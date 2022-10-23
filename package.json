@@ -4,22 +4,28 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port=8000",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "prettier": "cd src && npx prettier --write ."
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^1.0.2",
+    "@sveltejs/vite-plugin-svelte": "^1.0.9",
     "@tsconfig/svelte": "^3.0.0",
+    "@types/ws": "^8.5.3",
     "autoprefixer": "^10.4.12",
     "postcss": "^8.4.16",
-    "svelte": "^3.49.0",
-    "svelte-check": "^2.8.1",
+    "prettier": "2.7.1",
+    "svelte": "^3.52.0",
+    "svelte-check": "^2.9.2",
     "svelte-preprocess": "^4.10.7",
+    "tailwindcss": "^3.2.1",
     "tslib": "^2.4.0",
-    "tailwindcss": "^3.1.8",
     "typescript": "^4.6.4",
-    "vite": "^3.1.0"
+    "vite": "^3.1.8"
+  },
+  "dependencies": {
+    "ws": "^8.9.0"
   }
 }
