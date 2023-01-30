@@ -6,6 +6,8 @@ import Users from "./components/Users";
 import Creator from "./pages/creator/Creator";
 import { useSettingsStore } from "./store/settings";
 
+import "./i18n";
+
 function App() {
   const isCreatorCompleted = useSettingsStore(
     (state) => state.isCreatorCompleted
