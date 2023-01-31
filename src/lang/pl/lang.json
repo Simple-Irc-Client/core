@@ -1,5 +1,9 @@
 {
     "creator.nick.title": "Witaj",
     "creator.nick.nick": "Podaj swój pseudonim",
-    "creator.nick.button.next": "Dalej"
+    "creator.nick.button.next": "Dalej",
+    "creator.server.title": "Witaj",
+    "creator.server.nick": "Wybierz serwer",
+    "creator.server.server": "Wybierz serwer",
+    "creator.server.button.next": "Dalej"
 }
