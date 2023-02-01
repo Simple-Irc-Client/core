@@ -30,9 +30,9 @@ function App() {
       <CssBaseline />
       {!isCreatorCompleted && <Creator />}
       {isCreatorCompleted && (
-        <div className="flex flex-col">
+        <div className="tw-flex tw-flex-col">
           <Channels />
-          <div className="flex-row">
+          <div className="tw-flex-row">
             <Topic />
             <Main />
             <Toolbar />

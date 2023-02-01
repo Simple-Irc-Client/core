@@ -5,6 +5,7 @@ import CreatorChannelList from "./CreatorChannelList";
 import CreatorNick from "./CreatorNick";
 import CreatorPassword from "./CreatorPassword";
 import CreatorServer from "./CreatorServer";
+import CreatorLoading from "./CreatorLoading";
 
 const Creator = () => {
   const creatorStep = useSettingsStore((state) => state.creatorStep);
@@ -19,10 +20,11 @@ const Creator = () => {
             alignItems: 'center',
           }}
         >
-      {creatorStep === 1 && <CreatorNick />}
-      {creatorStep === 2 && <CreatorServer />}
-      {creatorStep === 3 && <CreatorPassword />}
-      {creatorStep === 4 && <CreatorChannelList />}
+      {creatorStep === 'nick' && <CreatorNick />}
+      {creatorStep === 'server' && <CreatorServer />}
+      {creatorStep === 'password' && <CreatorPassword />}
+      {creatorStep === 'loading' && <CreatorLoading />}
+      {creatorStep === 'channels' && <CreatorChannelList />}
       </Box>
     </Container>
   );

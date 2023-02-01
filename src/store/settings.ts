@@ -2,9 +2,11 @@ import { create } from "zustand";
 import { Server } from "../models/servers";
 import { devtools, persist } from "zustand/middleware";
 
+type CreatorStep = "nick" | "server" | "loading" | "password" | "channels";
+
 interface SettingsStore {
   isCreatorCompleted: boolean;
-  creatorStep: number;
+  creatorStep: CreatorStep;
   nick: string;
   server: Server | undefined;
   currentChannelName: string;
@@ -19,7 +21,7 @@ export const useSettingsStore = create<SettingsStore>()(
     persist(
       (set) => ({
         isCreatorCompleted: false,
-        creatorStep: 1,
+        creatorStep: "nick",
         nick: "",
         server: undefined,
         currentChannelName: "",
@@ -35,7 +37,7 @@ export const useSettingsStore = create<SettingsStore>()(
           })),
         setNick: (newNick: string) => set(() => ({ nick: newNick })),
         setServer: (newServer: Server) => set(() => ({ server: newServer })),
-        setCreatorStep: (newCreatorStep: number) =>
+        setCreatorStep: (newCreatorStep: CreatorStep) =>
           set(() => ({ creatorStep: newCreatorStep })),
       }),
       {

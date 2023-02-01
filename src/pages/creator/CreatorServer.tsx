@@ -20,6 +20,7 @@ const CreatorServer = () => {
   const onClick = () => {
     if (server !== undefined) {
       connect(server, nick);
+      setCreatorStep('loading');
     }
   };
 

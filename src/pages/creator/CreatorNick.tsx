@@ -14,7 +14,7 @@ const CreatorNick = () => {
 
   const onClick = () => {
     if (nick.length !== 0) {
-      setCreatorStep(2);
+      setCreatorStep('server');
     }
   };
 
