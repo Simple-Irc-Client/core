@@ -18,7 +18,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 const theme = createTheme();
 
-import "./services/network";
+import "./network/network";
 
 function App() {
   const isCreatorCompleted = useSettingsStore(

@@ -5,12 +5,14 @@ import { devtools, persist } from "zustand/middleware";
 type CreatorStep = "nick" | "server" | "loading" | "password" | "channels";
 
 interface SettingsStore {
+  isConnected: boolean;
   isCreatorCompleted: boolean;
   creatorStep: CreatorStep;
   nick: string;
   server: Server | undefined;
   currentChannelName: string;
   setCreatorCompleted: Function;
+  setIsConnected: Function;
   setNick: Function;
   setServer: Function;
   setCreatorStep: Function;
@@ -20,6 +22,7 @@ export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
       (set) => ({
+        isConnected: false,
         isCreatorCompleted: false,
         creatorStep: "nick",
         nick: "",
@@ -35,6 +38,8 @@ export const useSettingsStore = create<SettingsStore>()(
           set((state) => ({
             isCreatorCompleted: state.isCreatorCompleted,
           })),
+        setIsConnected: (status: boolean) =>
+          set(() => ({ isConnected: status })),
         setNick: (newNick: string) => set(() => ({ nick: newNick })),
         setServer: (newServer: Server) => set(() => ({ server: newServer })),
         setCreatorStep: (newCreatorStep: CreatorStep) =>

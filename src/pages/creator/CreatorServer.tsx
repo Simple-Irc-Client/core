@@ -5,13 +5,10 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
 import { servers } from "../../models/servers";
-import { connect } from "../../services/network";
 import { useSettingsStore } from "../../store/settings";
 
 const CreatorServer = () => {
   const { t } = useTranslation();
-
-  const nick = useSettingsStore((state) => state.nick);
 
   const server = useSettingsStore((state) => state.server);
   const setServer = useSettingsStore((state) => state.setServer);
@@ -19,8 +16,7 @@ const CreatorServer = () => {
 
   const onClick = () => {
     if (server !== undefined) {
-      connect(server, nick);
-      setCreatorStep('loading');
+      setCreatorStep("loading");
     }
   };
 

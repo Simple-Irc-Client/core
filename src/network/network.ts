@@ -1,7 +1,8 @@
+import { defaultIRCPort, websocketHost, websocketPort } from "../config";
 import { Server } from "../models/servers";
+import { kernel } from "./kernel";
 
-export const port = 8667;
-const webSocket = new WebSocket(`ws://localhost:${port}`);
+const webSocket = new WebSocket(`ws://${websocketHost}:${websocketPort}`);
 
 const queueMessages: string[] = [];
 
@@ -11,7 +12,9 @@ webSocket.onopen = () => {
 
 webSocket.onmessage = (event) => {
   console.log(`websocket message: ${event?.data}`);
-  // TODO kernel
+  if (event?.data) {
+    kernel(event.data);
+  }
 };
 
 webSocket.onerror = (event) => {
@@ -30,6 +33,10 @@ setInterval(function networkQueue() {
   }
   webSocket.send(message);
 }, 300);
+
+export const webSocketStatus = () => {
+  return webSocket.readyState;
+}
 
 const sendMessage = (message: string) => {
   if (webSocket.readyState === 1) {
@@ -56,7 +63,7 @@ export const connect = (currentServer: Server, nick: string) => {
   }
 
   let serverHost: string | undefined = firstServer;
-  let serverPort: string | undefined = "6667";
+  let serverPort: string | undefined = `${defaultIRCPort}`;
 
   if (firstServer.includes(":")) {
     [serverHost, serverPort] = firstServer.split(":");
