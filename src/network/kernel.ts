@@ -1,14 +1,19 @@
 import { useSettingsStore } from "../store/settings";
 
-export const kernel = (message: string) => {
-  const { type, event } = JSON.parse(message);
+export type IrcEvent = {
+  type: string;
+  line?: string;
+};
 
-  switch (type) {
+export const kernel = (event: IrcEvent) => {
+  switch (event.type) {
     case "connected":
       handleConnected();
       break;
     case "raw":
-      handleRaw(event);
+      if (event?.line) {
+        handleRaw(event.line);
+      }
       break;
   }
 };
@@ -30,5 +35,5 @@ const handleRaw = (event: string) => {
 
   const lineWithoutTags = line.join(" ");
 
-  console.log(`lineWithoutTags: ${lineWithoutTags}`); // TODO debug
+  // console.log(`lineWithoutTags: ${lineWithoutTags}`); // TODO debug
 };

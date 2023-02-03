@@ -1,89 +1,51 @@
+import { connect as socketIOConnect } from "socket.io-client";
 import { defaultIRCPort, websocketHost, websocketPort } from "../config";
 import { Server } from "../models/servers";
 
-import { create } from "zustand";
+export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`);
+const queueMessages: unknown[] = [];
 
-interface Network {
-  websocket?: WebSocket;
-  webSocketReady: boolean;
-  queueMessages: string[];
-  init: Function;
-  setWebSocketReady: Function;
-  sendMessage: Function;
-  connect: Function;
-  sendMessageQueue: Function;
-}
+export const connect = (currentServer: Server, nick: string) => {
+  if (currentServer.servers === undefined) {
+    return;
+  }
 
-export const useNetwork = create<Network>((set, get) => ({
-  websocket: undefined,
-  webSocketReady: false,
-  queueMessages: [],
+  const firstServer = currentServer.servers[0];
 
-  init: () => {
-    if (get().websocket === undefined) {
-      set({
-        websocket: new WebSocket(`ws://${websocketHost}:${websocketPort}`),
-      });
-    }
-  },
+  if (firstServer === undefined) {
+    return;
+  }
 
-  setWebSocketReady: (status: boolean) => {
-    set({ webSocketReady: status });
-  },
+  let serverHost: string | undefined = firstServer;
+  let serverPort: string | undefined = `${defaultIRCPort}`;
 
-  sendMessage: (message: string) => {
-    if (get().websocket?.readyState === WebSocket.OPEN) {
-      get()?.websocket?.send(message);
-      console.log(`Sent to server ${message}`);
-    } else {
-      console.log("Message was not sent - the socket is closed");
-    }
-  },
+  if (firstServer.includes(":")) {
+    [serverHost, serverPort] = firstServer.split(":");
+  }
 
-  connect: (currentServer: Server, nick: string) => {
-    if (currentServer.servers === undefined) {
-      return;
-    }
-
-    const firstServer = currentServer.servers[0];
-
-    if (firstServer === undefined) {
-      return;
-    }
-
-    let serverHost: string | undefined = firstServer;
-    let serverPort: string | undefined = `${defaultIRCPort}`;
-
-    if (firstServer.includes(":")) {
-      [serverHost, serverPort] = firstServer.split(":");
-    }
-
-    const connectCommand = {
-      type: "connect",
-      event: {
-        nick,
-        server: {
-          host: serverHost,
-          port: Number(serverPort),
-          encoding: currentServer?.encoding,
-        },
+  const connectCommand = {
+    type: "connect",
+    event: {
+      nick,
+      server: {
+        host: serverHost,
+        port: Number(serverPort),
+        encoding: currentServer?.encoding,
       },
-    };
+    },
+  };
 
-    get().sendMessage(JSON.stringify(connectCommand));
-  },
+  sicSocket.emit("sic-client-event", connectCommand);
+};
 
-  sendMessageQueue: (message: string) => {
-    set((state) => ({
-      queueMessages: [...state.queueMessages, message],
-    }));
-  },
-}));
+export const sendMessage = (message: unknown) => {
+  sicSocket.emit("sic-client-event", message);
+};
 
-// setInterval(function networkQueue() {
-//   const message = queueMessages.pop();
-//   if (message === undefined) {
-//     return;
-//   }
-//   webSocket.send(message);
-// }, 300);
+setInterval(function networkSendQueueMessages() {
+  const message = queueMessages.pop();
+  if (message === undefined) {
+    return;
+  }
+  sicSocket.emit("sic-client-event", message);
+}, 300);
