@@ -2,9 +2,9 @@ import { create } from "zustand";
 import { Server } from "../models/servers";
 import { devtools, persist } from "zustand/middleware";
 
-type CreatorStep = "nick" | "server" | "loading" | "password" | "channels";
+export type CreatorStep = "nick" | "server" | "loading" | "password" | "channels";
 
-interface SettingsStore {
+export interface SettingsStore {
   isConnected: boolean;
   isCreatorCompleted: boolean;
   creatorStep: CreatorStep;

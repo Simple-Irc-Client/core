@@ -23,22 +23,20 @@ import { useEffect } from "react";
 import { kernel } from "./network/kernel";
 
 function App() {
-  const isCreatorCompleted = useSettingsStore(
-    (state) => state.isCreatorCompleted
-  );
+  const settings = useSettingsStore();
 
   useEffect(() => {
     sicSocket.on("sic-irc-event", (data) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
-      kernel(data);
+      kernel(settings, data);
     });
   }, [sicSocket]);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {!isCreatorCompleted && <Creator />}
-      {isCreatorCompleted && (
+      {!settings.isCreatorCompleted && <Creator />}
+      {settings.isCreatorCompleted && (
         <div className="tw-flex tw-flex-col">
           <Channels />
           <div className="tw-flex-row">
