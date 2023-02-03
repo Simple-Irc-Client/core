@@ -46,7 +46,7 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ creatorStep: newCreatorStep })),
       }),
       {
-        name: "SIC",
+        name: "settings",
       }
     )
   )
