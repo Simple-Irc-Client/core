@@ -9,18 +9,25 @@ const CreatorLoading = () => {
   const { t } = useTranslation();
 
   const [progress, setProgress] = useState(1);
-  const [isConnectedToIRC, setIsConnectedToIRC] = useState(false);
 
   const nick = useSettingsStore((state) => state.nick);
   const server = useSettingsStore((state) => state.server);
+  const isConnecting = useSettingsStore((state) => state.isConnecting);
+  const setIsConnecting = useSettingsStore((state) => state.setIsConnecting);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
-  if (server && !isConnectedToIRC) {
-    setIsConnectedToIRC(true);
-    setProgress(30);
+  if (server && !isConnecting && !isConnected) {
+    setIsConnecting(true);
+    console.log(`sending connect to irc command`);
     connect(server, nick);
   }
+
+  useEffect(() => {
+    if (isConnecting) {
+      setProgress(30);
+    }
+  }, [isConnecting]);
 
   useEffect(() => {
     if (isConnected) {

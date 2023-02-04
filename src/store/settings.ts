@@ -10,6 +10,7 @@ export type CreatorStep =
   | "channels";
 
 export interface SettingsStore {
+  isConnecting: boolean;
   isConnected: boolean;
   isCreatorCompleted: boolean;
   creatorStep: CreatorStep;
@@ -18,6 +19,7 @@ export interface SettingsStore {
   currentChannelName: string;
 
   setCreatorCompleted: Function;
+  setIsConnecting: Function;
   setIsConnected: Function;
   setNick: Function;
   setServer: Function;
@@ -28,6 +30,7 @@ export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
       (set) => ({
+        isConnecting: false,
         isConnected: false,
         isCreatorCompleted: false,
         creatorStep: "nick",
@@ -44,6 +47,8 @@ export const useSettingsStore = create<SettingsStore>()(
           set((state) => ({
             isCreatorCompleted: state.isCreatorCompleted,
           })),
+        setIsConnecting: (status: boolean) =>
+          set(() => ({ isConnecting: status })),
         setIsConnected: (status: boolean) =>
           set(() => ({ isConnected: status })),
         setNick: (newNick: string) => set(() => ({ nick: newNick })),
