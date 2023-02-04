@@ -5,6 +5,7 @@ import Topic from "./components/Topic";
 import Users from "./components/Users";
 import Creator from "./pages/creator/Creator";
 import { useSettingsStore } from "./store/settings";
+import { useEffect } from "react";
 
 import "./i18n";
 
@@ -20,20 +21,19 @@ const theme = createTheme();
 
 import { sicSocket } from "./network/network";
 import { kernel } from "./network/kernel";
-import { useEffect } from "react";
 
 function App() {
   const settings = useSettingsStore();
 
   useEffect(() => {
-    const onMessageReceived = (data: any) => {
+    const onIrcEvent = (data: any) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
       kernel(settings, data);
     };
 
-    sicSocket.on("sic-irc-event", onMessageReceived);
+    sicSocket.on("sic-irc-event", onIrcEvent);
     return () => {
-      sicSocket.off("sic-irc-event", onMessageReceived);
+      sicSocket.off("sic-irc-event", onIrcEvent);
     };
   }, [sicSocket]);
 
