@@ -9,6 +9,9 @@ import { useEffect } from "react";
 
 import "./i18n";
 
+import { sicSocket } from "./network/network";
+import { kernel } from "./network/kernel";
+
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
@@ -18,9 +21,6 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
 const theme = createTheme();
-
-import { sicSocket } from "./network/network";
-import { kernel } from "./network/kernel";
 
 function App() {
   const settings = useSettingsStore();
