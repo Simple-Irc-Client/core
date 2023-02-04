@@ -20,17 +20,22 @@ const theme = createTheme();
 
 import { sicSocket } from "./network/network";
 import { kernel } from "./network/kernel";
+import { useEffect } from "react";
 
 function App() {
   const settings = useSettingsStore();
 
-  if (!settings.socketInitialized) {
-    settings.seSocketInitialized(true);
-    sicSocket.on("sic-irc-event", (data) => {
+  useEffect(() => {
+    const onMessageReceived = (data: any) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
       kernel(settings, data);
-    });
-  }
+    };
+
+    sicSocket.on("sic-irc-event", onMessageReceived);
+    return () => {
+      sicSocket.off("sic-irc-event", onMessageReceived);
+    };
+  }, [sicSocket]);
 
   return (
     <ThemeProvider theme={theme}>
