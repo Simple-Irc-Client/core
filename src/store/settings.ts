@@ -2,15 +2,23 @@ import { create } from "zustand";
 import { Server } from "../models/servers";
 import { devtools, persist } from "zustand/middleware";
 
-export type CreatorStep = "nick" | "server" | "loading" | "password" | "channels";
+export type CreatorStep =
+  | "nick"
+  | "server"
+  | "loading"
+  | "password"
+  | "channels";
 
 export interface SettingsStore {
+  socketInitialized: boolean;
   isConnected: boolean;
   isCreatorCompleted: boolean;
   creatorStep: CreatorStep;
   nick: string;
   server: Server | undefined;
   currentChannelName: string;
+
+  seSocketInitialized: Function;
   setCreatorCompleted: Function;
   setIsConnected: Function;
   setNick: Function;
@@ -22,6 +30,7 @@ export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
       (set) => ({
+        socketInitialized: false,
         isConnected: false,
         isCreatorCompleted: false,
         creatorStep: "nick",
@@ -34,6 +43,8 @@ export const useSettingsStore = create<SettingsStore>()(
         // namesXProtoEnabled: false,
         // usersPrefix: [],
 
+        seSocketInitialized: (status: boolean) =>
+          set({ socketInitialized: status }),
         setCreatorCompleted: () =>
           set((state) => ({
             isCreatorCompleted: state.isCreatorCompleted,

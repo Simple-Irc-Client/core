@@ -2,7 +2,9 @@ import { connect as socketIOConnect } from "socket.io-client";
 import { defaultIRCPort, websocketHost, websocketPort } from "../config";
 import { Server } from "../models/servers";
 
-export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`);
+export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
+  transports: ["websocket"],
+});
 const queueMessages: unknown[] = [];
 
 export const connect = (currentServer: Server, nick: string) => {

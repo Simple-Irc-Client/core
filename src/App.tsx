@@ -19,18 +19,18 @@ import CssBaseline from "@mui/material/CssBaseline";
 const theme = createTheme();
 
 import { sicSocket } from "./network/network";
-import { useEffect } from "react";
 import { kernel } from "./network/kernel";
 
 function App() {
   const settings = useSettingsStore();
 
-  useEffect(() => {
+  if (!settings.socketInitialized) {
+    settings.seSocketInitialized(true);
     sicSocket.on("sic-irc-event", (data) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
       kernel(settings, data);
     });
-  }, [sicSocket]);
+  }
 
   return (
     <ThemeProvider theme={theme}>
