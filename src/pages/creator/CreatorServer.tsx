@@ -30,7 +30,7 @@ const CreatorServer = () => {
           disablePortal
           options={servers}
           sx={{ width: 300 }}
-          getOptionLabel={(option) => option.network}
+          getOptionLabel={(option) => option?.network || ""}
           renderInput={(params) => (
             <TextField {...params} label={t("creator.server.server")} />
           )}
@@ -51,6 +51,7 @@ const CreatorServer = () => {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
+          disabled={!server}
         >
           {t("creator.server.button.next")}
         </Button>

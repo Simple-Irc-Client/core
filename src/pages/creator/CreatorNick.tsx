@@ -39,6 +39,7 @@ const CreatorNick = () => {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
+          disabled={!nick}
         >
           {t("creator.nick.button.next")}
         </Button>
