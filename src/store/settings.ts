@@ -41,7 +41,6 @@ export const useSettingsStore = create<SettingsStore>()(
         isPasswordRequired: undefined,
         // currentChannelName: "",
         // currentChannelCategory: '',
-        // passwordRequired: false,
         // channelsList: [],
         // namesXProtoEnabled: false,
         // usersPrefix: [],
