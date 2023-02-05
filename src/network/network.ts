@@ -43,7 +43,7 @@ export const connect = (currentServer: Server, nick: string) => {
 };
 
 export const sendMessage = (message: unknown) => {
-  sicSocket.volatile.emit("sic-client-event", message);
+  sicSocket.emit("sic-client-event", message);
 };
 
 // setInterval(function networkSendQueueMessages() {

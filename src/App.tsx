@@ -35,7 +35,7 @@ function App() {
     return () => {
       sicSocket.off("sic-irc-event", onIrcEvent);
     };
-  }, [sicSocket]);
+  }, [sicSocket, settings]);
 
   return (
     <ThemeProvider theme={theme}>

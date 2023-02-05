@@ -16,7 +16,8 @@ export interface SettingsStore {
   creatorStep: CreatorStep;
   nick: string;
   server: Server | undefined;
-  currentChannelName: string;
+  // currentChannelName: string;
+  isPasswordRequired: boolean | undefined;
 
   setCreatorCompleted: Function;
   setIsConnecting: Function;
@@ -24,6 +25,7 @@ export interface SettingsStore {
   setNick: Function;
   setServer: Function;
   setCreatorStep: Function;
+  setIsPasswordRequired: Function;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -36,16 +38,17 @@ export const useSettingsStore = create<SettingsStore>()(
         creatorStep: "nick",
         nick: "",
         server: undefined,
-        currentChannelName: "",
+        isPasswordRequired: undefined,
+        // currentChannelName: "",
         // currentChannelCategory: '',
         // passwordRequired: false,
         // channelsList: [],
         // namesXProtoEnabled: false,
         // usersPrefix: [],
 
-        setCreatorCompleted: () =>
-          set((state) => ({
-            isCreatorCompleted: state.isCreatorCompleted,
+        setCreatorCompleted: (status: boolean) =>
+          set(() => ({
+            isCreatorCompleted: status,
           })),
         setIsConnecting: (status: boolean) =>
           set(() => ({ isConnecting: status })),
@@ -55,6 +58,8 @@ export const useSettingsStore = create<SettingsStore>()(
         setServer: (newServer: Server) => set(() => ({ server: newServer })),
         setCreatorStep: (newCreatorStep: CreatorStep) =>
           set(() => ({ creatorStep: newCreatorStep })),
+        setIsPasswordRequired: (status: boolean) =>
+          set(() => ({ isPasswordRequired: status })),
       }),
       {
         name: "settings",

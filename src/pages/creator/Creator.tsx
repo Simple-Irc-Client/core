@@ -13,18 +13,18 @@ const Creator = () => {
   return (
     <Container maxWidth="sm">
       <Box
-          sx={{
-            marginTop: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-      {creatorStep === 'nick' && <CreatorNick />}
-      {creatorStep === 'server' && <CreatorServer />}
-      {creatorStep === 'password' && <CreatorPassword />}
-      {creatorStep === 'loading' && <CreatorLoading />}
-      {creatorStep === 'channels' && <CreatorChannelList />}
+        sx={{
+          marginTop: 20,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {creatorStep === "nick" && <CreatorNick />}
+        {creatorStep === "server" && <CreatorServer />}
+        {creatorStep === "password" && <CreatorPassword />}
+        {creatorStep === "loading" && <CreatorLoading />}
+        {creatorStep === "channels" && <CreatorChannelList />}
       </Box>
     </Container>
   );

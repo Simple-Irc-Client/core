@@ -5,5 +5,10 @@
     "creator.server.title": "Witaj",
     "creator.server.nick": "Wybierz serwer",
     "creator.server.server": "Wybierz serwer",
-    "creator.server.button.next": "Dalej"
+    "creator.server.button.next": "Dalej",
+    "creator.loading.connecting": "Łaczenie z serwerem",
+    "creator.loading.connected": "Połączono",
+    "creator.loading.isPasswordRequired": "Sprawdzanie czy hasło jest wymagane",
+    "creator.loading.passwordIsRequired": "Hasło jest wymagane",
+    "creator.loading.passwordIsNotRequired": "Hasło nie jest wymagane"
 }
