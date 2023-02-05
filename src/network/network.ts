@@ -1,6 +1,7 @@
 import { connect as socketIOConnect } from "socket.io-client";
 import { defaultIRCPort, websocketHost, websocketPort } from "../config";
 import { Server } from "../models/servers";
+import { parseServer } from "./helpers";
 
 export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
   transports: ["websocket"],
@@ -10,21 +11,11 @@ export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
 // const queueMessages: unknown[] = [];
 
 export const connect = (currentServer: Server, nick: string) => {
-  if (currentServer.servers === undefined) {
-    return;
-  }
-
-  const firstServer = currentServer.servers[0];
-
-  if (firstServer === undefined) {
-    return;
-  }
-
-  let serverHost: string | undefined = firstServer;
-  let serverPort: string | undefined = `${defaultIRCPort}`;
-
-  if (firstServer.includes(":")) {
-    [serverHost, serverPort] = firstServer.split(":");
+  const singleServer = parseServer(currentServer);
+  if (!singleServer || !singleServer?.host) {
+    throw new Error(
+      "Unable to connect to IRC network - server host is empty"
+    );
   }
 
   const connectCommand = {
@@ -32,8 +23,8 @@ export const connect = (currentServer: Server, nick: string) => {
     event: {
       nick,
       server: {
-        host: serverHost,
-        port: Number(serverPort),
+        host: singleServer.host,
+        port: singleServer.port,
         encoding: currentServer?.encoding,
       },
     },
