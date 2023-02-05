@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Server } from "../../models/servers";
-import { parseServer } from "../helpers";
+import { parseIrcRawMessage, parseServer } from "../helpers";
 
 describe("helper tests", () => {
   it("test parse server", () => {
@@ -64,5 +64,45 @@ describe("helper tests", () => {
 
       expect(parseServer(server as Server)).toStrictEqual(result);
     }
+  });
+
+  it("test parse irc raw message", () => {
+    expect(
+      parseIrcRawMessage(":dsfsdfsdfsdf MODE dsfsdfsdfsdf :+x\r\n")
+    ).toStrictEqual({
+      tags: "",
+      sender: "dsfsdfsdfsdf",
+      command: "MODE",
+      line: ["dsfsdfsdfsdf", ":+x\r\n"],
+    });
+    expect(
+      parseIrcRawMessage(
+        "@draft/bot;msgid=MmlMsf9ZUy2zEzoBc8IQLV;time=2023-02-05T19:02:00.003Z :NickServ!NickServ@serwisy.pirc.pl NOTICE dsfsdfsdfsdf :Twoj nick nie jest zarejestrowany"
+      )
+    ).toStrictEqual({
+      tags: "@draft/bot;msgid=MmlMsf9ZUy2zEzoBc8IQLV;time=2023-02-05T19:02:00.003Z",
+      sender: "NickServ!NickServ@serwisy.pirc.pl",
+      command: "NOTICE",
+      line: ["dsfsdfsdfsdf", ":Twoj", "nick", "nie", "jest", "zarejestrowany"],
+    });
+    expect(
+      parseIrcRawMessage(
+        ":netsplit.pirc.pl 002 dsfsdfsdfsdf :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3\r\n"
+      )
+    ).toStrictEqual({
+      tags: "",
+      sender: "netsplit.pirc.pl",
+      command: "002",
+      line: [
+        "dsfsdfsdfsdf",
+        ":Your",
+        "host",
+        "is",
+        "netsplit.pirc.pl,",
+        "running",
+        "version",
+        "UnrealIRCd-6.0.3\r\n",
+      ],
+    });
   });
 });

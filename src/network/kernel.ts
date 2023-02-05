@@ -1,4 +1,5 @@
 import { SettingsStore } from "../store/settings";
+import { parseIrcRawMessage } from "./helpers";
 
 export type IrcEvent = {
   type: string;
@@ -23,29 +24,11 @@ const handleConnected = (settings: SettingsStore) => {
 };
 
 const handleRaw = (settings: SettingsStore, event: string) => {
-  const line: string[] = event?.split(" ") ?? [];
-
-  // @msgid=rPQvwimgWqGnqVcuVONIFJ;time=2023-02-01T23:08:26.026Z
-  // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z
-  let tags = "";
-  if (line.at(0)?.startsWith("@")) {
-    tags = line.shift() ?? "";
-  }
-
-  // NickServ!NickServ@serwisy.pirc.pl
-  let nick = "";
-  if (line.at(0)?.startsWith(":")) {
-    nick = line.shift() ?? "";
-    if (nick.at(0) === ":") {
-      nick = nick.substring(1);
-    }
-  }
-
-  const command = line.shift() ?? "";
+  const { tags, sender, command, line } = parseIrcRawMessage(event);
 
   switch (command) {
     case "NOTICE":
-      onNotice(settings, tags, nick, command, line);
+      onNotice(settings, tags, sender, command, line);
   }
   // TODO
   // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user\r\n
@@ -58,7 +41,7 @@ const handleRaw = (settings: SettingsStore, event: string) => {
 const onNotice = (
   settings: SettingsStore,
   tags: string,
-  nick: string,
+  sender: string,
   command: string,
   line: string[]
 ) => {
@@ -73,7 +56,7 @@ const onNotice = (
   }
 
   if (
-    nick.startsWith("NickServ!NickServ@") &&
+    sender.startsWith("NickServ!NickServ@") &&
     target === settings.nick &&
     passwordRequired.test(message)
   ) {
