@@ -5,6 +5,7 @@ import Topic from "./components/Topic";
 import Users from "./components/Users";
 import Creator from "./pages/creator/Creator";
 import { useSettingsStore } from "./store/settings";
+import { useChannelListStore } from "./store/channels";
 import { useEffect } from "react";
 
 import "./i18n";
@@ -23,25 +24,26 @@ import CssBaseline from "@mui/material/CssBaseline";
 const theme = createTheme();
 
 function App() {
-  const settings = useSettingsStore();
+  const settingsStore = useSettingsStore();
+  const channelListStore = useChannelListStore();
 
   useEffect(() => {
     const onIrcEvent = (data: any) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
-      kernel(settings, data);
+      kernel(settingsStore, channelListStore, data);
     };
 
     sicSocket.on("sic-irc-event", onIrcEvent);
     return () => {
       sicSocket.off("sic-irc-event", onIrcEvent);
     };
-  }, [sicSocket, settings]);
+  }, [sicSocket, settingsStore, channelListStore]);
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {!settings.isCreatorCompleted && <Creator />}
-      {settings.isCreatorCompleted && (
+      {!settingsStore.isCreatorCompleted && <Creator />}
+      {settingsStore.isCreatorCompleted && (
         <div className="tw-flex tw-flex-col">
           <Channels />
           <div className="tw-flex-row">

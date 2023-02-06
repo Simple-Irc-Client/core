@@ -18,10 +18,12 @@ export interface SettingsStore {
   server: Server | undefined;
   // currentChannelName: string;
   isPasswordRequired: boolean | undefined;
+  connectedTime: number; // unix timestamp
 
   setCreatorCompleted: Function;
   setIsConnecting: Function;
   setIsConnected: Function;
+  setConnectedTime: Function;
   setNick: Function;
   setServer: Function;
   setCreatorStep: Function;
@@ -39,6 +41,7 @@ export const useSettingsStore = create<SettingsStore>()(
         nick: "",
         server: undefined,
         isPasswordRequired: undefined,
+        connectedTime: 0,
         // currentChannelName: "",
         // currentChannelCategory: '',
         // channelsList: [],
@@ -59,6 +62,8 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ creatorStep: newCreatorStep })),
         setIsPasswordRequired: (status: boolean) =>
           set(() => ({ isPasswordRequired: status })),
+          setConnectedTime: (time: number) =>
+          set(() => ({ connectedTime: time })),
       }),
       {
         name: "settings",

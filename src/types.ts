@@ -9,3 +9,9 @@ export type ParsedIrcRawMessage = {
   command: string;
   line: string[];
 }
+
+export type Channel = {
+  name: string;
+  users: number;
+  topic: string;
+}

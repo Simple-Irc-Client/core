@@ -10,13 +10,13 @@ export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
 
 // const queueMessages: unknown[] = [];
 
-export const connect = (currentServer: Server, nick: string) => {
+export const ircConnect = (currentServer: Server, nick: string) => {
   const singleServer = parseServer(currentServer);
   if (!singleServer || !singleServer?.host) {
     throw new Error("Unable to connect to IRC network - server host is empty");
   }
 
-  const connectCommand = {
+  const command = {
     type: "connect",
     event: {
       nick,
@@ -28,10 +28,32 @@ export const connect = (currentServer: Server, nick: string) => {
     },
   };
 
-  sendMessage(connectCommand);
+  sendMessage(command);
 };
 
-export const sendMessage = (message: unknown) => {
+export const ircSendPassword = (password: string) => {
+  const command = {
+    type: "raw",
+    event: {
+      rawData: `PRIVMSG NickServ :IDENTIFY ${password}\n`,
+    },
+  };
+
+  sendMessage(command);
+};
+
+export const ircSendList = () => {
+  const command = {
+    type: "raw",
+    event: {
+      rawData: `LIST\n`,
+    },
+  };
+
+  sendMessage(command);
+};
+
+const sendMessage = (message: unknown) => {
   sicSocket.emit("sic-client-event", message);
 };
 

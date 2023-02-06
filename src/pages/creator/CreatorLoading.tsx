@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import LinearProgress from "@mui/material/LinearProgress";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { connect } from "../../network/network";
+import { ircConnect } from "../../network/network";
 import { useSettingsStore } from "../../store/settings";
 
 const CreatorLoading = () => {
@@ -21,7 +21,7 @@ const CreatorLoading = () => {
   if (server && !isConnecting && !isConnected) {
     setIsConnecting(true);
     console.log(`sending connect to irc command`);
-    connect(server, nick);
+    ircConnect(server, nick);
   }
 
   useEffect(() => {
