@@ -8,8 +8,7 @@ import { useSettingsStore } from "../../store/settings";
 const CreatorLoading = () => {
   const { t } = useTranslation();
 
-  const [progress, setProgress] = useState(1);
-  const [progressLabel, setProgressLabel] = useState<string | null>("");
+  const [progress, setProgress] = useState({ value: 1, label: "" });
 
   const nick = useSettingsStore((state) => state.nick);
   const server = useSettingsStore((state) => state.server);
@@ -26,27 +25,34 @@ const CreatorLoading = () => {
 
   useEffect(() => {
     if (isConnecting) {
-      setProgress(30);
-      setProgressLabel(t("creator.loading.connecting"));
+      setProgress({ value: 30, label: t("creator.loading.connecting") });
     }
   }, [isConnecting]);
 
   useEffect(() => {
     if (isConnected) {
-      setProgress(50);
-      setProgressLabel(t("creator.loading.connected"));
+      setProgress({ value: 50, label: t("creator.loading.connected") });
 
       setTimeout(() => {
-        setProgressLabel(t("creator.loading.isPasswordRequired"));
+        setProgress({
+          value: 50,
+          label: t("creator.loading.isPasswordRequired"),
+        });
       }, 2_000); // 2 sec
 
       setTimeout(() => {
         const localSettings = useSettingsStore.getState();
         if (localSettings.isPasswordRequired) {
-          setProgressLabel(t("creator.loading.passwordIsRequired"));
+          // setProgress({
+          //   value: 50,
+          //   label: t("creator.loading.passwordIsRequired"),
+          // });
           setCreatorStep("password");
         } else {
-          setProgressLabel(t("creator.loading.passwordIsNotRequired"));
+          // setProgress({
+          //   value: 50,
+          //   label: t("creator.loading.passwordIsNotRequired"),
+          // });
           setCreatorStep("channels");
         }
       }, 5_000); // 5 sec
@@ -56,9 +62,9 @@ const CreatorLoading = () => {
   return (
     <>
       <Box sx={{ width: "100%", mt: 3 }}>
-        <LinearProgress variant="determinate" value={progress} />
-        {progressLabel && (
-          <h2 className="tw-text-center tw-mt-4">{progressLabel}</h2>
+        <LinearProgress variant="determinate" value={progress.value} />
+        {progress.label && (
+          <h2 className="tw-text-center tw-mt-4">{progress.label}</h2>
         )}
       </Box>
     </>

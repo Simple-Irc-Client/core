@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Channel } from "../types";
+import { devtools, persist } from "zustand/middleware";
 
 export interface ChannelListStore {
   channels: Channel[];
@@ -10,21 +11,28 @@ export interface ChannelListStore {
   setFinished: Function;
 }
 
-export const useChannelListStore = create<ChannelListStore>()((set, get) => ({
-  channels: [],
-  finished: false,
+export const useChannelListStore = create<ChannelListStore>()(
+  devtools(
+    persist(
+      (set) => ({
+        channels: [],
+        finished: false,
 
-  setAddChannel: (name: string, users: number, topic: string) =>
-    set((state) => ({
-      channels: [...state.channels, { name, users, topic }],
-    })),
-  setClearList: () =>
-    set(() => ({
-      channels: [],
-      finished: false,
-    })),
-  setFinished: (status: boolean) =>
-    set(() => ({
-      finished: status,
-    })),
-}));
+        setAddChannel: (name: string, users: number, topic: string) =>
+          set((state) => ({
+            channels: [...state.channels, { name, users, topic }],
+          })),
+        setClearList: () =>
+          set(() => ({
+            channels: [],
+            finished: false,
+          })),
+        setFinished: (status: boolean) =>
+          set(() => ({
+            finished: status,
+          })),
+      }),
+      { name: "channels-list" }
+    )
+  )
+);

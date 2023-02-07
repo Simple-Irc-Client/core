@@ -13,5 +13,10 @@
     "creator.loading.passwordIsNotRequired": "Hasło nie jest wymagane",
     "creator.password.title": "Wymagane jest podanie hasła do konta",
     "creator.password.password": "Hasło",
-    "creator.password.button.next": "Dalej"
+    "creator.password.button.next": "Dalej",
+    "creator.channels.title": "Wybierz miejsce rozmów",
+    "creator.channels.column.name": "Nazwa",
+    "creator.channels.column.users": "Osoby",
+    "creator.channels.column.topic": "Temat",
+    "creator.channels.loading": "Pobieranie listy kanałów"
 }

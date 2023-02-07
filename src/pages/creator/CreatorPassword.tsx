@@ -2,19 +2,19 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ircSendPassword } from "../../network/network";
 import { useSettingsStore } from "../../store/settings";
 
 const CreatorPassword = () => {
   const { t } = useTranslation();
-  const [password, setPassword] = useState("");
+  const password = useRef("");
 
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
   const onClick = () => {
-    ircSendPassword(password);
+    ircSendPassword(password.current);
     setCreatorStep("channels");
   };
 
@@ -31,7 +31,7 @@ const CreatorPassword = () => {
           label={t("creator.password.password")}
           autoComplete="password"
           autoFocus
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(event) => password.current = event.target.value}
         />
         <Button
           onClick={onClick}

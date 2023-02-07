@@ -26,7 +26,7 @@ export const parseServer = (
 };
 
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
-  const line: string[] = message?.split(" ") ?? [];
+  const line: string[] = message?.trim()?.split(" ") ?? [];
 
   // @msgid=rPQvwimgWqGnqVcuVONIFJ;time=2023-02-01T23:08:26.026Z
   // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z

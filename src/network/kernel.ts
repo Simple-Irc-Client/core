@@ -80,17 +80,13 @@ const onRaw322 = (
   channelListStore: ChannelListStore,
   line: string[]
 ) => {
-  const nick = line.shift();
+  const sender = line.shift();
 
-  const channel = line.shift();
+  const name = line.shift();
   const users = Number(line.shift() ?? "0");
   const topic = line.join(" ")?.substring(1);
 
-  const newChannel = { channel, users, topic };
-
-  console.log(`adding channel: ${JSON.stringify(newChannel)}`);
-
-  channelListStore.setAddChannel(newChannel);
+  channelListStore.setAddChannel(name, users, topic);
 };
 
 // ::insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST\r\n

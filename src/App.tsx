@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import "./i18n";
 
 import { sicSocket } from "./network/network";
-import { kernel } from "./network/kernel";
+import { IrcEvent, kernel } from "./network/kernel";
 
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
@@ -28,7 +28,7 @@ function App() {
   const channelListStore = useChannelListStore();
 
   useEffect(() => {
-    const onIrcEvent = (data: any) => {
+    const onIrcEvent = (data: IrcEvent) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
       kernel(settingsStore, channelListStore, data);
     };

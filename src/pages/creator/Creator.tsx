@@ -11,7 +11,7 @@ const Creator = () => {
   const creatorStep = useSettingsStore((state) => state.creatorStep);
 
   return (
-    <Container maxWidth="sm">
+    <Container maxWidth={creatorStep === "channels" ? "md" : "sm"}>
       <Box
         sx={{
           marginTop: 20,
