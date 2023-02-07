@@ -73,7 +73,7 @@ describe("helper tests", () => {
       tags: "",
       sender: "dsfsdfsdfsdf",
       command: "MODE",
-      line: ["dsfsdfsdfsdf", ":+x\r\n"],
+      line: ["dsfsdfsdfsdf", ":+x"],
     });
     expect(
       parseIrcRawMessage(
@@ -101,7 +101,7 @@ describe("helper tests", () => {
         "netsplit.pirc.pl,",
         "running",
         "version",
-        "UnrealIRCd-6.0.3\r\n",
+        "UnrealIRCd-6.0.3",
       ],
     });
   });
