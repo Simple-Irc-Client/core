@@ -43,16 +43,16 @@ const CreatorLoading = () => {
       setTimeout(() => {
         const localSettings = useSettingsStore.getState();
         if (localSettings.isPasswordRequired) {
-          // setProgress({
-          //   value: 50,
-          //   label: t("creator.loading.passwordIsRequired"),
-          // });
+          setProgress({
+            value: 50,
+            label: t("creator.loading.passwordIsRequired"),
+          });
           setCreatorStep("password");
         } else {
-          // setProgress({
-          //   value: 50,
-          //   label: t("creator.loading.passwordIsNotRequired"),
-          // });
+          setProgress({
+            value: 50,
+            label: t("creator.loading.passwordIsNotRequired"),
+          });
           setCreatorStep("channels");
         }
       }, 5_000); // 5 sec
