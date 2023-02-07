@@ -40,15 +40,20 @@ const handleRaw = (
 
   switch (command) {
     case "001":
-      onRaw001(settingsStore);
+      onRaw001();
+      break;
     case "321":
       onRaw321(settingsStore, channelListStore);
+      break;
     case "322":
       onRaw322(settingsStore, channelListStore, line);
+      break;
     case "323":
       onRaw323(channelListStore);
+      break;
     case "NOTICE":
       onNotice(settingsStore, tags, sender, command, line);
+      break;
   }
   // TODO
   // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user\r\n
@@ -57,7 +62,7 @@ const handleRaw = (
   // :legowisko.pirc.pl 761 dsfsdfdsfdsfsdfdsfdsf Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
 };
 
-const onRaw001 = (settingsStore) => {
+const onRaw001 = () => {
   //
 };
 
