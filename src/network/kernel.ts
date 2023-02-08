@@ -126,16 +126,15 @@ const onNotice = (
 
   if (target === settingsStore.nick && list.test(message)) {
     const seconds = list.exec(message)?.[1];
-    if (seconds) {
+    if (seconds && settingsStore.connectedTime !== 0) {
       const currentTime = Math.floor(Date.now() / 1000);
+      const loggedTime = currentTime - settingsStore.connectedTime;
       const remaining =
-        Number(seconds) - (currentTime - settingsStore.connectedTime);
-      console.log(`settings.connectedTime: ${settingsStore.connectedTime}`);
-      console.log(`currentTime: ${currentTime}`);
-      console.log(`remaining: ${remaining}`);
+        loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
+
       setTimeout(() => {
         ircSendList();
-      }, Number(remaining + 1) * 1000);
+      }, (remaining + 1) * 1000);
     }
   }
 };

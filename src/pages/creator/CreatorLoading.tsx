@@ -17,19 +17,10 @@ const CreatorLoading = () => {
   const isConnected = useSettingsStore((state) => state.isConnected);
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
-  if (server && !isConnecting && !isConnected) {
-    setIsConnecting(true);
-    console.log(`sending connect to irc command`);
-    ircConnect(server, nick);
-  }
-
   useEffect(() => {
     if (isConnecting) {
       setProgress({ value: 30, label: t("creator.loading.connecting") });
     }
-  }, [isConnecting]);
-
-  useEffect(() => {
     if (isConnected) {
       setProgress({ value: 50, label: t("creator.loading.connected") });
 
@@ -57,7 +48,12 @@ const CreatorLoading = () => {
         }
       }, 5_000); // 5 sec
     }
-  }, [isConnected]);
+    if (server && !isConnecting && !isConnected) {
+      setIsConnecting(true);
+      console.log(`sending connect to irc command`);
+      ircConnect(server, nick);
+    }
+  }, [isConnecting, isConnected]);
 
   return (
     <>

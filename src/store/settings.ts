@@ -62,7 +62,7 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ creatorStep: newCreatorStep })),
         setIsPasswordRequired: (status: boolean) =>
           set(() => ({ isPasswordRequired: status })),
-          setConnectedTime: (time: number) =>
+        setConnectedTime: (time: number) =>
           set(() => ({ connectedTime: time })),
       }),
       {
