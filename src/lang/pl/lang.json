@@ -18,5 +18,6 @@
     "creator.channels.column.name": "Nazwa",
     "creator.channels.column.users": "Osoby",
     "creator.channels.column.topic": "Temat",
-    "creator.channels.loading": "Pobieranie listy kanałów"
+    "creator.channels.loading": "Pobieranie listy kanałów",
+    "creator.channels.button.skip": "Pomiń"
 }

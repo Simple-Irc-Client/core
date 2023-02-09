@@ -1,4 +1,4 @@
-import { ChannelListStore } from "../store/channels";
+import { ChannelListStore } from "../store/channelsList";
 import { SettingsStore } from "../store/settings";
 import { parseIrcRawMessage } from "./helpers";
 import { ircSendList } from "./network";

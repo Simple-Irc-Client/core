@@ -1,9 +1,9 @@
 import { create } from "zustand";
-import { Channel } from "../types";
+import { ChannelList } from "../types";
 import { devtools, persist } from "zustand/middleware";
 
 export interface ChannelListStore {
-  channels: Channel[];
+  channels: ChannelList[];
   finished: boolean;
 
   setAddChannel: Function;

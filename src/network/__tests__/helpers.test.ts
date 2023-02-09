@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment node
+ */
 import { describe, expect, it, vi } from "vitest";
 import { Server } from "../../models/servers";
 import { parseIrcRawMessage, parseServer } from "../helpers";
