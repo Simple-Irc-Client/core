@@ -16,7 +16,6 @@ export type ChannelList = {
   topic: string;
 }
 
-
 export type Message = {
   message: string;
   nick: User | string | undefined;
@@ -65,7 +64,7 @@ export type User = {
   avatarData: string;
   modes: string[];
   maxMode: number;
-  channels: Channel[];
+  channels: string[];
 };
 
 export type UserMode = {

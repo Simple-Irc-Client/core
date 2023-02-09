@@ -28,6 +28,10 @@ export const kernel = (
 const handleConnected = (settingsStore: SettingsStore) => {
   settingsStore.setIsConnected(true);
   settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
+
+  settingsStore.setAddOpenChannel("Debug");
+  settingsStore.setAddOpenChannel("Status");
+
   ircSendList();
 };
 

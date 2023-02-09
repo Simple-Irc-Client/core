@@ -16,9 +16,10 @@ export interface SettingsStore {
   creatorStep: CreatorStep;
   nick: string;
   server: Server | undefined;
-  // currentChannelName: string;
   isPasswordRequired: boolean | undefined;
   connectedTime: number; // unix timestamp
+  currentChannelName: string;
+  openChannels: string[];
 
   setCreatorCompleted: Function;
   setIsConnecting: Function;
@@ -28,12 +29,15 @@ export interface SettingsStore {
   setServer: Function;
   setCreatorStep: Function;
   setIsPasswordRequired: Function;
+  setCurrentChannelName: Function;
+  setAddOpenChannel: Function;
+  setRemoveOpenChannel: Function;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         isConnecting: false,
         isConnected: false,
         isCreatorCompleted: false,
@@ -42,9 +46,9 @@ export const useSettingsStore = create<SettingsStore>()(
         server: undefined,
         isPasswordRequired: undefined,
         connectedTime: 0,
-        // currentChannelName: "",
+        currentChannelName: "",
         // currentChannelCategory: '',
-        // channelsList: [],
+        openChannels: [],
         // namesXProtoEnabled: false,
         // usersPrefix: [],
 
@@ -64,6 +68,14 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ isPasswordRequired: status })),
         setConnectedTime: (time: number) =>
           set(() => ({ connectedTime: time })),
+        setCurrentChannelName: (channel: string) =>
+          set(() => ({ currentChannelName: channel })),
+        setAddOpenChannel: (channel: string) =>
+          set((state) => ({ openChannels: [...state.openChannels, channel] })),
+        setRemoveOpenChannel: (channel: string) =>
+          set((state) => ({
+            openChannels: state.openChannels.filter((name) => name !== channel),
+          })),
       }),
       {
         name: "settings",

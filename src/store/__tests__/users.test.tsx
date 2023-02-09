@@ -127,4 +127,69 @@ describe("users tests", () => {
 
     expect(testResult2).toStrictEqual(false);
   });
+
+  it("test get users from channel", () => {
+    const { result } = renderHook(() => useUsersStore());
+
+    const newUser1 = {
+      nick: "test-nick-1",
+      ident: "",
+      hostname: "",
+      avatarUrl: "",
+      avatarData: "",
+      modes: [],
+      maxMode: 0,
+      channels: ["channel1"],
+    };
+    const newUser2 = {
+      nick: "test-nick-2",
+      ident: "",
+      hostname: "",
+      avatarUrl: "",
+      avatarData: "",
+      modes: [],
+      maxMode: 0,
+      channels: ["channel2"],
+    };
+    const newUser3 = {
+      nick: "test-nick-3",
+      ident: "",
+      hostname: "",
+      avatarUrl: "",
+      avatarData: "",
+      modes: [],
+      maxMode: 0,
+      channels: ["channel1", "channel2"],
+    };
+    const newUser4 = {
+      nick: "test-nick-4",
+      ident: "",
+      hostname: "",
+      avatarUrl: "",
+      avatarData: "",
+      modes: [],
+      maxMode: 0,
+      channels: ["channel4"],
+    };
+
+    let testResult1;
+    act(() => {
+      result.current.setAddUser(newUser1);
+      result.current.setAddUser(newUser2);
+      result.current.setAddUser(newUser3);
+      result.current.setAddUser(newUser4);
+    });
+    act(() => {
+      testResult1 = result.current.getUsersFromChannel("channel4");
+    });
+
+    expect(testResult1).toStrictEqual([newUser4]);
+
+    let testResult2;
+    act(() => {
+      testResult2 = result.current.getUsersFromChannel("channel2");
+    });
+
+    expect(testResult2).toStrictEqual([newUser2, newUser3]);
+  });
 });

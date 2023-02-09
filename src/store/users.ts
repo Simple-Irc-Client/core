@@ -12,7 +12,7 @@ export interface UsersStore {
   getUser: Function;
   getHasUser: Function;
   //   setJoinUser: Function;
-  //   getUsersFromChannel: Function;
+  getUsersFromChannel: Function;
   //   setUserAvatar: Function;
 }
 
@@ -44,7 +44,14 @@ export const useUsersStore = create<UsersStore>()(
           return get().users.find((user: User) => user.nick === nick);
         },
         getHasUser: (nick: string): boolean => {
-          return get().users.find((user: User) => user.nick === nick) !== undefined;
+          return (
+            get().users.find((user: User) => user.nick === nick) !== undefined
+          );
+        },
+        getUsersFromChannel: (channel: string): User[] => {
+          return get().users.filter((user: User) =>
+            user.channels.includes(channel)
+          );
         },
       }),
       { name: "users" }

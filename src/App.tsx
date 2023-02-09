@@ -5,7 +5,7 @@ import Topic from "./components/Topic";
 import Users from "./components/Users";
 import Creator from "./pages/creator/Creator";
 import { useSettingsStore } from "./store/settings";
-import { useChannelListStore } from "./store/channels";
+import { useChannelListStore } from "./store/channelsList";
 import { useEffect } from "react";
 
 import "./i18n";
@@ -20,6 +20,7 @@ import "@fontsource/roboto/700.css";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import { Container, Stack } from "@mui/material";
 
 const theme = createTheme();
 
@@ -44,15 +45,19 @@ function App() {
       <CssBaseline />
       {!settingsStore.isCreatorCompleted && <Creator />}
       {settingsStore.isCreatorCompleted && (
-        <div className="tw-flex tw-flex-col">
-          <Channels />
-          <div className="tw-flex-row">
-            <Topic />
-            <Main />
-            <Toolbar />
-          </div>
-          <Users />
-        </div>
+        <>
+          <Container maxWidth="lg">
+            <Stack direction="row">
+              <Channels />
+              <Stack direction="column">
+                <Topic />
+                <Main />
+                <Toolbar />
+              </Stack>
+              <Users />
+            </Stack>
+          </Container>
+        </>
       )}
     </ThemeProvider>
   );

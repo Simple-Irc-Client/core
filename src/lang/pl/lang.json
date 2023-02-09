@@ -19,5 +19,6 @@
     "creator.channels.column.users": "Osoby",
     "creator.channels.column.topic": "Temat",
     "creator.channels.loading": "Pobieranie listy kanałów",
-    "creator.channels.button.skip": "Pomiń"
+    "creator.channels.button.skip": "Pomiń",
+    "creator.channels.button.join": "Dołącz"
 }
