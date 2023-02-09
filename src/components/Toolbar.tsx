@@ -1,5 +1,5 @@
 const Toolbar = () => {
-  return <>toolbar</>;
+  return <div>toolbar</div>;
 };
 
 export default Toolbar;

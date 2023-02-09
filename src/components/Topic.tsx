@@ -1,5 +1,5 @@
 const Topic = () => {
-  return <>topic</>;
+  return <div>topic</div>;
 };
 
 export default Topic;
