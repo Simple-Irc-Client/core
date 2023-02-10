@@ -1,5 +1,6 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useTranslation } from "react-i18next";
@@ -66,22 +67,24 @@ const CreatorChannelList = () => {
             }}
           />
         </div>
-        <Button
-          onClick={onSkip}
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-        >
-          {t("creator.channels.button.skip")}
-        </Button>
-        <Button
-          onClick={onJoin}
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-        >
-          {t("creator.channels.button.join")}
-        </Button>
+        <Stack spacing={2} direction="row">
+          <Button
+            onClick={onSkip}
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            {t("creator.channels.button.skip")}
+          </Button>
+          <Button
+            onClick={onJoin}
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            {t("creator.channels.button.join")}
+          </Button>
+        </Stack>
       </Box>
     </>
   );

@@ -46,7 +46,9 @@ function App() {
       {!settingsStore.isCreatorCompleted && <Creator />}
       {settingsStore.isCreatorCompleted && (
         <>
-          <Container maxWidth="lg">
+          <Container
+            sx={{ minWidth: "100%", height: "100vh", padding: "0 !important" }}
+          >
             <Stack direction="row">
               <Channels />
               <Stack direction="column">

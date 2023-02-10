@@ -1,5 +1,6 @@
 import { ChannelListStore } from "../store/channelsList";
 import { SettingsStore } from "../store/settings";
+import { ChannelCategory } from "../types";
 import { parseIrcRawMessage } from "./helpers";
 import { ircSendList } from "./network";
 
@@ -30,7 +31,10 @@ const handleConnected = (settingsStore: SettingsStore) => {
   settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
   settingsStore.setAddOpenChannel("Debug");
+
   settingsStore.setAddOpenChannel("Status");
+  settingsStore.setCurrentChannelName("Status");
+  settingsStore.setCurrentChannelCategory(ChannelCategory.status);
 
   ircSendList();
 };

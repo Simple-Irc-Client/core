@@ -20,5 +20,9 @@
     "creator.channels.column.topic": "Temat",
     "creator.channels.loading": "Pobieranie listy kanałów",
     "creator.channels.button.skip": "Pomiń",
-    "creator.channels.button.join": "Dołącz"
+    "creator.channels.button.join": "Dołącz",
+    "main.toolbar.write.channel": "Napisz na kanale ",
+    "main.toolbar.write.person": "Napisz do ",
+    "main.channels.title": "Kanały:",
+    "main.users.title": "Użytkownicy:"
 }

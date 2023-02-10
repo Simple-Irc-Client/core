@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Server } from "../models/servers";
 import { devtools, persist } from "zustand/middleware";
+import { ChannelCategory } from "../types";
 
 export type CreatorStep =
   | "nick"
@@ -19,6 +20,7 @@ export interface SettingsStore {
   isPasswordRequired: boolean | undefined;
   connectedTime: number; // unix timestamp
   currentChannelName: string;
+  currentChannelCategory: ChannelCategory;
   openChannels: string[];
 
   setCreatorCompleted: Function;
@@ -30,6 +32,7 @@ export interface SettingsStore {
   setCreatorStep: Function;
   setIsPasswordRequired: Function;
   setCurrentChannelName: Function;
+  setCurrentChannelCategory: Function;
   setAddOpenChannel: Function;
   setRemoveOpenChannel: Function;
 }
@@ -46,8 +49,8 @@ export const useSettingsStore = create<SettingsStore>()(
         server: undefined,
         isPasswordRequired: undefined,
         connectedTime: 0,
-        currentChannelName: "",
-        // currentChannelCategory: '',
+        currentChannelName: "Status",
+        currentChannelCategory: ChannelCategory.status,
         openChannels: [],
         // namesXProtoEnabled: false,
         // usersPrefix: [],
@@ -70,6 +73,8 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ connectedTime: time })),
         setCurrentChannelName: (channel: string) =>
           set(() => ({ currentChannelName: channel })),
+        setCurrentChannelCategory: (category: ChannelCategory) =>
+          set(() => ({ currentChannelCategory: category })),
         setAddOpenChannel: (channel: string) =>
           set((state) => ({ openChannels: [...state.openChannels, channel] })),
         setRemoveOpenChannel: (channel: string) =>
