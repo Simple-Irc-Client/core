@@ -1,9 +1,17 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  GridCellParams,
+  GridColDef,
+  GridToolbarQuickFilter,
+} from "@mui/x-data-grid";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ircJoinChannels } from "../../network/network";
 import { useChannelListStore } from "../../store/channelsList";
 import { useSettingsStore } from "../../store/settings";
 
@@ -15,12 +23,24 @@ const CreatorChannelList = () => {
     (state) => state.setCreatorCompleted
   );
 
+  const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
+
+  const handleDelete = (channelName: string) => () => {
+    updateSelectedChannel((channels) =>
+      channels.filter((channel) => channel !== channelName)
+    );
+  };
+
+  const handleClick = (params: GridCellParams) => {
+    updateSelectedChannel((channels) => [...channels, params.id.toString()]);
+  };
+
   const onSkip = () => {
     setCreatorCompleted(true);
   };
 
   const onJoin = () => {
-    // TODO join
+    ircJoinChannels(selectedChannels);
     setCreatorCompleted(true);
   };
 
@@ -34,12 +54,14 @@ const CreatorChannelList = () => {
       field: "users",
       headerName: t("creator.channels.column.users") ?? "Users",
       width: 100,
+      filterable: false,
     },
     {
       field: "topic",
       headerName: t("creator.channels.column.topic") ?? "Topic",
       width: 500,
       sortable: false,
+      filterable: false,
     },
   ];
 
@@ -49,13 +71,25 @@ const CreatorChannelList = () => {
         {t("creator.channels.title")}
       </Typography>
       <Box component="form" sx={{ mt: 3, width: "100%" }}>
+        {selectedChannels.map((channel) => (
+          <Chip
+            key={channel}
+            label={channel}
+            color="primary"
+            variant="outlined"
+            onDelete={handleDelete(channel)}
+          />
+        ))}
+      </Box>
+      <Box sx={{ mt: 3, width: "100%" }}>
         <div style={{ display: "flex", height: 350, width: "100%" }}>
           <DataGrid
+            loading={channels.length < 10}
             rows={channels.length > 10 ? channels : []}
+            disableColumnMenu={true}
             columns={columns}
             pageSize={50}
             rowsPerPageOptions={[50]}
-            checkboxSelection
             getRowId={(row) => row.name}
             initialState={{
               sorting: {
@@ -64,7 +98,18 @@ const CreatorChannelList = () => {
             }}
             localeText={{
               noRowsLabel: t("creator.channels.loading") ?? "No rows",
+              noResultsOverlayLabel:
+                t("creator.channels.toolbar.search.no.results") ??
+                "No results found.",
+              toolbarQuickFilterPlaceholder:
+                t("creator.channels.toolbar.search.placeholder") ?? "Search…",
+              toolbarQuickFilterLabel:
+                t("creator.channels.toolbar.search.label") ?? "Search",
+              toolbarQuickFilterDeleteIconLabel:
+                t("creator.channels.toolbar.clear") ?? "Clear",
             }}
+            onCellClick={handleClick}
+            components={{ Toolbar: GridToolbarQuickFilter }}
           />
         </div>
       </Box>

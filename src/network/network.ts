@@ -53,6 +53,17 @@ export const ircSendList = () => {
   sendMessage(command);
 };
 
+export const ircJoinChannels = (channels: string[]) => {
+  const command = {
+    type: "raw",
+    event: {
+      rawData: `JOIN ${channels.join(",")}\n`,
+    },
+  };
+
+  sendMessage(command);
+};
+
 const sendMessage = (message: unknown) => {
   sicSocket.emit("sic-client-event", message);
 };
