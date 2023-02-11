@@ -32,7 +32,7 @@ export const useChannelsStore = create<ChannelsStore>()(
                 topic: "",
                 topicSetBy: "",
                 topicSetTime: 0,
-                unReadMessages: "0",
+                unReadMessages: 0,
               },
             ],
           })),

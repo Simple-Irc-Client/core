@@ -28,11 +28,13 @@ const CreatorNick = () => {
         <TextField
           required
           fullWidth
+          aria-label={t("creator.nick.nick") ?? ""}
           label={t("creator.nick.nick")}
           autoComplete="nick"
           autoFocus
           onChange={(event) => setNick(event.target.value)}
           defaultValue={nick}
+          tabIndex={1}
         />
         <Button
           onClick={onClick}
@@ -41,6 +43,7 @@ const CreatorNick = () => {
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
           disabled={!nick}
+          tabIndex={2}
         >
           {t("creator.nick.button.next")}
         </Button>

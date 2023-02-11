@@ -67,23 +67,15 @@ const CreatorChannelList = () => {
             }}
           />
         </div>
-        <Stack spacing={2} direction="row">
-          <Button
-            onClick={onSkip}
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {t("creator.channels.button.skip")}
-          </Button>
-          <Button
-            onClick={onJoin}
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            {t("creator.channels.button.join")}
-          </Button>
-        </Stack>
       </Box>
+      <Stack spacing={2} direction="row" marginTop={2}>
+        <Button onClick={onSkip} tabIndex={1} variant="contained" size="large">
+          {t("creator.channels.button.skip")}
+        </Button>
+        <Button onClick={onJoin} tabIndex={2} variant="contained" size="large">
+          {t("creator.channels.button.join")}
+        </Button>
+      </Stack>
     </>
   );
 };

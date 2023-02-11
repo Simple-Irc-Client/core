@@ -8,13 +8,13 @@ export type ParsedIrcRawMessage = {
   sender: string;
   command: string;
   line: string[];
-}
+};
 
 export type ChannelList = {
   name: string;
   users: number;
   topic: string;
-}
+};
 
 export type Message = {
   message: string;
@@ -25,18 +25,18 @@ export type Message = {
 };
 
 export enum MessageCategory {
-  default = 'default',
-  join = 'join',
-  part = 'part',
-  quit = 'quit',
-  kick = 'kick',
-  mode = 'mode',
-  notice = 'notice',
-  info = 'info',
-  me = 'me',
-  error = 'error',
-  highlight = 'highlight',
-  motd = 'motd'
+  default = "default",
+  join = "join",
+  part = "part",
+  quit = "quit",
+  kick = "kick",
+  mode = "mode",
+  notice = "notice",
+  info = "info",
+  me = "me",
+  error = "error",
+  highlight = "highlight",
+  motd = "motd",
 }
 
 export type Channel = {
@@ -46,14 +46,14 @@ export type Channel = {
   topic: string;
   topicSetBy: string;
   topicSetTime: number;
-  unReadMessages: string;
+  unReadMessages: number;
 };
 
 export enum ChannelCategory {
-  channel = 'channel',
-  priv = 'priv',
-  status = 'status',
-  debug = 'debug',
+  channel = "channel",
+  priv = "priv",
+  status = "status",
+  debug = "debug",
 }
 
 export type User = {
