@@ -7,14 +7,13 @@ export interface ChannelsStore {
 
   setAddChannel: Function;
   setRemoveChannel: Function;
+  getChannel: Function;
   setTopic: Function;
   getTopic: Function;
   setTopicSetBy: Function;
-  // getTopicSetBy: Function;
-  // getTopicTime: Function;
+  getTopicSetBy: Function;
+  getTopicTime: Function;
 }
-
-const maxMessages = 200;
 
 export const useChannelsStore = create<ChannelsStore>()(
   devtools(
@@ -74,6 +73,12 @@ export const useChannelsStore = create<ChannelsStore>()(
               return channel;
             }),
           })),
+        getTopicTime: (channelName: string): number => {
+          return get().getChannel(channelName)?.topicSetTime ?? 0;
+        },
+        getTopicSetBy: (channelName: string): string => {
+          return get().getChannel(channelName)?.topicSetBy ?? "";
+        },
       }),
       { name: "channels" }
     )
