@@ -38,8 +38,7 @@ const handleConnected = (
   channelsStore.setAddChannel("Debug", ChannelCategory.debug);
   channelsStore.setAddChannel("Status", ChannelCategory.status);
 
-  settingsStore.setCurrentChannelName("Status");
-  settingsStore.setCurrentChannelCategory(ChannelCategory.status);
+  settingsStore.setCurrentChannelName("Status", ChannelCategory.status);
 
   ircSendList();
 };

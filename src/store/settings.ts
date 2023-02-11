@@ -31,7 +31,6 @@ export interface SettingsStore {
   setCreatorStep: Function;
   setIsPasswordRequired: Function;
   setCurrentChannelName: Function;
-  setCurrentChannelCategory: Function;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -67,10 +66,11 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ isPasswordRequired: status })),
         setConnectedTime: (time: number) =>
           set(() => ({ connectedTime: time })),
-        setCurrentChannelName: (channel: string) =>
-          set(() => ({ currentChannelName: channel })),
-        setCurrentChannelCategory: (category: ChannelCategory) =>
-          set(() => ({ currentChannelCategory: category })),
+        setCurrentChannelName: (channel: string, category: ChannelCategory) =>
+          set(() => ({
+            currentChannelName: channel,
+            currentChannelCategory: category,
+          })),
       }),
       {
         name: "settings",
