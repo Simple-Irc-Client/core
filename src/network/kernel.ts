@@ -1,3 +1,4 @@
+import { ChannelsStore } from "../store/channels";
 import { ChannelListStore } from "../store/channelsList";
 import { SettingsStore } from "../store/settings";
 import { ChannelCategory } from "../types";
@@ -11,28 +12,32 @@ export type IrcEvent = {
 
 export const kernel = (
   settingsStore: SettingsStore,
+  channelsStore: ChannelsStore,
   channelListStore: ChannelListStore,
   event: IrcEvent
 ) => {
   switch (event.type) {
     case "connected":
-      handleConnected(settingsStore);
+      handleConnected(settingsStore, channelsStore);
       break;
     case "raw":
       if (event?.line) {
-        handleRaw(settingsStore, channelListStore, event.line);
+        handleRaw(settingsStore, channelsStore, channelListStore, event.line);
       }
       break;
   }
 };
 
-const handleConnected = (settingsStore: SettingsStore) => {
+const handleConnected = (
+  settingsStore: SettingsStore,
+  channelsStore: ChannelsStore
+) => {
   settingsStore.setIsConnected(true);
   settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
-  settingsStore.setAddOpenChannel("Debug");
+  channelsStore.setAddChannel("Debug", ChannelCategory.debug);
+  channelsStore.setAddChannel("Status", ChannelCategory.status);
 
-  settingsStore.setAddOpenChannel("Status");
   settingsStore.setCurrentChannelName("Status");
   settingsStore.setCurrentChannelCategory(ChannelCategory.status);
 
@@ -41,6 +46,7 @@ const handleConnected = (settingsStore: SettingsStore) => {
 
 const handleRaw = (
   settingsStore: SettingsStore,
+  channelsStore: ChannelsStore,
   channelListStore: ChannelListStore,
   event: string
 ) => {

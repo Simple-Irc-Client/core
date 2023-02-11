@@ -21,7 +21,6 @@ export interface SettingsStore {
   connectedTime: number; // unix timestamp
   currentChannelName: string;
   currentChannelCategory: ChannelCategory;
-  openChannels: string[];
 
   setCreatorCompleted: Function;
   setIsConnecting: Function;
@@ -33,8 +32,6 @@ export interface SettingsStore {
   setIsPasswordRequired: Function;
   setCurrentChannelName: Function;
   setCurrentChannelCategory: Function;
-  setAddOpenChannel: Function;
-  setRemoveOpenChannel: Function;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -51,7 +48,6 @@ export const useSettingsStore = create<SettingsStore>()(
         connectedTime: 0,
         currentChannelName: "Status",
         currentChannelCategory: ChannelCategory.status,
-        openChannels: [],
         // namesXProtoEnabled: false,
         // usersPrefix: [],
 
@@ -75,12 +71,6 @@ export const useSettingsStore = create<SettingsStore>()(
           set(() => ({ currentChannelName: channel })),
         setCurrentChannelCategory: (category: ChannelCategory) =>
           set(() => ({ currentChannelCategory: category })),
-        setAddOpenChannel: (channel: string) =>
-          set((state) => ({ openChannels: [...state.openChannels, channel] })),
-        setRemoveOpenChannel: (channel: string) =>
-          set((state) => ({
-            openChannels: state.openChannels.filter((name) => name !== channel),
-          })),
       }),
       {
         name: "settings",

@@ -70,7 +70,6 @@ const CreatorChannelList = () => {
         <Stack spacing={2} direction="row">
           <Button
             onClick={onSkip}
-            fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >
@@ -78,7 +77,6 @@ const CreatorChannelList = () => {
           </Button>
           <Button
             onClick={onJoin}
-            fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >

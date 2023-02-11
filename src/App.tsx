@@ -21,24 +21,26 @@ import "@fontsource/roboto/700.css";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Container, Stack } from "@mui/material";
+import { useChannelsStore } from "./store/channels";
 
 const theme = createTheme();
 
 function App() {
   const settingsStore = useSettingsStore();
+  const channelsStore = useChannelsStore();
   const channelListStore = useChannelListStore();
 
   useEffect(() => {
     const onIrcEvent = (data: IrcEvent) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
-      kernel(settingsStore, channelListStore, data);
+      kernel(settingsStore, channelsStore, channelListStore, data);
     };
 
     sicSocket.on("sic-irc-event", onIrcEvent);
     return () => {
       sicSocket.off("sic-irc-event", onIrcEvent);
     };
-  }, [sicSocket, settingsStore, channelListStore]);
+  }, [sicSocket, settingsStore, channelsStore, channelListStore]);
 
   return (
     <ThemeProvider theme={theme}>
