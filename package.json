@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "npx eslint src/**/*.{ts,tsx} "
+    "lint": "npx eslint src/**/*.{ts,tsx}"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -22,7 +22,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^12.1.4",
-    "socket.io-client": "^4.5.4",
+    "socket.io-client": "^4.6.0",
     "zustand": "^4.3.2"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "@types/react-dom": "^18.0.9",
     "@typescript-eslint/eslint-plugin": "^5.51.0",
     "@typescript-eslint/parser": "^5.51.0",
-    "@vitejs/plugin-react": "^3.0.0",
+    "@vitejs/plugin-react": "^3.1.0",
     "autoprefixer": "^10.4.13",
     "eslint": "^8.34.0",
     "eslint-config-standard-with-typescript": "^34.0.0",
@@ -43,9 +43,9 @@
     "eslint-plugin-react": "^7.32.2",
     "jsdom": "^21.1.0",
     "postcss": "^8.4.21",
-    "tailwindcss": "^3.2.4",
+    "tailwindcss": "^3.2.6",
     "typescript": "^4.9.5",
-    "vite": "^4.0.0",
+    "vite": "^4.1.1",
     "vitest": "^0.28.4"
   }
 }

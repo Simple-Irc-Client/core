@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useState } from 'react'
 import { Box, Button, TextField, Typography } from '@mui/material'
 import { useTranslation } from 'react-i18next'
 import { ircSendPassword } from '../../network/network'
@@ -6,12 +6,16 @@ import { useSettingsStore } from '../../store/settings'
 
 const CreatorPassword = (): JSX.Element => {
   const { t } = useTranslation()
-  const password = useRef('')
+  const [password, setPassword] = useState('')
 
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep)
 
+  const onChange = (event: any): void => {
+    setPassword(event.target.value)
+  }
+
   const onClick = (): void => {
-    ircSendPassword(password.current)
+    ircSendPassword(password)
     setCreatorStep('channels')
   }
 
@@ -28,7 +32,7 @@ const CreatorPassword = (): JSX.Element => {
           label={t('creator.password.password')}
           autoComplete="password"
           autoFocus
-          onChange={(event) => (password.current = event.target.value)}
+          onChange={onChange}
         />
         <Button
           onClick={onClick}
@@ -36,7 +40,7 @@ const CreatorPassword = (): JSX.Element => {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
-          disabled={password.current === ''}
+          disabled={password === ''}
         >
           {t('creator.password.button.next')}
         </Button>

@@ -98,6 +98,9 @@ const handleRaw = (
     case 'NOTICE':
       onNotice(settingsStore, tags, sender, command, line)
       break
+    case 'NICK':
+      onNick(settingsStore, usersStore, tags, sender, command, line)
+      break
     case 'JOIN':
       onJoin(
         settingsStore,
@@ -300,6 +303,29 @@ const onNotice = (
   }
 }
 
+// @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
+const onNick = (
+  settingsStore: SettingsStore,
+  usersStore: UsersStore,
+  tags: string,
+  sender: string,
+  command: string,
+  line: string[]
+): void => {
+  const newNick = line.shift()?.substring(1)
+
+  if (newNick === undefined) {
+    console.warn('RAW NICK - warning - cannot read new nick')
+    return
+  }
+
+  if (sender === settingsStore.nick) {
+    // TODO message
+    settingsStore.setNick(newNick)
+  } else {
+    usersStore.setRenameUser(sender, newNick)
+  }
+}
 // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
 const onJoin = (
   settingsStore: SettingsStore,
