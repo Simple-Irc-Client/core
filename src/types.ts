@@ -61,7 +61,6 @@ export type User = {
   ident: string;
   hostname: string;
   avatarUrl: string;
-  avatarData: string;
   modes: string[];
   maxMode: number;
   channels: string[];
@@ -70,4 +69,10 @@ export type User = {
 export type UserMode = {
   symbol: string;
   mode: string;
+};
+
+export type Nick = {
+  nick: string;
+  ident: string;
+  hostname: string;
 };

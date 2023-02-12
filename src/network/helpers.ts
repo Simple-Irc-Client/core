@@ -1,6 +1,6 @@
 import { defaultIRCPort } from "../config";
 import { Server } from "../models/servers";
-import { ParsedIrcRawMessage, SingleServer } from "../types";
+import { Nick, ParsedIrcRawMessage, SingleServer } from "../types";
 
 export const parseServer = (
   currentServer?: Server
@@ -47,4 +47,17 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   const command = line.shift() ?? "";
 
   return { tags, sender, command, line };
+};
+
+export const parseNick = (fullNick: string): Nick => {
+  const nick = fullNick.substring(
+    fullNick.startsWith(":") ? 1 : 0,
+    fullNick.indexOf("!")
+  );
+  const ident = fullNick.substring(
+    fullNick.indexOf("!") + 1,
+    fullNick.indexOf("@")
+  );
+  const hostname = fullNick.substring(fullNick.indexOf("@") + 1);
+  return { nick, ident, hostname };
 };

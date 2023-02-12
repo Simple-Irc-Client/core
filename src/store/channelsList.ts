@@ -6,9 +6,15 @@ export interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
 
-  setAddChannel: Function;
-  setClearList: Function;
-  setFinished: Function;
+  setAddChannel: {
+    (name: string, users: number, topic: string): void;
+  };
+  setClearList: {
+    (): void;
+  };
+  setFinished: {
+    (status: boolean): void;
+  };
 }
 
 export const useChannelListStore = create<ChannelListStore>()(
@@ -18,16 +24,16 @@ export const useChannelListStore = create<ChannelListStore>()(
         channels: [],
         finished: false,
 
-        setAddChannel: (name: string, users: number, topic: string) =>
+        setAddChannel: (name: string, users: number, topic: string): void =>
           set((state) => ({
             channels: [...state.channels, { name, users, topic }],
           })),
-        setClearList: () =>
+        setClearList: (): void =>
           set(() => ({
             channels: [],
             finished: false,
           })),
-        setFinished: (status: boolean) =>
+        setFinished: (status: boolean): void =>
           set(() => ({
             finished: status,
           })),

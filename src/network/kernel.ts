@@ -1,9 +1,10 @@
 import { ChannelsStore } from "../store/channels";
 import { ChannelListStore } from "../store/channelsList";
 import { SettingsStore } from "../store/settings";
+import { UsersStore } from "../store/users";
 import { ChannelCategory } from "../types";
-import { parseIrcRawMessage } from "./helpers";
-import { ircSendList } from "./network";
+import { parseIrcRawMessage, parseNick } from "./helpers";
+import { ircRequestAvatar, ircSendList } from "./network";
 
 export type IrcEvent = {
   type: string;
@@ -14,6 +15,7 @@ export const kernel = (
   settingsStore: SettingsStore,
   channelsStore: ChannelsStore,
   channelListStore: ChannelListStore,
+  usersStore: UsersStore,
   event: IrcEvent
 ) => {
   switch (event.type) {
@@ -22,7 +24,13 @@ export const kernel = (
       break;
     case "raw":
       if (event?.line) {
-        handleRaw(settingsStore, channelsStore, channelListStore, event.line);
+        handleRaw(
+          settingsStore,
+          channelsStore,
+          channelListStore,
+          usersStore,
+          event.line
+        );
       }
       break;
   }
@@ -47,6 +55,7 @@ const handleRaw = (
   settingsStore: SettingsStore,
   channelsStore: ChannelsStore,
   channelListStore: ChannelListStore,
+  usersStore: UsersStore,
   event: string
 ) => {
   const { tags, sender, command, line } = parseIrcRawMessage(event);
@@ -54,6 +63,18 @@ const handleRaw = (
   switch (command) {
     case "001":
       onRaw001();
+      break;
+    case "002":
+      onRaw002();
+      break;
+    case "003":
+      onRaw003();
+      break;
+    case "004":
+      onRaw004();
+      break;
+    case "005":
+      onRaw005();
       break;
     case "321":
       onRaw321(settingsStore, channelListStore);
@@ -64,22 +85,72 @@ const handleRaw = (
     case "323":
       onRaw323(channelListStore);
       break;
+    case "332":
+      onRaw332(channelsStore, line);
+      break;
+    case "333":
+      onRaw333(channelsStore, line);
+      break;
+    case "353":
+      onRaw353(usersStore, line);
+      break;
     case "NOTICE":
       onNotice(settingsStore, tags, sender, command, line);
       break;
+    case "JOIN":
+      onJoin(
+        settingsStore,
+        channelsStore,
+        usersStore,
+        tags,
+        sender,
+        command,
+        line
+      );
+      break;
+    default:
+      // console.log(`unknown raw: ${line.join(" ")}`);
+      break;
   }
+
   // TODO
-  // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user\r\n
-  // ERROR :Closing Link: [185.251.84.36] (Registration Timeout)\r\n
-  // @msgid=OzlbgBf04QlrtVm1hk02Jq;time=2023-02-04T23:17:18.121Z :Merovingian NICK :Niezident17561\r\n
+  // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
+  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+  // @msgid=OzlbgBf04QlrtVm1hk02Jq;time=2023-02-04T23:17:18.121Z :Merovingian NICK :Niezident17561
   // :legowisko.pirc.pl 761 dsfsdfdsfdsfsdfdsfdsf Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
+  // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
+  // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
 };
 
+// :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
 const onRaw001 = () => {
   //
 };
 
-// :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name\r\n
+// :netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3
+const onRaw002 = () => {
+  //
+};
+
+// :netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC
+const onRaw003 = () => {
+  //
+};
+
+// :netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ
+const onRaw004 = () => {
+  //
+};
+
+// :netsplit.pirc.pl 005 SIC-test AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server
+// :netsplit.pirc.pl 005 SIC-test EXTBAN=~,acfjmnpqrtCGIOST EXTJWT=1 INVEX KICKLEN=307 KNOCK MAP MAXCHANNELS=30 MAXLIST=b:200,e:200,I:200 MAXNICKLEN=30 METADATA=10 MINNICKLEN=0 MODES=12 :are supported by this server
+// :netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server
+// :netsplit.pirc.pl 005 SIC-test UHNAMES USERIP WALLCHOPS WATCH=128 WATCHOPTS=A WHOX :are supported by this server
+const onRaw005 = () => {
+  //
+};
+
+// :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
 const onRaw321 = (
   settingsStore: SettingsStore,
   channelListStore: ChannelListStore
@@ -87,7 +158,7 @@ const onRaw321 = (
   channelListStore.setClearList();
 };
 
-// :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt] \r\n
+// :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
 const onRaw322 = (
   settingsStore: SettingsStore,
   channelListStore: ChannelListStore,
@@ -95,20 +166,85 @@ const onRaw322 = (
 ) => {
   const sender = line.shift();
 
-  const name = line.shift();
+  const name = line.shift() ?? "";
   const users = Number(line.shift() ?? "0");
   const topic = line.join(" ")?.substring(1);
 
   channelListStore.setAddChannel(name, users, topic);
 };
 
-// ::insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST\r\n
+// :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
 const onRaw323 = (channelListStore: ChannelListStore) => {
   channelListStore.setFinished(true);
 };
 
-// :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~\r\n
-// @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/\r\n"
+// :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
+const onRaw332 = (channelsStore: ChannelsStore, line: string[]) => {
+  const nick = line.shift();
+  const channel = line.shift();
+  const topic = line.join(" ")?.substring(1);
+
+  if (!channel) {
+    console.warn("RAW 332 - warning - cannot read channel");
+    return;
+  }
+
+  channelsStore.setTopic(channel, topic);
+};
+
+// :chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216
+const onRaw333 = (channelsStore: ChannelsStore, line: string[]) => {
+  const currentUser = line.shift();
+  const channel = line.shift();
+  const setBy = line.shift();
+  const setTime = Number(line.shift() ?? "0");
+
+  if (!channel || !setBy) {
+    console.warn("RAW 333 - warning - cannot read channel or setBy");
+    return;
+  }
+
+  channelsStore.setTopicSetBy(channel, setBy, setTime);
+};
+
+// :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
+const onRaw353 = (usersStore: UsersStore, line: string[]) => {
+  const currentUser = line.shift();
+  const flags = line.shift();
+  const channel = line.shift();
+
+  if (!channel) {
+    console.warn("RAW 353 - warning - cannot read channel");
+    return;
+  }
+
+  for (let user of line) {
+    if (user.startsWith(":")) {
+      user = user.substring(1);
+    }
+
+    const { nick, ident, hostname } = parseNick(user);
+
+    if (usersStore.getHasUser(nick)) {
+      usersStore.setJoinUser(nick, channel);
+    } else {
+      usersStore.setAddUser({
+        nick,
+        ident,
+        hostname,
+        avatarUrl: "",
+        modes: [], // TODO
+        maxMode: 0, // TODO
+        channels: [channel],
+      });
+
+      ircRequestAvatar(nick);
+    }
+  }
+};
+
+// :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
+// @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
 const onNotice = (
   settingsStore: SettingsStore,
   tags: string,
@@ -152,6 +288,53 @@ const onNotice = (
   }
 };
 
-const onJoin = () => {
-  // const rawMetadataCommand = ['METADATA', joinEvent.nick, 'GET', 'Avatar'];
+// @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
+const onJoin = (
+  settingsStore: SettingsStore,
+  channelsStore: ChannelsStore,
+  usersStore: UsersStore,
+  tags: string,
+  sender: string,
+  command: string,
+  line: string[]
+) => {
+  const channel = line.shift();
+  const { nick, ident, hostname } = parseNick(sender);
+
+  console.log(`JOIN nick ${nick}`);
+  console.log(`JOIN ident ${ident}`);
+  console.log(`JOIN hostname ${hostname}`);
+  console.log(`JOIN settingsStore.nick ${settingsStore.nick}`);
+
+  if (!channel) {
+    console.warn("RAW JOIN - warning - cannot read channel");
+    return;
+  }
+
+  if (nick === settingsStore.nick) {
+    channelsStore.setAddChannel(channel, ChannelCategory.channel);
+    settingsStore.setCurrentChannelName(channel, ChannelCategory.channel);
+  } else {
+    // TODO message joined
+
+    channelsStore.setAddChannel(channel, ChannelCategory.channel);
+
+    console.log(`JOIN usersStore.getHasUser ${usersStore.getHasUser(nick)}`);
+
+    if (usersStore.getHasUser(nick)) {
+      usersStore.setJoinUser(nick, channel);
+    } else {
+      usersStore.setAddUser({
+        nick,
+        ident,
+        hostname,
+        avatarUrl: "",
+        modes: [],
+        maxMode: 0,
+        channels: [channel],
+      });
+
+      ircRequestAvatar(nick);
+    }
+  }
 };

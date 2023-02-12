@@ -8,7 +8,7 @@ export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
   path: "/SimpleIrcClient",
 });
 
-// const queueMessages: unknown[] = [];
+const queueIrcMessages: unknown[] = [];
 
 export const ircConnect = (currentServer: Server, nick: string) => {
   const singleServer = parseServer(currentServer);
@@ -64,14 +64,29 @@ export const ircJoinChannels = (channels: string[]) => {
   sendMessage(command);
 };
 
+export const ircRequestAvatar = (nick: string) => {
+  const command = {
+    type: "raw",
+    event: {
+      rawData: `METADATA ${nick} GET Avatar\n`,
+    },
+  };
+
+  sendQueueMessage(command);
+};
+
 const sendMessage = (message: unknown) => {
   sicSocket.emit("sic-client-event", message);
 };
 
-// setInterval(function networkSendQueueMessages() {
-//   const message = queueMessages.pop();
-//   if (message === undefined) {
-//     return;
-//   }
-//   sicSocket.volatile.emit("sic-client-event", message);
-// }, 300);
+const sendQueueMessage = (message: unknown) => {
+  queueIrcMessages.push(message);
+};
+
+setInterval(function networkSendQueueMessages() {
+  const message = queueIrcMessages.pop();
+  if (message === undefined) {
+    return;
+  }
+  sicSocket.emit("sic-client-event", message);
+}, 300);

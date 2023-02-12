@@ -49,9 +49,9 @@ const CreatorLoading = () => {
       }, 5_000); // 5 sec
     }
     if (server && !isConnecting && !isConnected) {
-      setIsConnecting(true);
       console.log(`sending connect to irc command`);
       ircConnect(server, nick);
+      setIsConnecting(true);
     }
   }, [isConnecting, isConnected]);
 

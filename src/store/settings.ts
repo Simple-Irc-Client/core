@@ -22,15 +22,33 @@ export interface SettingsStore {
   currentChannelName: string;
   currentChannelCategory: ChannelCategory;
 
-  setCreatorCompleted: Function;
-  setIsConnecting: Function;
-  setIsConnected: Function;
-  setConnectedTime: Function;
-  setNick: Function;
-  setServer: Function;
-  setCreatorStep: Function;
-  setIsPasswordRequired: Function;
-  setCurrentChannelName: Function;
+  setCreatorCompleted: {
+    (status: boolean): void;
+  };
+  setIsConnecting: {
+    (status: boolean): void;
+  };
+  setIsConnected: {
+    (status: boolean): void;
+  };
+  setConnectedTime: {
+    (time: number): void;
+  };
+  setNick: {
+    (newNick: string): void;
+  };
+  setServer: {
+    (newServer: Server): void;
+  };
+  setCreatorStep: {
+    (newCreatorStep: CreatorStep): void;
+  };
+  setIsPasswordRequired: {
+    (status: boolean): void;
+  };
+  setCurrentChannelName: {
+    (channel: string, category: ChannelCategory): void;
+  };
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -47,26 +65,30 @@ export const useSettingsStore = create<SettingsStore>()(
         connectedTime: 0,
         currentChannelName: "Status",
         currentChannelCategory: ChannelCategory.status,
-        // namesXProtoEnabled: false,
-        // usersPrefix: [],
+        // TODO namesXProtoEnabled: false,
+        // TODO usersPrefix: [],
 
-        setCreatorCompleted: (status: boolean) =>
+        setCreatorCompleted: (status: boolean): void =>
           set(() => ({
             isCreatorCompleted: status,
           })),
-        setIsConnecting: (status: boolean) =>
+        setIsConnecting: (status: boolean): void =>
           set(() => ({ isConnecting: status })),
-        setIsConnected: (status: boolean) =>
+        setIsConnected: (status: boolean): void =>
           set(() => ({ isConnected: status })),
-        setNick: (newNick: string) => set(() => ({ nick: newNick })),
-        setServer: (newServer: Server) => set(() => ({ server: newServer })),
-        setCreatorStep: (newCreatorStep: CreatorStep) =>
-          set(() => ({ creatorStep: newCreatorStep })),
-        setIsPasswordRequired: (status: boolean) =>
-          set(() => ({ isPasswordRequired: status })),
-        setConnectedTime: (time: number) =>
+        setConnectedTime: (time: number): void =>
           set(() => ({ connectedTime: time })),
-        setCurrentChannelName: (channel: string, category: ChannelCategory) =>
+        setNick: (newNick: string): void => set(() => ({ nick: newNick })),
+        setServer: (newServer: Server): void =>
+          set(() => ({ server: newServer })),
+        setCreatorStep: (newCreatorStep: CreatorStep): void =>
+          set(() => ({ creatorStep: newCreatorStep })),
+        setIsPasswordRequired: (status: boolean): void =>
+          set(() => ({ isPasswordRequired: status })),
+        setCurrentChannelName: (
+          channel: string,
+          category: ChannelCategory
+        ): void =>
           set(() => ({
             currentChannelName: channel,
             currentChannelCategory: category,

@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { Server } from "../../models/servers";
-import { parseIrcRawMessage, parseServer } from "../helpers";
+import { Nick } from "../../types";
+import { parseIrcRawMessage, parseNick, parseServer } from "../helpers";
 
 describe("helper tests", () => {
   it("test parse server", () => {
@@ -107,5 +108,13 @@ describe("helper tests", () => {
         "UnrealIRCd-6.0.3",
       ],
     });
+  });
+
+  it("test parse nick", () => {
+    expect(parseNick("nick!ident@hostname")).toStrictEqual({
+      nick: "nick",
+      ident: "ident",
+      hostname: "hostname",
+    } as Nick);
   });
 });

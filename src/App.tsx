@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Channels from "./components/Channels";
 import Main from "./components/Main";
 import Toolbar from "./components/Toolbar";
@@ -6,7 +7,8 @@ import Users from "./components/Users";
 import Creator from "./pages/creator/Creator";
 import { useSettingsStore } from "./store/settings";
 import { useChannelListStore } from "./store/channelsList";
-import { useEffect } from "react";
+import { useChannelsStore } from "./store/channels";
+import { useUsersStore } from "./store/users";
 
 import "./i18n";
 
@@ -21,7 +23,6 @@ import "@fontsource/roboto/700.css";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Container, Stack } from "@mui/material";
-import { useChannelsStore } from "./store/channels";
 
 const theme = createTheme();
 
@@ -29,18 +30,19 @@ function App() {
   const settingsStore = useSettingsStore();
   const channelsStore = useChannelsStore();
   const channelListStore = useChannelListStore();
+  const usersStore = useUsersStore();
 
   useEffect(() => {
     const onIrcEvent = (data: IrcEvent) => {
       console.log(`irc event: ${JSON.stringify(data)}`);
-      kernel(settingsStore, channelsStore, channelListStore, data);
+      kernel(settingsStore, channelsStore, channelListStore, usersStore, data);
     };
 
     sicSocket.on("sic-irc-event", onIrcEvent);
     return () => {
       sicSocket.off("sic-irc-event", onIrcEvent);
     };
-  }, [sicSocket, settingsStore, channelsStore, channelListStore]);
+  }, [sicSocket, settingsStore, channelsStore, channelListStore, usersStore]);
 
   return (
     <ThemeProvider theme={theme}>

@@ -1,19 +1,35 @@
 import { create } from "zustand";
-import { User } from "../types";
+import { Channel, User } from "../types";
 import { devtools, persist } from "zustand/middleware";
 
 export interface UsersStore {
   users: User[];
 
-  setAddUser: Function;
-  //   setRemoveUser: Function;
-  setQuitUser: Function;
-  setRenameUser: Function;
-  getUser: Function;
-  getHasUser: Function;
-  //   setJoinUser: Function;
-  getUsersFromChannel: Function;
-  //   setUserAvatar: Function;
+  setAddUser: {
+    (newUser: User): void;
+  };
+  // TODO  setRemoveUser: Function;
+  setQuitUser: {
+    (nick: string): void;
+  };
+  setRenameUser: {
+    (from: string, to: string): void;
+  };
+  getUser: {
+    (nick: string): User | undefined;
+  };
+  getHasUser: {
+    (nick: string): boolean;
+  };
+  setJoinUser: {
+    (nick: string, channel: string): void;
+  };
+  getUsersFromChannel: {
+    (channel: string): User[];
+  };
+  setUserAvatar: {
+    (nick: string, avatarUrl: string): void;
+  };
 }
 
 export const useUsersStore = create<UsersStore>()(
@@ -48,11 +64,29 @@ export const useUsersStore = create<UsersStore>()(
             get().users.find((user: User) => user.nick === nick) !== undefined
           );
         },
+        setJoinUser: (nick: string, channel: string): void =>
+          set((state) => ({
+            users: state.users.map((user: User) => {
+              if (user.nick === nick) {
+                user.channels.push(channel);
+              }
+              return user;
+            }),
+          })),
         getUsersFromChannel: (channel: string): User[] => {
           return get().users.filter((user: User) =>
             user.channels.includes(channel)
           );
         },
+        setUserAvatar: (nick: string, avatarUrl: string): void =>
+          set((state) => ({
+            users: state.users.map((user: User) => {
+              if (user.nick === nick) {
+                user.avatarUrl = avatarUrl;
+              }
+              return user;
+            }),
+          })),
       }),
       { name: "users" }
     )

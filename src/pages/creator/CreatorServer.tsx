@@ -44,6 +44,7 @@ const CreatorServer = () => {
               setServer(newValue);
             }
           }}
+          noOptionsText={t("creator.server.message.no.options")}
         />
         <Button
           onClick={onClick}

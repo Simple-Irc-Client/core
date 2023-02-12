@@ -19,9 +19,10 @@ const Channels = () => {
   const openChannels: Channel[] = useChannelsStore(
     (state) => state.openChannels
   );
-  const setCurrentChannelName: Function = useSettingsStore(
+  const setCurrentChannelName = useSettingsStore(
     (state) => state.setCurrentChannelName
   );
+
   const handleListItemClick = (channel: Channel) => {
     setCurrentChannelName(channel.name, channel.category);
   };

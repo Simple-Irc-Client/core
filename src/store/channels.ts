@@ -1,18 +1,44 @@
 import { create } from "zustand";
-import { Channel, ChannelCategory, User } from "../types";
+import { Channel, ChannelCategory, Message, User } from "../types";
 import { devtools, persist } from "zustand/middleware";
+import { maxMessages } from "../config";
 
 export interface ChannelsStore {
   openChannels: Channel[];
 
-  setAddChannel: Function;
-  setRemoveChannel: Function;
-  getChannel: Function;
-  setTopic: Function;
-  getTopic: Function;
-  setTopicSetBy: Function;
-  getTopicSetBy: Function;
-  getTopicTime: Function;
+  setAddChannel: {
+    (channelName: string, category: ChannelCategory): void;
+  };
+  setRemoveChannel: {
+    (channelName: string): void;
+  };
+  getChannel: {
+    (channelName: string): Channel | undefined;
+  };
+  setTopic: {
+    (channelName: string, newTopic: string): void;
+  };
+  getTopic: {
+    (channelName: string): string;
+  };
+  setTopicSetBy: {
+    (channelName: string, nick: string, when: number): void;
+  };
+  getTopicSetBy: {
+    (channelName: string): string;
+  };
+  getTopicTime: {
+    (channelName: string): number;
+  };
+  setAddMessage: {
+    (channelName: string, newMessage: Message): void;
+  };
+  getMessages: {
+    (channelName: string): Message[];
+  };
+  getCategory: {
+    (channelName: string): ChannelCategory | undefined;
+  };
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -73,11 +99,29 @@ export const useChannelsStore = create<ChannelsStore>()(
               return channel;
             }),
           })),
+        getTopicSetBy: (channelName: string): string => {
+          return get().getChannel(channelName)?.topicSetBy ?? "";
+        },
         getTopicTime: (channelName: string): number => {
           return get().getChannel(channelName)?.topicSetTime ?? 0;
         },
-        getTopicSetBy: (channelName: string): string => {
-          return get().getChannel(channelName)?.topicSetBy ?? "";
+        setAddMessage: (channelName: string, newMessage: Message): void =>
+          set((state) => ({
+            openChannels: state.openChannels.map((channel: Channel) => {
+              if (channel.name === channelName) {
+                channel.messages.push(newMessage);
+                if (channel.messages.length > maxMessages) {
+                  channel.messages.shift();
+                }
+              }
+              return channel;
+            }),
+          })),
+        getMessages: (channelName: string): Message[] => {
+          return get().getChannel(channelName)?.messages ?? [];
+        },
+        getCategory: (channelName: string): ChannelCategory | undefined => {
+          return get().getChannel(channelName)?.category ?? undefined;
         },
       }),
       { name: "channels" }
