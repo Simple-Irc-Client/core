@@ -1,38 +1,39 @@
-import Avatar from "@mui/material/Avatar";
-import Divider from "@mui/material/Divider";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemAvatar from "@mui/material/ListItemAvatar";
-import ListItemText from "@mui/material/ListItemText";
-import Typography from "@mui/material/Typography";
-import React from "react";
+import {
+  Avatar,
+  Box,
+  Divider,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+} from "@mui/material";
+import { useChannelsStore } from "../store/channels";
+import { useSettingsStore } from "../store/settings";
 
 const Main = () => {
+  const currentChannelName: string = useSettingsStore(
+    (state) => state.currentChannelName
+  );
+
+  const channelsStore = useChannelsStore();
+
   return (
-    <List sx={{ bgcolor: "background.paper" }}>
-      <ListItem alignItems="flex-start">
-        <ListItemAvatar>
-          <Avatar alt="Remy Sharp" src="/static/images/avatar/1.jpg" />
-        </ListItemAvatar>
-        <ListItemText
-          primary="Brunch this weekend?"
-          secondary={
-            <React.Fragment>
-              <Typography
-                sx={{ display: "inline" }}
-                component="span"
-                variant="body2"
-                color="text.primary"
-              >
-                Ali Connors
-              </Typography>
-              {" — I'll be in your neighborhood doing errands this…"}
-            </React.Fragment>
-          }
-        />
-      </ListItem>
-      <Divider variant="inset" component="li" />
-    </List>
+    <Box sx={{ height: "100%" }}>
+      {channelsStore.getMessages(currentChannelName).map((message) => (
+        <List>
+          <ListItem alignItems="flex-start">
+            <ListItemAvatar>
+              <Avatar
+                alt={message?.nick?.nick ?? message.nick}
+                src={message.nick?.avatarUrl}
+              />
+            </ListItemAvatar>
+            <ListItemText primary={message.message} />
+          </ListItem>
+          <Divider variant="inset" component="li" />
+        </List>
+      ))}
+    </Box>
   );
 };
 

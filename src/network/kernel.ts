@@ -2,7 +2,7 @@ import { ChannelsStore } from "../store/channels";
 import { ChannelListStore } from "../store/channelsList";
 import { SettingsStore } from "../store/settings";
 import { UsersStore } from "../store/users";
-import { ChannelCategory } from "../types";
+import { ChannelCategory, MessageCategory } from "../types";
 import { parseIrcRawMessage, parseNick } from "./helpers";
 import { ircRequestAvatar, ircSendList } from "./network";
 
@@ -99,6 +99,17 @@ const handleRaw = (
       break;
     case "JOIN":
       onJoin(
+        settingsStore,
+        channelsStore,
+        usersStore,
+        tags,
+        sender,
+        command,
+        line
+      );
+      break;
+    case "PRIVMSG":
+      onPrivmsg(
         settingsStore,
         channelsStore,
         usersStore,
@@ -336,5 +347,44 @@ const onJoin = (
 
       ircRequestAvatar(nick);
     }
+  }
+};
+
+// @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
+// @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
+const onPrivmsg = (
+  settingsStore: SettingsStore,
+  channelsStore: ChannelsStore,
+  usersStore: UsersStore,
+  tags: string,
+  sender: string,
+  command: string,
+  line: string[]
+) => {
+  const target = line.shift();
+  const message = line.join(" ").substring(1);
+  const { nick } = parseNick(sender);
+
+  if (!target) {
+    console.warn("RAW PRIVMSG - warning - cannot read target");
+    return;
+  }
+
+  if (target === settingsStore.nick) {
+    // TODO priv
+  } else {
+    if (target !== settingsStore.currentChannelName) {
+      // TODO increment unread messages
+    }
+
+    const user = usersStore.getUser(nick);
+
+    channelsStore.setAddMessage(target, {
+      message,
+      nick: user ?? nick,
+      target,
+      time: 0, // TODO
+      category: MessageCategory.default,
+    });
   }
 };

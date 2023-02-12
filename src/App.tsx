@@ -55,7 +55,11 @@ function App() {
           >
             <Stack direction="row">
               <Channels />
-              <Stack direction="column" minWidth="calc(100% - 400px)">
+              <Stack
+                direction="column"
+                minWidth="calc(100% - 400px)"
+                height="100vh"
+              >
                 <Topic />
                 <Main />
                 <Toolbar />
