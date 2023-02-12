@@ -32,13 +32,7 @@ const CreatorLoading = (): JSX.Element => {
 
       setTimeout(() => {
         const localSettings = useSettingsStore.getState()
-        if (localSettings.isPasswordRequired === true) {
-          setProgress({
-            value: 50,
-            label: t('creator.loading.passwordIsRequired')
-          })
-          setCreatorStep('password')
-        } else {
+        if (localSettings.isPasswordRequired === false || localSettings.isPasswordRequired === undefined) {
           setProgress({
             value: 50,
             label: t('creator.loading.passwordIsNotRequired')

@@ -95,6 +95,9 @@ const handleRaw = (
     case '353':
       onRaw353(usersStore, line)
       break
+    case '761':
+      onRaw761(usersStore, line)
+      break
     case 'NOTICE':
       onNotice(settingsStore, tags, sender, command, line)
       break
@@ -258,6 +261,24 @@ const onRaw353 = (usersStore: UsersStore, line: string[]): void => {
   }
 }
 
+// :insomnia.pirc.pl 761 SIC-test Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
+const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
+  const currentUser = line.shift()
+  const nick = line.shift()
+  const item = line.shift()
+  const flags = line.shift()
+  const value = line.shift()?.substring(1)
+
+  if (nick === undefined) {
+    console.warn('RAW 761 - warning - cannot read nick')
+    return
+  }
+
+  if (item === 'Avatar' && value !== undefined) {
+    usersStore.setUserAvatar(nick, value)
+  }
+}
+
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
 // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
 const onNotice = (
@@ -286,6 +307,7 @@ const onNotice = (
     passwordRequired.test(message)
   ) {
     settingsStore.setIsPasswordRequired(true)
+    settingsStore.setCreatorStep('password')
   }
 
   if (target === settingsStore.nick && list.test(message)) {
@@ -355,9 +377,15 @@ const onJoin = (
   } else {
     // TODO message joined
 
-    channelsStore.setAddChannel(channel, ChannelCategory.channel)
+    if (channelsStore.getChannel(channel) === undefined) {
+      channelsStore.setAddChannel(channel, ChannelCategory.channel)
+    }
 
-    console.log(`JOIN usersStore.getHasUser ${usersStore.getHasUser(nick) ? 'true' : 'false'}`)
+    console.log(
+      `JOIN usersStore.getHasUser ${
+        usersStore.getHasUser(nick) ? 'true' : 'false'
+      }`
+    )
 
     if (usersStore.getHasUser(nick)) {
       usersStore.setJoinUser(nick, channel)
