@@ -25,6 +25,45 @@ describe('users tests', () => {
     expect(result.current.users.length).toStrictEqual(1)
   })
 
+  it('test remove user', () => {
+    const { result } = renderHook(() => useUsersStore())
+
+    act(() => {
+      result.current.setAddUser({
+        nick: 'test-nick1',
+        ident: '',
+        hostname: '',
+        avatarUrl: '',
+        modes: [],
+        maxMode: 0,
+        channels: ['channel1']
+      })
+    })
+    act(() => {
+      result.current.setRemoveUser('test-nick1', 'channel1')
+    })
+
+    expect(result.current.users.length).toStrictEqual(0)
+
+    act(() => {
+      result.current.setAddUser({
+        nick: 'test-nick1',
+        ident: '',
+        hostname: '',
+        avatarUrl: '',
+        modes: [],
+        maxMode: 0,
+        channels: ['channel1', 'channel2']
+      })
+    })
+    act(() => {
+      result.current.setRemoveUser('test-nick1', 'channel1')
+      expect(result.current.getUser('test-nick1')?.channels).toStrictEqual(['channel2'])
+    })
+
+    expect(result.current.users.length).toStrictEqual(1)
+  })
+
   it('test quit user', () => {
     const { result } = renderHook(() => useUsersStore())
 

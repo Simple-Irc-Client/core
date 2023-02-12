@@ -4,7 +4,7 @@ export interface SingleServer {
 }
 
 export interface ParsedIrcRawMessage {
-  tags: string
+  tags: Record<string, string>
   sender: string
   command: string
   line: string[]

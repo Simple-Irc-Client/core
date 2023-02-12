@@ -5,7 +5,7 @@ import { type Nick, type ParsedIrcRawMessage, type SingleServer } from '../types
 export const parseServer = (
   currentServer?: Server
 ): SingleServer | undefined => {
-  if (currentServer === undefined || currentServer?.servers === undefined) {
+  if (currentServer === undefined || currentServer?.servers?.length === 0) {
     return undefined
   }
 
@@ -22,7 +22,8 @@ export const parseServer = (
     [serverHost, serverPort] = firstServer?.split(':')
   }
 
-  return { host: serverHost, port: Number(serverPort ?? `${defaultIRCPort}`) }
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
+  return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`) }
 }
 
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
@@ -30,9 +31,18 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
 
   // @msgid=rPQvwimgWqGnqVcuVONIFJ;time=2023-02-01T23:08:26.026Z
   // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z
-  let tags = ''
+  const tags: Record<string, string> = {}
   if ((line?.[0] ?? '').startsWith('@')) {
-    tags = line.shift() ?? ''
+    const tagsList = line.shift()?.split(';') ?? []
+    for (const tag of tagsList) {
+      if (!tag.includes('=')) {
+        tags[tag] = ''
+      } else {
+        const key = tag.substring(0, tag.indexOf('='))
+        const value = tag.substring(tag.indexOf('=') + 1)
+        tags[key] = value
+      }
+    }
   }
 
   // NickServ!NickServ@serwisy.pirc.pl

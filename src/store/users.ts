@@ -6,7 +6,7 @@ export interface UsersStore {
   users: User[]
 
   setAddUser: (newUser: User) => void
-  // TODO  setRemoveUser: Function;
+  setRemoveUser: (nick: string, channel: string) => void
   setQuitUser: (nick: string) => void
   setRenameUser: (from: string, to: string) => void
   getUser: (nick: string) => User | undefined
@@ -27,7 +27,16 @@ export const useUsersStore = create<UsersStore>()(
             users: [...state.users, newUser]
           }))
         },
-        //   setRemoveUser
+        setRemoveUser: (nick: string, channelName: string): void => {
+          set((state) => ({
+            users: state.users.map((user: User) => {
+              if (user.nick === nick) {
+                user.channels = user.channels.filter((channel) => channel !== channelName)
+              }
+              return user
+            }).filter((user) => user.channels.length !== 0)
+          }))
+        },
         setQuitUser: (nick: string): void => {
           set((state) => ({
             users: state.users.filter((user: User) => user.nick !== nick)
