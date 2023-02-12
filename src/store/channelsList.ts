@@ -1,20 +1,14 @@
-import { create } from "zustand";
-import { ChannelList } from "../types";
-import { devtools, persist } from "zustand/middleware";
+import { create } from 'zustand'
+import { type ChannelList } from '../types'
+import { devtools, persist } from 'zustand/middleware'
 
 export interface ChannelListStore {
-  channels: ChannelList[];
-  finished: boolean;
+  channels: ChannelList[]
+  finished: boolean
 
-  setAddChannel: {
-    (name: string, users: number, topic: string): void;
-  };
-  setClearList: {
-    (): void;
-  };
-  setFinished: {
-    (status: boolean): void;
-  };
+  setAddChannel: (name: string, users: number, topic: string) => void
+  setClearList: () => void
+  setFinished: (status: boolean) => void
 }
 
 export const useChannelListStore = create<ChannelListStore>()(
@@ -24,21 +18,24 @@ export const useChannelListStore = create<ChannelListStore>()(
         channels: [],
         finished: false,
 
-        setAddChannel: (name: string, users: number, topic: string): void =>
+        setAddChannel: (name: string, users: number, topic: string): void => {
           set((state) => ({
-            channels: [...state.channels, { name, users, topic }],
-          })),
-        setClearList: (): void =>
+            channels: [...state.channels, { name, users, topic }]
+          }))
+        },
+        setClearList: (): void => {
           set(() => ({
             channels: [],
-            finished: false,
-          })),
-        setFinished: (status: boolean): void =>
+            finished: false
+          }))
+        },
+        setFinished: (status: boolean): void => {
           set(() => ({
-            finished: status,
-          })),
+            finished: status
+          }))
+        }
       }),
-      { name: "channels-list" }
+      { name: 'channels-list' }
     )
   )
-);
+)

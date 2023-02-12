@@ -1,652 +1,652 @@
-export type Server = {
-  command?: string;
-  default: number;
-  encoding: string;
-  flags?: number;
-  loginType?: number;
-  network: string;
-  servers: string[];
-};
+export interface Server {
+  command?: string
+  default: number
+  encoding: string
+  flags?: number
+  loginType?: number
+  network: string
+  servers: string[]
+}
 
 export const servers: Server[] = [
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "2600net",
-    servers: ["irc.2600.net"],
+    network: '2600net',
+    servers: ['irc.2600.net']
   },
   {
     default: 0,
-    encoding: "iso-2022-jp",
+    encoding: 'iso-2022-jp',
     flags: 19,
-    network: "2ch",
-    servers: ["irc.2ch.sc", "irc.nurs.or.jp", "irc.juggler.jp"],
+    network: '2ch',
+    servers: ['irc.2ch.sc', 'irc.nurs.or.jp', 'irc.juggler.jp']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "AccessIRC",
-    servers: ["irc.accessirc.net"],
+    network: 'AccessIRC',
+    servers: ['irc.accessirc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "AfterNET",
-    servers: ["irc.afternet.org"],
+    network: 'AfterNET',
+    servers: ['irc.afternet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Aitvaras",
+    network: 'Aitvaras',
     servers: [
-      "irc.data.lt:6668",
-      "irc.omnitel.net:6668",
-      "irc.ktu.lt:6668",
-      "irc.kis.lt:6668",
-      "irc.vub.lt:6668",
-      "irc.data.lt",
-      "irc.omnitel.net",
-      "irc.ktu.lt",
-      "irc.kis.lt",
-      "irc.vub.lt",
-    ],
+      'irc.data.lt:6668',
+      'irc.omnitel.net:6668',
+      'irc.ktu.lt:6668',
+      'irc.kis.lt:6668',
+      'irc.vub.lt:6668',
+      'irc.data.lt',
+      'irc.omnitel.net',
+      'irc.ktu.lt',
+      'irc.kis.lt',
+      'irc.vub.lt'
+    ]
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "Anthrochat",
-    servers: ["irc.anthrochat.net"],
+    network: 'Anthrochat',
+    servers: ['irc.anthrochat.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "ARCNet",
-    servers: ["arcnet-irc.org"],
+    network: 'ARCNet',
+    servers: ['arcnet-irc.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "AustNet",
-    servers: ["irc.austnet.org"],
+    network: 'AustNet',
+    servers: ['irc.austnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "AzzurraNet",
-    servers: ["irc.azzurra.org"],
+    network: 'AzzurraNet',
+    servers: ['irc.azzurra.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "BetaChat",
-    servers: ["irc.betachat.net"],
+    network: 'BetaChat',
+    servers: ['irc.betachat.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "Canternet",
-    servers: ["irc.canternet.org"],
+    network: 'Canternet',
+    servers: ['irc.canternet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "Chat4all",
-    servers: ["irc.chat4all.org"],
+    network: 'Chat4all',
+    servers: ['irc.chat4all.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "ChatJunkies",
-    servers: ["irc.chatjunkies.org"],
+    network: 'ChatJunkies',
+    servers: ['irc.chatjunkies.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "ChatNet",
-    servers: ["irc.chatnet.org"],
+    network: 'ChatNet',
+    servers: ['irc.chatnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "ChatSpike",
-    servers: ["irc.chatspike.net"],
+    network: 'ChatSpike',
+    servers: ['irc.chatspike.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "ChattingAway",
-    servers: ["irc.chattingaway.com"],
+    network: 'ChattingAway',
+    servers: ['irc.chattingaway.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Criten",
-    servers: ["irc.criten.net"],
+    network: 'Criten',
+    servers: ['irc.criten.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 2,
-    network: "DALnet",
-    servers: ["us.dal.net"],
+    network: 'DALnet',
+    servers: ['us.dal.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Dark-Tou-Net",
-    servers: ["irc.d-t-net.de"],
+    network: 'Dark-Tou-Net',
+    servers: ['irc.d-t-net.de']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "DarkMyst",
-    servers: ["irc.darkmyst.org"],
+    network: 'DarkMyst',
+    servers: ['irc.darkmyst.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "DeltaAnime",
-    servers: ["irc.deltaanime.net"],
+    network: 'DeltaAnime',
+    servers: ['irc.deltaanime.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "EFnet",
+    network: 'EFnet',
     servers: [
-      "irc.choopa.net",
-      "irc.paraphysics.net",
-      "efnet.port80.se",
-      "irc.underworld.no",
-      "irc.inet.tele.dk",
-    ],
+      'irc.choopa.net',
+      'irc.paraphysics.net',
+      'efnet.port80.se',
+      'irc.underworld.no',
+      'irc.inet.tele.dk'
+    ]
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "ElectroCode",
-    servers: ["irc.electrocode.net"],
+    network: 'ElectroCode',
+    servers: ['irc.electrocode.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "EnterTheGame",
-    servers: ["irc.enterthegame.com"],
+    network: 'EnterTheGame',
+    servers: ['irc.enterthegame.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "EntropyNet",
-    servers: ["irc.entropynet.net"],
+    network: 'EntropyNet',
+    servers: ['irc.entropynet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "EsperNet",
-    servers: ["irc.esper.net"],
+    network: 'EsperNet',
+    servers: ['irc.esper.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "EUIrc",
-    servers: ["irc.euirc.net"],
+    network: 'EUIrc',
+    servers: ['irc.euirc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "EuropNet",
-    servers: ["irc.europnet.org"],
+    network: 'EuropNet',
+    servers: ['irc.europnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "FDFNet",
-    servers: ["irc.fdfnet.net"],
+    network: 'FDFNet',
+    servers: ['irc.fdfnet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "freenode",
-    servers: ["chat.freenode.net", "irc.freenode.net"],
+    network: 'freenode',
+    servers: ['chat.freenode.net', 'irc.freenode.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "Furnet",
-    servers: ["irc.furnet.org"],
+    network: 'Furnet',
+    servers: ['irc.furnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "GalaxyNet",
-    servers: ["irc.galaxynet.org"],
+    network: 'GalaxyNet',
+    servers: ['irc.galaxynet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "GameSurge",
-    servers: ["irc.gamesurge.net"],
+    network: 'GameSurge',
+    servers: ['irc.gamesurge.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "GeekShed",
-    servers: ["irc.geekshed.net"],
+    network: 'GeekShed',
+    servers: ['irc.geekshed.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "GeeksIRC",
-    servers: ["irc.geeksirc.net"],
+    network: 'GeeksIRC',
+    servers: ['irc.geeksirc.net']
   },
   {
     default: 0,
-    encoding: "CP1252",
+    encoding: 'CP1252',
     flags: 19,
-    network: "German-Elite",
-    servers: ["irc.german-elite.net"],
+    network: 'German-Elite',
+    servers: ['irc.german-elite.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "GIMPNet",
-    servers: ["irc.gimp.org", "irc.gnome.org"],
+    network: 'GIMPNet',
+    servers: ['irc.gimp.org', 'irc.gnome.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "GlobalGamers",
-    servers: ["irc.globalgamers.net:6660", "irc.globalgamers.net"],
+    network: 'GlobalGamers',
+    servers: ['irc.globalgamers.net:6660', 'irc.globalgamers.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Hashmark",
-    servers: ["irc.hashmark.net"],
+    network: 'Hashmark',
+    servers: ['irc.hashmark.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "IdleMonkeys",
-    servers: ["irc.idlemonkeys.net"],
+    network: 'IdleMonkeys',
+    servers: ['irc.idlemonkeys.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "IndirectIRC",
-    servers: ["irc.indirectirc.com"],
+    network: 'IndirectIRC',
+    servers: ['irc.indirectirc.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "Interlinked",
-    servers: ["irc.interlinked.me"],
+    network: 'Interlinked',
+    servers: ['irc.interlinked.me']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "IRC4Fun",
-    servers: ["irc.irc4fun.net"],
+    network: 'IRC4Fun',
+    servers: ['irc.irc4fun.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "IRCHighWay",
-    servers: ["irc.irchighway.net"],
+    network: 'IRCHighWay',
+    servers: ['irc.irchighway.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "IRCNet",
-    servers: ["open.ircnet.net"],
+    network: 'IRCNet',
+    servers: ['open.ircnet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Irctoo.net",
-    servers: ["irc.irctoo.net"],
+    network: 'Irctoo.net',
+    servers: ['irc.irctoo.net']
   },
   {
     default: 0,
-    encoding: "CP1252",
+    encoding: 'CP1252',
     flags: 19,
-    network: "iZ-smart.net",
-    servers: ["irc.iz-smart.net"],
+    network: 'iZ-smart.net',
+    servers: ['irc.iz-smart.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "KBFail",
-    servers: ["irc.kbfail.net"],
+    network: 'KBFail',
+    servers: ['irc.kbfail.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Krstarica",
-    servers: ["irc.krstarica.com"],
+    network: 'Krstarica',
+    servers: ['irc.krstarica.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "LibraIRC",
-    servers: ["irc.librairc.net"],
+    network: 'LibraIRC',
+    servers: ['irc.librairc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "LinkNet",
-    servers: ["irc.link-net.org:7000"],
+    network: 'LinkNet',
+    servers: ['irc.link-net.org:7000']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "MindForge",
-    servers: ["irc.mindforge.org"],
+    network: 'MindForge',
+    servers: ['irc.mindforge.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "MIXXnet",
-    servers: ["irc.mixxnet.net"],
+    network: 'MIXXnet',
+    servers: ['irc.mixxnet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "Moznet",
-    servers: ["irc.mozilla.org"],
+    network: 'Moznet',
+    servers: ['irc.mozilla.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "ObsidianIRC",
-    servers: ["irc.obsidianirc.net"],
+    network: 'ObsidianIRC',
+    servers: ['irc.obsidianirc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 6,
-    network: "Oceanius",
-    servers: ["irc.oceanius.com"],
+    network: 'Oceanius',
+    servers: ['irc.oceanius.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "OFTC",
-    servers: ["irc.oftc.net"],
+    network: 'OFTC',
+    servers: ['irc.oftc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "OtherNet",
-    servers: ["irc.othernet.org"],
+    network: 'OtherNet',
+    servers: ['irc.othernet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "OzNet",
-    servers: ["irc.oz.org"],
+    network: 'OzNet',
+    servers: ['irc.oz.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 95,
-    network: "PIRC.PL",
-    servers: ["irc.pirc.pl"],
+    network: 'PIRC.PL',
+    servers: ['irc.pirc.pl']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "PonyChat",
-    servers: ["irc.ponychat.net"],
+    network: 'PonyChat',
+    servers: ['irc.ponychat.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "PTNet.org",
-    servers: ["uevora.ptnet.org", "vianetworks.ptnet.org"],
+    network: 'PTNet.org',
+    servers: ['uevora.ptnet.org', 'vianetworks.ptnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
     loginType: 8,
-    network: "QuakeNet",
-    servers: ["irc.quakenet.org"],
+    network: 'QuakeNet',
+    servers: ['irc.quakenet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
-    network: "Rizon",
-    servers: ["irc.rizon.net"],
+    network: 'Rizon',
+    servers: ['irc.rizon.net']
   },
   {
     default: 0,
-    encoding: "KOI8-R",
+    encoding: 'KOI8-R',
     flags: 19,
-    network: "RusNet",
-    servers: ["irc.tomsk.net", "irc.run.net", "irc.ru", "irc.lucky.net"],
+    network: 'RusNet',
+    servers: ['irc.tomsk.net', 'irc.run.net', 'irc.ru', 'irc.lucky.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "SceneNet",
-    servers: ["irc.scene.org"],
+    network: 'SceneNet',
+    servers: ['irc.scene.org']
   },
   {
     default: 0,
-    encoding: "CP1252",
+    encoding: 'CP1252',
     flags: 19,
-    network: "SeilEn.de",
-    servers: ["irc.seilen.de"],
+    network: 'SeilEn.de',
+    servers: ['irc.seilen.de']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Serenity-IRC",
-    servers: ["irc.serenity-irc.net"],
+    network: 'Serenity-IRC',
+    servers: ['irc.serenity-irc.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "SlashNET",
-    servers: ["irc.slashnet.org"],
+    network: 'SlashNET',
+    servers: ['irc.slashnet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
-    flags: 23,
-    loginType: 6,
-    network: "Snoonet",
-    servers: ["irc.snoonet.org"],
-  },
-  {
-    default: 0,
-    encoding: "CP1254",
-    flags: 19,
-    network: "Sohbet.Net",
-    servers: ["irc.sohbet.net"],
-  },
-  {
-    default: 0,
-    encoding: "utf8",
-    flags: 19,
-    network: "SolidIRC",
-    servers: ["irc.solidirc.com"],
-  },
-  {
-    default: 0,
-    encoding: "utf8",
-    flags: 19,
-    loginType: 6,
-    network: "SorceryNet",
-    servers: ["irc.sorcery.net"],
-  },
-  {
-    default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "SpotChat",
-    servers: ["irc.spotchat.org"],
+    network: 'Snoonet',
+    servers: ['irc.snoonet.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'CP1254',
     flags: 19,
-    network: "StarChat",
-    servers: ["irc.starchat.net"],
+    network: 'Sohbet.Net',
+    servers: ['irc.sohbet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Station51",
-    servers: ["irc.station51.net"],
+    network: 'SolidIRC',
+    servers: ['irc.solidirc.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
+    flags: 19,
+    loginType: 6,
+    network: 'SorceryNet',
+    servers: ['irc.sorcery.net']
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "StormBit",
-    servers: ["irc.stormbit.net"],
+    network: 'SpotChat',
+    servers: ['irc.spotchat.org']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "SwiftIRC",
-    servers: ["irc.swiftirc.net"],
+    network: 'StarChat',
+    servers: ['irc.starchat.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "synIRC",
-    servers: ["irc.synirc.net"],
+    network: 'Station51',
+    servers: ['irc.station51.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "Techtronix",
-    servers: ["irc.techtronix.net"],
+    network: 'StormBit',
+    servers: ['irc.stormbit.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
+    flags: 19,
+    network: 'SwiftIRC',
+    servers: ['irc.swiftirc.net']
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
+    flags: 19,
+    network: 'synIRC',
+    servers: ['irc.synirc.net']
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
     flags: 23,
-    network: "TURLINet",
-    servers: ["irc.servx.ru"],
+    loginType: 6,
+    network: 'Techtronix',
+    servers: ['irc.techtronix.net']
   },
   {
-    command: "MSG x@channels.undernet.org login %u %p",
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
+    flags: 23,
+    network: 'TURLINet',
+    servers: ['irc.servx.ru']
+  },
+  {
+    command: 'MSG x@channels.undernet.org login %u %p',
+    default: 0,
+    encoding: 'utf8',
     flags: 19,
     loginType: 9,
-    network: "UnderNet",
-    servers: ["us.undernet.org"],
+    network: 'UnderNet',
+    servers: ['us.undernet.org']
   },
   {
-    command: "MSG NS IDENTIFY %p",
+    command: 'MSG NS IDENTIFY %p',
     default: 0,
-    encoding: "CP1251",
+    encoding: 'CP1251',
     flags: 19,
     loginType: 9,
-    network: "UniBG",
-    servers: ["irc.lirex.com", "irc.naturella.com", "irc.techno-link.com"],
+    network: 'UniBG',
+    servers: ['irc.lirex.com', 'irc.naturella.com', 'irc.techno-link.com']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 19,
-    network: "Worldnet",
-    servers: ["irc.worldnet.net"],
+    network: 'Worldnet',
+    servers: ['irc.worldnet.net']
   },
   {
     default: 0,
-    encoding: "utf8",
+    encoding: 'utf8',
     flags: 23,
     loginType: 6,
-    network: "Xertion",
-    servers: ["irc.xertion.org"],
-  },
-];
+    network: 'Xertion',
+    servers: ['irc.xertion.org']
+  }
+]

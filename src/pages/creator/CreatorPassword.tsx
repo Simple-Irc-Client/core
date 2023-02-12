@@ -1,31 +1,31 @@
-import { Box, Button, TextField, Typography } from "@mui/material";
-import { useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { ircSendPassword } from "../../network/network";
-import { useSettingsStore } from "../../store/settings";
+import React, { useRef } from 'react'
+import { Box, Button, TextField, Typography } from '@mui/material'
+import { useTranslation } from 'react-i18next'
+import { ircSendPassword } from '../../network/network'
+import { useSettingsStore } from '../../store/settings'
 
-const CreatorPassword = () => {
-  const { t } = useTranslation();
-  const password = useRef("");
+const CreatorPassword = (): JSX.Element => {
+  const { t } = useTranslation()
+  const password = useRef('')
 
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
+  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep)
 
-  const onClick = () => {
-    ircSendPassword(password.current);
-    setCreatorStep("channels");
-  };
+  const onClick = (): void => {
+    ircSendPassword(password.current)
+    setCreatorStep('channels')
+  }
 
   return (
     <>
       <Typography component="h1" variant="h5">
-        {t("creator.password.title")}
+        {t('creator.password.title')}
       </Typography>
       <Box component="form" sx={{ mt: 3 }}>
         <TextField
           type="password"
           required
           fullWidth
-          label={t("creator.password.password")}
+          label={t('creator.password.password')}
           autoComplete="password"
           autoFocus
           onChange={(event) => (password.current = event.target.value)}
@@ -36,13 +36,13 @@ const CreatorPassword = () => {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
-          disabled={!password}
+          disabled={password.current === ''}
         >
-          {t("creator.password.button.next")}
+          {t('creator.password.button.next')}
         </Button>
       </Box>
     </>
-  );
-};
+  )
+}
 
-export default CreatorPassword;
+export default CreatorPassword

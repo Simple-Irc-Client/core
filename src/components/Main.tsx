@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   Avatar,
   Box,
@@ -5,26 +6,26 @@ import {
   List,
   ListItem,
   ListItemAvatar,
-  ListItemText,
-} from "@mui/material";
-import { useChannelsStore } from "../store/channels";
-import { useSettingsStore } from "../store/settings";
+  ListItemText
+} from '@mui/material'
+import { useChannelsStore } from '../store/channels'
+import { useSettingsStore } from '../store/settings'
 
-const Main = () => {
+const Main = (): JSX.Element => {
   const currentChannelName: string = useSettingsStore(
     (state) => state.currentChannelName
-  );
+  )
 
-  const channelsStore = useChannelsStore();
+  const channelsStore = useChannelsStore()
 
   return (
-    <Box sx={{ height: "100%" }}>
-      {channelsStore.getMessages(currentChannelName).map((message) => (
-        <List>
+    <Box sx={{ height: '100%' }}>
+      {channelsStore.getMessages(currentChannelName).map((message, index) => (
+        <List key={`message-${index}`}>
           <ListItem alignItems="flex-start">
             <ListItemAvatar>
               <Avatar
-                alt={message?.nick?.nick ?? message.nick}
+                alt={message.nick?.nick ?? message.nick}
                 src={message.nick?.avatarUrl}
               />
             </ListItemAvatar>
@@ -34,7 +35,7 @@ const Main = () => {
         </List>
       ))}
     </Box>
-  );
-};
+  )
+}
 
-export default Main;
+export default Main
