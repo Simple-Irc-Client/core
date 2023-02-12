@@ -55,7 +55,7 @@ function App() {
           >
             <Stack direction="row">
               <Channels />
-              <Stack direction="column">
+              <Stack direction="column" minWidth="calc(100% - 400px)">
                 <Topic />
                 <Main />
                 <Toolbar />
