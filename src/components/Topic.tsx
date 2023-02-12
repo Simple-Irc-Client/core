@@ -1,5 +1,4 @@
-import TextField from "@mui/material/TextField";
-import { useEffect, useState } from "react";
+import { Input } from "@mui/material";
 import { useChannelsStore } from "../store/channels";
 import { useSettingsStore } from "../store/settings";
 
@@ -8,22 +7,9 @@ const Topic = () => {
     (state) => state.currentChannelName
   );
 
-  const [topic, setTopic] = useState<string>("");
+  const channelsStore = useChannelsStore();
 
-  const getTopic = useChannelsStore((state) => state.getTopic);
-
-  useEffect(() => {
-    setTopic(getTopic(currentChannelName));
-  }, [currentChannelName]);
-
-  return (
-    <TextField
-      label={topic}
-      InputProps={{
-        readOnly: true,
-      }}
-    />
-  );
+  return <Input value={channelsStore.getTopic(currentChannelName)} disabled />;
 };
 
 export default Topic;

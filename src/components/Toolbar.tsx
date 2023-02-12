@@ -1,4 +1,4 @@
-import TextField from "@mui/material/TextField";
+import { TextField } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { useSettingsStore } from "../store/settings";
 import { ChannelCategory } from "../types";

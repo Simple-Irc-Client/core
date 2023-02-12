@@ -1,8 +1,4 @@
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import {
   DataGrid,
   GridCellParams,

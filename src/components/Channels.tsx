@@ -1,17 +1,21 @@
-import List from "@mui/material/List";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import TagOutlinedIcon from "@mui/icons-material/TagOutlined";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-import BuildOutlinedIcon from "@mui/icons-material/BuildOutlined";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import {
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  ListSubheader,
+  Badge,
+} from "@mui/material";
+import {
+  TagOutlined as TagOutlinedIcon,
+  HomeOutlined as HomeOutlinedIcon,
+  BuildOutlined as BuildOutlinedIcon,
+  PersonOutlineOutlined as PersonOutlineOutlinedIcon,
+} from "@mui/icons-material";
 import { useSettingsStore } from "../store/settings";
 import { Channel } from "../types";
-import ListSubheader from "@mui/material/ListSubheader";
 import { useTranslation } from "react-i18next";
 import { useChannelsStore } from "../store/channels";
-import Badge from "@mui/material/Badge";
 
 const Channels = () => {
   const { t } = useTranslation();
