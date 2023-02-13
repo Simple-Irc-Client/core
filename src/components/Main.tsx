@@ -25,8 +25,15 @@ const Main = (): JSX.Element => {
           <ListItem alignItems="flex-start">
             <ListItemAvatar>
               <Avatar
-                alt={message.nick?.nick ?? message.nick}
-                src={message.nick?.avatarUrl}
+                alt={message?.nick !== undefined
+                  ? (typeof message.nick === 'string' ? message.nick : message.nick.nick)
+                  : ''
+                }
+                src={
+                  message?.nick !== undefined
+                    ? (typeof message.nick === 'string' ? undefined : message.nick.avatarUrl)
+                    : undefined
+                }
               />
             </ListItemAvatar>
             <ListItemText primary={message.message} />
