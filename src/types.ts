@@ -20,7 +20,7 @@ export interface Message {
   message: string
   nick: User | string | undefined
   target: string
-  time: number
+  time: string
   category: MessageCategory
 }
 

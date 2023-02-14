@@ -466,7 +466,7 @@ const onPrivmsg = (
       message,
       nick: user ?? nick,
       target,
-      time: 0, // TODO
+      time: tags.time ?? new Date().toISOString(),
       category: MessageCategory.default
     })
   }
