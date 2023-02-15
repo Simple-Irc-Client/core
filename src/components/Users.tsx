@@ -1,41 +1,26 @@
-import React from 'react'
-import { useUsersStore } from '../store/users'
-import { useSettingsStore } from '../store/settings'
-import { ChannelCategory } from '../types'
-import {
-  Avatar,
-  List,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
-  ListSubheader
-} from '@mui/material'
-import { useTranslation } from 'react-i18next'
+import React from 'react';
+import { useUsersStore } from '../store/users';
+import { useSettingsStore } from '../store/settings';
+import { ChannelCategory } from '../types';
+import { Avatar, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 
 const Users = (): JSX.Element => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  const usersStore = useUsersStore()
+  const usersStore = useUsersStore();
 
-  const currentChannelName: string = useSettingsStore(
-    (state) => state.currentChannelName
-  )
-  const currentChannelCategory: ChannelCategory = useSettingsStore(
-    (state) => state.currentChannelCategory
-  )
+  const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
+  const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
   return (
     <>
       {currentChannelCategory === ChannelCategory.channel && (
         <List
-          subheader={
-            <ListSubheader component="div">
-              {t('main.users.title')}
-            </ListSubheader>
-          }
+          subheader={<ListSubheader component="div">{t('main.users.title')}</ListSubheader>}
           dense={true}
           sx={{
-            minWidth: '200px'
+            minWidth: '200px',
           }}
         >
           {usersStore.getUsersFromChannel(currentChannelName).map((user) => (
@@ -49,7 +34,7 @@ const Users = (): JSX.Element => {
         </List>
       )}
     </>
-  )
-}
+  );
+};
 
-export default Users
+export default Users;

@@ -98,6 +98,9 @@ const handleRaw = (
     case '761':
       onRaw761(usersStore, line)
       break
+    case '766':
+      onRaw766(usersStore)
+      break
     case 'NOTICE':
       onNotice(settingsStore, tags, sender, command, line)
       break
@@ -280,6 +283,11 @@ const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
   if (item === 'Avatar' && value !== undefined) {
     usersStore.setUserAvatar(nick, value)
   }
+}
+
+// :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
+const onRaw766 = (usersStore: UsersStore): void => {
+  //
 }
 
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~

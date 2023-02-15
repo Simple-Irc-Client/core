@@ -21,6 +21,7 @@ export interface SettingsStore {
   connectedTime: number // unix timestamp
   currentChannelName: string
   currentChannelCategory: ChannelCategory
+  theme: 'modern' | 'classic'
 
   setCreatorCompleted: (status: boolean) => void
   setIsConnecting: (status: boolean) => void
@@ -31,6 +32,7 @@ export interface SettingsStore {
   setCreatorStep: (newCreatorStep: CreatorStep) => void
   setIsPasswordRequired: (status: boolean) => void
   setCurrentChannelName: (channel: string, category: ChannelCategory) => void
+  setTheme: (theme: 'modern' | 'classic') => void
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -47,6 +49,7 @@ export const useSettingsStore = create<SettingsStore>()(
         connectedTime: 0,
         currentChannelName: 'Status',
         currentChannelCategory: ChannelCategory.status,
+        theme: 'modern',
         // TODO namesXProtoEnabled: false,
         // TODO usersPrefix: [],
 
@@ -70,7 +73,8 @@ export const useSettingsStore = create<SettingsStore>()(
             currentChannelName: channel,
             currentChannelCategory: category
           }))
-        }
+        },
+        setTheme: (newTheme: 'modern' | 'classic'): void => { set(() => ({ theme: newTheme })) },
       }),
       {
         name: 'settings'

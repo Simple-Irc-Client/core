@@ -1,27 +1,21 @@
-import React from 'react'
-import {
-  Autocomplete,
-  Box,
-  Button,
-  TextField,
-  Typography
-} from '@mui/material'
-import { useTranslation } from 'react-i18next'
-import { servers } from '../../models/servers'
-import { useSettingsStore } from '../../store/settings'
+import React from 'react';
+import { Autocomplete, Box, Button, TextField, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import { servers } from '../../models/servers';
+import { useSettingsStore } from '../../store/settings';
 
 const CreatorServer = (): JSX.Element => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  const server = useSettingsStore((state) => state.server)
-  const setServer = useSettingsStore((state) => state.setServer)
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep)
+  const server = useSettingsStore((state) => state.server);
+  const setServer = useSettingsStore((state) => state.setServer);
+  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
   const onClick = (): void => {
     if (server !== undefined) {
-      setCreatorStep('loading')
+      setCreatorStep('loading');
     }
-  }
+  };
 
   return (
     <>
@@ -34,9 +28,7 @@ const CreatorServer = (): JSX.Element => {
           options={servers}
           sx={{ width: 300 }}
           getOptionLabel={(option) => option?.network ?? ''}
-          renderInput={(params) => (
-            <TextField {...params} label={t('creator.server.server')} />
-          )}
+          renderInput={(params) => <TextField {...params} label={t('creator.server.server')} />}
           renderOption={(props, option) => (
             <Box component="li" {...props}>
               {option.network}
@@ -44,24 +36,17 @@ const CreatorServer = (): JSX.Element => {
           )}
           onChange={(event, newValue) => {
             if (newValue != null) {
-              setServer(newValue)
+              setServer(newValue);
             }
           }}
           noOptionsText={t('creator.server.message.no.options')}
         />
-        <Button
-          onClick={onClick}
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-          disabled={server == null}
-        >
+        <Button onClick={onClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
           {t('creator.server.button.next')}
         </Button>
       </Box>
     </>
-  )
-}
+  );
+};
 
-export default CreatorServer
+export default CreatorServer;

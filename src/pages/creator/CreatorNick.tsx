@@ -1,20 +1,20 @@
-import React from 'react'
-import { Box, Button, TextField, Typography } from '@mui/material'
-import { useTranslation } from 'react-i18next'
-import { useSettingsStore } from '../../store/settings'
+import React from 'react';
+import { Box, Button, TextField, Typography } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import { useSettingsStore } from '../../store/settings';
 
 const CreatorNick = (): JSX.Element => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  const nick = useSettingsStore((state) => state.nick)
-  const setNick = useSettingsStore((state) => state.setNick)
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep)
+  const nick = useSettingsStore((state) => state.nick);
+  const setNick = useSettingsStore((state) => state.setNick);
+  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
   const onClick = (): void => {
     if (nick.length !== 0) {
-      setCreatorStep('server')
+      setCreatorStep('server');
     }
-  }
+  };
 
   return (
     <>
@@ -29,24 +29,18 @@ const CreatorNick = (): JSX.Element => {
           label={t('creator.nick.nick')}
           autoComplete="nick"
           autoFocus
-          onChange={(event) => { setNick(event.target.value) }}
+          onChange={(event) => {
+            setNick(event.target.value);
+          }}
           defaultValue={nick}
           tabIndex={1}
         />
-        <Button
-          onClick={onClick}
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-          disabled={nick === ''}
-          tabIndex={2}
-        >
+        <Button onClick={onClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
           {t('creator.nick.button.next')}
         </Button>
       </Box>
     </>
-  )
-}
+  );
+};
 
-export default CreatorNick
+export default CreatorNick;

@@ -1,14 +1,14 @@
-import React from 'react'
-import { Box, Container } from '@mui/material'
-import { useSettingsStore } from '../../store/settings'
-import CreatorChannelList from './CreatorChannelList'
-import CreatorNick from './CreatorNick'
-import CreatorPassword from './CreatorPassword'
-import CreatorServer from './CreatorServer'
-import CreatorLoading from './CreatorLoading'
+import React from 'react';
+import { Box, Container } from '@mui/material';
+import { useSettingsStore } from '../../store/settings';
+import CreatorChannelList from './CreatorChannelList';
+import CreatorNick from './CreatorNick';
+import CreatorPassword from './CreatorPassword';
+import CreatorServer from './CreatorServer';
+import CreatorLoading from './CreatorLoading';
 
 const Creator = (): JSX.Element => {
-  const creatorStep = useSettingsStore((state) => state.creatorStep)
+  const creatorStep = useSettingsStore((state) => state.creatorStep);
 
   return (
     <Container maxWidth={creatorStep === 'channels' ? 'md' : 'sm'}>
@@ -17,7 +17,7 @@ const Creator = (): JSX.Element => {
           marginTop: 20,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center'
+          alignItems: 'center',
         }}
       >
         {creatorStep === 'nick' && <CreatorNick />}
@@ -27,7 +27,7 @@ const Creator = (): JSX.Element => {
         {creatorStep === 'channels' && <CreatorChannelList />}
       </Box>
     </Container>
-  )
-}
+  );
+};
 
-export default Creator
+export default Creator;
