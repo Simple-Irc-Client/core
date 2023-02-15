@@ -3,6 +3,7 @@
     "browser": true,
     "es2021": true
   },
+  "parser": "@typescript-eslint/parser",
   "extends": ["plugin:react/recommended", "standard-with-typescript", "prettier"],
   "overrides": [],
   "parserOptions": {
@@ -10,8 +11,10 @@
     "sourceType": "module",
     "project": "tsconfig.json"
   },
-  "plugins": ["react", "jsx-a11y"],
-  "rules": {},
+  "plugins": ["react", "jsx-a11y", "prettier"],
+  "rules": {
+    "prettier/prettier": ["error"]
+  },
   "settings": {
     "react": {
       "version": "18"

@@ -1,27 +1,27 @@
 export interface SingleServer {
-  host?: string
-  port: number
+  host?: string;
+  port: number;
 }
 
 export interface ParsedIrcRawMessage {
-  tags: Record<string, string>
-  sender: string
-  command: string
-  line: string[]
+  tags: Record<string, string>;
+  sender: string;
+  command: string;
+  line: string[];
 }
 
 export interface ChannelList {
-  name: string
-  users: number
-  topic: string
+  name: string;
+  users: number;
+  topic: string;
 }
 
 export interface Message {
-  message: string
-  nick: User | string | undefined
-  target: string
-  time: string
-  category: MessageCategory
+  message: string;
+  nick: User | string | undefined;
+  target: string;
+  time: string;
+  category: MessageCategory;
 }
 
 export enum MessageCategory {
@@ -40,13 +40,13 @@ export enum MessageCategory {
 }
 
 export interface Channel {
-  category: ChannelCategory
-  messages: Message[]
-  name: string
-  topic: string
-  topicSetBy: string
-  topicSetTime: number
-  unReadMessages: number
+  category: ChannelCategory;
+  messages: Message[];
+  name: string;
+  topic: string;
+  topicSetBy: string;
+  topicSetTime: number;
+  unReadMessages: number;
 }
 
 export enum ChannelCategory {
@@ -57,22 +57,22 @@ export enum ChannelCategory {
 }
 
 export interface User {
-  nick: string
-  ident: string
-  hostname: string
-  avatarUrl: string
-  modes: string[]
-  maxMode: number
-  channels: string[]
+  nick: string;
+  ident: string;
+  hostname: string;
+  avatarUrl: string;
+  modes: string[];
+  maxMode: number;
+  channels: string[];
 }
 
 export interface UserMode {
-  symbol: string
-  mode: string
+  symbol: string;
+  mode: string;
 }
 
 export interface Nick {
-  nick: string
-  ident: string
-  hostname: string
+  nick: string;
+  ident: string;
+  hostname: string;
 }

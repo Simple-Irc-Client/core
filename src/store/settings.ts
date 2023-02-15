@@ -1,38 +1,33 @@
-import { create } from 'zustand'
-import { type Server } from '../models/servers'
-import { devtools, persist } from 'zustand/middleware'
-import { ChannelCategory } from '../types'
+import { create } from 'zustand';
+import { type Server } from '../models/servers';
+import { devtools, persist } from 'zustand/middleware';
+import { ChannelCategory } from '../types';
 
-export type CreatorStep =
-  | 'nick'
-  | 'server'
-  | 'loading'
-  | 'password'
-  | 'channels'
+export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
 export interface SettingsStore {
-  isConnecting: boolean
-  isConnected: boolean
-  isCreatorCompleted: boolean
-  creatorStep: CreatorStep
-  nick: string
-  server: Server | undefined
-  isPasswordRequired: boolean | undefined
-  connectedTime: number // unix timestamp
-  currentChannelName: string
-  currentChannelCategory: ChannelCategory
-  theme: 'modern' | 'classic'
+  isConnecting: boolean;
+  isConnected: boolean;
+  isCreatorCompleted: boolean;
+  creatorStep: CreatorStep;
+  nick: string;
+  server: Server | undefined;
+  isPasswordRequired: boolean | undefined;
+  connectedTime: number; // unix timestamp
+  currentChannelName: string;
+  currentChannelCategory: ChannelCategory;
+  theme: 'modern' | 'classic';
 
-  setCreatorCompleted: (status: boolean) => void
-  setIsConnecting: (status: boolean) => void
-  setIsConnected: (status: boolean) => void
-  setConnectedTime: (time: number) => void
-  setNick: (newNick: string) => void
-  setServer: (newServer: Server) => void
-  setCreatorStep: (newCreatorStep: CreatorStep) => void
-  setIsPasswordRequired: (status: boolean) => void
-  setCurrentChannelName: (channel: string, category: ChannelCategory) => void
-  setTheme: (theme: 'modern' | 'classic') => void
+  setCreatorCompleted: (status: boolean) => void;
+  setIsConnecting: (status: boolean) => void;
+  setIsConnected: (status: boolean) => void;
+  setConnectedTime: (time: number) => void;
+  setNick: (newNick: string) => void;
+  setServer: (newServer: Server) => void;
+  setCreatorStep: (newCreatorStep: CreatorStep) => void;
+  setIsPasswordRequired: (status: boolean) => void;
+  setCurrentChannelName: (channel: string, category: ChannelCategory) => void;
+  setTheme: (theme: 'modern' | 'classic') => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -55,30 +50,43 @@ export const useSettingsStore = create<SettingsStore>()(
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
-            isCreatorCompleted: status
-          }))
+            isCreatorCompleted: status,
+          }));
         },
-        setIsConnecting: (status: boolean): void => { set(() => ({ isConnecting: status })) },
-        setIsConnected: (status: boolean): void => { set(() => ({ isConnected: status })) },
-        setConnectedTime: (time: number): void => { set(() => ({ connectedTime: time })) },
-        setNick: (newNick: string): void => { set(() => ({ nick: newNick })) },
-        setServer: (newServer: Server): void => { set(() => ({ server: newServer })) },
-        setCreatorStep: (newCreatorStep: CreatorStep): void => { set(() => ({ creatorStep: newCreatorStep })) },
-        setIsPasswordRequired: (status: boolean): void => { set(() => ({ isPasswordRequired: status })) },
-        setCurrentChannelName: (
-          channel: string,
-          category: ChannelCategory
-        ): void => {
+        setIsConnecting: (status: boolean): void => {
+          set(() => ({ isConnecting: status }));
+        },
+        setIsConnected: (status: boolean): void => {
+          set(() => ({ isConnected: status }));
+        },
+        setConnectedTime: (time: number): void => {
+          set(() => ({ connectedTime: time }));
+        },
+        setNick: (newNick: string): void => {
+          set(() => ({ nick: newNick }));
+        },
+        setServer: (newServer: Server): void => {
+          set(() => ({ server: newServer }));
+        },
+        setCreatorStep: (newCreatorStep: CreatorStep): void => {
+          set(() => ({ creatorStep: newCreatorStep }));
+        },
+        setIsPasswordRequired: (status: boolean): void => {
+          set(() => ({ isPasswordRequired: status }));
+        },
+        setCurrentChannelName: (channel: string, category: ChannelCategory): void => {
           set(() => ({
             currentChannelName: channel,
-            currentChannelCategory: category
-          }))
+            currentChannelCategory: category,
+          }));
         },
-        setTheme: (newTheme: 'modern' | 'classic'): void => { set(() => ({ theme: newTheme })) },
+        setTheme: (newTheme: 'modern' | 'classic'): void => {
+          set(() => ({ theme: newTheme }));
+        },
       }),
       {
-        name: 'settings'
+        name: 'settings',
       }
     )
   )
-)
+);

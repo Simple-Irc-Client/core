@@ -1,22 +1,22 @@
-import { create } from 'zustand'
-import { type Channel, type ChannelCategory, type Message } from '../types'
-import { devtools, persist } from 'zustand/middleware'
-import { maxMessages } from '../config'
+import { create } from 'zustand';
+import { type Channel, type ChannelCategory, type Message } from '../types';
+import { devtools, persist } from 'zustand/middleware';
+import { maxMessages } from '../config';
 
 export interface ChannelsStore {
-  openChannels: Channel[]
+  openChannels: Channel[];
 
-  setAddChannel: (channelName: string, category: ChannelCategory) => void
-  setRemoveChannel: (channelName: string) => void
-  getChannel: (channelName: string) => Channel | undefined
-  setTopic: (channelName: string, newTopic: string) => void
-  getTopic: (channelName: string) => string
-  setTopicSetBy: (channelName: string, nick: string, when: number) => void
-  getTopicSetBy: (channelName: string) => string
-  getTopicTime: (channelName: string) => number
-  setAddMessage: (channelName: string, newMessage: Message) => void
-  getMessages: (channelName: string) => Message[]
-  getCategory: (channelName: string) => ChannelCategory | undefined
+  setAddChannel: (channelName: string, category: ChannelCategory) => void;
+  setRemoveChannel: (channelName: string) => void;
+  getChannel: (channelName: string) => Channel | undefined;
+  setTopic: (channelName: string, newTopic: string) => void;
+  getTopic: (channelName: string) => string;
+  setTopicSetBy: (channelName: string, nick: string, when: number) => void;
+  getTopicSetBy: (channelName: string) => string;
+  getTopicTime: (channelName: string) => number;
+  setAddMessage: (channelName: string, newMessage: Message) => void;
+  getMessages: (channelName: string) => Message[];
+  getCategory: (channelName: string) => ChannelCategory | undefined;
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -36,78 +36,70 @@ export const useChannelsStore = create<ChannelsStore>()(
                 topic: '',
                 topicSetBy: '',
                 topicSetTime: 0,
-                unReadMessages: 0
-              }
-            ]
-          }))
+                unReadMessages: 0,
+              },
+            ],
+          }));
         },
         setRemoveChannel: (channelName: string) => {
           set((state) => ({
-            openChannels: state.openChannels.filter(
-              (channel) => channel.name !== channelName
-            )
-          }))
+            openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
+          }));
         },
         getChannel: (channelName: string): Channel | undefined => {
-          return get().openChannels.find(
-            (channel: Channel) => channel.name === channelName
-          )
+          return get().openChannels.find((channel: Channel) => channel.name === channelName);
         },
         setTopic: (channelName: string, newTopic: string) => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
               if (channel.name === channelName) {
-                channel.topic = newTopic
+                channel.topic = newTopic;
               }
-              return channel
-            })
-          }))
+              return channel;
+            }),
+          }));
         },
         getTopic: (channelName: string): string => {
-          return (
-            get().openChannels.find(
-              (channel: Channel) => channel.name === channelName
-            )?.topic ?? ''
-          )
+          return get().openChannels.find((channel: Channel) => channel.name === channelName)?.topic ?? '';
         },
         setTopicSetBy: (channelName: string, nick: string, when: number) => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
               if (channel.name === channelName) {
-                channel.topicSetBy = nick
-                channel.topicSetTime = when
+                channel.topicSetBy = nick;
+                channel.topicSetTime = when;
               }
-              return channel
-            })
-          }))
+              return channel;
+            }),
+          }));
         },
         getTopicSetBy: (channelName: string): string => {
-          return get().getChannel(channelName)?.topicSetBy ?? ''
+          return get().getChannel(channelName)?.topicSetBy ?? '';
         },
         getTopicTime: (channelName: string): number => {
-          return get().getChannel(channelName)?.topicSetTime ?? 0
+          return get().getChannel(channelName)?.topicSetTime ?? 0;
         },
         setAddMessage: (channelName: string, newMessage: Message): void => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
               if (channel.name === channelName) {
-                channel.messages.push(newMessage)
+                channel.messages.push(newMessage);
                 if (channel.messages.length > maxMessages) {
-                  channel.messages.shift()
+                  channel.messages.shift();
                 }
               }
-              return channel
-            })
-          }))
+              return channel;
+            }),
+          }));
         },
         getMessages: (channelName: string): Message[] => {
-          return get().getChannel(channelName)?.messages ?? []
+          return get().getChannel(channelName)?.messages ?? [];
         },
         getCategory: (channelName: string): ChannelCategory | undefined => {
-          return get().getChannel(channelName)?.category ?? undefined
-        }
+          return get().getChannel(channelName)?.category ?? undefined;
+        },
       }),
       { name: 'channels' }
     )
   )
-)
+);

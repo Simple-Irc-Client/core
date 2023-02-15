@@ -1,19 +1,19 @@
-import { connect as socketIOConnect } from 'socket.io-client'
-import { websocketHost, websocketPort } from '../config'
-import { type Server } from '../models/servers'
-import { parseServer } from './helpers'
+import { connect as socketIOConnect } from 'socket.io-client';
+import { websocketHost, websocketPort } from '../config';
+import { type Server } from '../models/servers';
+import { parseServer } from './helpers';
 
 export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
   transports: ['websocket'],
-  path: '/SimpleIrcClient'
-})
+  path: '/SimpleIrcClient',
+});
 
-const queueIrcMessages: unknown[] = []
+const queueIrcMessages: unknown[] = [];
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
-  const singleServer = parseServer(currentServer)
-  if ((singleServer == null) || singleServer?.host === undefined || singleServer?.host === '') {
-    throw new Error('Unable to connect to IRC network - server host is empty')
+  const singleServer = parseServer(currentServer);
+  if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
+    throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
   const command = {
@@ -23,70 +23,70 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       server: {
         host: singleServer.host,
         port: singleServer.port,
-        encoding: currentServer?.encoding
-      }
-    }
-  }
+        encoding: currentServer?.encoding,
+      },
+    },
+  };
 
-  sendMessage(command)
-}
+  sendMessage(command);
+};
 
 export const ircSendPassword = (password: string): void => {
   const command = {
     type: 'raw',
     event: {
-      rawData: `PRIVMSG NickServ :IDENTIFY ${password}\n`
-    }
-  }
+      rawData: `PRIVMSG NickServ :IDENTIFY ${password}\n`,
+    },
+  };
 
-  sendMessage(command)
-}
+  sendMessage(command);
+};
 
 export const ircSendList = (): void => {
   const command = {
     type: 'raw',
     event: {
-      rawData: 'LIST\n'
-    }
-  }
+      rawData: 'LIST\n',
+    },
+  };
 
-  sendMessage(command)
-}
+  sendMessage(command);
+};
 
 export const ircJoinChannels = (channels: string[]): void => {
   const command = {
     type: 'raw',
     event: {
-      rawData: `JOIN ${channels.join(',')}\n`
-    }
-  }
+      rawData: `JOIN ${channels.join(',')}\n`,
+    },
+  };
 
-  sendMessage(command)
-}
+  sendMessage(command);
+};
 
 export const ircRequestAvatar = (nick: string): void => {
   const command = {
     type: 'raw',
     event: {
-      rawData: `METADATA ${nick} GET Avatar\n`
-    }
-  }
+      rawData: `METADATA ${nick} GET Avatar\n`,
+    },
+  };
 
-  sendQueueMessage(command)
-}
+  sendQueueMessage(command);
+};
 
 const sendMessage = (message: unknown): void => {
-  sicSocket.emit('sic-client-event', message)
-}
+  sicSocket.emit('sic-client-event', message);
+};
 
 const sendQueueMessage = (message: unknown): void => {
-  queueIrcMessages.push(message)
-}
+  queueIrcMessages.push(message);
+};
 
-setInterval(function networkSendQueueMessages () {
-  const message = queueIrcMessages.pop()
+setInterval(function networkSendQueueMessages() {
+  const message = queueIrcMessages.pop();
   if (message === undefined) {
-    return
+    return;
   }
-  sicSocket.emit('sic-client-event', message)
-}, 300)
+  sicSocket.emit('sic-client-event', message);
+}, 300);

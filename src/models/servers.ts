@@ -1,11 +1,11 @@
 export interface Server {
-  command?: string
-  default: number
-  encoding: string
-  flags?: number
-  loginType?: number
-  network: string
-  servers: string[]
+  command?: string;
+  default: number;
+  encoding: string;
+  flags?: number;
+  loginType?: number;
+  network: string;
+  servers: string[];
 }
 
 export const servers: Server[] = [
@@ -14,21 +14,21 @@ export const servers: Server[] = [
     encoding: 'utf8',
     flags: 19,
     network: '2600net',
-    servers: ['irc.2600.net']
+    servers: ['irc.2600.net'],
   },
   {
     default: 0,
     encoding: 'iso-2022-jp',
     flags: 19,
     network: '2ch',
-    servers: ['irc.2ch.sc', 'irc.nurs.or.jp', 'irc.juggler.jp']
+    servers: ['irc.2ch.sc', 'irc.nurs.or.jp', 'irc.juggler.jp'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'AccessIRC',
-    servers: ['irc.accessirc.net']
+    servers: ['irc.accessirc.net'],
   },
   {
     default: 0,
@@ -36,53 +36,42 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'AfterNET',
-    servers: ['irc.afternet.org']
+    servers: ['irc.afternet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Aitvaras',
-    servers: [
-      'irc.data.lt:6668',
-      'irc.omnitel.net:6668',
-      'irc.ktu.lt:6668',
-      'irc.kis.lt:6668',
-      'irc.vub.lt:6668',
-      'irc.data.lt',
-      'irc.omnitel.net',
-      'irc.ktu.lt',
-      'irc.kis.lt',
-      'irc.vub.lt'
-    ]
+    servers: ['irc.data.lt:6668', 'irc.omnitel.net:6668', 'irc.ktu.lt:6668', 'irc.kis.lt:6668', 'irc.vub.lt:6668', 'irc.data.lt', 'irc.omnitel.net', 'irc.ktu.lt', 'irc.kis.lt', 'irc.vub.lt'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'Anthrochat',
-    servers: ['irc.anthrochat.net']
+    servers: ['irc.anthrochat.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'ARCNet',
-    servers: ['arcnet-irc.org']
+    servers: ['arcnet-irc.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'AustNet',
-    servers: ['irc.austnet.org']
+    servers: ['irc.austnet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'AzzurraNet',
-    servers: ['irc.azzurra.org']
+    servers: ['irc.azzurra.org'],
   },
   {
     default: 0,
@@ -90,7 +79,7 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'BetaChat',
-    servers: ['irc.betachat.net']
+    servers: ['irc.betachat.net'],
   },
   {
     default: 0,
@@ -98,28 +87,28 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'Canternet',
-    servers: ['irc.canternet.org']
+    servers: ['irc.canternet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'Chat4all',
-    servers: ['irc.chat4all.org']
+    servers: ['irc.chat4all.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'ChatJunkies',
-    servers: ['irc.chatjunkies.org']
+    servers: ['irc.chatjunkies.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'ChatNet',
-    servers: ['irc.chatnet.org']
+    servers: ['irc.chatnet.org'],
   },
   {
     default: 0,
@@ -127,21 +116,21 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'ChatSpike',
-    servers: ['irc.chatspike.net']
+    servers: ['irc.chatspike.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'ChattingAway',
-    servers: ['irc.chattingaway.com']
+    servers: ['irc.chattingaway.com'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Criten',
-    servers: ['irc.criten.net']
+    servers: ['irc.criten.net'],
   },
   {
     default: 0,
@@ -149,14 +138,14 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 2,
     network: 'DALnet',
-    servers: ['us.dal.net']
+    servers: ['us.dal.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Dark-Tou-Net',
-    servers: ['irc.d-t-net.de']
+    servers: ['irc.d-t-net.de'],
   },
   {
     default: 0,
@@ -164,27 +153,21 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'DarkMyst',
-    servers: ['irc.darkmyst.org']
+    servers: ['irc.darkmyst.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'DeltaAnime',
-    servers: ['irc.deltaanime.net']
+    servers: ['irc.deltaanime.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'EFnet',
-    servers: [
-      'irc.choopa.net',
-      'irc.paraphysics.net',
-      'efnet.port80.se',
-      'irc.underworld.no',
-      'irc.inet.tele.dk'
-    ]
+    servers: ['irc.choopa.net', 'irc.paraphysics.net', 'efnet.port80.se', 'irc.underworld.no', 'irc.inet.tele.dk'],
   },
   {
     default: 0,
@@ -192,14 +175,14 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'ElectroCode',
-    servers: ['irc.electrocode.net']
+    servers: ['irc.electrocode.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'EnterTheGame',
-    servers: ['irc.enterthegame.com']
+    servers: ['irc.enterthegame.com'],
   },
   {
     default: 0,
@@ -207,7 +190,7 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'EntropyNet',
-    servers: ['irc.entropynet.net']
+    servers: ['irc.entropynet.net'],
   },
   {
     default: 0,
@@ -215,28 +198,28 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'EsperNet',
-    servers: ['irc.esper.net']
+    servers: ['irc.esper.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'EUIrc',
-    servers: ['irc.euirc.net']
+    servers: ['irc.euirc.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'EuropNet',
-    servers: ['irc.europnet.org']
+    servers: ['irc.europnet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'FDFNet',
-    servers: ['irc.fdfnet.net']
+    servers: ['irc.fdfnet.net'],
   },
   {
     default: 0,
@@ -244,35 +227,35 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'freenode',
-    servers: ['chat.freenode.net', 'irc.freenode.net']
+    servers: ['chat.freenode.net', 'irc.freenode.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'Furnet',
-    servers: ['irc.furnet.org']
+    servers: ['irc.furnet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'GalaxyNet',
-    servers: ['irc.galaxynet.org']
+    servers: ['irc.galaxynet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'GameSurge',
-    servers: ['irc.gamesurge.net']
+    servers: ['irc.gamesurge.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'GeekShed',
-    servers: ['irc.geekshed.net']
+    servers: ['irc.geekshed.net'],
   },
   {
     default: 0,
@@ -280,42 +263,42 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'GeeksIRC',
-    servers: ['irc.geeksirc.net']
+    servers: ['irc.geeksirc.net'],
   },
   {
     default: 0,
     encoding: 'CP1252',
     flags: 19,
     network: 'German-Elite',
-    servers: ['irc.german-elite.net']
+    servers: ['irc.german-elite.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'GIMPNet',
-    servers: ['irc.gimp.org', 'irc.gnome.org']
+    servers: ['irc.gimp.org', 'irc.gnome.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'GlobalGamers',
-    servers: ['irc.globalgamers.net:6660', 'irc.globalgamers.net']
+    servers: ['irc.globalgamers.net:6660', 'irc.globalgamers.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Hashmark',
-    servers: ['irc.hashmark.net']
+    servers: ['irc.hashmark.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'IdleMonkeys',
-    servers: ['irc.idlemonkeys.net']
+    servers: ['irc.idlemonkeys.net'],
   },
   {
     default: 0,
@@ -323,7 +306,7 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'IndirectIRC',
-    servers: ['irc.indirectirc.com']
+    servers: ['irc.indirectirc.com'],
   },
   {
     default: 0,
@@ -331,7 +314,7 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'Interlinked',
-    servers: ['irc.interlinked.me']
+    servers: ['irc.interlinked.me'],
   },
   {
     default: 0,
@@ -339,63 +322,63 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'IRC4Fun',
-    servers: ['irc.irc4fun.net']
+    servers: ['irc.irc4fun.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'IRCHighWay',
-    servers: ['irc.irchighway.net']
+    servers: ['irc.irchighway.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'IRCNet',
-    servers: ['open.ircnet.net']
+    servers: ['open.ircnet.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Irctoo.net',
-    servers: ['irc.irctoo.net']
+    servers: ['irc.irctoo.net'],
   },
   {
     default: 0,
     encoding: 'CP1252',
     flags: 19,
     network: 'iZ-smart.net',
-    servers: ['irc.iz-smart.net']
+    servers: ['irc.iz-smart.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'KBFail',
-    servers: ['irc.kbfail.net']
+    servers: ['irc.kbfail.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Krstarica',
-    servers: ['irc.krstarica.com']
+    servers: ['irc.krstarica.com'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'LibraIRC',
-    servers: ['irc.librairc.net']
+    servers: ['irc.librairc.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'LinkNet',
-    servers: ['irc.link-net.org:7000']
+    servers: ['irc.link-net.org:7000'],
   },
   {
     default: 0,
@@ -403,28 +386,28 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'MindForge',
-    servers: ['irc.mindforge.org']
+    servers: ['irc.mindforge.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'MIXXnet',
-    servers: ['irc.mixxnet.net']
+    servers: ['irc.mixxnet.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'Moznet',
-    servers: ['irc.mozilla.org']
+    servers: ['irc.mozilla.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'ObsidianIRC',
-    servers: ['irc.obsidianirc.net']
+    servers: ['irc.obsidianirc.net'],
   },
   {
     default: 0,
@@ -432,35 +415,35 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'Oceanius',
-    servers: ['irc.oceanius.com']
+    servers: ['irc.oceanius.com'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'OFTC',
-    servers: ['irc.oftc.net']
+    servers: ['irc.oftc.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'OtherNet',
-    servers: ['irc.othernet.org']
+    servers: ['irc.othernet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'OzNet',
-    servers: ['irc.oz.org']
+    servers: ['irc.oz.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 95,
     network: 'PIRC.PL',
-    servers: ['irc.pirc.pl']
+    servers: ['irc.pirc.pl'],
   },
   {
     default: 0,
@@ -468,14 +451,14 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'PonyChat',
-    servers: ['irc.ponychat.net']
+    servers: ['irc.ponychat.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'PTNet.org',
-    servers: ['uevora.ptnet.org', 'vianetworks.ptnet.org']
+    servers: ['uevora.ptnet.org', 'vianetworks.ptnet.org'],
   },
   {
     default: 0,
@@ -483,49 +466,49 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 8,
     network: 'QuakeNet',
-    servers: ['irc.quakenet.org']
+    servers: ['irc.quakenet.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'Rizon',
-    servers: ['irc.rizon.net']
+    servers: ['irc.rizon.net'],
   },
   {
     default: 0,
     encoding: 'KOI8-R',
     flags: 19,
     network: 'RusNet',
-    servers: ['irc.tomsk.net', 'irc.run.net', 'irc.ru', 'irc.lucky.net']
+    servers: ['irc.tomsk.net', 'irc.run.net', 'irc.ru', 'irc.lucky.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'SceneNet',
-    servers: ['irc.scene.org']
+    servers: ['irc.scene.org'],
   },
   {
     default: 0,
     encoding: 'CP1252',
     flags: 19,
     network: 'SeilEn.de',
-    servers: ['irc.seilen.de']
+    servers: ['irc.seilen.de'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Serenity-IRC',
-    servers: ['irc.serenity-irc.net']
+    servers: ['irc.serenity-irc.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'SlashNET',
-    servers: ['irc.slashnet.org']
+    servers: ['irc.slashnet.org'],
   },
   {
     default: 0,
@@ -533,21 +516,21 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'Snoonet',
-    servers: ['irc.snoonet.org']
+    servers: ['irc.snoonet.org'],
   },
   {
     default: 0,
     encoding: 'CP1254',
     flags: 19,
     network: 'Sohbet.Net',
-    servers: ['irc.sohbet.net']
+    servers: ['irc.sohbet.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'SolidIRC',
-    servers: ['irc.solidirc.com']
+    servers: ['irc.solidirc.com'],
   },
   {
     default: 0,
@@ -555,7 +538,7 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 6,
     network: 'SorceryNet',
-    servers: ['irc.sorcery.net']
+    servers: ['irc.sorcery.net'],
   },
   {
     default: 0,
@@ -563,21 +546,21 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'SpotChat',
-    servers: ['irc.spotchat.org']
+    servers: ['irc.spotchat.org'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'StarChat',
-    servers: ['irc.starchat.net']
+    servers: ['irc.starchat.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Station51',
-    servers: ['irc.station51.net']
+    servers: ['irc.station51.net'],
   },
   {
     default: 0,
@@ -585,21 +568,21 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'StormBit',
-    servers: ['irc.stormbit.net']
+    servers: ['irc.stormbit.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'SwiftIRC',
-    servers: ['irc.swiftirc.net']
+    servers: ['irc.swiftirc.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'synIRC',
-    servers: ['irc.synirc.net']
+    servers: ['irc.synirc.net'],
   },
   {
     default: 0,
@@ -607,14 +590,14 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'Techtronix',
-    servers: ['irc.techtronix.net']
+    servers: ['irc.techtronix.net'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 23,
     network: 'TURLINet',
-    servers: ['irc.servx.ru']
+    servers: ['irc.servx.ru'],
   },
   {
     command: 'MSG x@channels.undernet.org login %u %p',
@@ -623,7 +606,7 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 9,
     network: 'UnderNet',
-    servers: ['us.undernet.org']
+    servers: ['us.undernet.org'],
   },
   {
     command: 'MSG NS IDENTIFY %p',
@@ -632,14 +615,14 @@ export const servers: Server[] = [
     flags: 19,
     loginType: 9,
     network: 'UniBG',
-    servers: ['irc.lirex.com', 'irc.naturella.com', 'irc.techno-link.com']
+    servers: ['irc.lirex.com', 'irc.naturella.com', 'irc.techno-link.com'],
   },
   {
     default: 0,
     encoding: 'utf8',
     flags: 19,
     network: 'Worldnet',
-    servers: ['irc.worldnet.net']
+    servers: ['irc.worldnet.net'],
   },
   {
     default: 0,
@@ -647,6 +630,6 @@ export const servers: Server[] = [
     flags: 23,
     loginType: 6,
     network: 'Xertion',
-    servers: ['irc.xertion.org']
-  }
-]
+    servers: ['irc.xertion.org'],
+  },
+];
