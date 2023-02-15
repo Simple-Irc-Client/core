@@ -32,10 +32,10 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
   settingsStore.setIsConnected(true);
   settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
-  channelsStore.setAddChannel('Debug', ChannelCategory.debug);
-  channelsStore.setAddChannel('Status', ChannelCategory.status);
+  channelsStore.setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+  channelsStore.setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
 
-  settingsStore.setCurrentChannelName('Status', ChannelCategory.status);
+  settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
 
   ircSendList();
 };
