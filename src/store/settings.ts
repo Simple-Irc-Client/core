@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type Server } from '../models/servers';
 import { devtools, persist } from 'zustand/middleware';
-import { ChannelCategory } from '../types';
+import { ChannelCategory, type UserMode } from '../types';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
@@ -17,6 +17,8 @@ export interface SettingsStore {
   currentChannelName: string;
   currentChannelCategory: ChannelCategory;
   theme: 'modern' | 'classic';
+  namesXProtoEnabled: boolean;
+  userModes: UserMode[];
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -28,12 +30,14 @@ export interface SettingsStore {
   setIsPasswordRequired: (status: boolean) => void;
   setCurrentChannelName: (channel: string, category: ChannelCategory) => void;
   setTheme: (theme: 'modern' | 'classic') => void;
+  setNamesXProtoEnabled: (status: boolean) => void;
+  setUserModes: (modes: UserMode[]) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set) => ({
         isConnecting: false,
         isConnected: false,
         isCreatorCompleted: false,
@@ -45,8 +49,8 @@ export const useSettingsStore = create<SettingsStore>()(
         currentChannelName: 'Status',
         currentChannelCategory: ChannelCategory.status,
         theme: 'modern',
-        // TODO namesXProtoEnabled: false,
-        // TODO usersPrefix: [],
+        namesXProtoEnabled: false,
+        userModes: [],
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -82,6 +86,12 @@ export const useSettingsStore = create<SettingsStore>()(
         },
         setTheme: (newTheme: 'modern' | 'classic'): void => {
           set(() => ({ theme: newTheme }));
+        },
+        setNamesXProtoEnabled: (status: boolean): void => {
+          set(() => ({ namesXProtoEnabled: status }));
+        },
+        setUserModes: (modes: UserMode[]): void => {
+          set(() => ({ userModes: modes }));
         },
       }),
       {

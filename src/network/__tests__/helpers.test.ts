@@ -3,7 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../../models/servers';
-import { parseIrcRawMessage, parseNick, parseServer } from '../helpers';
+import { type UserMode } from '../../types';
+import { createMaxMode, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
 
 describe('helper tests', () => {
   it('test parse server', () => {
@@ -97,10 +98,48 @@ describe('helper tests', () => {
   });
 
   it('test parse nick', () => {
-    expect(parseNick('nick!ident@hostname')).toStrictEqual({
+    expect(parseNick('nick!ident@hostname', [])).toStrictEqual({
+      modes: [],
       nick: 'nick',
       ident: 'ident',
       hostname: 'hostname',
     });
+    expect(
+      parseNick('@+nick!ident@hostname', [
+        { symbol: '@', mode: 'o' },
+        { symbol: '+', mode: 'v' },
+      ])
+    ).toStrictEqual({
+      modes: ['o', 'v'],
+      nick: 'nick',
+      ident: 'ident',
+      hostname: 'hostname',
+    });
+  });
+
+  it('should test createMaxMode', () => {
+    const serverModes: UserMode[] = [
+      { symbol: '~', mode: 'q' },
+      { symbol: '&', mode: 'a' },
+      { symbol: '@', mode: 'o' },
+      { symbol: '%', mode: 'h' },
+      { symbol: '+', mode: 'v' },
+    ];
+
+    expect(createMaxMode(['q'], serverModes)).toEqual(256);
+    expect(createMaxMode(['a'], serverModes)).toEqual(255);
+    expect(createMaxMode(['o'], serverModes)).toEqual(254);
+    expect(createMaxMode(['h'], serverModes)).toEqual(253);
+    expect(createMaxMode(['v'], serverModes)).toEqual(252);
+    expect(createMaxMode(['xyz'], serverModes)).toEqual(-1);
+    expect(createMaxMode([], serverModes)).toEqual(-1);
+  });
+
+  it('should test parseUserModes', () => {
+    expect(parseUserModes('')).toStrictEqual([]);
+    expect(parseUserModes(undefined)).toStrictEqual([]);
+    expect(parseUserModes('(v)+')).toStrictEqual([{ symbol: '+', mode: 'v' }]);
+    expect(parseUserModes('(x)')).toStrictEqual([]); // incorrect
+    expect(parseUserModes('()*')).toStrictEqual([]); // incorrect
   });
 });

@@ -71,7 +71,25 @@ export const useUsersStore = create<UsersStore>()(
           }));
         },
         getUsersFromChannel: (channel: string): User[] => {
-          return get().users.filter((user: User) => user.channels.includes(channel));
+          return get()
+            .users.filter((user: User) => user.channels.includes(channel))
+            .sort((obj1: User, obj2: User) => {
+              if (obj1.maxMode !== obj2.maxMode) {
+                if (obj1.maxMode < obj2.maxMode) {
+                  return 1;
+                } else {
+                  return -1;
+                }
+              } else {
+                if (obj1.nick.toLowerCase() > obj2.nick.toLowerCase()) {
+                  return 1;
+                }
+                if (obj1.nick.toLowerCase() < obj2.nick.toLowerCase()) {
+                  return -1;
+                }
+              }
+              return 0;
+            });
         },
         setUserAvatar: (nick: string, avatarUrl: string): void => {
           set((state) => ({

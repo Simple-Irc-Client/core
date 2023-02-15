@@ -72,6 +72,7 @@ export interface UserMode {
 }
 
 export interface Nick {
+  modes: string[];
   nick: string;
   ident: string;
   hostname: string;

@@ -53,6 +53,17 @@ export const ircSendList = (): void => {
   sendMessage(command);
 };
 
+export const ircSendNamesXProto = (): void => {
+  const command = {
+    type: 'raw',
+    event: {
+      rawData: 'PROTOCTL NAMESX\n',
+    },
+  };
+
+  sendMessage(command);
+};
+
 export const ircJoinChannels = (channels: string[]): void => {
   const command = {
     type: 'raw',

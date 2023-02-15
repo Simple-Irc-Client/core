@@ -4,13 +4,16 @@ import { type ChannelListStore } from '../store/channelsList';
 import { type SettingsStore } from '../store/settings';
 import { type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory } from '../types';
-import { parseIrcRawMessage, parseNick } from './helpers';
-import { ircRequestAvatar, ircSendList } from './network';
+import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
+import { ircRequestAvatar, ircSendList, ircSendNamesXProto } from './network';
 
 export interface IrcEvent {
   type: string;
   line?: string;
 }
+
+const STATUS_CHANNEL = 'Status';
+const DEBUG_CHANNEL = 'Debug';
 
 export const kernel = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListStore: ChannelListStore, usersStore: UsersStore, event: IrcEvent): void => {
   switch (event.type) {
@@ -54,7 +57,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onRaw004();
       break;
     case '005':
-      onRaw005();
+      onRaw005(settingsStore, line);
       break;
     case '321':
       onRaw321(settingsStore, channelListStore);
@@ -72,7 +75,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onRaw333(channelsStore, line);
       break;
     case '353':
-      onRaw353(usersStore, line);
+      onRaw353(settingsStore, usersStore, line);
       break;
     case '761':
       onRaw761(usersStore, line);
@@ -133,8 +136,30 @@ const onRaw004 = (): void => {
 // :netsplit.pirc.pl 005 SIC-test EXTBAN=~,acfjmnpqrtCGIOST EXTJWT=1 INVEX KICKLEN=307 KNOCK MAP MAXCHANNELS=30 MAXLIST=b:200,e:200,I:200 MAXNICKLEN=30 METADATA=10 MINNICKLEN=0 MODES=12 :are supported by this server
 // :netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server
 // :netsplit.pirc.pl 005 SIC-test UHNAMES USERIP WALLCHOPS WATCH=128 WATCHOPTS=A WHOX :are supported by this server
-const onRaw005 = (): void => {
-  //
+const onRaw005 = (settingsStore: SettingsStore, line: string[]): void => {
+  for (let singleLine of line) {
+    singleLine = singleLine.replace(':are supported by this server', '');
+    const parameters = singleLine.split(' ');
+    for (const parameter of parameters) {
+      if (parameter.includes('=')) {
+        const [key, value] = parameter.split('=');
+        switch (key) {
+          // TODO
+          // case 'CHANTYPES':
+          // settingsStore.setChannelTypes(value);
+          // break;
+          case 'PREFIX':
+            settingsStore.setUserModes(parseUserModes(value));
+            break;
+        }
+      }
+
+      if (parameter === 'NAMESX') {
+        settingsStore.setNamesXProtoEnabled(true);
+        ircSendNamesXProto();
+      }
+    }
+  }
 };
 
 // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
@@ -188,7 +213,7 @@ const onRaw333 = (channelsStore: ChannelsStore, line: string[]): void => {
 };
 
 // :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
-const onRaw353 = (usersStore: UsersStore, line: string[]): void => {
+const onRaw353 = (settingsStore: SettingsStore, usersStore: UsersStore, line: string[]): void => {
   const currentUser = line.shift();
   const flags = line.shift();
   const channel = line.shift();
@@ -203,7 +228,8 @@ const onRaw353 = (usersStore: UsersStore, line: string[]): void => {
       user = user.substring(1);
     }
 
-    const { nick, ident, hostname } = parseNick(user);
+    const serverUserPrefixes = settingsStore.userModes;
+    const { modes, nick, ident, hostname } = parseNick(user, settingsStore.userModes);
 
     if (usersStore.getHasUser(nick)) {
       usersStore.setJoinUser(nick, channel);
@@ -213,8 +239,8 @@ const onRaw353 = (usersStore: UsersStore, line: string[]): void => {
         ident,
         hostname,
         avatarUrl: '',
-        modes: [], // TODO
-        maxMode: 0, // TODO
+        modes,
+        maxMode: createMaxMode(modes, serverUserPrefixes),
         channels: [channel],
       });
 
@@ -297,8 +323,10 @@ const onNick = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
 };
 // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
 const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+  const serverUserModes = settingsStore.userModes;
+
   const channel = line.shift();
-  const { nick, ident, hostname } = parseNick(sender);
+  const { nick, ident, hostname } = parseNick(sender, serverUserModes);
 
   console.log(`JOIN nick ${nick}`);
   console.log(`JOIN ident ${ident}`);
@@ -342,6 +370,8 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 
 // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
 const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+  const serverUserModes = settingsStore.userModes;
+
   const channel = line.shift();
   const reason = line.join(' ').substring(1);
 
@@ -350,7 +380,7 @@ const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
     return;
   }
 
-  const { nick } = parseNick(sender);
+  const { nick } = parseNick(sender, serverUserModes);
   if (nick === settingsStore.nick) {
     // TODO
   } else {
@@ -362,9 +392,11 @@ const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
 const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+  const serverUserModes = settingsStore.userModes;
+
   const target = line.shift();
   const message = line.join(' ').substring(1);
-  const { nick } = parseNick(sender);
+  const { nick } = parseNick(sender, serverUserModes);
 
   if (target === undefined) {
     console.warn('RAW PRIVMSG - warning - cannot read target');

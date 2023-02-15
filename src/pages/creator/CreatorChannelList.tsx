@@ -66,7 +66,7 @@ const CreatorChannelList = (): JSX.Element => {
         <div style={{ display: 'flex', height: 350, width: '100%' }}>
           <DataGrid
             loading={channels.length < 10}
-            rows={channels}
+            rows={channels.length > 10 ? channels : []}
             disableColumnMenu={true}
             columns={columns}
             pageSize={50}
