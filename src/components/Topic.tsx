@@ -10,7 +10,7 @@ const Topic = (): JSX.Element => {
 
   return (
     <Box sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex' }}>
-      <Input value={channelsStore.getTopic(currentChannelName)} disabled sx={{ marginBottom: '1rem', flexGrow: '1' }} />
+      <Input value={channelsStore.getTopic(currentChannelName)} disabled sx={{ marginBottom: '1rem', flexGrow: '1', minHeight: '48px' }} />
     </Box>
   );
 };
