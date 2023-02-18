@@ -1,6 +1,8 @@
 export const STATUS_CHANNEL = 'Status';
 export const DEBUG_CHANNEL = 'Debug';
 
+export const defaultQuitMessage = 'Simple Irc Client ( https://simpleircclient.com )';
+
 export const websocketPort = 8667;
 export const websocketHost = 'localhost';
 
