@@ -11,7 +11,12 @@ const CreatorServer = (): JSX.Element => {
   const setServer = useSettingsStore((state) => state.setServer);
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
-  const onClick = (): void => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    handleClick();
+  };
+
+  const handleClick = (): void => {
     if (server !== undefined) {
       setCreatorStep('loading');
     }
@@ -22,7 +27,7 @@ const CreatorServer = (): JSX.Element => {
       <Typography component="h1" variant="h5">
         {t('creator.server.title')}
       </Typography>
-      <Box component="form" sx={{ mt: 3 }}>
+      <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
         <Autocomplete
           disablePortal
           options={servers}
@@ -41,7 +46,7 @@ const CreatorServer = (): JSX.Element => {
           }}
           noOptionsText={t('creator.server.message.no.options')}
         />
-        <Button onClick={onClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
+        <Button onClick={handleClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
           {t('creator.server.button.next')}
         </Button>
       </Box>

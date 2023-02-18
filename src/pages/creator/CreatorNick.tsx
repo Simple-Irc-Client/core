@@ -10,7 +10,12 @@ const CreatorNick = (): JSX.Element => {
   const setNick = useSettingsStore((state) => state.setNick);
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
-  const onClick = (): void => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    handleClick();
+  };
+
+  const handleClick = (): void => {
     if (nick.length !== 0) {
       setCreatorStep('server');
     }
@@ -21,7 +26,7 @@ const CreatorNick = (): JSX.Element => {
       <Typography component="h1" variant="h5">
         {t('creator.nick.title')}
       </Typography>
-      <Box component="form" sx={{ mt: 3 }}>
+      <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
         <TextField
           required
           fullWidth
@@ -35,7 +40,7 @@ const CreatorNick = (): JSX.Element => {
           defaultValue={nick}
           tabIndex={1}
         />
-        <Button onClick={onClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
+        <Button onClick={handleClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
           {t('creator.nick.button.next')}
         </Button>
       </Box>

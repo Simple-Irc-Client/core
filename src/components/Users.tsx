@@ -4,6 +4,7 @@ import { useSettingsStore } from '../store/settings';
 import { ChannelCategory } from '../types';
 import { Avatar, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { usersColor, usersTitleColor } from '../config';
 
 const Users = (): JSX.Element => {
   const { t } = useTranslation();
@@ -17,10 +18,16 @@ const Users = (): JSX.Element => {
     <>
       {currentChannelCategory === ChannelCategory.channel && (
         <List
-          subheader={<ListSubheader component="div">{t('main.users.title')}</ListSubheader>}
+          subheader={
+            <ListSubheader component="div" sx={{ backgroundColor: usersTitleColor, marginBottom: '1rem' }}>
+              {t('main.users.title')}
+            </ListSubheader>
+          }
           dense={true}
           sx={{
             minWidth: '200px',
+            backgroundColor: usersColor,
+            borderLeft: '1px solid #eeeeee',
           }}
         >
           {usersStore.getUsersFromChannel(currentChannelName).map((user) => (

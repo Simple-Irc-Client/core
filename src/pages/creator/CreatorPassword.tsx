@@ -12,11 +12,16 @@ const CreatorPassword = (): JSX.Element => {
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
   const nick = useSettingsStore((state) => state.nick);
 
-  const onChange = (event: any): void => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    handleClick();
+  };
+
+  const handleChange = (event: any): void => {
     setPassword(event.target.value);
   };
 
-  const onClick = (): void => {
+  const handleClick = (): void => {
     if (lastNick === nick) {
       ircSendPassword(password);
     }
@@ -34,7 +39,7 @@ const CreatorPassword = (): JSX.Element => {
       <Typography component="h1" variant="h5">
         {t('creator.password.title')}
       </Typography>
-      <Box component="form" sx={{ mt: 3 }}>
+      <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
         {lastNick !== nick && (
           <>
             <Typography align="center" variant="subtitle1">
@@ -53,10 +58,10 @@ const CreatorPassword = (): JSX.Element => {
         )}
         {lastNick === nick && (
           <>
-            <TextField type="password" required fullWidth label={t('creator.password.password')} autoComplete="password" autoFocus onChange={onChange} />
+            <TextField type="password" required fullWidth label={t('creator.password.password')} autoComplete="password" autoFocus onChange={handleChange} />
           </>
         )}
-        <Button onClick={onClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={lastNick === nick && password === ''}>
+        <Button onClick={handleClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={lastNick === nick && password === ''}>
           {t('creator.password.button.next')}
         </Button>
       </Box>

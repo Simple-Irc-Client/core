@@ -22,11 +22,11 @@ const CreatorChannelList = (): JSX.Element => {
     updateSelectedChannel((channels) => [...channels, params.id.toString()]);
   };
 
-  const onSkip = (): void => {
+  const handleSkip = (): void => {
     setCreatorCompleted(true);
   };
 
-  const onJoin = (): void => {
+  const handleJoin = (): void => {
     ircJoinChannels(selectedChannels);
     setCreatorCompleted(true);
   };
@@ -57,7 +57,7 @@ const CreatorChannelList = (): JSX.Element => {
       <Typography component="h1" variant="h5">
         {t('creator.channels.title')}
       </Typography>
-      <Box component="form" sx={{ mt: 3, width: '100%' }}>
+      <Box component="div" sx={{ mt: 3, width: '100%' }}>
         {selectedChannels.map((channel) => (
           <Chip key={channel} label={channel} color="primary" variant="outlined" onDelete={handleDelete(channel)} />
         ))}
@@ -90,10 +90,10 @@ const CreatorChannelList = (): JSX.Element => {
         </div>
       </Box>
       <Stack spacing={2} direction="row" marginTop={2}>
-        <Button onClick={onSkip} tabIndex={1} variant="contained" size="large">
+        <Button onClick={handleSkip} tabIndex={1} variant="contained" size="large">
           {t('creator.channels.button.skip')}
         </Button>
-        <Button onClick={onJoin} tabIndex={2} variant="contained" size="large">
+        <Button onClick={handleJoin} tabIndex={2} variant="contained" size="large">
           {t('creator.channels.button.join')}
         </Button>
       </Stack>

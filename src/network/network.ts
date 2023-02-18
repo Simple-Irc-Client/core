@@ -86,6 +86,17 @@ export const ircRequestAvatar = (nick: string): void => {
   sendQueueMessage(command);
 };
 
+export const ircSendRawMessage = (data: string): void => {
+  const command = {
+    type: 'raw',
+    event: {
+      rawData: `${data}\n`,
+    },
+  };
+
+  sendMessage(command);
+};
+
 const sendMessage = (message: unknown): void => {
   sicSocket.emit('sic-client-event', message);
 };

@@ -5,6 +5,7 @@ import { useSettingsStore } from '../store/settings';
 import { type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useChannelsStore } from '../store/channels';
+import { channelsColor, channelsTitleColor } from '../config';
 
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
@@ -17,7 +18,14 @@ const Channels = (): JSX.Element => {
   };
 
   return (
-    <List subheader={<ListSubheader component="div">{t('main.channels.title')}</ListSubheader>} sx={{ minWidth: '200px' }}>
+    <List
+      subheader={
+        <ListSubheader component="div" sx={{ backgroundColor: channelsTitleColor, marginBottom: '1rem' }}>
+          {t('main.channels.title')}
+        </ListSubheader>
+      }
+      sx={{ minWidth: '200px', backgroundColor: channelsColor }}
+    >
       {openChannels.map((channel) => (
         <ListItemButton
           key={channel.name}
