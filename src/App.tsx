@@ -57,7 +57,7 @@ function App(): JSX.Element {
               <Stack
                 direction="column"
                 height="100vh"
-                sx={{ marginLeft: { xs: 0, md: channelsWidth }, minWidth: { xs: '100%', sm: `calc(100% - ${usersWidth})`, md: `calc(100% - ${channelsWidth} - ${usersWidth})` } }}
+                sx={{ marginLeft: { xs: 0, md: `${channelsWidth}px` }, minWidth: { xs: '100%', sm: `calc(100% - ${usersWidth + 1}px)`, md: `calc(100% - ${channelsWidth + usersWidth + 1}px)` } }}
               >
                 <Topic />
                 <Main />

@@ -4,7 +4,7 @@ import { useSettingsStore } from '../store/settings';
 import { ChannelCategory } from '../types';
 import { Avatar, Box, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { usersColor, usersTitleColor } from '../config';
+import { usersColor, usersTitleColor, usersWidth } from '../config';
 
 const Users = (): JSX.Element => {
   const { t } = useTranslation();
@@ -25,7 +25,7 @@ const Users = (): JSX.Element => {
           }
           dense={true}
           sx={{
-            minWidth: '200px',
+            minWidth: `${usersWidth}px`,
             backgroundColor: usersColor,
           }}
         >

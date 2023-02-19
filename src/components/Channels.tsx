@@ -22,7 +22,7 @@ const Channels = (): JSX.Element => {
       variant="permanent"
       sx={{
         display: { xs: 'none', md: 'block' },
-        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: channelsWidth, backgroundColor: { md: channelsColor } },
+        '& .MuiDrawer-paper': { boxSizing: 'border-box', backgroundColor: { md: channelsColor } },
       }}
       open
     >
@@ -32,7 +32,7 @@ const Channels = (): JSX.Element => {
             {t('main.channels.title')}
           </ListSubheader>
         }
-        sx={{ minWidth: channelsWidth, backgroundColor: { md: channelsColor } }}
+        sx={{ minWidth: `${channelsWidth}px`, backgroundColor: { md: channelsColor } }}
       >
         {openChannels.map((channel) => (
           <ListItemButton

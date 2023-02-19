@@ -45,6 +45,7 @@ const Toolbar = (): JSX.Element => {
         value={message}
         sx={{ flexGrow: '1', marginBottom: '10px' }}
         onChange={handleChange}
+        autoComplete="off"
       />
       <IconButton type="submit" aria-label="send">
         <SendIcon />
