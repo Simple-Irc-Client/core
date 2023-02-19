@@ -75,6 +75,17 @@ export const ircJoinChannels = (channels: string[]): void => {
   sendMessage(command);
 };
 
+export const ircPartChannel = (channel: string): void => {
+  const command = {
+    type: 'raw',
+    event: {
+      rawData: `PART ${channel}\n`,
+    },
+  };
+
+  sendMessage(command);
+};
+
 export const ircRequestMetadata = (nick: string, item: string): void => {
   const command = {
     type: 'raw',
