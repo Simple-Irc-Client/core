@@ -52,15 +52,15 @@ export const parseMessageToCommand = (channel: string, message: string): string 
         // TODO
         break;
       case 'kick':
-      // TODO
       case 'k':
+        // TODO
         break;
       case 'me':
         // TODO
         break;
       case 'part':
-      // TODO
       case 'p':
+        // TODO
         break;
       case 'topic':
         return topicCommand(channel, line);
