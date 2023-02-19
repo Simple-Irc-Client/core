@@ -92,7 +92,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onRaw766(usersStore);
       break;
     case 'NOTICE':
-      onNotice(settingsStore, tags, sender, command, line);
+      onNotice(settingsStore, channelsStore, tags, sender, command, line);
       break;
     case 'NICK':
       onNick(settingsStore, usersStore, tags, sender, command, line);
@@ -101,7 +101,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onJoin(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'PART':
-      onPart(settingsStore, usersStore, tags, sender, command, line);
+      onPart(settingsStore, usersStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'PRIVMSG':
       onPrivmsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
@@ -301,17 +301,33 @@ const onRaw766 = (usersStore: UsersStore): void => {
 
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
 // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
-const onNotice = (settingsStore: SettingsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
 
   const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST, please ignore the fake output above.*/;
 
   const target = line.shift();
 
+  if (target === undefined) {
+    console.warn('RAW NOTICE - warning - cannot read target');
+    return;
+  }
+
   let message = line.join(' ');
   if (message.at(0) === ':') {
     message = message.substring(1);
   }
+
+  const newMessage = {
+    message,
+    nick: sender,
+    target,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.notice,
+  };
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, newMessage);
+  channelsStore.setAddMessage(settingsStore.currentChannelName, newMessage);
 
   if (sender.startsWith('NickServ!NickServ@') && target === settingsStore.nick && passwordRequired.test(message)) {
     settingsStore.setIsPasswordRequired(true);
@@ -390,7 +406,7 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 };
 
 // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
-const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const serverUserModes = settingsStore.userModes;
 
   const channel = line.shift();
@@ -403,7 +419,10 @@ const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
 
   const { nick } = parseNick(sender, serverUserModes);
   if (nick === settingsStore.nick) {
-    // TODO
+    usersStore.setRemoveUser(nick, channel);
+    channelsStore.setRemoveChannel(channel);
+
+    // TODO select new channel
   } else {
     // TODO message
     usersStore.setRemoveUser(nick, channel);
