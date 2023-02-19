@@ -32,4 +32,8 @@ describe('command tests', () => {
   it('test who command', () => {
     expect(parseMessageToCommand('#channel', '/who user1')).toStrictEqual('WHO user1');
   });
+
+  it('test topic command', () => {
+    expect(parseMessageToCommand('#channel', '/topic new topic')).toStrictEqual('TOPIC #channel new topic');
+  });
 });

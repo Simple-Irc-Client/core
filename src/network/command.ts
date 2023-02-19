@@ -10,10 +10,12 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   switch (line?.[0]?.toLowerCase()) {
     case 'amsg':
     case 'all':
+      // TODO amsg
       break;
     case 'away':
       return awayCommand(line);
     case 'help':
+      // TODO help
       break;
     case 'join':
     case 'j':
@@ -36,25 +38,32 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   if (channel !== STATUS_CHANNEL) {
     switch (line?.[0]?.toLowerCase()) {
       case 'ban':
+        // TODO
         break;
       case 'cycle':
       case 'hop':
+        // TODO
         break;
       case 'invite':
+        // TODO
         break;
       case 'kb':
       case 'kban':
+        // TODO
         break;
       case 'kick':
+      // TODO
       case 'k':
         break;
       case 'me':
+        // TODO
         break;
       case 'part':
+      // TODO
       case 'p':
         break;
       case 'topic':
-        break;
+        return topicCommand(channel, line);
     }
   }
 
@@ -93,4 +102,9 @@ const whoCommand = (line: string[]): string => {
   line.shift();
 
   return `WHO ${line.join(' ')}`;
+};
+
+const topicCommand = (channel: string, line: string[]): string => {
+  line.shift();
+  return `TOPIC ${channel} ${line.join(' ')}`;
 };
