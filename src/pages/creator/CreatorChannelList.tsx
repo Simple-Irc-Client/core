@@ -93,7 +93,7 @@ const CreatorChannelList = (): JSX.Element => {
         <Button onClick={handleSkip} tabIndex={1} variant="contained" size="large">
           {t('creator.channels.button.skip')}
         </Button>
-        <Button onClick={handleJoin} tabIndex={2} variant="contained" size="large">
+        <Button onClick={handleJoin} tabIndex={2} variant="contained" size="large" disabled={selectedChannels.length === 0}>
           {t('creator.channels.button.join')}
         </Button>
       </Stack>

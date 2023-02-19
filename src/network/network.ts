@@ -75,11 +75,11 @@ export const ircJoinChannels = (channels: string[]): void => {
   sendMessage(command);
 };
 
-export const ircRequestAvatar = (nick: string): void => {
+export const ircRequestMetadata = (nick: string, item: string): void => {
   const command = {
     type: 'raw',
     event: {
-      rawData: `METADATA ${nick} GET Avatar\n`,
+      rawData: `METADATA ${nick} GET ${item}\n`,
     },
   };
 

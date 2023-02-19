@@ -14,6 +14,7 @@ export interface UsersStore {
   setJoinUser: (nick: string, channel: string) => void;
   getUsersFromChannel: (channel: string) => User[];
   setUserAvatar: (nick: string, avatarUrl: string) => void;
+  setUserColor: (nick: string, color: string) => void;
 }
 
 export const useUsersStore = create<UsersStore>()(
@@ -91,11 +92,21 @@ export const useUsersStore = create<UsersStore>()(
               return 0;
             });
         },
-        setUserAvatar: (nick: string, avatarUrl: string): void => {
+        setUserAvatar: (nick: string, avatar: string): void => {
           set((state) => ({
             users: state.users.map((user: User) => {
               if (user.nick === nick) {
-                user.avatarUrl = avatarUrl;
+                user.avatar = avatar;
+              }
+              return user;
+            }),
+          }));
+        },
+        setUserColor: (nick: string, color: string): void => {
+          set((state) => ({
+            users: state.users.map((user: User) => {
+              if (user.nick === nick) {
+                user.color = color;
               }
               return user;
             }),

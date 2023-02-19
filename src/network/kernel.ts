@@ -5,7 +5,7 @@ import { type SettingsStore } from '../store/settings';
 import { type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
-import { ircRequestAvatar, ircSendList, ircSendNamesXProto } from './network';
+import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 
 export interface IrcEvent {
   type: string;
@@ -42,6 +42,14 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
 
 const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListStore: ChannelListStore, usersStore: UsersStore, event: string): void => {
   const { tags, sender, command, line } = parseIrcRawMessage(event);
+
+  channelsStore.setAddMessage(DEBUG_CHANNEL, {
+    message: `<- ${event.trim()}`,
+    nick: DEBUG_CHANNEL,
+    target: DEBUG_CHANNEL,
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+  });
 
   switch (command) {
     case '001':
@@ -110,6 +118,23 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
   // :legowisko.pirc.pl 761 dsfsdfdsfdsfsdfdsfdsf Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
   // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
   // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
+
+  // Ban => 'b',
+  // Exception => 'e',
+  // Limit => 'l',
+  // InviteOnly => 'i',
+  // InviteException => 'I',
+  // Key => 'k',
+  // Moderated => 'm',
+  // RegisteredOnly => 'r',
+  // Secret => 's',
+  // ProtectedTopic => 't',
+  // NoExternalMessages => 'n',
+  // Founder => 'q',
+  // Admin => 'a',
+  // Oper => 'o',
+  // Halfop => 'h',
+  // Voice => 'v',
 };
 
 // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -238,13 +263,12 @@ const onRaw353 = (settingsStore: SettingsStore, usersStore: UsersStore, line: st
         nick,
         ident,
         hostname,
-        avatarUrl: '',
         modes,
         maxMode: createMaxMode(modes, serverUserPrefixes),
         channels: [channel],
       });
 
-      ircRequestAvatar(nick);
+      ircRequestMetadata(nick, 'Avatar');
     }
   }
 };
@@ -253,7 +277,7 @@ const onRaw353 = (settingsStore: SettingsStore, usersStore: UsersStore, line: st
 const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
   const currentUser = line.shift();
   const nick = line.shift();
-  const item = line.shift();
+  const item = line.shift()?.toLowerCase();
   const flags = line.shift();
   const value = line.shift()?.substring(1);
 
@@ -262,8 +286,11 @@ const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
     return;
   }
 
-  if (item === 'Avatar' && value !== undefined) {
+  if (item === 'avatar' && value !== undefined) {
     usersStore.setUserAvatar(nick, value);
+  }
+  if (item === 'color' && value !== undefined) {
+    usersStore.setUserColor(nick, value);
   }
 };
 
@@ -328,11 +355,6 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
   const channel = line.shift();
   const { nick, ident, hostname } = parseNick(sender, serverUserModes);
 
-  console.log(`JOIN nick ${nick}`);
-  console.log(`JOIN ident ${ident}`);
-  console.log(`JOIN hostname ${hostname}`);
-  console.log(`JOIN settingsStore.nick ${settingsStore.nick}`);
-
   if (channel === undefined) {
     console.warn('RAW JOIN - warning - cannot read channel');
     return;
@@ -357,13 +379,12 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
         nick,
         ident,
         hostname,
-        avatarUrl: '',
         modes: [],
         maxMode: 0,
         channels: [channel],
       });
 
-      ircRequestAvatar(nick);
+      ircRequestMetadata(nick, 'Avatar');
     }
   }
 };

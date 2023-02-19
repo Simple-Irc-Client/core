@@ -4,6 +4,19 @@ import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
 import { type Message } from '../types';
 import { format } from 'date-fns';
+import { DEBUG_CHANNEL } from '../config';
+
+const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
+  <ListItem>
+    <ListItemText>
+      <code>
+        {format(new Date(message.time), 'HH:mm:ss')}
+        &nbsp;
+        {message.message}
+      </code>
+    </ListItemText>
+  </ListItem>
+);
 
 const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
@@ -22,7 +35,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
     <ListItemAvatar>
       <Avatar
         alt={message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
-        src={message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatarUrl) : undefined}
+        src={message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined}
       >
         {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : ''}
       </Avatar>
@@ -32,7 +45,11 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
       primary={
         <React.Fragment>
           <Typography component="div" sx={{ display: 'flex' }}>
-            <Typography component="div" variant="body2" sx={{ minWidth: 'fit-content' }}>
+            <Typography
+              component="div"
+              variant="body2"
+              sx={{ minWidth: 'fit-content', color: message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit' }}
+            >
               {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
             </Typography>
             <Box sx={{ flexGrow: 1, width: '100%' }} />
@@ -75,8 +92,13 @@ const Main = (): JSX.Element => {
     <Box sx={{ height: '100%', overflowY: 'scroll' }}>
       {messages.map((message, index) => (
         <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
-          {theme === 'classic' && <MainViewClassic message={message} />}
-          {theme === 'modern' && <MainViewModern message={message} />}
+          {currentChannelName === DEBUG_CHANNEL && <MainViewDebug message={message} />}
+          {currentChannelName !== DEBUG_CHANNEL && (
+            <>
+              {theme === 'classic' && <MainViewClassic message={message} />}
+              {theme === 'modern' && <MainViewModern message={message} />}
+            </>
+          )}
         </List>
       ))}
       <AlwaysScrollToBottom />

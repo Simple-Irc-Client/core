@@ -60,7 +60,8 @@ export interface User {
   nick: string;
   ident: string;
   hostname: string;
-  avatarUrl: string;
+  avatar?: string; // ircv3
+  color?: string; // ircv3
   modes: string[];
   maxMode: number;
   channels: string[];

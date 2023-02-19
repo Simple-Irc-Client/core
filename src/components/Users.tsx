@@ -16,7 +16,7 @@ const Users = (): JSX.Element => {
 
   return (
     <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee' }}>
-      {currentChannelCategory === ChannelCategory.channel && (
+      {[ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) && (
         <List
           subheader={
             <ListSubheader component="div" sx={{ backgroundColor: usersTitleColor, marginBottom: '1rem' }}>
@@ -32,9 +32,9 @@ const Users = (): JSX.Element => {
           {usersStore.getUsersFromChannel(currentChannelName).map((user) => (
             <ListItemButton key={user.nick}>
               <ListItemAvatar>
-                <Avatar alt={user.nick} src={user.avatarUrl} />
+                <Avatar alt={user.nick} src={user.avatar} />
               </ListItemAvatar>
-              <ListItemText primary={user.nick} />
+              <ListItemText primary={user.nick} sx={{ color: user.color ?? 'inherit' }} />
             </ListItemButton>
           ))}
         </List>

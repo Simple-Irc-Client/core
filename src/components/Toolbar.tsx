@@ -6,6 +6,7 @@ import { ChannelCategory } from '../types';
 import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
 import { parseMessageToCommand } from '../network/command';
+import { DEBUG_CHANNEL } from '../config';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();
@@ -38,18 +39,22 @@ const Toolbar = (): JSX.Element => {
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex', borderTop: '1px solid #eeeeee' }}>
-      <TextField
-        label={currentChannelCategory === ChannelCategory.priv ? `${t('main.toolbar.write.person')} ${currentChannelName}` : `${t('main.toolbar.write.channel')} ${currentChannelName}`}
-        variant="standard"
-        autoFocus
-        value={message}
-        sx={{ flexGrow: '1', marginBottom: '10px' }}
-        onChange={handleChange}
-        autoComplete="off"
-      />
-      <IconButton type="submit" aria-label="send">
-        <SendIcon />
-      </IconButton>
+      {currentChannelName !== DEBUG_CHANNEL && (
+        <>
+          <TextField
+            label={currentChannelCategory === ChannelCategory.priv ? `${t('main.toolbar.write.person')} ${currentChannelName}` : `${t('main.toolbar.write.channel')} ${currentChannelName}`}
+            variant="standard"
+            autoFocus
+            value={message}
+            sx={{ flexGrow: '1', marginBottom: '10px' }}
+            onChange={handleChange}
+            autoComplete="off"
+          />
+          <IconButton type="submit" aria-label="send">
+            <SendIcon />
+          </IconButton>
+        </>
+      )}
     </Box>
   );
 };
