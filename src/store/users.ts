@@ -13,7 +13,7 @@ export interface UsersStore {
   getHasUser: (nick: string) => boolean;
   setJoinUser: (nick: string, channel: string) => void;
   getUsersFromChannel: (channel: string) => User[];
-  setUserAvatar: (nick: string, avatarUrl: string) => void;
+  setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
 }
 
