@@ -23,6 +23,7 @@ import '@fontsource/roboto/700.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Stack } from '@mui/material';
+import { channelsWidth, usersWidth } from './config';
 
 const theme = createTheme();
 
@@ -53,7 +54,11 @@ function App(): JSX.Element {
           <Container sx={{ minWidth: '100%', height: '100vh', padding: '0 !important' }}>
             <Stack direction="row">
               <Channels />
-              <Stack direction="column" minWidth="calc(100% - 400px)" height="100vh">
+              <Stack
+                direction="column"
+                height="100vh"
+                sx={{ marginLeft: { xs: 0, md: channelsWidth }, minWidth: { xs: '100%', sm: `calc(100% - ${usersWidth})`, md: `calc(100% - ${channelsWidth} - ${usersWidth})` } }}
+              >
                 <Topic />
                 <Main />
                 <Toolbar />

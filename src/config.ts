@@ -14,3 +14,6 @@ export const channelsTitleColor = '#e0e0e0';
 export const channelsColor = '#eeeeee';
 export const usersTitleColor = 'white';
 export const usersColor = 'white';
+
+export const channelsWidth = '200px';
+export const usersWidth = '200px';
