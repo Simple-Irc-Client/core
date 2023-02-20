@@ -86,11 +86,22 @@ export const ircPartChannel = (channel: string): void => {
   sendMessage(command);
 };
 
-export const ircRequestMetadata = (nick: string, item: string): void => {
+export const ircRequestMetadataItem = (nick: string, item: string): void => {
   const command = {
     type: 'raw',
     event: {
       rawData: `METADATA ${nick} GET ${item}\n`,
+    },
+  };
+
+  sendQueueMessage(command);
+};
+
+export const ircRequestMetadata = (nick: string): void => {
+  const command = {
+    type: 'raw',
+    event: {
+      rawData: `METADATA ${nick} LIST\n`,
     },
   };
 

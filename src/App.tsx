@@ -35,7 +35,6 @@ function App(): JSX.Element {
 
   useEffect(() => {
     const onIrcEvent = (data: IrcEvent): void => {
-      console.log(`irc event: ${JSON.stringify(data)}`);
       kernel(settingsStore, channelsStore, channelListStore, usersStore, data);
     };
 

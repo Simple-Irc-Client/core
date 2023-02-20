@@ -106,6 +106,9 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
     case '353':
       onRaw353(settingsStore, usersStore, line);
       break;
+    case '366':
+      onRaw366();
+      break;
     case '372':
       onRaw372(channelsStore, tags, line);
       break;
@@ -118,8 +121,11 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
     case '761':
       onRaw761(usersStore, line);
       break;
+    case '762':
+      onRaw762();
+      break;
     case '766':
-      onRaw766(usersStore);
+      onRaw766();
       break;
     case 'NOTICE':
       onNotice(settingsStore, channelsStore, tags, sender, command, line);
@@ -137,7 +143,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onPrivmsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     default:
-      // console.log(`unknown raw: ${line.join(" ")}`);
+      console.log(`unknown irc event: ${JSON.stringify(event)}`);
       break;
   }
 
@@ -423,9 +429,14 @@ const onRaw353 = (settingsStore: SettingsStore, usersStore: UsersStore, line: st
         channels: [channel],
       });
 
-      ircRequestMetadata(nick, 'Avatar');
+      ircRequestMetadata(nick);
     }
   }
+};
+
+// :bzyk.pirc.pl 366 SIC-test #sic :End of /NAMES list.
+const onRaw366 = (): void => {
+  //
 };
 
 // :saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27
@@ -491,8 +502,13 @@ const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
   }
 };
 
+// :chmurka.pirc.pl 762 SIC-test :end of metadata
+const onRaw762 = (): void => {
+  //
+};
+
 // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
-const onRaw766 = (usersStore: UsersStore): void => {
+const onRaw766 = (): void => {
   //
 };
 
@@ -560,17 +576,18 @@ const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
   if (sender === settingsStore.nick) {
     channelsStore.setAddMessage(settingsStore.currentChannelName, {
       message: i18next.t('kernel.nick').replace('{{from}}', sender).replace('{{to}}', newNick),
-      nick: sender,
       target: settingsStore.currentChannelName,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
     });
 
     settingsStore.setNick(newNick);
+    usersStore.setRenameUser(sender, newNick);
   } else {
     usersStore.setRenameUser(sender, newNick);
   }
 };
+
 // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
 const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const channel = line.shift();
@@ -609,7 +626,7 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
         channels: [channel],
       });
 
-      ircRequestMetadata(nick, 'Avatar');
+      ircRequestMetadata(nick);
     }
   }
 };
@@ -626,7 +643,10 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 
   const { nick } = parseNick(sender, settingsStore.userModes);
   if (nick === settingsStore.nick) {
-    usersStore.setRemoveUser(nick, channel);
+    const usersFromChannel = usersStore.getUsersFromChannel(channel);
+    for (const userFromChannel of usersFromChannel) {
+      usersStore.setRemoveUser(userFromChannel.nick, channel);
+    }
     channelsStore.setRemoveChannel(channel);
 
     // TODO select new channel
