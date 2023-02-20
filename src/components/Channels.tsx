@@ -19,6 +19,7 @@ const Channels = (): JSX.Element => {
 
   const openChannels: Channel[] = useChannelsStore((state) => state.openChannels);
   const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
+  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
 
@@ -84,6 +85,7 @@ const Channels = (): JSX.Element => {
               onClick={() => {
                 handleListItemClick(channel);
               }}
+              selected={currentChannelName === channel.name}
             >
               <Badge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" sx={{ top: '50%' }}>
                 <ListItemIcon sx={{ minWidth: '30px' }}>
