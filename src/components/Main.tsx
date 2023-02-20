@@ -4,7 +4,7 @@ import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
 import { type Message } from '../types';
 import { format } from 'date-fns';
-import { DEBUG_CHANNEL } from '../config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
@@ -12,6 +12,7 @@ const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
       <code>
         {format(new Date(message.time), 'HH:mm:ss')}
         &nbsp;
+        {message?.nick !== undefined && <>&lt;{typeof message.nick === 'string' ? message.nick : message.nick.nick}&gt;&nbsp;</>}
         {message.message}
       </code>
     </ListItemText>
@@ -92,8 +93,8 @@ const Main = (): JSX.Element => {
     <Box sx={{ height: '100%', overflowY: 'scroll' }}>
       {messages.map((message, index) => (
         <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
-          {currentChannelName === DEBUG_CHANNEL && <MainViewDebug message={message} />}
-          {currentChannelName !== DEBUG_CHANNEL && (
+          {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
+          {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
             <>
               {theme === 'classic' && <MainViewClassic message={message} />}
               {theme === 'modern' && <MainViewModern message={message} />}

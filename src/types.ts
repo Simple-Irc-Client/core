@@ -18,7 +18,7 @@ export interface ChannelList {
 
 export interface Message {
   message: string;
-  nick: User | string | undefined;
+  nick?: User | string;
   target: string;
   time: string;
   category: MessageCategory;

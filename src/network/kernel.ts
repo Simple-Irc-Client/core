@@ -6,6 +6,7 @@ import { type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
+import i18next from '../i18n';
 
 export interface IrcEvent {
   type: string;
@@ -45,7 +46,6 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
 
   channelsStore.setAddMessage(DEBUG_CHANNEL, {
     message: `<- ${event.trim()}`,
-    nick: DEBUG_CHANNEL,
     target: DEBUG_CHANNEL,
     time: new Date().toISOString(),
     category: MessageCategory.info,
@@ -53,19 +53,40 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
 
   switch (command) {
     case '001':
-      onRaw001();
+      onRaw001(channelsStore, tags, line);
       break;
     case '002':
-      onRaw002();
+      onRaw002(channelsStore, tags, line);
       break;
     case '003':
-      onRaw003();
+      onRaw003(channelsStore, tags, line);
       break;
     case '004':
       onRaw004();
       break;
     case '005':
       onRaw005(settingsStore, line);
+      break;
+    case '251':
+      onRaw251(channelsStore, tags, line);
+      break;
+    case '252':
+      onRaw252(channelsStore, tags, line);
+      break;
+    case '253':
+      onRaw253(channelsStore, tags, line);
+      break;
+    case '254':
+      onRaw254(channelsStore, tags, line);
+      break;
+    case '255':
+      onRaw255(channelsStore, tags, line);
+      break;
+    case '265':
+      onRaw265(channelsStore, tags, line);
+      break;
+    case '266':
+      onRaw266(channelsStore, tags, line);
       break;
     case '321':
       onRaw321(settingsStore, channelListStore);
@@ -85,6 +106,15 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
     case '353':
       onRaw353(settingsStore, usersStore, line);
       break;
+    case '372':
+      onRaw372(channelsStore, tags, line);
+      break;
+    case '375':
+      onRaw375(channelsStore, tags, line);
+      break;
+    case '376':
+      onRaw376(channelsStore, tags, line);
+      break;
     case '761':
       onRaw761(usersStore, line);
       break;
@@ -95,13 +125,13 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onNotice(settingsStore, channelsStore, tags, sender, command, line);
       break;
     case 'NICK':
-      onNick(settingsStore, usersStore, tags, sender, command, line);
+      onNick(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'JOIN':
       onJoin(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'PART':
-      onPart(settingsStore, usersStore, channelsStore, usersStore, tags, sender, command, line);
+      onPart(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'PRIVMSG':
       onPrivmsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
@@ -138,18 +168,45 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
 };
 
 // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
-const onRaw001 = (): void => {
-  //
+const onRaw001 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
 };
 
 // :netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3
-const onRaw002 = (): void => {
-  //
+const onRaw002 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
 };
 
 // :netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC
-const onRaw003 = (): void => {
-  //
+const onRaw003 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
 };
 
 // :netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ
@@ -185,6 +242,104 @@ const onRaw005 = (settingsStore: SettingsStore, line: string[]): void => {
       }
     }
   }
+};
+
+// :saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers
+const onRaw251 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 252 SIC-test 27 :operator(s) online
+const onRaw252 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 253 SIC-test -14 :unknown connection(s)
+const onRaw253 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 254 SIC-test 185 :channels formed
+const onRaw254 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 255 SIC-test :I have 42 clients and 0 servers
+const onRaw255 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62
+const onRaw265 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721
+const onRaw266 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
 };
 
 // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
@@ -273,6 +428,48 @@ const onRaw353 = (settingsStore: SettingsStore, usersStore: UsersStore, line: st
   }
 };
 
+// :saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27
+const onRaw372 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 375 SIC-test :- saturn.pirc.pl Message of the Day -
+const onRaw375 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
+// :saturn.pirc.pl 376 SIC-test :End of /MOTD command.
+const onRaw376 = (channelsStore: ChannelsStore, tags: Record<string, string>, line: string[]): void => {
+  const nick = line.shift();
+
+  const message = line.join(' ').substring(1);
+
+  channelsStore.setAddMessage(STATUS_CHANNEL, {
+    message,
+    target: STATUS_CHANNEL,
+    time: tags?.time ?? new Date().toISOString(),
+    category: MessageCategory.motd,
+  });
+};
+
 // :insomnia.pirc.pl 761 SIC-test Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
 const onRaw761 = (usersStore: UsersStore, line: string[]): void => {
   const currentUser = line.shift();
@@ -299,6 +496,7 @@ const onRaw766 = (usersStore: UsersStore): void => {
   //
 };
 
+// :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
 // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
 const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
@@ -318,9 +516,11 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
     message = message.substring(1);
   }
 
+  const { nick } = parseNick(sender, settingsStore.userModes);
+
   const newMessage = {
     message,
-    nick: sender,
+    nick: nick.length !== 0 ? nick : undefined,
     target,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.notice,
@@ -329,7 +529,7 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
   channelsStore.setAddMessage(STATUS_CHANNEL, newMessage);
   channelsStore.setAddMessage(settingsStore.currentChannelName, newMessage);
 
-  if (sender.startsWith('NickServ!NickServ@') && target === settingsStore.nick && passwordRequired.test(message)) {
+  if (nick === 'NickServ' && target === settingsStore.nick && passwordRequired.test(message)) {
     settingsStore.setIsPasswordRequired(true);
     settingsStore.setCreatorStep('password');
   }
@@ -349,7 +549,7 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
 };
 
 // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
-const onNick = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const newNick = line.shift()?.substring(1);
 
   if (newNick === undefined) {
@@ -358,7 +558,14 @@ const onNick = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
   }
 
   if (sender === settingsStore.nick) {
-    // TODO message
+    channelsStore.setAddMessage(settingsStore.currentChannelName, {
+      message: i18next.t('kernel.nick').replace('{{from}}', sender).replace('{{to}}', newNick),
+      nick: sender,
+      target: settingsStore.currentChannelName,
+      time: tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+    });
+
     settingsStore.setNick(newNick);
   } else {
     usersStore.setRenameUser(sender, newNick);
@@ -366,10 +573,8 @@ const onNick = (settingsStore: SettingsStore, usersStore: UsersStore, tags: Reco
 };
 // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
 const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
-  const serverUserModes = settingsStore.userModes;
-
   const channel = line.shift();
-  const { nick, ident, hostname } = parseNick(sender, serverUserModes);
+  const { nick, ident, hostname } = parseNick(sender, settingsStore.userModes);
 
   if (channel === undefined) {
     console.warn('RAW JOIN - warning - cannot read channel');
@@ -380,13 +585,17 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
     channelsStore.setAddChannel(channel, ChannelCategory.channel);
     settingsStore.setCurrentChannelName(channel, ChannelCategory.channel);
   } else {
-    // TODO message joined
+    channelsStore.setAddMessage(settingsStore.currentChannelName, {
+      message: i18next.t('kernel.join').replace('{{nick}}', nick),
+      nick: undefined,
+      target: settingsStore.currentChannelName,
+      time: tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.join,
+    });
 
     if (channelsStore.getChannel(channel) === undefined) {
       channelsStore.setAddChannel(channel, ChannelCategory.channel);
     }
-
-    console.log(`JOIN usersStore.getHasUser ${usersStore.getHasUser(nick) ? 'true' : 'false'}`);
 
     if (usersStore.getHasUser(nick)) {
       usersStore.setJoinUser(nick, channel);
@@ -406,25 +615,32 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 };
 
 // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
-const onPart = (settingsStore: SettingsStore, usersStore: UsersStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
-  const serverUserModes = settingsStore.userModes;
-
+const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const channel = line.shift();
-  const reason = line.join(' ').substring(1);
+  const reason = line.join(' ').substring(1) ?? '';
 
   if (channel === undefined) {
     console.warn('RAW PART - warning - cannot read channel');
     return;
   }
 
-  const { nick } = parseNick(sender, serverUserModes);
+  const { nick } = parseNick(sender, settingsStore.userModes);
   if (nick === settingsStore.nick) {
     usersStore.setRemoveUser(nick, channel);
     channelsStore.setRemoveChannel(channel);
 
     // TODO select new channel
   } else {
-    // TODO message
+    channelsStore.setAddMessage(settingsStore.currentChannelName, {
+      message: i18next
+        .t('kernel.part')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      target: settingsStore.currentChannelName,
+      time: tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.part,
+    });
+
     usersStore.setRemoveUser(nick, channel);
   }
 };
@@ -456,7 +672,7 @@ const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
       message,
       nick: user ?? nick,
       target,
-      time: tags.time ?? new Date().toISOString(),
+      time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.default,
     });
   }

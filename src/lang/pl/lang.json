@@ -34,5 +34,10 @@
     "main.toolbar.write.channel": "Napisz na kanale ",
     "main.toolbar.write.person": "Napisz do ",
     "main.channels.title": "Kanały:",
-    "main.users.title": "Użytkownicy:"
+    "main.users.title": "Użytkownicy:",
+    "kernel.nick": "{{from}} zmienił nick na {{to}}",
+    "kernel.join": "{{nick}} wszedł do kanału",
+    "kernel.part": "{{nick}} opuścił kanal {{reason}}",
+    "kernel.quit": "{{nick}} opuścił serwer {{reason}}",
+    "kernel.topic": "{{nick}} zmienił temat kanału na: {{topic}}"
 }
