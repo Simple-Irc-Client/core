@@ -96,7 +96,7 @@ export const useSettingsStore = create<SettingsStore>()(
         setUserModes: (modes: UserMode[]): void => {
           set(() => ({ userModes: modes }));
         },
-        setListRequestRemainingSeconds: (seconds: boolean): void => {
+        setListRequestRemainingSeconds: (seconds: number): void => {
           set(() => ({ listRequestRemainingSeconds: seconds }));
         },
       }),
