@@ -12,7 +12,7 @@ import { useUsersStore } from './store/users';
 
 import './i18n';
 
-import { sicSocket } from './network/network';
+import { ircSendList, sicSocket } from './network/network';
 import { type IrcEvent, kernel } from './network/kernel';
 
 import '@fontsource/roboto/300.css';
@@ -43,6 +43,14 @@ function App(): JSX.Element {
       sicSocket.off('sic-irc-event', onIrcEvent);
     };
   }, [sicSocket, settingsStore, channelsStore, channelListStore, usersStore]);
+
+  useEffect(() => {
+    if (settingsStore.listRequestRemainingSeconds > -1) {
+      setTimeout(() => {
+        ircSendList();
+      }, (settingsStore.listRequestRemainingSeconds + 1) * 1000);
+    }
+  }, [settingsStore.listRequestRemainingSeconds]);
 
   return (
     <ThemeProvider theme={theme}>

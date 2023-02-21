@@ -556,10 +556,7 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
       const currentTime = Math.floor(Date.now() / 1000);
       const loggedTime = currentTime - settingsStore.connectedTime;
       const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
-
-      setTimeout(() => {
-        ircSendList();
-      }, (remaining + 1) * 1000);
+      settingsStore.setListRequestRemainingSeconds(remaining);
     }
   }
 };

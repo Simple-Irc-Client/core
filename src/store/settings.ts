@@ -19,6 +19,7 @@ export interface SettingsStore {
   theme: 'modern' | 'classic';
   namesXProtoEnabled: boolean;
   userModes: UserMode[];
+  listRequestRemainingSeconds: number;
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -32,6 +33,7 @@ export interface SettingsStore {
   setTheme: (theme: 'modern' | 'classic') => void;
   setNamesXProtoEnabled: (status: boolean) => void;
   setUserModes: (modes: UserMode[]) => void;
+  setListRequestRemainingSeconds: (seconds: number) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -51,6 +53,7 @@ export const useSettingsStore = create<SettingsStore>()(
         theme: 'modern',
         namesXProtoEnabled: false,
         userModes: [],
+        listRequestRemainingSeconds: -1,
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -92,6 +95,9 @@ export const useSettingsStore = create<SettingsStore>()(
         },
         setUserModes: (modes: UserMode[]): void => {
           set(() => ({ userModes: modes }));
+        },
+        setListRequestRemainingSeconds: (seconds: boolean): void => {
+          set(() => ({ listRequestRemainingSeconds: seconds }));
         },
       }),
       {
