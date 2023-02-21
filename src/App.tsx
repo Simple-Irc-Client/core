@@ -46,9 +46,12 @@ function App(): JSX.Element {
 
   useEffect(() => {
     if (settingsStore.listRequestRemainingSeconds > -1) {
-      setTimeout(() => {
+      const listRequestTimeout = setTimeout(() => {
         ircSendList();
       }, (settingsStore.listRequestRemainingSeconds + 1) * 1000);
+      return () => {
+        clearTimeout(listRequestTimeout);
+      };
     }
   }, [settingsStore.listRequestRemainingSeconds]);
 
