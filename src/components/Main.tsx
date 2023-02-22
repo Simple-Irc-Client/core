@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material';
 import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
-import { type Message } from '../types';
+import { MessageCategory, type Message } from '../types';
 import { format } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config';
 
@@ -32,43 +32,56 @@ const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
 );
 
 const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
-  <ListItem alignItems="flex-start">
-    <ListItemAvatar>
-      <Avatar
-        alt={message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
-        src={message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined}
-      >
-        {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : ''}
-      </Avatar>
-    </ListItemAvatar>
-    <ListItemText
-      disableTypography={true}
-      primary={
-        <React.Fragment>
-          <Typography component="div" sx={{ display: 'flex' }}>
-            <Typography
-              component="div"
-              variant="body2"
-              sx={{ minWidth: 'fit-content', color: message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit' }}
+  <>
+    {message.category !== MessageCategory.default && (
+      <>
+        <ListItem>
+          <ListItemText>{message.message}</ListItemText>
+        </ListItem>
+      </>
+    )}
+    {message.category === MessageCategory.default && (
+      <>
+        <ListItem alignItems="flex-start">
+          <ListItemAvatar>
+            <Avatar
+              alt={message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
+              src={message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined}
             >
-              {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
-            </Typography>
-            <Box sx={{ flexGrow: 1, width: '100%' }} />
-            <Typography component="div" variant="body2">
-              {format(new Date(message.time), 'HH:mm')}
-            </Typography>
-          </Typography>
-        </React.Fragment>
-      }
-      secondary={
-        <React.Fragment>
-          <Typography component="div" variant="body2" color="text.primary">
-            {message.message}
-          </Typography>
-        </React.Fragment>
-      }
-    />
-  </ListItem>
+              {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : ''}
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText
+            disableTypography={true}
+            primary={
+              <React.Fragment>
+                <Typography component="div" sx={{ display: 'flex' }}>
+                  <Typography
+                    component="div"
+                    variant="body2"
+                    sx={{ minWidth: 'fit-content', color: message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit' }}
+                  >
+                    {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
+                  </Typography>
+                  <Box sx={{ flexGrow: 1, width: '100%' }} />
+                  <Typography component="div" variant="body2">
+                    {format(new Date(message.time), 'HH:mm')}
+                  </Typography>
+                </Typography>
+              </React.Fragment>
+            }
+            secondary={
+              <React.Fragment>
+                <Typography component="div" variant="body2" color="text.primary">
+                  {message.message}
+                </Typography>
+              </React.Fragment>
+            }
+          />
+        </ListItem>
+      </>
+    )}
+  </>
 );
 
 const Main = (): JSX.Element => {
