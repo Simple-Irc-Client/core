@@ -36,7 +36,7 @@
     "main.users.title": "Użytkownicy:",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",
     "kernel.join": "{{nick}} wszedł do kanału",
-    "kernel.part": "{{nick}} opuścił kanal {{reason}}",
+    "kernel.part": "{{nick}} opuścił kanał {{reason}}",
     "kernel.quit": "{{nick}} opuścił serwer {{reason}}",
     "kernel.topic": "{{nick}} zmienił temat kanału na: {{topic}}"
 }
