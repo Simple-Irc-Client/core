@@ -15,7 +15,7 @@ const Users = (): JSX.Element => {
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
   return (
-    <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee' }}>
+    <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee', overflowY: 'scroll' }}>
       {[ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) && (
         <List
           subheader={

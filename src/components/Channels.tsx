@@ -43,6 +43,7 @@ const Channels = (): JSX.Element => {
     <Drawer
       variant="permanent"
       sx={{
+        overflowY: 'scroll',
         display: { xs: 'none', md: 'block' },
         '& .MuiDrawer-paper': { boxSizing: 'border-box', backgroundColor: { md: channelsColor } },
       }}

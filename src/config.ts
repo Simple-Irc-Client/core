@@ -16,4 +16,4 @@ export const usersTitleColor = 'white';
 export const usersColor = 'white';
 
 export const channelsWidth = 200;
-export const usersWidth = 200;
+export const usersWidth = 300;

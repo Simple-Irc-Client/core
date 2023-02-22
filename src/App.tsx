@@ -62,7 +62,7 @@ function App(): JSX.Element {
       {settingsStore.isCreatorCompleted && (
         <>
           <Container sx={{ minWidth: '100%', height: '100vh', padding: '0 !important' }}>
-            <Stack direction="row">
+            <Stack direction="row" sx={{ height: '100vh' }}>
               <Channels />
               <Stack
                 direction="column"
