@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useUsersStore } from '../store/users';
 import { useSettingsStore } from '../store/settings';
 import { ChannelCategory } from '../types';
@@ -30,7 +30,7 @@ const Users = (): JSX.Element => {
           }}
         >
           {usersStore.getUsersFromChannel(currentChannelName).map((user) => (
-            <ListItemButton key={user.nick}>
+            <ListItemButton key={user.nick} onClick={(event) => handleUserContextMenu(event, user)} onContextMenu={(event) => handleUserContextMenu(event, user)}>
               <ListItemAvatar>
                 <Avatar alt={user.nick} src={user.avatar} />
               </ListItemAvatar>

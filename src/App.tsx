@@ -1,14 +1,15 @@
 import React, { useEffect } from 'react';
-import Channels from './components/Channels';
-import Main from './components/Main';
-import Toolbar from './components/Toolbar';
-import Topic from './components/Topic';
-import Users from './components/Users';
+import Channels from './containers/Channels';
+import Main from './containers/Main';
+import Toolbar from './containers/Toolbar';
+import Topic from './containers/Topic';
+import Users from './containers/Users';
 import Creator from './pages/creator/Creator';
 import { useSettingsStore } from './store/settings';
 import { useChannelListStore } from './store/channelsList';
 import { useChannelsStore } from './store/channels';
 import { useUsersStore } from './store/users';
+import { channelsWidth, usersWidth } from './config';
 
 import './i18n';
 
@@ -23,7 +24,6 @@ import '@fontsource/roboto/700.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Stack } from '@mui/material';
-import { channelsWidth, usersWidth } from './config';
 
 const theme = createTheme();
 
@@ -55,12 +55,16 @@ function App(): JSX.Element {
     }
   }, [settingsStore.listRequestRemainingSeconds]);
 
+  const handleContextMenu = (event: React.MouseEvent): void => {
+    event.preventDefault();
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {!settingsStore.isCreatorCompleted && <Creator />}
-      {settingsStore.isCreatorCompleted && (
-        <>
+      <div onContextMenu={handleContextMenu}>
+        {!settingsStore.isCreatorCompleted && <Creator />}
+        {settingsStore.isCreatorCompleted && (
           <Container sx={{ minWidth: '100%', height: '100vh', padding: '0 !important' }}>
             <Stack direction="row" sx={{ height: '100vh' }}>
               <Channels />
@@ -76,8 +80,8 @@ function App(): JSX.Element {
               <Users />
             </Stack>
           </Container>
-        </>
-      )}
+        )}
+      </div>
     </ThemeProvider>
   );
 }
