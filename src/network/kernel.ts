@@ -36,10 +36,11 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
   settingsStore.setIsConnected(true);
   settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
-  channelsStore.setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
-  channelsStore.setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-
-  settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+  if (channelsStore.getChannel(DEBUG_CHANNEL) === undefined) {
+    channelsStore.setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    channelsStore.setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
+    settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+  }
 
   for (const channel of channelsStore.openChannels) {
     channelsStore.setAddMessage(channel.name, {
