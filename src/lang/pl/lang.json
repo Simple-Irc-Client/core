@@ -17,7 +17,7 @@
     "creator.password.button.next": "Dalej",
     "creator.password.message.timeout1": "Niestety, upłynał wymagany czas na wpisanie hasła",
     "creator.password.message.timeout2": "Aby zmienić login - w głównym oknie programu wpisz polecenia:",
-    "creator.password.message.timeout3": "/msg nick {nick}",
+    "creator.password.message.timeout3": "/msg nick {{nick}}",
     "creator.password.message.timeout4": "/msg NickServ identify HASŁO",
     "creator.channels.title": "Wybierz miejsce rozmów",
     "creator.channels.column.name": "Nazwa",

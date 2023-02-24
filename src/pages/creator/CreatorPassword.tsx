@@ -49,7 +49,7 @@ const CreatorPassword = (): JSX.Element => {
               {t('creator.password.message.timeout2')}
             </Typography>
             <Typography align="center" variant="subtitle2">
-              {t('creator.password.message.timeout3').replace('{nick}', lastNick)}
+              {t('creator.password.message.timeout3').replace('{{nick}}', lastNick)}
             </Typography>
             <Typography align="center" variant="subtitle2">
               {t('creator.password.message.timeout4')}
