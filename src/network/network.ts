@@ -32,83 +32,34 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
 };
 
 export const ircSendPassword = (password: string): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: `PRIVMSG NickServ :IDENTIFY ${password}\n`,
-    },
-  };
-
-  sendMessage(command);
+  ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${password}`);
 };
 
 export const ircSendList = (): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: 'LIST\n',
-    },
-  };
-
-  sendMessage(command);
+  ircSendRawMessage(`LIST`);
 };
 
 export const ircSendNamesXProto = (): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: 'PROTOCTL NAMESX\n',
-    },
-  };
-
-  sendMessage(command);
+  ircSendRawMessage(`PROTOCTL NAMESX`);
 };
 
 export const ircJoinChannels = (channels: string[]): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: `JOIN ${channels.join(',')}\n`,
-    },
-  };
-
-  sendMessage(command);
+  ircSendRawMessage(`JOIN ${channels.join(',')}`);
 };
 
 export const ircPartChannel = (channel: string): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: `PART ${channel}\n`,
-    },
-  };
-
-  sendMessage(command);
+  ircSendRawMessage(`PART ${channel}`);
 };
 
 export const ircRequestMetadataItem = (nick: string, item: string): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: `METADATA ${nick} GET ${item}\n`,
-    },
-  };
-
-  sendQueueMessage(command);
+  ircSendRawMessage(`METADATA ${nick} GET ${item}`, true);
 };
 
 export const ircRequestMetadata = (nick: string): void => {
-  const command = {
-    type: 'raw',
-    event: {
-      rawData: `METADATA ${nick} LIST\n`,
-    },
-  };
-
-  sendQueueMessage(command);
+  ircSendRawMessage(`METADATA ${nick} LIST`, true);
 };
 
-export const ircSendRawMessage = (data: string): void => {
+export const ircSendRawMessage = (data: string, queue?: boolean): void => {
   const command = {
     type: 'raw',
     event: {
@@ -116,7 +67,11 @@ export const ircSendRawMessage = (data: string): void => {
     },
   };
 
-  sendMessage(command);
+  if (queue === true) {
+    sendQueueMessage(command);
+  } else {
+    sendMessage(command);
+  }
 };
 
 const sendMessage = (message: unknown): void => {
