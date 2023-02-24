@@ -52,9 +52,11 @@ export const useChannelsStore = create<ChannelsStore>()(
         setTopic: (channelName: string, newTopic: string) => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
-              if (channel.name === channelName) {
-                channel.topic = newTopic;
+              if (channel.name !== channelName) {
+                return channel;
               }
+
+              channel.topic = newTopic;
               return channel;
             }),
           }));
@@ -65,10 +67,12 @@ export const useChannelsStore = create<ChannelsStore>()(
         setTopicSetBy: (channelName: string, nick: string, when: number) => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
-              if (channel.name === channelName) {
-                channel.topicSetBy = nick;
-                channel.topicSetTime = when;
+              if (channel.name !== channelName) {
+                return channel;
               }
+
+              channel.topicSetBy = nick;
+              channel.topicSetTime = when;
               return channel;
             }),
           }));
@@ -82,11 +86,13 @@ export const useChannelsStore = create<ChannelsStore>()(
         setAddMessage: (channelName: string, newMessage: Message): void => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: Channel) => {
-              if (channel.name === channelName) {
-                channel.messages.push(newMessage);
-                if (channel.messages.length > maxMessages) {
-                  channel.messages.shift();
-                }
+              if (channel.name !== channelName) {
+                return channel;
+              }
+
+              channel.messages.push(newMessage);
+              if (channel.messages.length > maxMessages) {
+                channel.messages.shift();
               }
               return channel;
             }),
