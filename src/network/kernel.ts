@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type ChannelsStore } from '../store/channels';
-import { type ChannelListStore } from '../store/channelsList';
-import { type SettingsStore } from '../store/settings';
-import { type UsersStore } from '../store/users';
+import { useChannelsStore, type ChannelsStore } from '../store/channels';
+import { useChannelListStore, type ChannelListStore } from '../store/channelsList';
+import { useSettingsStore, type SettingsStore } from '../store/settings';
+import { useUsersStore, type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
@@ -16,7 +16,12 @@ export interface IrcEvent {
 const STATUS_CHANNEL = 'Status';
 const DEBUG_CHANNEL = 'Debug';
 
-export const kernel = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListStore: ChannelListStore, usersStore: UsersStore, event: IrcEvent): void => {
+export const kernel = (event: IrcEvent): void => {
+  const settingsStore = useSettingsStore.getState();
+  const channelsStore = useChannelsStore.getState();
+  const channelListStore = useChannelListStore.getState();
+  const usersStore = useUsersStore.getState();
+
   switch (event.type) {
     case 'connected':
       handleConnected(settingsStore, channelsStore);
