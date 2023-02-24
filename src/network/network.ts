@@ -83,6 +83,10 @@ const sendQueueMessage = (message: unknown): void => {
 };
 
 setInterval(function networkSendQueueMessages() {
+  if (queueIrcMessages.length === 0) {
+    return;
+  }
+
   const message = queueIrcMessages.pop();
   if (message === undefined) {
     return;

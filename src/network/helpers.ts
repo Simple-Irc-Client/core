@@ -2,6 +2,11 @@ import { defaultIRCPort } from '../config';
 import { type Server } from '../models/servers';
 import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer } from '../types';
 
+/**
+ *
+ * @param currentServer
+ * @returns
+ */
 export const parseServer = (currentServer?: Server): SingleServer | undefined => {
   if (currentServer === undefined || currentServer?.servers?.length === 0) {
     return undefined;
@@ -24,6 +29,11 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
   return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`) };
 };
 
+/**
+ *
+ * @param message
+ * @returns
+ */
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   const line: string[] = message?.trim()?.split(' ') ?? [];
 
@@ -57,6 +67,12 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   return { tags, sender, command, line };
 };
 
+/**
+ * Parse nick and return ident, hostname and user modes
+ * @param fullNick
+ * @param userModes
+ * @returns
+ */
 export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
   const modes: string[] = [];
   let nick = fullNick.substring(fullNick.startsWith(':') ? 1 : 0, fullNick.lastIndexOf('!'));
@@ -74,6 +90,13 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
   return { modes, nick, ident, hostname };
 };
 
+/**
+ * That func is returning maximum int number based on user mode
+ * Based on that int number we'll be sorting users and user with higher mode (int) will be first on users list
+ * @param userModes
+ * @param serverModes
+ * @returns
+ */
 export const createMaxMode = (userModes: string[], serverModes: UserMode[]): number => {
   let maxMode = -1;
   userModes.forEach((userMode: string) => {
@@ -89,7 +112,16 @@ export const createMaxMode = (userModes: string[], serverModes: UserMode[]): num
   return maxMode;
 };
 
-// (qaohv)~&@%+
+/**
+ * That function parse line modes from IRC server "(qaohv)~&@%+" and returns it as array:
+ * [
+ *   ["mode": "q", symbol: "~"],
+ *   ["mode": "a", symbol: "&"],
+ *   ["mode": "o", symbol: "@"],
+ * ]
+ * @param userPrefixes
+ * @returns
+ */
 export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => {
   const result: UserMode[] = [];
 
