@@ -380,6 +380,7 @@ const onRaw266 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
 // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
 const onRaw321 = (settingsStore: SettingsStore, channelListStore: ChannelListStore): void => {
   channelListStore.setClearList();
+  channelListStore.setFinished(false);
 };
 
 // :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
