@@ -5,6 +5,8 @@ import { useChannelsStore } from './store/channels';
 import { useUsersStore } from './store/users';
 import { ircSendList, sicSocket } from './network/network';
 import { type IrcEvent, kernel } from './network/kernel';
+import { DEBUG_CHANNEL } from './config';
+import { MessageCategory } from './types';
 
 export const AppNetwork = (): JSX.Element => {
   const settingsStore = useSettingsStore();
@@ -13,13 +15,28 @@ export const AppNetwork = (): JSX.Element => {
   const usersStore = useUsersStore();
 
   useEffect(() => {
+    // messages from server
     const onIrcEvent = (data: IrcEvent): void => {
       kernel(settingsStore, channelsStore, channelListStore, usersStore, data);
     };
 
+    // messages sent to server
+    const onServerEvent = (data: IrcEvent): void => {
+      if (data?.line !== undefined) {
+        channelsStore.setAddMessage(DEBUG_CHANNEL, {
+          message: `-> ${data.line?.trim()}`,
+          target: DEBUG_CHANNEL,
+          time: new Date().toISOString(),
+          category: MessageCategory.info,
+        });
+      }
+    };
+
     sicSocket.on('sic-irc-event', onIrcEvent);
+    sicSocket.on('sic-server-event', onServerEvent);
     return () => {
       sicSocket.off('sic-irc-event', onIrcEvent);
+      sicSocket.off('sic-server-event', onServerEvent);
     };
   }, [sicSocket, settingsStore, channelsStore, channelListStore, usersStore]);
 
