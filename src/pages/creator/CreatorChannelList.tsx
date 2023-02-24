@@ -10,7 +10,7 @@ const CreatorChannelList = (): JSX.Element => {
   const { t } = useTranslation();
 
   const channels = useChannelListStore((state) => state.channels);
-  const setCreatorCompleted = useSettingsStore((state) => state.setCreatorCompleted);
+  const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
 

@@ -9,41 +9,53 @@ const CreatorLoading = (): JSX.Element => {
 
   const [progress, setProgress] = useState({ value: 0, label: '' });
 
-  const nick = useSettingsStore((state) => state.nick);
-  const server = useSettingsStore((state) => state.server);
   const isConnecting = useSettingsStore((state) => state.isConnecting);
-  const setIsConnecting = useSettingsStore((state) => state.setIsConnecting);
+  const setIsConnecting = useSettingsStore.getState().setIsConnecting;
+
   const isConnected = useSettingsStore((state) => state.isConnected);
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
+  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
 
   const ircConnectRequested = useRef(false);
 
   useEffect(() => {
-    if (server !== undefined && !isConnecting && !isConnected && !ircConnectRequested.current) {
-      ircConnectRequested.current = true;
-      console.log('sending connect to irc command');
-      ircConnect(server, nick);
-      setIsConnecting(true);
+    if (!ircConnectRequested.current) {
+      const server = useSettingsStore.getState().server;
+      if (server !== undefined) {
+        ircConnectRequested.current = true;
+
+        console.log('sending connect to irc command');
+        const nick = useSettingsStore.getState().nick;
+
+        ircConnect(server, nick);
+        setIsConnecting(true);
+      }
     }
+
     if (isConnecting) {
       setProgress({ value: 1, label: t('creator.loading.connecting') });
     }
+
     if (isConnected) {
       setProgress({ value: 2, label: t('creator.loading.connected') });
 
-      setTimeout(() => {
+      const timeout2 = setTimeout(() => {
         setProgress({
           value: 3,
           label: t('creator.loading.isPasswordRequired'),
         });
       }, 2_000); // 2 sec
 
-      setTimeout(() => {
+      const timeout5 = setTimeout(() => {
         const localSettings = useSettingsStore.getState();
         if (localSettings.isPasswordRequired === false || localSettings.isPasswordRequired === undefined) {
           setCreatorStep('channels');
         }
       }, 5_000); // 5 sec
+
+      return () => {
+        clearTimeout(timeout2);
+        clearTimeout(timeout5);
+      };
     }
   }, [isConnecting, isConnected]);
 

@@ -9,7 +9,7 @@ const CreatorPassword = (): JSX.Element => {
   const [lastNick, setLastNick] = useState('');
   const [password, setPassword] = useState('');
 
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
+  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
   const nick = useSettingsStore((state) => state.nick);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {

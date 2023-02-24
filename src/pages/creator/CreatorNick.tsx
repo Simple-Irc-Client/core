@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../../store/settings';
@@ -6,8 +6,7 @@ import { useSettingsStore } from '../../store/settings';
 const CreatorNick = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const nick = useSettingsStore((state) => state.nick);
-  const setNick = useSettingsStore((state) => state.setNick);
+  const [nick, formNick] = useState('');
   const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
@@ -17,6 +16,9 @@ const CreatorNick = (): JSX.Element => {
 
   const handleClick = (): void => {
     if (nick.length !== 0) {
+      const setNick = useSettingsStore.getState().setNick;
+
+      setNick(nick);
       setCreatorStep('server');
     }
   };
@@ -35,7 +37,7 @@ const CreatorNick = (): JSX.Element => {
           autoComplete="nick"
           autoFocus
           onChange={(event) => {
-            setNick(event.target.value);
+            formNick(event.target.value);
           }}
           defaultValue={nick}
           tabIndex={1}

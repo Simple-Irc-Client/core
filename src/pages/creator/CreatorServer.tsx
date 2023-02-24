@@ -8,8 +8,8 @@ const CreatorServer = (): JSX.Element => {
   const { t } = useTranslation();
 
   const server = useSettingsStore((state) => state.server);
-  const setServer = useSettingsStore((state) => state.setServer);
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
+  const setServer = useSettingsStore.getState().setServer;
+  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
