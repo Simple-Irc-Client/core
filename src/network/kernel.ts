@@ -21,6 +21,9 @@ export const kernel = (settingsStore: SettingsStore, channelsStore: ChannelsStor
     case 'connected':
       handleConnected(settingsStore, channelsStore);
       break;
+    case 'close':
+      handleDisconnected(channelsStore);
+      break;
     case 'raw':
       if (event?.line !== undefined) {
         handleRaw(settingsStore, channelsStore, channelListStore, usersStore, event.line);
@@ -38,7 +41,27 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
 
   settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
 
+  for (const channel of channelsStore.openChannels) {
+    channelsStore.setAddMessage(channel.name, {
+      message: i18next.t('kernel.connected'),
+      target: channel.name,
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+    });
+  }
+
   ircSendList();
+};
+
+const handleDisconnected = (channelsStore: ChannelsStore): void => {
+  for (const channel of channelsStore.openChannels) {
+    channelsStore.setAddMessage(channel.name, {
+      message: i18next.t('kernel.disconnected'),
+      target: channel.name,
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+    });
+  }
 };
 
 const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListStore: ChannelListStore, usersStore: UsersStore, event: string): void => {

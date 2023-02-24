@@ -34,6 +34,8 @@
     "main.toolbar.write": "Napisz na ",
     "main.channels.title": "Kanały:",
     "main.users.title": "Użytkownicy:",
+    "kernel.connected": "Połączono z serwerem",
+    "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",
     "kernel.join": "{{nick}} wszedł do kanału",
     "kernel.part": "{{nick}} opuścił kanał {{reason}}",
