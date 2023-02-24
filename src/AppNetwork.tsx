@@ -14,22 +14,22 @@ export const AppNetwork = (): JSX.Element => {
   const channelListStore = useChannelListStore();
   const usersStore = useUsersStore();
 
+  const onServerEvent = (data: IrcEvent): void => {
+    // messages sent to server
+    if (data?.line !== undefined) {
+      channelsStore.setAddMessage(DEBUG_CHANNEL, {
+        message: `-> ${data.line?.trim()}`,
+        target: DEBUG_CHANNEL,
+        time: new Date().toISOString(),
+        category: MessageCategory.info,
+      });
+    }
+  };
+
   useEffect(() => {
     // messages from server
     const onIrcEvent = (data: IrcEvent): void => {
       kernel(settingsStore, channelsStore, channelListStore, usersStore, data);
-    };
-
-    // messages sent to server
-    const onServerEvent = (data: IrcEvent): void => {
-      if (data?.line !== undefined) {
-        channelsStore.setAddMessage(DEBUG_CHANNEL, {
-          message: `-> ${data.line?.trim()}`,
-          target: DEBUG_CHANNEL,
-          time: new Date().toISOString(),
-          category: MessageCategory.info,
-        });
-      }
     };
 
     sicSocket.on('sic-irc-event', onIrcEvent);
