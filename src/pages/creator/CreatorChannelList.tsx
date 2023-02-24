@@ -9,8 +9,9 @@ import { useSettingsStore } from '../../store/settings';
 const CreatorChannelList = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const channels = useChannelListStore((state) => state.channels);
   const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
+  const finished = useChannelListStore((state) => state.finished);
+  const channels = finished ? useChannelListStore.getState().channels : [];
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
 
@@ -65,8 +66,8 @@ const CreatorChannelList = (): JSX.Element => {
       <Box sx={{ mt: 3, width: '100%' }}>
         <div style={{ display: 'flex', height: 350, width: '100%' }}>
           <DataGrid
-            loading={channels.length < 10}
-            rows={channels.length > 10 ? channels : []}
+            loading={channels.length < 10 || !finished}
+            rows={channels.length > 10 && finished ? channels : []}
             disableColumnMenu={true}
             columns={columns}
             pageSize={50}
