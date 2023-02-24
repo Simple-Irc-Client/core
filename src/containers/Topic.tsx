@@ -5,12 +5,11 @@ import { useSettingsStore } from '../store/settings';
 
 const Topic = (): JSX.Element => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
-
-  const channelsStore = useChannelsStore();
+  const getTopic = useChannelsStore((state) => state.getTopic);
 
   return (
     <Box sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex' }}>
-      <Input value={channelsStore.getTopic(currentChannelName)} disabled sx={{ marginBottom: '1rem', flexGrow: '1', minHeight: '48px' }} />
+      <Input value={getTopic(currentChannelName)} disabled sx={{ marginBottom: '1rem', flexGrow: '1', minHeight: '48px' }} />
     </Box>
   );
 };
