@@ -9,7 +9,7 @@ import { usersColor, usersTitleColor, usersWidth } from '../config';
 const Users = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const getUsersFromChannel = useUsersStore((state) => state.getUsersFromChannel);
+  const usersStore = useUsersStore();
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
@@ -29,7 +29,7 @@ const Users = (): JSX.Element => {
             backgroundColor: usersColor,
           }}
         >
-          {getUsersFromChannel(currentChannelName).map((user) => (
+          {usersStore.getUsersFromChannel(currentChannelName).map((user) => (
             <ListItemButton key={user.nick}>
               <ListItemAvatar>
                 <Avatar alt={user.nick} src={user.avatar} />
