@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Autocomplete, Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { servers } from '../../models/servers';
+import { type Server, servers } from '../../models/servers';
 import { useSettingsStore } from '../../store/settings';
 import { ircConnect } from '../../network/network';
 
 const CreatorServer = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const [server, formServer] = useState(undefined);
+  const [server, formServer] = useState<Server | undefined>(undefined);
   const setServer = useSettingsStore.getState().setServer;
   const setCreatorStep = useSettingsStore.getState().setCreatorStep;
   const setIsConnecting = useSettingsStore.getState().setIsConnecting;
