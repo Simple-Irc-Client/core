@@ -23,6 +23,7 @@ const CreatorServer = (): JSX.Element => {
       setServer(server);
       const nick = useSettingsStore.getState().nick;
 
+      console.log('sending connect to irc command');
       ircConnect(server, nick);
 
       setIsConnecting(true);

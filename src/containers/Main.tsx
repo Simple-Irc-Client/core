@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material';
 import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
@@ -87,14 +87,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
 const Main = (): JSX.Element => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
-
   const channelsStore = useChannelsStore();
-
-  const [messages, updateMessages] = useState<Message[]>([]);
-
-  useEffect(() => {
-    updateMessages(channelsStore.getMessages(currentChannelName));
-  }, [currentChannelName, channelsStore.getMessages(currentChannelName).length]);
 
   const AlwaysScrollToBottom = (): JSX.Element => {
     const elementRef = useRef<HTMLDivElement>(null);
@@ -104,7 +97,7 @@ const Main = (): JSX.Element => {
 
   return (
     <Box sx={{ height: '100%', overflowY: 'scroll' }}>
-      {messages.map((message, index) => (
+      {channelsStore.getMessages(currentChannelName).map((message, index) => (
         <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
           {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
           {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
