@@ -7,7 +7,7 @@ const CreatorNick = (): JSX.Element => {
   const { t } = useTranslation();
 
   const [nick, formNick] = useState('');
-  const setCreatorStep = useSettingsStore((state) => state.setCreatorStep);
+  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
