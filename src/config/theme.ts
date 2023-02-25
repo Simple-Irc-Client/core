@@ -6,18 +6,18 @@ export const usersColor = 'white';
 export const channelsWidth = 200;
 export const usersWidth = 300;
 
-export enum messageColor {
-  ServerFrom = '#ee0000',
-  ServerTo = '#0000ee',
-  DefaultColor = '#000000',
-  TimeColor = '#666666',
-  JoinColor = '#009300',
-  PartColor = '#4733FF',
-  QuitColor = '#00007F',
-  KickColor = '#00007F',
-  ModeColor = '#009300',
-  NoticeColor = '#0066FF',
-  InfoColor = '#666666',
-  MeColor = '#800080',
-  ErrorColor = '#ff0000',
+export enum MessageColor {
+  serverFrom = '#000000',
+  serverTo = '#2e7d32',
+  time = '#666666',
+  default = '#000000',
+  join = '#009300',
+  part = '#4733FF',
+  quit = '#00007F',
+  kick = '#00007F',
+  mode = '#009300',
+  notice = '#0066FF',
+  info = '#666666',
+  me = '#800080',
+  error = '#ff0000',
 }

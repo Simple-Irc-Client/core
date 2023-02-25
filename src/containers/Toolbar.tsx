@@ -9,6 +9,7 @@ import { parseMessageToCommand } from '../network/command';
 import { DEBUG_CHANNEL } from '../config/config';
 import { useChannelsStore } from '../store/channels';
 import { useUsersStore } from '../store/users';
+import { MessageColor } from '../config/theme';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();
@@ -44,6 +45,7 @@ const Toolbar = (): JSX.Element => {
           target: currentChannelName,
           time: new Date().toISOString(),
           category: MessageCategory.default,
+          color: MessageColor.default,
         });
 
         payload = `PRIVMSG ${currentChannelName} :${message}`;

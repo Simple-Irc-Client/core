@@ -5,15 +5,16 @@ import { useSettingsStore } from '../store/settings';
 import { MessageCategory, type Message } from '../types';
 import { format } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
+import { MessageColor } from '../config/theme';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
     <ListItemText>
       <code>
-        {format(new Date(message.time), 'HH:mm:ss')}
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
         &nbsp;
         {message?.nick !== undefined && <>&lt;{typeof message.nick === 'string' ? message.nick : message.nick.nick}&gt;&nbsp;</>}
-        {message.message}
+        <span style={{ color: message.color ?? MessageColor.default }}>{message.message}</span>
       </code>
     </ListItemText>
   </ListItem>
@@ -22,11 +23,11 @@ const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
 const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
     <ListItemText>
-      {format(new Date(message.time), 'HH:mm')}
+      <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
       &nbsp; &lt;
       {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
       &gt; &nbsp;
-      {message.message}
+      <span style={{ color: message.color ?? MessageColor.default }}>{message.message}</span>
     </ListItemText>
   </ListItem>
 );
@@ -36,7 +37,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
     {message.category !== MessageCategory.default && (
       <>
         <ListItem>
-          <ListItemText>{message.message}</ListItemText>
+          <ListItemText sx={{ color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
         </ListItem>
       </>
     )}
@@ -64,7 +65,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
                     {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
                   </Typography>
                   <Box sx={{ flexGrow: 1, width: '100%' }} />
-                  <Typography component="div" variant="body2">
+                  <Typography component="div" variant="body2" sx={{ color: MessageColor.time }}>
                     {format(new Date(message.time), 'HH:mm')}
                   </Typography>
                 </Typography>
@@ -72,7 +73,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
             }
             secondary={
               <React.Fragment>
-                <Typography component="div" variant="body2" color="text.primary">
+                <Typography component="div" variant="body2" color="text.primary" sx={{ color: message.color ?? MessageColor.default }}>
                   {message.message}
                 </Typography>
               </React.Fragment>

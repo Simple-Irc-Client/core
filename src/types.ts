@@ -1,3 +1,5 @@
+import { type MessageColor } from './config/theme';
+
 export interface SingleServer {
   host?: string;
   port: number;
@@ -22,6 +24,7 @@ export interface Message {
   target: string;
   time: string;
   category: MessageCategory;
+  color?: MessageColor;
 }
 
 export enum MessageCategory {
@@ -35,7 +38,7 @@ export enum MessageCategory {
   info = 'info',
   me = 'me',
   error = 'error',
-  highlight = 'highlight',
+  // highlight = 'highlight',
   motd = 'motd',
 }
 

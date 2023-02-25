@@ -7,6 +7,7 @@ import { ChannelCategory, MessageCategory } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 import i18next from '../i18n';
+import { MessageColor } from '../config/theme';
 
 export interface IrcEvent {
   type: string;
@@ -53,6 +54,7 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
       target: channel.name,
       time: new Date().toISOString(),
       category: MessageCategory.info,
+      color: MessageColor.info,
     });
   }
 
@@ -66,6 +68,7 @@ const handleDisconnected = (channelsStore: ChannelsStore): void => {
       target: channel.name,
       time: new Date().toISOString(),
       category: MessageCategory.info,
+      color: MessageColor.info,
     });
   }
 };
@@ -78,6 +81,7 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
     target: DEBUG_CHANNEL,
     time: new Date().toISOString(),
     category: MessageCategory.info,
+    color: MessageColor.serverFrom,
   });
 
   switch (command) {
@@ -213,6 +217,7 @@ const onRaw001 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -227,6 +232,7 @@ const onRaw002 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -241,6 +247,7 @@ const onRaw003 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -290,6 +297,7 @@ const onRaw251 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -304,6 +312,7 @@ const onRaw252 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -318,6 +327,7 @@ const onRaw253 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -332,6 +342,7 @@ const onRaw254 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -346,6 +357,7 @@ const onRaw255 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -360,6 +372,7 @@ const onRaw265 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -374,6 +387,7 @@ const onRaw266 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -480,6 +494,7 @@ const onRaw372 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -494,6 +509,7 @@ const onRaw375 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -508,6 +524,7 @@ const onRaw376 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
     target: STATUS_CHANNEL,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
+    color: MessageColor.info,
   });
 };
 
@@ -571,6 +588,7 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
     target,
     time: tags?.time ?? new Date().toISOString(),
     category: MessageCategory.notice,
+    color: MessageColor.notice,
   };
 
   channelsStore.setAddMessage(STATUS_CHANNEL, newMessage);
@@ -607,6 +625,7 @@ const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
       target: settingsStore.currentChannelName,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
+      color: MessageColor.info,
     });
 
     settingsStore.setNick(newNick);
@@ -636,6 +655,7 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
       target: settingsStore.currentChannelName,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.join,
+      color: MessageColor.join,
     });
 
     if (channelsStore.getChannel(channel) === undefined) {
@@ -687,6 +707,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
       target: settingsStore.currentChannelName,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.part,
+      color: MessageColor.part,
     });
 
     usersStore.setRemoveUser(nick, channel);
@@ -722,6 +743,7 @@ const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
       target,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.default,
+      color: MessageColor.default,
     });
   }
 };

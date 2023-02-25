@@ -5,6 +5,7 @@ import { ircSendList, sicSocket } from './network/network';
 import { type IrcEvent, kernel } from './network/kernel';
 import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
+import { MessageColor } from './config/theme';
 
 export const AppNetwork = (): JSX.Element => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
@@ -17,6 +18,7 @@ export const AppNetwork = (): JSX.Element => {
         target: DEBUG_CHANNEL,
         time: new Date().toISOString(),
         category: MessageCategory.info,
+        color: MessageColor.serverTo,
       });
     }
   };
