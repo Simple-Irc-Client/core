@@ -1,4 +1,4 @@
-import { defaultIRCPort } from '../config';
+import { defaultIRCPort } from '../config/config';
 import { type Server } from '../models/servers';
 import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer } from '../types';
 

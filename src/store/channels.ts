@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type Channel, type ChannelCategory, type Message } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { maxMessages } from '../config';
+import { maxMessages } from '../config/config';
 
 export interface ChannelsStore {
   openChannels: Channel[];

@@ -3,7 +3,7 @@ import { useSettingsStore } from './store/settings';
 import { useChannelsStore } from './store/channels';
 import { ircSendList, sicSocket } from './network/network';
 import { type IrcEvent, kernel } from './network/kernel';
-import { DEBUG_CHANNEL } from './config';
+import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
 
 export const AppNetwork = (): JSX.Element => {

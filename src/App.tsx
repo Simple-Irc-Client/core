@@ -8,7 +8,7 @@ import Creator from './pages/creator/Creator';
 import { useSettingsStore } from './store/settings';
 import { AppNetwork } from './AppNetwork';
 
-import { channelsWidth, usersWidth } from './config';
+import { channelsWidth, usersWidth } from './config/theme';
 
 import './i18n';
 

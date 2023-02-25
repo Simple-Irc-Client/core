@@ -1,5 +1,5 @@
 import { connect as socketIOConnect } from 'socket.io-client';
-import { websocketHost, websocketPort } from '../config';
+import { websocketHost, websocketPort } from '../config/config';
 import { type Server } from '../models/servers';
 import { parseServer } from './helpers';
 

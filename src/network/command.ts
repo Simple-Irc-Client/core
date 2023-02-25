@@ -1,4 +1,4 @@
-import { defaultQuitMessage, STATUS_CHANNEL } from '../config';
+import { defaultQuitMessage, STATUS_CHANNEL } from '../config/config';
 
 export const parseMessageToCommand = (channel: string, message: string): string => {
   if (message?.[0] === '/') {

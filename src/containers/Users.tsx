@@ -4,7 +4,7 @@ import { useSettingsStore } from '../store/settings';
 import { ChannelCategory } from '../types';
 import { Avatar, Box, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { usersColor, usersTitleColor, usersWidth } from '../config';
+import { usersColor, usersTitleColor, usersWidth } from '../config/theme';
 
 const Users = (): JSX.Element => {
   const { t } = useTranslation();

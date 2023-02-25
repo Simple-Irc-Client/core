@@ -11,7 +11,7 @@ import { useSettingsStore } from '../store/settings';
 import { ChannelCategory, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useChannelsStore } from '../store/channels';
-import { channelsColor, channelsWidth, channelsTitleColor } from '../config';
+import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircPartChannel } from '../network/network';
 
 const Channels = (): JSX.Element => {

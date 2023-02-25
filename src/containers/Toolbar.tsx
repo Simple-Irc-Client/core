@@ -6,7 +6,7 @@ import { MessageCategory, type User } from '../types';
 import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
 import { parseMessageToCommand } from '../network/command';
-import { DEBUG_CHANNEL } from '../config';
+import { DEBUG_CHANNEL } from '../config/config';
 import { useChannelsStore } from '../store/channels';
 import { useUsersStore } from '../store/users';
 

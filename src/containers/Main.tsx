@@ -4,7 +4,7 @@ import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
 import { MessageCategory, type Message } from '../types';
 import { format } from 'date-fns';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
