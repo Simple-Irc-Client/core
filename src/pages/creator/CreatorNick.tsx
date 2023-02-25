@@ -8,6 +8,7 @@ const CreatorNick = (): JSX.Element => {
 
   const [nick, formNick] = useState('');
   const setCreatorStep = useSettingsStore.getState().setCreatorStep;
+  const setNick = useSettingsStore.getState().setNick;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -16,8 +17,6 @@ const CreatorNick = (): JSX.Element => {
 
   const handleClick = (): void => {
     if (nick.length !== 0) {
-      const setNick = useSettingsStore.getState().setNick;
-
       setNick(nick);
       setCreatorStep('server');
     }
