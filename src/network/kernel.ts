@@ -698,6 +698,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
     channelsStore.setRemoveChannel(channel);
 
     // TODO select new channel
+    settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
   } else {
     channelsStore.setAddMessage(settingsStore.currentChannelName, {
       message: i18next
