@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { ircConnect } from '../../network/network';
 import { useSettingsStore } from '../../store/settings';
 
 const CreatorLoading = (): JSX.Element => {
@@ -10,27 +9,10 @@ const CreatorLoading = (): JSX.Element => {
   const [progress, setProgress] = useState({ value: 0, label: '' });
 
   const isConnecting = useSettingsStore((state) => state.isConnecting);
-  const setIsConnecting = useSettingsStore.getState().setIsConnecting;
-
   const isConnected = useSettingsStore((state) => state.isConnected);
   const setCreatorStep = useSettingsStore.getState().setCreatorStep;
 
-  const ircConnectRequested = useRef(false);
-
   useEffect(() => {
-    if (!ircConnectRequested.current) {
-      const server = useSettingsStore.getState().server;
-      if (server !== undefined) {
-        ircConnectRequested.current = true;
-
-        console.log('sending connect to irc command');
-        const nick = useSettingsStore.getState().nick;
-
-        ircConnect(server, nick);
-        setIsConnecting(true);
-      }
-    }
-
     if (isConnecting) {
       setProgress({ value: 1, label: t('creator.loading.connecting') });
     }

@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Autocomplete, Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { servers } from '../../models/servers';
 import { useSettingsStore } from '../../store/settings';
+import { ircConnect } from '../../network/network';
 
 const CreatorServer = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const server = useSettingsStore((state) => state.server);
+  const [server, formServer] = useState(undefined);
   const setServer = useSettingsStore.getState().setServer;
   const setCreatorStep = useSettingsStore.getState().setCreatorStep;
+  const setIsConnecting = useSettingsStore.getState().setIsConnecting;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -18,6 +20,13 @@ const CreatorServer = (): JSX.Element => {
 
   const handleClick = (): void => {
     if (server !== undefined) {
+      setServer(server);
+      const nick = useSettingsStore.getState().nick;
+
+      ircConnect(server, nick);
+
+      setIsConnecting(true);
+
       setCreatorStep('loading');
     }
   };
@@ -41,7 +50,7 @@ const CreatorServer = (): JSX.Element => {
           )}
           onChange={(event, newValue) => {
             if (newValue != null) {
-              setServer(newValue);
+              formServer(newValue);
             }
           }}
           noOptionsText={t('creator.server.message.no.options')}
