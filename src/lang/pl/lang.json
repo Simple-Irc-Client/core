@@ -7,7 +7,7 @@
     "creator.server.server": "Wybierz serwer",
     "creator.server.button.next": "Dalej",
     "creator.server.message.no.options": "Brak wyników",
-    "creator.loading.connecting": "Łaczenie z serwerem",
+    "creator.loading.connecting": "Łączenie z serwerem",
     "creator.loading.connected": "Połączono",
     "creator.loading.isPasswordRequired": "Sprawdzanie czy hasło jest wymagane",
     "creator.loading.passwordIsRequired": "Hasło jest wymagane",

@@ -1,5 +1,8 @@
 import { defaultQuitMessage, STATUS_CHANNEL } from '../config/config';
 
+export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg', '/whois', '/whereis', '/who'];
+export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];
+
 export const parseMessageToCommand = (channel: string, message: string): string => {
   if (message?.[0] === '/') {
     message = message.substring(1);
