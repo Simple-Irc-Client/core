@@ -39,7 +39,7 @@ export const AppNetwork = (): JSX.Element => {
 
   // send LIST request after 20 seconds
   useEffect(() => {
-    if (listRequestRemainingSeconds > -1) {
+    if (sicSocket.connected && listRequestRemainingSeconds > -1) {
       const listRequestTimeout = setTimeout(() => {
         ircSendList();
       }, (listRequestRemainingSeconds + 1) * 1000);
