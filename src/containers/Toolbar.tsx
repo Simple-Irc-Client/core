@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, IconButton, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/settings';
-import { ChannelCategory, MessageCategory, type User } from '../types';
+import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../types';
 import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../network/command';
@@ -31,6 +31,39 @@ const Toolbar = (): JSX.Element => {
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
+
+  const commands = useMemo(
+    () =>
+      ([ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands).sort((a, b) => {
+        const A = a.toLowerCase();
+        const B = b.toLowerCase();
+        return A < B ? -1 : A > B ? 1 : 0;
+      }),
+    [currentChannelCategory]
+  );
+
+  const channels = useMemo(
+    () =>
+      useChannelListStore.getState().channels.sort((a, b) => {
+        const A = a.name.toLowerCase();
+        const B = b.name.toLowerCase();
+        return A < B ? -1 : A > B ? 1 : 0;
+      }),
+    []
+  );
+
+  const users = useMemo(
+    () =>
+      useUsersStore
+        .getState()
+        .getUsersFromChannel(currentChannelName)
+        .sort((a, b) => {
+          const A = a.nick.toLowerCase();
+          const B = b.nick.toLowerCase();
+          return A < B ? -1 : A > B ? 1 : 0;
+        }),
+    [currentChannelName]
+  );
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
@@ -79,6 +112,54 @@ const Toolbar = (): JSX.Element => {
     }
   };
 
+  const autocompleteCommands = (word: string, commands: string[]): boolean => {
+    for (const [index, command] of commands.entries()) {
+      if (command.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
+        autocompleteIndex.current = index;
+
+        const newMessage = autocompleteMessage.current.split(' ');
+        newMessage.pop();
+        newMessage.push(command);
+        setMessage(newMessage.join(' '));
+
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const autocompleteChannels = (word: string, channels: ChannelList[]): boolean => {
+    for (const [index, channel] of channels.entries()) {
+      if (channel.name.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
+        autocompleteIndex.current = index;
+
+        const newMessage = autocompleteMessage.current.split(' ');
+        newMessage.pop();
+        newMessage.push(channel.name);
+        setMessage(newMessage.join(' '));
+
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const autocompleteUsers = (word: string, users: User[]): boolean => {
+    for (const [index, user] of users.entries()) {
+      if (user.nick.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
+        autocompleteIndex.current = index;
+
+        const newMessage = autocompleteMessage.current.split(' ');
+        newMessage.pop();
+        newMessage.push(user.nick);
+        setMessage(newMessage.join(' '));
+
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     switch (event.key) {
       case 'Tab': {
@@ -87,70 +168,28 @@ const Toolbar = (): JSX.Element => {
         if (word !== undefined && word?.length !== 0) {
           if (word.startsWith('/')) {
             // autocomplete commands
-            const commands = ([ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands).sort((a, b) => {
-              const A = a.toLowerCase();
-              const B = b.toLowerCase();
-              return A < B ? -1 : A > B ? 1 : 0;
-            });
-
-            for (const [index, command] of commands.entries()) {
-              if (command.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
-                autocompleteIndex.current = index;
-
-                const newMessage = autocompleteMessage.current.split(' ');
-                newMessage.pop();
-                newMessage.push(command);
-                setMessage(newMessage.join(' '));
-
-                return;
-              }
+            const done = autocompleteCommands(word, commands);
+            if (done) {
+              return;
             }
             autocompleteIndex.current = -1; // clear index if its last complete
+            autocompleteCommands(word, commands);
           } else if (word.startsWith('#')) {
             // autocomplete channel name
-            const channels = useChannelListStore.getState().channels.sort((a, b) => {
-              const A = a.name.toLowerCase();
-              const B = b.name.toLowerCase();
-              return A < B ? -1 : A > B ? 1 : 0;
-            });
-
-            for (const [index, channel] of channels.entries()) {
-              if (channel.name.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
-                autocompleteIndex.current = index;
-
-                const newMessage = autocompleteMessage.current.split(' ');
-                newMessage.pop();
-                newMessage.push(channel.name);
-                setMessage(newMessage.join(' '));
-
-                return;
-              }
+            const done = autocompleteChannels(word, channels);
+            if (done) {
+              return;
             }
             autocompleteIndex.current = -1; // clear index if its last complete
+            autocompleteChannels(word, channels);
           } else {
             // autocomplete users
-            const users = useUsersStore
-              .getState()
-              .getUsersFromChannel(currentChannelName)
-              .sort((a, b) => {
-                const A = a.nick.toLowerCase();
-                const B = b.nick.toLowerCase();
-                return A < B ? -1 : A > B ? 1 : 0;
-              });
-
-            for (const [index, user] of users.entries()) {
-              if (user.nick.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
-                autocompleteIndex.current = index;
-
-                const newMessage = autocompleteMessage.current.split(' ');
-                newMessage.pop();
-                newMessage.push(user.nick);
-                setMessage(newMessage.join(' '));
-
-                return;
-              }
+            const done = autocompleteUsers(word, users);
+            if (done) {
+              return;
             }
             autocompleteIndex.current = -1; // clear index if its last complete
+            autocompleteUsers(word, users);
           }
         }
         break;
