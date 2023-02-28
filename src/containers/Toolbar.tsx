@@ -19,6 +19,7 @@ const Toolbar = (): JSX.Element => {
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const setAddMessage = useChannelsStore((state) => state.setAddMessage);
   const getUser = useUsersStore((state) => state.getUser);
+  const finished = useChannelListStore((state) => state.finished);
 
   const nick: string = useSettingsStore((state) => state.nick);
   let user: User | undefined;
@@ -44,24 +45,21 @@ const Toolbar = (): JSX.Element => {
 
   const channels = useMemo(
     () =>
-      useChannelListStore.getState().channels.sort((a, b) => {
+      (useChannelListStore.getState().channels ?? []).sort((a, b) => {
         const A = a.name.toLowerCase();
         const B = b.name.toLowerCase();
         return A < B ? -1 : A > B ? 1 : 0;
       }),
-    []
+    [finished]
   );
 
   const users = useMemo(
     () =>
-      useUsersStore
-        .getState()
-        .getUsersFromChannel(currentChannelName)
-        .sort((a, b) => {
-          const A = a.nick.toLowerCase();
-          const B = b.nick.toLowerCase();
-          return A < B ? -1 : A > B ? 1 : 0;
-        }),
+      (useUsersStore.getState().getUsersFromChannel(currentChannelName) ?? []).sort((a, b) => {
+        const A = a.nick.toLowerCase();
+        const B = b.nick.toLowerCase();
+        return A < B ? -1 : A > B ? 1 : 0;
+      }),
     [currentChannelName]
   );
 
