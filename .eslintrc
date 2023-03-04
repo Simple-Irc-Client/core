@@ -11,9 +11,10 @@
     "sourceType": "module",
     "project": "tsconfig.json"
   },
-  "plugins": ["react", "jsx-a11y", "prettier"],
+  "plugins": ["react", "jsx-a11y", "prettier", "unused-imports"],
   "rules": {
-    "prettier/prettier": ["error"]
+    "prettier/prettier": ["error"],
+    "unused-imports/no-unused-imports": "error"
   },
   "settings": {
     "react": {
