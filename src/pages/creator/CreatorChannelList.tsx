@@ -13,9 +13,9 @@ const CreatorChannelList = (): JSX.Element => {
 
   const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
 
-  const { isFinished, channelList } = useChannelList();
+  const { isFinished } = useChannelList();
 
-  const channels = isFinished ? channelList ?? [] : [];
+  const channels = isFinished ? useChannelList().channelList ?? [] : [];
   const openChannels = useChannelsStore((state) => state.openChannels);
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
