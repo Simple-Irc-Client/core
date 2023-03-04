@@ -29,7 +29,7 @@ const Users = (): JSX.Element => {
             backgroundColor: usersColor,
           }}
         >
-          {usersStore.getUsersFromChannel(currentChannelName).map((user) => (
+          {usersStore.getUsersFromChannelSortedByMode(currentChannelName).map((user) => (
             <ListItemButton key={user.nick}>
               <ListItemAvatar>
                 <Avatar alt={user.nick} src={user.avatar} />

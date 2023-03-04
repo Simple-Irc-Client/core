@@ -9,12 +9,13 @@ export interface ChannelListStore {
   setAddChannel: (name: string, users: number, topic: string) => void;
   setClearList: () => void;
   setFinished: (status: boolean) => void;
+  getChannelsSortedByAZ: () => ChannelList[];
 }
 
 export const useChannelListStore = create<ChannelListStore>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         channels: [],
         finished: false,
 
@@ -33,6 +34,13 @@ export const useChannelListStore = create<ChannelListStore>()(
           set(() => ({
             finished: status,
           }));
+        },
+        getChannelsSortedByAZ: (): ChannelList[] => {
+          return get().channels.sort((a: ChannelList, b: ChannelList) => {
+            const A = a.name.toLowerCase();
+            const B = b.name.toLowerCase();
+            return A < B ? -1 : A > B ? 1 : 0;
+          });
         },
       }),
       { name: 'channels-list' }

@@ -12,7 +12,8 @@ export interface UsersStore {
   getUser: (nick: string) => User | undefined;
   getHasUser: (nick: string) => boolean;
   setJoinUser: (nick: string, channel: string) => void;
-  getUsersFromChannel: (channel: string) => User[];
+  getUsersFromChannelSortedByMode: (channel: string) => User[];
+  getUsersFromChannelSortedByAZ: (channel: string) => User[];
   setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
 }
@@ -71,25 +72,34 @@ export const useUsersStore = create<UsersStore>()(
             }),
           }));
         },
-        getUsersFromChannel: (channel: string): User[] => {
+        getUsersFromChannelSortedByMode: (channel: string): User[] => {
           return get()
             .users.filter((user: User) => user.channels.includes(channel))
-            .sort((obj1: User, obj2: User) => {
-              if (obj1.maxMode !== obj2.maxMode) {
-                if (obj1.maxMode < obj2.maxMode) {
+            .sort((a: User, b: User) => {
+              if (a.maxMode !== b.maxMode) {
+                if (a.maxMode < b.maxMode) {
                   return 1;
                 } else {
                   return -1;
                 }
               } else {
-                if (obj1.nick.toLowerCase() > obj2.nick.toLowerCase()) {
+                if (a.nick.toLowerCase() > b.nick.toLowerCase()) {
                   return 1;
                 }
-                if (obj1.nick.toLowerCase() < obj2.nick.toLowerCase()) {
+                if (a.nick.toLowerCase() < b.nick.toLowerCase()) {
                   return -1;
                 }
               }
               return 0;
+            });
+        },
+        getUsersFromChannelSortedByAZ: (channel: string): User[] => {
+          return get()
+            .users.filter((user: User) => user.channels.includes(channel))
+            .sort((a: User, b: User) => {
+              const A = a.nick.toLowerCase();
+              const B = b.nick.toLowerCase();
+              return A < B ? -1 : A > B ? 1 : 0;
             });
         },
         setUserAvatar: (nick: string, avatar: string): void => {

@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
 import { DataGrid, type GridCellParams, type GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '../../network/network';
-import { useChannelListStore } from '../../store/channelsList';
 import { useSettingsStore } from '../../store/settings';
+import { useChannelsStore } from '../../store/channels';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
+import { useChannelList } from '../../providers/ChannelListContext';
 
 const CreatorChannelList = (): JSX.Element => {
   const { t } = useTranslation();
 
   const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
-  const finished = useChannelListStore((state) => state.finished);
-  const channels = finished ? useChannelListStore.getState().channels : [];
+
+  const { isFinished, channelList } = useChannelList();
+
+  const channels = isFinished ? channelList ?? [] : [];
+  const openChannels = useChannelsStore((state) => state.openChannels);
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
 
@@ -53,6 +58,12 @@ const CreatorChannelList = (): JSX.Element => {
     },
   ];
 
+  useEffect(() => {
+    for (const openChannel of openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))) {
+      updateSelectedChannel((channels) => channels.concat([openChannel.name]));
+    }
+  }, [openChannels]);
+
   return (
     <>
       <Typography component="h1" variant="h5">
@@ -66,8 +77,8 @@ const CreatorChannelList = (): JSX.Element => {
       <Box sx={{ mt: 3, width: '100%' }}>
         <div style={{ display: 'flex', height: 350, width: '100%' }}>
           <DataGrid
-            loading={channels.length < 10 || !finished}
-            rows={channels.length > 10 && finished ? channels : []}
+            loading={channels.length < 10 || !isFinished}
+            rows={channels.length > 10 && isFinished ? channels : []}
             disableColumnMenu={true}
             columns={columns}
             pageSize={50}

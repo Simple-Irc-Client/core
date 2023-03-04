@@ -10,7 +10,7 @@ import { DEBUG_CHANNEL } from '../config/config';
 import { useChannelsStore } from '../store/channels';
 import { useUsersStore } from '../store/users';
 import { MessageColor } from '../config/theme';
-import { useChannelListStore } from '../store/channelsList';
+import { useChannelList } from '../providers/ChannelListContext';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();
@@ -19,7 +19,6 @@ const Toolbar = (): JSX.Element => {
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const setAddMessage = useChannelsStore((state) => state.setAddMessage);
   const getUser = useUsersStore((state) => state.getUser);
-  const finished = useChannelListStore((state) => state.finished);
 
   const nick: string = useSettingsStore((state) => state.nick);
   let user: User | undefined;
@@ -33,35 +32,18 @@ const Toolbar = (): JSX.Element => {
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
 
-  const commands = useMemo(
-    () =>
-      ([ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands).sort((a, b) => {
-        const A = a.toLowerCase();
-        const B = b.toLowerCase();
-        return A < B ? -1 : A > B ? 1 : 0;
-      }),
-    [currentChannelCategory]
-  );
+  const commands = useMemo(() => {
+    const commandsNotSorted = [ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands;
+    return commandsNotSorted.sort((a, b) => {
+      const A = a.toLowerCase();
+      const B = b.toLowerCase();
+      return A < B ? -1 : A > B ? 1 : 0;
+    });
+  }, [currentChannelCategory]);
 
-  const channels = useMemo(
-    () =>
-      (useChannelListStore.getState().channels ?? []).sort((a, b) => {
-        const A = a.name.toLowerCase();
-        const B = b.name.toLowerCase();
-        return A < B ? -1 : A > B ? 1 : 0;
-      }),
-    [finished]
-  );
+  const channels = useChannelList().channelList;
 
-  const users = useMemo(
-    () =>
-      (useUsersStore.getState().getUsersFromChannel(currentChannelName) ?? []).sort((a, b) => {
-        const A = a.nick.toLowerCase();
-        const B = b.nick.toLowerCase();
-        return A < B ? -1 : A > B ? 1 : 0;
-      }),
-    [currentChannelName]
-  );
+  const users = useMemo(() => useUsersStore.getState().getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);

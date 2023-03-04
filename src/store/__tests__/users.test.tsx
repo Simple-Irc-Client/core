@@ -204,14 +204,14 @@ describe('users tests', () => {
       result.current.setAddUser(newUser4);
     });
     act(() => {
-      testResult1 = result.current.getUsersFromChannel('channel4');
+      testResult1 = result.current.getUsersFromChannelSortedByMode('channel4');
     });
 
     expect(testResult1).toStrictEqual([newUser4]);
 
     let testResult2;
     act(() => {
-      testResult2 = result.current.getUsersFromChannel('channel2');
+      testResult2 = result.current.getUsersFromChannelSortedByMode('channel2');
     });
 
     expect(testResult2).toStrictEqual([newUser2, newUser3]);

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useChannelsStore, type ChannelsStore } from '../store/channels';
-import { useChannelListStore, type ChannelListStore } from '../store/channelsList';
 import { useSettingsStore, type SettingsStore } from '../store/settings';
 import { useUsersStore, type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory } from '../types';
@@ -8,6 +7,7 @@ import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
+import { type ChannelListContextProps } from '../providers/ChannelListContext';
 
 export interface IrcEvent {
   type: string;
@@ -17,10 +17,9 @@ export interface IrcEvent {
 const STATUS_CHANNEL = 'Status';
 const DEBUG_CHANNEL = 'Debug';
 
-export const kernel = (event: IrcEvent): void => {
+export const kernel = (event: IrcEvent, channelListContext: ChannelListContextProps): void => {
   const settingsStore = useSettingsStore.getState();
   const channelsStore = useChannelsStore.getState();
-  const channelListStore = useChannelListStore.getState();
   const usersStore = useUsersStore.getState();
 
   switch (event.type) {
@@ -32,7 +31,7 @@ export const kernel = (event: IrcEvent): void => {
       break;
     case 'raw':
       if (event?.line !== undefined) {
-        handleRaw(settingsStore, channelsStore, channelListStore, usersStore, event.line);
+        handleRaw(settingsStore, channelsStore, channelListContext, usersStore, event.line);
       }
       break;
   }
@@ -73,7 +72,7 @@ const handleDisconnected = (channelsStore: ChannelsStore): void => {
   }
 };
 
-const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListStore: ChannelListStore, usersStore: UsersStore, event: string): void => {
+const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListContext: ChannelListContextProps, usersStore: UsersStore, event: string): void => {
   const { tags, sender, command, line } = parseIrcRawMessage(event);
 
   channelsStore.setAddMessage(DEBUG_CHANNEL, {
@@ -122,13 +121,13 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onRaw266(channelsStore, tags, line);
       break;
     case '321':
-      onRaw321(settingsStore, channelListStore);
+      onRaw321(channelListContext);
       break;
     case '322':
-      onRaw322(settingsStore, channelListStore, line);
+      onRaw322(channelListContext, line);
       break;
     case '323':
-      onRaw323(channelListStore);
+      onRaw323(channelListContext);
       break;
     case '332':
       onRaw332(channelsStore, line);
@@ -392,25 +391,25 @@ const onRaw266 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
 };
 
 // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
-const onRaw321 = (settingsStore: SettingsStore, channelListStore: ChannelListStore): void => {
-  channelListStore.setClearList();
-  channelListStore.setFinished(false);
+const onRaw321 = (channelListContext: ChannelListContextProps): void => {
+  channelListContext.clear();
+  channelListContext.setFinished(false);
 };
 
 // :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
-const onRaw322 = (settingsStore: SettingsStore, channelListStore: ChannelListStore, line: string[]): void => {
+const onRaw322 = (channelListContext: ChannelListContextProps, line: string[]): void => {
   const sender = line.shift();
 
   const name = line.shift() ?? '';
   const users = Number(line.shift() ?? '0');
   const topic = line.join(' ')?.substring(1);
 
-  channelListStore.setAddChannel(name, users, topic);
+  channelListContext.add({ name, users, topic });
 };
 
 // :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
-const onRaw323 = (channelListStore: ChannelListStore): void => {
-  channelListStore.setFinished(true);
+const onRaw323 = (channelListContext: ChannelListContextProps): void => {
+  channelListContext.setFinished(true);
 };
 
 // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
@@ -691,7 +690,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 
   const { nick } = parseNick(sender, settingsStore.userModes);
   if (nick === settingsStore.nick) {
-    const usersFromChannel = usersStore.getUsersFromChannel(channel);
+    const usersFromChannel = usersStore.getUsersFromChannelSortedByAZ(channel);
     for (const userFromChannel of usersFromChannel) {
       usersStore.setRemoveUser(userFromChannel.nick, channel);
     }

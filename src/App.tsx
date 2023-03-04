@@ -20,6 +20,7 @@ import '@fontsource/roboto/700.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Stack } from '@mui/material';
+import { ChannelListProvider } from './providers/ChannelListProvider';
 
 const theme = createTheme();
 
@@ -32,28 +33,30 @@ function App(): JSX.Element {
 
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AppNetwork />
-      <div onContextMenu={handleContextMenu}>
-        {!isCreatorCompleted && <Creator />}
-        {isCreatorCompleted && (
-          <Container sx={{ minWidth: '100%', height: '100vh', padding: '0 !important' }}>
-            <Stack direction="row" sx={{ height: '100vh' }}>
-              <Channels />
-              <Stack
-                direction="column"
-                height="100vh"
-                sx={{ marginLeft: { xs: 0, md: `${channelsWidth}px` }, minWidth: { xs: '100%', sm: `calc(100% - ${usersWidth + 1}px)`, md: `calc(100% - ${channelsWidth + usersWidth + 1}px)` } }}
-              >
-                <Topic />
-                <Main />
-                <Toolbar />
+      <ChannelListProvider>
+        <CssBaseline />
+        <AppNetwork />
+        <div onContextMenu={handleContextMenu}>
+          {!isCreatorCompleted && <Creator />}
+          {isCreatorCompleted && (
+            <Container sx={{ minWidth: '100%', height: '100vh', padding: '0 !important' }}>
+              <Stack direction="row" sx={{ height: '100vh' }}>
+                <Channels />
+                <Stack
+                  direction="column"
+                  height="100vh"
+                  sx={{ marginLeft: { xs: 0, md: `${channelsWidth}px` }, minWidth: { xs: '100%', sm: `calc(100% - ${usersWidth + 1}px)`, md: `calc(100% - ${channelsWidth + usersWidth + 1}px)` } }}
+                >
+                  <Topic />
+                  <Main />
+                  <Toolbar />
+                </Stack>
+                <Users />
               </Stack>
-              <Users />
-            </Stack>
-          </Container>
-        )}
-      </div>
+            </Container>
+          )}
+        </div>
+      </ChannelListProvider>
     </ThemeProvider>
   );
 }
