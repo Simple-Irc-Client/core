@@ -5,6 +5,7 @@ import { maxMessages } from '../config/config';
 
 export interface ChannelsStore {
   openChannels: Channel[];
+  openChannelsShortList: string[];
 
   setAddChannel: (channelName: string, category: ChannelCategory) => void;
   setRemoveChannel: (channelName: string) => void;
@@ -24,9 +25,11 @@ export const useChannelsStore = create<ChannelsStore>()(
     persist(
       (set, get) => ({
         openChannels: [],
+        openChannelsShortList: [],
 
         setAddChannel: (channelName: string, category: ChannelCategory): void => {
           set((state) => ({
+            openChannelsShortList: [...state.openChannelsShortList, channelName],
             openChannels: [
               ...state.openChannels,
               {
@@ -43,11 +46,15 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setRemoveChannel: (channelName: string) => {
           set((state) => ({
+            openChannelsShortList: state.openChannelsShortList.filter((channel) => channel !== channelName),
             openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
           }));
         },
         getChannel: (channelName: string): Channel | undefined => {
           return get().openChannels.find((channel: Channel) => channel.name === channelName);
+        },
+        getOpenChannels: (): string[] => {
+          return get().openChannels.map((channel) => channel.name);
         },
         setTopic: (channelName: string, newTopic: string) => {
           set((state) => ({

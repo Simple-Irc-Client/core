@@ -13,10 +13,10 @@ const CreatorChannelList = (): JSX.Element => {
 
   const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
 
-  const { isFinished } = useChannelList();
+  const { isFinished, channelList } = useChannelList();
 
-  const channels = isFinished ? useChannelList().channelList ?? [] : [];
-  const openChannels = useChannelsStore((state) => state.openChannels);
+  const channels = isFinished ? channelList ?? [] : [];
+  const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
 
@@ -59,9 +59,8 @@ const CreatorChannelList = (): JSX.Element => {
   ];
 
   useEffect(() => {
-    for (const openChannel of openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))) {
-      updateSelectedChannel((channels) => channels.concat([openChannel.name]));
-    }
+    const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel)).filter((channel) => !selectedChannels.includes(channel));
+    updateSelectedChannel(selectedChannels.concat(diff));
   }, [openChannels]);
 
   return (
