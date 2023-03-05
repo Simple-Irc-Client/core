@@ -52,7 +52,7 @@ export interface Channel {
   topicSetBy: string;
   topicSetTime: number;
   unReadMessages: number;
-  typing: Record<string, UserTypingStatus>;
+  typing: string[]; // Record<string, UserTypingStatus>;
 }
 
 export enum ChannelCategory {

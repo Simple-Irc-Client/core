@@ -42,7 +42,7 @@ export const useChannelsStore = create<ChannelsStore>()(
                 topicSetBy: '',
                 topicSetTime: 0,
                 unReadMessages: 0,
-                typing: {},
+                typing: [],
               },
             ],
           }));
@@ -121,10 +121,16 @@ export const useChannelsStore = create<ChannelsStore>()(
                 return channel;
               }
 
-              channel.typing[nick] = status;
-
-              if (status === 'done') {
-                delete channel.typing[nick];
+              switch (status) {
+                case 'done':
+                  channel.typing = channel.typing.filter((typingNick) => typingNick !== nick);
+                  break;
+                case 'active':
+                case 'paused':
+                  if (!channel.typing.includes(nick)) {
+                    channel.typing.push(nick);
+                  }
+                  break;
               }
 
               return channel;
@@ -132,10 +138,7 @@ export const useChannelsStore = create<ChannelsStore>()(
           }));
         },
         getTyping: (channelName: string): string[] => {
-          const typings = get().getChannel(channelName)?.typing ?? {};
-          return Object.entries(typings).map(([nick, status]) => {
-            return nick;
-          });
+          return get().getChannel(channelName)?.typing ?? [];
         },
       }),
       { name: 'channels' }
