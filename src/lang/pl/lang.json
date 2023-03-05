@@ -34,6 +34,7 @@
     "main.toolbar.write": "Napisz na ",
     "main.channels.title": "Kanały:",
     "main.users.title": "Użytkownicy:",
+    "main.user-typing": "pisze...",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",

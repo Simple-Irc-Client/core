@@ -2,7 +2,7 @@
 import { useChannelsStore, type ChannelsStore } from '../store/channels';
 import { useSettingsStore, type SettingsStore } from '../store/settings';
 import { useUsersStore, type UsersStore } from '../store/users';
-import { ChannelCategory, MessageCategory } from '../types';
+import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 import i18next from '../i18n';
@@ -172,7 +172,10 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onPart(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     case 'PRIVMSG':
-      onPrivmsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onPrivMsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      break;
+    case 'TAGMSG':
+      onTagMsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
       break;
     default:
       console.log(`unknown irc event: ${JSON.stringify(event)}`);
@@ -182,10 +185,9 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
   // TODO
   // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
   // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
-  // @msgid=OzlbgBf04QlrtVm1hk02Jq;time=2023-02-04T23:17:18.121Z :Merovingian NICK :Niezident17561
-  // :legowisko.pirc.pl 761 dsfsdfdsfdsfsdfdsfdsf Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg
   // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
   // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
+  // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
 
   // Ban => 'b',
   // Exception => 'e',
@@ -716,7 +718,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
-const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onPrivMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
   const serverUserModes = settingsStore.userModes;
 
   const target = line.shift();
@@ -735,6 +737,10 @@ const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
       // TODO increment unread messages
     }
 
+    if (target === settingsStore.currentChannelName) {
+      channelsStore.setTyping(target, nick, 'done');
+    }
+
     const user = usersStore.getUser(nick);
 
     channelsStore.setAddMessage(target, {
@@ -745,5 +751,24 @@ const onPrivmsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
       category: MessageCategory.default,
       color: MessageColor.default,
     });
+  }
+};
+
+// @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie\r\n
+const onTagMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+  const serverUserModes = settingsStore.userModes;
+
+  const channel = line.shift();
+
+  if (channel === undefined) {
+    console.warn('RAW TAGMSG - warning - cannot read channel');
+    return;
+  }
+
+  const { nick } = parseNick(sender, serverUserModes);
+
+  const status = tags?.['+typing'];
+  if (status !== undefined) {
+    channelsStore.setTyping(channel, nick, status as UserTypingStatus);
   }
 };

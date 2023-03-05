@@ -6,6 +6,7 @@ import { MessageCategory, type Message } from '../types';
 import { format } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 import { MessageColor } from '../config/theme';
+import { useTranslation } from 'react-i18next';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
@@ -86,6 +87,7 @@ const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
 );
 
 const Main = (): JSX.Element => {
+  const { t } = useTranslation();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const channelsStore = useChannelsStore();
@@ -97,7 +99,7 @@ const Main = (): JSX.Element => {
   };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'scroll' }}>
+    <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative' }}>
       {channelsStore.getMessages(currentChannelName).map((message, index) => (
         <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
           {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
@@ -109,6 +111,12 @@ const Main = (): JSX.Element => {
           )}
         </List>
       ))}
+      {channelsStore.getTyping(currentChannelName).length !== 0 && (
+        <Box sx={{ position: 'absolute', bottom: '0', left: '16px', fontSize: '12px' }}>
+          {channelsStore.getTyping(currentChannelName).join(', ')}
+          &nbsp;{t('main.user-typing')}
+        </Box>
+      )}
       <AlwaysScrollToBottom />
     </Box>
   );

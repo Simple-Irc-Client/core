@@ -42,6 +42,8 @@ export enum MessageCategory {
   motd = 'motd',
 }
 
+export type UserTypingStatus = 'active' | 'paused' | 'done';
+
 export interface Channel {
   category: ChannelCategory;
   messages: Message[];
@@ -50,6 +52,7 @@ export interface Channel {
   topicSetBy: string;
   topicSetTime: number;
   unReadMessages: number;
+  typing: Record<string, UserTypingStatus>;
 }
 
 export enum ChannelCategory {

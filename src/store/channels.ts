@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type Channel, type ChannelCategory, type Message } from '../types';
+import { type UserTypingStatus, type Channel, type ChannelCategory, type Message } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { maxMessages } from '../config/config';
 
@@ -18,6 +18,8 @@ export interface ChannelsStore {
   setAddMessage: (channelName: string, newMessage: Message) => void;
   getMessages: (channelName: string) => Message[];
   getCategory: (channelName: string) => ChannelCategory | undefined;
+  setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
+  getTyping: (channelName: string) => string[];
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -40,6 +42,7 @@ export const useChannelsStore = create<ChannelsStore>()(
                 topicSetBy: '',
                 topicSetTime: 0,
                 unReadMessages: 0,
+                typing: {},
               },
             ],
           }));
@@ -110,6 +113,29 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         getCategory: (channelName: string): ChannelCategory | undefined => {
           return get().getChannel(channelName)?.category ?? undefined;
+        },
+        setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
+          set((state) => ({
+            openChannels: state.openChannels.map((channel: Channel) => {
+              if (channel.name !== channelName) {
+                return channel;
+              }
+
+              channel.typing[nick] = status;
+
+              if (status === 'done') {
+                delete channel.typing[nick];
+              }
+
+              return channel;
+            }),
+          }));
+        },
+        getTyping: (channelName: string): string[] => {
+          const typings = get().getChannel(channelName)?.typing ?? {};
+          return Object.entries(typings).map(([nick, status]) => {
+            return nick;
+          });
         },
       }),
       { name: 'channels' }
