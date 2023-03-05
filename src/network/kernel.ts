@@ -734,7 +734,7 @@ const onPrivMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
     // TODO priv
   } else {
     if (target !== settingsStore.currentChannelName) {
-      // TODO increment unread messages
+      channelsStore.setIncreaseUnreadMessages(target);
     }
 
     if (target === settingsStore.currentChannelName) {

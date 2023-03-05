@@ -20,6 +20,8 @@ export interface ChannelsStore {
   getCategory: (channelName: string) => ChannelCategory | undefined;
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   getTyping: (channelName: string) => string[];
+  setClearUnreadMessages: (channelName: string) => void;
+  setIncreaseUnreadMessages: (channelName: string) => void;
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -139,6 +141,30 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         getTyping: (channelName: string): string[] => {
           return get().getChannel(channelName)?.typing ?? [];
+        },
+        setClearUnreadMessages: (channelName: string) => {
+          set((state) => ({
+            openChannels: state.openChannels.map((channel: Channel) => {
+              if (channel.name !== channelName) {
+                return channel;
+              }
+
+              channel.unReadMessages = 0;
+              return channel;
+            }),
+          }));
+        },
+        setIncreaseUnreadMessages: (channelName: string) => {
+          set((state) => ({
+            openChannels: state.openChannels.map((channel: Channel) => {
+              if (channel.name !== channelName) {
+                return channel;
+              }
+
+              channel.unReadMessages++;
+              return channel;
+            }),
+          }));
         },
       }),
       { name: 'channels' }

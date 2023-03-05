@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircPartChannel } from '../network/network';
+import { type BadgeProps } from '@mui/material/Badge';
+import { styled } from '@mui/material/styles';
 
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
@@ -20,6 +22,7 @@ const Channels = (): JSX.Element => {
   const openChannels: Channel[] = useChannelsStore((state) => state.openChannels);
   const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const setClearUnreadMessages = useChannelsStore((state) => state.setClearUnreadMessages);
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
 
@@ -37,7 +40,14 @@ const Channels = (): JSX.Element => {
 
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
+    setClearUnreadMessages(channel.name);
   };
+
+  const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
+    '& .MuiBadge-badge': {
+      top: '50%',
+    },
+  }));
 
   return (
     <Drawer
@@ -45,7 +55,7 @@ const Channels = (): JSX.Element => {
       sx={{
         overflowY: 'scroll',
         display: { xs: 'none', md: 'block' },
-        '& .MuiDrawer-paper': { boxSizing: 'border-box', backgroundColor: { md: channelsColor } },
+        '& .MuiDrawer-paper': { backgroundColor: { md: channelsColor } },
       }}
       open
     >
@@ -67,19 +77,23 @@ const Channels = (): JSX.Element => {
               handleHover(channel.name, false);
             }}
             secondaryAction={
-              <IconButton
-                edge="end"
-                aria-label="close"
-                sx={{ display: [ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) ? (showRemoveChannelIcon === channel.name ? 'inherit' : 'none') : 'none' }}
-                onClick={() => {
-                  handleRemoveChannel(channel);
-                }}
-              >
-                <CloseOutlinedIcon />
-              </IconButton>
+              <>
+                {showRemoveChannelIcon !== channel.name && <StyledBadge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" />}
+                <IconButton
+                  edge="end"
+                  aria-label="close"
+                  sx={{ display: [ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) ? (showRemoveChannelIcon === channel.name ? 'inherit' : 'none') : 'none' }}
+                  onClick={() => {
+                    handleRemoveChannel(channel);
+                  }}
+                >
+                  <CloseOutlinedIcon />
+                </IconButton>
+              </>
             }
             disablePadding
           >
+            {/*  */}
             <ListItemButton
               aria-label={channel.name}
               dense={true}
@@ -88,16 +102,14 @@ const Channels = (): JSX.Element => {
               }}
               selected={currentChannelName === channel.name}
             >
-              <Badge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" sx={{ top: '50%' }}>
-                <ListItemIcon sx={{ minWidth: '30px' }}>
-                  {channel.category === 'channel' && <TagOutlinedIcon />}
-                  {channel.category === 'priv' && <PersonOutlineOutlinedIcon />}
-                  {channel.category === 'status' && <HomeOutlinedIcon />}
-                  {channel.category === 'debug' && <BuildOutlinedIcon />}
-                  {channel.category === undefined && <TagOutlinedIcon />}
-                </ListItemIcon>
-                <ListItemText primary={channel.name} />
-              </Badge>
+              <ListItemIcon sx={{ minWidth: '30px' }}>
+                {channel.category === 'channel' && <TagOutlinedIcon />}
+                {channel.category === 'priv' && <PersonOutlineOutlinedIcon />}
+                {channel.category === 'status' && <HomeOutlinedIcon />}
+                {channel.category === 'debug' && <BuildOutlinedIcon />}
+                {channel.category === undefined && <TagOutlinedIcon />}
+              </ListItemIcon>
+              <ListItemText primary={channel.name} />
             </ListItemButton>
           </ListItem>
         ))}
