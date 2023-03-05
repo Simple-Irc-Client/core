@@ -67,16 +67,18 @@ const Toolbar = (): JSX.Element => {
     if (message.startsWith('/')) {
       payload = parseMessageToCommand(currentChannelName, message);
     } else {
-      setAddMessage(currentChannelName, {
-        message,
-        nick: user ?? nick,
-        target: currentChannelName,
-        time: new Date().toISOString(),
-        category: MessageCategory.default,
-        color: MessageColor.default,
-      });
+      if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+        setAddMessage(currentChannelName, {
+          message,
+          nick: user ?? nick,
+          target: currentChannelName,
+          time: new Date().toISOString(),
+          category: MessageCategory.default,
+          color: MessageColor.default,
+        });
 
-      payload = `PRIVMSG ${currentChannelName} :${message}`;
+        payload = `PRIVMSG ${currentChannelName} :${message}`;
+      }
     }
     ircSendRawMessage(payload);
 

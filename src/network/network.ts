@@ -60,6 +60,10 @@ export const ircRequestMetadata = (nick: string): void => {
 };
 
 export const ircSendRawMessage = (data: string, queue?: boolean): void => {
+  if (data.length === 0) {
+    return;
+  }
+
   const command = {
     type: 'raw',
     event: {
