@@ -6,7 +6,7 @@ import { ChannelCategory, type ChannelList, MessageCategory, type User } from '.
 import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../network/command';
-import { DEBUG_CHANNEL } from '../config/config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 import { useChannelsStore } from '../store/channels';
 import { useUsersStore } from '../store/users';
 import { MessageColor } from '../config/theme';
@@ -32,6 +32,8 @@ const Toolbar = (): JSX.Element => {
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
 
+  const typingStatus = useRef<'active' | 'paused' | 'done' | undefined>(undefined);
+
   const commands = useMemo(() => {
     const commandsNotSorted = [ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands;
     return commandsNotSorted.sort((a, b) => {
@@ -47,6 +49,11 @@ const Toolbar = (): JSX.Element => {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
+
+    if (typingStatus.current !== 'active' && ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+      typingStatus.current = 'active';
+      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`, true);
+    }
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLInputElement>): void => {
@@ -72,6 +79,11 @@ const Toolbar = (): JSX.Element => {
       payload = `PRIVMSG ${currentChannelName} :${message}`;
     }
     ircSendRawMessage(payload);
+
+    if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+      typingStatus.current = 'done';
+      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`, true);
+    }
 
     setMessage('');
   };
