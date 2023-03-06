@@ -1,6 +1,7 @@
 import React from 'react';
 import Channels from './containers/Channels';
 import Main from './containers/Main';
+import Typing from './containers/Typing';
 import Toolbar from './containers/Toolbar';
 import Topic from './containers/Topic';
 import Users from './containers/Users';
@@ -49,6 +50,7 @@ function App(): JSX.Element {
                 >
                   <Topic />
                   <Main />
+                  <Typing />
                   <Toolbar />
                 </Stack>
                 <Users />
