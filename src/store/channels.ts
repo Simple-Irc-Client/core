@@ -156,7 +156,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setIncreaseUnreadMessages: (channelName: string) => {
           set((state) => ({
-            openChannelsShortList: state.openChannels.map((channel: Channel) => {
+            openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
               if (channel.name !== channelName) {
                 return channel;
               }
