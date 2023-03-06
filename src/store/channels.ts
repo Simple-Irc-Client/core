@@ -144,6 +144,14 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setClearUnreadMessages: (channelName: string) => {
           set((state) => ({
+            openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
+              if (channel.name !== channelName) {
+                return channel;
+              }
+
+              channel.unReadMessages = 0;
+              return channel;
+            }),
             openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
