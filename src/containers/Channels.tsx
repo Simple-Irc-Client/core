@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Drawer, ListItem, IconButton } from '@mui/material';
+import { List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Drawer, ListItem, IconButton, Autocomplete, TextField } from '@mui/material';
 import {
+  AddOutlined as AddOutlinedIcon,
   TagOutlined as TagOutlinedIcon,
   HomeOutlined as HomeOutlinedIcon,
   BuildOutlined as BuildOutlinedIcon,
@@ -12,9 +13,10 @@ import { ChannelCategory, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
-import { ircPartChannel } from '../network/network';
+import { ircJoinChannels, ircPartChannel } from '../network/network';
 import { type BadgeProps } from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
+import { useChannelList } from '../providers/ChannelListContext';
 
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
@@ -23,6 +25,11 @@ const Channels = (): JSX.Element => {
   const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const setClearUnreadMessages = useChannelsStore((state) => state.setClearUnreadMessages);
+  const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
+
+  const channels = useChannelList().channelList;
+
+  const [joinChannel, setJoinChannel] = useState<string>('');
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
 
@@ -36,6 +43,13 @@ const Channels = (): JSX.Element => {
 
   const handleRemoveChannel = (channel: Channel): void => {
     ircPartChannel(channel.name);
+  };
+
+  const handleJoinChannel = (): void => {
+    if (joinChannel.length !== 0) {
+      ircJoinChannels([joinChannel]);
+      setJoinChannel('');
+    }
   };
 
   const handleListItemClick = (channel: Channel): void => {
@@ -93,7 +107,6 @@ const Channels = (): JSX.Element => {
             }
             disablePadding
           >
-            {/*  */}
             <ListItemButton
               aria-label={channel.name}
               dense={true}
@@ -113,6 +126,36 @@ const Channels = (): JSX.Element => {
             </ListItemButton>
           </ListItem>
         ))}
+        <ListItem
+          secondaryAction={
+            <>
+              <IconButton
+                edge="end"
+                aria-label="add"
+                onClick={() => {
+                  handleJoinChannel();
+                }}
+              >
+                <AddOutlinedIcon />
+              </IconButton>
+            </>
+          }
+        >
+          <Autocomplete
+            value={joinChannel}
+            size="small"
+            options={channels.map((option) => option.name)}
+            getOptionDisabled={(option) => openChannelsShort.includes(option)}
+            freeSolo
+            onChange={(event, newValue) => {
+              if (newValue != null) {
+                setJoinChannel(newValue);
+              }
+            }}
+            renderInput={(params) => <TextField {...params} variant="standard" />}
+            sx={{ width: '100%' }}
+          />
+        </ListItem>
       </List>
     </Drawer>
   );
