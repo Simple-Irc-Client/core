@@ -653,7 +653,7 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
     channelsStore.setAddMessage(settingsStore.currentChannelName, {
       message: i18next.t('kernel.join').replace('{{nick}}', nick),
       nick: undefined,
-      target: settingsStore.currentChannelName,
+      target: channel,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.join,
       color: MessageColor.join,
