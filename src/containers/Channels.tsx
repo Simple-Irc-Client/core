@@ -21,7 +21,6 @@ import { useChannelList } from '../providers/ChannelListContext';
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const openChannels: Channel[] = useChannelsStore((state) => state.openChannels);
   const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const setClearUnreadMessages = useChannelsStore((state) => state.setClearUnreadMessages);
@@ -81,7 +80,7 @@ const Channels = (): JSX.Element => {
         }
         sx={{ minWidth: `${channelsWidth}px`, backgroundColor: { md: channelsColor } }}
       >
-        {openChannels.map((channel) => (
+        {openChannelsShort.map((channel) => (
           <ListItem
             key={channel.name}
             onMouseEnter={() => {
@@ -145,7 +144,13 @@ const Channels = (): JSX.Element => {
             value={joinChannel}
             size="small"
             options={channels.map((option) => option.name)}
-            getOptionDisabled={(option) => openChannelsShort.includes(option)}
+            getOptionDisabled={(option) =>
+              openChannelsShort
+                .map((channel) => {
+                  return channel.name;
+                })
+                .includes(option)
+            }
             freeSolo
             onChange={(event, newValue) => {
               if (newValue != null) {

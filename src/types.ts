@@ -45,13 +45,16 @@ export enum MessageCategory {
 export type UserTypingStatus = 'active' | 'paused' | 'done';
 
 export interface Channel {
-  category: ChannelCategory;
-  messages: Message[];
   name: string;
+  category: ChannelCategory;
+  unReadMessages: number;
+}
+
+export interface ChannelExtended extends Channel {
+  messages: Message[];
   topic: string;
   topicSetBy: string;
   topicSetTime: number;
-  unReadMessages: number;
   typing: string[]; // Record<string, UserTypingStatus>;
 }
 

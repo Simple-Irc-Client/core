@@ -1,15 +1,15 @@
 import { create } from 'zustand';
-import { type UserTypingStatus, type Channel, type ChannelCategory, type Message } from '../types';
+import { type UserTypingStatus, type Channel, type ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { maxMessages } from '../config/config';
 
 export interface ChannelsStore {
-  openChannels: Channel[];
-  openChannelsShortList: string[];
+  openChannels: ChannelExtended[];
+  openChannelsShortList: Channel[];
 
   setAddChannel: (channelName: string, category: ChannelCategory) => void;
   setRemoveChannel: (channelName: string) => void;
-  getChannel: (channelName: string) => Channel | undefined;
+  getChannel: (channelName: string) => ChannelExtended | undefined;
   setTopic: (channelName: string, newTopic: string) => void;
   getTopic: (channelName: string) => string;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
@@ -33,7 +33,7 @@ export const useChannelsStore = create<ChannelsStore>()(
 
         setAddChannel: (channelName: string, category: ChannelCategory): void => {
           set((state) => ({
-            openChannelsShortList: [...state.openChannelsShortList, channelName],
+            openChannelsShortList: [...state.openChannelsShortList, { category, name: channelName, unReadMessages: 0 }],
             openChannels: [
               ...state.openChannels,
               {
@@ -51,19 +51,19 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setRemoveChannel: (channelName: string) => {
           set((state) => ({
-            openChannelsShortList: state.openChannelsShortList.filter((channel) => channel !== channelName),
+            openChannelsShortList: state.openChannelsShortList.filter((channel) => channel.name !== channelName),
             openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
           }));
         },
-        getChannel: (channelName: string): Channel | undefined => {
-          return get().openChannels.find((channel: Channel) => channel.name === channelName);
+        getChannel: (channelName: string): ChannelExtended | undefined => {
+          return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName);
         },
         getOpenChannels: (): string[] => {
           return get().openChannels.map((channel) => channel.name);
         },
         setTopic: (channelName: string, newTopic: string) => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
@@ -74,11 +74,11 @@ export const useChannelsStore = create<ChannelsStore>()(
           }));
         },
         getTopic: (channelName: string): string => {
-          return get().openChannels.find((channel: Channel) => channel.name === channelName)?.topic ?? '';
+          return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName)?.topic ?? '';
         },
         setTopicSetBy: (channelName: string, nick: string, when: number) => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
@@ -97,7 +97,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setAddMessage: (channelName: string, newMessage: Message): void => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
@@ -118,7 +118,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
@@ -144,7 +144,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setClearUnreadMessages: (channelName: string) => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
@@ -156,7 +156,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         setIncreaseUnreadMessages: (channelName: string) => {
           set((state) => ({
-            openChannels: state.openChannels.map((channel: Channel) => {
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
               if (channel.name !== channelName) {
                 return channel;
               }
