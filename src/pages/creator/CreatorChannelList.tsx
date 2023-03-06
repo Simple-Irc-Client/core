@@ -59,8 +59,14 @@ const CreatorChannelList = (): JSX.Element => {
   ];
 
   useEffect(() => {
-    const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel)).filter((channel) => !selectedChannels.includes(channel));
-    updateSelectedChannel(selectedChannels.concat(diff));
+    const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name)).filter((channel) => !selectedChannels.includes(channel.name));
+    updateSelectedChannel(
+      selectedChannels.concat(
+        diff.map((channel) => {
+          return channel.name;
+        })
+      )
+    );
   }, [openChannels]);
 
   return (
