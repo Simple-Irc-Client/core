@@ -1,4 +1,4 @@
-import React, { type FC, type PropsWithChildren, useRef, useCallback, useMemo, useState } from 'react';
+import React, { type FC, type PropsWithChildren, useRef, useState } from 'react';
 import { ChannelListContext } from './ChannelListContext';
 import { type ChannelList } from '../types';
 
@@ -6,17 +6,17 @@ export const ChannelListProvider: FC<PropsWithChildren> = ({ children }) => {
   const channelList = useRef<ChannelList[]>([]);
   const [isFinished, setIsFinished] = useState(false);
 
-  const handleAdd = useCallback((channel: ChannelList) => {
+  const handleAdd = (channel: ChannelList): void => {
     if (channel.name !== '*') {
       channelList.current.push(channel);
     }
-  }, []);
+  };
 
-  const handleClear = useCallback(() => {
+  const handleClear = (): void => {
     channelList.current = [];
-  }, []);
+  };
 
-  const handleSetFinished = useCallback((status: boolean) => {
+  const handleSetFinished = (status: boolean): void => {
     if (status) {
       channelList.current = channelList.current.sort((a: ChannelList, b: ChannelList) => {
         const A = a.name.toLowerCase();
@@ -25,18 +25,15 @@ export const ChannelListProvider: FC<PropsWithChildren> = ({ children }) => {
       });
     }
     setIsFinished(status);
-  }, []);
+  };
 
-  const value = useMemo(
-    () => ({
-      channelList: channelList.current,
-      isFinished,
-      add: handleAdd,
-      clear: handleClear,
-      setFinished: handleSetFinished,
-    }),
-    [isFinished]
-  );
+  const value = {
+    channelList: channelList.current.length > 10 ? channelList.current : [],
+    isFinished,
+    add: handleAdd,
+    clear: handleClear,
+    setFinished: handleSetFinished,
+  };
 
   return <ChannelListContext.Provider value={value}>{children}</ChannelListContext.Provider>;
 };

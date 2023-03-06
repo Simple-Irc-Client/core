@@ -37,7 +37,7 @@ export const AppNetwork = (): JSX.Element => {
       sicSocket.off('sic-irc-event', onIrcEvent);
       sicSocket.off('sic-server-event', onServerEvent);
     };
-  }, [sicSocket]);
+  }, []);
 
   // send LIST request after 20 seconds
   useEffect(() => {
