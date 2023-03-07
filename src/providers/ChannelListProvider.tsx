@@ -1,4 +1,4 @@
-import React, { type FC, type PropsWithChildren, useRef, useState } from 'react';
+import React, { type FC, type PropsWithChildren, useRef, useState, useMemo } from 'react';
 import { ChannelListContext } from './ChannelListContext';
 import { type ChannelList } from '../types';
 
@@ -27,13 +27,16 @@ export const ChannelListProvider: FC<PropsWithChildren> = ({ children }) => {
     setIsFinished(status);
   };
 
-  const value = {
-    channelList: channelList.current.length > 10 ? channelList.current : [],
-    isFinished,
-    add: handleAdd,
-    clear: handleClear,
-    setFinished: handleSetFinished,
-  };
+  const value = useMemo(
+    () => ({
+      channelList: channelList.current.length > 10 ? channelList.current : [],
+      isFinished,
+      add: handleAdd,
+      clear: handleClear,
+      setFinished: handleSetFinished,
+    }),
+    [isFinished]
+  );
 
   return <ChannelListContext.Provider value={value}>{children}</ChannelListContext.Provider>;
 };
