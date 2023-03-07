@@ -706,7 +706,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
         .t('kernel.part')
         .replace('{{nick}}', nick)
         .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-      target: settingsStore.currentChannelName,
+      target: channel,
       time: tags?.time ?? new Date().toISOString(),
       category: MessageCategory.part,
       color: MessageColor.part,
