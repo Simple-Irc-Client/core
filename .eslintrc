@@ -14,7 +14,13 @@
   "plugins": ["react", "jsx-a11y", "prettier", "unused-imports"],
   "rules": {
     "prettier/prettier": ["error"],
-    "unused-imports/no-unused-imports": "error"
+    "unused-imports/no-unused-imports": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": ["@mui/*/*/*"]
+      }
+    ]
   },
   "settings": {
     "react": {
