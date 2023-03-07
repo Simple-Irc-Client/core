@@ -15,31 +15,32 @@ const Users = (): JSX.Element => {
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
   return (
-    <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee', overflowY: 'scroll' }}>
+    <>
       {[ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) && (
-        <List
-          subheader={
-            <ListSubheader component="div" sx={{ backgroundColor: usersTitleColor, marginBottom: '1rem' }}>
-              {t('main.users.title')}
-            </ListSubheader>
-          }
-          dense={true}
-          sx={{
-            minWidth: `${usersWidth}px`,
-            backgroundColor: usersColor,
-          }}
-        >
-          {usersStore.getUsersFromChannelSortedByMode(currentChannelName).map((user) => (
-            <ListItemButton key={user.nick}>
-              <ListItemAvatar>
-                <Avatar alt={user.nick} src={user.avatar} />
-              </ListItemAvatar>
-              <ListItemText primary={user.nick} sx={{ color: user.color ?? 'inherit' }} />
-            </ListItemButton>
-          ))}
-        </List>
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee', overflowY: 'auto', minWidth: `${usersWidth}px` }}>
+          <List
+            subheader={
+              <ListSubheader component="div" sx={{ backgroundColor: usersTitleColor, marginBottom: '1rem' }}>
+                {t('main.users.title')}
+              </ListSubheader>
+            }
+            dense={true}
+            sx={{
+              backgroundColor: usersColor,
+            }}
+          >
+            {usersStore.getUsersFromChannelSortedByMode(currentChannelName).map((user) => (
+              <ListItemButton key={user.nick}>
+                <ListItemAvatar>
+                  <Avatar alt={user.nick} src={user.avatar} />
+                </ListItemAvatar>
+                <ListItemText primary={user.nick} sx={{ color: user.color ?? 'inherit' }} />
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
       )}
-    </Box>
+    </>
   );
 };
 

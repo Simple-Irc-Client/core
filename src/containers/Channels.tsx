@@ -68,6 +68,7 @@ const Channels = (): JSX.Element => {
       sx={{
         overflowY: 'scroll',
         display: { xs: 'none', md: 'block' },
+        minWidth: { md: `${channelsWidth}px` },
         '& .MuiDrawer-paper': { backgroundColor: { md: channelsColor } },
       }}
       open
@@ -78,7 +79,7 @@ const Channels = (): JSX.Element => {
             {t('main.channels.title')}
           </ListSubheader>
         }
-        sx={{ minWidth: `${channelsWidth}px`, backgroundColor: { md: channelsColor } }}
+        sx={{ minWidth: { md: `${channelsWidth}px` }, backgroundColor: { md: channelsColor } }}
       >
         {openChannelsShort.map((channel) => (
           <ListItem
