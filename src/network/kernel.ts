@@ -62,11 +62,11 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
 
 const handleDisconnected = (channelsStore: ChannelsStore): void => {
   channelsStore.setAddMessageToAllChannels({
-      message: i18next.t('kernel.disconnected'),
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
+    message: i18next.t('kernel.disconnected'),
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+    color: MessageColor.info,
+  });
 };
 
 const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListContext: ChannelListContextProps, usersStore: UsersStore, event: string): void => {
@@ -177,6 +177,9 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
     case 'TAGMSG':
       onTagMsg(settingsStore, channelsStore, tags, sender, line);
       break;
+    // case 'CAP':
+    // onCap(settingsStore, line);
+    // break;
     default:
       console.log(`unknown irc event: ${JSON.stringify(event)}`);
       break;
@@ -789,5 +792,25 @@ const onTagMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
   const status = tags?.['+typing'];
   if (status !== undefined) {
     channelsStore.setTyping(channel, nick, status as UserTypingStatus);
+  }
+};
+
+// :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
+// :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
+const onCap = (settingsStore: SettingsStore, line: string[]): void => {
+  const user = line.shift();
+  const response = line.shift(); // LS, ACK
+
+  const caps: Record<string, string> = {};
+
+  const capList = line.shift()?.split(' ') ?? [];
+  for (const cap of capList) {
+    if (!cap.includes('=')) {
+      caps[cap] = '';
+    } else {
+      const key = cap.substring(0, cap.indexOf('='));
+      const value = cap.substring(cap.indexOf('=') + 1);
+      caps[key] = value;
+    }
   }
 };
