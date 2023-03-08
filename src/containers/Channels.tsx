@@ -64,7 +64,7 @@ const Channels = (): JSX.Element => {
 
   return (
     <Drawer
-      variant="permanent"
+      variant="persistent"
       sx={{
         overflowY: 'scroll',
         display: { xs: 'none', md: 'block' },
