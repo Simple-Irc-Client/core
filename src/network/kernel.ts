@@ -593,7 +593,9 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
   };
 
   channelsStore.setAddMessage(STATUS_CHANNEL, newMessage);
-  channelsStore.setAddMessage(settingsStore.currentChannelName, newMessage);
+  if (settingsStore.currentChannelName !== STATUS_CHANNEL) {
+    channelsStore.setAddMessage(settingsStore.currentChannelName, newMessage);
+  }
 
   if (nick === 'NickServ' && target === settingsStore.nick && passwordRequired.test(message)) {
     settingsStore.setIsPasswordRequired(true);
