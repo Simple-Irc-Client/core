@@ -115,6 +115,12 @@ describe('helper tests', () => {
       ident: 'ident',
       hostname: 'hostname',
     });
+    expect(parseNick(':netsplit.pirc.pl', [])).toStrictEqual({
+      modes: [],
+      nick: 'netsplit.pirc.pl',
+      ident: '',
+      hostname: '',
+    });
   });
 
   it('should test createMaxMode', () => {

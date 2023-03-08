@@ -75,7 +75,7 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
  */
 export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
   const modes: string[] = [];
-  let nick = fullNick.substring(fullNick.startsWith(':') ? 1 : 0, fullNick.lastIndexOf('!'));
+  let nick = fullNick.substring(fullNick.startsWith(':') ? 1 : 0, fullNick.lastIndexOf('!') !== -1 ? fullNick.lastIndexOf('!') : fullNick.length);
 
   for (const userMode of userModes) {
     if (nick.startsWith(userMode.symbol)) {
@@ -84,8 +84,12 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
     }
   }
 
-  const ident = fullNick.substring(fullNick.lastIndexOf('!') + 1, fullNick.lastIndexOf('@'));
-  const hostname = fullNick.substring(fullNick.lastIndexOf('@') + 1);
+  let ident = '';
+  let hostname = '';
+  if (fullNick.lastIndexOf('!') !== -1 && fullNick.lastIndexOf('@') !== -1) {
+    ident = fullNick.substring(fullNick.lastIndexOf('!') + 1, fullNick.lastIndexOf('@'));
+    hostname = fullNick.substring(fullNick.lastIndexOf('@') + 1);
+  }
 
   return { modes, nick, ident, hostname };
 };

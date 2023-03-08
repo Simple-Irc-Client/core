@@ -12,6 +12,7 @@
     "creator.loading.isPasswordRequired": "Sprawdzanie czy hasło jest wymagane",
     "creator.loading.passwordIsRequired": "Hasło jest wymagane",
     "creator.loading.passwordIsNotRequired": "Hasło nie jest wymagane",
+    "creator.loading.error": "Nie udało się połączyć z serwerem: {{message}}",
     "creator.password.title": "Wymagane jest podanie hasła do konta",
     "creator.password.password": "Hasło",
     "creator.password.button.next": "Dalej",

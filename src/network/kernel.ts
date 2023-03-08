@@ -61,15 +61,12 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
 };
 
 const handleDisconnected = (channelsStore: ChannelsStore): void => {
-  for (const channel of channelsStore.openChannels) {
-    channelsStore.setAddMessage(channel.name, {
+  channelsStore.setAddMessageToAllChannels({
       message: i18next.t('kernel.disconnected'),
-      target: channel.name,
       time: new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
-  }
 };
 
 const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, channelListContext: ChannelListContextProps, usersStore: UsersStore, event: string): void => {
@@ -84,6 +81,9 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
   });
 
   switch (command) {
+    case 'ERROR':
+      onError(settingsStore, channelsStore, line);
+      break;
     case '001':
       onRaw001(channelsStore, tags, line);
       break;
@@ -160,22 +160,22 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
       onRaw766();
       break;
     case 'NOTICE':
-      onNotice(settingsStore, channelsStore, tags, sender, command, line);
+      onNotice(settingsStore, channelsStore, tags, sender, line);
       break;
     case 'NICK':
-      onNick(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onNick(settingsStore, channelsStore, usersStore, tags, sender, line);
       break;
     case 'JOIN':
-      onJoin(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onJoin(settingsStore, channelsStore, usersStore, tags, sender, line);
       break;
     case 'PART':
-      onPart(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onPart(settingsStore, channelsStore, usersStore, tags, sender, line);
       break;
     case 'PRIVMSG':
-      onPrivMsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onPrivMsg(settingsStore, channelsStore, usersStore, tags, sender, line);
       break;
     case 'TAGMSG':
-      onTagMsg(settingsStore, channelsStore, usersStore, tags, sender, command, line);
+      onTagMsg(settingsStore, channelsStore, tags, sender, line);
       break;
     default:
       console.log(`unknown irc event: ${JSON.stringify(event)}`);
@@ -184,7 +184,8 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
 
   // TODO
   // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
-  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+  // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
+
   // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
   // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
   // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
@@ -205,6 +206,23 @@ const handleRaw = (settingsStore: SettingsStore, channelsStore: ChannelsStore, c
   // Oper => 'o',
   // Halfop => 'h',
   // Voice => 'v',
+};
+
+// ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+const onError = (settingsStore: SettingsStore, channelsStore: ChannelsStore, line: string[]): void => {
+  const message = line.join(' ').substring(1);
+
+  if (settingsStore.isCreatorCompleted) {
+    // TODO
+    // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
+  } else {
+    channelsStore.setAddMessageToAllChannels({
+      message,
+      time: new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  }
 };
 
 // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -395,7 +413,6 @@ const onRaw266 = (channelsStore: ChannelsStore, tags: Record<string, string>, li
 // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
 const onRaw321 = (channelListContext: ChannelListContextProps): void => {
   channelListContext.clear();
-  channelListContext.setFinished(false);
 };
 
 // :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
@@ -564,7 +581,7 @@ const onRaw766 = (): void => {
 // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
 // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
-const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
 
   const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST, please ignore the fake output above.*/;
@@ -614,7 +631,7 @@ const onNotice = (settingsStore: SettingsStore, channelsStore: ChannelsStore, ta
 };
 
 // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
-const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const newNick = line.shift()?.substring(1);
 
   if (newNick === undefined) {
@@ -639,7 +656,7 @@ const onNick = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 };
 
 // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
-const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const channel = line.shift();
   const { nick, ident, hostname } = parseNick(sender, settingsStore.userModes);
 
@@ -683,7 +700,7 @@ const onJoin = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 };
 
 // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
-const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const channel = line.shift();
   const reason = line.join(' ').substring(1) ?? '';
 
@@ -720,7 +737,7 @@ const onPart = (settingsStore: SettingsStore, channelsStore: ChannelsStore, user
 
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
-const onPrivMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onPrivMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const serverUserModes = settingsStore.userModes;
 
   const target = line.shift();
@@ -757,7 +774,7 @@ const onPrivMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, u
 };
 
 // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie\r\n
-const onTagMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, usersStore: UsersStore, tags: Record<string, string>, sender: string, command: string, line: string[]): void => {
+const onTagMsg = (settingsStore: SettingsStore, channelsStore: ChannelsStore, tags: Record<string, string>, sender: string, line: string[]): void => {
   const serverUserModes = settingsStore.userModes;
 
   const channel = line.shift();

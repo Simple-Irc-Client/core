@@ -14,6 +14,7 @@ export const ChannelListProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const handleClear = (): void => {
     channelList.current = [];
+    setIsFinished(false);
   };
 
   const handleSetFinished = (status: boolean): void => {

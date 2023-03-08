@@ -16,6 +16,7 @@ export interface ChannelsStore {
   getTopicSetBy: (channelName: string) => string;
   getTopicTime: (channelName: string) => number;
   setAddMessage: (channelName: string, newMessage: Message) => void;
+  setAddMessageToAllChannels: (newMessage: Omit<Message, 'target'>) => void;
   getMessages: (channelName: string) => Message[];
   getCategory: (channelName: string) => ChannelCategory | undefined;
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
@@ -103,6 +104,17 @@ export const useChannelsStore = create<ChannelsStore>()(
               }
 
               channel.messages.push(newMessage);
+              if (channel.messages.length > maxMessages) {
+                channel.messages.shift();
+              }
+              return channel;
+            }),
+          }));
+        },
+        setAddMessageToAllChannels: (newMessage: Omit<Message, 'target'>): void => {
+          set((state) => ({
+            openChannels: state.openChannels.map((channel: ChannelExtended) => {
+              channel.messages.push({ ...newMessage, target: channel.name });
               if (channel.messages.length > maxMessages) {
                 channel.messages.shift();
               }
