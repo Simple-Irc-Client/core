@@ -71,7 +71,7 @@ const CreatorChannelList = (): JSX.Element => {
 
   return (
     <>
-      <Typography component="h1" variant="h5">
+      <Typography component="h1" variant="h5" sx={{ textAlign: 'center' }}>
         {t('creator.channels.title')}
       </Typography>
       <Box component="div" sx={{ mt: 3, width: '100%' }}>
@@ -106,7 +106,7 @@ const CreatorChannelList = (): JSX.Element => {
           />
         </div>
       </Box>
-      <Stack spacing={2} direction="row" marginTop={2}>
+      <Stack spacing={2} direction="row" marginTop={2} justifyContent="center">
         <Button onClick={handleSkip} tabIndex={1} variant="contained" size="large">
           {t('creator.channels.button.skip')}
         </Button>

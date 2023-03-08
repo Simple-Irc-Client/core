@@ -24,7 +24,7 @@ const CreatorNick = (): JSX.Element => {
 
   return (
     <>
-      <Typography component="h1" variant="h5">
+      <Typography component="h1" variant="h5" sx={{ textAlign: 'center' }}>
         {t('creator.nick.title')}
       </Typography>
       <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>

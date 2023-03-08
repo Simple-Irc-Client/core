@@ -14,17 +14,37 @@ const Creator = (): JSX.Element => {
     <Container maxWidth={creatorStep === 'channels' ? 'md' : 'sm'}>
       <Box
         sx={{
-          marginTop: 20,
+          height: '100vh',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
         }}
       >
-        {creatorStep === 'nick' && <CreatorNick />}
-        {creatorStep === 'server' && <CreatorServer />}
-        {creatorStep === 'password' && <CreatorPassword />}
-        {creatorStep === 'loading' && <CreatorLoading />}
-        {creatorStep === 'channels' && <CreatorChannelList />}
+        {creatorStep === 'nick' && (
+          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+            <CreatorNick />
+          </Box>
+        )}
+        {creatorStep === 'server' && (
+          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+            <CreatorServer />
+          </Box>
+        )}
+        {creatorStep === 'password' && (
+          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+            <CreatorPassword />
+          </Box>
+        )}
+        {creatorStep === 'loading' && (
+          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto', width: '100%' }}>
+            <CreatorLoading />
+          </Box>
+        )}
+        {creatorStep === 'channels' && (
+          <Box sx={{ marginTop: { xs: 'auto', md: '25%' }, marginBottom: 'auto', width: '100%' }}>
+            <CreatorChannelList />
+          </Box>
+        )}
       </Box>
     </Container>
   );
