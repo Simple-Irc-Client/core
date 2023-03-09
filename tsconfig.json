@@ -16,7 +16,8 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "noUncheckedIndexedAccess": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "strictPropertyInitialization": true
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
