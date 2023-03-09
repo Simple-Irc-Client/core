@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
 import { useChannelsStore } from './store/channels';
 import { ircSendList, sicSocket } from './network/network';
-import { type IrcEvent, kernel } from './network/kernel';
+import { type IrcEvent, Kernel } from './network/kernel';
 import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
 import { MessageColor } from './config/theme';
@@ -27,7 +27,7 @@ export const AppNetwork = (): JSX.Element => {
 
   const onIrcEvent = (data: IrcEvent): void => {
     // messages from server
-    kernel(data, channelListContext);
+    new Kernel(channelListContext).handle(data);
   };
 
   useEffect(() => {
