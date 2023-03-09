@@ -4,7 +4,7 @@
     "es2021": true
   },
   "parser": "@typescript-eslint/parser",
-  "extends": ["plugin:react/recommended", "standard-with-typescript", "prettier"],
+  "extends": ["plugin:react/recommended", "plugin:react-hooks/recommended", "standard-with-typescript", "prettier"],
   "overrides": [],
   "parserOptions": {
     "ecmaVersion": "latest",
