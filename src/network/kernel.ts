@@ -47,15 +47,12 @@ const handleConnected = (settingsStore: SettingsStore, channelsStore: ChannelsSt
     settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
   }
 
-  for (const channel of channelsStore.openChannels) {
-    channelsStore.setAddMessage(channel.name, {
-      message: i18next.t('kernel.connected'),
-      target: channel.name,
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  }
+  channelsStore.setAddMessageToAllChannels({
+    message: i18next.t('kernel.connected'),
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+    color: MessageColor.info,
+  });
 
   ircSendList();
 };
