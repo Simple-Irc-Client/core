@@ -67,7 +67,7 @@ const CreatorChannelList = (): JSX.Element => {
         })
       )
     );
-  }, [openChannels]);
+  }, [openChannels, selectedChannels]);
 
   return (
     <>

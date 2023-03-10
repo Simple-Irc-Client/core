@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Box, IconButton, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/settings';
@@ -21,11 +21,6 @@ const Toolbar = (): JSX.Element => {
   const getUser = useUsersStore((state) => state.getUser);
 
   const nick: string = useSettingsStore((state) => state.nick);
-  let user: User | undefined;
-
-  useEffect(() => {
-    user = getUser(nick);
-  }, [nick]);
 
   const [message, setMessage] = useState('');
   const autocompleteMessage = useRef('');
@@ -70,7 +65,7 @@ const Toolbar = (): JSX.Element => {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
         setAddMessage(currentChannelName, {
           message,
-          nick: user ?? nick,
+          nick: getUser(nick) ?? nick,
           target: currentChannelName,
           time: new Date().toISOString(),
           category: MessageCategory.default,
