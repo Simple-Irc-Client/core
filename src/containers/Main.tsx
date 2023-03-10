@@ -65,7 +65,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
                     <Box sx={{ display: 'flex' }}>
                       <Box sx={{ minWidth: 'fit-content', color: nickColor }}>{nick}</Box>
                       <Box sx={{ flexGrow: 1, width: '100%' }} />
-                      <Box sx={{ color: MessageColor.time, fontSize: '12px' }}>{format(new Date(message.time), 'HH:mm')}</Box>
+                      <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
                     </Box>
                   </>
                 ) : undefined
@@ -78,7 +78,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
                       <Box sx={{ display: 'flex' }}>
                         <Box sx={{ minWidth: 'fit-content', fontSize: '14px' }}>{message.message}</Box>
                         <Box sx={{ flexGrow: 1, width: '100%' }} />
-                        <Box sx={{ color: MessageColor.time, fontSize: '12px' }}>{format(new Date(message.time), 'HH:mm')}</Box>
+                        <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
                       </Box>
                     )}
                   </Box>
@@ -106,7 +106,7 @@ const Main = (): JSX.Element => {
   };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative' }}>
+    <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative', overflowWrap: 'anywhere' }}>
       {channelsStore.getMessages(currentChannelName).map((message, index) => {
         const mainWindow = (
           <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
