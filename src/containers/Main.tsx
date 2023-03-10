@@ -32,63 +32,69 @@ const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
   </ListItem>
 );
 
-const MainViewModern = ({ message }: { message: Message }): JSX.Element => (
-  <>
-    {message.category !== MessageCategory.default && (
-      <>
-        <ListItem>
-          <ListItemText sx={{ color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
-        </ListItem>
-      </>
-    )}
-    {message.category === MessageCategory.default && (
-      <>
-        <ListItem alignItems="flex-start">
-          <ListItemAvatar>
-            <Avatar
-              alt={message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
-              src={message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined}
-            >
-              {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : ''}
-            </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            disableTypography={true}
-            primary={
-              <React.Fragment>
-                <Typography component="div" sx={{ display: 'flex' }}>
-                  <Typography
-                    component="div"
-                    variant="body2"
-                    sx={{ minWidth: 'fit-content', color: message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit' }}
-                  >
-                    {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
+const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: string }): JSX.Element => {
+  const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
+  const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
+  const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
+  const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
+
+  return (
+    <>
+      {message.category !== MessageCategory.default && (
+        <>
+          <ListItem>
+            <ListItemText sx={{ color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
+          </ListItem>
+        </>
+      )}
+      {message.category === MessageCategory.default && (
+        <>
+          <ListItem alignItems="flex-start" sx={{ paddingTop: lastNick === nick ? '0' : '', paddingBottom: lastNick === nick ? '0' : '' }}>
+            <ListItemAvatar>
+              {lastNick !== nick && (
+                <Avatar alt={nick} src={avatar}>
+                  {avatarLetter}
+                </Avatar>
+              )}
+            </ListItemAvatar>
+            <ListItemText
+              disableTypography={true}
+              primary={
+                lastNick !== nick ? (
+                  <React.Fragment>
+                    <Typography component="div" sx={{ display: 'flex' }}>
+                      <Typography component="div" variant="body2" sx={{ minWidth: 'fit-content', color: nickColor }}>
+                        {nick}
+                      </Typography>
+                      <Box sx={{ flexGrow: 1, width: '100%' }} />
+                      <Typography component="div" variant="body2" sx={{ color: MessageColor.time }}>
+                        {format(new Date(message.time), 'HH:mm')}
+                      </Typography>
+                    </Typography>
+                  </React.Fragment>
+                ) : undefined
+              }
+              secondary={
+                <React.Fragment>
+                  <Typography component="div" variant="body2" color="text.primary" sx={{ color: message.color ?? MessageColor.default }}>
+                    {message.message}
                   </Typography>
-                  <Box sx={{ flexGrow: 1, width: '100%' }} />
-                  <Typography component="div" variant="body2" sx={{ color: MessageColor.time }}>
-                    {format(new Date(message.time), 'HH:mm')}
-                  </Typography>
-                </Typography>
-              </React.Fragment>
-            }
-            secondary={
-              <React.Fragment>
-                <Typography component="div" variant="body2" color="text.primary" sx={{ color: message.color ?? MessageColor.default }}>
-                  {message.message}
-                </Typography>
-              </React.Fragment>
-            }
-          />
-        </ListItem>
-      </>
-    )}
-  </>
-);
+                </React.Fragment>
+              }
+            />
+          </ListItem>
+        </>
+      )}
+    </>
+  );
+};
 
 const Main = (): JSX.Element => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const channelsStore = useChannelsStore();
+
+  let lastNick = '';
 
   const AlwaysScrollToBottom = (): JSX.Element => {
     const elementRef = useRef<HTMLDivElement>(null);
@@ -98,17 +104,21 @@ const Main = (): JSX.Element => {
 
   return (
     <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative' }}>
-      {channelsStore.getMessages(currentChannelName).map((message, index) => (
-        <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
-          {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
-          {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
-            <>
-              {theme === 'classic' && <MainViewClassic message={message} />}
-              {theme === 'modern' && <MainViewModern message={message} />}
-            </>
-          )}
-        </List>
-      ))}
+      {channelsStore.getMessages(currentChannelName).map((message, index) => {
+        const mainWindow = (
+          <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
+            {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
+            {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
+              <>
+                {theme === 'classic' && <MainViewClassic message={message} />}
+                {theme === 'modern' && <MainViewModern message={message} lastNick={lastNick} />}
+              </>
+            )}
+          </List>
+        );
+        lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
+        return mainWindow;
+      })}
       <AlwaysScrollToBottom />
     </Box>
   );
