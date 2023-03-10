@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText, Typography } from '@mui/material';
+import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
 import { MessageCategory, type Message } from '../types';
@@ -43,7 +43,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
       {message.category !== MessageCategory.default && (
         <>
           <ListItem>
-            <ListItemText sx={{ color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
+            <ListItemText sx={{ paddingLeft: '56px', color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
           </ListItem>
         </>
       )}
@@ -61,25 +61,28 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
               disableTypography={true}
               primary={
                 lastNick !== nick ? (
-                  <React.Fragment>
-                    <Typography component="div" sx={{ display: 'flex' }}>
-                      <Typography component="div" variant="body2" sx={{ minWidth: 'fit-content', color: nickColor }}>
-                        {nick}
-                      </Typography>
+                  <>
+                    <Box sx={{ display: 'flex' }}>
+                      <Box sx={{ minWidth: 'fit-content', color: nickColor }}>{nick}</Box>
                       <Box sx={{ flexGrow: 1, width: '100%' }} />
-                      <Typography component="div" variant="body2" sx={{ color: MessageColor.time }}>
-                        {format(new Date(message.time), 'HH:mm')}
-                      </Typography>
-                    </Typography>
-                  </React.Fragment>
+                      <Box sx={{ color: MessageColor.time, fontSize: '12px' }}>{format(new Date(message.time), 'HH:mm')}</Box>
+                    </Box>
+                  </>
                 ) : undefined
               }
               secondary={
-                <React.Fragment>
-                  <Typography component="div" variant="body2" color="text.primary" sx={{ color: message.color ?? MessageColor.default }}>
-                    {message.message}
-                  </Typography>
-                </React.Fragment>
+                <>
+                  <Box sx={{ color: message.color ?? MessageColor.default }}>
+                    {lastNick !== nick && <Box sx={{ fontSize: '14px' }}>{message.message}</Box>}
+                    {lastNick === nick && (
+                      <Box sx={{ display: 'flex' }}>
+                        <Box sx={{ minWidth: 'fit-content', fontSize: '14px' }}>{message.message}</Box>
+                        <Box sx={{ flexGrow: 1, width: '100%' }} />
+                        <Box sx={{ color: MessageColor.time, fontSize: '12px' }}>{format(new Date(message.time), 'HH:mm')}</Box>
+                      </Box>
+                    )}
+                  </Box>
+                </>
               }
             />
           </ListItem>
