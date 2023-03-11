@@ -199,3 +199,69 @@ export const useChannelsStore = create<ChannelsStore>()(
     )
   )
 );
+
+export const setAddChannel = (channelName: string, category: ChannelCategory): void => {
+  if (useChannelsStore.getState().getChannel(channelName) === undefined) {
+    useChannelsStore.getState().setAddChannel(channelName, category);
+  }
+};
+
+export const setRemoveChannel = (channelName: string): void => {
+  useChannelsStore.getState().setRemoveChannel(channelName);
+};
+
+export const getChannel = (channelName: string): ChannelExtended | undefined => {
+  return useChannelsStore.getState().getChannel(channelName);
+};
+
+export const setTopic = (channelName: string, newTopic: string): void => {
+  useChannelsStore.getState().setTopic(channelName, newTopic);
+};
+
+export const getTopic = (channelName: string): string => {
+  return useChannelsStore.getState().getTopic(channelName);
+};
+
+export const setTopicSetBy = (channelName: string, nick: string, when: number): void => {
+  useChannelsStore.getState().setTopicSetBy(channelName, nick, when);
+};
+
+export const getTopicSetBy = (channelName: string): string => {
+  return useChannelsStore.getState().getTopicSetBy(channelName);
+};
+
+export const getTopicTime = (channelName: string): number => {
+  return useChannelsStore.getState().getTopicTime(channelName);
+};
+
+export const setAddMessage = (channelName: string, newMessage: Message): void => {
+  useChannelsStore.getState().setAddMessage(channelName, newMessage);
+};
+
+export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>): void => {
+  useChannelsStore.getState().setAddMessageToAllChannels(newMessage);
+};
+
+export const getMessages = (channelName: string): Message[] => {
+  return useChannelsStore.getState().getMessages(channelName);
+};
+
+export const getCategory = (channelName: string): ChannelCategory | undefined => {
+  return useChannelsStore.getState().getCategory(channelName);
+};
+
+export const setTyping = (channelName: string, nick: string, status: UserTypingStatus): void => {
+  useChannelsStore.getState().setTyping(channelName, nick, status);
+};
+
+export const getTyping = (channelName: string): string[] => {
+  return useChannelsStore.getState().getTyping(channelName);
+};
+
+export const setClearUnreadMessages = (channelName: string): void => {
+  useChannelsStore.getState().setClearUnreadMessages(channelName);
+};
+
+export const setIncreaseUnreadMessages = (channelName: string): void => {
+  useChannelsStore.getState().setIncreaseUnreadMessages(channelName);
+};

@@ -11,7 +11,7 @@ import {
 import { useSettingsStore } from '../store/settings';
 import { ChannelCategory, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
-import { useChannelsStore } from '../store/channels';
+import { setClearUnreadMessages, useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../network/network';
 import { type BadgeProps } from '@mui/material/Badge';
@@ -24,7 +24,6 @@ const Channels = (): JSX.Element => {
 
   const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const setClearUnreadMessages = useChannelsStore((state) => state.setClearUnreadMessages);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
 
   const { isChannelsDrawerOpen } = useChannelsDrawer();

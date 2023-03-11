@@ -7,7 +7,7 @@ import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../network/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
-import { useChannelsStore } from '../store/channels';
+import { setAddMessage } from '../store/channels';
 import { useUsersStore } from '../store/users';
 import { MessageColor } from '../config/theme';
 import { useChannelList } from '../providers/ChannelListContext';
@@ -17,7 +17,6 @@ const Toolbar = (): JSX.Element => {
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
-  const setAddMessage = useChannelsStore((state) => state.setAddMessage);
   const getUser = useUsersStore((state) => state.getUser);
 
   const nick: string = useSettingsStore((state) => state.nick);

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
-import { useChannelsStore } from './store/channels';
+import { setAddMessage } from './store/channels';
 import { ircSendList, sicSocket } from './network/network';
 import { type IrcEvent, Kernel } from './network/kernel';
 import { DEBUG_CHANNEL } from './config/config';
@@ -15,7 +15,7 @@ export const AppNetwork = (): JSX.Element => {
   const onServerEvent = (data: IrcEvent): void => {
     // messages sent to server
     if (data?.line !== undefined) {
-      useChannelsStore.getState().setAddMessage(DEBUG_CHANNEL, {
+      setAddMessage(DEBUG_CHANNEL, {
         message: `-> ${data.line?.trim()}`,
         target: DEBUG_CHANNEL,
         time: new Date().toISOString(),

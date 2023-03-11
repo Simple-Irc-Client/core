@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useChannelsStore, type ChannelsStore } from '../store/channels';
+import { setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
 import { useSettingsStore, type SettingsStore } from '../store/settings';
 import { useUsersStore, type UsersStore } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
@@ -20,7 +20,6 @@ const DEBUG_CHANNEL = 'Debug';
 export class Kernel {
   private readonly channelListContext: ChannelListContextProps;
   private readonly settingsStore: SettingsStore;
-  private readonly channelsStore: ChannelsStore;
   private readonly usersStore: UsersStore;
 
   private tags: Record<string, string>;
@@ -32,7 +31,6 @@ export class Kernel {
     this.channelListContext = channelListContext;
 
     this.settingsStore = useSettingsStore.getState();
-    this.channelsStore = useChannelsStore.getState();
     this.usersStore = useUsersStore.getState();
 
     this.tags = {};
@@ -61,13 +59,11 @@ export class Kernel {
     this.settingsStore.setIsConnected(true);
     this.settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
-    if (this.channelsStore.getChannel(DEBUG_CHANNEL) === undefined) {
-      this.channelsStore.setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
-      this.channelsStore.setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-      this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
-    }
+    setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
+    this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
 
-    this.channelsStore.setAddMessageToAllChannels({
+    setAddMessageToAllChannels({
       message: i18next.t('kernel.connected'),
       time: new Date().toISOString(),
       category: MessageCategory.info,
@@ -78,7 +74,7 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
-    this.channelsStore.setAddMessageToAllChannels({
+    setAddMessageToAllChannels({
       message: i18next.t('kernel.disconnected'),
       time: new Date().toISOString(),
       category: MessageCategory.info,
@@ -93,7 +89,7 @@ export class Kernel {
     this.command = command;
     this.line = line;
 
-    this.channelsStore.setAddMessage(DEBUG_CHANNEL, {
+    setAddMessage(DEBUG_CHANNEL, {
       message: `<- ${event.trim()}`,
       target: DEBUG_CHANNEL,
       time: new Date().toISOString(),
@@ -240,7 +236,7 @@ export class Kernel {
       // TODO
       // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     } else {
-      this.channelsStore.setAddMessageToAllChannels({
+      setAddMessageToAllChannels({
         message,
         time: new Date().toISOString(),
         category: MessageCategory.error,
@@ -255,7 +251,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -270,7 +266,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -285,7 +281,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -335,7 +331,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -350,7 +346,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -365,7 +361,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -380,7 +376,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -395,7 +391,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -410,7 +406,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -425,7 +421,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -466,7 +462,7 @@ export class Kernel {
       return;
     }
 
-    this.channelsStore.setTopic(channel, topic);
+    setTopic(channel, topic);
   };
 
   // :chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216
@@ -481,7 +477,7 @@ export class Kernel {
       return;
     }
 
-    this.channelsStore.setTopicSetBy(channel, setBy, setTime);
+    setTopicSetBy(channel, setBy, setTime);
   };
 
   // :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
@@ -531,7 +527,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -546,7 +542,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -561,7 +557,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, {
+    setAddMessage(STATUS_CHANNEL, {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -633,9 +629,9 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    this.channelsStore.setAddMessage(STATUS_CHANNEL, newMessage);
+    setAddMessage(STATUS_CHANNEL, newMessage);
     if (this.settingsStore.currentChannelName !== STATUS_CHANNEL) {
-      this.channelsStore.setAddMessage(this.settingsStore.currentChannelName, newMessage);
+      setAddMessage(this.settingsStore.currentChannelName, newMessage);
     }
 
     if (nick === 'NickServ' && target === this.settingsStore.nick && passwordRequired.test(message)) {
@@ -664,7 +660,7 @@ export class Kernel {
     }
 
     if (this.sender === this.settingsStore.nick) {
-      this.channelsStore.setAddMessage(this.settingsStore.currentChannelName, {
+      setAddMessage(this.settingsStore.currentChannelName, {
         message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
         target: this.settingsStore.currentChannelName,
         time: this.tags?.time ?? new Date().toISOString(),
@@ -690,10 +686,10 @@ export class Kernel {
     }
 
     if (nick === this.settingsStore.nick) {
-      this.channelsStore.setAddChannel(channel, ChannelCategory.channel);
+      setAddChannel(channel, ChannelCategory.channel);
       this.settingsStore.setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
-      this.channelsStore.setAddMessage(this.settingsStore.currentChannelName, {
+      setAddMessage(this.settingsStore.currentChannelName, {
         message: i18next.t('kernel.join').replace('{{nick}}', nick),
         nick: undefined,
         target: channel,
@@ -702,9 +698,7 @@ export class Kernel {
         color: MessageColor.join,
       });
 
-      if (this.channelsStore.getChannel(channel) === undefined) {
-        this.channelsStore.setAddChannel(channel, ChannelCategory.channel);
-      }
+      setAddChannel(channel, ChannelCategory.channel);
 
       if (this.usersStore.getHasUser(nick)) {
         this.usersStore.setJoinUser(nick, channel);
@@ -739,12 +733,12 @@ export class Kernel {
       for (const userFromChannel of usersFromChannel) {
         this.usersStore.setRemoveUser(userFromChannel.nick, channel);
       }
-      this.channelsStore.setRemoveChannel(channel);
+      setRemoveChannel(channel);
 
       // TODO select new channel
       this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     } else {
-      this.channelsStore.setAddMessage(this.settingsStore.currentChannelName, {
+      setAddMessage(this.settingsStore.currentChannelName, {
         message: i18next
           .t('kernel.part')
           .replace('{{nick}}', nick)
@@ -777,16 +771,16 @@ export class Kernel {
       // TODO priv
     } else {
       if (target !== this.settingsStore.currentChannelName) {
-        this.channelsStore.setIncreaseUnreadMessages(target);
+        setIncreaseUnreadMessages(target);
       }
 
       if (target === this.settingsStore.currentChannelName) {
-        this.channelsStore.setTyping(target, nick, 'done');
+        setTyping(target, nick, 'done');
       }
 
       const user = this.usersStore.getUser(nick);
 
-      this.channelsStore.setAddMessage(target, {
+      setAddMessage(target, {
         message,
         nick: user ?? nick,
         target,
@@ -812,7 +806,7 @@ export class Kernel {
 
     const status = this.tags?.['+typing'];
     if (status !== undefined) {
-      this.channelsStore.setTyping(channel, nick, status as UserTypingStatus);
+      setTyping(channel, nick, status as UserTypingStatus);
     }
   };
 
