@@ -623,15 +623,14 @@ export class Kernel {
     const newMessage = {
       message,
       nick: nick.length !== 0 ? nick : undefined,
-      target,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.notice,
       color: MessageColor.notice,
     };
 
-    setAddMessage(STATUS_CHANNEL, newMessage);
+    setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL });
     if (this.settingsStore.currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage(this.settingsStore.currentChannelName, newMessage);
+      setAddMessage(target, { ...newMessage, target });
     }
 
     if (nick === 'NickServ' && target === this.settingsStore.nick && passwordRequired.test(message)) {
@@ -689,9 +688,8 @@ export class Kernel {
       setAddChannel(channel, ChannelCategory.channel);
       this.settingsStore.setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
-      setAddMessage(this.settingsStore.currentChannelName, {
+      setAddMessage(channel, {
         message: i18next.t('kernel.join').replace('{{nick}}', nick),
-        nick: undefined,
         target: channel,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.join,
@@ -738,7 +736,7 @@ export class Kernel {
       // TODO select new channel
       this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     } else {
-      setAddMessage(this.settingsStore.currentChannelName, {
+      setAddMessage(channel, {
         message: i18next
           .t('kernel.part')
           .replace('{{nick}}', nick)
