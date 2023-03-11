@@ -127,3 +127,47 @@ export const useUsersStore = create<UsersStore>()(
     )
   )
 );
+
+export const setAddUser = (newUser: User): void => {
+  useUsersStore.getState().setAddUser(newUser);
+};
+
+export const setRemoveUser = (nick: string, channel: string): void => {
+  useUsersStore.getState().setRemoveUser(nick, channel);
+};
+
+export const setQuitUser = (nick: string): void => {
+  useUsersStore.getState().setQuitUser(nick);
+};
+
+export const setRenameUser = (from: string, to: string): void => {
+  useUsersStore.getState().setRenameUser(from, to);
+};
+
+export const getUser = (nick: string): User | undefined => {
+  return useUsersStore.getState().getUser(nick);
+};
+
+export const getHasUser = (nick: string): boolean => {
+  return useUsersStore.getState().getHasUser(nick);
+};
+
+export const setJoinUser = (nick: string, channel: string): void => {
+  useUsersStore.getState().setJoinUser(nick, channel);
+};
+
+export const getUsersFromChannelSortedByMode = (channel: string): User[] => {
+  return useUsersStore.getState().getUsersFromChannelSortedByMode(channel);
+};
+
+export const getUsersFromChannelSortedByAZ = (channel: string): User[] => {
+  return useUsersStore.getState().getUsersFromChannelSortedByAZ(channel);
+};
+
+export const setUserAvatar = (nick: string, avatar: string): void => {
+  useUsersStore.getState().setUserAvatar(nick, avatar);
+};
+
+export const setUserColor = (nick: string, color: string): void => {
+  useUsersStore.getState().setUserColor(nick, color);
+};

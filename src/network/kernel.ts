@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
 import { useSettingsStore, type SettingsStore } from '../store/settings';
-import { useUsersStore, type UsersStore } from '../store/users';
+import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
@@ -20,7 +20,6 @@ const DEBUG_CHANNEL = 'Debug';
 export class Kernel {
   private readonly channelListContext: ChannelListContextProps;
   private readonly settingsStore: SettingsStore;
-  private readonly usersStore: UsersStore;
 
   private tags: Record<string, string>;
   private sender: string;
@@ -31,7 +30,6 @@ export class Kernel {
     this.channelListContext = channelListContext;
 
     this.settingsStore = useSettingsStore.getState();
-    this.usersStore = useUsersStore.getState();
 
     this.tags = {};
     this.sender = '';
@@ -205,6 +203,8 @@ export class Kernel {
     // TODO
     // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
+
+    // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
 
     // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
     // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
@@ -499,10 +499,10 @@ export class Kernel {
       const serverUserPrefixes = this.settingsStore.userModes;
       const { modes, nick, ident, hostname } = parseNick(user, this.settingsStore.userModes);
 
-      if (this.usersStore.getHasUser(nick)) {
-        this.usersStore.setJoinUser(nick, channel);
+      if (getHasUser(nick)) {
+        setJoinUser(nick, channel);
       } else {
-        this.usersStore.setAddUser({
+        setAddUser({
           nick,
           ident,
           hostname,
@@ -580,10 +580,10 @@ export class Kernel {
     }
 
     if (item === 'avatar' && value !== undefined) {
-      this.usersStore.setUserAvatar(nick, value);
+      setUserAvatar(nick, value);
     }
     if (item === 'color' && value !== undefined) {
-      this.usersStore.setUserColor(nick, value);
+      setUserColor(nick, value);
     }
   };
 
@@ -669,9 +669,9 @@ export class Kernel {
       });
 
       this.settingsStore.setNick(newNick);
-      this.usersStore.setRenameUser(this.sender, newNick);
+      setRenameUser(this.sender, newNick);
     } else {
-      this.usersStore.setRenameUser(this.sender, newNick);
+      setRenameUser(this.sender, newNick);
     }
   };
 
@@ -700,10 +700,10 @@ export class Kernel {
 
       setAddChannel(channel, ChannelCategory.channel);
 
-      if (this.usersStore.getHasUser(nick)) {
-        this.usersStore.setJoinUser(nick, channel);
+      if (getHasUser(nick)) {
+        setJoinUser(nick, channel);
       } else {
-        this.usersStore.setAddUser({
+        setAddUser({
           nick,
           ident,
           hostname,
@@ -729,9 +729,9 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, this.settingsStore.userModes);
     if (nick === this.settingsStore.nick) {
-      const usersFromChannel = this.usersStore.getUsersFromChannelSortedByAZ(channel);
+      const usersFromChannel = getUsersFromChannelSortedByAZ(channel);
       for (const userFromChannel of usersFromChannel) {
-        this.usersStore.setRemoveUser(userFromChannel.nick, channel);
+        setRemoveUser(userFromChannel.nick, channel);
       }
       setRemoveChannel(channel);
 
@@ -749,7 +749,7 @@ export class Kernel {
         color: MessageColor.part,
       });
 
-      this.usersStore.setRemoveUser(nick, channel);
+      setRemoveUser(nick, channel);
     }
   };
 
@@ -778,11 +778,9 @@ export class Kernel {
         setTyping(target, nick, 'done');
       }
 
-      const user = this.usersStore.getUser(nick);
-
       setAddMessage(target, {
         message,
-        nick: user ?? nick,
+        nick: getUser(nick) ?? nick,
         target,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.default,

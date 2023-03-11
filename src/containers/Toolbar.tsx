@@ -8,7 +8,7 @@ import { Send as SendIcon } from '@mui/icons-material';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../network/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 import { setAddMessage } from '../store/channels';
-import { useUsersStore } from '../store/users';
+import { getUser, getUsersFromChannelSortedByAZ } from '../store/users';
 import { MessageColor } from '../config/theme';
 import { useChannelList } from '../providers/ChannelListContext';
 
@@ -17,7 +17,6 @@ const Toolbar = (): JSX.Element => {
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
-  const getUser = useUsersStore((state) => state.getUser);
 
   const nick: string = useSettingsStore((state) => state.nick);
 
@@ -39,7 +38,7 @@ const Toolbar = (): JSX.Element => {
 
   const channels = useChannelList().channelList;
 
-  const users = useMemo(() => useUsersStore.getState().getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
+  const users = useMemo(() => getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
