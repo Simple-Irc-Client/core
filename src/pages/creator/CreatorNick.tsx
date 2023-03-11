@@ -41,7 +41,7 @@ const CreatorNick = (): JSX.Element => {
           defaultValue={nick}
           tabIndex={1}
         />
-        <Button onClick={handleClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
+        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
           {t('creator.nick.button.next')}
         </Button>
       </Box>
