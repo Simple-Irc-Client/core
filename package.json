@@ -20,7 +20,6 @@
     "@mui/material": "^5.11.7",
     "@mui/x-data-grid": "^5.17.22",
     "date-fns": "^2.29.3",
-    "eventemitter3": "^5.0.0",
     "i18next": "^22.4.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
