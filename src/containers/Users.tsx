@@ -1,18 +1,16 @@
 import React from 'react';
-import { useUsersStore } from '../store/users';
 import { useSettingsStore } from '../store/settings';
 import { ChannelCategory } from '../types';
 import { Avatar, Box, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usersColor, usersTitleColor, usersWidth } from '../config/theme';
+import { useCurrentStore } from '../store/current';
 
 const Users = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const usersStore = useUsersStore();
-
-  const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const users = useCurrentStore((state) => state.users);
 
   return (
     <>
@@ -29,7 +27,7 @@ const Users = (): JSX.Element => {
               backgroundColor: usersColor,
             }}
           >
-            {usersStore.getUsersFromChannelSortedByMode(currentChannelName).map((user) => (
+            {users.map((user) => (
               <ListItemButton key={user.nick}>
                 <ListItemAvatar>
                   <Avatar alt={user.nick} src={user.avatar} />

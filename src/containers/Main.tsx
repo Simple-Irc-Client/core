@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
-import { useChannelsStore } from '../store/channels';
 import { useSettingsStore } from '../store/settings';
 import { MessageCategory, type Message } from '../types';
 import { format } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 import { MessageColor } from '../config/theme';
+import { useCurrentStore } from '../store/current';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>
@@ -95,7 +95,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
 const Main = (): JSX.Element => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
-  const channelsStore = useChannelsStore();
+  const messages = useCurrentStore((state) => state.messages);
 
   let lastNick = '';
 
@@ -107,7 +107,7 @@ const Main = (): JSX.Element => {
 
   return (
     <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative', overflowWrap: 'anywhere' }}>
-      {channelsStore.getMessages(currentChannelName).map((message, index) => {
+      {messages.map((message, index) => {
         const mainWindow = (
           <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
             {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}

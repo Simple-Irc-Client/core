@@ -8,10 +8,10 @@ import {
   PersonOutlineOutlined as PersonOutlineOutlinedIcon,
   CloseOutlined as CloseOutlinedIcon,
 } from '@mui/icons-material';
-import { useSettingsStore } from '../store/settings';
+import { setCurrentChannelName, useSettingsStore } from '../store/settings';
 import { ChannelCategory, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
-import { setClearUnreadMessages, useChannelsStore } from '../store/channels';
+import { useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../network/network';
 import { type BadgeProps } from '@mui/material/Badge';
@@ -22,7 +22,6 @@ import { useChannelsDrawer } from '../providers/ChannelsDrawerContext';
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const setCurrentChannelName = useSettingsStore((state) => state.setCurrentChannelName);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
 
@@ -55,7 +54,6 @@ const Channels = (): JSX.Element => {
 
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
-    setClearUnreadMessages(channel.name);
   };
 
   const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({

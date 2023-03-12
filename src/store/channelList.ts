@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { type ChannelList } from '../types';
 import { devtools } from 'zustand/middleware';
 
-export interface ChannelListStore {
+interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
 

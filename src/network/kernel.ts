@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
-import { useSettingsStore, type SettingsStore } from '../store/settings';
+import { setCurrentChannelName, useSettingsStore, type SettingsStore } from '../store/settings';
 import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
@@ -59,7 +59,7 @@ export class Kernel {
 
     setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-    this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+    setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
 
     setAddMessageToAllChannels({
       message: i18next.t('kernel.connected'),
@@ -686,7 +686,7 @@ export class Kernel {
 
     if (nick === this.settingsStore.nick) {
       setAddChannel(channel, ChannelCategory.channel);
-      this.settingsStore.setCurrentChannelName(channel, ChannelCategory.channel);
+      setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
       setAddMessage(channel, {
         message: i18next.t('kernel.join').replace('{{nick}}', nick),
@@ -734,7 +734,7 @@ export class Kernel {
       setRemoveChannel(channel);
 
       // TODO select new channel
-      this.settingsStore.setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     } else {
       setAddMessage(channel, {
         message: i18next

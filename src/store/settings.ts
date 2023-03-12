@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { type Server } from '../models/servers';
 import { devtools, persist } from 'zustand/middleware';
 import { ChannelCategory, type UserMode } from '../types';
+import { setClearUnreadMessages, useChannelsStore } from './channels';
+import { useCurrentStore } from './current';
+import { useUsersStore } from './users';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
@@ -29,7 +32,7 @@ export interface SettingsStore {
   setServer: (newServer: Server) => void;
   setCreatorStep: (newCreatorStep: CreatorStep) => void;
   setIsPasswordRequired: (status: boolean) => void;
-  setCurrentChannelName: (channel: string, category: ChannelCategory) => void;
+  setCurrentChannelName: (channelName: string, category: ChannelCategory) => void;
   setTheme: (theme: 'modern' | 'classic') => void;
   setNamesXProtoEnabled: (status: boolean) => void;
   setUserModes: (modes: UserMode[]) => void;
@@ -81,9 +84,9 @@ export const useSettingsStore = create<SettingsStore>()(
         setIsPasswordRequired: (status: boolean): void => {
           set(() => ({ isPasswordRequired: status }));
         },
-        setCurrentChannelName: (channel: string, category: ChannelCategory): void => {
+        setCurrentChannelName: (channelName: string, category: ChannelCategory): void => {
           set(() => ({
-            currentChannelName: channel,
+            currentChannelName: channelName,
             currentChannelCategory: category,
           }));
         },
@@ -106,3 +109,14 @@ export const useSettingsStore = create<SettingsStore>()(
     )
   )
 );
+
+export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
+  useSettingsStore.getState().setCurrentChannelName(channelName, category);
+
+  setClearUnreadMessages(channelName);
+
+  useCurrentStore.getState().setUpdateTopic(useChannelsStore.getState().getTopic(channelName));
+  useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
+  useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
+  useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
+};

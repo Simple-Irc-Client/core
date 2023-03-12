@@ -1,21 +1,18 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore } from '../store/settings';
-import { useChannelsStore } from '../store/channels';
+import { useCurrentStore } from '../store/current';
 
 const Typing = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
-
-  const channelsStore = useChannelsStore();
+  const typing = useCurrentStore((state) => state.typing);
 
   return (
     <Box sx={{ fontSize: '12px', height: '28px', marginLeft: '16px' }}>
-      {channelsStore.getTyping(currentChannelName).length !== 0 && (
+      {typing.length !== 0 && (
         <>
-          {channelsStore.getTyping(currentChannelName).join(', ')}
+          {typing.join(', ')}
           &nbsp;{t('main.user-typing')}
         </>
       )}

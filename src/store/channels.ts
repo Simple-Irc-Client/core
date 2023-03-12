@@ -2,8 +2,10 @@ import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, type ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { maxMessages } from '../config/config';
+import { useSettingsStore } from './settings';
+import { useCurrentStore } from './current';
 
-export interface ChannelsStore {
+interface ChannelsStore {
   openChannels: ChannelExtended[];
   openChannelsShortList: Channel[];
 
@@ -16,7 +18,6 @@ export interface ChannelsStore {
   getTopicSetBy: (channelName: string) => string;
   getTopicTime: (channelName: string) => number;
   setAddMessage: (channelName: string, newMessage: Message) => void;
-  setAddMessageToAllChannels: (newMessage: Omit<Message, 'target'>) => void;
   getMessages: (channelName: string) => Message[];
   getCategory: (channelName: string) => ChannelCategory | undefined;
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
@@ -111,19 +112,14 @@ export const useChannelsStore = create<ChannelsStore>()(
             }),
           }));
         },
-        setAddMessageToAllChannels: (newMessage: Omit<Message, 'target'>): void => {
-          set((state) => ({
-            openChannels: state.openChannels.map((channel: ChannelExtended) => {
-              channel.messages.push({ ...newMessage, target: channel.name });
-              if (channel.messages.length > maxMessages) {
-                channel.messages.shift();
-              }
-              return channel;
-            }),
-          }));
-        },
         getMessages: (channelName: string): Message[] => {
-          return get().getChannel(channelName)?.messages ?? [];
+          return (
+            get()
+              .getChannel(channelName)
+              ?.messages?.map((message) => {
+                return message; // map is required because it's chaning object id
+              }) ?? []
+          );
         },
         getCategory: (channelName: string): ChannelCategory | undefined => {
           return get().getChannel(channelName)?.category ?? undefined;
@@ -216,6 +212,12 @@ export const getChannel = (channelName: string): ChannelExtended | undefined => 
 
 export const setTopic = (channelName: string, newTopic: string): void => {
   useChannelsStore.getState().setTopic(channelName, newTopic);
+
+  const currentChannelName = useSettingsStore.getState().currentChannelName;
+
+  if (currentChannelName === channelName) {
+    useCurrentStore.getState().setUpdateTopic(newTopic);
+  }
 };
 
 export const getTopic = (channelName: string): string => {
@@ -236,10 +238,25 @@ export const getTopicTime = (channelName: string): number => {
 
 export const setAddMessage = (channelName: string, newMessage: Message): void => {
   useChannelsStore.getState().setAddMessage(channelName, newMessage);
+
+  const currentChannelName = useSettingsStore.getState().currentChannelName;
+
+  if (currentChannelName === channelName) {
+    useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
+  }
 };
 
 export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>): void => {
-  useChannelsStore.getState().setAddMessageToAllChannels(newMessage);
+  const channels = useChannelsStore.getState().openChannels;
+  const currentChannelName = useSettingsStore.getState().currentChannelName;
+
+  for (const channel of channels) {
+    useChannelsStore.getState().setAddMessage(channel.name, { ...newMessage, target: channel.name });
+
+    if (currentChannelName === channel.name) {
+      useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(currentChannelName));
+    }
+  }
 };
 
 export const getMessages = (channelName: string): Message[] => {
@@ -252,6 +269,12 @@ export const getCategory = (channelName: string): ChannelCategory | undefined =>
 
 export const setTyping = (channelName: string, nick: string, status: UserTypingStatus): void => {
   useChannelsStore.getState().setTyping(channelName, nick, status);
+
+  const currentChannelName = useSettingsStore.getState().currentChannelName;
+
+  if (currentChannelName === channelName) {
+    useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
+  }
 };
 
 export const getTyping = (channelName: string): string[] => {
