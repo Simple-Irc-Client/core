@@ -56,7 +56,7 @@ const CreatorServer = (): JSX.Element => {
           }}
           noOptionsText={t('creator.server.message.no.options')}
         />
-        <Button onClick={handleClick} type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
+        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
           {t('creator.server.button.next')}
         </Button>
       </Box>
