@@ -11,13 +11,14 @@ import {
 import { setCurrentChannelName, useSettingsStore } from '../store/settings';
 import { ChannelCategory, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
-import { useChannelsStore } from '../store/channels';
+import { isPriv, setRemoveChannel, useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../network/network';
 import { type BadgeProps } from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
 import { useChannelList } from '../providers/ChannelListContext';
 import { useChannelsDrawer } from '../providers/ChannelsDrawerContext';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
@@ -42,7 +43,11 @@ const Channels = (): JSX.Element => {
   };
 
   const handleRemoveChannel = (channel: Channel): void => {
-    ircPartChannel(channel.name);
+    if (isPriv(channel.name)) {
+      setRemoveChannel(channel.name);
+    } else {
+      ircPartChannel(channel.name);
+    }
   };
 
   const handleJoinChannel = (): void => {
@@ -82,17 +87,21 @@ const Channels = (): JSX.Element => {
           }}
           secondaryAction={
             <>
-              {showRemoveChannelIcon !== channel.name && <StyledBadge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" />}
-              <IconButton
-                edge="end"
-                aria-label="close"
-                sx={{ display: [ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) ? (showRemoveChannelIcon === channel.name ? 'inherit' : 'none') : 'none' }}
-                onClick={() => {
-                  handleRemoveChannel(channel);
-                }}
-              >
-                <CloseOutlinedIcon />
-              </IconButton>
+              {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
+                <>
+                  {showRemoveChannelIcon !== channel.name && <StyledBadge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" />}
+                  <IconButton
+                    edge="end"
+                    aria-label="close"
+                    sx={{ display: [ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) ? (showRemoveChannelIcon === channel.name ? 'inherit' : 'none') : 'none' }}
+                    onClick={() => {
+                      handleRemoveChannel(channel);
+                    }}
+                  >
+                    <CloseOutlinedIcon />
+                  </IconButton>
+                </>
+              )}
             </>
           }
           disablePadding

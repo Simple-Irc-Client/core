@@ -9,3 +9,5 @@ export const websocketHost = 'localhost';
 export const defaultIRCPort = 6667;
 
 export const maxMessages = 200;
+
+export const defaultChannelType = '#';

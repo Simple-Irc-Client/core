@@ -23,6 +23,7 @@ export interface SettingsStore {
   namesXProtoEnabled: boolean;
   userModes: UserMode[];
   listRequestRemainingSeconds: number;
+  channelTypes: string[];
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -37,6 +38,7 @@ export interface SettingsStore {
   setNamesXProtoEnabled: (status: boolean) => void;
   setUserModes: (modes: UserMode[]) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
+  setChannelTypes: (types: string[]) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -57,6 +59,7 @@ export const useSettingsStore = create<SettingsStore>()(
         namesXProtoEnabled: false,
         userModes: [],
         listRequestRemainingSeconds: -1,
+        channelTypes: [],
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -102,6 +105,9 @@ export const useSettingsStore = create<SettingsStore>()(
         setListRequestRemainingSeconds: (seconds: number): void => {
           set(() => ({ listRequestRemainingSeconds: seconds }));
         },
+        setChannelTypes: (types: string[]): void => {
+          set(() => ({ channelTypes: types }));
+        },
       }),
       {
         name: 'settings',
@@ -119,4 +125,8 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
   useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
   useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
   useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
+};
+
+export const setChannelTypes = (types: string[]): void => {
+  useSettingsStore.getState().setChannelTypes(types);
 };

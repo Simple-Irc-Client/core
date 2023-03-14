@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { maxMessages } from '../config/config';
+import { defaultChannelType, maxMessages } from '../config/config';
 import { useSettingsStore } from './settings';
 import { useCurrentStore } from './current';
 
@@ -246,7 +246,7 @@ export const getTopicTime = (channelName: string): number => {
 
 export const setAddMessage = (channelName: string, newMessage: Message): void => {
   if (!useChannelsStore.getState().existChannel(channelName)) {
-    useChannelsStore.getState().setAddChannel(channelName, ChannelCategory.priv); // TODO add helper for checking if its priv
+    useChannelsStore.getState().setAddChannel(channelName, isPriv(channelName) ? ChannelCategory.priv : ChannelCategory.channel);
   }
 
   useChannelsStore.getState().setAddMessage(channelName, newMessage);
@@ -299,4 +299,8 @@ export const setClearUnreadMessages = (channelName: string): void => {
 
 export const setIncreaseUnreadMessages = (channelName: string): void => {
   useChannelsStore.getState().setIncreaseUnreadMessages(channelName);
+};
+
+export const isPriv = (channelName: string): boolean => {
+  return !useSettingsStore.getState().channelTypes.includes(channelName[0] ?? defaultChannelType);
 };

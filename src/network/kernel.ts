@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { existChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
-import { setCurrentChannelName, useSettingsStore, type SettingsStore } from '../store/settings';
+import { setChannelTypes, setCurrentChannelName, useSettingsStore, type SettingsStore } from '../store/settings';
 import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
@@ -8,6 +8,7 @@ import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
 import { type ChannelListContextProps } from '../providers/ChannelListContext';
+import { defaultChannelType } from '../config/config';
 
 export interface IrcEvent {
   type: string;
@@ -307,10 +308,9 @@ export class Kernel {
         if (parameter.includes('=')) {
           const [key, value] = parameter.split('=');
           switch (key) {
-            // TODO
-            // case 'CHANTYPES':
-            // settingsStore.setChannelTypes(value);
-            // break;
+            case 'CHANTYPES':
+              setChannelTypes((value ?? defaultChannelType).split(''));
+              break;
             case 'PREFIX':
               this.settingsStore.setUserModes(parseUserModes(value));
               break;
