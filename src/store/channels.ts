@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type UserTypingStatus, type Channel, type ChannelCategory, type Message, type ChannelExtended } from '../types';
+import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { maxMessages } from '../config/config';
 import { useSettingsStore } from './settings';
@@ -12,6 +12,7 @@ interface ChannelsStore {
   setAddChannel: (channelName: string, category: ChannelCategory) => void;
   setRemoveChannel: (channelName: string) => void;
   getChannel: (channelName: string) => ChannelExtended | undefined;
+  existChannel: (channelName: string) => boolean;
   setTopic: (channelName: string, newTopic: string) => void;
   getTopic: (channelName: string) => string;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
@@ -59,6 +60,9 @@ export const useChannelsStore = create<ChannelsStore>()(
         },
         getChannel: (channelName: string): ChannelExtended | undefined => {
           return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName);
+        },
+        existChannel: (channelName: string): boolean => {
+          return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName) !== undefined;
         },
         getOpenChannels: (): string[] => {
           return get().openChannels.map((channel) => channel.name);
@@ -197,7 +201,7 @@ export const useChannelsStore = create<ChannelsStore>()(
 );
 
 export const setAddChannel = (channelName: string, category: ChannelCategory): void => {
-  if (useChannelsStore.getState().getChannel(channelName) === undefined) {
+  if (!useChannelsStore.getState().existChannel(channelName)) {
     useChannelsStore.getState().setAddChannel(channelName, category);
   }
 };
@@ -208,6 +212,10 @@ export const setRemoveChannel = (channelName: string): void => {
 
 export const getChannel = (channelName: string): ChannelExtended | undefined => {
   return useChannelsStore.getState().getChannel(channelName);
+};
+
+export const existChannel = (channelName: string): boolean => {
+  return useChannelsStore.getState().existChannel(channelName);
 };
 
 export const setTopic = (channelName: string, newTopic: string): void => {
@@ -237,6 +245,10 @@ export const getTopicTime = (channelName: string): number => {
 };
 
 export const setAddMessage = (channelName: string, newMessage: Message): void => {
+  if (!useChannelsStore.getState().existChannel(channelName)) {
+    useChannelsStore.getState().setAddChannel(channelName, ChannelCategory.priv); // TODO add helper for checking if its priv
+  }
+
   useChannelsStore.getState().setAddMessage(channelName, newMessage);
 
   const currentChannelName = useSettingsStore.getState().currentChannelName;

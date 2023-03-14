@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
+import { existChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
 import { setCurrentChannelName, useSettingsStore, type SettingsStore } from '../store/settings';
 import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
@@ -765,26 +765,29 @@ export class Kernel {
       return;
     }
 
-    if (target === this.settingsStore.nick) {
-      // TODO priv
-    } else {
-      if (target !== this.settingsStore.currentChannelName) {
-        setIncreaseUnreadMessages(target);
-      }
+    const isPrivMessage = target === this.settingsStore.nick;
+    const messageTarget = isPrivMessage ? nick : target;
 
-      if (target === this.settingsStore.currentChannelName) {
-        setTyping(target, nick, 'done');
-      }
-
-      setAddMessage(target, {
-        message,
-        nick: getUser(nick) ?? nick,
-        target,
-        time: this.tags?.time ?? new Date().toISOString(),
-        category: MessageCategory.default,
-        color: MessageColor.default,
-      });
+    if (!existChannel(messageTarget)) {
+      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
     }
+
+    if (messageTarget !== this.settingsStore.currentChannelName) {
+      setIncreaseUnreadMessages(messageTarget);
+    }
+
+    if (messageTarget === this.settingsStore.currentChannelName) {
+      setTyping(messageTarget, nick, 'done');
+    }
+
+    setAddMessage(messageTarget, {
+      message,
+      nick: getUser(nick) ?? nick,
+      target: messageTarget,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.default,
+      color: MessageColor.default,
+    });
   };
 
   // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie\r\n
