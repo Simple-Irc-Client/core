@@ -63,8 +63,8 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
                 lastNick !== nick ? (
                   <>
                     <Box sx={{ display: 'flex' }}>
-                      <Box sx={{ minWidth: 'fit-content', color: nickColor }}>{nick}</Box>
-                      <Box sx={{ flexGrow: 1, width: '100%' }} />
+                      <Box sx={{ color: nickColor }}>{nick}</Box>
+                      <Box sx={{ flexGrow: 1 }} />
                       <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
                     </Box>
                   </>
@@ -76,8 +76,8 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
                     {lastNick !== nick && <Box sx={{ fontSize: '14px' }}>{message.message}</Box>}
                     {lastNick === nick && (
                       <Box sx={{ display: 'flex' }}>
-                        <Box sx={{ minWidth: 'fit-content', fontSize: '14px' }}>{message.message}</Box>
-                        <Box sx={{ flexGrow: 1, width: '100%' }} />
+                        <Box sx={{ fontSize: '14px' }}>{message.message}</Box>
+                        <Box sx={{ flexGrow: 1 }} />
                         <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
                       </Box>
                     )}
