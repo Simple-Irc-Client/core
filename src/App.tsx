@@ -21,13 +21,15 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
 import { ChannelListProvider } from './providers/ChannelListProvider';
 import { ChannelsDrawerProvider } from './providers/ChannelsDrawerProvider';
+import { ContextMenuProvider } from './providers/ContextMenuProvider';
+import { ContextMenu } from './components/ContextMenu';
 
 const theme = createTheme();
 
 function App(): JSX.Element {
   const isCreatorCompleted = useSettingsStore((state) => state.isCreatorCompleted);
 
-  const handleContextMenu = (event: React.MouseEvent): void => {
+  const handleNoContextMenu = (event: React.MouseEvent): void => {
     event.preventDefault();
   };
 
@@ -36,24 +38,27 @@ function App(): JSX.Element {
       <CssBaseline />
       <ChannelListProvider>
         <ChannelsDrawerProvider>
-          <AppNetwork />
-          <div onContextMenu={handleContextMenu}>
-            {!isCreatorCompleted && <Creator />}
-            {isCreatorCompleted && (
-              <Box sx={{ display: 'flex' }}>
-                <Box>
-                  <Channels />
+          <ContextMenuProvider>
+            <ContextMenu />
+            <AppNetwork />
+            <Box onContextMenu={handleNoContextMenu}>
+              {!isCreatorCompleted && <Creator />}
+              {isCreatorCompleted && (
+                <Box sx={{ display: 'flex' }}>
+                  <Box>
+                    <Channels />
+                  </Box>
+                  <Box height="calc(100vh - (64px + 28px + 60px))" width="100%">
+                    <Topic />
+                    <Main />
+                    <Typing />
+                    <Toolbar />
+                  </Box>
+                  <Users />
                 </Box>
-                <Box height="calc(100vh - (64px + 28px + 60px))" width="100%">
-                  <Topic />
-                  <Main />
-                  <Typing />
-                  <Toolbar />
-                </Box>
-                <Users />
-              </Box>
-            )}
-          </div>
+              )}
+            </Box>
+          </ContextMenuProvider>
         </ChannelsDrawerProvider>
       </ChannelListProvider>
     </ThemeProvider>
