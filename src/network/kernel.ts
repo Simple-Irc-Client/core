@@ -630,7 +630,7 @@ export class Kernel {
 
     setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL });
     if (this.settingsStore.currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage(target, { ...newMessage, target });
+      setAddMessage(this.settingsStore.currentChannelName, { ...newMessage, target: this.settingsStore.currentChannelName });
     }
 
     if (nick === 'NickServ' && target === this.settingsStore.nick && passwordRequired.test(message)) {
