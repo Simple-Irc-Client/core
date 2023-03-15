@@ -246,7 +246,16 @@ export const getTopicTime = (channelName: string): number => {
 
 export const setAddMessage = (channelName: string, newMessage: Message): void => {
   if (!useChannelsStore.getState().existChannel(channelName)) {
-    useChannelsStore.getState().setAddChannel(channelName, isPriv(channelName) ? ChannelCategory.priv : ChannelCategory.channel);
+    let category;
+    if (channelName === DEBUG_CHANNEL) {
+      category = ChannelCategory.debug;
+    } else if (channelName === STATUS_CHANNEL) {
+      category = ChannelCategory.status;
+    } else {
+      category = isPriv(channelName) ? ChannelCategory.priv : ChannelCategory.channel;
+    }
+
+    useChannelsStore.getState().setAddChannel(channelName, category);
   }
 
   useChannelsStore.getState().setAddMessage(channelName, newMessage);
