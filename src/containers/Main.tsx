@@ -107,9 +107,10 @@ const Main = (): JSX.Element => {
 
   return (
     <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative', overflowWrap: 'anywhere' }}>
-      {messages.map((message, index) => {
+      <List dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
+        {messages.map((message) => {
         const mainWindow = (
-          <List key={`message-${index}`} dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
+            <React.Fragment key={`message-${message.id}`}>
             {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
             {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
               <>
@@ -117,12 +118,13 @@ const Main = (): JSX.Element => {
                 {theme === 'modern' && <MainViewModern message={message} lastNick={lastNick} />}
               </>
             )}
-          </List>
+            </React.Fragment>
         );
         lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
         return mainWindow;
       })}
       <AlwaysScrollToBottom />
+      </List>
     </Box>
   );
 };

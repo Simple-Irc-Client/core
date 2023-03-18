@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { defaultChannelType, maxMessages } from '../config/config';
+import { DEBUG_CHANNEL, defaultChannelType, maxMessages, STATUS_CHANNEL } from '../config/config';
 import { useSettingsStore } from './settings';
 import { useCurrentStore } from './current';
 
