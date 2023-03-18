@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore } from '../../store/settings';
+import { setCreatorStep, setNick } from '../../store/settings';
 
 const CreatorNick = (): JSX.Element => {
   const { t } = useTranslation();
 
   const [nick, formNick] = useState('');
-  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
-  const setNick = useSettingsStore.getState().setNick;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();

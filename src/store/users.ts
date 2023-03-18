@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type User } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { useSettingsStore } from './settings';
+import { getCurrentChannelName } from './settings';
 import { useCurrentStore } from './current';
 
 interface UsersStore {
@@ -133,7 +133,7 @@ export const useUsersStore = create<UsersStore>()(
 export const setAddUser = (newUser: User): void => {
   useUsersStore.getState().setAddUser(newUser);
 
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (newUser.channels.includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
@@ -143,14 +143,14 @@ export const setAddUser = (newUser: User): void => {
 export const setRemoveUser = (nick: string, channelName: string): void => {
   useUsersStore.getState().setRemoveUser(nick, channelName);
 
-  if (useSettingsStore.getState().currentChannelName === channelName) {
+  if (getCurrentChannelName() === channelName) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
   }
 };
 
 export const setQuitUser = (nick: string): void => {
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   useUsersStore.getState().setQuitUser(nick);
 
@@ -163,7 +163,7 @@ export const setRenameUser = (from: string, to: string): void => {
   useUsersStore.getState().setRenameUser(from, to);
 
   const channels = useUsersStore.getState().getUser(to)?.channels ?? [];
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (channels.includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
@@ -181,7 +181,7 @@ export const getHasUser = (nick: string): boolean => {
 export const setJoinUser = (nick: string, channelName: string): void => {
   useUsersStore.getState().setJoinUser(nick, channelName);
 
-  if (useSettingsStore.getState().currentChannelName === channelName) {
+  if (getCurrentChannelName() === channelName) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
   }
 };
@@ -198,7 +198,7 @@ export const setUserAvatar = (nick: string, avatar: string): void => {
   useUsersStore.getState().setUserAvatar(nick, avatar);
 
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (channels.includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
@@ -209,7 +209,7 @@ export const setUserColor = (nick: string, color: string): void => {
   useUsersStore.getState().setUserColor(nick, color);
 
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (channels.includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));

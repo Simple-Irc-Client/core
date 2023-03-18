@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { DEBUG_CHANNEL, defaultChannelType, maxMessages, STATUS_CHANNEL } from '../config/config';
-import { useSettingsStore } from './settings';
+import { getChannelTypes, getCurrentChannelName } from './settings';
 import { useCurrentStore } from './current';
 
 interface ChannelsStore {
@@ -221,7 +221,7 @@ export const existChannel = (channelName: string): boolean => {
 export const setTopic = (channelName: string, newTopic: string): void => {
   useChannelsStore.getState().setTopic(channelName, newTopic);
 
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (currentChannelName === channelName) {
     useCurrentStore.getState().setUpdateTopic(newTopic);
@@ -260,7 +260,7 @@ export const setAddMessage = (channelName: string, newMessage: Message): void =>
 
   useChannelsStore.getState().setAddMessage(channelName, newMessage);
 
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (currentChannelName === channelName) {
     useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
@@ -269,7 +269,7 @@ export const setAddMessage = (channelName: string, newMessage: Message): void =>
 
 export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>): void => {
   const channels = useChannelsStore.getState().openChannels;
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {
     useChannelsStore.getState().setAddMessage(channel.name, { ...newMessage, target: channel.name });
@@ -291,7 +291,7 @@ export const getCategory = (channelName: string): ChannelCategory | undefined =>
 export const setTyping = (channelName: string, nick: string, status: UserTypingStatus): void => {
   useChannelsStore.getState().setTyping(channelName, nick, status);
 
-  const currentChannelName = useSettingsStore.getState().currentChannelName;
+  const currentChannelName = getCurrentChannelName();
 
   if (currentChannelName === channelName) {
     useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
@@ -311,5 +311,5 @@ export const setIncreaseUnreadMessages = (channelName: string): void => {
 };
 
 export const isPriv = (channelName: string): boolean => {
-  return !useSettingsStore.getState().channelTypes.includes(channelName[0] ?? defaultChannelType);
+  return !getChannelTypes().includes(channelName[0] ?? defaultChannelType);
 };

@@ -3,15 +3,13 @@ import { Box, Button, Chip, Stack, Typography } from '@mui/material';
 import { DataGrid, type GridCellParams, type GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '../../network/network';
-import { useSettingsStore } from '../../store/settings';
 import { useChannelsStore } from '../../store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
 import { useChannelList } from '../../providers/ChannelListContext';
+import { setCreatorCompleted } from '../../store/settings';
 
 const CreatorChannelList = (): JSX.Element => {
   const { t } = useTranslation();
-
-  const setCreatorCompleted = useSettingsStore.getState().setCreatorCompleted;
 
   const { isFinished, channelList } = useChannelList();
 

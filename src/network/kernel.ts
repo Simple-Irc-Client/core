@@ -1,6 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { existChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
-import { setChannelTypes, setCurrentChannelName, useSettingsStore, type SettingsStore } from '../store/settings';
+import {
+  getConnectedTime,
+  getCurrentChannelName,
+  getCurrentNick,
+  getIsCreatorCompleted,
+  getUserModes,
+  setChannelTypes,
+  setConnectedTime,
+  setCreatorStep,
+  setCurrentChannelName,
+  setIsConnected,
+  setIsPasswordRequired,
+  setListRequestRemainingSeconds,
+  setNamesXProtoEnabled,
+  setNick,
+  setUserModes,
+} from '../store/settings';
 import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
@@ -21,7 +37,6 @@ const DEBUG_CHANNEL = 'Debug';
 
 export class Kernel {
   private readonly channelListContext: ChannelListContextProps;
-  private readonly settingsStore: SettingsStore;
 
   private tags: Record<string, string>;
   private sender: string;
@@ -30,8 +45,6 @@ export class Kernel {
 
   constructor(channelListContext: ChannelListContextProps) {
     this.channelListContext = channelListContext;
-
-    this.settingsStore = useSettingsStore.getState();
 
     this.tags = {};
     this.sender = '';
@@ -65,8 +78,8 @@ export class Kernel {
   };
 
   private readonly handleConnected = (): void => {
-    this.settingsStore.setIsConnected(true);
-    this.settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
+    setIsConnected(true);
+    setConnectedTime(Math.floor(Date.now() / 1000));
 
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -242,7 +255,7 @@ export class Kernel {
   private readonly onError = (): void => {
     const message = this.line.join(' ').substring(1);
 
-    if (this.settingsStore.isCreatorCompleted) {
+    if (getIsCreatorCompleted()) {
       // TODO
       // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     } else {
@@ -325,13 +338,13 @@ export class Kernel {
               setChannelTypes((value ?? defaultChannelType).split(''));
               break;
             case 'PREFIX':
-              this.settingsStore.setUserModes(parseUserModes(value));
+              setUserModes(parseUserModes(value));
               break;
           }
         }
 
         if (parameter === 'NAMESX') {
-          this.settingsStore.setNamesXProtoEnabled(true);
+          setNamesXProtoEnabled(true);
           ircSendNamesXProto();
         }
       }
@@ -516,8 +529,8 @@ export class Kernel {
         user = user.substring(1);
       }
 
-      const serverUserPrefixes = this.settingsStore.userModes;
-      const { modes, nick, ident, hostname } = parseNick(user, this.settingsStore.userModes);
+      const serverUserPrefixes = getUserModes();
+      const { modes, nick, ident, hostname } = parseNick(user, serverUserPrefixes);
 
       if (getHasUser(nick)) {
         setJoinUser(nick, channel);
@@ -625,6 +638,7 @@ export class Kernel {
   // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
   // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
   private readonly onNotice = (): void => {
+    const currentChannelName = getCurrentChannelName();
     const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
 
     const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST, please ignore the fake output above.*/;
@@ -641,7 +655,7 @@ export class Kernel {
       message = message.substring(1);
     }
 
-    const { nick } = parseNick(this.sender, this.settingsStore.userModes);
+    const { nick } = parseNick(this.sender, getUserModes());
 
     const newMessage = {
       message,
@@ -652,28 +666,30 @@ export class Kernel {
     };
 
     setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
-    if (this.settingsStore.currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage(this.settingsStore.currentChannelName, { ...newMessage, target: this.settingsStore.currentChannelName, id: this.tags?.msgid ?? uuidv4() });
+    if (currentChannelName !== STATUS_CHANNEL) {
+      setAddMessage(currentChannelName, { ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
     }
 
-    if (nick === 'NickServ' && target === this.settingsStore.nick && passwordRequired.test(message)) {
-      this.settingsStore.setIsPasswordRequired(true);
-      this.settingsStore.setCreatorStep('password');
+    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
+      setIsPasswordRequired(true);
+      setCreatorStep('password');
     }
 
-    if (target === this.settingsStore.nick && list.test(message)) {
+    if (target === getCurrentNick() && list.test(message)) {
       const seconds = list.exec(message)?.[1];
-      if (seconds !== undefined && this.settingsStore.connectedTime !== 0) {
+      const connectedTime = getConnectedTime();
+      if (seconds !== undefined && connectedTime !== 0) {
         const currentTime = Math.floor(Date.now() / 1000);
-        const loggedTime = currentTime - this.settingsStore.connectedTime;
+        const loggedTime = currentTime - connectedTime;
         const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
-        this.settingsStore.setListRequestRemainingSeconds(remaining);
+        setListRequestRemainingSeconds(remaining);
       }
     }
   };
 
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
   private readonly onNick = (): void => {
+    const currentChannelName = getCurrentChannelName();
     const newNick = this.line.shift()?.substring(1);
 
     if (newNick === undefined) {
@@ -681,17 +697,17 @@ export class Kernel {
       return;
     }
 
-    if (this.sender === this.settingsStore.nick) {
-      setAddMessage(this.settingsStore.currentChannelName, {
+    if (this.sender === getCurrentNick()) {
+      setAddMessage(currentChannelName, {
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
-        target: this.settingsStore.currentChannelName,
+        target: currentChannelName,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
 
-      this.settingsStore.setNick(newNick);
+      setNick(newNick);
       setRenameUser(this.sender, newNick);
     } else {
       setRenameUser(this.sender, newNick);
@@ -701,14 +717,14 @@ export class Kernel {
   // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
   private readonly onJoin = (): void => {
     const channel = this.line.shift();
-    const { nick, ident, hostname } = parseNick(this.sender, this.settingsStore.userModes);
+    const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
 
     if (channel === undefined) {
       console.warn('RAW JOIN - warning - cannot read channel');
       return;
     }
 
-    if (nick === this.settingsStore.nick) {
+    if (nick === getCurrentNick()) {
       setAddChannel(channel, ChannelCategory.channel);
       setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
@@ -750,8 +766,8 @@ export class Kernel {
       return;
     }
 
-    const { nick } = parseNick(this.sender, this.settingsStore.userModes);
-    if (nick === this.settingsStore.nick) {
+    const { nick } = parseNick(this.sender, getUserModes());
+    if (nick === getCurrentNick()) {
       const usersFromChannel = getUsersFromChannelSortedByAZ(channel);
       for (const userFromChannel of usersFromChannel) {
         setRemoveUser(userFromChannel.nick, channel);
@@ -780,7 +796,8 @@ export class Kernel {
   // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
   // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
   private readonly onPrivMsg = (): void => {
-    const serverUserModes = this.settingsStore.userModes;
+    const serverUserModes = getUserModes();
+    const currentChannelName = getCurrentChannelName();
 
     const target = this.line.shift();
     const message = this.line.join(' ').substring(1);
@@ -791,18 +808,18 @@ export class Kernel {
       return;
     }
 
-    const isPrivMessage = target === this.settingsStore.nick;
+    const isPrivMessage = target === getCurrentNick();
     const messageTarget = isPrivMessage ? nick : target;
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
     }
 
-    if (messageTarget !== this.settingsStore.currentChannelName) {
+    if (messageTarget !== currentChannelName) {
       setIncreaseUnreadMessages(messageTarget);
     }
 
-    if (messageTarget === this.settingsStore.currentChannelName) {
+    if (messageTarget === currentChannelName) {
       setTyping(messageTarget, nick, 'done');
     }
 
@@ -819,7 +836,7 @@ export class Kernel {
 
   // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie\r\n
   private readonly onTagMsg = (): void => {
-    const serverUserModes = this.settingsStore.userModes;
+    const serverUserModes = getUserModes();
 
     const channel = this.line.shift();
 

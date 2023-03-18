@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore } from '../../store/settings';
+import { getIsPasswordRequired, setCreatorStep, useSettingsStore } from '../../store/settings';
 
 const CreatorLoading = (): JSX.Element => {
   const { t } = useTranslation();
@@ -10,7 +10,6 @@ const CreatorLoading = (): JSX.Element => {
 
   const isConnecting = useSettingsStore((state) => state.isConnecting);
   const isConnected = useSettingsStore((state) => state.isConnected);
-  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
 
   useEffect(() => {
     if (isConnecting) {
@@ -28,8 +27,8 @@ const CreatorLoading = (): JSX.Element => {
       }, 2_000); // 2 sec
 
       const timeout5 = setTimeout(() => {
-        const localSettings = useSettingsStore.getState();
-        if (localSettings.isPasswordRequired === false || localSettings.isPasswordRequired === undefined) {
+        const isPasswordRequired = getIsPasswordRequired();
+        if (isPasswordRequired === false || isPasswordRequired === undefined) {
           setCreatorStep('channels');
         }
       }, 5_000); // 5 sec

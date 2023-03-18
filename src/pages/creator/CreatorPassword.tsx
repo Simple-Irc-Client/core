@@ -2,14 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword } from '../../network/network';
-import { useSettingsStore } from '../../store/settings';
+import { setCreatorStep, useSettingsStore } from '../../store/settings';
 
 const CreatorPassword = (): JSX.Element => {
   const { t } = useTranslation();
   const [lastNick, setLastNick] = useState('');
   const [password, setPassword] = useState('');
 
-  const setCreatorStep = useSettingsStore.getState().setCreatorStep;
   const nick = useSettingsStore((state) => state.nick);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {

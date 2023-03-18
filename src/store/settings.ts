@@ -116,6 +116,38 @@ export const useSettingsStore = create<SettingsStore>()(
   )
 );
 
+export const setCreatorCompleted = (status: boolean): void => {
+  useSettingsStore.getState().setCreatorCompleted(status);
+};
+
+export const setIsConnecting = (status: boolean): void => {
+  useSettingsStore.getState().setIsConnecting(status);
+};
+
+export const setIsConnected = (status: boolean): void => {
+  useSettingsStore.getState().setIsConnected(status);
+};
+
+export const setConnectedTime = (time: number): void => {
+  useSettingsStore.getState().setConnectedTime(time);
+};
+
+export const setNick = (newNick: string): void => {
+  useSettingsStore.getState().setNick(newNick);
+};
+
+export const setServer = (newServer: Server): void => {
+  useSettingsStore.getState().setServer(newServer);
+};
+
+export const setCreatorStep = (newCreatorStep: CreatorStep): void => {
+  useSettingsStore.getState().setCreatorStep(newCreatorStep);
+};
+
+export const setIsPasswordRequired = (status: boolean): void => {
+  useSettingsStore.getState().setIsPasswordRequired(status);
+};
+
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
   useSettingsStore.getState().setCurrentChannelName(channelName, category);
 
@@ -127,6 +159,54 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
   useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
 };
 
+export const setTheme = (newTheme: 'modern' | 'classic'): void => {
+  useSettingsStore.getState().setTheme(newTheme);
+};
+
+export const setNamesXProtoEnabled = (status: boolean): void => {
+  useSettingsStore.getState().setNamesXProtoEnabled(status);
+};
+
+export const setUserModes = (modes: UserMode[]): void => {
+  useSettingsStore.getState().setUserModes(modes);
+};
+
+export const setListRequestRemainingSeconds = (seconds: number): void => {
+  useSettingsStore.getState().setListRequestRemainingSeconds(seconds);
+};
+
 export const setChannelTypes = (types: string[]): void => {
   useSettingsStore.getState().setChannelTypes(types);
+};
+
+export const getCurrentNick = (): string => {
+  return useSettingsStore.getState().nick;
+};
+
+export const getCurrentChannelName = (): string => {
+  return useSettingsStore.getState().currentChannelName;
+};
+
+export const getCurrentChannelCategory = (): ChannelCategory => {
+  return useSettingsStore.getState().currentChannelCategory;
+};
+
+export const getChannelTypes = (): string[] => {
+  return useSettingsStore.getState().channelTypes;
+};
+
+export const getUserModes = (): UserMode[] => {
+  return useSettingsStore.getState().userModes;
+};
+
+export const getConnectedTime = (): number => {
+  return useSettingsStore.getState().connectedTime;
+};
+
+export const getIsCreatorCompleted = (): boolean => {
+  return useSettingsStore.getState().isCreatorCompleted;
+};
+
+export const getIsPasswordRequired = (): boolean | undefined => {
+  return useSettingsStore.getState().isPasswordRequired;
 };

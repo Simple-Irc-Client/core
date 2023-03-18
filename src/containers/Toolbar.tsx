@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Box, IconButton, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore } from '../store/settings';
+import { getCurrentNick, useSettingsStore } from '../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../types';
 import { ircSendRawMessage } from '../network/network';
 import { Send as SendIcon } from '@mui/icons-material';
@@ -11,14 +11,13 @@ import { setAddMessage } from '../store/channels';
 import { getUser, getUsersFromChannelSortedByAZ } from '../store/users';
 import { MessageColor } from '../config/theme';
 import { useChannelList } from '../providers/ChannelListContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
-
-  const nick: string = useSettingsStore((state) => state.nick);
 
   const [message, setMessage] = useState('');
   const autocompleteMessage = useRef('');
@@ -61,7 +60,10 @@ const Toolbar = (): JSX.Element => {
       payload = parseMessageToCommand(currentChannelName, message);
     } else {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+        const nick = getCurrentNick();
+
         setAddMessage(currentChannelName, {
+          id: uuidv4(),
           message,
           nick: getUser(nick) ?? nick,
           target: currentChannelName,
