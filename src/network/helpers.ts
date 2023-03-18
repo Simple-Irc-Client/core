@@ -41,7 +41,7 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z
   const tags: Record<string, string> = {};
   if ((line?.[0] ?? '').startsWith('@')) {
-    const tagsList = line.shift()?.split(';') ?? [];
+    const tagsList = line.shift()?.substring(1).split(';') ?? [];
     for (const tag of tagsList) {
       if (!tag.includes('=')) {
         tags[tag] = '';

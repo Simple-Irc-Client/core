@@ -81,7 +81,7 @@ describe('helper tests', () => {
       parseIrcRawMessage('@draft/bot;msgid=MmlMsf9ZUy2zEzoBc8IQLV;time=2023-02-05T19:02:00.003Z :NickServ!NickServ@serwisy.pirc.pl NOTICE dsfsdfsdfsdf :Twoj nick nie jest zarejestrowany')
     ).toStrictEqual({
       tags: {
-        '@draft/bot': '',
+        'draft/bot': '',
         msgid: 'MmlMsf9ZUy2zEzoBc8IQLV',
         time: '2023-02-05T19:02:00.003Z',
       },

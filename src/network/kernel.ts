@@ -9,6 +9,7 @@ import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
 import { type ChannelListContextProps } from '../providers/ChannelListContext';
 import { defaultChannelType } from '../config/config';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface IrcEvent {
   type: string;
@@ -40,6 +41,9 @@ export class Kernel {
 
   handle(event: IrcEvent): void {
     switch (event.type) {
+      case 'connect':
+        this.handleConnect();
+        break;
       case 'connected':
         this.handleConnected();
         break;
@@ -54,15 +58,18 @@ export class Kernel {
     }
   }
 
+  private readonly handleConnect = (): void => {
+    setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
+    setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+  };
+
   private readonly handleConnected = (): void => {
     this.settingsStore.setIsConnected(true);
     this.settingsStore.setConnectedTime(Math.floor(Date.now() / 1000));
 
-    setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
-    setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-    setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
-
     setAddMessageToAllChannels({
+      id: uuidv4(),
       message: i18next.t('kernel.connected'),
       time: new Date().toISOString(),
       category: MessageCategory.info,
@@ -74,6 +81,7 @@ export class Kernel {
 
   private readonly handleDisconnected = (): void => {
     setAddMessageToAllChannels({
+      id: uuidv4(),
       message: i18next.t('kernel.disconnected'),
       time: new Date().toISOString(),
       category: MessageCategory.info,
@@ -89,6 +97,7 @@ export class Kernel {
     this.line = line;
 
     setAddMessage(DEBUG_CHANNEL, {
+      id: uuidv4(),
       message: `<- ${event.trim()}`,
       target: DEBUG_CHANNEL,
       time: new Date().toISOString(),
@@ -238,6 +247,7 @@ export class Kernel {
       // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     } else {
       setAddMessageToAllChannels({
+        id: this.tags?.msgid ?? uuidv4(),
         message,
         time: new Date().toISOString(),
         category: MessageCategory.error,
@@ -253,6 +263,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -268,6 +279,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -283,6 +295,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -332,6 +345,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -347,6 +361,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -362,6 +377,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -377,6 +393,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -392,6 +409,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -407,6 +425,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -422,6 +441,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -528,6 +548,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -543,6 +564,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -558,6 +580,7 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     setAddMessage(STATUS_CHANNEL, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
@@ -628,9 +651,9 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL });
+    setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
     if (this.settingsStore.currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage(this.settingsStore.currentChannelName, { ...newMessage, target: this.settingsStore.currentChannelName });
+      setAddMessage(this.settingsStore.currentChannelName, { ...newMessage, target: this.settingsStore.currentChannelName, id: this.tags?.msgid ?? uuidv4() });
     }
 
     if (nick === 'NickServ' && target === this.settingsStore.nick && passwordRequired.test(message)) {
@@ -660,6 +683,7 @@ export class Kernel {
 
     if (this.sender === this.settingsStore.nick) {
       setAddMessage(this.settingsStore.currentChannelName, {
+        id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
         target: this.settingsStore.currentChannelName,
         time: this.tags?.time ?? new Date().toISOString(),
@@ -689,6 +713,7 @@ export class Kernel {
       setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
       setAddMessage(channel, {
+        id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.join').replace('{{nick}}', nick),
         target: channel,
         time: this.tags?.time ?? new Date().toISOString(),
@@ -737,6 +762,7 @@ export class Kernel {
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     } else {
       setAddMessage(channel, {
+        id: this.tags?.msgid ?? uuidv4(),
         message: i18next
           .t('kernel.part')
           .replace('{{nick}}', nick)
@@ -781,6 +807,7 @@ export class Kernel {
     }
 
     setAddMessage(messageTarget, {
+      id: this.tags?.msgid ?? uuidv4(),
       message,
       nick: getUser(nick) ?? nick,
       target: messageTarget,

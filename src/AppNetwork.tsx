@@ -7,6 +7,7 @@ import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
 import { MessageColor } from './config/theme';
 import { ChannelListContext } from './providers/ChannelListContext';
+import { v4 as uuidv4 } from 'uuid';
 
 export const AppNetwork = (): JSX.Element => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
@@ -16,6 +17,7 @@ export const AppNetwork = (): JSX.Element => {
     // messages sent to server
     if (data?.line !== undefined) {
       setAddMessage(DEBUG_CHANNEL, {
+        id: uuidv4(),
         message: `-> ${data.line?.trim()}`,
         target: DEBUG_CHANNEL,
         time: new Date().toISOString(),

@@ -19,6 +19,7 @@ export interface ChannelList {
 }
 
 export interface Message {
+  id: string;
   message: string;
   nick?: User | string;
   target: string;

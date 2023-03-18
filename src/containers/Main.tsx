@@ -109,21 +109,21 @@ const Main = (): JSX.Element => {
     <Box sx={{ height: '100%', overflowY: 'scroll', position: 'relative', overflowWrap: 'anywhere' }}>
       <List dense={true} sx={{ paddingTop: '0', paddingBottom: '0' }}>
         {messages.map((message) => {
-        const mainWindow = (
+          const mainWindow = (
             <React.Fragment key={`message-${message.id}`}>
-            {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
-            {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
-              <>
-                {theme === 'classic' && <MainViewClassic message={message} />}
-                {theme === 'modern' && <MainViewModern message={message} lastNick={lastNick} />}
-              </>
-            )}
+              {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
+              {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
+                <>
+                  {theme === 'classic' && <MainViewClassic message={message} />}
+                  {theme === 'modern' && <MainViewModern message={message} lastNick={lastNick} />}
+                </>
+              )}
             </React.Fragment>
-        );
-        lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
-        return mainWindow;
-      })}
-      <AlwaysScrollToBottom />
+          );
+          lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
+          return mainWindow;
+        })}
+        <AlwaysScrollToBottom />
       </List>
     </Box>
   );
