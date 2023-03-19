@@ -42,7 +42,11 @@ export const setAddChannelToList = (name: string, users: number, topic: string):
     return;
   }
 
-  useChannelListStore.getState().setAddChannel(name, users, topic);
+  const exist = useChannelListStore.getState().channels.find((channel) => channel.name === name) !== undefined;
+
+  if (!exist) {
+    useChannelListStore.getState().setAddChannel(name, users, topic);
+  }
 };
 
 export const setChannelListClear = (): void => {
