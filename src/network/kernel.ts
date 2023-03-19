@@ -371,7 +371,7 @@ export class Kernel {
   private readonly onRaw252 = (): void => {
     const nick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.line.join(' ');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -387,7 +387,7 @@ export class Kernel {
   private readonly onRaw253 = (): void => {
     const nick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.line.join(' ');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -403,7 +403,7 @@ export class Kernel {
   private readonly onRaw254 = (): void => {
     const nick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.line.join(' ');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -434,6 +434,8 @@ export class Kernel {
   // :saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62
   private readonly onRaw265 = (): void => {
     const nick = this.line.shift();
+    const local = this.line.shift();
+    const max = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -450,6 +452,8 @@ export class Kernel {
   // :saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721
   private readonly onRaw266 = (): void => {
     const nick = this.line.shift();
+    const global = this.line.shift();
+    const max = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
