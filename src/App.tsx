@@ -19,7 +19,6 @@ import '@fontsource/roboto/700.css';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
-import { ChannelListProvider } from './providers/ChannelListProvider';
 import { ChannelsDrawerProvider } from './providers/ChannelsDrawerProvider';
 import { ContextMenuProvider } from './providers/ContextMenuProvider';
 import { ContextMenu } from './components/ContextMenu';
@@ -36,31 +35,29 @@ function App(): JSX.Element {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <ChannelListProvider>
-        <ChannelsDrawerProvider>
-          <ContextMenuProvider>
-            <ContextMenu />
-            <AppNetwork />
-            <Box onContextMenu={handleNoContextMenu}>
-              {!isCreatorCompleted && <Creator />}
-              {isCreatorCompleted && (
-                <Box sx={{ display: 'flex' }}>
-                  <Box>
-                    <Channels />
-                  </Box>
-                  <Box height="calc(100vh - (64px + 28px + 60px))" width="100%">
-                    <Topic />
-                    <Main />
-                    <Typing />
-                    <Toolbar />
-                  </Box>
-                  <Users />
+      <ChannelsDrawerProvider>
+        <ContextMenuProvider>
+          <ContextMenu />
+          <AppNetwork />
+          <Box onContextMenu={handleNoContextMenu}>
+            {!isCreatorCompleted && <Creator />}
+            {isCreatorCompleted && (
+              <Box sx={{ display: 'flex' }}>
+                <Box>
+                  <Channels />
                 </Box>
-              )}
-            </Box>
-          </ContextMenuProvider>
-        </ChannelsDrawerProvider>
-      </ChannelListProvider>
+                <Box height="calc(100vh - (64px + 28px + 60px))" width="100%">
+                  <Topic />
+                  <Main />
+                  <Typing />
+                  <Toolbar />
+                </Box>
+                <Users />
+              </Box>
+            )}
+          </Box>
+        </ContextMenuProvider>
+      </ChannelsDrawerProvider>
     </ThemeProvider>
   );
 }

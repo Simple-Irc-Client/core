@@ -23,9 +23,9 @@ import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
-import { type ChannelListContextProps } from '../providers/ChannelListContext';
 import { defaultChannelType } from '../config/config';
 import { v4 as uuidv4 } from 'uuid';
+import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../store/channelList';
 
 export interface IrcEvent {
   type: string;
@@ -36,16 +36,12 @@ const STATUS_CHANNEL = 'Status';
 const DEBUG_CHANNEL = 'Debug';
 
 export class Kernel {
-  private readonly channelListContext: ChannelListContextProps;
-
   private tags: Record<string, string>;
   private sender: string;
   private command: string;
   private line: string[];
 
-  constructor(channelListContext: ChannelListContextProps) {
-    this.channelListContext = channelListContext;
-
+  constructor() {
     this.tags = {};
     this.sender = '';
     this.command = '';
@@ -465,7 +461,7 @@ export class Kernel {
 
   // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
   private readonly onRaw321 = (): void => {
-    this.channelListContext.clear();
+    setChannelListClear();
   };
 
   // :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
@@ -476,12 +472,12 @@ export class Kernel {
     const users = Number(this.line.shift() ?? '0');
     const topic = this.line.join(' ')?.substring(1);
 
-    this.channelListContext.add({ name, users, topic });
+    setAddChannelToList(name, users, topic);
   };
 
   // :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
   private readonly onRaw323 = (): void => {
-    this.channelListContext.setFinished(true);
+    setChannelListFinished(true);
   };
 
   // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają

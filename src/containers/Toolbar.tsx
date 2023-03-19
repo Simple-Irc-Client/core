@@ -10,8 +10,8 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
 import { setAddMessage } from '../store/channels';
 import { getUser, getUsersFromChannelSortedByAZ } from '../store/users';
 import { MessageColor } from '../config/theme';
-import { useChannelList } from '../providers/ChannelListContext';
 import { v4 as uuidv4 } from 'uuid';
+import { getChannelListSortedByAZ } from '../store/channelList';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ const Toolbar = (): JSX.Element => {
     });
   }, [currentChannelCategory]);
 
-  const channels = useChannelList().channelList;
+  const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
   const users = useMemo(() => getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
 

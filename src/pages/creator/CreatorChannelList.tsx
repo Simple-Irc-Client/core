@@ -1,22 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
 import { DataGrid, type GridCellParams, type GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '../../network/network';
 import { useChannelsStore } from '../../store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
-import { useChannelList } from '../../providers/ChannelListContext';
 import { setCreatorCompleted } from '../../store/settings';
+import { getChannelListSortedByUsers, useChannelListStore } from '../../store/channelList';
+import { type ChannelList } from '../../types';
 
 const CreatorChannelList = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const { isFinished, channelList } = useChannelList();
+  const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const channels = isFinished ? channelList ?? [] : [];
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
   const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
+
+  const [channelList, updateChannelsList] = useState<ChannelList[]>([]);
+
+  useMemo(() => {
+    updateChannelsList(isChannelListLoadingFinished ? getChannelListSortedByUsers() ?? [] : []);
+  }, [isChannelListLoadingFinished]);
 
   const handleDelete = (channelName: string) => () => {
     updateSelectedChannel((channels) => channels.filter((channel) => channel !== channelName));
@@ -58,13 +64,15 @@ const CreatorChannelList = (): JSX.Element => {
 
   useEffect(() => {
     const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name)).filter((channel) => !selectedChannels.includes(channel.name));
-    updateSelectedChannel(
-      selectedChannels.concat(
-        diff.map((channel) => {
-          return channel.name;
-        })
-      )
-    );
+    if (diff.length !== 0) {
+      updateSelectedChannel(
+        selectedChannels.concat(
+          diff.map((channel) => {
+            return channel.name;
+          })
+        )
+      );
+    }
   }, [openChannels, selectedChannels]);
 
   return (
@@ -80,8 +88,8 @@ const CreatorChannelList = (): JSX.Element => {
       <Box sx={{ mt: 3, width: '100%' }}>
         <div style={{ display: 'flex', height: 350, width: '100%' }}>
           <DataGrid
-            loading={channels.length < 10 || !isFinished}
-            rows={channels.length > 10 && isFinished ? channels : []}
+            loading={!isChannelListLoadingFinished}
+            rows={channelList}
             disableColumnMenu={true}
             columns={columns}
             pageSize={50}

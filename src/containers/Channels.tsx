@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Drawer, ListItem, IconButton, Autocomplete, TextField } from '@mui/material';
 import {
   AddOutlined as AddOutlinedIcon,
@@ -9,16 +9,16 @@ import {
   CloseOutlined as CloseOutlinedIcon,
 } from '@mui/icons-material';
 import { setCurrentChannelName, useSettingsStore } from '../store/settings';
-import { ChannelCategory, type Channel } from '../types';
+import { ChannelCategory, type ChannelList, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../network/network';
 import { type BadgeProps } from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
-import { useChannelList } from '../providers/ChannelListContext';
 import { useChannelsDrawer } from '../providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
+import { getChannelListSortedByAZ, useChannelListStore } from '../store/channelList';
 
 const Channels = (): JSX.Element => {
   const { t } = useTranslation();
@@ -28,7 +28,13 @@ const Channels = (): JSX.Element => {
 
   const { isChannelsDrawerOpen } = useChannelsDrawer();
 
-  const channels = useChannelList().channelList;
+  const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+
+  const [channelList, updateChannelsList] = useState<ChannelList[]>([]);
+
+  useMemo(() => {
+    updateChannelsList(isChannelListLoadingFinished ? getChannelListSortedByAZ() ?? [] : []);
+  }, [isChannelListLoadingFinished]);
 
   const [joinChannel, setJoinChannel] = useState<string>('');
 
@@ -143,7 +149,7 @@ const Channels = (): JSX.Element => {
         <Autocomplete
           value={joinChannel}
           size="small"
-          options={channels.map((option) => option.name)}
+          options={channelList.map((option) => option.name)}
           getOptionDisabled={(option) =>
             openChannelsShort
               .map((channel) => {

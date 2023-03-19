@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
 import { setAddMessage } from './store/channels';
 import { ircSendList, sicSocket } from './network/network';
@@ -6,12 +6,10 @@ import { type IrcEvent, Kernel } from './network/kernel';
 import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
 import { MessageColor } from './config/theme';
-import { ChannelListContext } from './providers/ChannelListContext';
 import { v4 as uuidv4 } from 'uuid';
 
 export const AppNetwork = (): JSX.Element => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
-  const channelListContext = useContext(ChannelListContext);
 
   const onServerEvent = (data: IrcEvent): void => {
     // messages sent to server
@@ -29,7 +27,7 @@ export const AppNetwork = (): JSX.Element => {
 
   const onIrcEvent = (data: IrcEvent): void => {
     // messages from server
-    new Kernel(channelListContext).handle(data);
+    new Kernel().handle(data);
   };
 
   useEffect(() => {
