@@ -14,7 +14,7 @@ export const AppNetwork = (): JSX.Element => {
   const onServerEvent = (data: IrcEvent): void => {
     // messages sent to server
     if (data?.line !== undefined) {
-      setAddMessage(DEBUG_CHANNEL, {
+      setAddMessage({
         id: uuidv4(),
         message: `-> ${data.line?.trim()}`,
         target: DEBUG_CHANNEL,

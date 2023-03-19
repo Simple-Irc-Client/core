@@ -18,7 +18,7 @@ interface ChannelsStore {
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
   getTopicSetBy: (channelName: string) => string;
   getTopicTime: (channelName: string) => number;
-  setAddMessage: (channelName: string, newMessage: Message) => void;
+  setAddMessage: (newMessage: Message) => void;
   getMessages: (channelName: string) => Message[];
   getCategory: (channelName: string) => ChannelCategory | undefined;
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
@@ -101,10 +101,10 @@ export const useChannelsStore = create<ChannelsStore>()(
         getTopicTime: (channelName: string): number => {
           return get().getChannel(channelName)?.topicSetTime ?? 0;
         },
-        setAddMessage: (channelName: string, newMessage: Message): void => {
+        setAddMessage: (newMessage: Message): void => {
           set((state) => ({
             openChannels: state.openChannels.map((channel: ChannelExtended) => {
-              if (channel.name !== channelName) {
+              if (channel.name !== newMessage.target) {
                 return channel;
               }
 
@@ -244,26 +244,26 @@ export const getTopicTime = (channelName: string): number => {
   return useChannelsStore.getState().getTopicTime(channelName);
 };
 
-export const setAddMessage = (channelName: string, newMessage: Message): void => {
-  if (!useChannelsStore.getState().existChannel(channelName)) {
+export const setAddMessage = (newMessage: Message): void => {
+  if (!useChannelsStore.getState().existChannel(newMessage.target)) {
     let category;
-    if (channelName === DEBUG_CHANNEL) {
+    if (newMessage.target === DEBUG_CHANNEL) {
       category = ChannelCategory.debug;
-    } else if (channelName === STATUS_CHANNEL) {
+    } else if (newMessage.target === STATUS_CHANNEL) {
       category = ChannelCategory.status;
     } else {
-      category = isPriv(channelName) ? ChannelCategory.priv : ChannelCategory.channel;
+      category = isPriv(newMessage.target) ? ChannelCategory.priv : ChannelCategory.channel;
     }
 
-    useChannelsStore.getState().setAddChannel(channelName, category);
+    useChannelsStore.getState().setAddChannel(newMessage.target, category);
   }
 
-  useChannelsStore.getState().setAddMessage(channelName, newMessage);
+  useChannelsStore.getState().setAddMessage(newMessage);
 
   const currentChannelName = getCurrentChannelName();
 
-  if (currentChannelName === channelName) {
-    useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
+  if (currentChannelName === newMessage.target) {
+    useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(newMessage.target));
   }
 };
 
@@ -272,7 +272,7 @@ export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>):
   const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {
-    useChannelsStore.getState().setAddMessage(channel.name, { ...newMessage, target: channel.name });
+    useChannelsStore.getState().setAddMessage({ ...newMessage, target: channel.name });
 
     if (currentChannelName === channel.name) {
       useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(currentChannelName));

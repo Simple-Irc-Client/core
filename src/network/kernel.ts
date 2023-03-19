@@ -89,6 +89,8 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
+    setIsConnected(false);
+
     setAddMessageToAllChannels({
       id: uuidv4(),
       message: i18next.t('kernel.disconnected'),
@@ -105,7 +107,7 @@ export class Kernel {
     this.command = command;
     this.line = line;
 
-    setAddMessage(DEBUG_CHANNEL, {
+    setAddMessage({
       id: uuidv4(),
       message: `<- ${event.trim()}`,
       target: DEBUG_CHANNEL,
@@ -228,6 +230,8 @@ export class Kernel {
     // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
     // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
     // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
+    // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
+    // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
 
     // Ban => 'b',
     // Exception => 'e',
@@ -271,7 +275,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -287,7 +291,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -303,7 +307,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -353,7 +357,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -369,7 +373,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -385,7 +389,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -401,7 +405,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -417,7 +421,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -433,7 +437,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -449,7 +453,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -556,7 +560,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -572,7 +576,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -588,7 +592,7 @@ export class Kernel {
 
     const message = this.line.join(' ').substring(1);
 
-    setAddMessage(STATUS_CHANNEL, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
@@ -661,9 +665,9 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    setAddMessage(STATUS_CHANNEL, { ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
+    setAddMessage({ ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
     if (currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage(currentChannelName, { ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
+      setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
     }
 
     if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
@@ -694,7 +698,7 @@ export class Kernel {
     }
 
     if (this.sender === getCurrentNick()) {
-      setAddMessage(currentChannelName, {
+      setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
         target: currentChannelName,
@@ -724,7 +728,7 @@ export class Kernel {
       setAddChannel(channel, ChannelCategory.channel);
       setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
-      setAddMessage(channel, {
+      setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.join').replace('{{nick}}', nick),
         target: channel,
@@ -773,7 +777,7 @@ export class Kernel {
       // TODO select new channel
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     } else {
-      setAddMessage(channel, {
+      setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next
           .t('kernel.part')
@@ -819,7 +823,7 @@ export class Kernel {
       setTyping(messageTarget, nick, 'done');
     }
 
-    setAddMessage(messageTarget, {
+    setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message,
       nick: getUser(nick) ?? nick,

@@ -62,7 +62,7 @@ const Toolbar = (): JSX.Element => {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
         const nick = getCurrentNick();
 
-        setAddMessage(currentChannelName, {
+        setAddMessage({
           id: uuidv4(),
           message,
           nick: getUser(nick) ?? nick,

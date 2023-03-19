@@ -1,15 +1,15 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-import trEN from './lang/en/lang.json';
-import trPL from './lang/pl/lang.json';
+import translateEN from './lang/en/lang.json';
+import translatePL from './lang/pl/lang.json';
 
 const resources = {
   en: {
-    translation: trEN,
+    translation: translateEN,
   },
   pl: {
-    translation: trPL,
+    translation: translatePL,
   },
 };
 
