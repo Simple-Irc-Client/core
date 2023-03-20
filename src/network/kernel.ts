@@ -634,7 +634,7 @@ export class Kernel {
     });
   };
 
-  // :chmurka.pirc.pl 396 sic-test D6D788C7.623ED634.C8132F93.IP :is now your displayed host
+  // :chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host
   private readonly onRaw396 = (): void => {
     const nick = this.line.shift();
 
