@@ -493,6 +493,8 @@ export class Kernel {
   };
 
   // :insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]
+  // :netsplit.pirc.pl 322 sic-test * 1 :
+  // :netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]
   private readonly onRaw322 = (): void => {
     const sender = this.line.shift();
 

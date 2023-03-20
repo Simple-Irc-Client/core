@@ -5,6 +5,7 @@ import { describe, expect, it, afterEach, vi } from 'vitest';
 import { Kernel } from '../kernel';
 import * as settingsFile from '../../store/settings';
 import * as channelsFile from '../../store/channels';
+import * as channelListFile from '../../store/channelList';
 import * as networkFile from '../../network/network';
 import i18next from '../../i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
@@ -220,5 +221,65 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Current global users 271, max 1721' }));
+  });
+
+  it('test raw 321', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetChannelListClear).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 322 #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetAddChannelToList).toHaveBeenCalledWith('#Base', 1, '[+nt]');
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 322 #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+
+    const line = ':netsplit.pirc.pl 322 sic-test * 1 :';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetAddChannelToList).toHaveBeenCalledWith('*', 1, '');
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 322 #3', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+
+    const line = ':netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetAddChannelToList).toHaveBeenCalledWith('#+Kosciol+', 1, '[+nt]');
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 323', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetChannelListFinished).toHaveBeenNthCalledWith(1, true);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
   });
 });
