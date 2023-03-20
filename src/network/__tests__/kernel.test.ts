@@ -12,6 +12,14 @@ import i18next from '../../i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
 
 describe('kernel tests', () => {
+  const defaultUserModes = [
+    { symbol: '~', mode: 'q' },
+    { symbol: '&', mode: 'a' },
+    { symbol: '@', mode: 'o' },
+    { symbol: '%', mode: 'h' },
+    { symbol: '+', mode: 'v' },
+  ];
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -340,7 +348,7 @@ describe('kernel tests', () => {
 
   it('test raw 353 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => []);
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
@@ -365,25 +373,25 @@ describe('kernel tests', () => {
       channels: ['#Religie'],
       hostname: '397FF66D:D8E4ABEE:5838DA6D:IP',
       ident: '~user',
-      maxMode: -1,
-      modes: [],
-      nick: '+Alisha',
+      maxMode: 252,
+      modes: ['v'],
+      nick: 'Alisha',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
       channels: ['#Religie'],
       hostname: 'AB43659:6EA4AE53:B58B785A:IP',
       ident: '~ProrokCod',
-      maxMode: -1,
-      modes: [],
-      nick: '+ProrokCodzienny',
+      maxMode: 252,
+      modes: ['v'],
+      nick: 'ProrokCodzienny',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
       channels: ['#Religie'],
       hostname: 'bot:kanalowy.pomocnik',
       ident: 'pomocny',
-      maxMode: -1,
-      modes: [],
-      nick: '&@Pomocnik',
+      maxMode: 255,
+      modes: ['a', 'o'],
+      nick: 'Pomocnik',
     });
     expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(4);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
@@ -392,7 +400,7 @@ describe('kernel tests', () => {
 
   it('test raw 353 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => []);
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => true);
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
@@ -543,5 +551,52 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw NOTICE #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+
+    const line = '@draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '[#religie] Dla trolli są inne kanały...' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#current-channel', message: '[#religie] Dla trolli są inne kanały...' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
+  });
+
+  it('test raw NOTICE #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetSetCreatorStep = vi.spyOn(settingsFile, 'setCreatorStep').mockImplementation(() => {});
+
+    const line =
+      '@draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenNthCalledWith(1, true);
+
+    expect(mockSetSetCreatorStep).toHaveBeenCalledTimes(1);
+    expect(mockSetSetCreatorStep).toHaveBeenNthCalledWith(1, 'password');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 });

@@ -699,7 +699,7 @@ export class Kernel {
   // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
   // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
   // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
-  // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE ghfghfghfghfghfgh :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
+  // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
   private readonly onNotice = (): void => {
     const currentChannelName = getCurrentChannelName();
     const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
@@ -713,12 +713,26 @@ export class Kernel {
       return;
     }
 
-    let message = this.line.join(' ');
-    if (message.at(0) === ':') {
-      message = message.substring(1);
-    }
+    const message = this.line.join(' ').substring(1);
 
     const { nick } = parseNick(this.sender, getUserModes());
+
+    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
+      setIsPasswordRequired(true);
+      setCreatorStep('password');
+    }
+
+    if (list.test(message) && target === getCurrentNick() && !getIsCreatorCompleted()) {
+      const seconds = list.exec(message)?.[1];
+      const connectedTime = getConnectedTime();
+      if (seconds !== undefined && connectedTime !== 0) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const loggedTime = currentTime - connectedTime;
+        const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
+        setListRequestRemainingSeconds(remaining);
+      }
+      return;
+    }
 
     const newMessage = {
       message,
@@ -731,22 +745,6 @@ export class Kernel {
     setAddMessage({ ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
     if (currentChannelName !== STATUS_CHANNEL) {
       setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
-    }
-
-    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
-      setIsPasswordRequired(true);
-      setCreatorStep('password');
-    }
-
-    if (target === getCurrentNick() && list.test(message)) {
-      const seconds = list.exec(message)?.[1];
-      const connectedTime = getConnectedTime();
-      if (seconds !== undefined && connectedTime !== 0) {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const loggedTime = currentTime - connectedTime;
-        const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
-        setListRequestRemainingSeconds(remaining);
-      }
     }
   };
 

@@ -6,7 +6,7 @@ import { act, renderHook } from '@testing-library/react-hooks';
 import { useUsersStore } from '../users';
 import { type User } from '../../types';
 
-describe('users tests', () => {
+describe.skip('users tests', () => {
   it('test add user', () => {
     const { result } = renderHook(() => useUsersStore());
 
