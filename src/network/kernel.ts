@@ -198,6 +198,9 @@ export class Kernel {
       case 'ERROR':
         this.onError();
         break;
+      case 'PONG':
+        this.onPong();
+        break;
       case 'BATCH':
         this.onBatch();
         break;
@@ -268,7 +271,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -284,7 +287,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -300,7 +303,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -314,7 +317,7 @@ export class Kernel {
       message: this.line.join(' '),
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -331,7 +334,7 @@ export class Kernel {
       message: this.line.join(' '),
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
 
@@ -370,7 +373,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -386,7 +389,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -402,7 +405,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -418,7 +421,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -434,7 +437,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -452,7 +455,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -470,7 +473,7 @@ export class Kernel {
       message,
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.motd,
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
@@ -680,6 +683,11 @@ export class Kernel {
       // TODO
       // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     }
+  };
+
+  // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686
+  private readonly onPong = (): void => {
+    //
   };
 
   // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
