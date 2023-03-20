@@ -319,7 +319,16 @@ export class Kernel {
 
   // :netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ
   private readonly onRaw004 = (): void => {
-    //
+    const nick = this.line.shift();
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: this.line.join(' '),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.motd,
+      color: MessageColor.info,
+    });
   };
 
   // :netsplit.pirc.pl 005 SIC-test AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server
@@ -327,6 +336,17 @@ export class Kernel {
   // :netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server
   // :netsplit.pirc.pl 005 SIC-test UHNAMES USERIP WALLCHOPS WATCH=128 WATCHOPTS=A WHOX :are supported by this server
   private readonly onRaw005 = (): void => {
+    const nick = this.line.shift();
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: this.line.join(' '),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.motd,
+      color: MessageColor.info,
+    });
+
     for (let singleLine of this.line) {
       singleLine = singleLine.replace(':are supported by this server', '');
       const parameters = singleLine.split(' ');

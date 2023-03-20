@@ -15,9 +15,9 @@ describe('kernel tests', () => {
   });
 
   it('test connected', () => {
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected');
-    const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime');
-    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels');
+    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel().handle({ type: 'connected' });
 
@@ -27,8 +27,8 @@ describe('kernel tests', () => {
   });
 
   it('test close', () => {
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected');
-    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels');
+    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel().handle({ type: 'close' });
 
@@ -37,7 +37,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 001', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1';
 
@@ -48,7 +48,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 002', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3';
 
@@ -59,7 +59,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 003', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC';
 
@@ -70,12 +70,27 @@ describe('kernel tests', () => {
   });
 
   it('test raw 004', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
     const line = ':netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ';
     new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        target: STATUS_CHANNEL,
+        message: 'netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ',
+      })
+    );
   });
 
   it('test raw 005 chantypes', () => {
-    const mockSetChannelTypes = vi.spyOn(settingsFile, 'setChannelTypes');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    const mockSetChannelTypes = vi.spyOn(settingsFile, 'setChannelTypes').mockImplementation(() => {});
+    const mockSetNamesXProtoEnabled = vi.spyOn(settingsFile, 'setNamesXProtoEnabled').mockImplementation(() => {});
+    const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
       ':netsplit.pirc.pl 005 SIC-test AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server';
@@ -83,12 +98,27 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetChannelTypes).toHaveBeenNthCalledWith(1, ['#']);
+
+    expect(mockSetNamesXProtoEnabled).toHaveBeenCalledTimes(0);
+    expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(0);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        target: STATUS_CHANNEL,
+        message:
+          'AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server',
+      })
+    );
   });
 
   it('test raw 005 prefix', () => {
-    const mockSetUserModes = vi.spyOn(settingsFile, 'setUserModes');
-    const mockSetNamesXProtoEnabled = vi.spyOn(settingsFile, 'setNamesXProtoEnabled');
-    const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    const mockSetUserModes = vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
+    const mockSetNamesXProtoEnabled = vi.spyOn(settingsFile, 'setNamesXProtoEnabled').mockImplementation(() => {});
+    const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
       ':netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server';
@@ -104,10 +134,19 @@ describe('kernel tests', () => {
     ]);
     expect(mockSetNamesXProtoEnabled).toHaveBeenNthCalledWith(1, true);
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        target: STATUS_CHANNEL,
+        message:
+          'MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server',
+      })
+    );
   });
 
   it('test raw 251', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers';
 
@@ -118,7 +157,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 252', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 252 SIC-test 27 :operator(s) online';
 
@@ -129,7 +168,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 253', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 253 SIC-test -14 :unknown connection(s)';
 
@@ -140,7 +179,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 254', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 254 SIC-test 185 :channels formed';
 
@@ -151,7 +190,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 255', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 255 SIC-test :I have 42 clients and 0 servers';
 
@@ -162,7 +201,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 265', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62';
 
@@ -173,7 +212,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 266', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage');
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721';
 
