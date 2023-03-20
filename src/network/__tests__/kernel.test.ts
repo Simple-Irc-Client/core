@@ -6,6 +6,7 @@ import { Kernel } from '../kernel';
 import * as settingsFile from '../../store/settings';
 import * as channelsFile from '../../store/channels';
 import * as channelListFile from '../../store/channelList';
+import * as usersFile from '../../store/users';
 import * as networkFile from '../../network/network';
 import i18next from '../../i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
@@ -304,6 +305,77 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetTopicSetBy).toHaveBeenNthCalledWith(1, '#sic', 'Merovingian', 1552692216);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 353 #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => []);
+    const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
+
+    const line =
+      ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(4);
+    expect(mockGetHasUser).toHaveBeenCalledTimes(4);
+    expect(mockSetAddUser).toHaveBeenCalledTimes(4);
+    expect(mockSetAddUser).toHaveBeenNthCalledWith(1, {
+      channels: ['#Religie'],
+      hostname: 'vhost:kohana.aleksia',
+      ident: '~aleksa7',
+      maxMode: -1,
+      modes: [],
+      nick: 'aleksa7',
+    });
+    expect(mockSetAddUser).toHaveBeenNthCalledWith(2, {
+      channels: ['#Religie'],
+      hostname: '397FF66D:D8E4ABEE:5838DA6D:IP',
+      ident: '~user',
+      maxMode: -1,
+      modes: [],
+      nick: '+Alisha',
+    });
+    expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
+      channels: ['#Religie'],
+      hostname: 'AB43659:6EA4AE53:B58B785A:IP',
+      ident: '~ProrokCod',
+      maxMode: -1,
+      modes: [],
+      nick: '+ProrokCodzienny',
+    });
+    expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
+      channels: ['#Religie'],
+      hostname: 'bot:kanalowy.pomocnik',
+      ident: 'pomocny',
+      maxMode: -1,
+      modes: [],
+      nick: '&@Pomocnik',
+    });
+    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(4);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 353 #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => []);
+    const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => true);
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
+    const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
+
+    const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetHasUser).toHaveBeenCalledTimes(1);
+    expect(mockSetAddUser).toHaveBeenCalledTimes(0);
+    expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie');
+    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(0);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
   });
 });
