@@ -282,4 +282,28 @@ describe('kernel tests', () => {
     expect(mockSetChannelListFinished).toHaveBeenNthCalledWith(1, true);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
   });
+
+  it('test raw 332', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetTopic = vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {});
+
+    const line = ':chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetTopic).toHaveBeenNthCalledWith(1, '#sic', 'Prace nad Simple Irc Client trwają');
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
+
+  it('test raw 333', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetTopicSetBy = vi.spyOn(channelsFile, 'setTopicSetBy').mockImplementation(() => {});
+
+    const line = ':chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetTopicSetBy).toHaveBeenNthCalledWith(1, '#sic', 'Merovingian', 1552692216);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+  });
 });
