@@ -186,6 +186,9 @@ export class Kernel {
       case '376':
         this.onRaw376();
         break;
+      case '396':
+        this.onRaw396();
+        break;
       case '761':
         this.onRaw761();
         break;
@@ -627,6 +630,22 @@ export class Kernel {
       target: STATUS_CHANNEL,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.motd,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 396 sic-test D6D788C7.623ED634.C8132F93.IP :is now your displayed host
+  private readonly onRaw396 = (): void => {
+    const nick = this.line.shift();
+
+    const message = this.line.join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
       color: MessageColor.info,
     });
   };
