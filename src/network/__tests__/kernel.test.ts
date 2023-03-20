@@ -599,4 +599,32 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
+
+  it('test raw NOTICE #3', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => false);
+    const mockGetConnectedTime = vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
+    const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+
+    expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
+
+    expect(mockSetListRequestRemainingSeconds).toHaveBeenCalledTimes(1);
+    expect(mockSetListRequestRemainingSeconds).toHaveBeenNthCalledWith(1, 15);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
 });

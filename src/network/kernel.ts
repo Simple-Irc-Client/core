@@ -702,9 +702,9 @@ export class Kernel {
   // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
   private readonly onNotice = (): void => {
     const currentChannelName = getCurrentChannelName();
-    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
 
-    const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST, please ignore the fake output above.*/;
+    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
+    const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST.*/;
 
     const target = this.line.shift();
 
