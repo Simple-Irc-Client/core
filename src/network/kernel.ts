@@ -117,9 +117,6 @@ export class Kernel {
     });
 
     switch (command) {
-      case 'ERROR':
-        this.onError();
-        break;
       case '001':
         this.onRaw001();
         break;
@@ -198,6 +195,9 @@ export class Kernel {
       case '766':
         this.onRaw766();
         break;
+      case 'ERROR':
+        this.onError();
+        break;
       case 'NOTICE':
         this.onNotice();
         break;
@@ -254,24 +254,6 @@ export class Kernel {
     // Oper => 'o',
     // Halfop => 'h',
     // Voice => 'v',
-  };
-
-  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
-  private readonly onError = (): void => {
-    const message = this.line.join(' ').substring(1);
-
-    if (getIsCreatorCompleted()) {
-      // TODO
-      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
-    } else {
-      setAddMessageToAllChannels({
-        id: this.tags?.msgid ?? uuidv4(),
-        message,
-        time: new Date().toISOString(),
-        category: MessageCategory.error,
-        color: MessageColor.error,
-      });
-    }
   };
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -679,6 +661,24 @@ export class Kernel {
   // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
   private readonly onRaw766 = (): void => {
     //
+  };
+
+  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+  private readonly onError = (): void => {
+    const message = this.line.join(' ').substring(1);
+
+    if (getIsCreatorCompleted()) {
+      // TODO
+      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
+    } else {
+      setAddMessageToAllChannels({
+        id: this.tags?.msgid ?? uuidv4(),
+        message,
+        time: new Date().toISOString(),
+        category: MessageCategory.error,
+        color: MessageColor.error,
+      });
+    }
   };
 
   // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
