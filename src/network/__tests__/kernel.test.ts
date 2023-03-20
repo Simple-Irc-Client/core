@@ -522,4 +522,15 @@ describe('kernel tests', () => {
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: 'Closing Link: [1.1.1.1] (Registration Timeout)' }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
+
+  it('test raw BATCH', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    const line = 'netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
 });
