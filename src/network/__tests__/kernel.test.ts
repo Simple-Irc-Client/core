@@ -505,4 +505,21 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
+
+  it('test raw ERROR', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => true);
+
+    const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: 'Closing Link: [1.1.1.1] (Registration Timeout)' }));
+    expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
 });

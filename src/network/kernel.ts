@@ -668,9 +668,6 @@ export class Kernel {
     const message = this.line.join(' ').substring(1);
 
     if (getIsCreatorCompleted()) {
-      // TODO
-      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
-    } else {
       setAddMessageToAllChannels({
         id: this.tags?.msgid ?? uuidv4(),
         message,
@@ -678,6 +675,9 @@ export class Kernel {
         category: MessageCategory.error,
         color: MessageColor.error,
       });
+    } else {
+      // TODO
+      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     }
   };
 
