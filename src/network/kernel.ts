@@ -216,6 +216,15 @@ export class Kernel {
       case 'PART':
         this.onPart();
         break;
+      case 'KICK':
+        this.onKick();
+        break;
+      case 'QUIT':
+        this.onQuit();
+        break;
+      case 'MODE':
+        this.onMode();
+        break;
       case 'PRIVMSG':
         this.onPrivMsg();
         break;
@@ -233,31 +242,6 @@ export class Kernel {
     // TODO
     // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
-
-    // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
-
-    // @account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__
-
-    // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
-    // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
-    // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
-
-    // Ban => 'b',
-    // Exception => 'e',
-    // Limit => 'l',
-    // InviteOnly => 'i',
-    // InviteException => 'I',
-    // Key => 'k',
-    // Moderated => 'm',
-    // RegisteredOnly => 'r',
-    // Secret => 's',
-    // ProtectedTopic => 't',
-    // NoExternalMessages => 'n',
-    // Founder => 'q',
-    // Admin => 'a',
-    // Oper => 'o',
-    // Halfop => 'h',
-    // Voice => 'v',
   };
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -852,6 +836,40 @@ export class Kernel {
 
       setRemoveUser(nick, channel);
     }
+  };
+
+  // @account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__
+  private readonly onKick = (): void => {
+    // TODO
+  };
+
+  // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
+  private readonly onQuit = (): void => {
+    // TODO
+  };
+
+  // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
+  // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
+  // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
+
+  // Ban => 'b',
+  // Exception => 'e',
+  // Limit => 'l',
+  // InviteOnly => 'i',
+  // InviteException => 'I',
+  // Key => 'k',
+  // Moderated => 'm',
+  // RegisteredOnly => 'r',
+  // Secret => 's',
+  // ProtectedTopic => 't',
+  // NoExternalMessages => 'n',
+  // Founder => 'q',
+  // Admin => 'a',
+  // Oper => 'o',
+  // Halfop => 'h',
+  // Voice => 'v',
+  private readonly onMode = (): void => {
+    // TODO
   };
 
   // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
