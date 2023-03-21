@@ -24,6 +24,7 @@ export interface SettingsStore {
   userModes: UserMode[];
   listRequestRemainingSeconds: number;
   channelTypes: string[];
+  isMetadataEnabled: boolean;
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -39,6 +40,7 @@ export interface SettingsStore {
   setUserModes: (modes: UserMode[]) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
   setChannelTypes: (types: string[]) => void;
+  setIsMetadataEnabled: () => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -60,6 +62,7 @@ export const useSettingsStore = create<SettingsStore>()(
         userModes: [],
         listRequestRemainingSeconds: -1,
         channelTypes: [],
+        isMetadataEnabled: false,
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -107,6 +110,9 @@ export const useSettingsStore = create<SettingsStore>()(
         },
         setChannelTypes: (types: string[]): void => {
           set(() => ({ channelTypes: types }));
+        },
+        setIsMetadataEnabled: (): void => {
+          set(() => ({ isMetadataEnabled: true }));
         },
       }),
       {
@@ -209,4 +215,12 @@ export const getIsCreatorCompleted = (): boolean => {
 
 export const getIsPasswordRequired = (): boolean | undefined => {
   return useSettingsStore.getState().isPasswordRequired;
+};
+
+export const setMetadataEnabled = (): void => {
+  useSettingsStore.getState().setIsMetadataEnabled();
+};
+
+export const isMetadataEnabled = (): boolean => {
+  return useSettingsStore.getState().isMetadataEnabled;
 };

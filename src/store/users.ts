@@ -131,7 +131,14 @@ export const useUsersStore = create<UsersStore>()(
 );
 
 export const setAddUser = (newUser: User): void => {
-  useUsersStore.getState().setAddUser(newUser);
+  if (getHasUser(newUser.nick)) {
+    const channel = newUser.channels.shift();
+    if (channel !== undefined) {
+      setJoinUser(newUser.nick, channel);
+    }
+  } else {
+    useUsersStore.getState().setAddUser(newUser);
+  }
 
   const currentChannelName = getCurrentChannelName();
 

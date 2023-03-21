@@ -6,6 +6,7 @@ import {
   getCurrentNick,
   getIsCreatorCompleted,
   getUserModes,
+  isMetadataEnabled,
   setChannelTypes,
   setConnectedTime,
   setCreatorStep,
@@ -768,33 +769,28 @@ export class Kernel {
       return;
     }
 
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.join').replace('{{nick}}', nick),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.join,
+      color: MessageColor.join,
+    });
+
     if (nick === getCurrentNick()) {
-      setAddChannel(channel, ChannelCategory.channel);
       setCurrentChannelName(channel, ChannelCategory.channel);
     } else {
-      setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
-        message: i18next.t('kernel.join').replace('{{nick}}', nick),
-        target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
-        category: MessageCategory.join,
-        color: MessageColor.join,
+      setAddUser({
+        nick,
+        ident,
+        hostname,
+        modes: [],
+        maxMode: 0,
+        channels: [channel],
       });
 
-      setAddChannel(channel, ChannelCategory.channel);
-
-      if (getHasUser(nick)) {
-        setJoinUser(nick, channel);
-      } else {
-        setAddUser({
-          nick,
-          ident,
-          hostname,
-          modes: [],
-          maxMode: 0,
-          channels: [channel],
-        });
-
+      if (isMetadataEnabled()) {
         ircRequestMetadata(nick);
       }
     }

@@ -679,4 +679,53 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel2', message: 'SIC-test zmienił nick na Niezident36707' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
+
+  it('test raw JOIN #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+
+    const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddUser).toHaveBeenCalledTimes(0);
+    expect(mockIsMetadataEnabled).toHaveBeenCalledTimes(0);
+    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(0);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test wszedł do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw JOIN #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+
+    const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
+
+    expect(mockSetAddUser).toHaveBeenCalledTimes(1);
+    expect(mockIsMetadataEnabled).toHaveBeenCalledTimes(1);
+    expect(mockIrcRequestMetadata).toHaveBeenCalledWith('SIC-test');
+    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test wszedł do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
 });
