@@ -486,7 +486,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetUserAvatar).toHaveBeenNthCalledWith(1, 'Merovingian', 'https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg');
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('Merovingian', 'https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -589,10 +589,10 @@ describe('kernel tests', () => {
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
 
     expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
-    expect(mockSetIsPasswordRequired).toHaveBeenNthCalledWith(1, true);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
 
     expect(mockSetSetCreatorStep).toHaveBeenCalledTimes(1);
-    expect(mockSetSetCreatorStep).toHaveBeenNthCalledWith(1, 'password');
+    expect(mockSetSetCreatorStep).toHaveBeenCalledWith('password');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
@@ -622,9 +622,52 @@ describe('kernel tests', () => {
     expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
 
     expect(mockSetListRequestRemainingSeconds).toHaveBeenCalledTimes(1);
-    expect(mockSetListRequestRemainingSeconds).toHaveBeenNthCalledWith(1, 15);
+    expect(mockSetListRequestRemainingSeconds).toHaveBeenCalledWith(15);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw NICK #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+
+    const line = '@msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockSetRenameUser).toHaveBeenCalledTimes(1);
+    expect(mockSetRenameUser).toHaveBeenCalledWith('Merovingian', 'Niezident36707');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw NICK #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+
+    const line = '@msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :SIC-test NICK :Niezident36707';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetRenameUser).toHaveBeenCalledTimes(1);
+    expect(mockSetRenameUser).toHaveBeenNthCalledWith(1, 'SIC-test', 'Niezident36707');
+
+    expect(mockSetNick).toHaveBeenCalledTimes(1);
+    expect(mockSetNick).toHaveBeenCalledWith('Niezident36707');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'SIC-test zmienił nick na Niezident36707' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 });
