@@ -17,7 +17,7 @@ import {
   setNick,
   setUserModes,
 } from '../store/settings';
-import { getHasUser, getUser, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
+import { getHasUser, getUser, getUserChannels, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
@@ -726,10 +726,7 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    setAddMessage({ ...newMessage, target: STATUS_CHANNEL, id: uuidv4() });
-    if (currentChannelName !== STATUS_CHANNEL) {
-      setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
-    }
+    setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
   };
 
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
@@ -742,20 +739,22 @@ export class Kernel {
       return;
     }
 
-    if (this.sender === getCurrentNick()) {
+    const channels = getUserChannels(this.sender);
+    setRenameUser(this.sender, newNick);
+
+    for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
-        target: currentChannelName,
+        target: channel,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
+    }
 
+    if (this.sender === getCurrentNick()) {
       setNick(newNick);
-      setRenameUser(this.sender, newNick);
-    } else {
-      setRenameUser(this.sender, newNick);
     }
   };
 
@@ -895,6 +894,8 @@ export class Kernel {
       console.warn('RAW PRIVMSG - warning - cannot read target');
       return;
     }
+
+    // TODO '\001' ACTION '\001'
 
     const isPrivMessage = target === getCurrentNick();
     const messageTarget = isPrivMessage ? nick : target;

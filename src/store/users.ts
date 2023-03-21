@@ -174,6 +174,10 @@ export const getUser = (nick: string): User | undefined => {
   return useUsersStore.getState().getUser(nick);
 };
 
+export const getUserChannels = (nick: string): string[] => {
+  return useUsersStore.getState().getUser(nick)?.channels ?? [];
+};
+
 export const getHasUser = (nick: string): boolean => {
   return useUsersStore.getState().getHasUser(nick);
 };
