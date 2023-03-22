@@ -243,6 +243,8 @@ export class Kernel {
     // TODO
     // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
+
+    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
   };
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
