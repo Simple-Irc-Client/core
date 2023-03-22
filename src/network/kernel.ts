@@ -848,7 +848,46 @@ export class Kernel {
 
   // @account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__
   private readonly onKick = (): void => {
-    // TODO KICK
+    const currentNick = getCurrentNick();
+
+    const channel = this.line.shift();
+    const kicked = this.line.shift();
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    if (kicked === undefined) {
+      console.warn('RAW KICK - warning - cannot read kicked');
+      return;
+    }
+
+    if (channel === undefined) {
+      console.warn('RAW KICK - warning - cannot read channel');
+      return;
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t(`kernel.kick${kicked === currentNick ? '-you' : ''}`)
+        .replace('{{kicked}}', kicked)
+        .replace('{{kickedBy}}', nick)
+        .replace('{{channel}}', channel)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      target: kicked === currentNick ? STATUS_CHANNEL : channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.kick,
+      color: MessageColor.kick,
+    });
+
+    setRemoveUser(kicked, channel);
+
+    if (kicked === currentNick) {
+      setRemoveChannel(channel);
+
+      // TODO select new channel
+      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+    }
   };
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
