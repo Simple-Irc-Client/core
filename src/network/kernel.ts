@@ -18,7 +18,7 @@ import {
   setNick,
   setUserModes,
 } from '../store/settings';
-import { getHasUser, getUser, getUserChannels, getUsersFromChannelSortedByAZ, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
@@ -245,6 +245,20 @@ export class Kernel {
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
+
+    // whois:
+    // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
+    // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
+    // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
+    // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
+    // :chmurka.pirc.pl 301 sic-test Noop :gone
+    // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
+    // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
+    // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
+    // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
+    // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
+    // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
+    // :chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.
   };
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -809,29 +823,26 @@ export class Kernel {
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.part')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.part,
+      color: MessageColor.part,
+    });
+
+    setRemoveUser(nick, channel);
+
     if (nick === getCurrentNick()) {
-      const usersFromChannel = getUsersFromChannelSortedByAZ(channel);
-      for (const userFromChannel of usersFromChannel) {
-        setRemoveUser(userFromChannel.nick, channel);
-      }
       setRemoveChannel(channel);
 
       // TODO select new channel
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
-    } else {
-      setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
-        message: i18next
-          .t('kernel.part')
-          .replace('{{nick}}', nick)
-          .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-        target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
-        category: MessageCategory.part,
-        color: MessageColor.part,
-      });
-
-      setRemoveUser(nick, channel);
     }
   };
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type User } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { getCurrentChannelName } from './settings';
+import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
 
 interface UsersStore {
@@ -148,9 +148,17 @@ export const setAddUser = (newUser: User): void => {
 };
 
 export const setRemoveUser = (nick: string, channelName: string): void => {
+  if (nick === getCurrentNick()) {
+    // TODO refactor this func
+    const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
+    for (const userFromChannel of usersFromChannel) {
+      setRemoveUser(userFromChannel.nick, channelName);
+    }
+  }
+
   useUsersStore.getState().setRemoveUser(nick, channelName);
 
-  if (getCurrentChannelName() === channelName) {
+  if (getCurrentChannelName() === channelName && nick !== getCurrentNick()) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
   }
 };

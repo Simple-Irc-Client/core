@@ -680,9 +680,10 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
-  it('test raw JOIN #1', () => {
+  it('test raw JOIN #1 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
@@ -693,6 +694,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
@@ -707,6 +709,7 @@ describe('kernel tests', () => {
   it('test raw JOIN #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
@@ -717,6 +720,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
@@ -726,6 +730,52 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw PART #1 self', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+
+    const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
+
+    expect(mockSetRemoveUser).toHaveBeenCalledTimes(1);
+    expect(mockSetRemoveUser).toHaveBeenCalledWith('Merovingian', '#sic');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw PART #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+    const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetRemoveUser).toHaveBeenCalledTimes(1);
+    expect(mockSetRemoveUser).toHaveBeenCalledWith('Merovingian', '#sic');
+
+    expect(mockSetRemoveChannel).toHaveBeenCalledTimes(1);
+    expect(mockSetRemoveChannel).toHaveBeenCalledWith('#sic');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 });
