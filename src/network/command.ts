@@ -41,29 +41,29 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   if (channel !== STATUS_CHANNEL) {
     switch (line?.[0]?.toLowerCase()) {
       case 'ban':
-        // TODO
+        // TODO ban
         break;
       case 'cycle':
       case 'hop':
-        // TODO
+        // TODO hop
         break;
       case 'invite':
-        // TODO
+        // TODO invite
         break;
       case 'kb':
       case 'kban':
-        // TODO
+        // TODO kban
         break;
       case 'kick':
       case 'k':
-        // TODO
+        // TODO kick
         break;
       case 'me':
-        // TODO
+        // TODO me
         break;
       case 'part':
       case 'p':
-        // TODO
+        // TODO part
         break;
       case 'topic':
         return topicCommand(channel, line);

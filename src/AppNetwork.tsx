@@ -30,7 +30,7 @@ export const AppNetwork = (): JSX.Element => {
     try {
       new Kernel().handle(data);
     } catch (err) {
-      console.log(err);
+      console.warn(err);
     }
   };
 

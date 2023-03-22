@@ -49,6 +49,11 @@ export class Kernel {
     this.line = [];
   }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  assert = (func: Function, variable: string): Error => {
+    return new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
+  };
+
   handle(event: IrcEvent): void {
     switch (event.type) {
       case 'connect':
@@ -240,7 +245,7 @@ export class Kernel {
         break;
     }
 
-    // TODO
+    // TODO unknown raw:
     // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
 
@@ -509,8 +514,7 @@ export class Kernel {
     const topic = this.line.join(' ')?.substring(1);
 
     if (channel === undefined) {
-      console.warn('RAW 332 - warning - cannot read channel');
-      return;
+      throw this.assert(this.onRaw332, 'channel');
     }
 
     setTopic(channel, topic);
@@ -523,9 +527,11 @@ export class Kernel {
     const setBy = this.line.shift();
     const setTime = Number(this.line.shift() ?? '0');
 
-    if (channel === undefined || setBy === undefined) {
-      console.warn('RAW 333 - warning - cannot read channel or setBy');
-      return;
+    if (channel === undefined) {
+      throw this.assert(this.onRaw333, 'channel');
+    }
+    if (setBy === undefined) {
+      throw this.assert(this.onRaw333, 'setBy');
     }
 
     setTopicSetBy(channel, setBy, setTime);
@@ -539,8 +545,7 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      console.warn('RAW 353 - warning - cannot read channel');
-      return;
+      throw this.assert(this.onRaw353, 'channel');
     }
 
     for (let user of this.line) {
@@ -646,8 +651,7 @@ export class Kernel {
     const value = this.line.shift()?.substring(1);
 
     if (nick === undefined) {
-      console.warn('RAW 761 - warning - cannot read nick');
-      return;
+      throw this.assert(this.onRaw761, 'nick');
     }
 
     if (item === 'avatar' && value !== undefined) {
@@ -681,7 +685,7 @@ export class Kernel {
         color: MessageColor.error,
       });
     } else {
-      // TODO
+      // TODO display error message if creator is still opened
       // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
     }
   };
@@ -710,8 +714,7 @@ export class Kernel {
     const target = this.line.shift();
 
     if (target === undefined) {
-      console.warn('RAW NOTICE - warning - cannot read target');
-      return;
+      throw this.assert(this.onNotice, 'target');
     }
 
     const message = this.line.join(' ').substring(1);
@@ -752,8 +755,7 @@ export class Kernel {
     const newNick = this.line.shift()?.substring(1);
 
     if (newNick === undefined) {
-      console.warn('RAW NICK - warning - cannot read new nick');
-      return;
+      throw this.assert(this.onNick, 'newNick');
     }
 
     const channels = getUserChannels(this.sender);
@@ -781,8 +783,7 @@ export class Kernel {
     const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
 
     if (channel === undefined) {
-      console.warn('RAW JOIN - warning - cannot read channel');
-      return;
+      throw this.assert(this.onJoin, 'channel');
     }
 
     setAddMessage({
@@ -818,8 +819,7 @@ export class Kernel {
     const reason = this.line.join(' ').substring(1) ?? '';
 
     if (channel === undefined) {
-      console.warn('RAW PART - warning - cannot read channel');
-      return;
+      throw this.assert(this.onPart, 'channel');
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
@@ -841,7 +841,6 @@ export class Kernel {
     if (nick === getCurrentNick()) {
       setRemoveChannel(channel);
 
-      // TODO select new channel
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
   };
@@ -855,13 +854,11 @@ export class Kernel {
     const reason = this.line.join(' ').substring(1) ?? '';
 
     if (kicked === undefined) {
-      console.warn('RAW KICK - warning - cannot read kicked');
-      return;
+      throw this.assert(this.onKick, 'kicked');
     }
 
     if (channel === undefined) {
-      console.warn('RAW KICK - warning - cannot read channel');
-      return;
+      throw this.assert(this.onKick, 'channel');
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
@@ -885,7 +882,6 @@ export class Kernel {
     if (kicked === currentNick) {
       setRemoveChannel(channel);
 
-      // TODO select new channel
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
   };
@@ -925,7 +921,7 @@ export class Kernel {
   // Halfop => 'h',
   // Voice => 'v',
   private readonly onMode = (): void => {
-    // TODO
+    // TODO MODE
   };
 
   // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
@@ -939,8 +935,7 @@ export class Kernel {
     const { nick } = parseNick(this.sender, serverUserModes);
 
     if (target === undefined) {
-      console.warn('RAW PRIVMSG - warning - cannot read target');
-      return;
+      throw this.assert(this.onPrivMsg, 'target');
     }
 
     // TODO '\001' ACTION '\001'
@@ -978,8 +973,7 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      console.warn('RAW TAGMSG - warning - cannot read channel');
-      return;
+      throw this.assert(this.onTagMsg, 'channel');
     }
 
     const { nick } = parseNick(this.sender, serverUserModes);
@@ -1008,5 +1002,7 @@ export class Kernel {
         caps[key] = value;
       }
     }
+
+    // TODO setMetadataEnabled();
   };
 }
