@@ -42,7 +42,7 @@ function App(): JSX.Element {
           <Box onContextMenu={handleNoContextMenu}>
             {!isCreatorCompleted && <Creator />}
             {isCreatorCompleted && (
-              <Box sx={{ display: 'flex' }}>
+              <Box sx={{ display: 'flex', height: '100vh' }}>
                 <Box>
                   <Channels />
                 </Box>
