@@ -992,6 +992,7 @@ export class Kernel {
 
   // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
   // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
+  // @draft/bot;msgid=GQRN0k0RNmLY3Ai6f9g6Qk;time=2023-03-23T15:32:56.299Z :Global!Global@serwisy.pirc.pl PRIVMSG sic-test :VERSION
   private readonly onPrivMsg = (): void => {
     const serverUserModes = getUserModes();
     const currentChannelName = getCurrentChannelName();
@@ -1004,7 +1005,10 @@ export class Kernel {
       throw this.assert(this.onPrivMsg, 'target');
     }
 
-    // TODO '\001' ACTION '\001'
+    if (message.startsWith('\x01')) {
+      // ignore CTCP messages
+      return;
+    }
 
     const isPrivMessage = target === getCurrentNick();
     const messageTarget = isPrivMessage ? nick : target;
