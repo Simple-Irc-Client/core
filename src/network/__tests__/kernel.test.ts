@@ -886,7 +886,72 @@ describe('kernel tests', () => {
 
   // TODO mode
 
-  // TODO privmsg
+  it('test raw PRIVMSG #1 channel', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+    const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+    const mockGetUser = vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    const mockSetIncreaseUnreadMessages = vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+
+    const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockSetIncreaseUnreadMessages).toHaveBeenCalledTimes(0);
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockExistChannel).toHaveBeenCalledTimes(1);
+    expect(mockExistChannel).toHaveBeenCalledWith('#sic');
+
+    expect(mockSetTyping).toHaveBeenCalledTimes(1);
+    expect(mockSetTyping).toHaveBeenCalledWith('#sic', 'SIC-test2', 'done');
+
+    expect(mockGetUser).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'test 1' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw PRIVMSG #1 priv', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+    const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+    const mockGetUser = vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    const mockSetIncreaseUnreadMessages = vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+
+    const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG SIC-test :test 1';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockExistChannel).toHaveBeenCalledTimes(1);
+    expect(mockExistChannel).toHaveBeenCalledWith('SIC-test2');
+
+    expect(mockSetIncreaseUnreadMessages).toHaveBeenCalledTimes(1);
+    expect(mockSetIncreaseUnreadMessages).toHaveBeenCalledWith('SIC-test2');
+
+    expect(mockSetTyping).toHaveBeenCalledTimes(0);
+
+    expect(mockGetUser).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: 'SIC-test2', message: 'test 1' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
 
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
