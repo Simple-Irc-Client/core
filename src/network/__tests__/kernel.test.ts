@@ -875,6 +875,8 @@ describe('kernel tests', () => {
 
   // TODO mode
 
+  // TODO privmsg
+
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
@@ -894,6 +896,24 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
-  // TODO tagmsg
+  it('test raw TAGMSG', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+
+    const line =
+      '@+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+
+    expect(mockSetTyping).toHaveBeenCalledTimes(1);
+    expect(mockSetTyping).toHaveBeenCalledWith('#Religie', 'kato_starszy', 'active');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   // TODO cap
 });
