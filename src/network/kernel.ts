@@ -18,7 +18,7 @@ import {
   setNick,
   setUserModes,
 } from '../store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
@@ -891,7 +891,22 @@ export class Kernel {
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
   private readonly onQuit = (): void => {
-    // TODO QUIT
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    const message = {
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.quit')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.quit,
+      color: MessageColor.quit,
+    };
+
+    setQuitUser(nick, message);
   };
 
   private readonly onInvite = (): void => {

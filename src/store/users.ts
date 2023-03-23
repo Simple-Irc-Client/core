@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { type User } from '../types';
+import { type Message, type User } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
+import { setAddMessage } from './channels';
 
 interface UsersStore {
   users: User[];
@@ -163,9 +164,13 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
   }
 };
 
-export const setQuitUser = (nick: string): void => {
+export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): void => {
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
+
+  for (const channel of channels) {
+    setAddMessage({ ...message, target: channel });
+  }
 
   useUsersStore.getState().setQuitUser(nick);
 
