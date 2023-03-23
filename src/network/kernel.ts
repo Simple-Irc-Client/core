@@ -231,6 +231,9 @@ export class Kernel {
       case 'INVITE':
         this.onInvite();
         break;
+      case 'KILL':
+        this.onKill();
+        break;
       case 'MODE':
         this.onMode();
         break;
@@ -934,8 +937,24 @@ export class Kernel {
     });
   };
 
+  // :server KILL scc_test :Killed (Nickname collision)
   private readonly onKill = (): void => {
-    // TODO KILL
+    const me = this.line.shift();
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.kill')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
   };
 
   // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
