@@ -825,9 +825,15 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  // TODO quit
+  // TODO invite
+  // TODO kill
+  // TODO mode
+
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetTopic = vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {});
 
     const line = '@account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1';
 
@@ -835,8 +841,14 @@ describe('kernel tests', () => {
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
+    expect(mockSetTopic).toHaveBeenCalledTimes(1);
+    expect(mockSetTopic).toHaveBeenCalledWith('#sic', 'Test 1');
+
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian ustawił temat kanału na: Test 1' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
+
+  // TODO tagmsg
+  // TODO cap
 });

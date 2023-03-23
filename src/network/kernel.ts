@@ -989,6 +989,8 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    setTopic(channel, topic);
   };
 
   // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie\r\n
@@ -1011,6 +1013,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
   // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
+  // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag
   private readonly onCap = (): void => {
     const user = this.line.shift();
     const response = this.line.shift(); // LS, ACK
