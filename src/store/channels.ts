@@ -302,6 +302,16 @@ export const getTyping = (channelName: string): string[] => {
   return useChannelsStore.getState().getTyping(channelName);
 };
 
+export const existTyping = (channelName: string, nick: string): boolean => {
+  return useChannelsStore.getState().getTyping(channelName).includes(nick);
+};
+
+export const clearTyping = (channelName: string, nick: string): void => {
+  if (existTyping(channelName, nick)) {
+    setTyping(channelName, nick, 'done');
+  }
+};
+
 export const setClearUnreadMessages = (channelName: string): void => {
   useChannelsStore.getState().setClearUnreadMessages(channelName);
 };

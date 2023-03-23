@@ -3,7 +3,7 @@ import { type Message, type User } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
-import { setAddMessage } from './channels';
+import { clearTyping, setAddMessage } from './channels';
 
 interface UsersStore {
   users: User[];
@@ -157,6 +157,7 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
   }
 
   useUsersStore.getState().setRemoveUser(nick, channelName);
+  clearTyping(channelName, nick);
 
   if (getCurrentChannelName() === channelName && nick !== getCurrentNick()) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
@@ -169,6 +170,7 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
 
   for (const channel of channels) {
     setAddMessage({ ...message, target: channel });
+    clearTyping(channel, nick);
   }
 
   useUsersStore.getState().setQuitUser(nick);
@@ -182,6 +184,11 @@ export const setRenameUser = (from: string, to: string): void => {
   useUsersStore.getState().setRenameUser(from, to);
 
   const channels = useUsersStore.getState().getUser(to)?.channels ?? [];
+
+  for (const channel of channels) {
+    clearTyping(channel, from);
+  }
+
   const currentChannelName = getCurrentChannelName();
 
   if (channels.includes(currentChannelName)) {
