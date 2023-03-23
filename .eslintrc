@@ -15,6 +15,9 @@
   "rules": {
     "prettier/prettier": ["error"],
     "unused-imports/no-unused-imports": "error",
+    "import/no-duplicates": "error",
+    "import/no-self-import": "error",
+    "import/no-cycle": "warn",
     "no-restricted-imports": [
       "error",
       {
