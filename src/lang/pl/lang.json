@@ -43,5 +43,5 @@
     "kernel.quit": "{{nick}} opuścił serwer {{reason}}",
     "kernel.kick": "{{kicked}} został wyrzucony przez {{kickedBy}} {{reason}}",
     "kernel.kick-you": "Zostałeś wyrzucony z {{channel}} przez {{kickedBy}} {{reason}}",
-    "kernel.topic": "{{nick}} zmienił temat kanału na: {{topic}}"
+    "kernel.topic": "{{nick}} ustawił temat kanału na: {{topic}}"
 }

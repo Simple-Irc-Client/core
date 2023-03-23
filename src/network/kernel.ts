@@ -234,6 +234,9 @@ export class Kernel {
       case 'PRIVMSG':
         this.onPrivMsg();
         break;
+      case 'TOPIC':
+        this.onTopic();
+        break;
       case 'TAGMSG':
         this.onTagMsg();
         break;
@@ -963,6 +966,28 @@ export class Kernel {
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.default,
       color: MessageColor.default,
+    });
+  };
+
+  // @account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1
+  private readonly onTopic = (): void => {
+    const channel = this.line.shift();
+
+    const topic = this.line.join(' ').substring(1);
+
+    if (channel === undefined) {
+      throw this.assert(this.onTopic, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t(`kernel.topic`).replace('{{nick}}', nick).replace('{{topic}}', topic),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
     });
   };
 
