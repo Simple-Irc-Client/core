@@ -150,10 +150,9 @@ export const setAddUser = (newUser: User): void => {
 
 export const setRemoveUser = (nick: string, channelName: string): void => {
   if (nick === getCurrentNick()) {
-    // TODO refactor this func
     const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
     for (const userFromChannel of usersFromChannel) {
-      setRemoveUser(userFromChannel.nick, channelName);
+      useUsersStore.getState().setRemoveUser(userFromChannel.nick, channelName);
     }
   }
 
