@@ -255,10 +255,9 @@ export class Kernel {
       // this.onCap();
       // break;
 
-      // TODO AWAY
-      // case 'AWAY':
-      //   this.onAway();
-      //   break;
+      case 'AWAY':
+        this.onAway();
+        break;
       default:
         console.log(`unknown irc event: ${JSON.stringify(event)}`);
         break;
@@ -271,9 +270,6 @@ export class Kernel {
     // :chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
-
-    // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
-    // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
 
     // whois:
     // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
@@ -1115,5 +1111,11 @@ export class Kernel {
     }
 
     // TODO setMetadataEnabled();
+  };
+
+  // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
+  // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
+  private readonly onAway = (): void => {
+    //
   };
 }
