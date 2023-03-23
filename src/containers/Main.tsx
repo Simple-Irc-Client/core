@@ -38,6 +38,8 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
   const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
   const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
 
+  // TODO fix notice message layout - currently there is no nick displayed
+
   return (
     <>
       {message.category !== MessageCategory.default && (
