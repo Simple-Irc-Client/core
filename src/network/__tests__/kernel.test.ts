@@ -873,7 +873,6 @@ describe('kernel tests', () => {
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
-  // TODO kill
   // TODO mode
 
   it('test raw TOPIC', () => {
