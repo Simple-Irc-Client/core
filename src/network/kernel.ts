@@ -228,6 +228,9 @@ export class Kernel {
       case 'QUIT':
         this.onQuit();
         break;
+      case 'INVITE':
+        this.onInvite();
+        break;
       case 'MODE':
         this.onMode();
         break;
@@ -909,8 +912,26 @@ export class Kernel {
     setQuitUser(nick, message);
   };
 
+  // @msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic
   private readonly onInvite = (): void => {
-    // TODO INVITE
+    const invited = this.line.shift();
+
+    const channel = this.line.shift()?.substring(1);
+
+    if (channel === undefined) {
+      throw this.assert(this.onInvite, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.invite').replace('{{nick}}', nick).replace('{{channel}}', channel),
+      target: getCurrentChannelName(),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
   };
 
   private readonly onKill = (): void => {
