@@ -1061,9 +1061,11 @@ export class Kernel {
     const { nick } = parseNick(this.sender, serverUserModes);
 
     const status = this.tags?.['+typing'];
-    if (status !== undefined) {
-      setTyping(channel, nick, status as UserTypingStatus);
+    if (status === undefined) {
+      return;
     }
+
+    setTyping(channel, nick, status as UserTypingStatus);
   };
 
   // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
