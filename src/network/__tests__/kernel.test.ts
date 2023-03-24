@@ -10,6 +10,7 @@ import * as usersFile from '../../store/users';
 import * as networkFile from '../../network/network';
 import i18next from '../../i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
+import { ChannelCategory } from '../../types';
 
 describe('kernel tests', () => {
   const defaultUserModes = [
@@ -83,7 +84,7 @@ describe('kernel tests', () => {
 
   it('test raw CAP #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
 
     const line =
@@ -91,7 +92,8 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetMetadataEnabled).toBeCalledTimes(1);
+    expect(mockSetSupportedOption).toBeCalledTimes(1);
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata');
     expect(mockIrcRequestMetadata).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -100,14 +102,14 @@ describe('kernel tests', () => {
 
   it.skip('test raw CAP #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
 
     const line = ':jowisz.pirc.pl CAP * LS :unrealircd.org/json-log';
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetMetadataEnabled).toBeCalledTimes(0);
+    expect(mockSetSupportedOption).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -116,14 +118,14 @@ describe('kernel tests', () => {
 
   it('test raw CAP #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
 
     const line = ':saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag';
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetMetadataEnabled).toBeCalledTimes(0);
+    expect(mockSetSupportedOption).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -168,6 +170,8 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
@@ -176,8 +180,15 @@ describe('kernel tests', () => {
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#channel1', ChannelCategory.channel);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
+
+    expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
+
+    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #channel1');
+    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(2, 'WHO #channel1 %chtsunfra,152');
+    expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(2);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
@@ -658,7 +669,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const mockSetChannelTypes = vi.spyOn(settingsFile, 'setChannelTypes').mockImplementation(() => {});
-    const mockSetNamesXProtoEnabled = vi.spyOn(settingsFile, 'setNamesXProtoEnabled').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
@@ -669,7 +680,7 @@ describe('kernel tests', () => {
     expect(mockSetChannelTypes).toHaveBeenNthCalledWith(1, ['#']);
 
     expect(mockSetChannelTypes).toHaveBeenCalledTimes(1);
-    expect(mockSetNamesXProtoEnabled).toHaveBeenCalledTimes(0);
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(0);
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -688,7 +699,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const mockSetUserModes = vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
-    const mockSetNamesXProtoEnabled = vi.spyOn(settingsFile, 'setNamesXProtoEnabled').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
@@ -704,7 +715,7 @@ describe('kernel tests', () => {
       { mode: 'v', symbol: '+' },
     ]);
     expect(mockSetUserModes).toHaveBeenCalledTimes(1);
-    expect(mockSetNamesXProtoEnabled).toHaveBeenNthCalledWith(1, true);
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('NAMESX');
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(

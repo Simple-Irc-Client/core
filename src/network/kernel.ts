@@ -6,6 +6,7 @@ import {
   getCurrentNick,
   getIsCreatorCompleted,
   getUserModes,
+  isSupportedOption,
   setChannelTypes,
   setConnectedTime,
   setCreatorStep,
@@ -13,15 +14,14 @@ import {
   setIsConnected,
   setIsPasswordRequired,
   setListRequestRemainingSeconds,
-  setMetadataEnabled,
-  setNamesXProtoEnabled,
   setNick,
+  setSupportedOption,
   setUserModes,
 } from '../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
-import { ircRequestMetadata, ircSendList, ircSendNamesXProto } from './network';
+import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
 import { defaultChannelType } from '../config/config';
@@ -329,7 +329,7 @@ export class Kernel {
     }
 
     if (Object.keys(caps).includes('draft/metadata')) {
-      setMetadataEnabled();
+      setSupportedOption('metadata');
       ircRequestMetadata();
     }
   };
@@ -394,6 +394,10 @@ export class Kernel {
 
     if (nick === getCurrentNick()) {
       setCurrentChannelName(channel, ChannelCategory.channel);
+      ircSendRawMessage(`MODE ${channel}`);
+      if (isSupportedOption('WHOX')) {
+        ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
+      }
     } else {
       setAddUser({
         nick,
@@ -830,11 +834,14 @@ export class Kernel {
             case 'PREFIX':
               setUserModes(parseUserModes(value));
               break;
+            case 'WHOX':
+              setSupportedOption('WHOX');
+              break;
           }
         }
 
         if (parameter === 'NAMESX') {
-          setNamesXProtoEnabled(true);
+          setSupportedOption('NAMESX');
           ircSendNamesXProto();
         }
       }

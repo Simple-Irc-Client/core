@@ -36,11 +36,11 @@ export const ircSendPassword = (password: string): void => {
 };
 
 export const ircSendList = (): void => {
-  ircSendRawMessage(`LIST`);
+  ircSendRawMessage('LIST');
 };
 
 export const ircSendNamesXProto = (): void => {
-  ircSendRawMessage(`PROTOCTL NAMESX`);
+  ircSendRawMessage('PROTOCTL NAMESX');
 };
 
 export const ircJoinChannels = (channels: string[]): void => {
@@ -56,7 +56,7 @@ export const ircRequestMetadataItem = (nick: string, item: string): void => {
 };
 
 export const ircRequestMetadata = (): void => {
-  ircSendRawMessage(`METADATA * SUB avatar status bot homepage display-name bot-url color`);
+  ircSendRawMessage('METADATA * SUB avatar status bot homepage display-name bot-url color');
 };
 
 export const ircRequestMetadataList = (nick: string): void => {

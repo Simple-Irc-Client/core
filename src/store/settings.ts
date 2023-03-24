@@ -20,11 +20,10 @@ export interface SettingsStore {
   currentChannelName: string;
   currentChannelCategory: ChannelCategory;
   theme: 'modern' | 'classic';
-  namesXProtoEnabled: boolean;
   userModes: UserMode[];
   listRequestRemainingSeconds: number;
   channelTypes: string[];
-  isMetadataEnabled: boolean;
+  supportedOptions: string[];
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -36,11 +35,10 @@ export interface SettingsStore {
   setIsPasswordRequired: (status: boolean) => void;
   setCurrentChannelName: (channelName: string, category: ChannelCategory) => void;
   setTheme: (theme: 'modern' | 'classic') => void;
-  setNamesXProtoEnabled: (status: boolean) => void;
   setUserModes: (modes: UserMode[]) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
   setChannelTypes: (types: string[]) => void;
-  setIsMetadataEnabled: () => void;
+  setSupportedOption: (option: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -58,11 +56,10 @@ export const useSettingsStore = create<SettingsStore>()(
         currentChannelName: 'Status',
         currentChannelCategory: ChannelCategory.status,
         theme: 'modern',
-        namesXProtoEnabled: false,
         userModes: [],
         listRequestRemainingSeconds: -1,
         channelTypes: [],
-        isMetadataEnabled: false,
+        supportedOptions: [],
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -99,9 +96,6 @@ export const useSettingsStore = create<SettingsStore>()(
         setTheme: (newTheme: 'modern' | 'classic'): void => {
           set(() => ({ theme: newTheme }));
         },
-        setNamesXProtoEnabled: (status: boolean): void => {
-          set(() => ({ namesXProtoEnabled: status }));
-        },
         setUserModes: (modes: UserMode[]): void => {
           set(() => ({ userModes: modes }));
         },
@@ -111,8 +105,8 @@ export const useSettingsStore = create<SettingsStore>()(
         setChannelTypes: (types: string[]): void => {
           set(() => ({ channelTypes: types }));
         },
-        setIsMetadataEnabled: (): void => {
-          set(() => ({ isMetadataEnabled: true }));
+        setSupportedOption: (option: string): void => {
+          set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
         },
       }),
       {
@@ -169,10 +163,6 @@ export const setTheme = (newTheme: 'modern' | 'classic'): void => {
   useSettingsStore.getState().setTheme(newTheme);
 };
 
-export const setNamesXProtoEnabled = (status: boolean): void => {
-  useSettingsStore.getState().setNamesXProtoEnabled(status);
-};
-
 export const setUserModes = (modes: UserMode[]): void => {
   useSettingsStore.getState().setUserModes(modes);
 };
@@ -217,10 +207,10 @@ export const getIsPasswordRequired = (): boolean | undefined => {
   return useSettingsStore.getState().isPasswordRequired;
 };
 
-export const setMetadataEnabled = (): void => {
-  useSettingsStore.getState().setIsMetadataEnabled();
+export const setSupportedOption = (key: string): void => {
+  useSettingsStore.getState().setSupportedOption(key);
 };
 
-export const isMetadataEnabled = (): boolean => {
-  return useSettingsStore.getState().isMetadataEnabled;
+export const isSupportedOption = (option: string): boolean => {
+  return useSettingsStore.getState().supportedOptions.includes(option);
 };
