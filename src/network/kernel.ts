@@ -123,6 +123,64 @@ export class Kernel {
     });
 
     switch (command) {
+      case 'AWAY':
+        this.onAway();
+        break;
+      case 'BATCH':
+        this.onBatch();
+        break;
+      case 'CAP':
+        this.onCap();
+        break;
+      case 'ERROR':
+        this.onError();
+        break;
+      case 'INVITE':
+        this.onInvite();
+        break;
+      case 'JOIN':
+        this.onJoin();
+        break;
+      case 'KICK':
+        this.onKick();
+        break;
+      case 'KILL':
+        this.onKill();
+        break;
+      case 'METADATA':
+        this.onMetadata();
+        break;
+      case 'MODE':
+        this.onMode();
+        break;
+      case 'NICK':
+        this.onNick();
+        break;
+      case 'NOTICE':
+        this.onNotice();
+        break;
+      case 'PART':
+        this.onPart();
+        break;
+      case 'PING':
+        this.onPing();
+        break;
+      case 'PONG':
+        this.onPong();
+        break;
+      case 'PRIVMSG':
+        this.onPrivMsg();
+        break;
+      case 'QUIT':
+        this.onQuit();
+        break;
+      case 'TAGMSG':
+        this.onTagMsg();
+        break;
+      case 'TOPIC':
+        this.onTopic();
+        break;
+
       case '001':
         this.onRaw001();
         break;
@@ -201,63 +259,7 @@ export class Kernel {
       case '766':
         this.onRaw766();
         break;
-      case 'ERROR':
-        this.onError();
-        break;
-      case 'PING':
-        this.onPing();
-        break;
-      case 'PONG':
-        this.onPong();
-        break;
-      case 'BATCH':
-        this.onBatch();
-        break;
-      case 'NOTICE':
-        this.onNotice();
-        break;
-      case 'NICK':
-        this.onNick();
-        break;
-      case 'JOIN':
-        this.onJoin();
-        break;
-      case 'PART':
-        this.onPart();
-        break;
-      case 'KICK':
-        this.onKick();
-        break;
-      case 'QUIT':
-        this.onQuit();
-        break;
-      case 'INVITE':
-        this.onInvite();
-        break;
-      case 'KILL':
-        this.onKill();
-        break;
-      case 'MODE':
-        this.onMode();
-        break;
-      case 'PRIVMSG':
-        this.onPrivMsg();
-        break;
-      case 'TOPIC':
-        this.onTopic();
-        break;
-      case 'TAGMSG':
-        this.onTagMsg();
-        break;
-      case 'CAP':
-        this.onCap();
-        break;
-      case 'METADATA':
-        this.onMetadata();
-        break;
-      case 'AWAY':
-        this.onAway();
-        break;
+
       default:
         console.log(`unknown irc event: ${JSON.stringify(event)}`);
         break;
@@ -284,6 +286,457 @@ export class Kernel {
     // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
     // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
     // :chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.
+  };
+
+  // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
+  // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
+  private readonly onAway = (): void => {
+    //
+  };
+
+  // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
+  // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
+  private readonly onBatch = (): void => {
+    //
+  };
+
+  // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
+  // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
+  // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag
+  private readonly onCap = (): void => {
+    const user = this.line.shift();
+    const type = this.line.shift(); // LS, ACK, NAK, LIST, NEW, DEL
+
+    if (user !== '*' || type !== 'LS') {
+      return;
+    }
+
+    if (this.line?.[0] === '*') {
+      this.line.shift();
+    }
+
+    const caps: Record<string, string> = {};
+
+    const capList = this.line.join(' ').substring(1).split(' ');
+    for (const cap of capList) {
+      if (!cap.includes('=')) {
+        caps[cap] = '';
+      } else {
+        const key = cap.substring(0, cap.indexOf('='));
+        const value = cap.substring(cap.indexOf('=') + 1);
+        caps[key] = value;
+      }
+    }
+
+    if (Object.keys(caps).includes('draft/metadata')) {
+      setMetadataEnabled();
+      ircRequestMetadata();
+    }
+  };
+
+  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+  private readonly onError = (): void => {
+    const message = this.line.join(' ').substring(1);
+
+    if (getIsCreatorCompleted()) {
+      setAddMessageToAllChannels({
+        id: this.tags?.msgid ?? uuidv4(),
+        message,
+        time: new Date().toISOString(),
+        category: MessageCategory.error,
+        color: MessageColor.error,
+      });
+    } else {
+      // TODO display error message if creator is still opened
+      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
+    }
+  };
+
+  // @msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic
+  private readonly onInvite = (): void => {
+    const invited = this.line.shift();
+
+    const channel = this.line.shift()?.substring(1);
+
+    if (channel === undefined) {
+      throw this.assert(this.onInvite, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.invite').replace('{{nick}}', nick).replace('{{channel}}', channel),
+      target: getCurrentChannelName(),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
+  private readonly onJoin = (): void => {
+    const channel = this.line.shift();
+    const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
+
+    if (channel === undefined) {
+      throw this.assert(this.onJoin, 'channel');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.join').replace('{{nick}}', nick),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.join,
+      color: MessageColor.join,
+    });
+
+    if (nick === getCurrentNick()) {
+      setCurrentChannelName(channel, ChannelCategory.channel);
+    } else {
+      setAddUser({
+        nick,
+        ident,
+        hostname,
+        modes: [],
+        maxMode: 0,
+        channels: [channel],
+      });
+    }
+  };
+
+  // @account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__
+  private readonly onKick = (): void => {
+    const currentNick = getCurrentNick();
+
+    const channel = this.line.shift();
+    const kicked = this.line.shift();
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    if (kicked === undefined) {
+      throw this.assert(this.onKick, 'kicked');
+    }
+
+    if (channel === undefined) {
+      throw this.assert(this.onKick, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t(`kernel.kick${kicked === currentNick ? '-you' : ''}`)
+        .replace('{{kicked}}', kicked)
+        .replace('{{kickedBy}}', nick)
+        .replace('{{channel}}', channel)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      target: kicked === currentNick ? STATUS_CHANNEL : channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.kick,
+      color: MessageColor.kick,
+    });
+
+    setRemoveUser(kicked, channel);
+
+    if (kicked === currentNick) {
+      setRemoveChannel(channel);
+
+      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+    }
+  };
+
+  // :server KILL scc_test :Killed (Nickname collision)
+  private readonly onKill = (): void => {
+    const me = this.line.shift();
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.kill')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
+  private readonly onMetadata = (): void => {
+    const nick = this.line.shift();
+    const item = this.line.shift()?.toLowerCase();
+    const flags = this.line.shift();
+    const value = this.line.shift()?.substring(1);
+
+    if (nick === undefined) {
+      throw this.assert(this.onMetadata, 'nick');
+    }
+
+    if (item === 'avatar' && value !== undefined) {
+      setUserAvatar(nick, value);
+    }
+    if (item === 'color' && value !== undefined) {
+      setUserColor(nick, value);
+    }
+  };
+
+  // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
+  // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
+  // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
+  // :Merovingian MODE Merovingian :+x
+
+  // Ban => 'b',
+  // Exception => 'e',
+  // Limit => 'l',
+  // InviteOnly => 'i',
+  // InviteException => 'I',
+  // Key => 'k',
+  // Moderated => 'm',
+  // RegisteredOnly => 'r',
+  // Secret => 's',
+  // ProtectedTopic => 't',
+  // NoExternalMessages => 'n',
+  // Founder => 'q',
+  // Admin => 'a',
+  // Oper => 'o',
+  // Halfop => 'h',
+  // Voice => 'v',
+  private readonly onMode = (): void => {
+    // TODO MODE
+  };
+
+  // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
+  private readonly onNick = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const newNick = this.line.shift()?.substring(1);
+
+    if (newNick === undefined) {
+      throw this.assert(this.onNick, 'newNick');
+    }
+
+    const channels = getUserChannels(this.sender);
+    setRenameUser(this.sender, newNick);
+
+    for (const channel of channels) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
+        target: channel,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+
+    if (this.sender === getCurrentNick()) {
+      setNick(newNick);
+    }
+  };
+
+  // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
+  // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
+  // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
+  // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
+  private readonly onNotice = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
+    const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST.*/;
+
+    const target = this.line.shift();
+
+    if (target === undefined) {
+      throw this.assert(this.onNotice, 'target');
+    }
+
+    const message = this.line.join(' ').substring(1);
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
+      setIsPasswordRequired(true);
+      setCreatorStep('password');
+    }
+
+    if (list.test(message) && target === getCurrentNick() && !getIsCreatorCompleted()) {
+      const seconds = list.exec(message)?.[1];
+      const connectedTime = getConnectedTime();
+      if (seconds !== undefined && connectedTime !== 0) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const loggedTime = currentTime - connectedTime;
+        const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
+        setListRequestRemainingSeconds(remaining);
+      }
+      return;
+    }
+
+    const newMessage = {
+      message,
+      nick: nick.length !== 0 ? nick : undefined,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.notice,
+      color: MessageColor.notice,
+    };
+
+    setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
+  };
+
+  // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
+  private readonly onPart = (): void => {
+    const channel = this.line.shift();
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    if (channel === undefined) {
+      throw this.assert(this.onPart, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.part')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.part,
+      color: MessageColor.part,
+    });
+
+    setRemoveUser(nick, channel);
+
+    if (nick === getCurrentNick()) {
+      setRemoveChannel(channel);
+
+      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+    }
+  };
+
+  // PING :F549DB3
+  private readonly onPing = (): void => {
+    //
+  };
+
+  // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686
+  private readonly onPong = (): void => {
+    //
+  };
+
+  // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
+  // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
+  // @draft/bot;msgid=GQRN0k0RNmLY3Ai6f9g6Qk;time=2023-03-23T15:32:56.299Z :Global!Global@serwisy.pirc.pl PRIVMSG sic-test :VERSION
+  private readonly onPrivMsg = (): void => {
+    const serverUserModes = getUserModes();
+    const currentChannelName = getCurrentChannelName();
+
+    const target = this.line.shift();
+    const message = this.line.join(' ').substring(1);
+    const { nick } = parseNick(this.sender, serverUserModes);
+
+    if (target === undefined) {
+      throw this.assert(this.onPrivMsg, 'target');
+    }
+
+    if (message.startsWith('\x01')) {
+      // ignore CTCP messages
+      return;
+    }
+
+    const isPrivMessage = target === getCurrentNick();
+    const messageTarget = isPrivMessage ? nick : target;
+
+    if (!existChannel(messageTarget)) {
+      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+    }
+
+    if (messageTarget !== currentChannelName) {
+      setIncreaseUnreadMessages(messageTarget);
+    }
+
+    if (messageTarget === currentChannelName) {
+      setTyping(messageTarget, nick, 'done');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      nick: getUser(nick) ?? nick,
+      target: messageTarget,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.default,
+      color: MessageColor.default,
+    });
+  };
+
+  // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
+  private readonly onQuit = (): void => {
+    const reason = this.line.join(' ').substring(1) ?? '';
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    const message = {
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next
+        .t('kernel.quit')
+        .replace('{{nick}}', nick)
+        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.quit,
+      color: MessageColor.quit,
+    };
+
+    setQuitUser(nick, message);
+  };
+
+  // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie
+  private readonly onTagMsg = (): void => {
+    const serverUserModes = getUserModes();
+
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      throw this.assert(this.onTagMsg, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, serverUserModes);
+
+    const status = this.tags?.['+typing'];
+    if (status === undefined) {
+      return;
+    }
+
+    setTyping(channel, nick, status as UserTypingStatus);
+  };
+
+  // @account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1
+  private readonly onTopic = (): void => {
+    const channel = this.line.shift();
+
+    const topic = this.line.join(' ').substring(1);
+
+    if (channel === undefined) {
+      throw this.assert(this.onTopic, 'channel');
+    }
+
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t(`kernel.topic`).replace('{{nick}}', nick).replace('{{topic}}', topic),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+
+    setTopic(channel, topic);
   };
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
@@ -689,457 +1142,6 @@ export class Kernel {
 
   // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
   private readonly onRaw766 = (): void => {
-    //
-  };
-
-  // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
-  private readonly onError = (): void => {
-    const message = this.line.join(' ').substring(1);
-
-    if (getIsCreatorCompleted()) {
-      setAddMessageToAllChannels({
-        id: this.tags?.msgid ?? uuidv4(),
-        message,
-        time: new Date().toISOString(),
-        category: MessageCategory.error,
-        color: MessageColor.error,
-      });
-    } else {
-      // TODO display error message if creator is still opened
-      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
-    }
-  };
-
-  // PING :F549DB3
-  private readonly onPing = (): void => {
-    //
-  };
-
-  // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686
-  private readonly onPong = (): void => {
-    //
-  };
-
-  // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
-  // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
-  private readonly onBatch = (): void => {
-    //
-  };
-
-  // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
-  // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
-  // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
-  // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
-  private readonly onNotice = (): void => {
-    const currentChannelName = getCurrentChannelName();
-
-    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
-    const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST.*/;
-
-    const target = this.line.shift();
-
-    if (target === undefined) {
-      throw this.assert(this.onNotice, 'target');
-    }
-
-    const message = this.line.join(' ').substring(1);
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
-      setIsPasswordRequired(true);
-      setCreatorStep('password');
-    }
-
-    if (list.test(message) && target === getCurrentNick() && !getIsCreatorCompleted()) {
-      const seconds = list.exec(message)?.[1];
-      const connectedTime = getConnectedTime();
-      if (seconds !== undefined && connectedTime !== 0) {
-        const currentTime = Math.floor(Date.now() / 1000);
-        const loggedTime = currentTime - connectedTime;
-        const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
-        setListRequestRemainingSeconds(remaining);
-      }
-      return;
-    }
-
-    const newMessage = {
-      message,
-      nick: nick.length !== 0 ? nick : undefined,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.notice,
-      color: MessageColor.notice,
-    };
-
-    setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
-  };
-
-  // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
-  private readonly onNick = (): void => {
-    const currentChannelName = getCurrentChannelName();
-    const newNick = this.line.shift()?.substring(1);
-
-    if (newNick === undefined) {
-      throw this.assert(this.onNick, 'newNick');
-    }
-
-    const channels = getUserChannels(this.sender);
-    setRenameUser(this.sender, newNick);
-
-    for (const channel of channels) {
-      setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
-        message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
-        target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
-        category: MessageCategory.info,
-        color: MessageColor.info,
-      });
-    }
-
-    if (this.sender === getCurrentNick()) {
-      setNick(newNick);
-    }
-  };
-
-  // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
-  private readonly onJoin = (): void => {
-    const channel = this.line.shift();
-    const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
-
-    if (channel === undefined) {
-      throw this.assert(this.onJoin, 'channel');
-    }
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.join').replace('{{nick}}', nick),
-      target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.join,
-      color: MessageColor.join,
-    });
-
-    if (nick === getCurrentNick()) {
-      setCurrentChannelName(channel, ChannelCategory.channel);
-    } else {
-      setAddUser({
-        nick,
-        ident,
-        hostname,
-        modes: [],
-        maxMode: 0,
-        channels: [channel],
-      });
-    }
-  };
-
-  // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
-  private readonly onPart = (): void => {
-    const channel = this.line.shift();
-    const reason = this.line.join(' ').substring(1) ?? '';
-
-    if (channel === undefined) {
-      throw this.assert(this.onPart, 'channel');
-    }
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.part')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-      target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.part,
-      color: MessageColor.part,
-    });
-
-    setRemoveUser(nick, channel);
-
-    if (nick === getCurrentNick()) {
-      setRemoveChannel(channel);
-
-      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
-    }
-  };
-
-  // @account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__
-  private readonly onKick = (): void => {
-    const currentNick = getCurrentNick();
-
-    const channel = this.line.shift();
-    const kicked = this.line.shift();
-    const reason = this.line.join(' ').substring(1) ?? '';
-
-    if (kicked === undefined) {
-      throw this.assert(this.onKick, 'kicked');
-    }
-
-    if (channel === undefined) {
-      throw this.assert(this.onKick, 'channel');
-    }
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t(`kernel.kick${kicked === currentNick ? '-you' : ''}`)
-        .replace('{{kicked}}', kicked)
-        .replace('{{kickedBy}}', nick)
-        .replace('{{channel}}', channel)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-      target: kicked === currentNick ? STATUS_CHANNEL : channel,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.kick,
-      color: MessageColor.kick,
-    });
-
-    setRemoveUser(kicked, channel);
-
-    if (kicked === currentNick) {
-      setRemoveChannel(channel);
-
-      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
-    }
-  };
-
-  // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
-  private readonly onQuit = (): void => {
-    const reason = this.line.join(' ').substring(1) ?? '';
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    const message = {
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.quit')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.quit,
-      color: MessageColor.quit,
-    };
-
-    setQuitUser(nick, message);
-  };
-
-  // @msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic
-  private readonly onInvite = (): void => {
-    const invited = this.line.shift();
-
-    const channel = this.line.shift()?.substring(1);
-
-    if (channel === undefined) {
-      throw this.assert(this.onInvite, 'channel');
-    }
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.invite').replace('{{nick}}', nick).replace('{{channel}}', channel),
-      target: getCurrentChannelName(),
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // :server KILL scc_test :Killed (Nickname collision)
-  private readonly onKill = (): void => {
-    const me = this.line.shift();
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    const reason = this.line.join(' ').substring(1) ?? '';
-
-    setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.kill')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.error,
-      color: MessageColor.error,
-    });
-  };
-
-  // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
-  // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
-  // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
-  // :Merovingian MODE Merovingian :+x
-
-  // Ban => 'b',
-  // Exception => 'e',
-  // Limit => 'l',
-  // InviteOnly => 'i',
-  // InviteException => 'I',
-  // Key => 'k',
-  // Moderated => 'm',
-  // RegisteredOnly => 'r',
-  // Secret => 's',
-  // ProtectedTopic => 't',
-  // NoExternalMessages => 'n',
-  // Founder => 'q',
-  // Admin => 'a',
-  // Oper => 'o',
-  // Halfop => 'h',
-  // Voice => 'v',
-  private readonly onMode = (): void => {
-    // TODO MODE
-  };
-
-  // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
-  // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
-  // @draft/bot;msgid=GQRN0k0RNmLY3Ai6f9g6Qk;time=2023-03-23T15:32:56.299Z :Global!Global@serwisy.pirc.pl PRIVMSG sic-test :VERSION
-  private readonly onPrivMsg = (): void => {
-    const serverUserModes = getUserModes();
-    const currentChannelName = getCurrentChannelName();
-
-    const target = this.line.shift();
-    const message = this.line.join(' ').substring(1);
-    const { nick } = parseNick(this.sender, serverUserModes);
-
-    if (target === undefined) {
-      throw this.assert(this.onPrivMsg, 'target');
-    }
-
-    if (message.startsWith('\x01')) {
-      // ignore CTCP messages
-      return;
-    }
-
-    const isPrivMessage = target === getCurrentNick();
-    const messageTarget = isPrivMessage ? nick : target;
-
-    if (!existChannel(messageTarget)) {
-      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
-    }
-
-    if (messageTarget !== currentChannelName) {
-      setIncreaseUnreadMessages(messageTarget);
-    }
-
-    if (messageTarget === currentChannelName) {
-      setTyping(messageTarget, nick, 'done');
-    }
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message,
-      nick: getUser(nick) ?? nick,
-      target: messageTarget,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.default,
-      color: MessageColor.default,
-    });
-  };
-
-  // @account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1
-  private readonly onTopic = (): void => {
-    const channel = this.line.shift();
-
-    const topic = this.line.join(' ').substring(1);
-
-    if (channel === undefined) {
-      throw this.assert(this.onTopic, 'channel');
-    }
-
-    const { nick } = parseNick(this.sender, getUserModes());
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t(`kernel.topic`).replace('{{nick}}', nick).replace('{{topic}}', topic),
-      target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-
-    setTopic(channel, topic);
-  };
-
-  // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie
-  private readonly onTagMsg = (): void => {
-    const serverUserModes = getUserModes();
-
-    const channel = this.line.shift();
-
-    if (channel === undefined) {
-      throw this.assert(this.onTagMsg, 'channel');
-    }
-
-    const { nick } = parseNick(this.sender, serverUserModes);
-
-    const status = this.tags?.['+typing'];
-    if (status === undefined) {
-      return;
-    }
-
-    setTyping(channel, nick, status as UserTypingStatus);
-  };
-
-  // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
-  // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
-  // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag
-  private readonly onCap = (): void => {
-    const user = this.line.shift();
-    const type = this.line.shift(); // LS, ACK, NAK, LIST, NEW, DEL
-
-    if (user !== '*' || type !== 'LS') {
-      return;
-    }
-
-    if (this.line?.[0] === '*') {
-      this.line.shift();
-    }
-
-    const caps: Record<string, string> = {};
-
-    const capList = this.line.join(' ').substring(1).split(' ');
-    for (const cap of capList) {
-      if (!cap.includes('=')) {
-        caps[cap] = '';
-      } else {
-        const key = cap.substring(0, cap.indexOf('='));
-        const value = cap.substring(cap.indexOf('=') + 1);
-        caps[key] = value;
-      }
-    }
-
-    if (Object.keys(caps).includes('draft/metadata')) {
-      setMetadataEnabled();
-      ircRequestMetadata();
-    }
-  };
-
-  // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
-  private readonly onMetadata = (): void => {
-    const nick = this.line.shift();
-    const item = this.line.shift()?.toLowerCase();
-    const flags = this.line.shift();
-    const value = this.line.shift()?.substring(1);
-
-    if (nick === undefined) {
-      throw this.assert(this.onMetadata, 'nick');
-    }
-
-    if (item === 'avatar' && value !== undefined) {
-      setUserAvatar(nick, value);
-    }
-    if (item === 'color' && value !== undefined) {
-      setUserColor(nick, value);
-    }
-  };
-
-  // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
-  // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
-  private readonly onAway = (): void => {
     //
   };
 }
