@@ -351,7 +351,6 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
-    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
 
     const line =
       ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik';
@@ -393,7 +392,6 @@ describe('kernel tests', () => {
       modes: ['a', 'o'],
       nick: 'Pomocnik',
     });
-    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(4);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -403,7 +401,6 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => true);
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => false);
-    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => false);
     const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
 
     const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
@@ -414,7 +411,6 @@ describe('kernel tests', () => {
     expect(mockGetHasUser).toHaveBeenCalledTimes(1);
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
     expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie');
-    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(0);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -697,8 +693,6 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
-    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
@@ -709,8 +703,6 @@ describe('kernel tests', () => {
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
-    expect(mockIsMetadataEnabled).toHaveBeenCalledTimes(0);
-    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
@@ -723,8 +715,6 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    const mockIsMetadataEnabled = vi.spyOn(settingsFile, 'isMetadataEnabled').mockImplementation(() => true);
-    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
@@ -735,9 +725,6 @@ describe('kernel tests', () => {
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
-    expect(mockIsMetadataEnabled).toHaveBeenCalledTimes(1);
-    expect(mockIrcRequestMetadata).toHaveBeenCalledWith('SIC-test');
-    expect(mockIrcRequestMetadata).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
@@ -992,6 +979,69 @@ describe('kernel tests', () => {
   });
 
   // TODO cap
+
+  it('test raw CAP #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+
+    const line =
+      ':chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetMetadataEnabled).toBeCalledTimes(1);
+    expect(mockIrcRequestMetadata).toBeCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it.skip('test raw CAP #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+
+    const line = ':jowisz.pirc.pl CAP * LS :unrealircd.org/json-log';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetMetadataEnabled).toBeCalledTimes(0);
+    expect(mockIrcRequestMetadata).toBeCalledTimes(0);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw CAP #3', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetMetadataEnabled = vi.spyOn(settingsFile, 'setMetadataEnabled').mockImplementation(() => {});
+    const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+
+    const line = ':saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetMetadataEnabled).toBeCalledTimes(0);
+    expect(mockIrcRequestMetadata).toBeCalledTimes(0);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+
+    const line = ':netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('Noop', 'https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg');
+    expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
 
   it('test raw AWAY #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});

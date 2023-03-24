@@ -6,7 +6,6 @@ import {
   getCurrentNick,
   getIsCreatorCompleted,
   getUserModes,
-  isMetadataEnabled,
   setChannelTypes,
   setConnectedTime,
   setCreatorStep,
@@ -14,6 +13,7 @@ import {
   setIsConnected,
   setIsPasswordRequired,
   setListRequestRemainingSeconds,
+  setMetadataEnabled,
   setNamesXProtoEnabled,
   setNick,
   setUserModes,
@@ -249,12 +249,12 @@ export class Kernel {
       case 'TAGMSG':
         this.onTagMsg();
         break;
-
-      // TODO CAP
-      // case 'CAP':
-      // this.onCap();
-      // break;
-
+      case 'CAP':
+        this.onCap();
+        break;
+      case 'METADATA':
+        this.onMetadata();
+        break;
       case 'AWAY':
         this.onAway();
         break;
@@ -587,8 +587,6 @@ export class Kernel {
           maxMode: createMaxMode(modes, serverUserPrefixes),
           channels: [channel],
         });
-
-        ircRequestMetadata(nick);
       }
     }
   };
@@ -833,10 +831,6 @@ export class Kernel {
         maxMode: 0,
         channels: [channel],
       });
-
-      if (isMetadataEnabled()) {
-        ircRequestMetadata(nick);
-      }
     }
   };
 
@@ -1095,11 +1089,19 @@ export class Kernel {
   // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag
   private readonly onCap = (): void => {
     const user = this.line.shift();
-    const response = this.line.shift(); // LS, ACK
+    const type = this.line.shift(); // LS, ACK, NAK, LIST, NEW, DEL
+
+    if (user !== '*' || type !== 'LS') {
+      return;
+    }
+
+    if (this.line?.[0] === '*') {
+      this.line.shift();
+    }
 
     const caps: Record<string, string> = {};
 
-    const capList = this.line.shift()?.split(' ') ?? [];
+    const capList = this.line.join(' ').substring(1).split(' ');
     for (const cap of capList) {
       if (!cap.includes('=')) {
         caps[cap] = '';
@@ -1110,7 +1112,29 @@ export class Kernel {
       }
     }
 
-    // TODO setMetadataEnabled();
+    if (Object.keys(caps).includes('draft/metadata')) {
+      setMetadataEnabled();
+      ircRequestMetadata();
+    }
+  };
+
+  // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
+  private readonly onMetadata = (): void => {
+    const nick = this.line.shift();
+    const item = this.line.shift()?.toLowerCase();
+    const flags = this.line.shift();
+    const value = this.line.shift()?.substring(1);
+
+    if (nick === undefined) {
+      throw this.assert(this.onMetadata, 'nick');
+    }
+
+    if (item === 'avatar' && value !== undefined) {
+      setUserAvatar(nick, value);
+    }
+    if (item === 'color' && value !== undefined) {
+      setUserColor(nick, value);
+    }
   };
 
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
