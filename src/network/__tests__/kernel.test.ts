@@ -55,7 +55,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -66,7 +66,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -77,7 +77,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -94,7 +94,7 @@ describe('kernel tests', () => {
     expect(mockSetMetadataEnabled).toBeCalledTimes(1);
     expect(mockIrcRequestMetadata).toBeCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -110,7 +110,7 @@ describe('kernel tests', () => {
     expect(mockSetMetadataEnabled).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -126,7 +126,7 @@ describe('kernel tests', () => {
     expect(mockSetMetadataEnabled).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -141,7 +141,7 @@ describe('kernel tests', () => {
 
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: 'Closing Link: [1.1.1.1] (Registration Timeout)' }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
@@ -157,7 +157,7 @@ describe('kernel tests', () => {
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'mero zaprasza do kanału: #sic' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -179,7 +179,7 @@ describe('kernel tests', () => {
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -201,7 +201,7 @@ describe('kernel tests', () => {
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -222,7 +222,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveUser).toHaveBeenCalledTimes(1);
     expect(mockSetRemoveUser).toHaveBeenCalledWith('sic-test', '#Religie');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#Religie', message: 'sic-test został wyrzucony przez ratler__ (ratler__)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -247,7 +247,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveChannel).toHaveBeenCalledTimes(1);
     expect(mockSetRemoveChannel).toHaveBeenCalledWith('#Religie');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Zostałeś wyrzucony z #Religie przez ratler__ (ratler__)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -263,7 +263,7 @@ describe('kernel tests', () => {
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessageToAllChannels).toHaveBeenNthCalledWith(1, expect.objectContaining({ message: 'Zostałeś rozłączony z serwera przez server (Killed (Nickname collision))' }));
@@ -280,7 +280,7 @@ describe('kernel tests', () => {
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Noop', 'https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -304,7 +304,7 @@ describe('kernel tests', () => {
     expect(mockSetRenameUser).toHaveBeenCalledTimes(1);
     expect(mockSetRenameUser).toHaveBeenCalledWith('Merovingian', 'Niezident36707');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian zmienił nick na Niezident36707' }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel2', message: 'Merovingian zmienił nick na Niezident36707' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
@@ -334,7 +334,7 @@ describe('kernel tests', () => {
     expect(mockSetNick).toHaveBeenCalledTimes(1);
     expect(mockSetNick).toHaveBeenCalledWith('Niezident36707');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test zmienił nick na Niezident36707' }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel2', message: 'SIC-test zmienił nick na Niezident36707' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
@@ -352,7 +352,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '[#religie] Dla trolli są inne kanały...' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -380,7 +380,7 @@ describe('kernel tests', () => {
     expect(mockSetSetCreatorStep).toHaveBeenCalledTimes(1);
     expect(mockSetSetCreatorStep).toHaveBeenCalledWith('password');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -409,7 +409,7 @@ describe('kernel tests', () => {
     expect(mockSetListRequestRemainingSeconds).toHaveBeenCalledTimes(1);
     expect(mockSetListRequestRemainingSeconds).toHaveBeenCalledWith(15);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -429,7 +429,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveUser).toHaveBeenCalledTimes(1);
     expect(mockSetRemoveUser).toHaveBeenCalledWith('Merovingian', '#sic');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -454,7 +454,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveChannel).toHaveBeenCalledTimes(1);
     expect(mockSetRemoveChannel).toHaveBeenCalledWith('#sic');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -466,7 +466,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -477,7 +477,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -509,7 +509,7 @@ describe('kernel tests', () => {
 
     expect(mockGetUser).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'test 1' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -543,7 +543,7 @@ describe('kernel tests', () => {
 
     expect(mockGetUser).toHaveBeenCalledTimes(1);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: 'SIC-test2', message: 'test 1' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -559,7 +559,7 @@ describe('kernel tests', () => {
     expect(mockSetQuitUser).toHaveBeenCalledTimes(1);
     expect(mockSetQuitUser).toHaveBeenCalledWith('mero', expect.objectContaining({ message: 'mero opuścił serwer (Quit: Leaving)' }));
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -578,7 +578,7 @@ describe('kernel tests', () => {
     expect(mockSetTyping).toHaveBeenCalledTimes(1);
     expect(mockSetTyping).toHaveBeenCalledWith('#Religie', 'kato_starszy', 'active');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -596,7 +596,7 @@ describe('kernel tests', () => {
     expect(mockSetTopic).toHaveBeenCalledTimes(1);
     expect(mockSetTopic).toHaveBeenCalledWith('#sic', 'Test 1');
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian ustawił temat kanału na: Test 1' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -608,7 +608,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -620,7 +620,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -632,7 +632,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This server was created Sun May 8 2022 at 13:49:18 UTC' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -643,7 +643,7 @@ describe('kernel tests', () => {
     const line = ':netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ';
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -672,7 +672,7 @@ describe('kernel tests', () => {
     expect(mockSetNamesXProtoEnabled).toHaveBeenCalledTimes(0);
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(0);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -706,7 +706,7 @@ describe('kernel tests', () => {
     expect(mockSetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetNamesXProtoEnabled).toHaveBeenNthCalledWith(1, true);
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(1);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -725,7 +725,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'There are 158 users and 113 invisible on 10 servers' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -737,7 +737,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '27 :operator(s) online' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -749,7 +749,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '-14 :unknown connection(s)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -761,7 +761,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '185 :channels formed' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -773,7 +773,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'I have 42 clients and 0 servers' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -785,7 +785,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Current local users 42, max 62' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -797,7 +797,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Current global users 271, max 1721' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -811,7 +811,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetChannelListClear).toHaveBeenCalledTimes(1);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -824,7 +824,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('#Base', 1, '[+nt]');
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddChannelToList).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -838,7 +838,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('*', 1, '');
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddChannelToList).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -852,7 +852,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('#+Kosciol+', 1, '[+nt]');
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddChannelToList).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -866,7 +866,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetChannelListFinished).toHaveBeenNthCalledWith(1, true);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetChannelListFinished).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -880,7 +880,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetTopic).toHaveBeenNthCalledWith(1, '#sic', 'Prace nad Simple Irc Client trwają');
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetTopic).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -894,7 +894,7 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetTopicSetBy).toHaveBeenNthCalledWith(1, '#sic', 'Merovingian', 1552692216);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetTopicSetBy).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -945,7 +945,7 @@ describe('kernel tests', () => {
       modes: ['a', 'o'],
       nick: 'Pomocnik',
     });
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -964,7 +964,7 @@ describe('kernel tests', () => {
     expect(mockGetHasUser).toHaveBeenCalledTimes(1);
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
     expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie');
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -975,7 +975,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -986,7 +986,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '- 2/6/2022 11:27' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -998,7 +998,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '- saturn.pirc.pl Message of the Day -' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -1010,7 +1010,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'End of /MOTD command.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -1022,7 +1022,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'A.A.A.IP :is now your displayed host' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -1037,7 +1037,7 @@ describe('kernel tests', () => {
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Merovingian', 'https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -1048,7 +1048,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
@@ -1059,7 +1059,7 @@ describe('kernel tests', () => {
 
     new Kernel().handle({ type: 'raw', line });
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `<- ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 });

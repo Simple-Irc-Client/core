@@ -16,7 +16,7 @@ export const AppNetwork = (): JSX.Element => {
     if (data?.line !== undefined) {
       setAddMessage({
         id: uuidv4(),
-        message: `-> ${data.line?.trim()}`,
+        message: `<< ${data.line?.trim()}`,
         target: DEBUG_CHANNEL,
         time: new Date().toISOString(),
         category: MessageCategory.info,

@@ -115,7 +115,7 @@ export class Kernel {
 
     setAddMessage({
       id: uuidv4(),
-      message: `<- ${event.trim()}`,
+      message: `>> ${event.trim()}`,
       target: DEBUG_CHANNEL,
       time: new Date().toISOString(),
       category: MessageCategory.info,
