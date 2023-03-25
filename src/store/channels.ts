@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '../types';
 import { devtools, persist } from 'zustand/middleware';
-import { DEBUG_CHANNEL, defaultChannelType, maxMessages, STATUS_CHANNEL } from '../config/config';
+import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '../config/config';
 import { getChannelTypes, getCurrentChannelName } from './settings';
 import { useCurrentStore } from './current';
 
@@ -321,5 +321,17 @@ export const setIncreaseUnreadMessages = (channelName: string): void => {
 };
 
 export const isPriv = (channelName: string): boolean => {
-  return !getChannelTypes().includes(channelName[0] ?? defaultChannelType);
+  const char = channelName?.[0];
+  if (char === undefined) {
+    throw new Error(`Error - isPriv - cannot read first character of: ${channelName}`);
+  }
+  return !getChannelTypes().includes(char);
+};
+
+export const isChannel = (channelName: string): boolean => {
+  const char = channelName?.[0];
+  if (char === undefined) {
+    throw new Error(`Error - isChannel - cannot read first character of: ${channelName}`);
+  }
+  return getChannelTypes().includes(char);
 };

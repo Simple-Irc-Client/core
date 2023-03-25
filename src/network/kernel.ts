@@ -273,6 +273,8 @@ export class Kernel {
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
 
+    // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
+
     // whois:
     // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
     // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
@@ -473,20 +475,22 @@ export class Kernel {
 
   // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
   private readonly onMetadata = (): void => {
-    const nick = this.line.shift();
+    const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
     const value = this.line.shift()?.substring(1);
 
-    if (nick === undefined) {
-      throw this.assert(this.onMetadata, 'nick');
+    if (nickOrChannel === undefined) {
+      throw this.assert(this.onMetadata, 'nickOrChannel');
     }
 
-    if (item === 'avatar' && value !== undefined) {
-      setUserAvatar(nick, value);
-    }
-    if (item === 'color' && value !== undefined) {
-      setUserColor(nick, value);
+    if (isChannel(nickOrChannel)) {
+      if (item === 'avatar' && value !== undefined) {
+        setUserAvatar(nickOrChannel, value);
+      }
+      if (item === 'color' && value !== undefined) {
+        setUserColor(nickOrChannel, value);
+      }
     }
   };
 
