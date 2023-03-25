@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { existChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
+import { existChannel, isChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
 import {
   getConnectedTime,
   getCurrentChannelName,
@@ -350,7 +350,7 @@ export class Kernel {
       });
     } else {
       // TODO display error message if creator is still opened
-      // setProgress({ value: 0, label: i18next.t('creator.loading.error').replace('{{message}}', message) });
+      // setProgress({ value: 0, label: i18next.t('creator.loading.error', { message });
     }
   };
 
@@ -368,7 +368,7 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.invite').replace('{{nick}}', nick).replace('{{channel}}', channel),
+      message: i18next.t('kernel.invite', { nick, channel }),
       target: getCurrentChannelName(),
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
@@ -387,7 +387,7 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.join').replace('{{nick}}', nick),
+      message: i18next.t('kernel.join', { nick }),
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.join,
@@ -432,12 +432,7 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t(`kernel.kick${kicked === currentNick ? '-you' : ''}`)
-        .replace('{{kicked}}', kicked)
-        .replace('{{kickedBy}}', nick)
-        .replace('{{channel}}', channel)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      message: i18next.t(`kernel.kick${kicked === currentNick ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
       target: kicked === currentNick ? STATUS_CHANNEL : channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.kick,
@@ -463,16 +458,14 @@ export class Kernel {
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.kill')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      message: i18next.t('kernel.kill', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
   };
 
+  // https://ircv3.net/specs/core/metadata-3.2
   // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
   private readonly onMetadata = (): void => {
     const nickOrChannel = this.line.shift();
@@ -498,6 +491,7 @@ export class Kernel {
   // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
   // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
   // :Merovingian MODE Merovingian :+x
+  // :mero MODE mero :+xz
 
   // Ban => 'b',
   // Exception => 'e',
@@ -534,7 +528,7 @@ export class Kernel {
     for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
-        message: i18next.t('kernel.nick').replace('{{from}}', this.sender).replace('{{to}}', newNick),
+        message: i18next.t('kernel.nick', { from: this.sender, to: newNick }),
         target: channel,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.info,
@@ -608,10 +602,7 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.part')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.part,
@@ -691,10 +682,7 @@ export class Kernel {
 
     const message = {
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next
-        .t('kernel.quit')
-        .replace('{{nick}}', nick)
-        .replace('{{reason}}', reason.length !== 0 ? `(${reason})` : ''),
+      message: i18next.t('kernel.quit', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.quit,
       color: MessageColor.quit,
@@ -737,7 +725,7 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t(`kernel.topic`).replace('{{nick}}', nick).replace('{{topic}}', topic),
+      message: i18next.t(`kernel.topic`, { nick, topic }),
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
