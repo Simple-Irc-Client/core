@@ -12,6 +12,7 @@ import {
   setCreatorStep,
   setCurrentChannelName,
   setIsConnected,
+  setIsConnecting,
   setIsPasswordRequired,
   setListRequestRemainingSeconds,
   setNick,
@@ -74,6 +75,8 @@ export class Kernel {
           this.handleRaw(event.line);
         }
         break;
+      default:
+        console.log(`unhandled kernel event: ${event.type} ${event?.line ?? ''}`);
     }
   }
 
@@ -84,6 +87,7 @@ export class Kernel {
   };
 
   private readonly handleConnected = (): void => {
+    setIsConnecting(false);
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
 
@@ -97,6 +101,7 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
+    setIsConnecting(false);
     setIsConnected(false);
 
     setAddMessageToAllChannels({

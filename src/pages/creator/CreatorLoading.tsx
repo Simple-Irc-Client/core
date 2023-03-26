@@ -38,6 +38,10 @@ const CreatorLoading = (): JSX.Element => {
         clearTimeout(timeout5);
       };
     }
+
+    if (!isConnecting && !isConnected) {
+      setProgress({ value: 2, label: t('creator.loading.disconnected') });
+    }
   }, [isConnecting, isConnected]);
 
   return (

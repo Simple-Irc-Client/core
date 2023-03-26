@@ -27,12 +27,14 @@ describe('kernel tests', () => {
   });
 
   it('test connected', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
     const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
     const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel().handle({ type: 'connected' });
 
+    expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(true);
     expect(mockSetConnectedTime).toBeCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.connected') }));
@@ -40,11 +42,13 @@ describe('kernel tests', () => {
   });
 
   it('test close', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
     const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel().handle({ type: 'close' });
 
+    expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(false);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.disconnected') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
