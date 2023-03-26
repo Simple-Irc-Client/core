@@ -5,6 +5,7 @@ import { ChannelCategory, type UserMode } from '../types';
 import { setClearUnreadMessages, useChannelsStore } from './channels';
 import { useCurrentStore } from './current';
 import { useUsersStore } from './users';
+import { defaultChannelType } from '../config/config';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
@@ -188,7 +189,7 @@ export const getCurrentChannelCategory = (): ChannelCategory => {
 };
 
 export const getChannelTypes = (): string[] => {
-  return useSettingsStore.getState().channelTypes;
+  return useSettingsStore.getState().channelTypes ?? [defaultChannelType];
 };
 
 export const getUserModes = (): UserMode[] => {
