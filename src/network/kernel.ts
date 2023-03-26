@@ -699,19 +699,24 @@ export class Kernel {
   };
 
   // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
+  // :mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat
   private readonly onPart = (): void => {
-    const channel = this.line.shift();
+    let channel = this.line.shift();
     const reason = this.line.join(' ').substring(1) ?? '';
 
     if (channel === undefined) {
       throw this.assert(this.onPart, 'channel');
     }
 
+    if (channel.startsWith(':')) {
+      channel = channel.substring(1);
+    }
+
     const { nick } = parseNick(this.sender, getUserModes());
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
+      message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.part,
@@ -791,7 +796,7 @@ export class Kernel {
 
     const message = {
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.quit', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
+      message: i18next.t('kernel.quit', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.quit,
       color: MessageColor.quit,

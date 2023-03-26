@@ -551,6 +551,31 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw PART #3 self', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
+    const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+    const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetRemoveUser).toHaveBeenCalledTimes(1);
+    expect(mockSetRemoveUser).toHaveBeenCalledWith('mero-test', '#chat');
+
+    expect(mockSetRemoveChannel).toHaveBeenCalledTimes(1);
+    expect(mockSetRemoveChannel).toHaveBeenCalledWith('#chat');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: 'mero-test opuścił kanał' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw PING', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
