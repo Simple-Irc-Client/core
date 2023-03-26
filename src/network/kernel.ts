@@ -90,8 +90,6 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
-
-    ircSendList();
   };
 
   private readonly handleDisconnected = (): void => {
@@ -514,6 +512,8 @@ export class Kernel {
 
     const currentChannelName = getCurrentChannelName();
 
+    const line = this.line;
+
     const userOfChannel = this.line.shift();
 
     if (userOfChannel === undefined) {
@@ -582,7 +582,7 @@ export class Kernel {
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode });
-            console.log(`unknown mode: ${mode} from ${flags}`);
+            console.log(`unknown mode: ${mode} from ${flags} / ${line.join(' ')}`);
             break;
         }
 
@@ -846,6 +846,8 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    ircSendList();
   };
 
   // :netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3
