@@ -117,7 +117,7 @@ export const createMaxMode = (userModes: string[], serverModes: UserMode[]): num
 };
 
 /**
- * That function parse line modes from IRC server "(qaohv)~&@%+" and returns it as array:
+ * That function parse line modes from IRC server "(yqaohv)!~&@%+" and returns it as array:
  * [
  *   ["mode": "q", symbol: "~"],
  *   ["mode": "a", symbol: "&"],

@@ -282,6 +282,8 @@ export class Kernel {
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
 
+    // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
+
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
@@ -561,10 +563,6 @@ export class Kernel {
 
         if (flag === '+' || flag === '-' || plusMinus === undefined) {
           continue; // set flag
-        }
-
-        if (flag === '' || flag === ' ') {
-          continue; // incorrect flag
         }
 
         let message = '';
