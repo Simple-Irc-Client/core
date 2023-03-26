@@ -339,9 +339,10 @@ export class Kernel {
       }
     }
 
-    if (Object.keys(caps).includes('draft/metadata')) {
-      setSupportedOption('metadata');
+    const capsKeys = Object.keys(caps);
+    if (capsKeys.includes('draft/metadata')) {
       ircRequestMetadata();
+      setSupportedOption('metadata');
     }
   };
 
@@ -491,7 +492,7 @@ export class Kernel {
       throw this.assert(this.onMetadata, 'nickOrChannel');
     }
 
-    if (isChannel(nickOrChannel)) {
+    if (!isChannel(nickOrChannel)) {
       if (item === 'avatar' && value !== undefined) {
         setUserAvatar(nickOrChannel, value);
       }

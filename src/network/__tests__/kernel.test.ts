@@ -342,7 +342,7 @@ describe('kernel tests', () => {
   it('test raw METADATA', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg';
 
