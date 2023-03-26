@@ -822,7 +822,7 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, serverUserModes);
 
-    const status = this.tags?.['+typing'];
+    const status = this.tags?.['+typing'] ?? this.tags?.['+draft/typing'];
     if (status === undefined) {
       return;
     }
