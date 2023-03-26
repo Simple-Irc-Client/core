@@ -646,11 +646,12 @@ export class Kernel {
   // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
   // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
   // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
+  // :irc.librairc.net NOTICE SIC-test :*** You cannot list within the first 60 seconds of connecting. Please try again later.
   private readonly onNotice = (): void => {
     const currentChannelName = getCurrentChannelName();
 
     const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony).*/;
-    const list = /.*You have to be connected for at least (\d+) seconds before being able to \/LIST.*/;
+    const list = /.*(You have to be connected for at least (?<secs1>\d+) seconds before being able to \/LIST|You cannot list within the first (?<secs2>\d+) seconds of connecting).*/;
 
     const target = this.line.shift();
 
@@ -668,7 +669,9 @@ export class Kernel {
     }
 
     if (list.test(message) && target === getCurrentNick() && !getIsCreatorCompleted()) {
-      const seconds = list.exec(message)?.[1];
+      const regexpGroups = list.exec(message)?.groups;
+      const seconds = regexpGroups?.secs1 ?? regexpGroups?.secs2;
+
       const connectedTime = getConnectedTime();
       if (seconds !== undefined && connectedTime !== 0) {
         const currentTime = Math.floor(Date.now() / 1000);
@@ -1083,6 +1086,7 @@ export class Kernel {
   };
 
   // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
+  // :irc01-black.librairc.net 332 mero-test #chat :\u00034Welcome to #chat chatroom at http://librairc.net ~ for rules check https://goo.gl/Ksv9gr ~ If you need help type /join #help
   private readonly onRaw332 = (): void => {
     const nick = this.line.shift();
     const channel = this.line.shift();
@@ -1112,6 +1116,7 @@ export class Kernel {
     setTopicSetBy(channel, setBy, setTime);
   };
 
+  // :irc01-black.librairc.net 353 mero-test = #chat :ircbot!ircbot@ircbot.botop.librairc.net Freak!Freak@LibraIRC-ug4.vta.mvnbg3.IP WatchDog!WatchDog@Watchdog.botop.librairc.net !~@iBan!iBan@iBan.botop.librairc.net !iBot!iBot@iBot.botop.librairc.net chip_x!chip@LibraIRC-i5e.6cr.4lkbg1.IP
   // :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
   // :chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik krejzus!krejzus@ukryty-13F27FB6.brb.dj Cienisty!Cienisty@cloak:Cienisty
   private readonly onRaw353 = (): void => {
