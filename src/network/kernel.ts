@@ -380,12 +380,17 @@ export class Kernel {
   };
 
   // @msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #sic * :Simple Irc Client user
+  // :mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP JOIN :#chat
   private readonly onJoin = (): void => {
-    const channel = this.line.shift();
+    let channel = this.line.shift();
     const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
 
     if (channel === undefined) {
       throw this.assert(this.onJoin, 'channel');
+    }
+
+    if (channel.startsWith(':')) {
+      channel = channel.substring(1);
     }
 
     setAddMessage({
