@@ -42,11 +42,15 @@ export class Kernel {
   private command: string;
   private line: string[];
 
+  private eventLine: string;
+
   constructor() {
     this.tags = {};
     this.sender = '';
     this.command = '';
     this.line = [];
+
+    this.eventLine = '';
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -110,10 +114,11 @@ export class Kernel {
     this.sender = sender;
     this.command = command;
     this.line = line;
+    this.eventLine = event?.trim();
 
     setAddMessage({
       id: uuidv4(),
-      message: `>> ${event.trim()}`,
+      message: `>> ${this.eventLine}`,
       target: DEBUG_CHANNEL,
       time: new Date().toISOString(),
       category: MessageCategory.info,
@@ -490,6 +495,7 @@ export class Kernel {
   // @draft/bot;msgid=g3x5HMBRj88mm32ndwtaUp;time=2023-03-19T21:08:35.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +v rupert__
   // :Merovingian MODE Merovingian :+x
   // :mero MODE mero :+xz
+  // :mero-test MODE mero-test :+i
 
   // Ban => 'b',
   // Exception => 'e',
@@ -511,8 +517,6 @@ export class Kernel {
     const { nick } = parseNick(this.sender, getUserModes());
 
     const currentChannelName = getCurrentChannelName();
-
-    const line = this.line;
 
     const userOfChannel = this.line.shift();
 
@@ -582,7 +586,7 @@ export class Kernel {
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode });
-            console.log(`unknown mode: ${mode} from ${flags} / ${line.join(' ')}`);
+            console.log(`unknown mode: ${mode} / ${this.eventLine}`);
             break;
         }
 
