@@ -573,7 +573,7 @@ export class Kernel {
           case 'O': // Allows server operators to opt-in to overriding restrictions.
           case 'R': // Prevents users who are not logged into a services account from messaging the user.
           case 'r': // Marks the user as being logged into a services account.
-          case 'S': // Strips IRC formatting codes from messages sent by users matching <mask>.
+          case 'S': // Enables stripping of IRC formatting codes from private messages.
           case 'T': // Enables blocking private messages that contain CTCPs.
           case 'W': // Informs the user when someone does a /WHOIS query on their nick.
           case 'x': // Enables hiding of the user's hostname.
