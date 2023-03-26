@@ -35,7 +35,7 @@ const CreatorLoading = (): JSX.Element => {
       };
     }
 
-    if (!isConnecting && !isConnected) {
+    if (!isConnecting && !isConnected && creatorProgress.value !== 0) {
       setCreatorProgress(0, t('creator.loading.disconnected'));
     }
   }, [isConnecting, isConnected]);
