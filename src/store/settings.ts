@@ -9,6 +9,11 @@ import { defaultChannelType } from '../config/config';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
+export interface CreatorProgress {
+  value: number;
+  label?: string;
+}
+
 export interface SettingsStore {
   isConnecting: boolean;
   isConnected: boolean;
@@ -25,6 +30,7 @@ export interface SettingsStore {
   listRequestRemainingSeconds: number;
   channelTypes: string[];
   supportedOptions: string[];
+  creatorProgress: CreatorProgress;
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -40,6 +46,7 @@ export interface SettingsStore {
   setListRequestRemainingSeconds: (seconds: number) => void;
   setChannelTypes: (types: string[]) => void;
   setSupportedOption: (option: string) => void;
+  setCreatorProgress: (value: number, label: string) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -61,6 +68,7 @@ export const useSettingsStore = create<SettingsStore>()(
         listRequestRemainingSeconds: -1,
         channelTypes: [],
         supportedOptions: [],
+        creatorProgress: { value: 0, label: '' },
 
         setCreatorCompleted: (status: boolean): void => {
           set(() => ({
@@ -108,6 +116,9 @@ export const useSettingsStore = create<SettingsStore>()(
         },
         setSupportedOption: (option: string): void => {
           set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
+        },
+        setCreatorProgress: (value: number, label: string): void => {
+          set(() => ({ creatorProgress: { value, label } }));
         },
       }),
       {
@@ -214,4 +225,8 @@ export const setSupportedOption = (key: string): void => {
 
 export const isSupportedOption = (option: string): boolean => {
   return useSettingsStore.getState().supportedOptions.includes(option);
+};
+
+export const setCreatorProgress = (value: number, label: string): void => {
+  useSettingsStore.getState().setCreatorProgress(value, label);
 };

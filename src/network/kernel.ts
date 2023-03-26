@@ -9,6 +9,7 @@ import {
   isSupportedOption,
   setChannelTypes,
   setConnectedTime,
+  setCreatorProgress,
   setCreatorStep,
   setCurrentChannelName,
   setIsConnected,
@@ -345,20 +346,20 @@ export class Kernel {
   };
 
   // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
+  // ERROR :Closing Link: [unknown@185.251.84.36] (SSL_do_accept failed)
   private readonly onError = (): void => {
     const message = this.line.join(' ').substring(1);
 
-    if (getIsCreatorCompleted()) {
-      setAddMessageToAllChannels({
-        id: this.tags?.msgid ?? uuidv4(),
-        message,
-        time: new Date().toISOString(),
-        category: MessageCategory.error,
-        color: MessageColor.error,
-      });
-    } else {
-      // TODO display error message if creator is still opened
-      // setProgress({ value: 0, label: i18next.t('creator.loading.error', { message });
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      time: new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    if (!getIsCreatorCompleted()) {
+      setCreatorProgress(0, i18next.t('creator.loading.error', { message }));
     }
   };
 
