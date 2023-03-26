@@ -510,7 +510,104 @@ export class Kernel {
   // Halfop => 'h',
   // Voice => 'v',
   private readonly onMode = (): void => {
-    // TODO MODE
+    const { nick } = parseNick(this.sender, getUserModes());
+
+    const currentChannelName = getCurrentChannelName();
+
+    const userOfChannel = this.line.shift();
+
+    if (userOfChannel === undefined) {
+      throw this.assert(this.onMode, 'userOfChannel');
+    }
+
+    let flags = this.line.shift() ?? '';
+    if (flags.startsWith(':')) {
+      flags = flags.substring(1);
+    }
+
+    if (isChannel(userOfChannel)) {
+      // channel
+      const channel = userOfChannel;
+    } else {
+      // user
+      const user = userOfChannel;
+
+      let plusMinus: '+' | '-' | undefined;
+      for (let i = 0; i < flags.length; i++) {
+        const flag = flags?.[i] ?? '';
+
+        if (flag === '+') {
+          plusMinus = '+';
+        }
+        if (flag === '-') {
+          plusMinus = '-';
+        }
+
+        if (flag === '+' || flag === '-' || plusMinus === undefined) {
+          continue; // set flag
+        }
+
+        if (flag === '' || flag === ' ') {
+          continue; // incorrect flag
+        }
+
+        let message = '';
+
+        const mode = `${plusMinus}${flag}`;
+        const translate = `kernel.mode.user.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
+
+        // https://docs.inspircd.org/3/user-modes/
+        switch (flag) {
+          case 'B': // Marks the user as a bot.
+          case 'c': // Requires other users to have a common channel before they can message this user.
+          case 'd': // Prevents the user from receiving channel messages.
+          case 'D': // Prevents the user from receiving private messages.
+          case 'G': // Enables censoring messages sent to the user.
+          case 'g': // Enables whitelisting of who can message the user.
+          case 'H': // Hides the user's server operator status from unprivileged users.
+          case 'h': // Marks the user as being available for help.
+          case 'I': // Hides the channels the user is in from their /WHOIS response.
+          case 'k': // Protects services pseudoclients against kicks, kills, and channel prefix mode changes.
+          case 'L': // Prevents users from being redirected by channel mode L (redirect).
+          case 'N': // Disables receiving channel history on join.
+          case 'O': // Allows server operators to opt-in to overriding restrictions.
+          case 'R': // Prevents users who are not logged into a services account from messaging the user.
+          case 'r': // Marks the user as being logged into a services account.
+          case 'S': // Strips IRC formatting codes from messages sent by users matching <mask>.
+          case 'T': // Enables blocking private messages that contain CTCPs.
+          case 'W': // Informs the user when someone does a /WHOIS query on their nick.
+          case 'x': // Enables hiding of the user's hostname.
+          case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
+            message = i18next.t(translate, { nick: user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode }) });
+            break;
+          default:
+            message = i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode });
+            console.log(`unknown mode: ${mode} from ${flags}`);
+            break;
+        }
+
+        if (flag === 'r' || flag === 'x') {
+          setAddMessage({
+            id: this.tags?.msgid ?? uuidv4(),
+            message,
+            target: STATUS_CHANNEL,
+            time: this.tags?.time ?? new Date().toISOString(),
+            category: MessageCategory.mode,
+            color: MessageColor.mode,
+          });
+          continue;
+        }
+
+        setAddMessage({
+          id: this.tags?.msgid ?? uuidv4(),
+          message,
+          target: currentChannelName,
+          time: this.tags?.time ?? new Date().toISOString(),
+          category: MessageCategory.mode,
+          color: MessageColor.mode,
+        });
+      }
+    }
   };
 
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707

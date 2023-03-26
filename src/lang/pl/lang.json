@@ -45,5 +45,6 @@
     "kernel.kick-you": "Zostałeś wyrzucony z {{channel}} przez {{kickedBy}} {{reason}}",
     "kernel.topic": "{{nick}} ustawił temat kanału na: {{topic}}",
     "kernel.invite": "{{nick}} zaprasza do kanału: {{channel}}",
-    "kernel.kill": "Zostałeś rozłączony z serwera przez {{nick}} {{reason}}"
+    "kernel.kill": "Zostałeś rozłączony z serwera przez {{nick}} {{reason}}",
+    "kernel.mode.user.unknown": "{{nick}} ma teraz flage {{mode}}"
 }
