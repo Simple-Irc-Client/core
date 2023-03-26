@@ -26,7 +26,7 @@ import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
-import { defaultChannelType } from '../config/config';
+import { defaultChannelTypes } from '../config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../store/channelList';
 
@@ -942,7 +942,7 @@ export class Kernel {
           const [key, value] = parameter.split('=');
           switch (key) {
             case 'CHANTYPES':
-              setChannelTypes((value ?? defaultChannelType).split(''));
+              setChannelTypes(value !== undefined ? value.split('') : defaultChannelTypes);
               break;
             case 'PREFIX':
               setUserModes(parseUserModes(value));
