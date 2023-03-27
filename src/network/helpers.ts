@@ -1,6 +1,6 @@
 import { defaultIRCPort } from '../config/config';
 import { type Server } from '../models/servers';
-import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer } from '../types';
+import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '../types';
 
 /**
  *
@@ -150,4 +150,75 @@ export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => 
   }
 
   return result;
+};
+
+/**
+ * CHANMODES=A,B,C,D
+
+   The CHANMODES parameter is used to indicate the channel modes
+   available and the arguments they take.  There are four categories of
+   modes, defined as follows:
+   -  Type A: Modes that add or remove an address to or from a list.
+      These modes MUST always have a parameter when sent from the server
+      to a client.  A client MAY issue the mode without an argument to
+      obtain the current contents of the list.
+
+   -  Type B: Modes that change a setting on a channel.  These modes
+      MUST always have a parameter.
+
+   -  Type C: Modes that change a setting on a channel.  These modes
+      MUST have a parameter when being set, and MUST NOT have a
+      parameter when being unset.
+
+   -  Type D: Modes that change a setting on a channel.  These modes
+      MUST NOT have a parameter.
+
+   To allow for future extensions, a server MAY send additional types,
+   delimeted by the comma character (',').  The behaviour of any
+   additional types is undefined.
+
+   Example: beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ
+
+ * @param modes 
+ * @returns 
+ */
+export const parseChannelModes = (modes: string | undefined): ChannelMode => {
+  const result: ChannelMode = {
+    A: [],
+    B: [],
+    C: [],
+    D: [],
+  };
+
+  if (modes === undefined) {
+    return result;
+  }
+
+  const list = modes.split(',');
+  result.A = list.shift()?.split('') ?? []; // both
+  result.B = list.shift()?.split('') ?? []; // both
+  result.C = list.shift()?.split('') ?? []; // add
+  result.D = list.shift()?.split('') ?? []; // single
+
+  return result;
+};
+
+export const channelModeType = (flag: string, channelModes: ChannelMode, userModes: UserMode[]): 'A' | 'B' | 'C' | 'D' | 'U' | undefined => {
+  if (channelModes.A.includes(flag)) {
+    return 'A';
+  }
+  if (channelModes.B.includes(flag)) {
+    return 'B';
+  }
+  if (channelModes.C.includes(flag)) {
+    return 'C';
+  }
+  if (channelModes.D.includes(flag)) {
+    return 'D';
+  }
+  if (userModes.find((item) => item.mode === flag) !== undefined) {
+    return 'U';
+  }
+
+  return undefined;
 };

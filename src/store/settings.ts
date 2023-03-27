@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type Server } from '../models/servers';
 import { devtools, persist } from 'zustand/middleware';
-import { ChannelCategory, type UserMode } from '../types';
+import { ChannelCategory, type ChannelMode, type UserMode } from '../types';
 import { setClearUnreadMessages, useChannelsStore } from './channels';
 import { useCurrentStore } from './current';
 import { useUsersStore } from './users';
@@ -27,6 +27,7 @@ export interface SettingsStore {
   currentChannelCategory: ChannelCategory;
   theme: 'modern' | 'classic';
   userModes: UserMode[];
+  channelModes: ChannelMode;
   listRequestRemainingSeconds: number;
   channelTypes: string[];
   supportedOptions: string[];
@@ -43,6 +44,7 @@ export interface SettingsStore {
   setCurrentChannelName: (channelName: string, category: ChannelCategory) => void;
   setTheme: (theme: 'modern' | 'classic') => void;
   setUserModes: (modes: UserMode[]) => void;
+  setChannelModes: (modes: ChannelMode) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
   setChannelTypes: (types: string[]) => void;
   setSupportedOption: (option: string) => void;
@@ -65,6 +67,7 @@ export const useSettingsStore = create<SettingsStore>()(
         currentChannelCategory: ChannelCategory.status,
         theme: 'modern',
         userModes: [],
+        channelModes: { A: [], B: [], C: [], D: [] },
         listRequestRemainingSeconds: -1,
         channelTypes: [],
         supportedOptions: [],
@@ -107,6 +110,9 @@ export const useSettingsStore = create<SettingsStore>()(
         },
         setUserModes: (modes: UserMode[]): void => {
           set(() => ({ userModes: modes }));
+        },
+        setChannelModes: (modes: ChannelMode): void => {
+          set(() => ({ channelModes: modes }));
         },
         setListRequestRemainingSeconds: (seconds: number): void => {
           set(() => ({ listRequestRemainingSeconds: seconds }));
@@ -177,6 +183,14 @@ export const setTheme = (newTheme: 'modern' | 'classic'): void => {
 
 export const setUserModes = (modes: UserMode[]): void => {
   useSettingsStore.getState().setUserModes(modes);
+};
+
+export const setChannelModes = (modes: ChannelMode): void => {
+  useSettingsStore.getState().setChannelModes(modes);
+};
+
+export const getChannelModes = (): ChannelMode => {
+  return useSettingsStore.getState().channelModes;
 };
 
 export const setListRequestRemainingSeconds = (seconds: number): void => {

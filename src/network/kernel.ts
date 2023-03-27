@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { existChannel, isChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
 import {
+  getChannelModes,
   getConnectedTime,
   getCurrentChannelName,
   getCurrentNick,
   getIsCreatorCompleted,
   getUserModes,
   isSupportedOption,
+  setChannelModes,
   setChannelTypes,
   setConnectedTime,
   setCreatorProgress,
@@ -22,7 +24,7 @@ import {
 } from '../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
-import { createMaxMode, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
+import { channelModeType, createMaxMode, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
@@ -510,23 +512,8 @@ export class Kernel {
   // :Merovingian MODE Merovingian :+x
   // :mero MODE mero :+xz
   // :mero-test MODE mero-test :+i
-
-  // Ban => 'b',
-  // Exception => 'e',
-  // Limit => 'l',
-  // InviteOnly => 'i',
-  // InviteException => 'I',
-  // Key => 'k',
-  // Moderated => 'm',
-  // RegisteredOnly => 'r',
-  // Secret => 's',
-  // ProtectedTopic => 't',
-  // NoExternalMessages => 'n',
-  // Founder => 'q',
-  // Admin => 'a',
-  // Oper => 'o',
-  // Halfop => 'h',
-  // Voice => 'v',
+  // @draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian
+  // @account=Merovingian;msgid=Mo53vHEaXcEELccHhGfuVA;time=2023-03-27T23:52:26.726Z :Merovingian!~pirc@cloak:Merovingian MODE #sic +l 99
   private readonly onMode = (): void => {
     const { nick } = parseNick(this.sender, getUserModes());
 
@@ -544,10 +531,76 @@ export class Kernel {
     }
 
     if (isChannel(userOfChannel)) {
-      // channel
+      // channel mode
       const channel = userOfChannel;
+
+      let plusMinus: '+' | '-' | undefined;
+
+      let flagParameterIndex = 0;
+      for (let i = 0; i < flags.length; i++) {
+        const flag = flags?.[i] ?? '';
+
+        if (flag === '+') {
+          plusMinus = '+';
+        }
+        if (flag === '-') {
+          plusMinus = '-';
+        }
+
+        if (flag === '+' || flag === '-' || plusMinus === undefined) {
+          continue; // set flag
+        }
+
+        const mode = `${plusMinus}${flag}`;
+        const type = channelModeType(flag, getChannelModes(), getUserModes());
+
+        let message = '';
+        const translate = `kernel.mode.channel.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
+
+        switch (`${plusMinus}${type ?? ''}`) {
+          case '+A':
+          case '-A':
+          case '+B':
+          case '-B':
+          case '+C': {
+            // with params
+            const param = this.line?.[flagParameterIndex];
+            flagParameterIndex++;
+            message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
+            break;
+          }
+          case '-C':
+          case '+D':
+          case '-D':
+            // single
+            message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown', { channel, setBy: nick, mode }) });
+            break;
+          case '+U':
+          case '-U': {
+            // user flag
+            const user = this.line?.[flagParameterIndex];
+            flagParameterIndex++;
+            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.user', { user, setBy: nick, mode }) });
+            // TODO add flag to user
+            break;
+          }
+          default:
+            message = i18next.t('kernel.mode.channel.unknown', { channel, setBy: nick, mode });
+            console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            break;
+        }
+
+        setAddMessage({
+          id: uuidv4(),
+          message,
+          target: currentChannelName,
+          time: this.tags?.time ?? new Date().toISOString(),
+          category: MessageCategory.mode,
+          color: MessageColor.mode,
+        });
+      }
     } else {
-      // user
+      // user mode
       const user = userOfChannel;
 
       let plusMinus: '+' | '-' | undefined;
@@ -592,17 +645,18 @@ export class Kernel {
           case 'W': // Informs the user when someone does a /WHOIS query on their nick.
           case 'x': // Enables hiding of the user's hostname.
           case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
-            message = i18next.t(translate, { nick: user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode }) });
+            // TODO case yqaohv
+            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
             break;
           default:
-            message = i18next.t('kernel.mode.user.unknown', { nick: user, setBy: nick, mode });
+            message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
             console.log(`unknown mode: ${mode} / ${this.eventLine}`);
             break;
         }
 
         if (flag === 'r' || flag === 'x') {
           setAddMessage({
-            id: this.tags?.msgid ?? uuidv4(),
+            id: uuidv4(),
             message,
             target: STATUS_CHANNEL,
             time: this.tags?.time ?? new Date().toISOString(),
@@ -613,7 +667,7 @@ export class Kernel {
         }
 
         setAddMessage({
-          id: this.tags?.msgid ?? uuidv4(),
+          id: uuidv4(),
           message,
           target: currentChannelName,
           time: this.tags?.time ?? new Date().toISOString(),
@@ -949,6 +1003,9 @@ export class Kernel {
               break;
             case 'WHOX':
               setSupportedOption('WHOX');
+              break;
+            case 'CHANMODES':
+              setChannelModes(parseChannelModes(value));
               break;
           }
         }

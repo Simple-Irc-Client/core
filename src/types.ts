@@ -88,3 +88,11 @@ export interface Nick {
   ident: string;
   hostname: string;
 }
+
+export interface ChannelMode {
+  A: string[];
+  B: string[];
+  C: string[];
+  D: string[];
+  U?: string[];
+}
