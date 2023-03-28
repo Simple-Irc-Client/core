@@ -804,6 +804,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const mockSetChannelTypes = vi.spyOn(settingsFile, 'setChannelTypes').mockImplementation(() => {});
+    const mockSetChannelModes = vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
@@ -815,6 +816,15 @@ describe('kernel tests', () => {
     expect(mockSetChannelTypes).toHaveBeenNthCalledWith(1, ['#']);
 
     expect(mockSetChannelTypes).toHaveBeenCalledTimes(1);
+
+    expect(mockSetChannelModes).toHaveBeenCalledTimes(1);
+    expect(mockSetChannelModes).toHaveBeenCalledWith({
+      A: ['b', 'e', 'I'],
+      B: ['f', 'k', 'L'],
+      C: ['l', 'H'],
+      D: ['c', 'd', 'i', 'm', 'n', 'p', 'r', 's', 't', 'z', 'B', 'C', 'D', 'G', 'K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'V', 'Z'],
+    });
+
     expect(mockSetSupportedOption).toHaveBeenCalledTimes(0);
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(0);
 
@@ -835,6 +845,7 @@ describe('kernel tests', () => {
 
     const mockSetUserModes = vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetChannelModes = vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
@@ -850,6 +861,7 @@ describe('kernel tests', () => {
       { mode: 'v', symbol: '+' },
     ]);
     expect(mockSetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockSetChannelModes).toHaveBeenCalledTimes(0);
     expect(mockSetSupportedOption).toHaveBeenCalledWith('NAMESX');
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
