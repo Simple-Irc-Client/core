@@ -3,7 +3,7 @@ import { websocketHost, websocketPort } from '../config/config';
 import { type Server } from '../models/servers';
 import { parseServer } from './helpers';
 
-export const sicSocket = socketIOConnect(`${websocketHost}:${websocketPort}`, {
+export const sicSocket = socketIOConnect(`http://${websocketHost}:${websocketPort}`, {
   transports: ['websocket'],
   path: '/SimpleIrcClient',
 });
