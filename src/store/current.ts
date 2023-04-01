@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { type Message, type User } from '../types';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 
 interface CurrentStore {
   topic: string;
@@ -16,35 +16,32 @@ interface CurrentStore {
 
 export const useCurrentStore = create<CurrentStore>()(
   devtools(
-    persist(
-      (set) => ({
-        topic: '',
-        messages: [],
-        users: [],
-        typing: [],
+    (set) => ({
+      topic: '',
+      messages: [],
+      users: [],
+      typing: [],
 
-        setUpdateTopic: (topic: string): void => {
-          set(() => ({
-            topic,
-          }));
-        },
-        setUpdateMessages: (messages: Message[]): void => {
-          set(() => ({
-            messages,
-          }));
-        },
-        setUpdateUsers: (users: User[]): void => {
-          set(() => ({
-            users,
-          }));
-        },
-        setUpdateTyping: (typing: string[]): void => {
-          set(() => ({
-            typing,
-          }));
-        },
-      }),
-      { name: 'current' }
-    )
+      setUpdateTopic: (topic: string): void => {
+        set(() => ({
+          topic,
+        }));
+      },
+      setUpdateMessages: (messages: Message[]): void => {
+        set(() => ({
+          messages,
+        }));
+      },
+      setUpdateUsers: (users: User[]): void => {
+        set(() => ({
+          users,
+        }));
+      },
+      setUpdateTyping: (typing: string[]): void => {
+        set(() => ({
+          typing,
+        }));
+      },
+    }),
   )
 );
