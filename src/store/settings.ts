@@ -52,81 +52,79 @@ export interface SettingsStore {
 }
 
 export const useSettingsStore = create<SettingsStore>()(
-devtools(
-    (set) => ({
-      isConnecting: false,
-      isConnected: false,
-      isCreatorCompleted: false,
-      creatorStep: 'nick',
-      nick: '',
-      server: undefined,
-      isPasswordRequired: undefined,
-      connectedTime: 0,
-      currentChannelName: 'Status',
-      currentChannelCategory: ChannelCategory.status,
-      theme: 'modern',
-      userModes: [],
-      channelModes: { A: [], B: [], C: [], D: [] },
-      listRequestRemainingSeconds: -1,
-      channelTypes: [],
-      supportedOptions: [],
-      creatorProgress: { value: 0, label: '' },
+  devtools((set) => ({
+    isConnecting: false,
+    isConnected: false,
+    isCreatorCompleted: false,
+    creatorStep: 'nick',
+    nick: '',
+    server: undefined,
+    isPasswordRequired: undefined,
+    connectedTime: 0,
+    currentChannelName: 'Status',
+    currentChannelCategory: ChannelCategory.status,
+    theme: 'modern',
+    userModes: [],
+    channelModes: { A: [], B: [], C: [], D: [] },
+    listRequestRemainingSeconds: -1,
+    channelTypes: [],
+    supportedOptions: [],
+    creatorProgress: { value: 0, label: '' },
 
-      setCreatorCompleted: (status: boolean): void => {
-        set(() => ({
-          isCreatorCompleted: status,
-        }));
-      },
-      setIsConnecting: (status: boolean): void => {
-        set(() => ({ isConnecting: status }));
-      },
-      setIsConnected: (status: boolean): void => {
-        set(() => ({ isConnected: status }));
-      },
-      setConnectedTime: (time: number): void => {
-        set(() => ({ connectedTime: time }));
-      },
-      setNick: (newNick: string): void => {
-        set(() => ({ nick: newNick }));
-      },
-      setServer: (newServer: Server): void => {
-        set(() => ({ server: newServer }));
-      },
-      setCreatorStep: (newCreatorStep: CreatorStep): void => {
-        set(() => ({ creatorStep: newCreatorStep }));
-      },
-      setIsPasswordRequired: (status: boolean): void => {
-        set(() => ({ isPasswordRequired: status }));
-      },
-      setCurrentChannelName: (channelName: string, category: ChannelCategory): void => {
-        set(() => ({
-          currentChannelName: channelName,
-          currentChannelCategory: category,
-        }));
-      },
-      setTheme: (newTheme: 'modern' | 'classic'): void => {
-        set(() => ({ theme: newTheme }));
-      },
-      setUserModes: (modes: UserMode[]): void => {
-        set(() => ({ userModes: modes }));
-      },
-      setChannelModes: (modes: ChannelMode): void => {
-        set(() => ({ channelModes: modes }));
-      },
-      setListRequestRemainingSeconds: (seconds: number): void => {
-        set(() => ({ listRequestRemainingSeconds: seconds }));
-      },
-      setChannelTypes: (types: string[]): void => {
-        set(() => ({ channelTypes: types }));
-      },
-      setSupportedOption: (option: string): void => {
-        set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
-      },
-      setCreatorProgress: (value: number, label: string): void => {
-        set(() => ({ creatorProgress: { value, label } }));
-      },
-    }),
-  )
+    setCreatorCompleted: (status: boolean): void => {
+      set(() => ({
+        isCreatorCompleted: status,
+      }));
+    },
+    setIsConnecting: (status: boolean): void => {
+      set(() => ({ isConnecting: status }));
+    },
+    setIsConnected: (status: boolean): void => {
+      set(() => ({ isConnected: status }));
+    },
+    setConnectedTime: (time: number): void => {
+      set(() => ({ connectedTime: time }));
+    },
+    setNick: (newNick: string): void => {
+      set(() => ({ nick: newNick }));
+    },
+    setServer: (newServer: Server): void => {
+      set(() => ({ server: newServer }));
+    },
+    setCreatorStep: (newCreatorStep: CreatorStep): void => {
+      set(() => ({ creatorStep: newCreatorStep }));
+    },
+    setIsPasswordRequired: (status: boolean): void => {
+      set(() => ({ isPasswordRequired: status }));
+    },
+    setCurrentChannelName: (channelName: string, category: ChannelCategory): void => {
+      set(() => ({
+        currentChannelName: channelName,
+        currentChannelCategory: category,
+      }));
+    },
+    setTheme: (newTheme: 'modern' | 'classic'): void => {
+      set(() => ({ theme: newTheme }));
+    },
+    setUserModes: (modes: UserMode[]): void => {
+      set(() => ({ userModes: modes }));
+    },
+    setChannelModes: (modes: ChannelMode): void => {
+      set(() => ({ channelModes: modes }));
+    },
+    setListRequestRemainingSeconds: (seconds: number): void => {
+      set(() => ({ listRequestRemainingSeconds: seconds }));
+    },
+    setChannelTypes: (types: string[]): void => {
+      set(() => ({ channelTypes: types }));
+    },
+    setSupportedOption: (option: string): void => {
+      set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
+    },
+    setCreatorProgress: (value: number, label: string): void => {
+      set(() => ({ creatorProgress: { value, label } }));
+    },
+  }))
 );
 
 export const setCreatorCompleted = (status: boolean): void => {

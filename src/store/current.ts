@@ -15,33 +15,31 @@ interface CurrentStore {
 }
 
 export const useCurrentStore = create<CurrentStore>()(
-  devtools(
-    (set) => ({
-      topic: '',
-      messages: [],
-      users: [],
-      typing: [],
+  devtools((set) => ({
+    topic: '',
+    messages: [],
+    users: [],
+    typing: [],
 
-      setUpdateTopic: (topic: string): void => {
-        set(() => ({
-          topic,
-        }));
-      },
-      setUpdateMessages: (messages: Message[]): void => {
-        set(() => ({
-          messages,
-        }));
-      },
-      setUpdateUsers: (users: User[]): void => {
-        set(() => ({
-          users,
-        }));
-      },
-      setUpdateTyping: (typing: string[]): void => {
-        set(() => ({
-          typing,
-        }));
-      },
-    }),
-  )
+    setUpdateTopic: (topic: string): void => {
+      set(() => ({
+        topic,
+      }));
+    },
+    setUpdateMessages: (messages: Message[]): void => {
+      set(() => ({
+        messages,
+      }));
+    },
+    setUpdateUsers: (users: User[]): void => {
+      set(() => ({
+        users,
+      }));
+    },
+    setUpdateTyping: (typing: string[]): void => {
+      set(() => ({
+        typing,
+      }));
+    },
+  }))
 );

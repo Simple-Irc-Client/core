@@ -28,173 +28,171 @@ interface ChannelsStore {
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
-  devtools(
-    (set, get) => ({
-      openChannels: [],
-      openChannelsShortList: [],
+  devtools((set, get) => ({
+    openChannels: [],
+    openChannelsShortList: [],
 
-      setAddChannel: (channelName: string, category: ChannelCategory): void => {
-        set((state) => ({
-          openChannelsShortList: [...state.openChannelsShortList, { category, name: channelName, unReadMessages: 0 }],
-          openChannels: [
-            ...state.openChannels,
-            {
-              category,
-              messages: [],
-              name: channelName,
-              topic: '',
-              topicSetBy: '',
-              topicSetTime: 0,
-              unReadMessages: 0,
-              typing: [],
-            },
-          ],
-        }));
-      },
-      setRemoveChannel: (channelName: string) => {
-        set((state) => ({
-          openChannelsShortList: state.openChannelsShortList.filter((channel) => channel.name !== channelName),
-          openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
-        }));
-      },
-      getChannel: (channelName: string): ChannelExtended | undefined => {
-        return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName);
-      },
-      existChannel: (channelName: string): boolean => {
-        return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName) !== undefined;
-      },
-      getOpenChannels: (): string[] => {
-        return get().openChannels.map((channel) => channel.name);
-      },
-      setTopic: (channelName: string, newTopic: string) => {
-        set((state) => ({
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
-
-            channel.topic = newTopic;
+    setAddChannel: (channelName: string, category: ChannelCategory): void => {
+      set((state) => ({
+        openChannelsShortList: [...state.openChannelsShortList, { category, name: channelName, unReadMessages: 0 }],
+        openChannels: [
+          ...state.openChannels,
+          {
+            category,
+            messages: [],
+            name: channelName,
+            topic: '',
+            topicSetBy: '',
+            topicSetTime: 0,
+            unReadMessages: 0,
+            typing: [],
+          },
+        ],
+      }));
+    },
+    setRemoveChannel: (channelName: string) => {
+      set((state) => ({
+        openChannelsShortList: state.openChannelsShortList.filter((channel) => channel.name !== channelName),
+        openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
+      }));
+    },
+    getChannel: (channelName: string): ChannelExtended | undefined => {
+      return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName);
+    },
+    existChannel: (channelName: string): boolean => {
+      return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName) !== undefined;
+    },
+    getOpenChannels: (): string[] => {
+      return get().openChannels.map((channel) => channel.name);
+    },
+    setTopic: (channelName: string, newTopic: string) => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-        }));
-      },
-      getTopic: (channelName: string): string => {
-        return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName)?.topic ?? '';
-      },
-      setTopicSetBy: (channelName: string, nick: string, when: number) => {
-        set((state) => ({
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          }
 
-            channel.topicSetBy = nick;
-            channel.topicSetTime = when;
+          channel.topic = newTopic;
+          return channel;
+        }),
+      }));
+    },
+    getTopic: (channelName: string): string => {
+      return get().openChannels.find((channel: ChannelExtended) => channel.name === channelName)?.topic ?? '';
+    },
+    setTopicSetBy: (channelName: string, nick: string, when: number) => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-        }));
-      },
-      getTopicSetBy: (channelName: string): string => {
-        return get().getChannel(channelName)?.topicSetBy ?? '';
-      },
-      getTopicTime: (channelName: string): number => {
-        return get().getChannel(channelName)?.topicSetTime ?? 0;
-      },
-      setAddMessage: (newMessage: Message): void => {
-        set((state) => ({
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== newMessage.target) {
-              return channel;
-            }
+          }
 
-            channel.messages.push(newMessage);
-            if (channel.messages.length > maxMessages) {
-              channel.messages.shift();
-            }
+          channel.topicSetBy = nick;
+          channel.topicSetTime = when;
+          return channel;
+        }),
+      }));
+    },
+    getTopicSetBy: (channelName: string): string => {
+      return get().getChannel(channelName)?.topicSetBy ?? '';
+    },
+    getTopicTime: (channelName: string): number => {
+      return get().getChannel(channelName)?.topicSetTime ?? 0;
+    },
+    setAddMessage: (newMessage: Message): void => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== newMessage.target) {
             return channel;
-          }),
-        }));
-      },
-      getMessages: (channelName: string): Message[] => {
-        return (
-          get()
-            .getChannel(channelName)
-            ?.messages?.map((message) => {
-              return message; // map is required because it's chaning object id
-            }) ?? []
-        );
-      },
-      getCategory: (channelName: string): ChannelCategory | undefined => {
-        return get().getChannel(channelName)?.category ?? undefined;
-      },
-      setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
-        set((state) => ({
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          }
 
-            switch (status) {
-              case 'done':
-                channel.typing = channel.typing.filter((typingNick) => typingNick !== nick);
-                break;
-              case 'active':
-              case 'paused':
-                if (!channel.typing.includes(nick)) {
-                  channel.typing.push(nick);
-                }
-                break;
-            }
-
+          channel.messages.push(newMessage);
+          if (channel.messages.length > maxMessages) {
+            channel.messages.shift();
+          }
+          return channel;
+        }),
+      }));
+    },
+    getMessages: (channelName: string): Message[] => {
+      return (
+        get()
+          .getChannel(channelName)
+          ?.messages?.map((message) => {
+            return message; // map is required because it's chaning object id
+          }) ?? []
+      );
+    },
+    getCategory: (channelName: string): ChannelCategory | undefined => {
+      return get().getChannel(channelName)?.category ?? undefined;
+    },
+    setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-        }));
-      },
-      getTyping: (channelName: string): string[] => {
-        return get().getChannel(channelName)?.typing ?? [];
-      },
-      setClearUnreadMessages: (channelName: string) => {
-        set((state) => ({
-          openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          }
 
-            channel.unReadMessages = 0;
-            return channel;
-          }),
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          switch (status) {
+            case 'done':
+              channel.typing = channel.typing.filter((typingNick) => typingNick !== nick);
+              break;
+            case 'active':
+            case 'paused':
+              if (!channel.typing.includes(nick)) {
+                channel.typing.push(nick);
+              }
+              break;
+          }
 
-            channel.unReadMessages = 0;
+          return channel;
+        }),
+      }));
+    },
+    getTyping: (channelName: string): string[] => {
+      return get().getChannel(channelName)?.typing ?? [];
+    },
+    setClearUnreadMessages: (channelName: string) => {
+      set((state) => ({
+        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-        }));
-      },
-      setIncreaseUnreadMessages: (channelName: string) => {
-        set((state) => ({
-          openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          }
 
-            channel.unReadMessages++;
+          channel.unReadMessages = 0;
+          return channel;
+        }),
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-          openChannels: state.openChannels.map((channel: ChannelExtended) => {
-            if (channel.name !== channelName) {
-              return channel;
-            }
+          }
 
-            channel.unReadMessages++;
+          channel.unReadMessages = 0;
+          return channel;
+        }),
+      }));
+    },
+    setIncreaseUnreadMessages: (channelName: string) => {
+      set((state) => ({
+        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
+          if (channel.name !== channelName) {
             return channel;
-          }),
-        }));
-      },
-    }),
-  )
+          }
+
+          channel.unReadMessages++;
+          return channel;
+        }),
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
+            return channel;
+          }
+
+          channel.unReadMessages++;
+          return channel;
+        }),
+      }));
+    },
+  }))
 );
 
 export const setAddChannel = (channelName: string, category: ChannelCategory): void => {
