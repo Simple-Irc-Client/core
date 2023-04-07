@@ -25,7 +25,7 @@ npm run start
 If you find a bug or would like to contribute to the project, please open an issue or submit a pull request on GitHub.
 
 ## License
-This project is licensed under the [Affero General Public License version 3 (AGPLv3)](https://github.com/Simple-Irc-Client/network/blob/main/LICENSE).
+This project is licensed under the [Affero General Public License version 3 (AGPLv3)](https://github.com/Simple-Irc-Client/core/blob/main/LICENSE).
 
 ## Authors
 
