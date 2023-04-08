@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../../models/servers';
 import { type UserMode } from '../../types';
-import { createMaxMode, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
+import { calculateMaxPermission, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
 
 describe('helper tests', () => {
   it('test parse server', () => {
@@ -99,52 +99,52 @@ describe('helper tests', () => {
 
   it('test parse nick', () => {
     expect(parseNick('nick!ident@hostname', [])).toStrictEqual({
-      modes: [],
+      flags: [],
       nick: 'nick',
       ident: 'ident',
       hostname: 'hostname',
     });
     expect(
       parseNick('@+nick!ident@hostname', [
-        { symbol: '@', mode: 'o' },
-        { symbol: '+', mode: 'v' },
+        { symbol: '@', flag: 'o' },
+        { symbol: '+', flag: 'v' },
       ])
     ).toStrictEqual({
-      modes: ['o', 'v'],
+      flags: ['o', 'v'],
       nick: 'nick',
       ident: 'ident',
       hostname: 'hostname',
     });
     expect(parseNick(':netsplit.pirc.pl', [])).toStrictEqual({
-      modes: [],
+      flags: [],
       nick: 'netsplit.pirc.pl',
       ident: '',
       hostname: '',
     });
   });
 
-  it('should test createMaxMode', () => {
+  it('should test calculateMaxPermission', () => {
     const serverModes: UserMode[] = [
-      { symbol: '~', mode: 'q' },
-      { symbol: '&', mode: 'a' },
-      { symbol: '@', mode: 'o' },
-      { symbol: '%', mode: 'h' },
-      { symbol: '+', mode: 'v' },
+      { symbol: '~', flag: 'q' },
+      { symbol: '&', flag: 'a' },
+      { symbol: '@', flag: 'o' },
+      { symbol: '%', flag: 'h' },
+      { symbol: '+', flag: 'v' },
     ];
 
-    expect(createMaxMode(['q'], serverModes)).toEqual(256);
-    expect(createMaxMode(['a'], serverModes)).toEqual(255);
-    expect(createMaxMode(['o'], serverModes)).toEqual(254);
-    expect(createMaxMode(['h'], serverModes)).toEqual(253);
-    expect(createMaxMode(['v'], serverModes)).toEqual(252);
-    expect(createMaxMode(['xyz'], serverModes)).toEqual(-1);
-    expect(createMaxMode([], serverModes)).toEqual(-1);
+    expect(calculateMaxPermission(['q'], serverModes)).toEqual(256);
+    expect(calculateMaxPermission(['a'], serverModes)).toEqual(255);
+    expect(calculateMaxPermission(['o'], serverModes)).toEqual(254);
+    expect(calculateMaxPermission(['h'], serverModes)).toEqual(253);
+    expect(calculateMaxPermission(['v'], serverModes)).toEqual(252);
+    expect(calculateMaxPermission(['xyz'], serverModes)).toEqual(-1);
+    expect(calculateMaxPermission([], serverModes)).toEqual(-1);
   });
 
   it('should test parseUserModes', () => {
     expect(parseUserModes('')).toStrictEqual([]);
     expect(parseUserModes(undefined)).toStrictEqual([]);
-    expect(parseUserModes('(v)+')).toStrictEqual([{ symbol: '+', mode: 'v' }]);
+    expect(parseUserModes('(v)+')).toStrictEqual([{ symbol: '+', flag: 'v' }]);
     expect(parseUserModes('(x)')).toStrictEqual([]); // incorrect
     expect(parseUserModes('()*')).toStrictEqual([]); // incorrect
   });

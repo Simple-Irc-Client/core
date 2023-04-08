@@ -39,7 +39,6 @@ export enum MessageCategory {
   info = 'info',
   me = 'me',
   error = 'error',
-  // highlight = 'highlight',
   motd = 'motd',
 }
 
@@ -70,23 +69,30 @@ export interface User {
   nick: string;
   ident: string;
   hostname: string;
-  avatar?: string; // ircv3
-  color?: string; // ircv3
-  modes: string[];
-  maxMode: number;
-  channels: string[];
+  /**
+   * ircv3
+   */
+  avatar?: string;
+  /**
+   * ircv3
+   */
+  color?: string;
+  /**
+   * Global flags - like Away
+   */
+  flags: string[];
+  channels: UserChannel[];
+}
+
+export interface UserChannel {
+  name: string;
+  flags: string[]; // yqoahv
+  maxPermission: number; // max perms based on flags
 }
 
 export interface UserMode {
   symbol: string;
-  mode: string;
-}
-
-export interface Nick {
-  modes: string[];
-  nick: string;
-  ident: string;
-  hostname: string;
+  flag: string;
 }
 
 export interface ChannelMode {
@@ -94,5 +100,12 @@ export interface ChannelMode {
   B: string[];
   C: string[];
   D: string[];
-  U?: string[];
+  U?: string[]; // user flags
+}
+
+export interface Nick {
+  nick: string;
+  ident: string;
+  hostname: string;
+  flags: string[];
 }

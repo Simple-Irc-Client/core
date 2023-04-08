@@ -1,4 +1,4 @@
-import { defaultIRCPort } from '../config/config';
+import { defaultIRCPort, defaultMaxPermission } from '../config/config';
 import { type Server } from '../models/servers';
 import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '../types';
 
@@ -74,12 +74,12 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
  * @returns
  */
 export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
-  const modes: string[] = [];
+  const flags: string[] = [];
   let nick = fullNick.substring(fullNick.startsWith(':') ? 1 : 0, fullNick.lastIndexOf('!') !== -1 ? fullNick.lastIndexOf('!') : fullNick.length);
 
   for (const userMode of userModes) {
     if (nick.startsWith(userMode.symbol)) {
-      modes.push(userMode.mode);
+      flags.push(userMode.flag);
       nick = nick.substring(1);
     }
   }
@@ -91,37 +91,37 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
     hostname = fullNick.substring(fullNick.lastIndexOf('@') + 1);
   }
 
-  return { modes, nick, ident, hostname };
+  return { nick, ident, hostname, flags };
 };
 
 /**
- * That func is returning maximum int number based on user mode
+ * That func is returning maximum int number based on user flags
  * Based on that int number we'll be sorting users and user with higher mode (int) will be first on users list
- * @param userModes
+ * @param flags
  * @param serverModes
  * @returns
  */
-export const createMaxMode = (userModes: string[], serverModes: UserMode[]): number => {
-  let maxMode = -1;
-  userModes.forEach((userMode: string) => {
-    const modeIndex: number = serverModes.findIndex((mode: UserMode) => mode.mode === userMode);
-    let newMaxMode = -1;
+export const calculateMaxPermission = (flags: string[], serverModes: UserMode[]): number => {
+  let maxPermission = defaultMaxPermission;
+  flags.forEach((flag: string) => {
+    const modeIndex: number = serverModes.findIndex((mode: UserMode) => mode.flag === flag);
+    let permission = defaultMaxPermission;
     if (modeIndex !== -1) {
-      newMaxMode = 256 - modeIndex;
+      permission = 256 - modeIndex;
     }
-    if (newMaxMode > maxMode) {
-      maxMode = newMaxMode;
+    if (permission > maxPermission) {
+      maxPermission = permission;
     }
   });
-  return maxMode;
+  return maxPermission;
 };
 
 /**
  * That function parse line modes from IRC server "(yqaohv)!~&@%+" and returns it as array:
  * [
- *   ["mode": "q", symbol: "~"],
- *   ["mode": "a", symbol: "&"],
- *   ["mode": "o", symbol: "@"],
+ *   ["flag": "q", symbol: "~"],
+ *   ["flag": "a", symbol: "&"],
+ *   ["flag": "o", symbol: "@"],
  * ]
  * @param userPrefixes
  * @returns
@@ -142,7 +142,7 @@ export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => 
     for (let i = 0; i < modes.length; i++) {
       if (modes?.[i] !== undefined && symbols?.[i] !== undefined) {
         result.push({
-          mode: modes[i] ?? '',
+          flag: modes[i] ?? '',
           symbol: symbols[i] ?? '',
         });
       }
@@ -216,7 +216,7 @@ export const channelModeType = (flag: string, channelModes: ChannelMode, userMod
   if (channelModes.D.includes(flag)) {
     return 'D';
   }
-  if (userModes.find((item) => item.mode === flag) !== undefined) {
+  if (userModes.find((item) => item.flag === flag) !== undefined) {
     return 'U';
   }
 

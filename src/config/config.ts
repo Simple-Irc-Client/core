@@ -11,3 +11,5 @@ export const defaultIRCPort = 6667;
 export const maxMessages = 300;
 
 export const defaultChannelTypes = ['#', '&'];
+
+export const defaultMaxPermission = -1;

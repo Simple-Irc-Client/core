@@ -14,12 +14,12 @@ import { ChannelCategory } from '../../types';
 
 describe('kernel tests', () => {
   const defaultUserModes = [
-    { symbol: '!', mode: 'y' }, // LibraIRC
-    { symbol: '~', mode: 'q' },
-    { symbol: '&', mode: 'a' },
-    { symbol: '@', mode: 'o' },
-    { symbol: '%', mode: 'h' },
-    { symbol: '+', mode: 'v' },
+    { symbol: '!', flag: 'y' }, // LibraIRC
+    { symbol: '~', flag: 'q' },
+    { symbol: '&', flag: 'a' },
+    { symbol: '@', flag: 'o' },
+    { symbol: '%', flag: 'h' },
+    { symbol: '+', flag: 'v' },
   ];
 
   afterEach(() => {
@@ -854,11 +854,11 @@ describe('kernel tests', () => {
     new Kernel().handle({ type: 'raw', line });
 
     expect(mockSetUserModes).toHaveBeenNthCalledWith(1, [
-      { mode: 'q', symbol: '~' },
-      { mode: 'a', symbol: '&' },
-      { mode: 'o', symbol: '@' },
-      { mode: 'h', symbol: '%' },
-      { mode: 'v', symbol: '+' },
+      { flag: 'q', symbol: '~' },
+      { flag: 'a', symbol: '&' },
+      { flag: 'o', symbol: '@' },
+      { flag: 'h', symbol: '%' },
+      { flag: 'v', symbol: '+' },
     ]);
     expect(mockSetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetChannelModes).toHaveBeenCalledTimes(0);
@@ -1072,35 +1072,31 @@ describe('kernel tests', () => {
     expect(mockGetHasUser).toHaveBeenCalledTimes(4);
     expect(mockSetAddUser).toHaveBeenCalledTimes(4);
     expect(mockSetAddUser).toHaveBeenNthCalledWith(1, {
-      channels: ['#Religie'],
+      channels: [{ name: '#Religie', flags: [], maxPermission: -1 }],
       hostname: 'vhost:kohana.aleksia',
       ident: '~aleksa7',
-      maxMode: -1,
-      modes: [],
+      flags: [],
       nick: 'aleksa7',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(2, {
-      channels: ['#Religie'],
+      channels: [{ name: '#Religie', flags: ['v'], maxPermission: 251 }],
       hostname: '397FF66D:D8E4ABEE:5838DA6D:IP',
       ident: '~user',
-      maxMode: 251,
-      modes: ['v'],
+      flags: [],
       nick: 'Alisha',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
-      channels: ['#Religie'],
+      channels: [{ name: '#Religie', flags: ['v'], maxPermission: 251 }],
       hostname: 'AB43659:6EA4AE53:B58B785A:IP',
       ident: '~ProrokCod',
-      maxMode: 251,
-      modes: ['v'],
+      flags: [],
       nick: 'ProrokCodzienny',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
-      channels: ['#Religie'],
+      channels: [{ name: '#Religie', flags: ['a', 'o'], maxPermission: 254 }],
       hostname: 'bot:kanalowy.pomocnik',
       ident: 'pomocny',
-      maxMode: 254,
-      modes: ['a', 'o'],
+      flags: [],
       nick: 'Pomocnik',
     });
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1142,43 +1138,38 @@ describe('kernel tests', () => {
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(5);
     expect(mockSetAddUser).toHaveBeenNthCalledWith(1, {
-      channels: ['#chat'],
+      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
       hostname: 'ircbot.botop.librairc.net',
       ident: 'ircbot',
-      maxMode: -1,
-      modes: [],
+      flags: [],
       nick: 'ircbot',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(2, {
-      channels: ['#chat'],
+      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
       hostname: 'LibraIRC-ug4.vta.mvnbg3.IP',
       ident: 'Freak',
-      maxMode: -1,
-      modes: [],
+      flags: [],
       nick: 'Freak',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
-      channels: ['#chat'],
+      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
       hostname: 'Watchdog.botop.librairc.net',
       ident: 'WatchDog',
-      maxMode: -1,
-      modes: [],
+      flags: [],
       nick: 'WatchDog',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
-      channels: ['#chat'],
+      channels: [{ name: '#chat', flags: ['y', 'q', 'o'], maxPermission: 256 }],
       hostname: 'iBan.botop.librairc.net',
       ident: 'iBan',
-      maxMode: 256,
-      modes: ['y', 'q', 'o'],
+      flags: [],
       nick: 'iBan',
     });
     expect(mockSetAddUser).toHaveBeenNthCalledWith(5, {
-      channels: ['#chat'],
+      channels: [{ name: '#chat', flags: ['y'], maxPermission: 256 }],
       hostname: 'iBot.botop.librairc.net',
       ident: 'iBot',
-      maxMode: 256,
-      modes: ['y'],
+      flags: [],
       nick: 'iBot',
     });
 

@@ -24,11 +24,11 @@ import {
 } from '../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
-import { channelModeType, createMaxMode, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
+import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
-import { defaultChannelTypes } from '../config/config';
+import { defaultChannelTypes, defaultMaxPermission } from '../config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../store/channelList';
 
@@ -284,6 +284,8 @@ export class Kernel {
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
 
+    // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
+
     // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
 
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
@@ -424,9 +426,8 @@ export class Kernel {
         nick,
         ident,
         hostname,
-        modes: [],
-        maxMode: 0,
-        channels: [channel],
+        flags: [],
+        channels: [{ name: channel, flags: [], maxPermission: defaultMaxPermission }],
       });
     }
   };
@@ -647,6 +648,7 @@ export class Kernel {
           case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
             // TODO case yqaohv
             message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
+            // TODO add flag to user?
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
@@ -1205,8 +1207,8 @@ export class Kernel {
         user = user.substring(1);
       }
 
-      const serverUserPrefixes = getUserModes();
-      const { modes, nick, ident, hostname } = parseNick(user, serverUserPrefixes);
+      const serverPrefixes = getUserModes();
+      const { flags, nick, ident, hostname } = parseNick(user, serverPrefixes);
 
       if (getHasUser(nick)) {
         setJoinUser(nick, channel);
@@ -1215,9 +1217,14 @@ export class Kernel {
           nick,
           ident,
           hostname,
-          modes,
-          maxMode: createMaxMode(modes, serverUserPrefixes),
-          channels: [channel],
+          flags: [],
+          channels: [
+            {
+              name: channel,
+              flags,
+              maxPermission: calculateMaxPermission(flags, serverPrefixes),
+            },
+          ],
         });
       }
     }

@@ -35,7 +35,7 @@ export const useUsersStore = create<UsersStore>()(
         users: state.users
           .map((user: User) => {
             if (user.nick === nick) {
-              user.channels = user.channels.filter((channel) => channel !== channelName);
+              user.channels = user.channels.filter((channel) => channel.name !== channelName);
             }
             return user;
           })
@@ -67,7 +67,7 @@ export const useUsersStore = create<UsersStore>()(
       set((state) => ({
         users: state.users.map((user: User) => {
           if (user.nick === nick) {
-            user.channels.push(channel);
+            user.channels.push({ name: channel, flags: [], maxPermission: -1 });
           }
           return user;
         }),
@@ -75,10 +75,10 @@ export const useUsersStore = create<UsersStore>()(
     },
     getUsersFromChannelSortedByMode: (channelName: string): User[] => {
       return get()
-        .users.filter((user: User) => user.channels.includes(channelName))
+        .users.filter((user: User) => user.channels.map((channel) => channel.name).includes(channelName))
         .sort((a: User, b: User) => {
-          if (a.maxMode !== b.maxMode) {
-            if (a.maxMode < b.maxMode) {
+          if (a.channels.find((channel) => channel.name === channelName)?.maxPermission !== b.channels.find((channel) => channel.name === channelName)?.maxPermission) {
+            if ((a.channels.find((channel) => channel.name === channelName)?.maxPermission ?? -1) < (b.channels.find((channel) => channel.name === channelName)?.maxPermission ?? -1)) {
               return 1;
             } else {
               return -1;
@@ -96,7 +96,7 @@ export const useUsersStore = create<UsersStore>()(
     },
     getUsersFromChannelSortedByAZ: (channelName: string): User[] => {
       return get()
-        .users.filter((user: User) => user.channels.includes(channelName))
+        .users.filter((user: User) => user.channels.map((channel) => channel.name).includes(channelName))
         .sort((a: User, b: User) => {
           const A = a.nick.toLowerCase();
           const B = b.nick.toLowerCase();
@@ -130,7 +130,7 @@ export const setAddUser = (newUser: User): void => {
   if (getHasUser(newUser.nick)) {
     const channel = newUser.channels.shift();
     if (channel !== undefined) {
-      setJoinUser(newUser.nick, channel);
+      setJoinUser(newUser.nick, channel.name);
     }
   } else {
     useUsersStore.getState().setAddUser(newUser);
@@ -138,7 +138,7 @@ export const setAddUser = (newUser: User): void => {
 
   const currentChannelName = getCurrentChannelName();
 
-  if (newUser.channels.includes(currentChannelName)) {
+  if (newUser.channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -164,13 +164,13 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
   const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {
-    setAddMessage({ ...message, target: channel });
-    clearTyping(channel, nick);
+    setAddMessage({ ...message, target: channel.name });
+    clearTyping(channel.name, nick);
   }
 
   useUsersStore.getState().setQuitUser(nick);
 
-  if (channels.includes(currentChannelName)) {
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -181,12 +181,12 @@ export const setRenameUser = (from: string, to: string): void => {
   const channels = useUsersStore.getState().getUser(to)?.channels ?? [];
 
   for (const channel of channels) {
-    clearTyping(channel, from);
+    clearTyping(channel.name, from);
   }
 
   const currentChannelName = getCurrentChannelName();
 
-  if (channels.includes(currentChannelName)) {
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -196,7 +196,12 @@ export const getUser = (nick: string): User | undefined => {
 };
 
 export const getUserChannels = (nick: string): string[] => {
-  return useUsersStore.getState().getUser(nick)?.channels ?? [];
+  return (
+    useUsersStore
+      .getState()
+      .getUser(nick)
+      ?.channels.map((channel) => channel.name) ?? []
+  );
 };
 
 export const getHasUser = (nick: string): boolean => {
@@ -225,7 +230,7 @@ export const setUserAvatar = (nick: string, avatar: string): void => {
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
 
-  if (channels.includes(currentChannelName)) {
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -236,7 +241,7 @@ export const setUserColor = (nick: string, color: string): void => {
   const channels = useUsersStore.getState().getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
 
-  if (channels.includes(currentChannelName)) {
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
