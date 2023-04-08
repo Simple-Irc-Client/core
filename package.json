@@ -20,6 +20,7 @@
     "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.14",
     "@mui/x-data-grid": "^5.17.26",
+    "@sentry/react": "^7.47.0",
     "date-fns": "^2.29.3",
     "i18next": "^22.4.13",
     "react": "^18.2.0",
