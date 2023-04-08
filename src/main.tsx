@@ -5,7 +5,7 @@ import './index.css';
 import * as Sentry from '@sentry/react';
 
 Sentry.init({
-  dsn: 'https://d278b7ea51bb4875a83db57b6771a050@o281310.ingest.sentry.io/4504975631712256',
+  dsn: import.meta.VITE_SENTRY_DSN,
   integrations: [new Sentry.BrowserTracing(), new Sentry.Replay()],
   // Performance Monitoring
   tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
