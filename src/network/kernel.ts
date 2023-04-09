@@ -22,7 +22,7 @@ import {
   setSupportedOption,
   setUserModes,
 } from '../store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUserAvatar, setUserColor } from '../store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
@@ -516,7 +516,10 @@ export class Kernel {
   // @draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian
   // @account=Merovingian;msgid=Mo53vHEaXcEELccHhGfuVA;time=2023-03-27T23:52:26.726Z :Merovingian!~pirc@cloak:Merovingian MODE #sic +l 99
   private readonly onMode = (): void => {
-    const { nick } = parseNick(this.sender, getUserModes());
+    const serverChannelModes = getChannelModes();
+    const serverUserModes = getUserModes();
+
+    const { nick } = parseNick(this.sender, serverUserModes);
 
     const currentChannelName = getCurrentChannelName();
 
@@ -553,7 +556,7 @@ export class Kernel {
         }
 
         const mode = `${plusMinus}${flag}`;
-        const type = channelModeType(flag, getChannelModes(), getUserModes());
+        const type = channelModeType(flag, serverChannelModes, serverUserModes);
 
         let message = '';
         const translate = `kernel.mode.channel.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
@@ -580,9 +583,11 @@ export class Kernel {
           case '-U': {
             // user flag
             const user = this.line?.[flagParameterIndex];
-            flagParameterIndex++;
-            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.user', { user, setBy: nick, mode }) });
-            // TODO add flag to user
+            if (user !== undefined) {
+              flagParameterIndex++;
+              message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.user', { user, setBy: nick, mode }) });
+              setUpdateUserFlag(user, channel, plusMinus, flag, serverUserModes);
+            }
             break;
           }
           default:

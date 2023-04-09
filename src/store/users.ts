@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import { type Message, type User } from '../types';
+import { type UserMode, type Message, type User } from '../types';
 import { devtools, persist } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
 import { clearTyping, setAddMessage } from './channels';
+import { calculateMaxPermission } from '../network/helpers';
 
 interface UsersStore {
   users: User[];
@@ -15,6 +16,7 @@ interface UsersStore {
   setJoinUser: (nick: string, channelName: string) => void;
   setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
+  setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
 }
 
 export const useUsersStore = create<UsersStore>()(
@@ -80,6 +82,28 @@ export const useUsersStore = create<UsersStore>()(
             users: state.users.map((user: User) => {
               if (user.nick === nick) {
                 user.color = color;
+              }
+              return user;
+            }),
+          }));
+        },
+        setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
+          set((state) => ({
+            users: state.users.map((user: User) => {
+              if (user.nick === nick) {
+                user.channels = user.channels.map((channel) => {
+                  if (channel.name === channelName) {
+                    if (plusMinus === '+') {
+                      channel.flags.push(newFlag);
+                      channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
+                    }
+                    if (plusMinus === '-') {
+                      channel.flags = channel.flags.filter((flag) => flag !== newFlag);
+                      channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
+                    }
+                  }
+                  return channel;
+                });
               }
               return user;
             }),
@@ -230,6 +254,16 @@ export const setUserColor = (nick: string, color: string): void => {
   const currentChannelName = getCurrentChannelName();
 
   if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
+};
+
+export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
+  useUsersStore.getState().setUpdateUserFlag(nick, channelName, plusMinus, newFlag, serverModes);
+
+  const currentChannelName = getCurrentChannelName();
+
+  if (channelName === currentChannelName) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };

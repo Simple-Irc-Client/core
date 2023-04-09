@@ -362,6 +362,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
 
     const line = ':mero MODE mero :+xz';
 
@@ -369,10 +370,35 @@ describe('kernel tests', () => {
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'mero ma teraz flage +x' }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel1', message: 'mero ma teraz flage +z' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
+  });
+
+  it('test raw MODE channel user #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+    const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+
+    const line = '@draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian';
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(2);
+    expect(mockSetUpdateUserFlag).toHaveBeenNthCalledWith(1, 'Merovingian', '#sic', '+', 'q', defaultUserModes);
+    expect(mockSetUpdateUserFlag).toHaveBeenNthCalledWith(2, 'Merovingian', '#sic', '+', 'o', defaultUserModes);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian ma teraz flage +q (ustawił ChanServ)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#sic', message: 'Merovingian ma teraz flage +o (ustawił ChanServ)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
