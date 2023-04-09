@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { type Server } from '../models/servers';
 import { devtools } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '../types';
-import { setClearUnreadMessages, useChannelsStore } from './channels';
+import { getMessages, getTopic, getTyping, setClearUnreadMessages } from './channels';
 import { useCurrentStore } from './current';
-import { useUsersStore } from './users';
+import { getUsersFromChannelSortedByMode } from './users';
 import { defaultChannelTypes } from '../config/config';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
@@ -164,10 +164,10 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
 
   setClearUnreadMessages(channelName);
 
-  useCurrentStore.getState().setUpdateTopic(useChannelsStore.getState().getTopic(channelName));
-  useCurrentStore.getState().setUpdateMessages(useChannelsStore.getState().getMessages(channelName));
-  useCurrentStore.getState().setUpdateUsers(useUsersStore.getState().getUsersFromChannelSortedByMode(channelName));
-  useCurrentStore.getState().setUpdateTyping(useChannelsStore.getState().getTyping(channelName));
+  useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
+  useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
+  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
+  useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
 };
 
 export const setTheme = (newTheme: 'modern' | 'classic'): void => {
