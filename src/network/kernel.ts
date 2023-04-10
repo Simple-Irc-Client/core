@@ -261,6 +261,9 @@ export class Kernel {
       case '396':
         this.onRaw396();
         break;
+      case '432':
+        this.onRaw432();
+        break;
       case '442':
         this.onRaw442();
         break;
@@ -286,9 +289,6 @@ export class Kernel {
     }
 
     // TODO unknown raw:
-    // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
-    // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
-
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
 
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
@@ -1304,6 +1304,33 @@ export class Kernel {
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
+    });
+  };
+
+  // :insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
+  // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
+  private readonly onRaw432 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const asterix = this.line.shift();
+    const nick = this.line.shift();
+
+    if (nick === undefined) {
+      throw this.assert(this.onRaw432, 'nick');
+    }
+
+    let message = this.line.join(' ');
+    if (message.startsWith(':')) {
+      message = message.substring(1);
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick} :${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
     });
   };
 

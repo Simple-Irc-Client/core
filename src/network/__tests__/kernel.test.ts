@@ -1262,6 +1262,36 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 432 #1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+    const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'ioiijhjkkljkljlkj :Erroneous Nickname' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw 432 #2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+    const line = `:insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user`;
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Merovingian :Nickname is unavailable: Being held for registered user' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw 442', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
