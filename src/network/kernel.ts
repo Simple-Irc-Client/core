@@ -261,6 +261,9 @@ export class Kernel {
       case '396':
         this.onRaw396();
         break;
+      case '442':
+        this.onRaw442();
+        break;
       case '761':
         this.onRaw761();
         break;
@@ -279,8 +282,6 @@ export class Kernel {
     // TODO unknown raw:
     // insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
-
-    // :chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
 
@@ -1298,6 +1299,36 @@ export class Kernel {
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel
+  private readonly onRaw442 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      throw this.assert(this.onRaw442, 'channel');
+    }
+
+    let message = this.line.join(' ');
+    if (message.startsWith(':')) {
+      message = message.substring(1);
+    }
+
+    if (message === "You're not on that channel") {
+      message = i18next.t('kernel.442.youre-not-on-that-channel');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel} :${message}`,
+      target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,

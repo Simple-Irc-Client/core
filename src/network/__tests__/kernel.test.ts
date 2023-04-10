@@ -1262,6 +1262,21 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 442', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+    const line = `:chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel`;
+
+    new Kernel().handle({ type: 'raw', line });
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#kanjpa :Nie jesteś na tym kanale' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw 761', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});

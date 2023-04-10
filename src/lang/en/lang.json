@@ -50,5 +50,6 @@
     "kernel.mode.user.unknown": "{{user}} has now flag {{mode}}",
     "kernel.mode.channel.user": "{{user}} has now flag {{mode}} (set by {{setBy}})",
     "kernel.mode.channel.unknown": "{{setBy}} sets mode {{mode}}",
-    "kernel.mode.channel.unknown-params": "{{setBy}} sets mode {{mode}} {{param}}"
+    "kernel.mode.channel.unknown-params": "{{setBy}} sets mode {{mode}} {{param}}",
+    "kernel.442.youre-not-on-that-channel": "You're not on that channel"
 }
