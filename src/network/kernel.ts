@@ -228,6 +228,9 @@ export class Kernel {
       case '266':
         this.onRaw266();
         break;
+      case '318':
+        this.onRaw318();
+        break;
       case '321':
         this.onRaw321();
         break;
@@ -305,7 +308,6 @@ export class Kernel {
     // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
     // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
     // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
-    // :chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.
   };
 
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
@@ -1142,6 +1144,11 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+  };
+
+  // :chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.
+  private readonly onRaw318 = (): void => {
+    //
   };
 
   // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
