@@ -264,6 +264,9 @@ export class Kernel {
       case '442':
         this.onRaw442();
         break;
+      case '477':
+        this.onRaw477();
+        break;
       case '761':
         this.onRaw761();
         break;
@@ -284,8 +287,6 @@ export class Kernel {
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
-
-    // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
 
     // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
 
@@ -1323,6 +1324,36 @@ export class Kernel {
 
     if (message === "You're not on that channel") {
       message = i18next.t('kernel.442.youre-not-on-that-channel');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel} :${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
+  private readonly onRaw477 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      throw this.assert(this.onRaw477, 'channel');
+    }
+
+    let message = this.line.join(' ');
+    if (message.startsWith(':')) {
+      message = message.substring(1);
+    }
+
+    if (message === 'You need a registered nick to join that channel.') {
+      message = i18next.t('kernel.477.you-need-a-registered-nick-to-join-that-channel');
     }
 
     setAddMessage({
