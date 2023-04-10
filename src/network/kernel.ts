@@ -1332,6 +1332,10 @@ export class Kernel {
       category: MessageCategory.error,
       color: MessageColor.error,
     });
+
+    if (!getIsCreatorCompleted()) {
+      // TODO handle error in creator
+    }
   };
 
   // :chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel
