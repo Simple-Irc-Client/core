@@ -264,6 +264,9 @@ export class Kernel {
       case '442':
         this.onRaw442();
         break;
+      case '474':
+        this.onRaw474();
+        break;
       case '477':
         this.onRaw477();
         break;
@@ -287,8 +290,6 @@ export class Kernel {
     // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
 
     // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
-
-    // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
 
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
@@ -1354,6 +1355,36 @@ export class Kernel {
 
     if (message === 'You need a registered nick to join that channel.') {
       message = i18next.t('kernel.477.you-need-a-registered-nick-to-join-that-channel');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel} :${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
+  private readonly onRaw474 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      throw this.assert(this.onRaw474, 'channel');
+    }
+
+    let message = this.line.join(' ');
+    if (message.startsWith(':')) {
+      message = message.substring(1);
+    }
+
+    if (message === 'Cannot join channel (+b)') {
+      message = i18next.t('kernel.474.cannot-join-channel-b');
     }
 
     setAddMessage({

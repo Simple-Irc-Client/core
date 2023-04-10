@@ -52,5 +52,6 @@
     "kernel.mode.channel.unknown": "{{setBy}} ustawia flage {{mode}}",
     "kernel.mode.channel.unknown-params": "{{setBy}} ustawia flage {{mode}} {{param}}",
     "kernel.442.youre-not-on-that-channel": "Nie jesteś na tym kanale",
+    "kernel.474.cannot-join-channel-b": "Nie możesz dołączyć do kanału (Masz bana)",
     "kernel.477.you-need-a-registered-nick-to-join-that-channel": "Wymagany jest zarejestrowany nick aby dołączyć do tego kanału"
 }
