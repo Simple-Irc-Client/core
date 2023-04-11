@@ -40,6 +40,213 @@ export interface IrcEvent {
 const STATUS_CHANNEL = 'Status';
 const DEBUG_CHANNEL = 'Debug';
 
+// https://www.rfc-editor.org/rfc/rfc2812
+
+const RPL_WELCOME = '001';
+const RPL_YOURHOST = '002';
+const RPL_CREATED = '003';
+const RPL_MYINFO = '004';
+const RPL_ISUPPORT = '005';
+const RPL_UMODEIS = '221';
+const RPL_UMODES = '221';
+const RPL_TRYAGAIN = '263';
+const RPL_NONE = '300';
+const RPL_AWAY = '301';
+const RPL_USERHOST = '302';
+const RPL_ISON = '303';
+const RPL_TEXT = '304';
+const RPL_UNAWAY = '305';
+const RPL_NOWAWAY = '306';
+const RPL_WHOISREGNICK = '307';
+const RPL_RULESSTART = '308';
+const RPL_ENDOFRULES = '309';
+const RPL_WHOISHELPOP = '310';
+const RPL_WHOISUSER = '311';
+const RPL_WHOISSERVER = '312';
+const RPL_WHOISOPERATOR = '313';
+const RPL_WHOWASUSER = '314';
+const RPL_ENDOFWHO = '315';
+const reserved = '316';
+const RPL_WHOISIDLE = '317';
+const RPL_ENDOFWHOIS = '318';
+const RPL_WHOISCHANNELS = '319';
+const RPL_WHOISSPECIAL = '320';
+const RPL_LISTSTART = '321';
+const RPL_LIST = '322';
+const RPL_ENDOFLIST = '323';
+const RPL_CHANNELMODEIS = '324';
+const RPL_CHANNEL_URL = '328';
+const RPL_CREATIONTIME = '329';
+const RPL_WHOISLOGGEDIN = '330';
+const RPL_NOTOPIC = '331';
+const RPL_TOPIC = '332';
+const RPL_TOPICWHOTIME = '333';
+const RPL_LISTSYNTAX = '334';
+const RPL_WHOISBOT = '335';
+// const RPL_INVITELIST = '336';
+// const RPL_ENDOFINVITELIST = '337';
+const RPL_USERIP = '340';
+const RPL_INVITING = '341';
+const RPL_SUMMONING = '342';
+const RPL_WHOISCOUNTRY = '344';
+const RPL_INVITELIST = '346';
+const RPL_ENDOFINVITELIST = '347';
+const RPL_INVITELISTEND = '347';
+const RPL_EXCEPTLIST = '348';
+const RPL_ENDOFEXCEPTLIST = '349';
+const RPL_VERSION = '351';
+const RPL_WHOREPLY = '352';
+const RPL_NAMREPLY = '353';
+const RPL_WHOSPCRPL = '354';
+const RPL_KILLDONE = '361';
+const RPL_CLOSING = '362';
+const RPL_CLOSEEND = '363';
+const RPL_LINKS = '364';
+const RPL_ENDOFLINKS = '365';
+const RPL_ENDOFNAMES = '366';
+const RPL_BANLIST = '367';
+const RPL_ENDOFBANLIST = '368';
+const RPL_ENDOFWHOWAS = '369';
+const RPL_INFO = '371';
+const RPL_MOTD = '372';
+const RPL_INFOSTART = '373';
+const RPL_ENDOFINFO = '374';
+const RPL_MOTDSTART = '375';
+const RPL_ENDOFMOTD = '376';
+const RPL_WHOISHOST = '378';
+const RPL_WHOISMODES = '379';
+const RPL_YOUREOPER = '381';
+const RPL_REHASHING = '382';
+const RPL_YOURESERVICE = '383';
+const RPL_MYPORTIS = '384';
+const RPL_NOTOPERANYMORE = '385';
+const RPL_QLIST = '386';
+const RPL_ENDOFQLIST = '387';
+const RPL_ALIST = '388';
+const RPL_ENDOFALIST = '389';
+const RPL_TIME = '391';
+const RPL_USERSSTART = '392';
+const RPL_USERS = '393';
+const RPL_ENDOFUSERS = '394';
+const RPL_HOSTHIDDEN = '396';
+const ERR_UNKNOWNERROR = '400';
+const ERR_NOSUCHNICK = '401';
+const ERR_NOSUCHSERVER = '402';
+const ERR_NOSUCHCHANNEL = '403';
+const ERR_CANNOTSENDTOCHAN = '404';
+const ERR_TOOMANYCHANNELS = '405';
+const ERR_WASNOSUCHNICK = '406';
+const ERR_TOOMANYTARGETS = '407';
+const ERR_NOSUCHSERVICE = '408';
+const ERR_NOORIGIN = '409';
+const ERR_INVALIDCAPCMD = '410';
+const ERR_ERR_NOTEXTTOSEND = '412';
+const ERR_NOTOPLEVEL = '413';
+const ERR_WILDTOPLEVEL = '414';
+const ERR_TOOMANYMATCHES = '416';
+const ERR_UNKNOWNCOMMAND = '421';
+const ERR_NOMOTD = '422';
+const ERR_NOADMININFO = '423';
+const ERR_FILEERROR = '424';
+const ERR_NOOPERMOTD = '425';
+const ERR_TOOMANYAWAY = '429';
+const ERR_NONICKNAMEGIVEN = '431';
+const ERR_ERRONEUSNICKNAME = '432';
+const ERR_NICKNAMEINUSE = '433';
+const ERR_NORULES = '434';
+const ERR_SERVICECONFUSED = '435';
+const ERR_NICKCOLLISION = '436';
+const ERR_BANNICKCHANGE = '437';
+const ERR_UNAVAILRESOURCE = '437';
+const ERR_NCHANGETOOFAST = '438';
+const ERR_TARGETTOOFAST = '439';
+const ERR_SERVICESDOWN = '440';
+const ERR_USERNOTINCHANNEL = '441';
+const ERR_NOTONCHANNEL = '442';
+const ERR_USERONCHANNEL = '443';
+const ERR_NOLOGIN = '444';
+const ERR_SUMMONDISABLED = '445';
+const ERR_USERSDISABLED = '446';
+const ERR_NONICKCHANGE = '447';
+const ERR_FORBIDDENCHANNEL = '448';
+const ERR_NOTREGISTERED = '451';
+const ERR_HOSTILENAME = '455';
+const ERR_NOHIDING = '459';
+const ERR_NOTFORHALFOPS = '460';
+const ERR_NEEDMOREPARAMS = '461';
+const ERR_ALREADYREGISTRED = '462';
+const ERR_NOPERMFORHOST = '463';
+const ERR_PASSWDMISMATCH = '464';
+const ERR_YOUREBANNEDCREEP = '465';
+const ERR_YOUWILLBEBANNED = '466';
+const ERR_KEYSET = '467';
+const ERR_ONLYSERVERSCANCHANGE = '468';
+const ERR_LINKSET = '469';
+const ERR_LINKCHANNEL = '470';
+const ERR_CHANNELISFULL = '471';
+const ERR_UNKNOWNMODE = '472';
+const ERR_INVITEONLYCHAN = '473';
+const ERR_BANNEDFROMCHAN = '474';
+const ERR_BADCHANNELKEY = '475';
+const ERR_NEEDREGGEDNICK = '477';
+const ERR_BANLISTFULL = '478';
+const ERR_LINKFAIL = '479';
+const ERR_CANNOTKNOCK = '480';
+const ERR_NOPRIVILEGES = '481';
+const ERR_CHANOPRIVSNEEDED = '482';
+const ERR_NONONREG = '486';
+const ERR_NOTFORUSERS = '487';
+const ERR_SECUREONLYCHAN = '489';
+const ERR_CHANOWNPRIVNEEDED = '499';
+const ERR_TOOMANYJOINS = '500';
+const ERR_UMODEUNKNOWNFLAG = '501';
+const ERR_USERSDONTMATCH = '502';
+const ERR_SILELISTFULL = '511';
+const ERR_TOOMANYWATCH = '512';
+const ERR_NEEDPONG = '513';
+const ERR_TOOMANYDCC = '514';
+const ERR_DISABLED = '517';
+const ERR_NOINVITE = '518';
+const ERR_ADMONLY = '519';
+const ERR_OPERONLY = '520';
+const ERR_LISTSYNTAX = '521';
+const ERR_CANTSENDTOUSER = '531';
+const RPL_REAWAY = '597';
+const RPL_GONEAWAY = '598';
+const RPL_NOTAWAY = '599';
+const RPL_LOGON = '600';
+const RPL_LOGOFF = '601';
+const RPL_WATCHOFF = '602';
+const RPL_WATCHSTAT = '603';
+const RPL_NOWON = '604';
+const RPL_NOWOFF = '605';
+const RPL_WATCHLIST = '606';
+const RPL_ENDOFWATCHLIST = '607';
+const RPL_CLEARWATCH = '608';
+const RPL_NOWISAWAY = '609';
+const RPL_WHOISSECURE = '671';
+const RPL_QUIETLIST = '728';
+const RPL_ENDOFQUIETLIST = '729';
+const RPL_MONONLINE = '730';
+const RPL_MONOFFLINE = '731';
+const RPL_MONLIST = '732';
+const RPL_ENDOFMONLIST = '733';
+const ERR_MONLISTFULL = '734';
+const ERR_MLOCKRESTRICTED = '742';
+const RPL_KEYVALUE = '761';
+const RPL_METADATAEND = '762';
+const RPL_METADATASUBOK = '770';
+const RPL_LOGGEDIN = '900';
+const RPL_LOGGEDOUT = '901';
+const ERR_NICKLOCKED = '902';
+const RPL_SASLSUCCESS = '903';
+const ERR_SASLFAIL = '904';
+const ERR_SASLTOOLONG = '905';
+const ERR_SASLABORTED = '906';
+const ERR_SASLALREADY = '907';
+const ERR_CANNOTDOCOMMAND = '972';
+const ERR_CANNOTCHANGECHANMODE = '974';
+
 export class Kernel {
   private tags: Record<string, string>;
   private sender: string;
@@ -193,19 +400,19 @@ export class Kernel {
         this.onTopic();
         break;
 
-      case '001':
+      case RPL_WELCOME:
         this.onRaw001();
         break;
-      case '002':
+      case RPL_YOURHOST:
         this.onRaw002();
         break;
-      case '003':
+      case RPL_CREATED:
         this.onRaw003();
         break;
-      case '004':
+      case RPL_MYINFO:
         this.onRaw004();
         break;
-      case '005':
+      case RPL_ISUPPORT:
         this.onRaw005();
         break;
       case '251':
@@ -229,58 +436,58 @@ export class Kernel {
       case '266':
         this.onRaw266();
         break;
-      case '318':
+      case RPL_ENDOFWHOIS:
         this.onRaw318();
         break;
-      case '321':
+      case RPL_LISTSTART:
         this.onRaw321();
         break;
-      case '322':
+      case RPL_LIST:
         this.onRaw322();
         break;
-      case '323':
+      case RPL_ENDOFLIST:
         this.onRaw323();
         break;
-      case '332':
+      case RPL_TOPIC:
         this.onRaw332();
         break;
-      case '333':
+      case RPL_TOPICWHOTIME:
         this.onRaw333();
         break;
-      case '353':
+      case RPL_NAMREPLY:
         this.onRaw353();
         break;
-      case '366':
+      case RPL_ENDOFNAMES:
         this.onRaw366();
         break;
-      case '372':
+      case RPL_MOTD:
         this.onRaw372();
         break;
-      case '375':
+      case RPL_MOTDSTART:
         this.onRaw375();
         break;
-      case '376':
+      case RPL_ENDOFMOTD:
         this.onRaw376();
         break;
-      case '396':
+      case RPL_HOSTHIDDEN:
         this.onRaw396();
         break;
-      case '432':
+      case ERR_ERRONEUSNICKNAME:
         this.onRaw432();
         break;
-      case '442':
+      case ERR_NOTONCHANNEL:
         this.onRaw442();
         break;
-      case '474':
+      case ERR_BANNEDFROMCHAN:
         this.onRaw474();
         break;
-      case '477':
+      case ERR_NEEDREGGEDNICK:
         this.onRaw477();
         break;
-      case '761':
+      case RPL_KEYVALUE:
         this.onRaw761();
         break;
-      case '762':
+      case RPL_METADATAEND:
         this.onRaw762();
         break;
       case '766':
