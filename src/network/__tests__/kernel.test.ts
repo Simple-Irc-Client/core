@@ -32,7 +32,7 @@ describe('kernel tests', () => {
     const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
-    new Kernel().handle({ type: 'connected' });
+    new Kernel({ type: 'connected' }).handle();
 
     expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(true);
@@ -46,7 +46,7 @@ describe('kernel tests', () => {
     const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
-    new Kernel().handle({ type: 'close' });
+    new Kernel({ type: 'close' }).handle();
 
     expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(false);
@@ -59,7 +59,7 @@ describe('kernel tests', () => {
 
     const line = '@account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -70,7 +70,7 @@ describe('kernel tests', () => {
 
     const line = '@account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -81,7 +81,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -95,7 +95,7 @@ describe('kernel tests', () => {
     const line =
       ':chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetSupportedOption).toBeCalledTimes(1);
     expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata');
@@ -112,7 +112,7 @@ describe('kernel tests', () => {
 
     const line = ':jowisz.pirc.pl CAP * LS :unrealircd.org/json-log';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetSupportedOption).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
@@ -128,7 +128,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetSupportedOption).toBeCalledTimes(0);
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
@@ -145,7 +145,7 @@ describe('kernel tests', () => {
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
     expect(mockSetCreatorProgress).toHaveBeenCalledTimes(0);
@@ -164,7 +164,7 @@ describe('kernel tests', () => {
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
     expect(mockSetCreatorProgress).toHaveBeenCalledTimes(1);
@@ -182,7 +182,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
@@ -202,7 +202,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -233,7 +233,7 @@ describe('kernel tests', () => {
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP JOIN :#chat';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -262,7 +262,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -283,7 +283,7 @@ describe('kernel tests', () => {
 
     const line = '@account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
@@ -305,7 +305,7 @@ describe('kernel tests', () => {
 
     const line = '@account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -328,7 +328,7 @@ describe('kernel tests', () => {
 
     const line = ':server KILL scc_test :Killed (Nickname collision)';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
@@ -346,7 +346,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
@@ -366,7 +366,7 @@ describe('kernel tests', () => {
 
     const line = ':mero MODE mero :+xz';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockIsChannel).toHaveBeenCalledTimes(1);
@@ -387,7 +387,7 @@ describe('kernel tests', () => {
 
     const line = '@draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -410,7 +410,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
 
@@ -436,7 +436,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :SIC-test NICK :Niezident36707';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -463,7 +463,7 @@ describe('kernel tests', () => {
 
     const line = '@draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -484,7 +484,7 @@ describe('kernel tests', () => {
     const line =
       '@draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -512,7 +512,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -540,7 +540,7 @@ describe('kernel tests', () => {
 
     const line = ':irc.librairc.net NOTICE SIC-test :*** You cannot list within the first 60 seconds of connecting. Please try again later.';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
@@ -565,7 +565,7 @@ describe('kernel tests', () => {
 
     const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
@@ -587,7 +587,7 @@ describe('kernel tests', () => {
 
     const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -612,7 +612,7 @@ describe('kernel tests', () => {
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -633,7 +633,7 @@ describe('kernel tests', () => {
 
     const line = 'PING :F549DB3';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -644,7 +644,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -662,7 +662,7 @@ describe('kernel tests', () => {
 
     const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -695,7 +695,7 @@ describe('kernel tests', () => {
 
     const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG SIC-test :test 1';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
@@ -723,7 +723,7 @@ describe('kernel tests', () => {
 
     const line = '@msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetQuitUser).toHaveBeenCalledTimes(1);
     expect(mockSetQuitUser).toHaveBeenCalledWith('mero', expect.objectContaining({ message: 'mero opuścił serwer (Quit: Leaving)' }));
@@ -740,7 +740,7 @@ describe('kernel tests', () => {
     const line =
       '@+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
@@ -758,7 +758,7 @@ describe('kernel tests', () => {
 
     const line = '@account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
@@ -776,7 +776,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockIrcSendList).toBeCalledTimes(1);
 
@@ -790,7 +790,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3' }));
@@ -802,7 +802,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This server was created Sun May 8 2022 at 13:49:18 UTC' }));
@@ -813,7 +813,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ';
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(
@@ -837,7 +837,7 @@ describe('kernel tests', () => {
     const line =
       ':netsplit.pirc.pl 005 SIC-test AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetChannelTypes).toHaveBeenNthCalledWith(1, ['#']);
 
@@ -877,7 +877,7 @@ describe('kernel tests', () => {
     const line =
       ':netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetUserModes).toHaveBeenNthCalledWith(1, [
       { flag: 'q', symbol: '~' },
@@ -907,7 +907,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'There are 158 users and 113 invisible on 10 servers' }));
@@ -919,7 +919,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 252 SIC-test 27 :operator(s) online';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '27 :operator(s) online' }));
@@ -931,7 +931,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 253 SIC-test -14 :unknown connection(s)';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '-14 :unknown connection(s)' }));
@@ -943,7 +943,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 254 SIC-test 185 :channels formed';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '185 :channels formed' }));
@@ -955,7 +955,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 255 SIC-test :I have 42 clients and 0 servers';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'I have 42 clients and 0 servers' }));
@@ -967,7 +967,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Current local users 42, max 62' }));
@@ -979,7 +979,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Current global users 271, max 1721' }));
@@ -991,7 +991,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -1003,7 +1003,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetChannelListClear).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1016,7 +1016,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl 322 dsfdsfdsfsdfdsfsdfaas #Base 1 :[+nt]';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('#Base', 1, '[+nt]');
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1030,7 +1030,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl 322 sic-test * 1 :';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('*', 1, '');
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1044,7 +1044,7 @@ describe('kernel tests', () => {
 
     const line = ':netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddChannelToList).toHaveBeenCalledWith('#+Kosciol+', 1, '[+nt]');
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1058,7 +1058,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetChannelListFinished).toHaveBeenNthCalledWith(1, true);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1072,7 +1072,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetTopic).toHaveBeenNthCalledWith(1, '#sic', 'Prace nad Simple Irc Client trwają');
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1086,7 +1086,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetTopicSetBy).toHaveBeenNthCalledWith(1, '#sic', 'Merovingian', 1552692216);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -1103,7 +1103,7 @@ describe('kernel tests', () => {
     const line =
       ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(4);
     expect(mockGetHasUser).toHaveBeenCalledTimes(4);
@@ -1149,7 +1149,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetHasUser).toHaveBeenCalledTimes(1);
@@ -1168,7 +1168,7 @@ describe('kernel tests', () => {
     const line =
       ':irc01-black.librairc.net 353 mero-test = #chat :ircbot!ircbot@ircbot.botop.librairc.net Freak!Freak@LibraIRC-ug4.vta.mvnbg3.IP WatchDog!WatchDog@Watchdog.botop.librairc.net !~@iBan!iBan@iBan.botop.librairc.net !iBot!iBot@iBot.botop.librairc.net';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(5);
     expect(mockGetHasUser).toHaveBeenCalledTimes(5);
@@ -1219,7 +1219,7 @@ describe('kernel tests', () => {
 
     const line = ':bzyk.pirc.pl 366 SIC-test #sic :End of /NAMES list.';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -1230,7 +1230,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '- 2/6/2022 11:27' }));
@@ -1242,7 +1242,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 375 SIC-test :- saturn.pirc.pl Message of the Day -';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '- saturn.pirc.pl Message of the Day -' }));
@@ -1254,7 +1254,7 @@ describe('kernel tests', () => {
 
     const line = ':saturn.pirc.pl 376 SIC-test :End of /MOTD command.';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'End of /MOTD command.' }));
@@ -1266,7 +1266,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'A.A.A.IP :is now your displayed host' }));
@@ -1280,7 +1280,7 @@ describe('kernel tests', () => {
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
@@ -1297,7 +1297,7 @@ describe('kernel tests', () => {
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
@@ -1314,7 +1314,7 @@ describe('kernel tests', () => {
 
     const line = `:insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
@@ -1330,7 +1330,7 @@ describe('kernel tests', () => {
 
     const line = `:chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
@@ -1345,7 +1345,7 @@ describe('kernel tests', () => {
 
     const line = `:saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
@@ -1360,7 +1360,7 @@ describe('kernel tests', () => {
 
     const line = `:insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.`;
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
@@ -1375,7 +1375,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl 761 SIC-test Merovingian Avatar * :https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Merovingian', 'https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
@@ -1388,7 +1388,7 @@ describe('kernel tests', () => {
 
     const line = ':chmurka.pirc.pl 762 SIC-test :end of metadata';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -1399,7 +1399,7 @@ describe('kernel tests', () => {
 
     const line = ':insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key';
 
-    new Kernel().handle({ type: 'raw', line });
+    new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);

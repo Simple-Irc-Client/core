@@ -46,15 +46,17 @@ export class Kernel {
   private command: string;
   private line: string[];
 
-  private eventLine: string;
+  private readonly event: IrcEvent;
+  private readonly eventLine: string;
 
-  constructor() {
+  constructor(event: IrcEvent) {
     this.tags = {};
     this.sender = '';
     this.command = '';
     this.line = [];
 
-    this.eventLine = '';
+    this.event = event;
+    this.eventLine = event?.line !== undefined ? event?.line.trim() : '';
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -62,8 +64,8 @@ export class Kernel {
     return new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
   };
 
-  handle(event: IrcEvent): void {
-    switch (event.type) {
+  handle(): void {
+    switch (this.event?.type) {
       case 'connect':
         this.handleConnect();
         break;
@@ -74,12 +76,12 @@ export class Kernel {
         this.handleDisconnected();
         break;
       case 'raw':
-        if (event?.line !== undefined) {
-          this.handleRaw(event.line);
+        if (this.event?.line !== undefined) {
+          this.handleRaw(this.event.line);
         }
         break;
       default:
-        console.log(`unhandled kernel event: ${event.type} ${event?.line ?? ''}`);
+        console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`);
     }
   }
 
@@ -122,7 +124,6 @@ export class Kernel {
     this.sender = sender;
     this.command = command;
     this.line = line;
-    this.eventLine = event?.trim();
 
     setAddMessage({
       id: uuidv4(),

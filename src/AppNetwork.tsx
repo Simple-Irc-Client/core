@@ -28,7 +28,7 @@ export const AppNetwork = (): JSX.Element => {
   const onIrcEvent = (data: IrcEvent): void => {
     // messages from server
     try {
-      new Kernel().handle(data);
+      new Kernel(data).handle();
     } catch (err) {
       console.warn(err);
     }
