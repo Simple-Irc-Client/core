@@ -436,6 +436,12 @@ export class Kernel {
       case '266':
         this.onRaw266();
         break;
+      case RPL_WHOISREGNICK:
+        this.onRaw307();
+        break;
+      case RPL_WHOISUSER:
+        this.onRaw311();
+        break;
       case RPL_ENDOFWHOIS:
         this.onRaw318();
         break;
@@ -508,8 +514,6 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
-    // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
-    // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
     // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
     // :chmurka.pirc.pl 301 sic-test Noop :gone
@@ -1351,6 +1355,40 @@ export class Kernel {
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
+  private readonly onRaw307 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const message = this.line.join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
+  private readonly onRaw311 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const message = this.line.join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
