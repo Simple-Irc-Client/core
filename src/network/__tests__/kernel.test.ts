@@ -995,7 +995,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop :is identified for this nick' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop :Ten nick jest zarejestrowany' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 

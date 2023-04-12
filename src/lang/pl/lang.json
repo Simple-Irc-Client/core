@@ -52,6 +52,7 @@
     "kernel.mode.channel.unknown": "{{setBy}} ustawia flage {{mode}}",
     "kernel.mode.channel.unknown-params": "{{setBy}} ustawia flage {{mode}} {{param}}",
     "kernel.307": "* {{user}} :{{message}}",
+    "kernel.307.is-identified-for-this-nick": "Ten nick jest zarejestrowany",
     "kernel.311": "* {{user}} Host: {{host}}",
     "kernel.319": "* {{user}} Jest na kanałach: {{channels}}",
     "kernel.442.youre-not-on-that-channel": "Nie jesteś na tym kanale",

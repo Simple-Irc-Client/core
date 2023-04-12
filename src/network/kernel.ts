@@ -517,14 +517,14 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
-    // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
-    // :chmurka.pirc.pl 301 sic-test Noop :gone
-    // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
-    // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
-    // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
-    // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
     // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
+    // :chmurka.pirc.pl 301 sic-test Noop :gone
+    // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
+    // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
     // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
+    // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
+    // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
+    // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
   };
 
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
@@ -1369,7 +1369,11 @@ export class Kernel {
 
     const myNick = this.line.shift();
     const user = this.line.shift();
-    const message = this.line.join(' ').substring(1);
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'is identified for this nick') {
+      message = i18next.t('kernel.307.is-identified-for-this-nick');
+    }
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
