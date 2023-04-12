@@ -52,6 +52,7 @@
     "kernel.mode.channel.unknown": "{{setBy}} sets mode {{mode}}",
     "kernel.mode.channel.unknown-params": "{{setBy}} sets mode {{mode}} {{param}}",
     "kernel.442.youre-not-on-that-channel": "You're not on that channel",
+    "kernel.473.cannot-join-channel-i": "Cannot join channel (Invite only channel)",
     "kernel.474.cannot-join-channel-b": "Cannot join channel (You're banned)",
     "kernel.477.you-need-a-registered-nick-to-join-that-channel": "You need a registered nick to join that channel."
 }

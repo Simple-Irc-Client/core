@@ -478,6 +478,9 @@ export class Kernel {
       case ERR_NOTONCHANNEL:
         this.onRaw442();
         break;
+      case ERR_INVITEONLYCHAN:
+        this.onRaw473();
+        break;
       case ERR_BANNEDFROMCHAN:
         this.onRaw474();
         break;
@@ -1583,15 +1586,15 @@ export class Kernel {
     });
   };
 
-  // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
-  private readonly onRaw477 = (): void => {
+  // :chommik.pirc.pl 473 sic-test #sic :Cannot join channel (+i)
+  private readonly onRaw473 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
     const nick = this.line.shift();
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw477, 'channel');
+      throw this.assert(this.onRaw473, 'channel');
     }
 
     let message = this.line.join(' ');
@@ -1599,8 +1602,8 @@ export class Kernel {
       message = message.substring(1);
     }
 
-    if (message === 'You need a registered nick to join that channel.') {
-      message = i18next.t('kernel.477.you-need-a-registered-nick-to-join-that-channel');
+    if (message === 'Cannot join channel (+i)') {
+      message = i18next.t('kernel.473.cannot-join-channel-i');
     }
 
     setAddMessage({
@@ -1631,6 +1634,36 @@ export class Kernel {
 
     if (message === 'Cannot join channel (+b)') {
       message = i18next.t('kernel.474.cannot-join-channel-b');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel} :${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
+  private readonly onRaw477 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      throw this.assert(this.onRaw477, 'channel');
+    }
+
+    let message = this.line.join(' ');
+    if (message.startsWith(':')) {
+      message = message.substring(1);
+    }
+
+    if (message === 'You need a registered nick to join that channel.') {
+      message = i18next.t('kernel.477.you-need-a-registered-nick-to-join-that-channel');
     }
 
     setAddMessage({
