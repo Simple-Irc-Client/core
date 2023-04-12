@@ -95,6 +95,22 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
 };
 
 /**
+ * Parse channel name and return channel name without permissions
+ * @param fullNick
+ * @param userModes
+ * @returns
+ */
+export const parseChannel = (channel: string, userModes: UserMode[]): string => {
+  for (const userMode of userModes) {
+    if (channel.startsWith(userMode.symbol)) {
+      channel = channel.substring(1);
+    }
+  }
+
+  return channel;
+};
+
+/**
  * That func is returning maximum int number based on user flags
  * Based on that int number we'll be sorting users and user with higher mode (int) will be first on users list
  * @param flags

@@ -4,9 +4,18 @@
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../../models/servers';
 import { type UserMode } from '../../types';
-import { calculateMaxPermission, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
+import { calculateMaxPermission, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
 
 describe('helper tests', () => {
+  const defaultUserModes = [
+    { symbol: '!', flag: 'y' }, // LibraIRC
+    { symbol: '~', flag: 'q' },
+    { symbol: '&', flag: 'a' },
+    { symbol: '@', flag: 'o' },
+    { symbol: '%', flag: 'h' },
+    { symbol: '+', flag: 'v' },
+  ];
+
   it('test parse server', () => {
     const tests = [
       [{}, undefined],
@@ -95,6 +104,11 @@ describe('helper tests', () => {
       command: '002',
       line: ['dsfsdfsdfsdf', ':Your', 'host', 'is', 'netsplit.pirc.pl,', 'running', 'version', 'UnrealIRCd-6.0.3'],
     });
+  });
+
+  it('test parse channel', () => {
+    expect(parseChannel('@#channel1', defaultUserModes)).toStrictEqual('#channel1');
+    expect(parseChannel('!@+#channel1', defaultUserModes)).toStrictEqual('#channel1');
   });
 
   it('test parse nick', () => {

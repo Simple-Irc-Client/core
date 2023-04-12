@@ -24,7 +24,7 @@ import {
 } from '../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
-import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes } from './helpers';
+import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import i18next from '../i18n';
 import { MessageColor } from '../config/theme';
@@ -445,6 +445,9 @@ export class Kernel {
       case RPL_ENDOFWHOIS:
         this.onRaw318();
         break;
+      case RPL_WHOISCHANNELS:
+        this.onRaw319();
+        break;
       case RPL_LISTSTART:
         this.onRaw321();
         break;
@@ -514,7 +517,6 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
-    // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
     // :chmurka.pirc.pl 301 sic-test Noop :gone
     // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
@@ -1137,7 +1139,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
   private readonly onRaw001 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1155,7 +1157,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3
   private readonly onRaw002 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1171,7 +1173,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC
   private readonly onRaw003 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1187,7 +1189,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ
   private readonly onRaw004 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -1204,7 +1206,7 @@ export class Kernel {
   // :netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server
   // :netsplit.pirc.pl 005 SIC-test UHNAMES USERIP WALLCHOPS WATCH=128 WATCHOPTS=A WHOX :are supported by this server
   private readonly onRaw005 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -1247,7 +1249,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers
   private readonly onRaw251 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1263,7 +1265,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 252 SIC-test 27 :operator(s) online
   private readonly onRaw252 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ');
 
@@ -1279,7 +1281,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 253 SIC-test -14 :unknown connection(s)
   private readonly onRaw253 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ');
 
@@ -1295,7 +1297,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 254 SIC-test 185 :channels formed
   private readonly onRaw254 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ');
 
@@ -1311,7 +1313,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 255 SIC-test :I have 42 clients and 0 servers
   private readonly onRaw255 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1327,7 +1329,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62
   private readonly onRaw265 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const local = this.line.shift();
     const max = this.line.shift();
 
@@ -1345,7 +1347,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721
   private readonly onRaw266 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const global = this.line.shift();
     const max = this.line.shift();
 
@@ -1365,12 +1367,13 @@ export class Kernel {
   private readonly onRaw307 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
-    const message = this.line.join(' ');
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const message = this.line.join(' ').substring(1);
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message,
+      message: i18next.t('kernel.307', { user, message }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
@@ -1382,12 +1385,13 @@ export class Kernel {
   private readonly onRaw311 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
-    const message = this.line.join(' ');
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const host = this.line.join(' ');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message,
+      message: i18next.t('kernel.311', { user, host }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
@@ -1400,6 +1404,30 @@ export class Kernel {
     //
   };
 
+  // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
+  private readonly onRaw319 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const serverUserModes = getUserModes();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const channels = this.line
+      .join(' ')
+      .substring(1)
+      .split(' ')
+      .map((channel) => parseChannel(channel, serverUserModes))
+      .join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.319', { user, channels }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
   // :insomnia.pirc.pl 321 dsfdsfdsfsdfdsfsdfaas Channel :Users  Name
   private readonly onRaw321 = (): void => {
     setChannelListClear();
@@ -1409,7 +1437,7 @@ export class Kernel {
   // :netsplit.pirc.pl 322 sic-test * 1 :
   // :netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]
   private readonly onRaw322 = (): void => {
-    const sender = this.line.shift();
+    const myNick = this.line.shift();
 
     const name = this.line.shift() ?? '';
     const users = Number(this.line.shift() ?? '0');
@@ -1426,7 +1454,7 @@ export class Kernel {
   // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
   // :irc01-black.librairc.net 332 mero-test #chat :\u00034Welcome to #chat chatroom at http://librairc.net ~ for rules check https://goo.gl/Ksv9gr ~ If you need help type /join #help
   private readonly onRaw332 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
     const topic = this.line.join(' ')?.substring(1);
 
@@ -1439,7 +1467,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216
   private readonly onRaw333 = (): void => {
-    const currentUser = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
     const setBy = this.line.shift();
     const setTime = Number(this.line.shift() ?? '0');
@@ -1458,7 +1486,7 @@ export class Kernel {
   // :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
   // :chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik krejzus!krejzus@ukryty-13F27FB6.brb.dj Cienisty!Cienisty@cloak:Cienisty
   private readonly onRaw353 = (): void => {
-    const currentUser = this.line.shift();
+    const myNick = this.line.shift();
     const flags = this.line.shift();
     const channel = this.line.shift();
 
@@ -1501,7 +1529,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27
   private readonly onRaw372 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1517,7 +1545,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 375 SIC-test :- saturn.pirc.pl Message of the Day -
   private readonly onRaw375 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1533,7 +1561,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 376 SIC-test :End of /MOTD command.
   private readonly onRaw376 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ').substring(1);
 
@@ -1549,7 +1577,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host
   private readonly onRaw396 = (): void => {
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
 
     const message = this.line.join(' ');
 
@@ -1598,7 +1626,7 @@ export class Kernel {
   private readonly onRaw442 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -1628,7 +1656,7 @@ export class Kernel {
   private readonly onRaw473 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -1658,7 +1686,7 @@ export class Kernel {
   private readonly onRaw474 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -1688,7 +1716,7 @@ export class Kernel {
   private readonly onRaw477 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const nick = this.line.shift();
+    const myNick = this.line.shift();
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -1718,7 +1746,7 @@ export class Kernel {
   // :chmurka.pirc.pl 761 sic-test kazuisticsimplicity ignore_list * :0
   // :chmurka.pirc.pl 761 sic-test aqq color * :#0000ff
   private readonly onRaw761 = (): void => {
-    const currentUser = this.line.shift();
+    const myNick = this.line.shift();
     const nick = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
