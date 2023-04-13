@@ -469,6 +469,9 @@ export class Kernel {
       case RPL_TOPICWHOTIME:
         this.onRaw333();
         break;
+      case RPL_WHOISBOT:
+        this.onRaw335();
+        break;
       case RPL_NAMREPLY:
         this.onRaw353();
         break;
@@ -527,7 +530,8 @@ export class Kernel {
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
     // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
-    // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
+
+    // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
     // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
   };
 
@@ -1535,6 +1539,23 @@ export class Kernel {
     }
 
     setTopicSetBy(channel, setBy, setTime);
+  };
+
+  // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
+  private readonly onRaw335 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.335', { user }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
   };
 
   // :irc01-black.librairc.net 353 mero-test = #chat :ircbot!ircbot@ircbot.botop.librairc.net Freak!Freak@LibraIRC-ug4.vta.mvnbg3.IP WatchDog!WatchDog@Watchdog.botop.librairc.net !~@iBan!iBan@iBan.botop.librairc.net !iBot!iBot@iBot.botop.librairc.net chip_x!chip@LibraIRC-i5e.6cr.4lkbg1.IP

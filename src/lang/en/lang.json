@@ -59,6 +59,7 @@
     "kernel.313.is-an-irc-operator": "Is an IRC Operator",
     "kernel.313.is-a-network-service": "Is a Network Service",
     "kernel.319": "* {{user}} Is on channels: {{channels}}",
+    "kernel.335": "* {{user}} Is a Bot",
     "kernel.442.youre-not-on-that-channel": "You're not on that channel",
     "kernel.473.cannot-join-channel-i": "Cannot join channel (Invite only channel)",
     "kernel.474.cannot-join-channel-b": "Cannot join channel (You're banned)",
