@@ -56,6 +56,7 @@
     "kernel.307": "* {{user}} {{message}}",
     "kernel.307.is-identified-for-this-nick": "Ten nick jest zarejestrowany",
     "kernel.311": "* {{user}} Host: {{host}}",
+    "kernel.312": "* {{user}} Jest na serwerze: {{server}} {{description}}",
     "kernel.313": "* {{user}} {{message}}",
     "kernel.313.is-an-irc-operator": "To IRC Operator",
     "kernel.313.is-a-network-service": "To Network Service",

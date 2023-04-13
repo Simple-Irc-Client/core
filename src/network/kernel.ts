@@ -448,6 +448,9 @@ export class Kernel {
       case RPL_WHOISUSER:
         this.onRaw311();
         break;
+      case RPL_WHOISSERVER:
+        this.onRaw312();
+        break;
       case RPL_WHOISOPERATOR:
         this.onRaw313();
         break;
@@ -532,7 +535,6 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
-    // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
     // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
     // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
@@ -1446,6 +1448,30 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.311', { user, host }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
+  private readonly onRaw312 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+
+    const server = this.line.shift();
+
+    let description = this.line.join(' ');
+    if (description.startsWith(':')) {
+      description = description.substring(1);
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,

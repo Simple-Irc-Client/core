@@ -56,6 +56,7 @@
     "kernel.307": "* {{user}} {{message}}",
     "kernel.307.is-identified-for-this-nick": "Is identified for this nick",
     "kernel.311": "* {{user}} Full hostname: {{host}}",
+    "kernel.312": "* {{user}} Is on server: {{server}} {{description}}",
     "kernel.313": "* {{user}} {{message}}",
     "kernel.313.is-an-irc-operator": "Is an IRC Operator",
     "kernel.313.is-a-network-service": "Is a Network Service",

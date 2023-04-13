@@ -1029,6 +1029,21 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 312', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+    const line = ':chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toBeCalledTimes(1);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Jest na serwerze: insomnia.pirc.pl (IRC lepszy od spania!)' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw 313 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
