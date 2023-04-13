@@ -436,6 +436,9 @@ export class Kernel {
       case '266':
         this.onRaw266();
         break;
+      case '276':
+        this.onRaw276();
+        break;
       case RPL_AWAY:
         this.onRaw301();
         break;
@@ -529,7 +532,6 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
 
     // whois:
-    // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
     // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
@@ -1366,6 +1368,24 @@ export class Kernel {
       id: this.tags?.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
+  private readonly onRaw276 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const message = this.line.join(' ').substring(1);
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.276', { user, message }),
+      target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
