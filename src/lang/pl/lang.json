@@ -59,6 +59,8 @@
     "kernel.313.is-an-irc-operator": "To IRC Operator",
     "kernel.313.is-a-network-service": "To Network Service",
     "kernel.319": "* {{user}} Jest na kanałach: {{channels}}",
+    "kernel.320": "* {{user}} {{message}}",
+    "kernel.320.a-network-administrator": "To Network Administrator",
     "kernel.335": "* {{user}} To Bot",
     "kernel.442.youre-not-on-that-channel": "Nie jesteś na tym kanale",
     "kernel.473.cannot-join-channel-i": "Nie możesz dołączyć do kanału (Kanał tylko dla zaproszonych)",

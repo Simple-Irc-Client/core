@@ -454,6 +454,9 @@ export class Kernel {
       case RPL_WHOISCHANNELS:
         this.onRaw319();
         break;
+      case RPL_WHOISSPECIAL:
+        this.onRaw320();
+        break;
       case RPL_LISTSTART:
         this.onRaw321();
         break;
@@ -528,9 +531,7 @@ export class Kernel {
     // whois:
     // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
-    // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
-
     // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
     // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
   };
@@ -1480,6 +1481,29 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.319', { user, channels }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
+  private readonly onRaw320 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'a Network Administrator') {
+      message = i18next.t('kernel.320.a-network-administrator');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.320', { user, message }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
