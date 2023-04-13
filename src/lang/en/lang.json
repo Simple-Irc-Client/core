@@ -51,6 +51,7 @@
     "kernel.mode.channel.user": "{{user}} has now flag {{mode}} (set by {{setBy}})",
     "kernel.mode.channel.unknown": "{{setBy}} sets mode {{mode}}",
     "kernel.mode.channel.unknown-params": "{{setBy}} sets mode {{mode}} {{param}}",
+    "kernel.301": "* {{user}} Is away {{reason}}",
     "kernel.307": "* {{user}} {{message}}",
     "kernel.307.is-identified-for-this-nick": "Is identified for this nick",
     "kernel.311": "* {{user}} Full hostname: {{host}}",

@@ -51,6 +51,7 @@
     "kernel.mode.channel.user": "{{user}} ma teraz flage {{mode}} (ustawił {{setBy}})",
     "kernel.mode.channel.unknown": "{{setBy}} ustawia flage {{mode}}",
     "kernel.mode.channel.unknown-params": "{{setBy}} ustawia flage {{mode}} {{param}}",
+    "kernel.301": "* {{user}} Jest nieobecny {{reason}}",
     "kernel.307": "* {{user}} {{message}}",
     "kernel.307.is-identified-for-this-nick": "Ten nick jest zarejestrowany",
     "kernel.311": "* {{user}} Host: {{host}}",
