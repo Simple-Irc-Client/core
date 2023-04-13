@@ -445,6 +445,9 @@ export class Kernel {
       case RPL_WHOISUSER:
         this.onRaw311();
         break;
+      case RPL_WHOISOPERATOR:
+        this.onRaw313();
+        break;
       case RPL_ENDOFWHOIS:
         this.onRaw318();
         break;
@@ -522,7 +525,6 @@ export class Kernel {
     // whois:
     // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
     // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
-    // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
     // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
     // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
@@ -1419,6 +1421,32 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.311', { user, host }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
+  private readonly onRaw313 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'is an IRC Operator') {
+      message = i18next.t('kernel.313.is-an-irc-operator');
+    }
+    if (message === 'is a Network Service') {
+      message = i18next.t('kernel.313.is-a-network-service');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.313', { user, message }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
