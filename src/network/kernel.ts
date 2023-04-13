@@ -517,6 +517,9 @@ export class Kernel {
       case RPL_KEYVALUE:
         this.onRaw761();
         break;
+      case RPL_WHOISSECURE:
+        this.onRaw671();
+        break;
       case RPL_METADATAEND:
         this.onRaw762();
         break;
@@ -537,7 +540,6 @@ export class Kernel {
     // whois:
     // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
     // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
-    // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
   };
 
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
@@ -1881,6 +1883,29 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: `${channel} :${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
+  private readonly onRaw671 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'is using a Secure Connection') {
+      message = i18next.t('kernel.671.is-using-a-secure-connection');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.671', { user, message }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
