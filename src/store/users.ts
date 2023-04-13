@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { type UserMode, type Message, type User } from '../types';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
 import { clearTyping, setAddMessage } from './channels';
@@ -20,101 +20,94 @@ interface UsersStore {
 }
 
 export const useUsersStore = create<UsersStore>()(
-  devtools(
-    persist(
-      (set) => ({
-        users: [],
+  devtools((set) => ({
+    users: [],
 
-        setAddUser: (newUser: User): void => {
-          set((state) => ({
-            users: [...state.users, newUser],
-          }));
-        },
-        setRemoveUser: (nick: string, channelName: string): void => {
-          set((state) => ({
-            users: state.users
-              .map((user: User) => {
-                if (user.nick === nick) {
-                  user.channels = user.channels.filter((channel) => channel.name !== channelName);
+    setAddUser: (newUser: User): void => {
+      set((state) => ({
+        users: [...state.users, newUser],
+      }));
+    },
+    setRemoveUser: (nick: string, channelName: string): void => {
+      set((state) => ({
+        users: state.users
+          .map((user: User) => {
+            if (user.nick === nick) {
+              user.channels = user.channels.filter((channel) => channel.name !== channelName);
+            }
+            return user;
+          })
+          .filter((user) => user.channels.length !== 0),
+      }));
+    },
+    setQuitUser: (nick: string): void => {
+      set((state) => ({
+        users: state.users.filter((user: User) => user.nick !== nick),
+      }));
+    },
+    setRenameUser: (from: string, to: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick === from) {
+            user.nick = to;
+          }
+          return user;
+        }),
+      }));
+    },
+    setJoinUser: (nick: string, channel: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick === nick) {
+            user.channels.push({ name: channel, flags: [], maxPermission: -1 });
+          }
+          return user;
+        }),
+      }));
+    },
+    setUserAvatar: (nick: string, avatar: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick === nick) {
+            user.avatar = avatar;
+          }
+          return user;
+        }),
+      }));
+    },
+    setUserColor: (nick: string, color: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick === nick) {
+            user.color = color;
+          }
+          return user;
+        }),
+      }));
+    },
+    setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick === nick) {
+            user.channels = user.channels.map((channel) => {
+              if (channel.name === channelName) {
+                if (plusMinus === '+') {
+                  channel.flags.push(newFlag);
+                  channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
                 }
-                return user;
-              })
-              .filter((user) => user.channels.length !== 0),
-          }));
-        },
-        setQuitUser: (nick: string): void => {
-          set((state) => ({
-            users: state.users.filter((user: User) => user.nick !== nick),
-          }));
-        },
-        setRenameUser: (from: string, to: string): void => {
-          set((state) => ({
-            users: state.users.map((user: User) => {
-              if (user.nick === from) {
-                user.nick = to;
+                if (plusMinus === '-') {
+                  channel.flags = channel.flags.filter((flag) => flag !== newFlag);
+                  channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
+                }
               }
-              return user;
-            }),
-          }));
-        },
-        setJoinUser: (nick: string, channel: string): void => {
-          set((state) => ({
-            users: state.users.map((user: User) => {
-              if (user.nick === nick) {
-                user.channels.push({ name: channel, flags: [], maxPermission: -1 });
-              }
-              return user;
-            }),
-          }));
-        },
-        setUserAvatar: (nick: string, avatar: string): void => {
-          set((state) => ({
-            users: state.users.map((user: User) => {
-              if (user.nick === nick) {
-                user.avatar = avatar;
-              }
-              return user;
-            }),
-          }));
-        },
-        setUserColor: (nick: string, color: string): void => {
-          set((state) => ({
-            users: state.users.map((user: User) => {
-              if (user.nick === nick) {
-                user.color = color;
-              }
-              return user;
-            }),
-          }));
-        },
-        setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
-          set((state) => ({
-            users: state.users.map((user: User) => {
-              if (user.nick === nick) {
-                user.channels = user.channels.map((channel) => {
-                  if (channel.name === channelName) {
-                    if (plusMinus === '+') {
-                      channel.flags.push(newFlag);
-                      channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
-                    }
-                    if (plusMinus === '-') {
-                      channel.flags = channel.flags.filter((flag) => flag !== newFlag);
-                      channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
-                    }
-                  }
-                  return channel;
-                });
-              }
-              return user;
-            }),
-          }));
-        },
-      }),
-      {
-        name: 'users',
-      }
-    )
-  )
+              return channel;
+            });
+          }
+          return user;
+        }),
+      }));
+    },
+  }))
 );
 
 export const setAddUser = (newUser: User): void => {
