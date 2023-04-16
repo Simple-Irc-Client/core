@@ -18,12 +18,9 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     case 'all':
       // TODO amsg
       break;
-    case 'away':
-      return awayCommand(line);
     case 'help':
       // TODO help
       break;
-    case 'join':
     case 'j':
       return joinCommand(line);
     case 'logout':
@@ -34,11 +31,10 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     case 'quote':
     case 'msg':
       return quoteCommand(line);
-    case 'whois':
     case 'whereis':
       return whoisCommand(line);
     case 'who':
-      return whoCommand(line);
+      return originalLine;
   }
 
   if (channel !== STATUS_CHANNEL) {
@@ -72,10 +68,6 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   return originalLine;
 };
 
-const awayCommand = (line: string[]): string => {
-  return `AWAY ${line.join(' ')}`;
-};
-
 const joinCommand = (line: string[]): string => {
   return `JOIN ${line.join(' ')}`;
 };
@@ -90,10 +82,6 @@ const quoteCommand = (line: string[]): string => {
 
 const whoisCommand = (line: string[]): string => {
   return `WHOIS ${line.join(' ')}`;
-};
-
-const whoCommand = (line: string[]): string => {
-  return `WHO ${line.join(' ')}`;
 };
 
 const cycleCommand = (channel: string, line: string[]): string => {

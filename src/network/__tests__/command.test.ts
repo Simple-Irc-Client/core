@@ -6,7 +6,7 @@ import { parseMessageToCommand } from '../command';
 
 describe('command tests', () => {
   it('test away command', () => {
-    expect(parseMessageToCommand('#channel', '/away message')).toStrictEqual('AWAY message');
+    expect(parseMessageToCommand('#channel', '/away message')).toStrictEqual('away message');
   });
 
   it('test join command', () => {
@@ -27,13 +27,12 @@ describe('command tests', () => {
     expect(parseMessageToCommand('#channel', 'test message')).toStrictEqual('test message');
   });
 
-  it('test whois command', () => {
-    expect(parseMessageToCommand('#channel', '/whois user1')).toStrictEqual('WHOIS user1');
+  it('test whereis command', () => {
     expect(parseMessageToCommand('#channel', '/whereis user1')).toStrictEqual('WHOIS user1');
   });
 
   it('test who command', () => {
-    expect(parseMessageToCommand('#channel', '/who user1')).toStrictEqual('WHO user1');
+    expect(parseMessageToCommand('#channel', '/who user1')).toStrictEqual('who user1');
   });
 
   it('test cycle command', () => {
