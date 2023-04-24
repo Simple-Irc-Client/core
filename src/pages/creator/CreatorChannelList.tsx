@@ -92,8 +92,6 @@ const CreatorChannelList = (): JSX.Element => {
             rows={channelList}
             disableColumnMenu={true}
             columns={columns}
-            pageSize={50}
-            rowsPerPageOptions={[50]}
             getRowId={(row) => row.name}
             initialState={{
               sorting: {
