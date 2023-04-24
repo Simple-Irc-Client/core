@@ -127,6 +127,17 @@ export const useSettingsStore = create<SettingsStore>()(
   }))
 );
 
+export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
+  useSettingsStore.getState().setCurrentChannelName(channelName, category);
+
+  setClearUnreadMessages(channelName);
+
+  useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
+  useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
+  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
+  useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
+};
+
 export const setCreatorCompleted = (status: boolean): void => {
   useSettingsStore.getState().setCreatorCompleted(status);
 };
@@ -157,17 +168,6 @@ export const setCreatorStep = (newCreatorStep: CreatorStep): void => {
 
 export const setIsPasswordRequired = (status: boolean): void => {
   useSettingsStore.getState().setIsPasswordRequired(status);
-};
-
-export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
-  useSettingsStore.getState().setCurrentChannelName(channelName, category);
-
-  setClearUnreadMessages(channelName);
-
-  useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
-  useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
-  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
-  useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
 };
 
 export const setTheme = (newTheme: 'modern' | 'classic'): void => {

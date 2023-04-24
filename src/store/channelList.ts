@@ -33,7 +33,7 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
 
 export const setAddChannelToList = (name: string, users: number, topic: string): void => {
   if (name === '*') {
-    return;
+    return; // ignore hidden channels
   }
 
   const exist = useChannelListStore.getState().channels.find((channel) => channel.name === name) !== undefined;
@@ -49,6 +49,7 @@ export const setChannelListClear = (): void => {
 
 export const setChannelListFinished = (status: boolean): void => {
   if (status && useChannelListStore.getState().channels.length < 10) {
+    setChannelListClear();
     return;
   }
 
