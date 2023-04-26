@@ -1,6 +1,6 @@
 import { connect as socketIOConnect } from 'socket.io-client';
-import { websocketHost, websocketPort } from '../config/config';
-import { type Server } from '../models/servers';
+import { websocketHost, websocketPort } from '../../config/config';
+import { type Server } from './servers';
 import { parseServer } from './helpers';
 
 export const sicSocket = socketIOConnect(`http://${websocketHost}:${websocketPort}`, {

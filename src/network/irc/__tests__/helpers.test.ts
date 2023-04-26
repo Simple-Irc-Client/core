@@ -2,8 +2,8 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest';
-import { type Server } from '../../models/servers';
-import { type UserMode } from '../../types';
+import { type Server } from '../servers';
+import { type UserMode } from '../../../types';
 import { calculateMaxPermission, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
 
 describe('helper tests', () => {

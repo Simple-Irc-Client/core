@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
 import { DataGrid, type GridCellParams, type GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
-import { ircJoinChannels } from '../../network/network';
+import { ircJoinChannels } from '../../network/irc/network';
 import { useChannelsStore } from '../../store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
 import { setCreatorCompleted } from '../../store/settings';

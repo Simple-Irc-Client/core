@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type Server } from '../models/servers';
+import { type Server } from '../network/irc/servers';
 import { devtools } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '../types';
 import { getMessages, getTopic, getTyping, setClearUnreadMessages } from './channels';

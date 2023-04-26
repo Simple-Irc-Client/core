@@ -4,7 +4,7 @@ import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
 import { setCurrentChannelName } from '../store/settings';
-import { ircSendRawMessage } from '../network/network';
+import { ircSendRawMessage } from '../network/irc/network';
 
 export const ContextMenu = (): JSX.Element => {
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();

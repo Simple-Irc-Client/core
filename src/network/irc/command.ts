@@ -1,4 +1,4 @@
-import { defaultQuitMessage, STATUS_CHANNEL } from '../config/config';
+import { defaultQuitMessage, STATUS_CHANNEL } from '../../config/config';
 
 export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg', '/whois', '/whereis', '/who'];
 export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];

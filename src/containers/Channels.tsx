@@ -13,7 +13,7 @@ import { ChannelCategory, type ChannelList, type Channel } from '../types';
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../config/theme';
-import { ircJoinChannels, ircPartChannel } from '../network/network';
+import { ircJoinChannels, ircPartChannel } from '../network/irc/network';
 import { type BadgeProps } from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
 import { useChannelsDrawer } from '../providers/ChannelsDrawerContext';

@@ -3,14 +3,14 @@
  */
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { Kernel } from '../kernel';
-import * as settingsFile from '../../store/settings';
-import * as channelsFile from '../../store/channels';
-import * as channelListFile from '../../store/channelList';
-import * as usersFile from '../../store/users';
-import * as networkFile from '../../network/network';
-import i18next from '../../i18n';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
-import { ChannelCategory } from '../../types';
+import * as settingsFile from '../../../store/settings';
+import * as channelsFile from '../../../store/channels';
+import * as channelListFile from '../../../store/channelList';
+import * as usersFile from '../../../store/users';
+import * as networkFile from '../network';
+import i18next from '../../../i18n';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
+import { ChannelCategory } from '../../../types';
 
 describe('kernel tests', () => {
   const defaultUserModes = [

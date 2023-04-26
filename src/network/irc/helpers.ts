@@ -1,6 +1,6 @@
-import { defaultIRCPort, defaultMaxPermission } from '../config/config';
-import { type Server } from '../models/servers';
-import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '../types';
+import { defaultIRCPort, defaultMaxPermission } from '../../config/config';
+import { type Server } from './servers';
+import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '../../types';
 
 /**
  *

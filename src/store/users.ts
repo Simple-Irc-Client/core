@@ -4,7 +4,7 @@ import { devtools } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from './settings';
 import { useCurrentStore } from './current';
 import { clearTyping, setAddMessage } from './channels';
-import { calculateMaxPermission } from '../network/helpers';
+import { calculateMaxPermission } from '../network/irc/helpers';
 
 interface UsersStore {
   users: User[];

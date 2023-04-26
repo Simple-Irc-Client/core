@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
 import { setAddMessage } from './store/channels';
-import { ircSendList, sicSocket } from './network/network';
-import { type IrcEvent, Kernel } from './network/kernel';
+import { ircSendList, sicSocket } from './network/irc/network';
+import { type IrcEvent, Kernel } from './network/irc/kernel';
 import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
 import { MessageColor } from './config/theme';

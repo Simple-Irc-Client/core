@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { ircSendPassword } from '../../network/network';
+import { ircSendPassword } from '../../network/irc/network';
 import { setCreatorStep, useSettingsStore } from '../../store/settings';
 
 const CreatorPassword = (): JSX.Element => {

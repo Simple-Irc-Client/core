@@ -1,5 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { existChannel, isChannel, setAddChannel, setAddMessage, setAddMessageToAllChannels, setIncreaseUnreadMessages, setRemoveChannel, setTopic, setTopicSetBy, setTyping } from '../store/channels';
+import {
+  existChannel,
+  isChannel,
+  setAddChannel,
+  setAddMessage,
+  setAddMessageToAllChannels,
+  setIncreaseUnreadMessages,
+  setRemoveChannel,
+  setTopic,
+  setTopicSetBy,
+  setTyping,
+} from '../../store/channels';
 import {
   getChannelModes,
   getConnectedTime,
@@ -21,16 +32,16 @@ import {
   setNick,
   setSupportedOption,
   setUserModes,
-} from '../store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../store/users';
-import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../types';
+} from '../../store/settings';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../../store/users';
+import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../../types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
-import i18next from '../i18n';
-import { MessageColor } from '../config/theme';
-import { defaultChannelTypes, defaultMaxPermission } from '../config/config';
+import i18next from '../../i18n';
+import { MessageColor } from '../../config/theme';
+import { defaultChannelTypes, defaultMaxPermission } from '../../config/config';
 import { v4 as uuidv4 } from 'uuid';
-import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../store/channelList';
+import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../../store/channelList';
 
 export interface IrcEvent {
   type: string;
