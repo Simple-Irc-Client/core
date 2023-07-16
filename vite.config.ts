@@ -7,6 +7,7 @@ export default defineConfig(({ command }) => {
     return {
       plugins: [react()],
       server: {
+        host: true,
         hmr: false,
       },
     }
@@ -14,6 +15,7 @@ export default defineConfig(({ command }) => {
     return {
       plugins: [react()],
       server: {
+        host: true,
         hmr: false,
       },
       base: './'

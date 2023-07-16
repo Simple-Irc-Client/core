@@ -12,5 +12,6 @@ RUN npm ci --only=production
 
 COPY --chown=node:node . .
 
-EXPOSE 8080
-CMD [ "npm", "run", "dev" ]
+CMD [ "npm", "run", "dev", "--", "--host" ]
+
+EXPOSE 5173
