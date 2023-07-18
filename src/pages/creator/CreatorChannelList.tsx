@@ -69,8 +69,8 @@ const CreatorChannelList = (): JSX.Element => {
         selectedChannels.concat(
           diff.map((channel) => {
             return channel.name;
-          })
-        )
+          }),
+        ),
       );
     }
   }, [openChannels, selectedChannels]);

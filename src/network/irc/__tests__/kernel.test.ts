@@ -819,7 +819,7 @@ describe('kernel tests', () => {
       expect.objectContaining({
         target: STATUS_CHANNEL,
         message: 'netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ',
-      })
+      }),
     );
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -859,7 +859,7 @@ describe('kernel tests', () => {
         target: STATUS_CHANNEL,
         message:
           'AWAYLEN=307 BOT=B CASEMAPPING=ascii CHANLIMIT=#:30 CHANMODES=beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ CHANNELLEN=32 CHANTYPES=# CHATHISTORY=50 CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply DEAF=d ELIST=MNUCT EXCEPTS :are supported by this server',
-      })
+      }),
     );
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
@@ -895,7 +895,7 @@ describe('kernel tests', () => {
         target: STATUS_CHANNEL,
         message:
           'MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server',
-      })
+      }),
     );
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });

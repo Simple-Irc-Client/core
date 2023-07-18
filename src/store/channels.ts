@@ -151,7 +151,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         }),
       }));
     },
-  }))
+  })),
 );
 
 export const setAddChannel = (channelName: string, category: ChannelCategory): void => {

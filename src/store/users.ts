@@ -107,7 +107,7 @@ export const useUsersStore = create<UsersStore>()(
         }),
       }));
     },
-  }))
+  })),
 );
 
 export const setAddUser = (newUser: User): void => {

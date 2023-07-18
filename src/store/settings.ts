@@ -124,7 +124,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setCreatorProgress: (value: number, label: string): void => {
       set(() => ({ creatorProgress: { value, label } }));
     },
-  }))
+  })),
 );
 
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
