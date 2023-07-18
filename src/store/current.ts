@@ -41,5 +41,5 @@ export const useCurrentStore = create<CurrentStore>()(
         typing,
       }));
     },
-  }))
+  })),
 );
