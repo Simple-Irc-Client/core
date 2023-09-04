@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 export const channelsTitleColor = '#e0e0e0';
 export const channelsColor = '#eeeeee';
 export const usersTitleColor = 'white';
