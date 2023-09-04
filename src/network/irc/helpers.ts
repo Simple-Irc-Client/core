@@ -22,7 +22,7 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
   let serverPort: string | undefined = `${defaultIRCPort}`;
 
   if (firstServer.includes(':')) {
-    [serverHost, serverPort] = firstServer?.split(':');
+    [serverHost, serverPort] = firstServer.split(':');
   }
 
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
@@ -153,7 +153,7 @@ export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => 
     userPrefixes = userPrefixes.substring(1);
   }
 
-  const [modes, symbols] = userPrefixes?.split(')');
+  const [modes, symbols] = userPrefixes.split(')');
   if (modes !== undefined && symbols !== undefined && modes?.length === symbols?.length) {
     for (let i = 0; i < modes.length; i++) {
       if (modes?.[i] !== undefined && symbols?.[i] !== undefined) {

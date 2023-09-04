@@ -16,6 +16,7 @@ const CreatorPassword = (): JSX.Element => {
     handleClick();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (event: any): void => {
     setPassword(event.target.value);
   };

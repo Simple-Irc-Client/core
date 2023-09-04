@@ -67,6 +67,7 @@ const Channels = (): JSX.Element => {
     setCurrentChannelName(channel.name, channel.category);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
     '& .MuiBadge-badge': {
       top: '50%',
