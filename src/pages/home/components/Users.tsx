@@ -1,11 +1,11 @@
 import React from 'react';
-import { useSettingsStore } from '../store/settings';
-import { ChannelCategory } from '../types';
+import { useSettingsStore } from '../../../store/settings';
+import { ChannelCategory } from '../../../types';
 import { Avatar, Box, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { usersColor, usersTitleColor, usersWidth } from '../config/theme';
-import { useCurrentStore } from '../store/current';
-import { useContextMenu } from '../providers/ContextMenuContext';
+import { usersColor, usersTitleColor, usersWidth } from '../../../config/theme';
+import { useCurrentStore } from '../../../store/current';
+import { useContextMenu } from '../../../providers/ContextMenuContext';
 
 const Users = (): JSX.Element => {
   const { t } = useTranslation();

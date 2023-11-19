@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { useCurrentStore } from '../store/current';
+import { useCurrentStore } from '../../../store/current';
 
 const Typing = (): JSX.Element => {
   const { t } = useTranslation();

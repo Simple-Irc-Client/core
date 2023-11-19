@@ -1,17 +1,17 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Box, IconButton, TextField } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore } from '../store/settings';
-import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../types';
-import { ircSendRawMessage } from '../network/irc/network';
+import { getCurrentNick, useSettingsStore } from '../../../store/settings';
+import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
+import { ircSendRawMessage } from '../../../network/irc/network';
 import { Send as SendIcon } from '@mui/icons-material';
-import { channelCommands, generalCommands, parseMessageToCommand } from '../network/irc/command';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
-import { setAddMessage } from '../store/channels';
-import { getUser, getUsersFromChannelSortedByAZ } from '../store/users';
-import { MessageColor } from '../config/theme';
+import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
+import { setAddMessage } from '../../../store/channels';
+import { getUser, getUsersFromChannelSortedByAZ } from '../../../store/users';
+import { MessageColor } from '../../../config/theme';
 import { v4 as uuidv4 } from 'uuid';
-import { getChannelListSortedByAZ } from '../store/channelList';
+import { getChannelListSortedByAZ } from '../../../store/channelList';
 
 const Toolbar = (): JSX.Element => {
   const { t } = useTranslation();

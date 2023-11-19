@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Avatar, Box, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
-import { useSettingsStore } from '../store/settings';
-import { MessageCategory, type Message } from '../types';
+import { useSettingsStore } from '../../../store/settings';
+import { MessageCategory, type Message } from '../../../types';
 import { format } from 'date-fns';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../config/config';
-import { MessageColor } from '../config/theme';
-import { useCurrentStore } from '../store/current';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
+import { MessageColor } from '../../../config/theme';
+import { useCurrentStore } from '../../../store/current';
 
 const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   <ListItem>

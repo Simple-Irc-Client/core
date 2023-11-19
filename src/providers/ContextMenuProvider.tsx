@@ -31,7 +31,7 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
       handleContextMenuUserClick,
       handleContextMenuClose,
     }),
-    [contextMenuOpen],
+    [contextMenuOpen, handleContextMenuClose, handleContextMenuUserClick],
   );
 
   return <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>;

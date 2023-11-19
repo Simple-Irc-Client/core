@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, IconButton, Input } from '@mui/material';
-import { useChannelsDrawer } from '../providers/ChannelsDrawerContext';
+import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useCurrentStore } from '../store/current';
+import { useCurrentStore } from '../../../store/current';
 
 const Topic = (): JSX.Element => {
   const topic: string = useCurrentStore((state) => state.topic);

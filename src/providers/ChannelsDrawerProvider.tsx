@@ -13,7 +13,7 @@ export const ChannelsDrawerProvider: FC<PropsWithChildren> = ({ children }) => {
       isChannelsDrawerOpen: isOpen,
       setChannelsDrawerStatus: handleChannelsDrawerStatus,
     }),
-    [isOpen],
+    [handleChannelsDrawerStatus, isOpen],
   );
 
   return <ChannelsDrawerContext.Provider value={value}>{children}</ChannelsDrawerContext.Provider>;
