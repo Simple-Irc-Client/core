@@ -106,7 +106,7 @@ const CreatorChannelList = (): JSX.Element => {
               toolbarQuickFilterDeleteIconLabel: t('creator.channels.toolbar.clear') ?? 'Clear',
             }}
             onCellClick={handleClick}
-            components={{ Toolbar: GridToolbarQuickFilter }}
+            slots={{ toolbar: GridToolbarQuickFilter }}
           />
         </div>
       </Box>
