@@ -57,7 +57,7 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   let sender = '';
   if ((line?.[0] ?? '').startsWith(':')) {
     sender = line.shift() ?? '';
-    if (sender?.[0] === ':') {
+    if (sender?.startsWith(':')) {
       sender = sender.substring(1);
     }
   }

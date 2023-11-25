@@ -56,11 +56,7 @@ const CreatorPassword = (): JSX.Element => {
             </Typography>
           </>
         )}
-        {lastNick === nick && (
-          <>
-            <TextField type="password" required fullWidth label={t('creator.password.password')} autoComplete="password" autoFocus onChange={handleChange} />
-          </>
-        )}
+        {lastNick === nick && <TextField type="password" required fullWidth label={t('creator.password.password')} autoComplete="password" autoFocus onChange={handleChange} />}
         <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={lastNick === nick && password === ''}>
           {t('creator.password.button.next')}
         </Button>

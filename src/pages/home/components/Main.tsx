@@ -43,52 +43,44 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
   return (
     <>
       {message.category !== MessageCategory.default && (
-        <>
-          <ListItem>
-            <ListItemText sx={{ paddingLeft: '56px', color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
-          </ListItem>
-        </>
+        <ListItem>
+          <ListItemText sx={{ paddingLeft: '56px', color: message.color ?? MessageColor.default }}>{message.message}</ListItemText>
+        </ListItem>
       )}
       {message.category === MessageCategory.default && (
-        <>
-          <ListItem alignItems="flex-start" sx={{ paddingTop: lastNick === nick ? '0' : '', paddingBottom: lastNick === nick ? '0' : '' }}>
-            <ListItemAvatar>
-              {lastNick !== nick && (
-                <Avatar alt={nick} src={avatar}>
-                  {avatarLetter}
-                </Avatar>
-              )}
-            </ListItemAvatar>
-            <ListItemText
-              disableTypography={true}
-              primary={
-                lastNick !== nick ? (
-                  <>
-                    <Box sx={{ display: 'flex' }}>
-                      <Box sx={{ color: nickColor }}>{nick}</Box>
-                      <Box sx={{ flexGrow: 1 }} />
-                      <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
-                    </Box>
-                  </>
-                ) : undefined
-              }
-              secondary={
-                <>
-                  <Box sx={{ color: message.color ?? MessageColor.default }}>
-                    {lastNick !== nick && <Box sx={{ fontSize: '14px' }}>{message.message}</Box>}
-                    {lastNick === nick && (
-                      <Box sx={{ display: 'flex' }}>
-                        <Box sx={{ fontSize: '14px' }}>{message.message}</Box>
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
-                      </Box>
-                    )}
+        <ListItem alignItems="flex-start" sx={{ paddingTop: lastNick === nick ? '0' : '', paddingBottom: lastNick === nick ? '0' : '' }}>
+          <ListItemAvatar>
+            {lastNick !== nick && (
+              <Avatar alt={nick} src={avatar}>
+                {avatarLetter}
+              </Avatar>
+            )}
+          </ListItemAvatar>
+          <ListItemText
+            disableTypography={true}
+            primary={
+              lastNick !== nick ? (
+                <Box sx={{ display: 'flex' }}>
+                  <Box sx={{ color: nickColor }}>{nick}</Box>
+                  <Box sx={{ flexGrow: 1 }} />
+                  <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
+                </Box>
+              ) : undefined
+            }
+            secondary={
+              <Box sx={{ color: message.color ?? MessageColor.default }}>
+                {lastNick !== nick && <Box sx={{ fontSize: '14px' }}>{message.message}</Box>}
+                {lastNick === nick && (
+                  <Box sx={{ display: 'flex' }}>
+                    <Box sx={{ fontSize: '14px' }}>{message.message}</Box>
+                    <Box sx={{ flexGrow: 1 }} />
+                    <Box sx={{ color: MessageColor.time, fontSize: '12px', minWidth: 'fit-content' }}>{format(new Date(message.time), 'HH:mm')}</Box>
                   </Box>
-                </>
-              }
-            />
-          </ListItem>
-        </>
+                )}
+              </Box>
+            }
+          />
+        </ListItem>
       )}
     </>
   );

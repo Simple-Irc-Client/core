@@ -4,7 +4,7 @@ export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/lo
 export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];
 
 export const parseMessageToCommand = (channel: string, message: string): string => {
-  if (message?.[0] === '/') {
+  if (message?.startsWith('/')) {
     message = message.substring(1);
   }
 

@@ -6,7 +6,7 @@ import { setCreatorStep, setNick } from '../../store/settings';
 const CreatorNick = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const [nick, formNick] = useState('');
+  const [formNick, setFormNick] = useState('');
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -14,8 +14,8 @@ const CreatorNick = (): JSX.Element => {
   };
 
   const handleClick = (): void => {
-    if (nick.length !== 0) {
-      setNick(nick);
+    if (formNick.length !== 0) {
+      setNick(formNick);
       setCreatorStep('server');
     }
   };
@@ -34,12 +34,12 @@ const CreatorNick = (): JSX.Element => {
           autoComplete="nick"
           autoFocus
           onChange={(event) => {
-            formNick(event.target.value);
+            setFormNick(event.target.value);
           }}
-          defaultValue={nick}
+          defaultValue={formNick}
           tabIndex={1}
         />
-        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={nick === ''} tabIndex={2}>
+        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={formNick === ''} tabIndex={2}>
           {t('creator.nick.button.next')}
         </Button>
       </Box>

@@ -41,12 +41,10 @@ const CreatorLoading = (): JSX.Element => {
   }, [isConnecting, isConnected]);
 
   return (
-    <>
-      <Box sx={{ width: '100%', mt: 3 }}>
-        <LinearProgress variant="determinate" value={creatorProgress.value * 30} />
-        {creatorProgress.label !== '' && <h2 className="tw-text-center tw-mt-4">{creatorProgress.label}</h2>}
-      </Box>
-    </>
+    <Box sx={{ width: '100%', mt: 3 }}>
+      <LinearProgress variant="determinate" value={creatorProgress.value * 30} />
+      {creatorProgress.label !== '' && <h2 className="tw-text-center tw-mt-4">{creatorProgress.label}</h2>}
+    </Box>
   );
 };
 
