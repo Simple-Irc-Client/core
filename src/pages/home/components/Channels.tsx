@@ -30,10 +30,10 @@ const Channels = (): JSX.Element => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const [channelList, updateChannelsList] = useState<ChannelList[]>([]);
+  const [channelsList, setChannelsList] = useState<ChannelList[]>([]);
 
   useMemo(() => {
-    updateChannelsList(isChannelListLoadingFinished ? getChannelListSortedByAZ() ?? [] : []);
+    setChannelsList(isChannelListLoadingFinished ? getChannelListSortedByAZ() ?? [] : []);
   }, [isChannelListLoadingFinished]);
 
   const [joinChannel, setJoinChannel] = useState<string>('');
@@ -134,23 +134,21 @@ const Channels = (): JSX.Element => {
       ))}
       <ListItem
         secondaryAction={
-          <>
-            <IconButton
-              edge="end"
-              aria-label="add"
-              onClick={() => {
-                handleJoinChannel();
-              }}
-            >
-              <AddOutlinedIcon />
-            </IconButton>
-          </>
+          <IconButton
+            edge="end"
+            aria-label="add"
+            onClick={() => {
+              handleJoinChannel();
+            }}
+          >
+            <AddOutlinedIcon />
+          </IconButton>
         }
       >
         <Autocomplete
           value={joinChannel}
           size="small"
-          options={channelList.map((option) => option.name)}
+          options={channelsList.map((option) => option.name)}
           getOptionDisabled={(option) =>
             openChannelsShort
               .map((channel) => {

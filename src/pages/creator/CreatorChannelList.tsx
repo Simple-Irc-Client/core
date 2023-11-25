@@ -16,20 +16,20 @@ const CreatorChannelList = (): JSX.Element => {
 
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
-  const [selectedChannels, updateSelectedChannel] = useState<string[]>([]);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
 
-  const [channelList, updateChannelsList] = useState<ChannelList[]>([]);
+  const [channelList, setChannelList] = useState<ChannelList[]>([]);
 
   useMemo(() => {
-    updateChannelsList(isChannelListLoadingFinished ? getChannelListSortedByUsers() ?? [] : []);
+    setChannelList(isChannelListLoadingFinished ? getChannelListSortedByUsers() ?? [] : []);
   }, [isChannelListLoadingFinished]);
 
   const handleDelete = (channelName: string) => () => {
-    updateSelectedChannel((channels) => channels.filter((channel) => channel !== channelName));
+    setSelectedChannels((channels) => channels.filter((channel) => channel !== channelName));
   };
 
   const handleClick = (params: GridCellParams): void => {
-    updateSelectedChannel((channels) => [...channels, params.id.toString()]);
+    setSelectedChannels((channels) => [...channels, params.id.toString()]);
   };
 
   const handleSkip = (): void => {
@@ -65,7 +65,7 @@ const CreatorChannelList = (): JSX.Element => {
   useEffect(() => {
     const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name)).filter((channel) => !selectedChannels.includes(channel.name));
     if (diff.length !== 0) {
-      updateSelectedChannel(
+      setSelectedChannels(
         selectedChannels.concat(
           diff.map((channel) => {
             return channel.name;
