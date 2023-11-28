@@ -801,9 +801,8 @@ export class Kernel {
       let plusMinus: '+' | '-' | undefined;
 
       let flagParameterIndex = 0;
-      for (let i = 0; i < flags.length; i++) {
-        const flag = flags?.[i] ?? '';
-
+      const flagsList = flags.split('');
+      for (const flag of flagsList) {
         if (flag === '+') {
           plusMinus = '+';
         }
