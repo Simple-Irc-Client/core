@@ -8,7 +8,7 @@ import { ircConnect } from '../../network/irc/network';
 const CreatorServer = (): JSX.Element => {
   const { t } = useTranslation();
 
-  const [server, formServer] = useState<Server | undefined>(undefined);
+  const [formServer, setFormServer] = useState<Server | undefined>(undefined);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -16,12 +16,12 @@ const CreatorServer = (): JSX.Element => {
   };
 
   const handleClick = (): void => {
-    if (server !== undefined) {
-      setServer(server);
+    if (formServer !== undefined) {
+      setServer(formServer);
       const nick = getCurrentNick();
 
       console.log('sending connect to irc command');
-      ircConnect(server, nick);
+      ircConnect(formServer, nick);
 
       setIsConnecting(true);
 
@@ -48,12 +48,12 @@ const CreatorServer = (): JSX.Element => {
           )}
           onChange={(event, newValue) => {
             if (newValue != null) {
-              formServer(newValue);
+              setFormServer(newValue);
             }
           }}
           noOptionsText={t('creator.server.message.no.options')}
         />
-        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={server == null}>
+        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={formServer == null}>
           {t('creator.server.button.next')}
         </Button>
       </Box>
