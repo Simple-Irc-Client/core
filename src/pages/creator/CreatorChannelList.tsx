@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Button, Chip, Stack, Typography } from '@mui/material';
-import { DataGrid, type GridCellParams, type GridColDef, GridToolbarQuickFilter } from '@mui/x-data-grid';
+import { DataGrid, type GridCellParams, type GridColDef, GridToolbar } from '@mui/x-data-grid';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '../../network/irc/network';
 import { useChannelsStore } from '../../store/channels';
@@ -106,7 +106,12 @@ const CreatorChannelList = (): JSX.Element => {
               toolbarQuickFilterDeleteIconLabel: t('creator.channels.toolbar.clear') ?? 'Clear',
             }}
             onCellClick={handleClick}
-            slots={{ toolbar: GridToolbarQuickFilter }}
+            slots={{ toolbar: GridToolbar }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+              },
+            }}
           />
         </div>
       </Box>

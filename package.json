@@ -13,7 +13,7 @@
     "coverage": "vitest run --coverage",
     "lint": "npx eslint src/**/*.{ts,tsx}"
   },
-  "engines": { 
+  "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
