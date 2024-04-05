@@ -1,4 +1,4 @@
-import i18next from 'i18next';
+import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import translateEN from './lang/en/lang.json';
@@ -13,7 +13,7 @@ const resources = {
   },
 };
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
-i18next.use(initReactI18next).init({ resources, lng: 'pl' });
+// eslint-disable-next-line import/no-named-as-default-member
+i18n.use(initReactI18next).init({ resources, lng: 'pl' });
 
-export default i18next;
+export default i18n;
