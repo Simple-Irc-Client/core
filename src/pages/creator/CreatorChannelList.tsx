@@ -21,7 +21,7 @@ const CreatorChannelList = (): JSX.Element => {
   const [channelList, setChannelList] = useState<ChannelList[]>([]);
 
   useMemo(() => {
-    setChannelList(isChannelListLoadingFinished ? getChannelListSortedByUsers() ?? [] : []);
+    setChannelList(isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []);
   }, [isChannelListLoadingFinished]);
 
   const handleDelete = (channelName: string) => () => {
