@@ -33,7 +33,7 @@ const Channels = (): JSX.Element => {
   const [channelsList, setChannelsList] = useState<ChannelList[]>([]);
 
   useMemo(() => {
-    setChannelsList(isChannelListLoadingFinished ? getChannelListSortedByAZ() ?? [] : []);
+    setChannelsList(isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []);
   }, [isChannelListLoadingFinished]);
 
   const [joinChannel, setJoinChannel] = useState<string>('');

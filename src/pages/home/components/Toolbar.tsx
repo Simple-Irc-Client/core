@@ -48,9 +48,7 @@ const Toolbar = (): JSX.Element => {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLInputElement>): void => {
-    event.preventDefault();
-
+  const handleSubmit = (): void => {
     if (message.length === 0) {
       return;
     }
@@ -198,7 +196,7 @@ const Toolbar = (): JSX.Element => {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex', borderTop: '1px solid #eeeeee' }}>
+    <Box component="form" sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex', borderTop: '1px solid #eeeeee' }} onSubmit={handleSubmit}>
       {currentChannelName !== DEBUG_CHANNEL && (
         <>
           <TextField
