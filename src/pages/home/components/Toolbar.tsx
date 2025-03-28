@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
 import { ircSendRawMessage } from '../../../network/irc/network';
-import { Send as SendIcon } from '@mui/icons-material';
+import SendIcon from '@mui/icons-material/Send';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { setAddMessage } from '../../../store/channels';
