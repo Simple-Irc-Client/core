@@ -1,13 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Drawer, ListItem, IconButton, Autocomplete, TextField } from '@mui/material';
-import {
-  AddOutlined as AddOutlinedIcon,
-  TagOutlined as TagOutlinedIcon,
-  HomeOutlined as HomeOutlinedIcon,
-  BuildOutlined as BuildOutlinedIcon,
-  PersonOutlineOutlined as PersonOutlineOutlinedIcon,
-  CloseOutlined as CloseOutlinedIcon,
-} from '@mui/icons-material';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import TagOutlinedIcon from '@mui/icons-material/TagOutlined';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
+import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import { setCurrentChannelName, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, type Channel } from '../../../types';
 import { useTranslation } from 'react-i18next';
