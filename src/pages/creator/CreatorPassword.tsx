@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ircSendPassword } from '../../network/irc/network';
 import { setCreatorStep, useSettingsStore } from '../../store/settings';
 
-const CreatorPassword = (): JSX.Element => {
+const CreatorPassword = () => {
   const { t } = useTranslation();
   const [lastNick, setLastNick] = useState('');
   const [password, setPassword] = useState('');

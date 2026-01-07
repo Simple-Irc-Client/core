@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useCurrentStore } from '../../../store/current';
 
-const Typing = (): JSX.Element => {
+const Typing = () => {
   const { t } = useTranslation();
 
   const typing = useCurrentStore((state) => state.typing);

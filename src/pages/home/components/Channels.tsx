@@ -18,7 +18,7 @@ import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { getChannelListSortedByAZ, useChannelListStore } from '../../../store/channelList';
 
-const Channels = (): JSX.Element => {
+const Channels = () => {
   const { t } = useTranslation();
 
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
@@ -72,7 +72,7 @@ const Channels = (): JSX.Element => {
     },
   }));
 
-  const ChannelsList = (): JSX.Element => (
+  const ChannelsList = () => (
     <List
       subheader={
         <ListSubheader component="div" sx={{ backgroundColor: { md: channelsTitleColor }, marginBottom: '1rem' }}>

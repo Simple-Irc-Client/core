@@ -7,7 +7,7 @@ import { usersColor, usersTitleColor, usersWidth } from '../../../config/theme';
 import { useCurrentStore } from '../../../store/current';
 import { useContextMenu } from '../../../providers/ContextMenuContext';
 
-const Users = (): JSX.Element => {
+const Users = () => {
   const { t } = useTranslation();
 
   const { handleContextMenuUserClick } = useContextMenu();

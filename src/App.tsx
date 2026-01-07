@@ -17,7 +17,7 @@ import MainWindow from './pages/home/Home';
 
 const theme = createTheme();
 
-function App(): JSX.Element {
+function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

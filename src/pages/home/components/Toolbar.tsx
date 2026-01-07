@@ -13,7 +13,7 @@ import { MessageColor } from '../../../config/theme';
 import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '../../../store/channelList';
 
-const Toolbar = (): JSX.Element => {
+const Toolbar = () => {
   const { t } = useTranslation();
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
