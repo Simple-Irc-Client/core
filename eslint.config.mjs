@@ -3,7 +3,6 @@ import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
 import react from "eslint-plugin-react";
 import jsxA11Y from "eslint-plugin-jsx-a11y";
 import prettier from "eslint-plugin-prettier";
-import unusedImports from "eslint-plugin-unused-imports";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
 import globals from "globals";
 import tsParser from "@typescript-eslint/parser";
@@ -35,7 +34,6 @@ export default defineConfig([{
         react: fixupPluginRules(react),
         "jsx-a11y": jsxA11Y,
         prettier,
-        "unused-imports": unusedImports,
         "@typescript-eslint": fixupPluginRules(typescriptEslint),
     },
 
@@ -61,7 +59,6 @@ export default defineConfig([{
 
     rules: {
         "prettier/prettier": ["error"],
-        "unused-imports/no-unused-imports": "error",
         "import/no-duplicates": "error",
         "import/no-self-import": "error",
         "import/no-cycle": "warn",
