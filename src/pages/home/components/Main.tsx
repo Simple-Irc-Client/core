@@ -7,7 +7,7 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { MessageColor } from '../../../config/theme';
 import { useCurrentStore } from '../../../store/current';
 
-const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
+const MainViewDebug = ({ message }: { message: Message }) => (
   <ListItem>
     <ListItemText>
       <code>
@@ -20,7 +20,7 @@ const MainViewDebug = ({ message }: { message: Message }): JSX.Element => (
   </ListItem>
 );
 
-const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
+const MainViewClassic = ({ message }: { message: Message }) => (
   <ListItem>
     <ListItemText>
       <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
@@ -32,7 +32,7 @@ const MainViewClassic = ({ message }: { message: Message }): JSX.Element => (
   </ListItem>
 );
 
-const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: string }): JSX.Element => {
+const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: string }) => {
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
   const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
@@ -86,14 +86,14 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
   );
 };
 
-const Main = (): JSX.Element => {
+const Main = () => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const messages = useCurrentStore((state) => state.messages);
 
   let lastNick = '';
 
-  const AlwaysScrollToBottom = (): JSX.Element => {
+  const AlwaysScrollToBottom = () => {
     const elementRef = useRef<HTMLDivElement>(null);
     useEffect(() => elementRef.current?.scrollIntoView());
     return <div ref={elementRef} />;

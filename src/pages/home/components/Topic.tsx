@@ -4,7 +4,7 @@ import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useCurrentStore } from '../../../store/current';
 
-const Topic = (): JSX.Element => {
+const Topic = () => {
   const topic: string = useCurrentStore((state) => state.topic);
 
   const { setChannelsDrawerStatus } = useChannelsDrawer();

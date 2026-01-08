@@ -3,7 +3,7 @@ import { Box, Button, TextField, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { setCreatorStep, setNick } from '../../store/settings';
 
-const CreatorNick = (): JSX.Element => {
+const CreatorNick = () => {
   const { t } = useTranslation();
 
   const [formNick, setFormNick] = useState('');

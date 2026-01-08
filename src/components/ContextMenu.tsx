@@ -6,7 +6,7 @@ import { ChannelCategory } from '../types';
 import { setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
 
-export const ContextMenu = (): JSX.Element => {
+export const ContextMenu = () => {
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
 
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {

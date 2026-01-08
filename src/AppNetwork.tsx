@@ -8,7 +8,7 @@ import { MessageCategory } from './types';
 import { MessageColor } from './config/theme';
 import { v4 as uuidv4 } from 'uuid';
 
-export const AppNetwork = (): JSX.Element => {
+export const AppNetwork = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
 
   const onServerEvent = (data: IrcEvent): void => {

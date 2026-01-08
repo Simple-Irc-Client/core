@@ -9,7 +9,7 @@ import { setCreatorCompleted } from '../../store/settings';
 import { getChannelListSortedByUsers, useChannelListStore } from '../../store/channelList';
 import { type ChannelList } from '../../types';
 
-const CreatorChannelList = (): JSX.Element => {
+const CreatorChannelList = () => {
   const { t } = useTranslation();
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);

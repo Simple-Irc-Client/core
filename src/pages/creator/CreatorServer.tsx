@@ -5,7 +5,7 @@ import { type Server, servers } from '../../network/irc/servers';
 import { getCurrentNick, setCreatorStep, setIsConnecting, setServer } from '../../store/settings';
 import { ircConnect } from '../../network/irc/network';
 
-const CreatorServer = (): JSX.Element => {
+const CreatorServer = () => {
   const { t } = useTranslation();
 
   const [formServer, setFormServer] = useState<Server | undefined>(undefined);

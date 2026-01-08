@@ -10,7 +10,7 @@ import { useSettingsStore } from '../../store/settings';
 
 import { Box } from '@mui/material';
 
-function App(): JSX.Element {
+function App() {
   const isCreatorCompleted = useSettingsStore((state) => state.isCreatorCompleted);
 
   const handleNoContextMenu = (event: React.MouseEvent): void => {

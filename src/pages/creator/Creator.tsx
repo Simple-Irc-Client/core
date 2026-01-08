@@ -7,7 +7,7 @@ import CreatorPassword from './CreatorPassword';
 import CreatorServer from './CreatorServer';
 import CreatorLoading from './CreatorLoading';
 
-const Creator = (): JSX.Element => {
+const Creator = () => {
   const creatorStep = useSettingsStore((state) => state.creatorStep);
 
   return (

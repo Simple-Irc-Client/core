@@ -3,7 +3,7 @@ import { Box, LinearProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress } from '../../store/settings';
 
-const CreatorLoading = (): JSX.Element => {
+const CreatorLoading = () => {
   const { t } = useTranslation();
 
   const isConnecting = useSettingsStore((state) => state.isConnecting);
