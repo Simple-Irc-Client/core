@@ -25,7 +25,6 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
     [serverHost, serverPort] = firstServer.split(':');
   }
 
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
   return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`) };
 };
 
