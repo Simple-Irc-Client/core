@@ -1,12 +1,101 @@
-import { connect as socketIOConnect } from 'socket.io-client';
 import { websocketHost, websocketPort } from '../../config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 
-export const sicSocket = socketIOConnect(`http://${websocketHost}:${websocketPort}`, {
-  transports: ['websocket'],
-  path: '/SimpleIrcClient',
-});
+// Native WebSocket connection
+let sicSocket: WebSocket | null = null;
+let isConnecting = false;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const eventHandlers: { [key: string]: ((data: any) => void)[] } = {};
+
+// Initialize WebSocket connection
+export const initWebSocket = (): WebSocket => {
+  // Return existing socket if it's open or connecting
+  if (sicSocket && (sicSocket.readyState === WebSocket.OPEN || sicSocket.readyState === WebSocket.CONNECTING)) {
+    return sicSocket;
+  }
+
+  // Prevent multiple simultaneous connection attempts
+  if (isConnecting) {
+    if (sicSocket) {
+      return sicSocket;
+    }
+    // Wait a bit and try again if socket isn't created yet
+    throw new Error('WebSocket connection already in progress');
+  }
+
+  isConnecting = true;
+  sicSocket = new WebSocket(`ws://${websocketHost}:${websocketPort}/SimpleIrcClient`);
+
+  sicSocket.onopen = () => {
+    isConnecting = false;
+    console.log('WebSocket connected');
+    triggerEvent('connect', {});
+  };
+
+  sicSocket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data as string) as { event?: string; data?: unknown };
+      if (data.event) {
+        triggerEvent(data.event, data.data);
+      }
+    } catch (err) {
+      console.error('Failed to parse WebSocket message:', err);
+    }
+  };
+
+  sicSocket.onerror = (error) => {
+    isConnecting = false;
+    console.error('WebSocket error:', error);
+    triggerEvent('error', error);
+  };
+
+  sicSocket.onclose = () => {
+    isConnecting = false;
+    console.log('WebSocket disconnected');
+    triggerEvent('close', {});
+    sicSocket = null;
+  };
+
+  return sicSocket;
+};
+
+// Event handler management
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const triggerEvent = (eventName: string, data: any) => {
+  const handlers = eventHandlers[eventName] || [];
+  handlers.forEach((handler) => handler(data));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const on = (eventName: string, callback: (data: any) => void): void => {
+  if (!eventHandlers[eventName]) {
+    eventHandlers[eventName] = [];
+  }
+  eventHandlers[eventName].push(callback);
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const off = (eventName: string, callback: (data: any) => void): void => {
+  const handlers = eventHandlers[eventName];
+  if (handlers) {
+    const index = handlers.indexOf(callback);
+    if (index > -1) {
+      handlers.splice(index, 1);
+    }
+  }
+};
+
+export const getSocket = () => {
+  if (!sicSocket) {
+    return initWebSocket();
+  }
+  return sicSocket;
+};
+
+export const isConnected = (): boolean => {
+  return sicSocket !== null && sicSocket.readyState === WebSocket.OPEN;
+};
 
 const queueIrcMessages: unknown[] = [];
 
@@ -83,7 +172,12 @@ export const ircSendRawMessage = (data: string, queue?: boolean): void => {
 };
 
 const sendMessage = (message: unknown): void => {
-  sicSocket.emit('sic-client-event', message);
+  const socket = getSocket();
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ event: 'sic-client-event', data: message }));
+  } else {
+    console.warn('WebSocket is not connected. Message not sent:', message);
+  }
 };
 
 const sendQueueMessage = (message: unknown): void => {
@@ -99,5 +193,8 @@ setInterval(function networkSendQueueMessages() {
   if (message === undefined) {
     return;
   }
-  sicSocket.emit('sic-client-event', message);
+  const socket = getSocket();
+  if (socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ event: 'sic-client-event', data: message }));
+  }
 }, 300);
