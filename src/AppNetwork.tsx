@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
 import { setAddMessage } from './store/channels';
 import { ircSendList, initWebSocket, on, off, isConnected } from './network/irc/network';
@@ -10,37 +10,33 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const AppNetwork = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
-  const isInitialized = useRef(false);
-
-  const onServerEvent = (data: IrcEvent): void => {
-    // messages sent to server
-    if (data?.line !== undefined) {
-      setAddMessage({
-        id: uuidv4(),
-        message: `<< ${data.line?.trim()}`,
-        target: DEBUG_CHANNEL,
-        time: new Date().toISOString(),
-        category: MessageCategory.info,
-        color: MessageColor.serverTo,
-      });
-    }
-  };
-
-  const onIrcEvent = (data: IrcEvent): void => {
-    // messages from server
-    try {
-      new Kernel(data).handle();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
 
   useEffect(() => {
-    // Prevent double initialization in React StrictMode
-    if (isInitialized.current) {
-      return;
-    }
-    isInitialized.current = true;
+    const onServerEvent = (data: IrcEvent): void => {
+      // messages sent to server
+      if (data?.line !== undefined) {
+        setAddMessage({
+          id: uuidv4(),
+          message: `<< ${data.line?.trim()}`,
+          target: DEBUG_CHANNEL,
+          time: new Date().toISOString(),
+          category: MessageCategory.info,
+          color: MessageColor.serverTo,
+        });
+      }
+    };
+
+    const onIrcEvent = (data: IrcEvent): void => {
+      // messages from server
+      try {
+        new Kernel(data).handle();
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+
+    on('sic-irc-event', onIrcEvent);
+    on('sic-server-event', onServerEvent);
 
     // Initialize WebSocket connection
     try {
@@ -50,8 +46,6 @@ export const AppNetwork = () => {
       console.debug('WebSocket initialization:', err);
     }
 
-    on('sic-irc-event', onIrcEvent);
-    on('sic-server-event', onServerEvent);
     return () => {
       off('sic-irc-event', onIrcEvent);
       off('sic-server-event', onServerEvent);
