@@ -6,7 +6,7 @@ import { parseServer } from './helpers';
 let sicSocket: WebSocket | null = null;
 let isConnecting = false;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const eventHandlers: { [key: string]: ((data: any) => void)[] } = {};
+const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 
 // Initialize WebSocket connection
 export const initWebSocket = (): WebSocket => {
