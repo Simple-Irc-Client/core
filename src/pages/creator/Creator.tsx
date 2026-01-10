@@ -1,5 +1,3 @@
-import React from 'react';
-import { Box, Container } from '@mui/material';
 import { useSettingsStore } from '../../store/settings';
 import CreatorChannelList from './CreatorChannelList';
 import CreatorNick from './CreatorNick';
@@ -11,42 +9,35 @@ const Creator = () => {
   const creatorStep = useSettingsStore((state) => state.creatorStep);
 
   return (
-    <Container maxWidth={creatorStep === 'channels' ? 'md' : 'sm'}>
-      <Box
-        sx={{
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
+    <div className={`mx-auto ${creatorStep === 'channels' ? 'max-w-screen-md' : 'max-w-screen-sm'}`}>
+      <div className="h-screen flex flex-col items-center">
         {creatorStep === 'nick' && (
-          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+          <div className="mt-auto md:mt-[40%] mb-auto">
             <CreatorNick />
-          </Box>
+          </div>
         )}
         {creatorStep === 'server' && (
-          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+          <div className="mt-auto md:mt-[40%] mb-auto">
             <CreatorServer />
-          </Box>
+          </div>
         )}
         {creatorStep === 'password' && (
-          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto' }}>
+          <div className="mt-auto md:mt-[40%] mb-auto">
             <CreatorPassword />
-          </Box>
+          </div>
         )}
         {creatorStep === 'loading' && (
-          <Box sx={{ marginTop: { xs: 'auto', md: '40%' }, marginBottom: 'auto', width: '100%' }}>
+          <div className="mt-auto md:mt-[40%] mb-auto w-full">
             <CreatorLoading />
-          </Box>
+          </div>
         )}
         {creatorStep === 'channels' && (
-          <Box sx={{ marginTop: { xs: 'auto', md: '25%' }, marginBottom: 'auto', width: '100%' }}>
+          <div className="mt-auto md:mt-[25%] mb-auto w-full">
             <CreatorChannelList />
-          </Box>
+          </div>
         )}
-      </Box>
-    </Container>
+      </div>
+    </div>
   );
 };
 

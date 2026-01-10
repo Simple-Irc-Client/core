@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { setCreatorStep, setNick } from '../../store/settings';
 
@@ -22,27 +24,27 @@ const CreatorNick = () => {
 
   return (
     <>
-      <Typography component="h1" variant="h5" sx={{ textAlign: 'center' }}>
-        {t('creator.nick.title')}
-      </Typography>
-      <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
-        <TextField
-          required
-          fullWidth
-          aria-label={t('creator.nick.nick') ?? ''}
-          label={t('creator.nick.nick')}
-          autoComplete="nick"
-          autoFocus
-          onChange={(event) => {
-            setFormNick(event.target.value);
-          }}
-          defaultValue={formNick}
-          tabIndex={1}
-        />
-        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={formNick === ''} tabIndex={2}>
+      <h1 className="text-2xl font-semibold text-center">{t('creator.nick.title')}</h1>
+      <form className="mt-8" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor="nick">{t('creator.nick.nick')}</Label>
+          <Input
+            id="nick"
+            required
+            aria-label={t('creator.nick.nick') ?? ''}
+            autoComplete="nick"
+            autoFocus
+            onChange={(event) => {
+              setFormNick(event.target.value);
+            }}
+            value={formNick}
+            tabIndex={1}
+          />
+        </div>
+        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={formNick === ''} tabIndex={2}>
           {t('creator.nick.button.next')}
         </Button>
-      </Box>
+      </form>
     </>
   );
 };

@@ -8,8 +8,6 @@ import Users from './components/Users';
 import Creator from '../creator/Creator';
 import { useSettingsStore } from '../../store/settings';
 
-import { Box } from '@mui/material';
-
 function App() {
   const isCreatorCompleted = useSettingsStore((state) => state.isCreatorCompleted);
 
@@ -18,23 +16,23 @@ function App() {
   };
 
   return (
-    <Box onContextMenu={handleNoContextMenu}>
+    <div onContextMenu={handleNoContextMenu}>
       {!isCreatorCompleted && <Creator />}
       {isCreatorCompleted && (
-        <Box sx={{ display: 'flex', height: '100vh' }}>
-          <Box>
+        <div className="flex h-screen">
+          <div>
             <Channels />
-          </Box>
-          <Box height="calc(100vh - (64px + 28px + 60px))" width="100%">
+          </div>
+          <div className="w-full" style={{ height: 'calc(100vh - (64px + 28px + 60px))' }}>
             <Topic />
             <Main />
             <Typing />
             <Toolbar />
-          </Box>
+          </div>
           <Users />
-        </Box>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
 

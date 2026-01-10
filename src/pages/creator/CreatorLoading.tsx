@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Box, LinearProgress } from '@mui/material';
+import { useEffect } from 'react';
+import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
 import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress } from '../../store/settings';
 
@@ -41,10 +41,10 @@ const CreatorLoading = () => {
   }, [isConnecting, isConnected]);
 
   return (
-    <Box sx={{ width: '100%', mt: 3 }}>
-      <LinearProgress variant="determinate" value={creatorProgress.value * 30} />
-      {creatorProgress.label !== '' && <h2 className="tw-text-center tw-mt-4">{creatorProgress.label}</h2>}
-    </Box>
+    <div className="w-full mt-8">
+      <Progress value={creatorProgress.value * 30} />
+      {creatorProgress.label !== '' && <h2 className="text-center mt-4">{creatorProgress.label}</h2>}
+    </div>
   );
 };
 

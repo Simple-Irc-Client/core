@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Button, TextField, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword } from '../../network/irc/network';
 import { setCreatorStep, useSettingsStore } from '../../store/settings';
@@ -16,8 +18,7 @@ const CreatorPassword = () => {
     handleClick();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleChange = (event: any): void => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setPassword(event.target.value);
   };
 
@@ -36,31 +37,26 @@ const CreatorPassword = () => {
 
   return (
     <>
-      <Typography component="h1" variant="h5" sx={{ textAlign: 'center' }}>
-        {t('creator.password.title')}
-      </Typography>
-      <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
+      <h1 className="text-2xl font-semibold text-center">{t('creator.password.title')}</h1>
+      <form className="mt-8" onSubmit={handleSubmit}>
         {lastNick !== nick && (
-          <>
-            <Typography align="center" variant="subtitle1">
-              {t('creator.password.message.timeout1')}
-            </Typography>
-            <Typography align="center" variant="subtitle1">
-              {t('creator.password.message.timeout2')}
-            </Typography>
-            <Typography align="center" variant="subtitle2">
-              {t('creator.password.message.timeout3', { nick: lastNick })}
-            </Typography>
-            <Typography align="center" variant="subtitle2">
-              {t('creator.password.message.timeout4')}
-            </Typography>
-          </>
+          <div className="space-y-2 text-center">
+            <p className="text-base">{t('creator.password.message.timeout1')}</p>
+            <p className="text-base">{t('creator.password.message.timeout2')}</p>
+            <p className="text-sm">{t('creator.password.message.timeout3', { nick: lastNick })}</p>
+            <p className="text-sm">{t('creator.password.message.timeout4')}</p>
+          </div>
         )}
-        {lastNick === nick && <TextField type="password" required fullWidth label={t('creator.password.password')} autoComplete="password" autoFocus onChange={handleChange} />}
-        <Button onClick={handleClick} type="button" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }} disabled={lastNick === nick && password === ''}>
+        {lastNick === nick && (
+          <div className="space-y-2">
+            <Label htmlFor="password">{t('creator.password.password')}</Label>
+            <Input id="password" type="password" required autoComplete="password" autoFocus onChange={handleChange} />
+          </div>
+        )}
+        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={lastNick === nick && password === ''}>
           {t('creator.password.button.next')}
         </Button>
-      </Box>
+      </form>
     </>
   );
 };
