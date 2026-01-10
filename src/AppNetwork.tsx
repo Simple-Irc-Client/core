@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useSettingsStore } from './store/settings';
 import { setAddMessage } from './store/channels';
-import { ircSendList, sicSocket } from './network/irc/network';
+import { ircSendList, initWebSocket, on, off, isConnected } from './network/irc/network';
 import { type IrcEvent, Kernel } from './network/irc/kernel';
 import { DEBUG_CHANNEL } from './config/config';
 import { MessageCategory } from './types';
@@ -11,41 +11,50 @@ import { v4 as uuidv4 } from 'uuid';
 export const AppNetwork = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
 
-  const onServerEvent = (data: IrcEvent): void => {
-    // messages sent to server
-    if (data?.line !== undefined) {
-      setAddMessage({
-        id: uuidv4(),
-        message: `<< ${data.line?.trim()}`,
-        target: DEBUG_CHANNEL,
-        time: new Date().toISOString(),
-        category: MessageCategory.info,
-        color: MessageColor.serverTo,
-      });
-    }
-  };
-
-  const onIrcEvent = (data: IrcEvent): void => {
-    // messages from server
-    try {
-      new Kernel(data).handle();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
   useEffect(() => {
-    sicSocket.on('sic-irc-event', onIrcEvent);
-    sicSocket.on('sic-server-event', onServerEvent);
+    const onServerEvent = (data: IrcEvent): void => {
+      // messages sent to server
+      if (data?.line !== undefined) {
+        setAddMessage({
+          id: uuidv4(),
+          message: `<< ${data.line?.trim()}`,
+          target: DEBUG_CHANNEL,
+          time: new Date().toISOString(),
+          category: MessageCategory.info,
+          color: MessageColor.serverTo,
+        });
+      }
+    };
+
+    const onIrcEvent = (data: IrcEvent): void => {
+      // messages from server
+      try {
+        new Kernel(data).handle();
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+
+    on('sic-irc-event', onIrcEvent);
+    on('sic-server-event', onServerEvent);
+
+    // Initialize WebSocket connection
+    try {
+      initWebSocket();
+    } catch (err) {
+      // Connection already in progress, that's fine
+      console.debug('WebSocket initialization:', err);
+    }
+
     return () => {
-      sicSocket.off('sic-irc-event', onIrcEvent);
-      sicSocket.off('sic-server-event', onServerEvent);
+      off('sic-irc-event', onIrcEvent);
+      off('sic-server-event', onServerEvent);
     };
   }, []);
 
   // send LIST request after 20 seconds
   useEffect(() => {
-    if (sicSocket.connected && listRequestRemainingSeconds > -1) {
+    if (isConnected() && listRequestRemainingSeconds > -1) {
       const listRequestTimeout = setTimeout(
         () => {
           ircSendList();
