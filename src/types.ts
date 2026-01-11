@@ -18,6 +18,22 @@ export interface ChannelList {
   topic: string;
 }
 
+export const MessageCategory = {
+  default: 'default',
+  join: 'join',
+  part: 'part',
+  quit: 'quit',
+  kick: 'kick',
+  mode: 'mode',
+  notice: 'notice',
+  info: 'info',
+  me: 'me',
+  error: 'error',
+  motd: 'motd',
+} as const;
+
+export type MessageCategory = (typeof MessageCategory)[keyof typeof MessageCategory];
+
 export interface Message {
   id: string;
   message: string;
@@ -28,21 +44,16 @@ export interface Message {
   color?: MessageColor;
 }
 
-export enum MessageCategory {
-  default = 'default',
-  join = 'join',
-  part = 'part',
-  quit = 'quit',
-  kick = 'kick',
-  mode = 'mode',
-  notice = 'notice',
-  info = 'info',
-  me = 'me',
-  error = 'error',
-  motd = 'motd',
-}
-
 export type UserTypingStatus = 'active' | 'paused' | 'done';
+
+export const ChannelCategory = {
+  channel: 'channel',
+  priv: 'priv',
+  status: 'status',
+  debug: 'debug',
+} as const;
+
+export type ChannelCategory = (typeof ChannelCategory)[keyof typeof ChannelCategory];
 
 export interface Channel {
   name: string;
@@ -56,13 +67,6 @@ export interface ChannelExtended extends Channel {
   topicSetBy: string;
   topicSetTime: number;
   typing: string[]; // Record<string, UserTypingStatus>;
-}
-
-export enum ChannelCategory {
-  channel = 'channel',
-  priv = 'priv',
-  status = 'status',
-  debug = 'debug',
 }
 
 export interface User {

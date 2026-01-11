@@ -28,7 +28,7 @@ const Toolbar = () => {
   const typingStatus = useRef<'active' | 'paused' | 'done' | undefined>(undefined);
 
   const commands = useMemo(() => {
-    const commandsNotSorted = [ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands;
+    const commandsNotSorted = (currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) ? generalCommands.concat(channelCommands) : generalCommands;
     return commandsNotSorted.sort((a, b) => {
       const A = a.toLowerCase();
       const B = b.toLowerCase();

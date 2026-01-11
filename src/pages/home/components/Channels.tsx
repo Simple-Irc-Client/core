@@ -121,7 +121,7 @@ const Channels = () => {
                   {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
                     <Badge className="h-5 min-w-5 flex items-center justify-center text-xs">{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
                   )}
-                  {[ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) && showRemoveChannelIcon === channel.name && (
+                  {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                     <Button
                       variant="ghost"
                       size="icon"

@@ -15,7 +15,7 @@ const Users = () => {
 
   return (
     <>
-      {[ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) && (
+      {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
         <div className="hidden sm:block border-l border-gray-200 overflow-y-auto" style={{ minWidth: `${usersWidth}px` }}>
           <div style={{ backgroundColor: usersColor }}>
             <div className="mb-4" style={{ backgroundColor: usersTitleColor }}>
