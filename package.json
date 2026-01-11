@@ -14,7 +14,7 @@
     "lint": "npx eslint src/**/*.{ts,tsx}"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
