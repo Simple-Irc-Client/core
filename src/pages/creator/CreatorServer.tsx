@@ -37,7 +37,7 @@ const CreatorServer = () => {
   return (
     <>
       <h1 className="text-2xl font-semibold text-center">{t('creator.server.title')}</h1>
-      <form className="mt-8" onSubmit={handleSubmit}>
+      <form className="mt-8 flex flex-col items-center" onSubmit={handleSubmit}>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" role="combobox" aria-expanded={open} className="w-[300px] justify-between">
@@ -69,7 +69,7 @@ const CreatorServer = () => {
             </Command>
           </PopoverContent>
         </Popover>
-        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={formServer == null}>
+        <Button onClick={handleClick} type="button" className="w-[300px] mt-8 mb-4" disabled={formServer == null}>
           {t('creator.server.button.next')}
         </Button>
       </form>
