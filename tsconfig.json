@@ -38,6 +38,8 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
 
+    "erasableSyntaxOnly": true,
+
     /* Completeness */
     "skipLibCheck": true,
 
