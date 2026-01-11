@@ -49,7 +49,9 @@ const Toolbar = () => {
     }
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+
     if (message.length === 0) {
       return;
     }
@@ -201,7 +203,7 @@ const Toolbar = () => {
       {currentChannelName !== DEBUG_CHANNEL && (
         <>
           <div className="flex-1 mb-2.5 relative">
-            <label htmlFor="message-input" className="absolute -top-2 left-0 text-xs text-gray-600">
+            <label htmlFor="message-input" className="absolute -top-5 left-0 text-xs text-gray-600">
               {`${t('main.toolbar.write')} ${currentChannelName}`}
             </label>
             <Input
