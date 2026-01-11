@@ -7,6 +7,7 @@ import Topic from './components/Topic';
 import Users from './components/Users';
 import Creator from '../creator/Creator';
 import { useSettingsStore } from '../../store/settings';
+import { channelsColor } from '@/config/theme';
 
 function App() {
   const isCreatorCompleted = useSettingsStore((state) => state.isCreatorCompleted);
@@ -20,7 +21,7 @@ function App() {
       {!isCreatorCompleted && <Creator />}
       {isCreatorCompleted && (
         <div className="flex h-screen">
-          <div>
+          <div style={{backgroundColor: channelsColor}}>
             <Channels />
           </div>
           <div className="w-full" style={{ height: 'calc(100vh - (64px + 28px + 60px))' }}>

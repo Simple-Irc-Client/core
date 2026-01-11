@@ -31,8 +31,6 @@ const Channels = () => {
     setChannelsList(isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []);
   }, [isChannelListLoadingFinished]);
 
-  const [joinChannel, setJoinChannel] = useState<string>('');
-
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -52,10 +50,9 @@ const Channels = () => {
     }
   };
 
-  const handleJoinChannel = (): void => {
-    if (joinChannel.length !== 0) {
-      ircJoinChannels([joinChannel]);
-      setJoinChannel('');
+  const handleJoinChannel = (channel: string): void => {
+    if (channel.length !== 0) {
+      ircJoinChannels([channel]);
       setOpen(false);
     }
   };
@@ -84,7 +81,6 @@ const Channels = () => {
       className="md:bg-opacity-100"
       style={{
         minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '',
-        backgroundColor: channelsColor,
       }}
     >
       <div className="mb-4 md:bg-opacity-100" style={{ backgroundColor: channelsTitleColor }}>
@@ -143,7 +139,7 @@ const Channels = () => {
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between text-sm h-9">
-                {joinChannel || t('main.channels.join')}
+                {t('main.channels.join')}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
@@ -160,11 +156,11 @@ const Channels = () => {
                           key={option.name}
                           value={option.name}
                           onSelect={(currentValue) => {
-                            setJoinChannel(currentValue);
+                            handleJoinChannel(currentValue);
                             setOpen(false);
                           }}
                         >
-                          <Check className={cn('mr-2 h-4 w-4', joinChannel === option.name ? 'opacity-100' : 'opacity-0')} />
+                          <Check className={cn('mr-2 h-4 w-4 opacity-0')} />
                           {option.name}
                         </CommandItem>
                       ))}
@@ -173,9 +169,6 @@ const Channels = () => {
               </Command>
             </PopoverContent>
           </Popover>
-          <Button variant="ghost" size="icon" aria-label="add" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleJoinChannel}>
-            <Plus className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
