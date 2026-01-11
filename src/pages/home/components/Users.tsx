@@ -1,7 +1,5 @@
-import React from 'react';
 import { useSettingsStore } from '../../../store/settings';
 import { ChannelCategory } from '../../../types';
-import { Avatar, Box, List, ListItemAvatar, ListItemButton, ListItemText, ListSubheader } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { usersColor, usersTitleColor, usersWidth } from '../../../config/theme';
 import { useCurrentStore } from '../../../store/current';
@@ -17,35 +15,38 @@ const Users = () => {
 
   return (
     <>
-      {[ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) && (
-        <Box sx={{ display: { xs: 'none', sm: 'block' }, borderLeft: '1px solid #eeeeee', overflowY: 'auto', minWidth: `${usersWidth}px` }}>
-          <List
-            subheader={
-              <ListSubheader component="div" sx={{ backgroundColor: usersTitleColor, marginBottom: '1rem' }}>
-                {t('main.users.title')}
-              </ListSubheader>
-            }
-            dense={true}
-            sx={{
-              backgroundColor: usersColor,
-            }}
-          >
-            {users.map((user) => (
-              <React.Fragment key={user.nick}>
-                <ListItemButton
+      {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
+        <div className="hidden sm:block border-l border-gray-200 overflow-y-auto" style={{ minWidth: `${usersWidth}px` }}>
+          <div style={{ backgroundColor: usersColor }}>
+            <div className="mb-4" style={{ backgroundColor: usersTitleColor }}>
+              <h3 className="text-sm font-medium p-4">{t('main.users.title')}</h3>
+            </div>
+            <div className="space-y-1">
+              {users.map((user) => (
+                <button
+                  key={user.nick}
                   onClick={(event) => {
                     handleContextMenuUserClick(event, 'user', user.nick);
                   }}
+                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 text-left"
                 >
-                  <ListItemAvatar>
-                    <Avatar alt={user.nick} src={user.avatar} />
-                  </ListItemAvatar>
-                  <ListItemText primary={user.nick} sx={{ color: user.color ?? 'inherit' }} />
-                </ListItemButton>
-              </React.Fragment>
-            ))}
-          </List>
-        </Box>
+                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                    {user.avatar ? (
+                      <img className="aspect-square h-full w-full" alt={user.nick} src={user.avatar} />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                        {user.nick.substring(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
+                    {user.nick}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

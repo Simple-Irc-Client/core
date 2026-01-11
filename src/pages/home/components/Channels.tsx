@@ -1,22 +1,19 @@
-import React, { useMemo, useState } from 'react';
-import { List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Badge, Drawer, ListItem, IconButton, Autocomplete, TextField } from '@mui/material';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import TagOutlinedIcon from '@mui/icons-material/TagOutlined';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import BuildOutlinedIcon from '@mui/icons-material/BuildOutlined';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import { useMemo, useState } from 'react';
+import { Plus, Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, type Channel } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '../../../store/channels';
 import { channelsColor, channelsWidth, channelsTitleColor } from '../../../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../../../network/irc/network';
-import { type BadgeProps } from '@mui/material/Badge';
-import { styled } from '@mui/material/styles';
 import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { getChannelListSortedByAZ, useChannelListStore } from '../../../store/channelList';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 const Channels = () => {
   const { t } = useTranslation();
@@ -37,6 +34,7 @@ const Channels = () => {
   const [joinChannel, setJoinChannel] = useState<string>('');
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
+  const [open, setOpen] = useState(false);
 
   const handleHover = (channel: string, visible: boolean): void => {
     if (visible) {
@@ -58,6 +56,7 @@ const Channels = () => {
     if (joinChannel.length !== 0) {
       ircJoinChannels([joinChannel]);
       setJoinChannel('');
+      setOpen(false);
     }
   };
 
@@ -65,120 +64,132 @@ const Channels = () => {
     setCurrentChannelName(channel.name, channel.category);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const StyledBadge = styled(Badge)<BadgeProps>(({ theme }) => ({
-    '& .MuiBadge-badge': {
-      top: '50%',
-    },
-  }));
+  const getChannelIcon = (category: ChannelCategory | undefined) => {
+    switch (category) {
+      case 'channel':
+        return <Hash className="h-4 w-4" />;
+      case 'priv':
+        return <User className="h-4 w-4" />;
+      case 'status':
+        return <Home className="h-4 w-4" />;
+      case 'debug':
+        return <Wrench className="h-4 w-4" />;
+      default:
+        return <Hash className="h-4 w-4" />;
+    }
+  };
 
   const ChannelsList = () => (
-    <List
-      subheader={
-        <ListSubheader component="div" sx={{ backgroundColor: { md: channelsTitleColor }, marginBottom: '1rem' }}>
-          {t('main.channels.title')}
-        </ListSubheader>
-      }
-      sx={{ minWidth: `${isChannelsDrawerOpen ? `${channelsWidth}px` : ''}`, backgroundColor: { md: channelsColor } }}
+    <div
+      className="md:bg-opacity-100"
+      style={{
+        minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '',
+        backgroundColor: channelsColor,
+      }}
     >
-      {openChannelsShort.map((channel) => (
-        <ListItem
-          key={channel.name}
-          onMouseEnter={() => {
-            handleHover(channel.name, true);
-          }}
-          onMouseLeave={() => {
-            handleHover(channel.name, false);
-          }}
-          secondaryAction={
-            <>
+      <div className="mb-4 md:bg-opacity-100" style={{ backgroundColor: channelsTitleColor }}>
+        <h3 className="text-sm font-medium p-4">{t('main.channels.title')}</h3>
+      </div>
+      <div>
+        {openChannelsShort.map((channel) => (
+          <div
+            key={channel.name}
+            onMouseEnter={() => {
+              handleHover(channel.name, true);
+            }}
+            onMouseLeave={() => {
+              handleHover(channel.name, false);
+            }}
+            className="relative"
+          >
+            <button
+              aria-label={channel.name}
+              onClick={() => {
+                handleListItemClick(channel);
+              }}
+              className={cn(
+                'w-full flex items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100',
+                currentChannelName === channel.name && 'bg-gray-200'
+              )}
+            >
+              <span className="min-w-[30px]">{getChannelIcon(channel.category)}</span>
+              <span className="flex-1">{channel.name}</span>
+            </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
                 <>
-                  {showRemoveChannelIcon !== channel.name && <StyledBadge badgeContent={channel.unReadMessages} showZero={false} max={99} color="primary" />}
-                  <IconButton
-                    edge="end"
-                    aria-label="close"
-                    sx={{ display: [ChannelCategory.channel, ChannelCategory.priv].includes(channel.category) ? (showRemoveChannelIcon === channel.name ? 'inherit' : 'none') : 'none' }}
-                    onClick={() => {
-                      handleRemoveChannel(channel);
-                    }}
-                  >
-                    <CloseOutlinedIcon />
-                  </IconButton>
+                  {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
+                    <Badge className="h-5 min-w-5 flex items-center justify-center text-xs">{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+                  )}
+                  {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="close"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        handleRemoveChannel(channel);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </>
               )}
-            </>
-          }
-          disablePadding
-        >
-          <ListItemButton
-            aria-label={channel.name}
-            dense={true}
-            onClick={() => {
-              handleListItemClick(channel);
-            }}
-            selected={currentChannelName === channel.name}
-          >
-            <ListItemIcon sx={{ minWidth: '30px' }}>
-              {channel.category === 'channel' && <TagOutlinedIcon />}
-              {channel.category === 'priv' && <PersonOutlineOutlinedIcon />}
-              {channel.category === 'status' && <HomeOutlinedIcon />}
-              {channel.category === 'debug' && <BuildOutlinedIcon />}
-              {channel.category === undefined && <TagOutlinedIcon />}
-            </ListItemIcon>
-            <ListItemText primary={channel.name} />
-          </ListItemButton>
-        </ListItem>
-      ))}
-      <ListItem
-        secondaryAction={
-          <IconButton
-            edge="end"
-            aria-label="add"
-            onClick={() => {
-              handleJoinChannel();
-            }}
-          >
-            <AddOutlinedIcon />
-          </IconButton>
-        }
-      >
-        <Autocomplete
-          value={joinChannel}
-          size="small"
-          options={channelsList.map((option) => option.name)}
-          getOptionDisabled={(option) =>
-            openChannelsShort
-              .map((channel) => {
-                return channel.name;
-              })
-              .includes(option)
-          }
-          freeSolo
-          onChange={(event, newValue) => {
-            if (newValue != null) {
-              setJoinChannel(newValue);
-            }
-          }}
-          renderInput={(params) => <TextField {...params} variant="standard" />}
-          sx={{ width: '100%' }}
-        />
-      </ListItem>
-    </List>
+            </div>
+          </div>
+        ))}
+        <div className="relative px-4 py-2">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between text-sm h-9">
+                {joinChannel || t('main.channels.join')}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput placeholder={t('main.channels.search') ?? ''} />
+                <CommandList>
+                  <CommandEmpty>{t('main.channels.no-results')}</CommandEmpty>
+                  <CommandGroup>
+                    {channelsList
+                      .filter((option) => !openChannelsShort.map((channel) => channel.name).includes(option.name))
+                      .map((option) => (
+                        <CommandItem
+                          key={option.name}
+                          value={option.name}
+                          onSelect={(currentValue) => {
+                            setJoinChannel(currentValue);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check className={cn('mr-2 h-4 w-4', joinChannel === option.name ? 'opacity-100' : 'opacity-0')} />
+                          {option.name}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <Button variant="ghost" size="icon" aria-label="add" className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleJoinChannel}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <Drawer
-      variant="persistent"
-      sx={{
-        overflowY: 'scroll',
-        minWidth: `${isChannelsDrawerOpen ? `${channelsWidth}px` : ''}`,
-        '& .MuiDrawer-paper': { backgroundColor: { md: channelsColor } },
+    <div
+      className={cn('overflow-y-auto transition-all duration-300', isChannelsDrawerOpen ? 'w-auto' : 'w-0')}
+      style={{
+        minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '0',
       }}
-      open={isChannelsDrawerOpen}
     >
-      <ChannelsList />
-    </Drawer>
+      {isChannelsDrawerOpen && <ChannelsList />}
+    </div>
   );
 };
 

@@ -1,5 +1,3 @@
-import React from 'react';
-import { Box } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useCurrentStore } from '../../../store/current';
 
@@ -9,14 +7,14 @@ const Typing = () => {
   const typing = useCurrentStore((state) => state.typing);
 
   return (
-    <Box sx={{ fontSize: '12px', height: '28px', marginLeft: '16px' }}>
+    <div className="text-xs h-7 ml-4">
       {typing.length !== 0 && (
         <>
           {typing.join(', ')}
           &nbsp;{t('main.user-typing')}
         </>
       )}
-    </Box>
+    </div>
   );
 };
 

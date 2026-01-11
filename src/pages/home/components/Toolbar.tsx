@@ -1,10 +1,9 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Box, IconButton, TextField } from '@mui/material';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
 import { ircSendRawMessage } from '../../../network/irc/network';
-import SendIcon from '@mui/icons-material/Send';
+import { Send } from 'lucide-react';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { setAddMessage } from '../../../store/channels';
@@ -12,6 +11,8 @@ import { getUser, getUsersFromChannelSortedByAZ } from '../../../store/users';
 import { MessageColor } from '../../../config/theme';
 import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '../../../store/channelList';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ const Toolbar = () => {
   const typingStatus = useRef<'active' | 'paused' | 'done' | undefined>(undefined);
 
   const commands = useMemo(() => {
-    const commandsNotSorted = [ChannelCategory.channel, ChannelCategory.priv].includes(currentChannelCategory) ? generalCommands.concat(channelCommands) : generalCommands;
+    const commandsNotSorted = (currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) ? generalCommands.concat(channelCommands) : generalCommands;
     return commandsNotSorted.sort((a, b) => {
       const A = a.toLowerCase();
       const B = b.toLowerCase();
@@ -196,27 +197,31 @@ const Toolbar = () => {
   };
 
   return (
-    <Box component="form" sx={{ paddingLeft: '16px', paddingRight: '16px', display: 'flex', borderTop: '1px solid #eeeeee' }} onSubmit={handleSubmit}>
+    <form className="px-4 flex border-t border-gray-200" onSubmit={handleSubmit}>
       {currentChannelName !== DEBUG_CHANNEL && (
         <>
-          <TextField
-            label={`${t('main.toolbar.write')} ${currentChannelName}`}
-            variant="standard"
-            autoFocus
-            value={message}
-            sx={{ flexGrow: '1', marginBottom: '10px' }}
-            onChange={handleChange}
-            onKeyUp={handleKeyUp}
-            onKeyDown={handleKeyDown}
-            autoComplete="off"
-            inputRef={autocompleteInput}
-          />
-          <IconButton type="submit" aria-label="send">
-            <SendIcon />
-          </IconButton>
+          <div className="flex-1 mb-2.5 relative">
+            <label htmlFor="message-input" className="absolute -top-2 left-0 text-xs text-gray-600">
+              {`${t('main.toolbar.write')} ${currentChannelName}`}
+            </label>
+            <Input
+              id="message-input"
+              autoFocus
+              value={message}
+              onChange={handleChange}
+              onKeyUp={handleKeyUp}
+              onKeyDown={handleKeyDown}
+              autoComplete="off"
+              ref={autocompleteInput}
+              className="border-0 border-b border-gray-300 rounded-none focus-visible:ring-0 focus-visible:border-b-2 focus-visible:border-primary px-0"
+            />
+          </div>
+          <Button type="submit" aria-label="send" variant="ghost" size="icon">
+            <Send className="h-4 w-4" />
+          </Button>
         </>
       )}
-    </Box>
+    </form>
   );
 };
 

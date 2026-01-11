@@ -1,5 +1,10 @@
-import React from 'react';
-import { Divider, Menu, MenuItem } from '@mui/material';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
@@ -22,18 +27,24 @@ export const ContextMenu = () => {
     };
 
     return (
-      <Menu
-        open={contextMenuOpen}
-        onClose={handleContextMenuClose}
-        anchorEl={contextMenuAnchorElement}
-        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-      >
-        <MenuItem disabled>{contextMenuItem ?? ''}</MenuItem>
-        <Divider />
-        <MenuItem onClick={handlePriv}>Priv</MenuItem>
-        <MenuItem onClick={handleWhois}>Whois</MenuItem>
-      </Menu>
+      <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
+        <DropdownMenuContent
+          style={
+            contextMenuAnchorElement
+              ? {
+                  position: 'fixed',
+                  left: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().left}px`,
+                  top: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().bottom}px`,
+                }
+              : undefined
+          }
+        >
+          <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handlePriv}>Priv</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleWhois}>Whois</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
   return <></>;
