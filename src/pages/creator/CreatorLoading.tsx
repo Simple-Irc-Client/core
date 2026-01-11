@@ -13,6 +13,7 @@ const CreatorLoading = () => {
   useEffect(() => {
     if (isConnecting) {
       setCreatorProgress(1, t('creator.loading.connecting'));
+      return undefined;
     }
 
     if (isConnected) {
@@ -38,6 +39,7 @@ const CreatorLoading = () => {
     if (!isConnecting && !isConnected && creatorProgress.value !== 0) {
       setCreatorProgress(0, t('creator.loading.disconnected'));
     }
+    return undefined;
   }, [isConnecting, isConnected]);
 
   return (

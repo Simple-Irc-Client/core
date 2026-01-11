@@ -65,6 +65,7 @@ export const AppNetwork = () => {
         clearTimeout(listRequestTimeout);
       };
     }
+    return undefined;
   }, [listRequestRemainingSeconds]);
 
   return <></>;
