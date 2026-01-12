@@ -1,12 +1,17 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { parseMessageToCommand } from '../command';
 import { useChannelsStore } from '../../../store/channels';
+import { useSettingsStore } from '../../../store/settings';
 import { ChannelCategory } from '../../../types';
 
 describe('command tests', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ channelTypes: ['#', '&'] });
+    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+  });
   it('test away command', () => {
     expect(parseMessageToCommand('#channel', '/away message')).toStrictEqual('away message');
   });
