@@ -58,6 +58,10 @@ docker run -p 5173:5173 simple-irc-client
 
 The application will be available at `http://localhost:5173`
 
+## Related Projects
+
+- [Simple-Irc-Client](https://github.com/Simple-Irc-Client) - Main project organization
+
 ## Contributing
 If you find a bug or have a feature request, please [open an issue](https://github.com/Simple-Irc-Client/core/issues) on GitHub.
 
