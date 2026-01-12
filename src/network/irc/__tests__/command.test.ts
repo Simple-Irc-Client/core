@@ -66,4 +66,25 @@ describe('command tests', () => {
   it('test topic command', () => {
     expect(parseMessageToCommand('#channel', '/topic new topic')).toStrictEqual('TOPIC #channel :new topic');
   });
+
+  it('test ban command', () => {
+    expect(parseMessageToCommand('#channel', '/ban')).toStrictEqual('MODE #channel +b');
+    expect(parseMessageToCommand('#channel', '/ban *!*@*.example.com')).toStrictEqual('MODE #channel +b *!*@*.example.com');
+    expect(parseMessageToCommand('#channel', '/b')).toStrictEqual('MODE #channel +b');
+    expect(parseMessageToCommand('#channel', '/b nick!user@host')).toStrictEqual('MODE #channel +b nick!user@host');
+  });
+
+  it('test kickban command', () => {
+    expect(parseMessageToCommand('#channel', '/kb')).toStrictEqual('kb');
+    expect(parseMessageToCommand('#channel', '/kb user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kb user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
+    expect(parseMessageToCommand('#channel', '/kban')).toStrictEqual('kban');
+    expect(parseMessageToCommand('#channel', '/kban user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kban user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
+  });
+
+  it('test me command', () => {
+    expect(parseMessageToCommand('#channel', '/me')).toStrictEqual('me');
+    expect(parseMessageToCommand('#channel', '/me waves hello')).toStrictEqual('PRIVMSG #channel :\x01ACTION waves hello\x01');
+  });
 });

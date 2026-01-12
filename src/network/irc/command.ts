@@ -40,8 +40,8 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   if (channel !== STATUS_CHANNEL) {
     switch (command) {
       case 'ban':
-        // TODO ban
-        break;
+      case 'b':
+        return banCommand(channel, line) ?? originalLine;
       case 'cycle':
       case 'hop':
         return cycleCommand(channel, line);
@@ -49,14 +49,12 @@ export const parseMessageToCommand = (channel: string, message: string): string 
         return inviteCommand(channel, line) ?? originalLine;
       case 'kb':
       case 'kban':
-        // TODO kban
-        break;
+        return kickBanCommand(channel, line) ?? originalLine;
       case 'kick':
       case 'k':
         return kickCommand(channel, line) ?? originalLine;
       case 'me':
-        // TODO me
-        break;
+        return meCommand(channel, line) ?? originalLine;
       case 'part':
       case 'p':
         return partCommand(channel, line);
@@ -129,4 +127,39 @@ const partCommand = (channel: string, line: string[]): string => {
 
 const topicCommand = (channel: string, line: string[]): string => {
   return `TOPIC ${channel} :${line.join(' ')}`;
+};
+
+const banCommand = (channel: string, line: string[]): string | undefined => {
+  const mask = line.shift();
+
+  if (mask === undefined) {
+    return `MODE ${channel} +b`;
+  }
+
+  return `MODE ${channel} +b ${mask}`;
+};
+
+const kickBanCommand = (channel: string, line: string[]): string | undefined => {
+  const user = line.shift();
+
+  if (user === undefined) {
+    return undefined;
+  }
+
+  let reason = line.join(' ');
+  if (reason.length !== 0) {
+    reason = ` :${reason}`;
+  }
+
+  return `MODE ${channel} +b ${user}\nKICK ${channel} ${user}${reason}`;
+};
+
+const meCommand = (channel: string, line: string[]): string | undefined => {
+  const action = line.join(' ');
+
+  if (action.length === 0) {
+    return undefined;
+  }
+
+  return `PRIVMSG ${channel} :\x01ACTION ${action}\x01`;
 };
