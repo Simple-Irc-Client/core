@@ -72,5 +72,22 @@
     "kernel.474.cannot-join-channel-b": "Nie możesz dołączyć do kanału (Masz bana)",
     "kernel.477.you-need-a-registered-nick-to-join-that-channel": "Wymagany jest zarejestrowany nick aby dołączyć do tego kanału",
     "kernel.671": "* {{user}} {{message}}",
-    "kernel.671.is-using-a-secure-connection": "Używa bezpiecznego połączenia"
+    "kernel.671.is-using-a-secure-connection": "Używa bezpiecznego połączenia",
+    "help.title": "--- Dostępne komendy ---",
+    "help.cmd.all": "Wyślij wiadomość do wszystkich otwartych kanałów",
+    "help.cmd.away": "Ustaw lub wyczyść status nieobecności",
+    "help.cmd.ban": "Zbanuj użytkownika lub wyświetl listę banów (tylko na kanale)",
+    "help.cmd.cycle": "Wyjdź i ponownie dołącz do kanału",
+    "help.cmd.help": "Wyświetl tę pomoc",
+    "help.cmd.invite": "Zaproś użytkownika na kanał",
+    "help.cmd.join": "Dołącz do kanału",
+    "help.cmd.kban": "Wyrzuć i zbanuj użytkownika (tylko na kanale)",
+    "help.cmd.kick": "Wyrzuć użytkownika z kanału",
+    "help.cmd.me": "Wyślij wiadomość akcji",
+    "help.cmd.raw": "Wyślij surowe polecenie IRC",
+    "help.cmd.part": "Opuść bieżący kanał",
+    "help.cmd.quit": "Rozłącz z serwerem",
+    "help.cmd.topic": "Ustaw temat kanału",
+    "help.cmd.whois": "Pobierz informacje o użytkowniku",
+    "help.cmd.who": "Wyświetl użytkowników pasujących do maski"
 }

@@ -1,10 +1,17 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import { parseMessageToCommand } from '../command';
+import { useChannelsStore } from '../../../store/channels';
+import { useSettingsStore } from '../../../store/settings';
+import { ChannelCategory } from '../../../types';
 
 describe('command tests', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ channelTypes: ['#', '&'] });
+    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+  });
   it('test away command', () => {
     expect(parseMessageToCommand('#channel', '/away message')).toStrictEqual('away message');
   });
@@ -65,5 +72,60 @@ describe('command tests', () => {
 
   it('test topic command', () => {
     expect(parseMessageToCommand('#channel', '/topic new topic')).toStrictEqual('TOPIC #channel :new topic');
+  });
+
+  it('test ban command', () => {
+    expect(parseMessageToCommand('#channel', '/ban')).toStrictEqual('MODE #channel +b');
+    expect(parseMessageToCommand('#channel', '/ban *!*@*.example.com')).toStrictEqual('MODE #channel +b *!*@*.example.com');
+    expect(parseMessageToCommand('#channel', '/b')).toStrictEqual('MODE #channel +b');
+    expect(parseMessageToCommand('#channel', '/b nick!user@host')).toStrictEqual('MODE #channel +b nick!user@host');
+  });
+
+  it('test kickban command', () => {
+    expect(parseMessageToCommand('#channel', '/kb')).toStrictEqual('kb');
+    expect(parseMessageToCommand('#channel', '/kb user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kb user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
+    expect(parseMessageToCommand('#channel', '/kban')).toStrictEqual('kban');
+    expect(parseMessageToCommand('#channel', '/kban user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kban user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
+  });
+
+  it('test me command', () => {
+    expect(parseMessageToCommand('#channel', '/me')).toStrictEqual('me');
+    expect(parseMessageToCommand('#channel', '/me waves hello')).toStrictEqual('PRIVMSG #channel :\x01ACTION waves hello\x01');
+  });
+
+  it('test all command', () => {
+    useChannelsStore.setState({
+      openChannels: [
+        { name: '#channel1', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+        { name: '#channel2', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+        { name: 'privUser', category: ChannelCategory.priv, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+      ],
+      openChannelsShortList: [],
+    });
+
+    expect(parseMessageToCommand('#channel', '/all')).toStrictEqual('all');
+    expect(parseMessageToCommand('#channel', '/all hello everyone')).toStrictEqual(
+      'PRIVMSG #channel1 :hello everyone\nPRIVMSG #channel2 :hello everyone',
+    );
+    expect(parseMessageToCommand('#channel', '/amsg hello everyone')).toStrictEqual(
+      'PRIVMSG #channel1 :hello everyone\nPRIVMSG #channel2 :hello everyone',
+    );
+  });
+
+  it('test help command', () => {
+    useChannelsStore.setState({
+      openChannels: [
+        { name: '#channel', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+      ],
+      openChannelsShortList: [],
+    });
+
+    expect(parseMessageToCommand('#channel', '/help')).toStrictEqual('');
+
+    const messages = useChannelsStore.getState().openChannels[0]?.messages;
+    expect(messages?.length).toBeGreaterThan(0);
+    expect(messages?.[0]?.message).toStrictEqual('--- Dostępne komendy ---'); // Polish is default language
   });
 });

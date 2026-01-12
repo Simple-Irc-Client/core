@@ -72,5 +72,22 @@
     "kernel.474.cannot-join-channel-b": "Cannot join channel (You're banned)",
     "kernel.477.you-need-a-registered-nick-to-join-that-channel": "You need a registered nick to join that channel.",
     "kernel.671": "* {{user}} {{message}}",
-    "kernel.671.is-using-a-secure-connection": "Is using a Secure Connection"
+    "kernel.671.is-using-a-secure-connection": "Is using a Secure Connection",
+    "help.title": "--- Available Commands ---",
+    "help.cmd.all": "Send message to all open channels",
+    "help.cmd.away": "Set or clear away status",
+    "help.cmd.ban": "Ban a user or list bans (channel only)",
+    "help.cmd.cycle": "Leave and rejoin the current channel",
+    "help.cmd.help": "Show this help message",
+    "help.cmd.invite": "Invite a user to the current channel",
+    "help.cmd.join": "Join a channel",
+    "help.cmd.kban": "Kick and ban a user (channel only)",
+    "help.cmd.kick": "Kick a user from the channel",
+    "help.cmd.me": "Send an action message",
+    "help.cmd.raw": "Send raw IRC command",
+    "help.cmd.part": "Leave the current channel",
+    "help.cmd.quit": "Disconnect from the server",
+    "help.cmd.topic": "Set the channel topic",
+    "help.cmd.whois": "Get information about a user",
+    "help.cmd.who": "List users matching a mask"
 }
