@@ -3,6 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { parseMessageToCommand } from '../command';
+import { useChannelsStore } from '../../../store/channels';
+import { ChannelCategory } from '../../../types';
 
 describe('command tests', () => {
   it('test away command', () => {
@@ -86,5 +88,24 @@ describe('command tests', () => {
   it('test me command', () => {
     expect(parseMessageToCommand('#channel', '/me')).toStrictEqual('me');
     expect(parseMessageToCommand('#channel', '/me waves hello')).toStrictEqual('PRIVMSG #channel :\x01ACTION waves hello\x01');
+  });
+
+  it('test all command', () => {
+    useChannelsStore.setState({
+      openChannels: [
+        { name: '#channel1', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+        { name: '#channel2', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+        { name: 'privUser', category: ChannelCategory.priv, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+      ],
+      openChannelsShortList: [],
+    });
+
+    expect(parseMessageToCommand('#channel', '/all')).toStrictEqual('all');
+    expect(parseMessageToCommand('#channel', '/all hello everyone')).toStrictEqual(
+      'PRIVMSG #channel1 :hello everyone\nPRIVMSG #channel2 :hello everyone',
+    );
+    expect(parseMessageToCommand('#channel', '/amsg hello everyone')).toStrictEqual(
+      'PRIVMSG #channel1 :hello everyone\nPRIVMSG #channel2 :hello everyone',
+    );
   });
 });

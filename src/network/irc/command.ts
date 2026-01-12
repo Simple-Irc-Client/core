@@ -1,4 +1,5 @@
 import { defaultQuitMessage, STATUS_CHANNEL } from '../../config/config';
+import { useChannelsStore, isChannel } from '../../store/channels';
 
 export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg', '/whois', '/whereis', '/who'];
 export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];
@@ -16,8 +17,7 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   switch (command) {
     case 'amsg':
     case 'all':
-      // TODO amsg
-      break;
+      return allCommand(line) ?? originalLine;
     case 'help':
       // TODO help
       break;
@@ -162,4 +162,23 @@ const meCommand = (channel: string, line: string[]): string | undefined => {
   }
 
   return `PRIVMSG ${channel} :\x01ACTION ${action}\x01`;
+};
+
+const allCommand = (line: string[]): string | undefined => {
+  const message = line.join(' ');
+
+  if (message.length === 0) {
+    return undefined;
+  }
+
+  const channels = useChannelsStore
+    .getState()
+    .openChannels.filter((channel) => isChannel(channel.name))
+    .map((channel) => channel.name);
+
+  if (channels.length === 0) {
+    return undefined;
+  }
+
+  return channels.map((channel) => `PRIVMSG ${channel} :${message}`).join('\n');
 };
