@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Plus, Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, type Channel } from '../../../types';
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '../../../store/channels';
-import { channelsColor, channelsWidth, channelsTitleColor } from '../../../config/theme';
+import { channelsWidth, channelsTitleColor } from '../../../config/theme';
 import { ircJoinChannels, ircPartChannel } from '../../../network/irc/network';
 import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
