@@ -4,6 +4,15 @@
 
 This is a web-based IRC client application developed using React that connects directly to IRC servers using WebSocket.
 
+## Features
+
+- **Direct Connection** - Connect to IRC servers directly via WebSocket without a backend service
+- **Modern UI** - Clean, responsive interface built with Tailwind CSS and shadcn/ui
+- **Dark Mode** - Beautiful dark theme with OKLCH color space
+- **Internationalization** - Multi-language support with i18next
+- **Channel Management** - Easy channel navigation and management
+- **User Interaction** - Private messages, WHOIS, and context menus
+
 ## Tech Stack
 
 - [React 19](https://react.dev/)
@@ -20,14 +29,19 @@ This is a web-based IRC client application developed using React that connects d
 
 - Node.js >= 24
 
-## Usage
+## Getting Started
+
+### Installation
+
+```bash
+npm install
+```
 
 ### Development
 
 Start the development server:
 
 ```bash
-npm install
 npm run dev
 ```
 
@@ -42,13 +56,18 @@ docker build -t simple-irc-client .
 docker run -p 5173:5173 simple-irc-client
 ```
 
+The application will be available at `http://localhost:5173`
+
 ## Contributing
-If you find a bug or would like to contribute to the project, please open an issue or submit a pull request on GitHub.
+If you find a bug or have a feature request, please [open an issue](https://github.com/Simple-Irc-Client/core/issues) on GitHub.
 
 ## License
-This project is licensed under the [Affero General Public License version 3 (AGPLv3)](https://github.com/Simple-Irc-Client/core/blob/main/LICENSE).
 
-## Authors
+This project is licensed under the [GNU Affero General Public License v3.0 (AGPL-3.0)](https://github.com/Simple-Irc-Client/core/blob/main/LICENSE).
+
+The AGPL-3.0 license ensures that if you modify and deploy this software over a network, you must make the complete source code available to users.
+
+**Authors:**
 
 - [Piotr Luczko](https://www.github.com/piotrluczko)
 - [Dariusz Markowicz](https://www.github.com/dmarkowicz)
