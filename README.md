@@ -2,23 +2,44 @@
 
 [![Build Status](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml/badge.svg)](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml)
 
-This is a web-based frontend application developed using React that allows users to connect to an Internet Relay Chat (IRC) server through a [backend service](https://github.com/Simple-Irc-Client/network).
+This is a web-based IRC client application developed using React that connects directly to IRC servers using WebSocket.
 
-## Technologies Used
-This application was built using the following technologies:
+## Tech Stack
 
-- [React](https://react.dev/)
-- [Zustand](https://github.com/pmndrs/zustand)
-- [Socket.IO](https://socket.io/)
-- [MUI](https://mui.com/)
+- [React 19](https://react.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vite.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://github.com/pmndrs/zustand) - State management
+- [ws](https://github.com/websockets/ws) - WebSocket client
+- [shadcn/ui](https://ui.shadcn.com/) - UI components
+- [Radix UI](https://www.radix-ui.com/) - Headless UI primitives
+- [i18next](https://www.i18next.com/) - Internationalization
+
+## Requirements
+
+- Node.js >= 24
 
 ## Usage
-**Before starting frontend application you need to run Simple Irc Client network module**
 
-Start frontend application by running:
+### Development
+
+Start the development server:
 
 ```bash
-npm run start
+npm install
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`
+
+### Docker
+
+Run using Docker:
+
+```bash
+docker build -t simple-irc-client .
+docker run -p 5173:5173 simple-irc-client
 ```
 
 ## Contributing
