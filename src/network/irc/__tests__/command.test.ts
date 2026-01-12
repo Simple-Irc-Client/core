@@ -108,4 +108,19 @@ describe('command tests', () => {
       'PRIVMSG #channel1 :hello everyone\nPRIVMSG #channel2 :hello everyone',
     );
   });
+
+  it('test help command', () => {
+    useChannelsStore.setState({
+      openChannels: [
+        { name: '#channel', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+      ],
+      openChannelsShortList: [],
+    });
+
+    expect(parseMessageToCommand('#channel', '/help')).toStrictEqual('');
+
+    const messages = useChannelsStore.getState().openChannels[0]?.messages;
+    expect(messages?.length).toBeGreaterThan(0);
+    expect(messages?.[0]?.message).toStrictEqual('--- Dostępne komendy ---'); // Polish is default language
+  });
 });

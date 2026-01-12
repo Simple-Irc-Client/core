@@ -1,5 +1,9 @@
 import { defaultQuitMessage, STATUS_CHANNEL } from '../../config/config';
-import { useChannelsStore, isChannel } from '../../store/channels';
+import { useChannelsStore, isChannel, setAddMessage } from '../../store/channels';
+import { MessageCategory } from '../../types';
+import { v4 as uuidv4 } from 'uuid';
+import { MessageColor } from '../../config/theme';
+import i18next from '../../i18n';
 
 export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg', '/whois', '/whereis', '/who'];
 export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];
@@ -19,8 +23,7 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     case 'all':
       return allCommand(line) ?? originalLine;
     case 'help':
-      // TODO help
-      break;
+      return helpCommand(channel);
     case 'j':
       return joinCommand(line);
     case 'logout':
@@ -181,4 +184,49 @@ const allCommand = (line: string[]): string | undefined => {
   }
 
   return channels.map((channel) => `PRIVMSG ${channel} :${message}`).join('\n');
+};
+
+const helpCommands = [
+  { cmd: '/all, /amsg <message>', key: 'help.cmd.all' },
+  { cmd: '/away [message]', key: 'help.cmd.away' },
+  { cmd: '/ban, /b [mask]', key: 'help.cmd.ban' },
+  { cmd: '/cycle, /hop [reason]', key: 'help.cmd.cycle' },
+  { cmd: '/help', key: 'help.cmd.help' },
+  { cmd: '/invite <nick>', key: 'help.cmd.invite' },
+  { cmd: '/join, /j <channel>', key: 'help.cmd.join' },
+  { cmd: '/kb, /kban <nick> [reason]', key: 'help.cmd.kban' },
+  { cmd: '/kick, /k <nick> [reason]', key: 'help.cmd.kick' },
+  { cmd: '/me <action>', key: 'help.cmd.me' },
+  { cmd: '/msg, /raw, /quote <raw>', key: 'help.cmd.raw' },
+  { cmd: '/part, /p [reason]', key: 'help.cmd.part' },
+  { cmd: '/quit, /q [reason]', key: 'help.cmd.quit' },
+  { cmd: '/topic <text>', key: 'help.cmd.topic' },
+  { cmd: '/whois, /whereis <nick>', key: 'help.cmd.whois' },
+  { cmd: '/who <mask>', key: 'help.cmd.who' },
+];
+
+const helpCommand = (channel: string): string => {
+  const time = new Date().toISOString();
+
+  setAddMessage({
+    id: uuidv4(),
+    message: i18next.t('help.title'),
+    target: channel,
+    time,
+    category: MessageCategory.info,
+    color: MessageColor.default,
+  });
+
+  for (const { cmd, key } of helpCommands) {
+    setAddMessage({
+      id: uuidv4(),
+      message: `${cmd} - ${i18next.t(key)}`,
+      target: channel,
+      time,
+      category: MessageCategory.info,
+      color: MessageColor.default,
+    });
+  }
+
+  return '';
 };
