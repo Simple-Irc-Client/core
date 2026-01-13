@@ -8,9 +8,10 @@ import {
 import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
-import { getCurrentUserFlags, getMonitorLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
+import { getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
 import { useTranslation } from 'react-i18next';
+import { getUser } from '../store/users';
 
 export const ContextMenu = () => {
   const { t } = useTranslation();
@@ -40,12 +41,23 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
+    const handleIgnore = (): void => {
+      const user = getUser(contextMenuItem);
+      if (user !== undefined) {
+        const hostmask = `${user.nick}!${user.ident}@${user.hostname}`;
+        ircSendRawMessage(`SILENCE +${hostmask}`);
+      }
+      handleContextMenuClose();
+    };
+
     // Check if user is registered (+r flag) and WATCH or MONITOR is available
     const currentUserFlags = getCurrentUserFlags();
     const isRegistered = currentUserFlags.includes('r');
     const watchLimit = getWatchLimit();
     const monitorLimit = getMonitorLimit();
+    const silenceLimit = getSilenceLimit();
     const canAddFriend = isRegistered && (watchLimit > 0 || monitorLimit > 0);
+    const canIgnore = isRegistered && silenceLimit > 0;
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
@@ -65,6 +77,7 @@ export const ContextMenu = () => {
           <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.priv')}</DropdownMenuItem>
           <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.whois')}</DropdownMenuItem>
           {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.addfriend')}</DropdownMenuItem>}
+          {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.ignore')}</DropdownMenuItem>}
         </DropdownMenuContent>
       </DropdownMenu>
     );

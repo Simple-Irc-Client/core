@@ -92,5 +92,6 @@
     "help.cmd.who": "List users matching a mask",
     "contextmenu.priv": "Priv",
     "contextmenu.whois": "Whois",
-    "contextmenu.addfriend": "Add Friend"
+    "contextmenu.addfriend": "Add Friend",
+    "contextmenu.ignore": "Ignore"
 }

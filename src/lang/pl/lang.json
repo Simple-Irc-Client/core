@@ -92,5 +92,6 @@
     "help.cmd.who": "Wyświetl użytkowników pasujących do maski",
     "contextmenu.priv": "Rozmowa prywatna",
     "contextmenu.whois": "Informacje",
-    "contextmenu.addfriend": "Dodaj do znajomych"
+    "contextmenu.addfriend": "Dodaj do znajomych",
+    "contextmenu.ignore": "Ignoruj"
 }

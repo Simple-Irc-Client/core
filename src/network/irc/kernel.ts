@@ -32,6 +32,7 @@ import {
   setListRequestRemainingSeconds,
   setMonitorLimit,
   setNick,
+  setSilenceLimit,
   setSupportedOption,
   setUserModes,
   setWatchLimit,
@@ -1286,6 +1287,9 @@ export class Kernel {
               break;
             case 'MONITOR':
               setMonitorLimit(value !== undefined ? parseInt(value, 10) : 0);
+              break;
+            case 'SILENCE':
+              setSilenceLimit(value !== undefined ? parseInt(value, 10) : 0);
               break;
           }
         }
