@@ -25,13 +25,16 @@ import {
   setCreatorProgress,
   setCreatorStep,
   setCurrentChannelName,
+  setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
   setIsPasswordRequired,
   setListRequestRemainingSeconds,
+  setMonitorLimit,
   setNick,
   setSupportedOption,
   setUserModes,
+  setWatchLimit,
 } from '../../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../../types';
@@ -921,6 +924,11 @@ export class Kernel {
         }
 
         if (flag === 'r' || flag === 'x') {
+          // Track current user's +r flag (registered status)
+          if (flag === 'r' && user === getCurrentNick()) {
+            setCurrentUserFlag('r', plusMinus === '+');
+          }
+
           setAddMessage({
             id: uuidv4(),
             message,
@@ -1272,6 +1280,12 @@ export class Kernel {
               break;
             case 'CHANMODES':
               setChannelModes(parseChannelModes(value));
+              break;
+            case 'WATCH':
+              setWatchLimit(value !== undefined ? parseInt(value, 10) : 0);
+              break;
+            case 'MONITOR':
+              setMonitorLimit(value !== undefined ? parseInt(value, 10) : 0);
               break;
           }
         }

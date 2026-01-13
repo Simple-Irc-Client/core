@@ -32,6 +32,9 @@ export interface SettingsStore {
   channelTypes: string[];
   supportedOptions: string[];
   creatorProgress: CreatorProgress;
+  currentUserFlags: string[]; // Current user's flags (e.g., +r for registered)
+  watchLimit: number; // WATCH limit from 005, 0 if not supported
+  monitorLimit: number; // MONITOR limit from 005, 0 if not supported
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -49,6 +52,9 @@ export interface SettingsStore {
   setChannelTypes: (types: string[]) => void;
   setSupportedOption: (option: string) => void;
   setCreatorProgress: (value: number, label: string) => void;
+  setCurrentUserFlag: (flag: string, add: boolean) => void;
+  setWatchLimit: (limit: number) => void;
+  setMonitorLimit: (limit: number) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -70,6 +76,9 @@ export const useSettingsStore = create<SettingsStore>()(
     channelTypes: [],
     supportedOptions: [],
     creatorProgress: { value: 0, label: '' },
+    currentUserFlags: [],
+    watchLimit: 0,
+    monitorLimit: 0,
 
     setCreatorCompleted: (status: boolean): void => {
       set(() => ({
@@ -123,6 +132,19 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setCreatorProgress: (value: number, label: string): void => {
       set(() => ({ creatorProgress: { value, label } }));
+    },
+    setCurrentUserFlag: (flag: string, add: boolean): void => {
+      set((state) => ({
+        currentUserFlags: add
+          ? [...state.currentUserFlags, flag]
+          : state.currentUserFlags.filter((f) => f !== flag),
+      }));
+    },
+    setWatchLimit: (limit: number): void => {
+      set(() => ({ watchLimit: limit }));
+    },
+    setMonitorLimit: (limit: number): void => {
+      set(() => ({ monitorLimit: limit }));
     },
   })),
 );
@@ -236,4 +258,28 @@ export const isSupportedOption = (option: string): boolean => {
 
 export const setCreatorProgress = (value: number, label: string): void => {
   useSettingsStore.getState().setCreatorProgress(value, label);
+};
+
+export const setCurrentUserFlag = (flag: string, add: boolean): void => {
+  useSettingsStore.getState().setCurrentUserFlag(flag, add);
+};
+
+export const getCurrentUserFlags = (): string[] => {
+  return useSettingsStore.getState().currentUserFlags;
+};
+
+export const setWatchLimit = (limit: number): void => {
+  useSettingsStore.getState().setWatchLimit(limit);
+};
+
+export const setMonitorLimit = (limit: number): void => {
+  useSettingsStore.getState().setMonitorLimit(limit);
+};
+
+export const getWatchLimit = (): number => {
+  return useSettingsStore.getState().watchLimit;
+};
+
+export const getMonitorLimit = (): number => {
+  return useSettingsStore.getState().monitorLimit;
 };

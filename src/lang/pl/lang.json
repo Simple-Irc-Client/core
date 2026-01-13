@@ -89,5 +89,8 @@
     "help.cmd.quit": "Rozłącz z serwerem",
     "help.cmd.topic": "Ustaw temat kanału",
     "help.cmd.whois": "Pobierz informacje o użytkowniku",
-    "help.cmd.who": "Wyświetl użytkowników pasujących do maski"
+    "help.cmd.who": "Wyświetl użytkowników pasujących do maski",
+    "contextmenu.priv": "Rozmowa prywatna",
+    "contextmenu.whois": "Informacje",
+    "contextmenu.addfriend": "Dodaj do znajomych"
 }

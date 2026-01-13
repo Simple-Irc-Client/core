@@ -8,10 +8,12 @@ import {
 import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
-import { setCurrentChannelName } from '../store/settings';
+import { getCurrentUserFlags, getMonitorLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
+import { useTranslation } from 'react-i18next';
 
 export const ContextMenu = () => {
+  const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
 
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
@@ -25,6 +27,25 @@ export const ContextMenu = () => {
       ircSendRawMessage(`WHOIS ${contextMenuItem}`);
       handleContextMenuClose();
     };
+
+    const handleAddFriend = (): void => {
+      const watchLimit = getWatchLimit();
+      const monitorLimit = getMonitorLimit();
+
+      if (monitorLimit > 0) {
+        ircSendRawMessage(`MONITOR + ${contextMenuItem}`);
+      } else if (watchLimit > 0) {
+        ircSendRawMessage(`WATCH +${contextMenuItem}`);
+      }
+      handleContextMenuClose();
+    };
+
+    // Check if user is registered (+r flag) and WATCH or MONITOR is available
+    const currentUserFlags = getCurrentUserFlags();
+    const isRegistered = currentUserFlags.includes('r');
+    const watchLimit = getWatchLimit();
+    const monitorLimit = getMonitorLimit();
+    const canAddFriend = isRegistered && (watchLimit > 0 || monitorLimit > 0);
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
@@ -41,8 +62,9 @@ export const ContextMenu = () => {
         >
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handlePriv}>Priv</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleWhois}>Whois</DropdownMenuItem>
+          <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.priv')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.whois')}</DropdownMenuItem>
+          {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.addfriend')}</DropdownMenuItem>}
         </DropdownMenuContent>
       </DropdownMenu>
     );

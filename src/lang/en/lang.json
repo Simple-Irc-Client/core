@@ -89,5 +89,8 @@
     "help.cmd.quit": "Disconnect from the server",
     "help.cmd.topic": "Set the channel topic",
     "help.cmd.whois": "Get information about a user",
-    "help.cmd.who": "List users matching a mask"
+    "help.cmd.who": "List users matching a mask",
+    "contextmenu.priv": "Priv",
+    "contextmenu.whois": "Whois",
+    "contextmenu.addfriend": "Add Friend"
 }
