@@ -11,7 +11,7 @@ import {
 import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
-import { getCurrentChannelCategory, getCurrentChannelName, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getUserModes, getWatchLimit, setCurrentChannelName } from '../store/settings';
+import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getUserModes, getWatchLimit, setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserChannelModes, getUser } from '../store/users';
@@ -134,13 +134,15 @@ export const ContextMenu = () => {
     };
 
     // Check global user registration and feature availability
+    const currentNick = getCurrentNick();
+    const isCurrentUser = contextMenuItem === currentNick;
     const currentUserFlags = getCurrentUserFlags();
     const isRegistered = currentUserFlags.includes('r');
     const watchLimit = getWatchLimit();
     const monitorLimit = getMonitorLimit();
     const silenceLimit = getSilenceLimit();
-    const canAddFriend = isRegistered && (watchLimit > 0 || monitorLimit > 0);
-    const canIgnore = isRegistered && silenceLimit > 0;
+    const canAddFriend = !isCurrentUser && isRegistered && (watchLimit > 0 || monitorLimit > 0);
+    const canIgnore = !isCurrentUser && isRegistered && silenceLimit > 0;
 
     // Check channel-specific operator permissions
     const channelCategory = getCurrentChannelCategory();
@@ -168,7 +170,7 @@ export const ContextMenu = () => {
         >
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.priv')}</DropdownMenuItem>
+          {!isCurrentUser && <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.priv')}</DropdownMenuItem>}
           <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.whois')}</DropdownMenuItem>
           {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.addfriend')}</DropdownMenuItem>}
           {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.ignore')}</DropdownMenuItem>}
