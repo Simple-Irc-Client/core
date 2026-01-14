@@ -185,9 +185,8 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      const saveButton = buttons.at(1);
-      expect(saveButton).toBeDefined();
-      fireEvent.click(saveButton!);
+      expect(buttons).toHaveLength(2);
+      fireEvent.click(buttons[1] as HTMLElement);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
     });
@@ -246,9 +245,8 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      const menuButton = buttons.at(0);
-      expect(menuButton).toBeDefined();
-      fireEvent.click(menuButton!);
+      expect(buttons).toHaveLength(1);
+      fireEvent.click(buttons[0] as HTMLElement);
 
       expect(mockSetChannelsDrawerStatus).toHaveBeenCalledTimes(1);
     });
