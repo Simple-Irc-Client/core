@@ -11,7 +11,7 @@ import {
 import { useContextMenu } from '../providers/ContextMenuContext';
 import { setAddChannel } from '../store/channels';
 import { ChannelCategory } from '../types';
-import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getUserModes, getWatchLimit, setCurrentChannelName } from '../store/settings';
+import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserChannelModes, getUser } from '../store/users';
