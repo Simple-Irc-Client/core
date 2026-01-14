@@ -15,7 +15,7 @@ export default defineConfig(({ command }) => {
       },
       server: {
         host: true,
-        hmr: false,
+        hmr: true,
       },
     }
   } else {
