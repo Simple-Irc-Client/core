@@ -46,7 +46,7 @@ const Topic = () => {
         onChange={(e) => setEditedTopic(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={!canEditTopic}
-        className="mb-4 flex-1 min-h-12"
+        className="mb-4 mt-1 flex-1 min-h-12"
       />
       {canEditTopic && editedTopic !== topic && (
         <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
