@@ -50,7 +50,6 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
-    // Check if user is registered (+r flag) and WATCH or MONITOR is available
     const currentUserFlags = getCurrentUserFlags();
     const isRegistered = currentUserFlags.includes('r');
     const watchLimit = getWatchLimit();
