@@ -892,7 +892,7 @@ export class Kernel {
         const mode = `${plusMinus}${flag}`;
         const translate = `kernel.mode.user.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
 
-        // https://docs.inspircd.org/3/user-modes/
+        // https://docs.inspircd.org/4/user-modes/
         switch (flag) {
           case 'B': // Marks the user as a bot.
           case 'c': // Requires other users to have a common channel before they can message this user.
