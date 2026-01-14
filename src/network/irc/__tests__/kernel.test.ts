@@ -209,7 +209,7 @@ describe('kernel tests', () => {
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#channel1', ChannelCategory.channel);
 
-    expect(mockSetAddUser).toHaveBeenCalledTimes(0);
+    expect(mockSetAddUser).toHaveBeenCalledTimes(1);
 
     expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 
@@ -240,7 +240,7 @@ describe('kernel tests', () => {
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#chat', ChannelCategory.channel);
 
-    expect(mockSetAddUser).toHaveBeenCalledTimes(0);
+    expect(mockSetAddUser).toHaveBeenCalledTimes(1);
 
     expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 

@@ -25,13 +25,17 @@ import {
   setCreatorProgress,
   setCreatorStep,
   setCurrentChannelName,
+  setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
   setIsPasswordRequired,
   setListRequestRemainingSeconds,
+  setMonitorLimit,
   setNick,
+  setSilenceLimit,
   setSupportedOption,
   setUserModes,
+  setWatchLimit,
 } from '../../store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../../store/users';
 import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../../types';
@@ -675,20 +679,21 @@ export class Kernel {
       color: MessageColor.join,
     });
 
+    // Add all users (including current user) to track channel-specific modes
+    setAddUser({
+      nick,
+      ident,
+      hostname,
+      flags: [],
+      channels: [{ name: channel, flags: [], maxPermission: -1 }],
+    });
+
     if (nick === getCurrentNick()) {
       setCurrentChannelName(channel, ChannelCategory.channel);
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
       }
-    } else {
-      setAddUser({
-        nick,
-        ident,
-        hostname,
-        flags: [],
-        channels: [{ name: channel, flags: [], maxPermission: defaultMaxPermission }],
-      });
     }
   };
 
@@ -888,7 +893,7 @@ export class Kernel {
         const mode = `${plusMinus}${flag}`;
         const translate = `kernel.mode.user.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
 
-        // https://docs.inspircd.org/3/user-modes/
+        // https://docs.inspircd.org/4/user-modes/
         switch (flag) {
           case 'B': // Marks the user as a bot.
           case 'c': // Requires other users to have a common channel before they can message this user.
@@ -921,6 +926,11 @@ export class Kernel {
         }
 
         if (flag === 'r' || flag === 'x') {
+          // Track current user's +r flag (registered status)
+          if (flag === 'r' && user === getCurrentNick()) {
+            setCurrentUserFlag('r', plusMinus === '+');
+          }
+
           setAddMessage({
             id: uuidv4(),
             message,
@@ -1272,6 +1282,15 @@ export class Kernel {
               break;
             case 'CHANMODES':
               setChannelModes(parseChannelModes(value));
+              break;
+            case 'WATCH':
+              setWatchLimit(value !== undefined ? parseInt(value, 10) : 0);
+              break;
+            case 'MONITOR':
+              setMonitorLimit(value !== undefined ? parseInt(value, 10) : 0);
+              break;
+            case 'SILENCE':
+              setSilenceLimit(value !== undefined ? parseInt(value, 10) : 0);
               break;
           }
         }
