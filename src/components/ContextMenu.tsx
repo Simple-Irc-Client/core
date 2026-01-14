@@ -206,9 +206,9 @@ export const ContextMenu = () => {
                   )}
 
                   {/* Kick/Ban options */}
-                  {permissions.canKick && <DropdownMenuItem onClick={handleKick}>{t('contextmenu.operator.kick')}</DropdownMenuItem>}
-                  {permissions.canBan && <DropdownMenuItem onClick={handleBan}>{t('contextmenu.operator.ban')}</DropdownMenuItem>}
-                  {permissions.canKick && permissions.canBan && <DropdownMenuItem onClick={handleKickBan}>{t('contextmenu.operator.kickban')}</DropdownMenuItem>}
+                  {permissions.canKick && !isCurrentUser && <DropdownMenuItem onClick={handleKick}>{t('contextmenu.operator.kick')}</DropdownMenuItem>}
+                  {permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleBan}>{t('contextmenu.operator.ban')}</DropdownMenuItem>}
+                  {permissions.canKick && permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleKickBan}>{t('contextmenu.operator.kickban')}</DropdownMenuItem>}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </>
