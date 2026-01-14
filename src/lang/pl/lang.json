@@ -93,5 +93,19 @@
     "contextmenu.priv": "Rozmowa prywatna",
     "contextmenu.whois": "Informacje",
     "contextmenu.addfriend": "Dodaj do znajomych",
-    "contextmenu.ignore": "Ignoruj"
+    "contextmenu.ignore": "Ignoruj",
+    "contextmenu.operator.title": "Akcje operatora",
+    "contextmenu.operator.give.voice": "Nadaj głos (+v)",
+    "contextmenu.operator.give.halfop": "Nadaj Half-Op (+h)",
+    "contextmenu.operator.give.op": "Nadaj operatora (+o)",
+    "contextmenu.operator.give.admin": "Nadaj admina (+a)",
+    "contextmenu.operator.give.owner": "Nadaj właściciela (+q)",
+    "contextmenu.operator.remove.voice": "Usuń głos (-v)",
+    "contextmenu.operator.remove.halfop": "Usuń Half-Op (-h)",
+    "contextmenu.operator.remove.op": "Usuń operatora (-o)",
+    "contextmenu.operator.remove.admin": "Usuń admina (-a)",
+    "contextmenu.operator.remove.owner": "Usuń właściciela (-q)",
+    "contextmenu.operator.kick": "Wyrzuć",
+    "contextmenu.operator.ban": "Zbanuj",
+    "contextmenu.operator.kickban": "Wyrzuć i zbanuj"
 }

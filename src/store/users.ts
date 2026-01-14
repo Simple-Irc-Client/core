@@ -260,3 +260,10 @@ export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: 
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
+
+export const getCurrentUserChannelModes = (channelName: string): string[] => {
+  const currentNick = getCurrentNick();
+  const user = getUser(currentNick);
+  const channel = user?.channels.find((ch) => ch.name === channelName);
+  return channel?.flags ?? [];
+};

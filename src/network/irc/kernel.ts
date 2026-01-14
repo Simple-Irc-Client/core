@@ -679,20 +679,21 @@ export class Kernel {
       color: MessageColor.join,
     });
 
+    // Add all users (including current user) to track channel-specific modes
+    setAddUser({
+      nick,
+      ident,
+      hostname,
+      flags: [],
+      channels: [{ name: channel, flags: [], maxPermission: -1 }],
+    });
+
     if (nick === getCurrentNick()) {
       setCurrentChannelName(channel, ChannelCategory.channel);
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
       }
-    } else {
-      setAddUser({
-        nick,
-        ident,
-        hostname,
-        flags: [],
-        channels: [{ name: channel, flags: [], maxPermission: defaultMaxPermission }],
-      });
     }
   };
 
