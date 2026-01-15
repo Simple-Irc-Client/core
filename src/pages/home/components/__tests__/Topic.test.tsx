@@ -251,4 +251,44 @@ describe('Topic', () => {
       expect(mockSetChannelsDrawerStatus).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('Debug channel', () => {
+    it('should not render input for Debug channel', () => {
+      setupMocks({ currentChannelName: 'Debug' });
+
+      render(<Topic />);
+
+      const input = screen.queryByRole('textbox');
+      expect(input).not.toBeInTheDocument();
+    });
+
+    it('should still render menu button for Debug channel', () => {
+      setupMocks({ currentChannelName: 'Debug' });
+
+      render(<Topic />);
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(1);
+    });
+  });
+
+  describe('Status channel', () => {
+    it('should not render input for Status channel', () => {
+      setupMocks({ currentChannelName: 'Status' });
+
+      render(<Topic />);
+
+      const input = screen.queryByRole('textbox');
+      expect(input).not.toBeInTheDocument();
+    });
+
+    it('should still render menu button for Debug channel', () => {
+      setupMocks({ currentChannelName: 'Status' });
+
+      render(<Topic />);
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(1);
+    });
+  });
 });
