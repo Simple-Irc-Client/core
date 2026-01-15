@@ -1,0 +1,574 @@
+import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import type { Server } from '../servers';
+
+// Mock config before importing network module
+vi.mock('../../../config/config', () => ({
+  websocketHost: 'localhost',
+  websocketPort: 8080,
+  defaultIRCPort: 6667,
+}));
+
+// Mock WebSocket interface
+interface MockWebSocket {
+  url: string;
+  readyState: number;
+  onopen: (() => void) | null;
+  onmessage: ((event: { data: string }) => void) | null;
+  onerror: ((error: Event) => void) | null;
+  onclose: (() => void) | null;
+  send: Mock;
+  close: Mock;
+}
+
+// Store for created mock sockets
+let lastCreatedSocket: MockWebSocket | null = null;
+
+const setLastCreatedSocket = (socket: MockWebSocket) => {
+  lastCreatedSocket = socket;
+};
+
+// Mock WebSocket class
+class MockWebSocketClass implements MockWebSocket {
+  url: string;
+  readyState = 1; // OPEN
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onerror: ((error: Event) => void) | null = null;
+  onclose: (() => void) | null = null;
+  send: Mock = vi.fn();
+  close: Mock = vi.fn();
+
+  constructor(url: string) {
+    this.url = url;
+    setLastCreatedSocket(this);
+  }
+}
+
+// Add static properties
+Object.assign(MockWebSocketClass, {
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+});
+
+// Assign mock to global
+vi.stubGlobal('WebSocket', MockWebSocketClass);
+
+describe('network', () => {
+  let network: typeof import('../network');
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    lastCreatedSocket = null;
+    network = await import('../network');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  const getSocket = (): MockWebSocket => {
+    network.initWebSocket();
+    if (!lastCreatedSocket) {
+      throw new Error('Socket was not created');
+    }
+    return lastCreatedSocket;
+  };
+
+  describe('initWebSocket', () => {
+    it('should create a new WebSocket connection', () => {
+      const socket = getSocket();
+      expect(socket).toBeDefined();
+      expect(socket.url).toBe('ws://localhost:8080/SimpleIrcClient');
+    });
+
+    it('should return existing socket if already open', () => {
+      const socket1 = getSocket();
+      socket1.readyState = 1; // OPEN
+
+      network.initWebSocket();
+      // Should not create a new socket
+      expect(lastCreatedSocket).toBe(socket1);
+    });
+
+    it('should return existing socket if connecting', () => {
+      const socket1 = getSocket();
+      socket1.readyState = 0; // CONNECTING
+
+      network.initWebSocket();
+      // Should not create a new socket
+      expect(lastCreatedSocket).toBe(socket1);
+    });
+  });
+
+  describe('on/off event handlers', () => {
+    it('should register and call event handlers', () => {
+      const handler = vi.fn();
+      network.on('custom-event', handler);
+
+      // Manually trigger onmessage to fire custom event
+      const socket = getSocket();
+      socket.onmessage?.({
+        data: JSON.stringify({ event: 'custom-event', data: { foo: 'bar' } }),
+      });
+
+      expect(handler).toHaveBeenCalledWith({ foo: 'bar' });
+    });
+
+    it('should remove event handlers with off', () => {
+      const handler = vi.fn();
+      network.on('custom-event', handler);
+      network.off('custom-event', handler);
+
+      const socket = getSocket();
+      socket.onmessage?.({
+        data: JSON.stringify({ event: 'custom-event', data: {} }),
+      });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('should handle removing non-existent handler gracefully', () => {
+      const handler = vi.fn();
+      expect(() => network.off('non-existent', handler)).not.toThrow();
+    });
+  });
+
+  describe('getSocket', () => {
+    it('should return existing socket or create new one', () => {
+      const socket = network.getSocket();
+      expect(socket).toBeDefined();
+    });
+  });
+
+  describe('isConnected', () => {
+    it('should return false when socket is not open', async () => {
+      // Need fresh module without socket initialized
+      vi.resetModules();
+      const freshNetwork = await import('../network');
+      // Don't init socket, check isConnected
+      expect(freshNetwork.isConnected()).toBe(false);
+    });
+
+    it('should return true when socket is open', () => {
+      const socket = getSocket();
+      socket.readyState = 1; // OPEN
+      expect(network.isConnected()).toBe(true);
+    });
+  });
+
+  describe('ircConnect', () => {
+    it('should send connect command with server details', () => {
+      const socket = getSocket();
+
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      };
+
+      network.ircConnect(server, 'testNick');
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'connect',
+            event: {
+              nick: 'testNick',
+              server: {
+                host: 'irc.test.net',
+                port: 6667,
+                encoding: 'utf8',
+              },
+            },
+          },
+        })
+      );
+    });
+
+    it('should use default port when not specified', () => {
+      const socket = getSocket();
+
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net'],
+      };
+
+      network.ircConnect(server, 'testNick');
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'connect',
+            event: {
+              nick: 'testNick',
+              server: {
+                host: 'irc.test.net',
+                port: 6667,
+                encoding: 'utf8',
+              },
+            },
+          },
+        })
+      );
+    });
+
+    it('should throw error when server host is empty', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: [],
+      };
+
+      expect(() => network.ircConnect(server, 'testNick')).toThrow(
+        'Unable to connect to IRC network - server host is empty'
+      );
+    });
+
+    it('should throw error when server is undefined', () => {
+      expect(() => network.ircConnect(undefined as unknown as Server, 'testNick')).toThrow(
+        'Unable to connect to IRC network - server host is empty'
+      );
+    });
+  });
+
+  describe('ircSendPassword', () => {
+    it('should send IDENTIFY command to NickServ', () => {
+      const socket = getSocket();
+
+      network.ircSendPassword('myPassword');
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'PRIVMSG NickServ :IDENTIFY myPassword\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircSendList', () => {
+    it('should send LIST command', () => {
+      const socket = getSocket();
+
+      network.ircSendList();
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'LIST\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircSendNamesXProto', () => {
+    it('should send PROTOCTL NAMESX command', () => {
+      const socket = getSocket();
+
+      network.ircSendNamesXProto();
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'PROTOCTL NAMESX\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircJoinChannels', () => {
+    it('should send JOIN command for single channel', () => {
+      const socket = getSocket();
+
+      network.ircJoinChannels(['#test']);
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'JOIN #test\n',
+            },
+          },
+        })
+      );
+    });
+
+    it('should send JOIN command for multiple channels', () => {
+      const socket = getSocket();
+
+      network.ircJoinChannels(['#test', '#foo', '#bar']);
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'JOIN #test,#foo,#bar\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircPartChannel', () => {
+    it('should send PART command', () => {
+      const socket = getSocket();
+
+      network.ircPartChannel('#test');
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'PART #test\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircRequestMetadataItem', () => {
+    it('should send METADATA GET command to queue', () => {
+      const socket = getSocket();
+
+      network.ircRequestMetadataItem('someUser', 'avatar');
+
+      // Queued messages are sent via interval, not immediately
+      expect(socket.send).not.toHaveBeenCalled();
+
+      // Advance timer to trigger queue processing
+      vi.advanceTimersByTime(300);
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'METADATA someUser GET avatar\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircRequestMetadata', () => {
+    it('should send METADATA SUB command', () => {
+      const socket = getSocket();
+
+      network.ircRequestMetadata();
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'METADATA * SUB avatar status bot homepage display-name bot-url color\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircRequestMetadataList', () => {
+    it('should send METADATA LIST command to queue', () => {
+      const socket = getSocket();
+
+      network.ircRequestMetadataList('someUser');
+
+      // Queued messages are sent via interval
+      vi.advanceTimersByTime(300);
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'METADATA someUser LIST\n',
+            },
+          },
+        })
+      );
+    });
+  });
+
+  describe('ircSendRawMessage', () => {
+    it('should send raw message', () => {
+      const socket = getSocket();
+
+      network.ircSendRawMessage('PRIVMSG #test :Hello world');
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'PRIVMSG #test :Hello world\n',
+            },
+          },
+        })
+      );
+    });
+
+    it('should not send empty messages', () => {
+      const socket = getSocket();
+
+      network.ircSendRawMessage('');
+
+      expect(socket.send).not.toHaveBeenCalled();
+    });
+
+    it('should queue message when queue flag is true', () => {
+      const socket = getSocket();
+
+      network.ircSendRawMessage('TEST MESSAGE', true);
+
+      // Should not be sent immediately
+      expect(socket.send).not.toHaveBeenCalled();
+
+      // Advance timer to trigger queue processing
+      vi.advanceTimersByTime(300);
+
+      expect(socket.send).toHaveBeenCalledWith(
+        JSON.stringify({
+          event: 'sic-client-event',
+          data: {
+            type: 'raw',
+            event: {
+              rawData: 'TEST MESSAGE\n',
+            },
+          },
+        })
+      );
+    });
+
+    it('should not send when socket is not open', () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const socket = getSocket();
+      socket.readyState = 0; // CONNECTING
+
+      network.ircSendRawMessage('TEST');
+
+      expect(socket.send).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'WebSocket is not connected. Message not sent:',
+        expect.any(Object)
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('WebSocket events', () => {
+    it('should trigger connect event on socket open', () => {
+      const connectHandler = vi.fn();
+      network.on('connect', connectHandler);
+
+      const socket = getSocket();
+      socket.onopen?.();
+
+      expect(connectHandler).toHaveBeenCalledWith({});
+    });
+
+    it('should trigger close event on socket close', () => {
+      const closeHandler = vi.fn();
+      network.on('close', closeHandler);
+
+      const socket = getSocket();
+      socket.onclose?.();
+
+      expect(closeHandler).toHaveBeenCalledWith({});
+    });
+
+    it('should trigger error event on socket error', () => {
+      const errorHandler = vi.fn();
+      network.on('error', errorHandler);
+
+      const socket = getSocket();
+      const mockError = new Event('error');
+      socket.onerror?.(mockError);
+
+      expect(errorHandler).toHaveBeenCalledWith(mockError);
+    });
+
+    it('should parse and trigger events from incoming messages', () => {
+      const messageHandler = vi.fn();
+      network.on('irc-message', messageHandler);
+
+      const socket = getSocket();
+
+      socket.onmessage?.({
+        data: JSON.stringify({ event: 'irc-message', data: { text: 'hello' } }),
+      });
+
+      expect(messageHandler).toHaveBeenCalledWith({ text: 'hello' });
+    });
+
+    it('should handle invalid JSON in messages gracefully', () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const socket = getSocket();
+
+      expect(() => {
+        socket.onmessage?.({ data: 'invalid json' });
+      }).not.toThrow();
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to parse WebSocket message:',
+        expect.any(Error)
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should ignore messages without event field', () => {
+      const messageHandler = vi.fn();
+      network.on('some-event', messageHandler);
+
+      const socket = getSocket();
+
+      socket.onmessage?.({
+        data: JSON.stringify({ data: { text: 'hello' } }),
+      });
+
+      expect(messageHandler).not.toHaveBeenCalled();
+    });
+  });
+});
