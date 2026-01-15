@@ -5,6 +5,7 @@ import { useCurrentStore } from '../../../store/current';
 import { useSettingsStore } from '../../../store/settings';
 import { getCurrentUserChannelModes } from '../../../store/users';
 import { ircSendRawMessage } from '../../../network/irc/network';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -36,22 +37,28 @@ const Topic = () => {
     }
   };
 
+  const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
+
   return (
     <div className="px-4 flex h-16">
       <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 md:hidden">
         <Menu className="h-4 w-4" />
       </Button>
-      <Input
-        value={editedTopic}
-        onChange={(e) => setEditedTopic(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={!canEditTopic}
-        className="mb-4 mt-1 flex-1 min-h-12"
-      />
-      {canEditTopic && editedTopic !== topic && (
-        <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
-          <Save className="h-4 w-4" />
-        </Button>
+      {!isDebugChannel && (
+        <>
+          <Input
+            value={editedTopic}
+            onChange={(e) => setEditedTopic(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={!canEditTopic}
+            className="mb-4 mt-1 flex-1 min-h-12"
+          />
+          {canEditTopic && editedTopic !== topic && (
+            <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
+              <Save className="h-4 w-4" />
+            </Button>
+          )}
+        </>
       )}
     </div>
   );

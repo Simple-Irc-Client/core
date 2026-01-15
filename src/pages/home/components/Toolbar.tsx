@@ -27,6 +27,10 @@ const Toolbar = () => {
 
   const typingStatus = useRef<'active' | 'paused' | 'done' | undefined>(undefined);
 
+  const messageHistory = useRef<string[]>([]);
+  const historyIndex = useRef(-1);
+  const currentInputBeforeHistory = useRef('');
+
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
     return commandsNotSorted.sort((a, b) => {
@@ -83,19 +87,22 @@ const Toolbar = () => {
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`, true);
     }
 
+    // Add message to history (max 10 items)
+    messageHistory.current = [message, ...messageHistory.current].slice(0, 10);
+    historyIndex.current = -1;
+    currentInputBeforeHistory.current = '';
+
     setMessage('');
   };
 
   const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>): void => {
     switch (event.key) {
       case 'Tab':
+      case 'Up':
+      case 'ArrowUp':
+      case 'Down':
+      case 'ArrowDown':
         return;
-      // case 'Up':
-      // case 'ArrowUp':
-      //   return;
-      // case 'Down':
-      // case 'ArrowDown':
-      //   return;
       default:
         autocompleteMessage.current = autocompleteInput.current?.value ?? '';
         break;
@@ -184,14 +191,45 @@ const Toolbar = () => {
         }
         break;
       }
-      // case 'Up':
-      // case 'ArrowUp':
-      //   event.preventDefault();
-      //   break;
-      // case 'Down':
-      // case 'ArrowDown':
-      //   event.preventDefault();
-      //   break;
+      case 'Up':
+      case 'ArrowUp': {
+        event.preventDefault();
+        if (messageHistory.current.length === 0) {
+          return;
+        }
+        // Save current input when starting to browse history
+        if (historyIndex.current === -1) {
+          currentInputBeforeHistory.current = message;
+        }
+        // Move up in history (older messages)
+        if (historyIndex.current < messageHistory.current.length - 1) {
+          historyIndex.current += 1;
+          const historyMessage = messageHistory.current[historyIndex.current];
+          if (historyMessage !== undefined) {
+            setMessage(historyMessage);
+          }
+        }
+        break;
+      }
+      case 'Down':
+      case 'ArrowDown': {
+        event.preventDefault();
+        if (historyIndex.current === -1) {
+          return;
+        }
+        // Move down in history (newer messages)
+        historyIndex.current -= 1;
+        if (historyIndex.current === -1) {
+          // Restore original input
+          setMessage(currentInputBeforeHistory.current);
+        } else {
+          const historyMessage = messageHistory.current[historyIndex.current];
+          if (historyMessage !== undefined) {
+            setMessage(historyMessage);
+          }
+        }
+        break;
+      }
       default:
         autocompleteIndex.current = -1;
         break;
