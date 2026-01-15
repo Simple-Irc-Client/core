@@ -400,6 +400,9 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
+  // TODO create test for weird -o flag:
+  // @draft/bot;bot;msgid=gdT3UNkBQco30FbIJuhORn;time=2026-01-15T19:58:12.349Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +rBCfHl-o [4j#R3,4k#K3,6m#M1,3n#N3,6t]:6 15:9999m 99 zsfsesefesfesfefs
+
   it('test raw NICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
