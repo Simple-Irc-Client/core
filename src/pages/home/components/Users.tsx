@@ -28,6 +28,10 @@ const Users = () => {
                   onClick={(event) => {
                     handleContextMenuUserClick(event, 'user', user.nick);
                   }}
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    handleContextMenuUserClick(event, 'user', user.nick);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 text-left"
                 >
                   <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
