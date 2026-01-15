@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, type Channel } from '../../../types';
@@ -27,7 +27,7 @@ const Channels = () => {
 
   const [channelsList, setChannelsList] = useState<ChannelList[]>([]);
 
-  useMemo(() => {
+  useEffect(() => {
     setChannelsList(isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []);
   }, [isChannelListLoadingFinished]);
 

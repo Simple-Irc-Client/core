@@ -96,11 +96,10 @@ const Main = () => {
 
   let lastNick = '';
 
-  const AlwaysScrollToBottom = () => {
-    const elementRef = useRef<HTMLDivElement>(null);
-    useEffect(() => elementRef.current?.scrollIntoView());
-    return <div ref={elementRef} />;
-  };
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView();
+  });
 
   return (
     <div className="h-full overflow-y-auto relative break-anywhere">
@@ -120,7 +119,7 @@ const Main = () => {
           lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
           return mainWindow;
         })}
-        <AlwaysScrollToBottom />
+        <div ref={scrollRef} />
       </div>
     </div>
   );

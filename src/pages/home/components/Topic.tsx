@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent } from 'react';
+import { useState, useRef, type KeyboardEvent } from 'react';
 import { useChannelsDrawer } from '../../../providers/ChannelsDrawerContext';
 import { Menu, Save } from 'lucide-react';
 import { useCurrentStore } from '../../../store/current';
@@ -15,13 +15,16 @@ const Topic = () => {
   const topic: string = useCurrentStore((state) => state.topic);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const [editedTopic, setEditedTopic] = useState(topic);
+  const prevTopic = useRef(topic);
+
+  // Reset editedTopic when external topic changes (without useEffect)
+  if (prevTopic.current !== topic) {
+    prevTopic.current = topic;
+    setEditedTopic(topic);
+  }
 
   const userFlags = getCurrentUserChannelModes(currentChannelName);
   const canEditTopic = userFlags.some((flag) => TOPIC_EDIT_FLAGS.includes(flag));
-
-  useEffect(() => {
-    setEditedTopic(topic);
-  }, [topic]);
 
   const { setChannelsDrawerStatus } = useChannelsDrawer();
 

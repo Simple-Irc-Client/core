@@ -9,7 +9,6 @@ import { useChannelsStore } from '../../store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
 import { setCreatorCompleted } from '../../store/settings';
 import { getChannelListSortedByUsers, useChannelListStore } from '../../store/channelList';
-import { type ChannelList } from '../../types';
 import { X } from 'lucide-react';
 
 const CreatorChannelList = () => {
@@ -21,12 +20,12 @@ const CreatorChannelList = () => {
 
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
 
-  const [channelList, setChannelList] = useState<ChannelList[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useMemo(() => {
-    setChannelList(isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []);
-  }, [isChannelListLoadingFinished]);
+  const channelList = useMemo(
+    () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
+    [isChannelListLoadingFinished]
+  );
 
   const filteredChannelList = useMemo(() => {
     if (!searchQuery) return channelList;
