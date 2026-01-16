@@ -61,6 +61,10 @@ export const useUsersStore = create<UsersStore>()(
           if (user.nick !== nick) {
             return user;
           }
+          // Prevent duplicate channel entries
+          if (user.channels.some((c) => c.name === channel)) {
+            return user;
+          }
           return { ...user, channels: [...user.channels, { name: channel, flags: [], maxPermission: -1 }] };
         }),
       }));
