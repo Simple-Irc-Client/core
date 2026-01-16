@@ -31,7 +31,7 @@ describe('Topic', () => {
     });
 
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
-      selector({ topic, messages: [], users: [], typing: [], setUpdateTopic: vi.fn(), setUpdateMessages: vi.fn(), setUpdateUsers: vi.fn(), setUpdateTyping: vi.fn() })
+      selector({ topic, messages: [], users: [], typing: [], setUpdateTopic: vi.fn(), setUpdateMessages: vi.fn(), setUpdateUsers: vi.fn(), setUpdateTyping: vi.fn(), setClearAll: vi.fn() })
     );
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>

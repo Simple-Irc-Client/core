@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { type Server } from '../network/irc/servers';
 import { devtools } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '../types';
-import { getMessages, getTopic, getTyping, setClearUnreadMessages } from './channels';
-import { useCurrentStore } from './current';
-import { getUsersFromChannelSortedByMode } from './users';
+import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from './channels';
+import { useCurrentStore, setCurrentClearAll } from './current';
+import { getUsersFromChannelSortedByMode, setUsersClearAll } from './users';
 import { defaultChannelTypes } from '../config/config';
+import { setChannelListClear } from './channelList';
+import { ircDisconnect } from '../network/irc/network';
 
 export type CreatorStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
@@ -57,6 +59,7 @@ export interface SettingsStore {
   setWatchLimit: (limit: number) => void;
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
+  resetCreatorState: () => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -151,6 +154,30 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setSilenceLimit: (limit: number): void => {
       set(() => ({ silenceLimit: limit }));
+    },
+    resetCreatorState: (): void => {
+      set(() => ({
+        isConnecting: false,
+        isConnected: false,
+        isCreatorCompleted: false,
+        creatorStep: 'nick',
+        nick: '',
+        server: undefined,
+        isPasswordRequired: undefined,
+        connectedTime: 0,
+        currentChannelName: 'Status',
+        currentChannelCategory: ChannelCategory.status,
+        userModes: [],
+        channelModes: { A: [], B: [], C: [], D: [] },
+        listRequestRemainingSeconds: -1,
+        channelTypes: [],
+        supportedOptions: [],
+        creatorProgress: { value: 0, label: '' },
+        currentUserFlags: [],
+        watchLimit: 0,
+        monitorLimit: 0,
+        silenceLimit: 0,
+      }));
     },
   })),
 );
@@ -300,4 +327,22 @@ export const setSilenceLimit = (limit: number): void => {
 
 export const getSilenceLimit = (): number => {
   return useSettingsStore.getState().silenceLimit;
+};
+
+export const resetCreatorState = (): void => {
+  useSettingsStore.getState().resetCreatorState();
+};
+
+export const resetAndGoToStart = (): void => {
+  // Disconnect from the network
+  ircDisconnect();
+
+  // Clear all stores
+  setChannelsClearAll();
+  setUsersClearAll();
+  setCurrentClearAll();
+  setChannelListClear();
+
+  // Reset settings store to initial state (this also sets creatorStep to 'nick')
+  resetCreatorState();
 };

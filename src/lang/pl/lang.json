@@ -13,6 +13,7 @@
     "creator.loading.passwordIsRequired": "Hasło jest wymagane",
     "creator.loading.passwordIsNotRequired": "Hasło nie jest wymagane",
     "creator.loading.error": "Nie udało się połączyć z serwerem - {{message}}",
+    "creator.loading.button.goBack": "Wróć",
     "creator.password.title": "Wybrany pseudonim jest chroniony hasłem",
     "creator.password.password": "Hasło",
     "creator.password.button.next": "Dalej",

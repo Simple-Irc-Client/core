@@ -25,6 +25,7 @@ describe('Typing', () => {
         setUpdateMessages: vi.fn(),
         setUpdateUsers: vi.fn(),
         setUpdateTyping: vi.fn(),
+        setClearAll: vi.fn(),
       })
     );
   };
