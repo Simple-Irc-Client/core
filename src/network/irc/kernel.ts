@@ -1780,6 +1780,11 @@ export class Kernel {
     });
   };
 
+  // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
+  private readonly onRaw421 = (): void => {
+    // TODO
+  }
+
   // :insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
   // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
   private readonly onRaw432 = (): void => {
@@ -1807,7 +1812,7 @@ export class Kernel {
     });
 
     if (!getIsCreatorCompleted()) {
-      // TODO handle error in creator
+      setCreatorProgress(0, i18next.t('creator.loading.error', { message }));
     }
   };
 
