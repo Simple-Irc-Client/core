@@ -266,6 +266,10 @@ export const setCreatorProgress = (value: number, label: string): void => {
   useSettingsStore.getState().setCreatorProgress(value, label);
 };
 
+export const getCreatorProgress = (): CreatorProgress => {
+  return useSettingsStore.getState().creatorProgress;
+};
+
 export const setCurrentUserFlag = (flag: string, add: boolean): void => {
   useSettingsStore.getState().setCurrentUserFlag(flag, add);
 };

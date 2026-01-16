@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { useChannelsStore } from '../../store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
 import { setCreatorCompleted } from '../../store/settings';
 import { getChannelListSortedByUsers, useChannelListStore } from '../../store/channelList';
-import { type ChannelList } from '../../types';
 import { X } from 'lucide-react';
 
 const CreatorChannelList = () => {
@@ -19,14 +18,15 @@ const CreatorChannelList = () => {
 
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  // Channels that user manually added (via clicking rows)
+  const [manuallySelectedChannels, setManuallySelectedChannels] = useState<string[]>([]);
 
-  const [channelList, setChannelList] = useState<ChannelList[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useMemo(() => {
-    setChannelList(isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []);
-  }, [isChannelListLoadingFinished]);
+  const channelList = useMemo(
+    () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
+    [isChannelListLoadingFinished]
+  );
 
   const filteredChannelList = useMemo(() => {
     if (!searchQuery) return channelList;
@@ -36,13 +36,22 @@ const CreatorChannelList = () => {
     );
   }, [channelList, searchQuery]);
 
+  // Derive selectedChannels from openChannels + manuallySelectedChannels
+  const selectedChannels = useMemo(() => {
+    const fromOpen = openChannels
+      .filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))
+      .map((channel) => channel.name);
+    const combined = new Set([...fromOpen, ...manuallySelectedChannels]);
+    return Array.from(combined);
+  }, [openChannels, manuallySelectedChannels]);
+
   const handleDelete = (channelName: string) => () => {
-    setSelectedChannels((channels) => channels.filter((channel) => channel !== channelName));
+    setManuallySelectedChannels((channels) => channels.filter((channel) => channel !== channelName));
   };
 
   const handleRowClick = (channelName: string): void => {
     if (!selectedChannels.includes(channelName)) {
-      setSelectedChannels((channels) => [...channels, channelName]);
+      setManuallySelectedChannels((channels) => [...channels, channelName]);
     }
   };
 
@@ -54,19 +63,6 @@ const CreatorChannelList = () => {
     ircJoinChannels(selectedChannels);
     setCreatorCompleted(true);
   };
-
-  useEffect(() => {
-    const diff = openChannels.filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name)).filter((channel) => !selectedChannels.includes(channel.name));
-    if (diff.length !== 0) {
-      setSelectedChannels(
-        selectedChannels.concat(
-          diff.map((channel) => {
-            return channel.name;
-          }),
-        ),
-      );
-    }
-  }, [openChannels, selectedChannels]);
 
   return (
     <>

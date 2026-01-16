@@ -22,6 +22,7 @@ vi.mock('../../../network/irc/network', () => ({
 vi.mock('../../../store/settings', () => ({
   setCreatorStep: vi.fn(),
   useSettingsStore: vi.fn(),
+  getCurrentNick: vi.fn(),
 }));
 
 describe('CreatorPassword', () => {
@@ -34,6 +35,7 @@ describe('CreatorPassword', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (selector: any) => selector({ nick })
     );
+    vi.mocked(settingsStore.getCurrentNick).mockReturnValue(nick);
   };
 
   describe('Basic rendering', () => {

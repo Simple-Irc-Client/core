@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress } from '../../store/settings';
+import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress, getCreatorProgress } from '../../store/settings';
 
 const CreatorLoading = () => {
   const { t } = useTranslation();
@@ -36,11 +36,12 @@ const CreatorLoading = () => {
       };
     }
 
-    if (!isConnecting && !isConnected && creatorProgress.value !== 0) {
+    // Read current value via getter to avoid dependency
+    if (!isConnecting && !isConnected && getCreatorProgress().value !== 0) {
       setCreatorProgress(0, t('creator.loading.disconnected'));
     }
     return undefined;
-  }, [isConnecting, isConnected]);
+  }, [isConnecting, isConnected, t]);
 
   return (
     <div className="w-full mt-8">

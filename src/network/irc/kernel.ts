@@ -685,7 +685,7 @@ export class Kernel {
       ident,
       hostname,
       flags: [],
-      channels: [{ name: channel, flags: [], maxPermission: -1 }],
+      channels: [{ name: channel, flags: [], maxPermission: defaultMaxPermission }],
     });
 
     if (nick === getCurrentNick()) {
