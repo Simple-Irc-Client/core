@@ -55,8 +55,7 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          channel.topic = newTopic;
-          return channel;
+          return { ...channel, topic: newTopic };
         }),
       }));
     },
@@ -67,9 +66,7 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          channel.topicSetBy = nick;
-          channel.topicSetTime = when;
-          return channel;
+          return { ...channel, topicSetBy: nick, topicSetTime: when };
         }),
       }));
     },
@@ -80,11 +77,11 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          channel.messages.push(newMessage);
-          if (channel.messages.length > maxMessages) {
-            channel.messages.shift();
+          const messages = [...channel.messages, newMessage];
+          if (messages.length > maxMessages) {
+            messages.shift();
           }
-          return channel;
+          return { ...channel, messages };
         }),
       }));
     },
@@ -95,19 +92,20 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
+          let typing: string[];
           switch (status) {
             case 'done':
-              channel.typing = channel.typing.filter((typingNick) => typingNick !== nick);
+              typing = channel.typing.filter((typingNick) => typingNick !== nick);
               break;
             case 'active':
             case 'paused':
-              if (!channel.typing.includes(nick)) {
-                channel.typing.push(nick);
-              }
+              typing = channel.typing.includes(nick) ? channel.typing : [...channel.typing, nick];
               break;
+            default:
+              typing = channel.typing;
           }
 
-          return channel;
+          return { ...channel, typing };
         }),
       }));
     },
@@ -118,16 +116,14 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          channel.unReadMessages = 0;
-          return channel;
+          return { ...channel, unReadMessages: 0 };
         }),
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
           if (channel.name !== channelName) {
             return channel;
           }
 
-          channel.unReadMessages = 0;
-          return channel;
+          return { ...channel, unReadMessages: 0 };
         }),
       }));
     },
@@ -138,16 +134,14 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          channel.unReadMessages++;
-          return channel;
+          return { ...channel, unReadMessages: channel.unReadMessages + 1 };
         }),
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
           if (channel.name !== channelName) {
             return channel;
           }
 
-          channel.unReadMessages++;
-          return channel;
+          return { ...channel, unReadMessages: channel.unReadMessages + 1 };
         }),
       }));
     },
