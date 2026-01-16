@@ -32,10 +32,10 @@ export const useUsersStore = create<UsersStore>()(
       set((state) => ({
         users: state.users
           .map((user: User) => {
-            if (user.nick === nick) {
-              user.channels = user.channels.filter((channel) => channel.name !== channelName);
+            if (user.nick !== nick) {
+              return user;
             }
-            return user;
+            return { ...user, channels: user.channels.filter((channel) => channel.name !== channelName) };
           })
           .filter((user) => user.channels.length !== 0),
       }));
@@ -48,62 +48,59 @@ export const useUsersStore = create<UsersStore>()(
     setRenameUser: (from: string, to: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick === from) {
-            user.nick = to;
+          if (user.nick !== from) {
+            return user;
           }
-          return user;
+          return { ...user, nick: to };
         }),
       }));
     },
     setJoinUser: (nick: string, channel: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick === nick) {
-            user.channels.push({ name: channel, flags: [], maxPermission: -1 });
+          if (user.nick !== nick) {
+            return user;
           }
-          return user;
+          return { ...user, channels: [...user.channels, { name: channel, flags: [], maxPermission: -1 }] };
         }),
       }));
     },
     setUserAvatar: (nick: string, avatar: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick === nick) {
-            user.avatar = avatar;
+          if (user.nick !== nick) {
+            return user;
           }
-          return user;
+          return { ...user, avatar };
         }),
       }));
     },
     setUserColor: (nick: string, color: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick === nick) {
-            user.color = color;
+          if (user.nick !== nick) {
+            return user;
           }
-          return user;
+          return { ...user, color };
         }),
       }));
     },
     setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick === nick) {
-            user.channels = user.channels.map((channel) => {
-              if (channel.name === channelName) {
-                if (plusMinus === '+') {
-                  channel.flags.push(newFlag);
-                  channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
-                }
-                if (plusMinus === '-') {
-                  channel.flags = channel.flags.filter((flag) => flag !== newFlag);
-                  channel.maxPermission = calculateMaxPermission(channel.flags, serverModes);
-                }
-              }
-              return channel;
-            });
+          if (user.nick !== nick) {
+            return user;
           }
-          return user;
+          return {
+            ...user,
+            channels: user.channels.map((channel) => {
+              if (channel.name !== channelName) {
+                return channel;
+              }
+              const flags = plusMinus === '+' ? [...channel.flags, newFlag] : channel.flags.filter((flag) => flag !== newFlag);
+              return { ...channel, flags, maxPermission: calculateMaxPermission(flags, serverModes) };
+            }),
+          };
         }),
       }));
     },
