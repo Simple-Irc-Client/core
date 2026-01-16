@@ -555,7 +555,8 @@ export class Kernel {
     // :services.librairc.net 328 sic-test #india :www.indiachat.co.in
     // :chmurka.pirc.pl 329 sic-test #sic 1676587044
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
-    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
+    // :insomnia.pirc.pl 404 mero-test-23452345 #sic :You cannot send messages to channels until you've been connected for 30 seconds or more (#sic)    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
+    // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
     // :chmurka.pirc.pl 770 sic-test :color
     // :chmurka.pirc.pl 770 sic-test :bot-url
     // :chmurka.pirc.pl 770 sic-test :display-name
@@ -1779,11 +1780,6 @@ export class Kernel {
       color: MessageColor.info,
     });
   };
-
-  // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
-  private readonly onRaw421 = (): void => {
-    // TODO
-  }
 
   // :insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
   // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
