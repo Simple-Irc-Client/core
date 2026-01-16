@@ -1,37 +1,37 @@
-import React, { type FC, type PropsWithChildren, useMemo, useRef, useState, useCallback } from 'react';
+import React, { type FC, type PropsWithChildren, useMemo, useState, useCallback } from 'react';
 import { type ContextMenuCategory, ContextMenuContext } from './ContextMenuContext';
 
 export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
-  const contextMenuAnchorElement = useRef<HTMLElement | null>(null);
-  const contextMenuCategory = useRef<ContextMenuCategory | undefined>(undefined);
-  const contextMenuItem = useRef<string | undefined>(undefined);
+  const [contextMenuAnchorElement, setContextMenuAnchorElement] = useState<HTMLElement | null>(null);
+  const [contextMenuCategory, setContextMenuCategory] = useState<ContextMenuCategory | undefined>(undefined);
+  const [contextMenuItem, setContextMenuItem] = useState<string | undefined>(undefined);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
 
   const handleContextMenuUserClick = useCallback((event: React.MouseEvent<HTMLElement>, category: ContextMenuCategory, item: string): void => {
     event.preventDefault();
-    contextMenuCategory.current = category;
-    contextMenuItem.current = item;
-    contextMenuAnchorElement.current = event.currentTarget;
+    setContextMenuCategory(category);
+    setContextMenuItem(item);
+    setContextMenuAnchorElement(event.currentTarget);
     setContextMenuOpen(true);
   }, []);
 
   const handleContextMenuClose = useCallback((): void => {
-    contextMenuCategory.current = undefined;
-    contextMenuItem.current = undefined;
-    contextMenuAnchorElement.current = null;
+    setContextMenuCategory(undefined);
+    setContextMenuItem(undefined);
+    setContextMenuAnchorElement(null);
     setContextMenuOpen(false);
   }, []);
 
   const value = useMemo(
     () => ({
-      contextMenuAnchorElement: contextMenuAnchorElement.current,
+      contextMenuAnchorElement,
       contextMenuOpen,
-      contextMenuCategory: contextMenuCategory.current,
-      contextMenuItem: contextMenuItem.current,
+      contextMenuCategory,
+      contextMenuItem,
       handleContextMenuUserClick,
       handleContextMenuClose,
     }),
-    [contextMenuOpen, handleContextMenuClose, handleContextMenuUserClick],
+    [contextMenuAnchorElement, contextMenuOpen, contextMenuCategory, contextMenuItem, handleContextMenuUserClick, handleContextMenuClose],
   );
 
   return <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>;

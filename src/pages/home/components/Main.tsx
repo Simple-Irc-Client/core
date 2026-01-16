@@ -89,12 +89,15 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
   );
 };
 
+const getNickFromMessage = (message: Message | undefined): string => {
+  if (!message?.nick) return '';
+  return typeof message.nick === 'string' ? message.nick : message.nick.nick;
+};
+
 const Main = () => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const messages = useCurrentStore((state) => state.messages);
-
-  let lastNick = '';
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -104,8 +107,9 @@ const Main = () => {
   return (
     <div className="h-full overflow-y-auto relative break-anywhere">
       <div className="pt-0 pb-0">
-        {messages.map((message) => {
-          const mainWindow = (
+        {messages.map((message, index) => {
+          const lastNick = getNickFromMessage(messages[index - 1]);
+          return (
             <div key={`message-${message.id}`}>
               {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
               {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
@@ -116,8 +120,6 @@ const Main = () => {
               )}
             </div>
           );
-          lastNick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
-          return mainWindow;
         })}
         <div ref={scrollRef} />
       </div>

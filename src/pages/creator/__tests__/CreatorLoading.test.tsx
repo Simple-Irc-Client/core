@@ -13,6 +13,7 @@ vi.mock('../../../store/settings', () => ({
   getIsPasswordRequired: vi.fn(),
   setCreatorStep: vi.fn(),
   setCreatorProgress: vi.fn(),
+  getCreatorProgress: vi.fn(),
   useSettingsStore: vi.fn(),
 }));
 
@@ -41,6 +42,7 @@ describe('CreatorLoading', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (selector: any) => selector({ isConnecting, isConnected, creatorProgress })
     );
+    vi.mocked(settingsStore.getCreatorProgress).mockReturnValue(creatorProgress);
   };
 
   describe('Basic rendering', () => {
