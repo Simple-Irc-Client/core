@@ -35,6 +35,7 @@ export interface SettingsStore {
   supportedOptions: string[];
   creatorProgress: CreatorProgress;
   currentUserFlags: string[]; // Current user's flags (e.g., +r for registered)
+  isAutoAway: boolean; // Whether the away status was set automatically due to inactivity
   watchLimit: number; // WATCH limit from 005, 0 if not supported
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
@@ -56,6 +57,7 @@ export interface SettingsStore {
   setSupportedOption: (option: string) => void;
   setCreatorProgress: (value: number, label: string) => void;
   setCurrentUserFlag: (flag: string, add: boolean) => void;
+  setIsAutoAway: (isAuto: boolean) => void;
   setWatchLimit: (limit: number) => void;
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
@@ -82,6 +84,7 @@ export const useSettingsStore = create<SettingsStore>()(
     supportedOptions: [],
     creatorProgress: { value: 0, label: '' },
     currentUserFlags: [],
+    isAutoAway: false,
     watchLimit: 0,
     monitorLimit: 0,
     silenceLimit: 0,
@@ -146,6 +149,9 @@ export const useSettingsStore = create<SettingsStore>()(
           : state.currentUserFlags.filter((f) => f !== flag),
       }));
     },
+    setIsAutoAway: (isAuto: boolean): void => {
+      set(() => ({ isAutoAway: isAuto }));
+    },
     setWatchLimit: (limit: number): void => {
       set(() => ({ watchLimit: limit }));
     },
@@ -174,6 +180,7 @@ export const useSettingsStore = create<SettingsStore>()(
         supportedOptions: [],
         creatorProgress: { value: 0, label: '' },
         currentUserFlags: [],
+        isAutoAway: false,
         watchLimit: 0,
         monitorLimit: 0,
         silenceLimit: 0,

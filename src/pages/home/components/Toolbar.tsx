@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
@@ -33,6 +33,8 @@ const Toolbar = () => {
   const nick: string = useSettingsStore((state) => state.nick);
   const currentUserFlags: string[] = useSettingsStore((state) => state.currentUserFlags);
   const isAway = currentUserFlags.includes('away');
+  const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
+  const isConnected: boolean = useSettingsStore((state) => state.isConnected);
 
   const awayMessages = useAwayMessagesStore((state) => state.messages);
   const awayMessagesCount = awayMessages.length;
@@ -50,6 +52,9 @@ const Toolbar = () => {
   const messageHistory = useRef<string[]>([]);
   const historyIndex = useRef(-1);
   const currentInputBeforeHistory = useRef('');
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
@@ -63,6 +68,41 @@ const Toolbar = () => {
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
   const users = useMemo(() => getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
+
+  // Reset inactivity timer - called when user sends a message
+  const resetInactivityTimer = (): void => {
+    // Clear existing timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+
+    // Don't start timer if already manually away (not auto-away)
+    if (isAway && !isAutoAway) {
+      return;
+    }
+
+    // Start new timer
+    inactivityTimerRef.current = setTimeout(() => {
+      const state = useSettingsStore.getState();
+      // Only set away if connected and not already away
+      if (state.isConnected && !state.currentUserFlags.includes('away')) {
+        ircSendRawMessage('AWAY :Auto away - inactive for 15 minutes');
+        state.setIsAutoAway(true);
+      }
+    }, AUTO_AWAY_TIMEOUT);
+  };
+
+  // Initialize and cleanup the inactivity timer
+  useEffect(() => {
+    resetInactivityTimer();
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEmojiClick = (emojiData: EmojiClickData): void => {
     setMessage((prev) => prev + emojiData.emoji);
@@ -117,6 +157,15 @@ const Toolbar = () => {
     messageHistory.current = [message, ...messageHistory.current].slice(0, 10);
     historyIndex.current = -1;
     currentInputBeforeHistory.current = '';
+
+    // If auto-away is active and connected, turn it off
+    if (isAutoAway && isConnected) {
+      ircSendRawMessage('AWAY');
+      useSettingsStore.getState().setIsAutoAway(false);
+    }
+
+    // Reset the inactivity timer
+    resetInactivityTimer();
 
     setMessage('');
   };

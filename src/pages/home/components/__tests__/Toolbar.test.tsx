@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Toolbar from '../Toolbar';
@@ -60,6 +60,7 @@ describe('Toolbar', () => {
         currentChannelCategory: ChannelCategory.channel,
         nick: 'testUser',
         currentUserFlags: [],
+        isConnected: true,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -549,4 +550,204 @@ describe('Toolbar', () => {
     });
   });
 
+  describe('Auto-away functionality', () => {
+    const mockSetIsAutoAway = vi.fn();
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isAutoAway: false,
+          isConnected: true,
+          setIsAutoAway: mockSetIsAutoAway,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      // Mock getState to return the same mock functions
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: [],
+        isConnected: true,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should send AWAY command after 15 minutes of inactivity', () => {
+      render(<Toolbar />);
+
+      // Fast forward 15 minutes
+      vi.advanceTimersByTime(15 * 60 * 1000);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(mockSetIsAutoAway).toHaveBeenCalledWith(true);
+    });
+
+    it('should not send AWAY command before 15 minutes', () => {
+      render(<Toolbar />);
+
+      // Fast forward 14 minutes
+      vi.advanceTimersByTime(14 * 60 * 1000);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+    });
+
+    it('should reset inactivity timer when sending a message', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+
+      // Fast forward 10 minutes
+      vi.advanceTimersByTime(10 * 60 * 1000);
+
+      // Send a message
+      fireEvent.change(input, { target: { value: 'Hello' } });
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Fast forward another 10 minutes (total 20 from start, but only 10 since last message)
+      vi.advanceTimersByTime(10 * 60 * 1000);
+
+      // Should not be away yet because timer was reset
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+
+      // Fast forward another 5 minutes (15 total since last message)
+      vi.advanceTimersByTime(5 * 60 * 1000);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+    });
+
+    it('should turn off auto-away when user sends a message', () => {
+      // Set up as auto-away
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: ['away'],
+          isAutoAway: true,
+          isConnected: true,
+          setIsAutoAway: mockSetIsAutoAway,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: ['away'],
+        isConnected: true,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Should send AWAY with no message to turn it off
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY');
+      expect(mockSetIsAutoAway).toHaveBeenCalledWith(false);
+    });
+
+    it('should not turn off away if it was set manually', () => {
+      // Set up as manually away (not auto)
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: ['away'],
+          isAutoAway: false,
+          isConnected: true,
+          setIsAutoAway: mockSetIsAutoAway,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: ['away'],
+        isConnected: true,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Should NOT send AWAY command to turn it off
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY');
+    });
+
+    it('should not set auto-away if already manually away', () => {
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: ['away'],
+        isConnected: true,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+
+      render(<Toolbar />);
+
+      // Fast forward 15 minutes
+      vi.advanceTimersByTime(15 * 60 * 1000);
+
+      // Should not send AWAY command because user is already away
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+    });
+
+    it('should not set auto-away if not connected', () => {
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: [],
+        isConnected: false,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+
+      render(<Toolbar />);
+
+      // Fast forward 15 minutes
+      vi.advanceTimersByTime(15 * 60 * 1000);
+
+      // Should not send AWAY command because not connected
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+    });
+
+    it('should not turn off auto-away if not connected', () => {
+      // Set up as auto-away but not connected
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: ['away'],
+          isAutoAway: true,
+          isConnected: false,
+          setIsAutoAway: mockSetIsAutoAway,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
+        currentUserFlags: ['away'],
+        isConnected: false,
+        setIsAutoAway: mockSetIsAutoAway,
+      } as unknown as settingsStore.SettingsStore);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Should NOT send AWAY command because not connected
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY');
+    });
+  });
 });

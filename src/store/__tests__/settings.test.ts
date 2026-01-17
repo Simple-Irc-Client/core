@@ -378,4 +378,26 @@ describe('settings store', () => {
       expect(flagsBefore).not.toBe(flagsAfter);
     });
   });
+
+  describe('setIsAutoAway', () => {
+    it('should set isAutoAway to true', () => {
+      useSettingsStore.getState().setIsAutoAway(true);
+
+      expect(useSettingsStore.getState().isAutoAway).toBe(true);
+    });
+
+    it('should set isAutoAway to false', () => {
+      useSettingsStore.getState().setIsAutoAway(true);
+      useSettingsStore.getState().setIsAutoAway(false);
+
+      expect(useSettingsStore.getState().isAutoAway).toBe(false);
+    });
+
+    it('should reset isAutoAway on resetCreatorState', () => {
+      useSettingsStore.getState().setIsAutoAway(true);
+      useSettingsStore.getState().resetCreatorState();
+
+      expect(useSettingsStore.getState().isAutoAway).toBe(false);
+    });
+  });
 });
