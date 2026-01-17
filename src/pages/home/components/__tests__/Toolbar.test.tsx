@@ -29,6 +29,19 @@ vi.mock('uuid', () => ({
   v4: () => 'test-uuid',
 }));
 
+vi.mock('emoji-picker-react', () => ({
+  default: ({ onEmojiClick }: { onEmojiClick: (data: { emoji: string }) => void }) => (
+    <div data-testid="emoji-picker">
+      <button type="button" onClick={() => onEmojiClick({ emoji: '😀' })} data-testid="emoji-grinning">
+        😀
+      </button>
+      <button type="button" onClick={() => onEmojiClick({ emoji: '❤️' })} data-testid="emoji-heart">
+        ❤️
+      </button>
+    </div>
+  ),
+}));
+
 describe('Toolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -290,6 +303,82 @@ describe('Toolbar', () => {
 
       const input = screen.queryByRole('textbox');
       expect(input).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Emoji picker', () => {
+    it('should render the emoticons button', () => {
+      render(<Toolbar />);
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      expect(emoticonButton).toBeInTheDocument();
+    });
+
+    it('should open emoji picker when clicking emoticons button', () => {
+      render(<Toolbar />);
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      fireEvent.click(emoticonButton);
+
+      const emojiPicker = screen.getByTestId('emoji-picker');
+      expect(emojiPicker).toBeInTheDocument();
+    });
+
+    it('should insert emoji into message input when clicking an emoji', () => {
+      render(<Toolbar />);
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      fireEvent.click(emoticonButton);
+
+      const emojiButton = screen.getByTestId('emoji-grinning');
+      fireEvent.click(emojiButton);
+
+      const input = screen.getByRole('textbox');
+      expect(input).toHaveValue('😀');
+    });
+
+    it('should append emoji to existing message', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello ' } });
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      fireEvent.click(emoticonButton);
+
+      const emojiButton = screen.getByTestId('emoji-heart');
+      fireEvent.click(emojiButton);
+
+      expect(input).toHaveValue('Hello ❤️');
+    });
+
+    it('should close emoji picker after selecting an emoji', () => {
+      render(<Toolbar />);
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      fireEvent.click(emoticonButton);
+
+      const emojiButton = screen.getByTestId('emoji-grinning');
+      fireEvent.click(emojiButton);
+
+      const emojiPicker = screen.queryByTestId('emoji-picker');
+      expect(emojiPicker).not.toBeInTheDocument();
+    });
+
+    it('should allow sending message with emoji', () => {
+      render(<Toolbar />);
+
+      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      fireEvent.click(emoticonButton);
+
+      const emojiButton = screen.getByTestId('emoji-grinning');
+      fireEvent.click(emojiButton);
+
+      const input = screen.getByRole('textbox');
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :😀');
     });
   });
 });
