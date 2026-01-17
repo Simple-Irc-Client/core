@@ -108,5 +108,6 @@
     "contextmenu.operator.remove.owner": "Remove Owner (-q)",
     "contextmenu.operator.kick": "Kick",
     "contextmenu.operator.ban": "Ban",
-    "contextmenu.operator.kickban": "Kick & Ban"
+    "contextmenu.operator.kickban": "Kick & Ban",
+    "contextmenu.invite": "Invite to Channel"
 }

@@ -108,5 +108,6 @@
     "contextmenu.operator.remove.owner": "Usuń właściciela (-q)",
     "contextmenu.operator.kick": "Wyrzuć",
     "contextmenu.operator.ban": "Zbanuj",
-    "contextmenu.operator.kickban": "Wyrzuć i zbanuj"
+    "contextmenu.operator.kickban": "Wyrzuć i zbanuj",
+    "contextmenu.invite": "Zaproś na kanał"
 }
