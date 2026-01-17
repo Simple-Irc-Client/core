@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import CreatorLoading from '../CreatorLoading';
 import * as settingsStore from '../../../store/settings';
 
@@ -15,6 +15,7 @@ vi.mock('../../../store/settings', () => ({
   setCreatorProgress: vi.fn(),
   getCreatorProgress: vi.fn(),
   useSettingsStore: vi.fn(),
+  resetAndGoToStart: vi.fn(),
 }));
 
 describe('CreatorLoading', () => {
@@ -301,6 +302,57 @@ describe('CreatorLoading', () => {
       rerender(<CreatorLoading />);
 
       expect(settingsStore.setCreatorProgress).toHaveBeenCalledWith(0, 'creator.loading.disconnected');
+    });
+  });
+
+  describe('Go Back button', () => {
+    it('should show Go Back button when progress is 0', () => {
+      setupMocks({
+        isConnecting: false,
+        isConnected: false,
+        creatorProgress: { value: 0, label: 'creator.loading.disconnected' },
+      });
+
+      render(<CreatorLoading />);
+
+      expect(screen.getByRole('button', { name: 'creator.loading.button.goBack' })).toBeInTheDocument();
+    });
+
+    it('should not show Go Back button when progress is greater than 0', () => {
+      setupMocks({
+        isConnecting: true,
+        creatorProgress: { value: 1, label: 'creator.loading.connecting' },
+      });
+
+      render(<CreatorLoading />);
+
+      expect(screen.queryByRole('button', { name: 'creator.loading.button.goBack' })).not.toBeInTheDocument();
+    });
+
+    it('should not show Go Back button when connected', () => {
+      setupMocks({
+        isConnected: true,
+        creatorProgress: { value: 2, label: 'creator.loading.connected' },
+      });
+
+      render(<CreatorLoading />);
+
+      expect(screen.queryByRole('button', { name: 'creator.loading.button.goBack' })).not.toBeInTheDocument();
+    });
+
+    it('should call resetAndGoToStart when Go Back button is clicked', () => {
+      setupMocks({
+        isConnecting: false,
+        isConnected: false,
+        creatorProgress: { value: 0, label: 'creator.loading.disconnected' },
+      });
+
+      render(<CreatorLoading />);
+
+      const goBackButton = screen.getByRole('button', { name: 'creator.loading.button.goBack' });
+      fireEvent.click(goBackButton);
+
+      expect(settingsStore.resetAndGoToStart).toHaveBeenCalledTimes(1);
     });
   });
 });

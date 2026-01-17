@@ -17,6 +17,7 @@ interface ChannelsStore {
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
+  setClearAll: () => void;
 }
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -143,6 +144,12 @@ export const useChannelsStore = create<ChannelsStore>()(
 
           return { ...channel, unReadMessages: channel.unReadMessages + 1 };
         }),
+      }));
+    },
+    setClearAll: () => {
+      set(() => ({
+        openChannels: [],
+        openChannelsShortList: [],
       }));
     },
   })),
@@ -286,4 +293,8 @@ export const isChannel = (channelName: string): boolean => {
     throw new Error(`Error - isChannel - cannot read first character of: ${channelName}`);
   }
   return getChannelTypes().includes(char);
+};
+
+export const setChannelsClearAll = (): void => {
+  useChannelsStore.getState().setClearAll();
 };

@@ -17,6 +17,7 @@ interface UsersStore {
   setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
   setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
+  setClearAll: () => void;
 }
 
 export const useUsersStore = create<UsersStore>()(
@@ -106,6 +107,11 @@ export const useUsersStore = create<UsersStore>()(
             }),
           };
         }),
+      }));
+    },
+    setClearAll: (): void => {
+      set(() => ({
+        users: [],
       }));
     },
   })),
@@ -267,4 +273,8 @@ export const getCurrentUserChannelModes = (channelName: string): string[] => {
   const user = getUser(currentNick);
   const channel = user?.channels.find((ch) => ch.name === channelName);
   return channel?.flags ?? [];
+};
+
+export const setUsersClearAll = (): void => {
+  useUsersStore.getState().setClearAll();
 };

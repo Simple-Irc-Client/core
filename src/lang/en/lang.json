@@ -13,6 +13,7 @@
     "creator.loading.passwordIsRequired": "Password is required",
     "creator.loading.passwordIsNotRequired": "Password is not required",
     "creator.loading.error": "Failed to connect to the server - {{message}}",
+    "creator.loading.button.goBack": "Go Back",
     "creator.password.title": "The selected nickname is password protected",
     "creator.password.password": "Password",
     "creator.password.button.next": "Next",

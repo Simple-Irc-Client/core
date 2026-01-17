@@ -12,6 +12,7 @@ interface CurrentStore {
   setUpdateMessages: (messages: Message[]) => void;
   setUpdateUsers: (users: User[]) => void;
   setUpdateTyping: (typing: string[]) => void;
+  setClearAll: () => void;
 }
 
 export const useCurrentStore = create<CurrentStore>()(
@@ -41,5 +42,17 @@ export const useCurrentStore = create<CurrentStore>()(
         typing,
       }));
     },
+    setClearAll: (): void => {
+      set(() => ({
+        topic: '',
+        messages: [],
+        users: [],
+        typing: [],
+      }));
+    },
   })),
 );
+
+export const setCurrentClearAll = (): void => {
+  useCurrentStore.getState().setClearAll();
+};

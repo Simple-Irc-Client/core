@@ -97,6 +97,19 @@ export const isConnected = (): boolean => {
   return sicSocket !== null && sicSocket.readyState === WebSocket.OPEN;
 };
 
+export const ircDisconnect = (): void => {
+  // Clear the message queue
+  queueIrcMessages.length = 0;
+
+  // Close the WebSocket connection if it exists
+  if (sicSocket) {
+    sicSocket.close();
+    sicSocket = null;
+  }
+
+  isConnecting = false;
+};
+
 const queueIrcMessages: unknown[] = [];
 
 export const ircConnect = (currentServer: Server, nick: string): void => {

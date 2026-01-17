@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress, getCreatorProgress } from '../../store/settings';
+import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress, getCreatorProgress, resetAndGoToStart } from '../../store/settings';
 
 const CreatorLoading = () => {
   const { t } = useTranslation();
@@ -43,10 +44,19 @@ const CreatorLoading = () => {
     return undefined;
   }, [isConnecting, isConnected, t]);
 
+  const handleGoBack = (): void => {
+    resetAndGoToStart();
+  };
+
   return (
     <div className="w-full mt-8">
       <Progress value={creatorProgress.value * 30} />
       {creatorProgress.label !== '' && <h2 className="text-center mt-4">{creatorProgress.label}</h2>}
+      {creatorProgress.value === 0 && (
+        <Button onClick={handleGoBack} variant="outline" className="w-full mt-8">
+          {t('creator.loading.button.goBack')}
+        </Button>
+      )}
     </div>
   );
 };
