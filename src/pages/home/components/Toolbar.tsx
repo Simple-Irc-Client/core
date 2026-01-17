@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
 import { ircSendRawMessage } from '../../../network/irc/network';
-import { Send, Smile } from 'lucide-react';
+import { Send, Smile, User as UserIcon, MessageSquare } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
@@ -15,15 +15,40 @@ import { getChannelListSortedByAZ } from '../../../store/channelList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useAwayMessagesStore, clearAwayMessages } from '../../../store/awayMessages';
+import { Label } from '@/components/ui/label';
 
 const Toolbar = () => {
   const { t } = useTranslation();
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const nick: string = useSettingsStore((state) => state.nick);
+  const currentUserFlags: string[] = useSettingsStore((state) => state.currentUserFlags);
+  const isAway = currentUserFlags.includes('away');
+
+  const awayMessages = useAwayMessagesStore((state) => state.messages);
+  const awayMessagesCount = awayMessages.length;
 
   const [message, setMessage] = useState('');
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [awayDialogOpen, setAwayDialogOpen] = useState(false);
+  const [newNick, setNewNick] = useState('');
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
@@ -245,44 +270,173 @@ const Toolbar = () => {
     }
   };
 
+  const handleNickChange = (): void => {
+    if (newNick.trim().length > 0) {
+      ircSendRawMessage(`NICK ${newNick.trim()}`);
+      setProfileDialogOpen(false);
+      setNewNick('');
+    }
+  };
+
+  const handleOpenAwayDialog = (): void => {
+    setAwayDialogOpen(true);
+  };
+
+  const handleCloseAwayDialog = (): void => {
+    clearAwayMessages();
+    setAwayDialogOpen(false);
+  };
+
+  const handleOpenProfileDialog = (): void => {
+    setNewNick(nick);
+    setProfileDialogOpen(true);
+  };
+
   return (
-    <form className="px-4 flex" onSubmit={handleSubmit}>
-      {currentChannelName !== DEBUG_CHANNEL && (
-        <>
-          <div className="flex-1 mt-1 mb-1 relative">
-            <label htmlFor="message-input" className="absolute -top-5 left-0 text-xs text-gray-600">
-              {`${t('main.toolbar.write')} ${currentChannelName}`}
-            </label>
-            <Input
-              id="message-input"
-              autoFocus
-              value={message}
-              onChange={handleChange}
-              onKeyUp={handleKeyUp}
-              onKeyDown={handleKeyDown}
-              autoComplete="off"
-              ref={autocompleteInput}
-              className="px-0"
-            />
-          </div>
-          {message && (
-            <Button className="mt-1 mb-1" type="submit" aria-label="send" variant="ghost" size="icon">
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
-          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button className="mt-1 mb-1" type="button" aria-label="emoticons" variant="ghost" size="icon">
-                <Smile className="h-4 w-4" />
+    <>
+      <form className="px-4 flex" onSubmit={handleSubmit}>
+        {currentChannelName !== DEBUG_CHANNEL && (
+          <>
+            {/* User Avatar with Dropdown Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full mr-2 mt-1 mb-1 hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                >
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                    {nick.substring(0, 1).toUpperCase()}
+                  </span>
+                  {isAway && awayMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
+                      {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={handleOpenProfileDialog}>
+                  <UserIcon className="mr-2 h-4 w-4" />
+                  {t('main.toolbar.profileSettings')}
+                </DropdownMenuItem>
+                {isAway && (
+                  <DropdownMenuItem onClick={handleOpenAwayDialog}>
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    {t('main.toolbar.awayMessages')}
+                    {awayMessagesCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {awayMessagesCount}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex-1 mt-1 mb-1 relative">
+              <label htmlFor="message-input" className="absolute -top-5 left-0 text-xs text-gray-600">
+                {`${t('main.toolbar.write')} ${currentChannelName}`}
+              </label>
+              <Input
+                id="message-input"
+                autoFocus
+                value={message}
+                onChange={handleChange}
+                onKeyUp={handleKeyUp}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
+                ref={autocompleteInput}
+                className="px-0"
+              />
+            </div>
+            {message && (
+              <Button className="mt-1 mb-1" type="submit" aria-label="send" variant="ghost" size="icon">
+                <Send className="h-4 w-4" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <EmojiPicker onEmojiClick={handleEmojiClick} />
-            </PopoverContent>
-          </Popover>
-        </>
-      )}
-    </form>
+            )}
+            <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button className="mt-1 mb-1" type="button" aria-label="emoticons" variant="ghost" size="icon">
+                  <Smile className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <EmojiPicker onEmojiClick={handleEmojiClick} />
+              </PopoverContent>
+            </Popover>
+          </>
+        )}
+      </form>
+
+      {/* Profile Settings Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('main.toolbar.profileSettings')}</DialogTitle>
+            <DialogDescription>{t('main.toolbar.profileDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="nick" className="text-right">
+                {t('main.toolbar.nick')}
+              </Label>
+              <Input
+                id="nick"
+                value={newNick}
+                onChange={(e) => setNewNick(e.target.value)}
+                className="col-span-3"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleNickChange();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={handleNickChange}>
+              {t('main.toolbar.changeNick')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Away Messages Dialog */}
+      <Dialog open={awayDialogOpen} onOpenChange={(open) => !open && handleCloseAwayDialog()}>
+        <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t('main.toolbar.awayMessages')}</DialogTitle>
+            <DialogDescription>{t('main.toolbar.awayMessagesDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto py-4">
+            {awayMessages.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center">{t('main.toolbar.noAwayMessages')}</p>
+            ) : (
+              <div className="space-y-3">
+                {awayMessages.map((msg) => (
+                  <div key={msg.id} className="border rounded-lg p-3">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                      <span className="font-medium">{msg.channel}</span>
+                      <span>{new Date(msg.time).toLocaleString()}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}
+                      {msg.message}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={handleCloseAwayDialog}>
+              {t('main.toolbar.markAsRead')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

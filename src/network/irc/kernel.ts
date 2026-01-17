@@ -46,6 +46,8 @@ import { MessageColor } from '../../config/theme';
 import { defaultChannelTypes, defaultMaxPermission } from '../../config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../../store/channelList';
+import { addAwayMessage } from '../../store/awayMessages';
+import { getCurrentUserFlags } from '../../store/settings';
 
 export interface IrcEvent {
   type: string;
@@ -792,9 +794,9 @@ export class Kernel {
 
     const currentChannelName = getCurrentChannelName();
 
-    const userOfChannel = this.line.shift();
+    const userOrChannel = this.line.shift();
 
-    if (userOfChannel === undefined) {
+    if (userOrChannel === undefined) {
       throw this.assert(this.onMode, 'userOfChannel');
     }
 
@@ -803,9 +805,9 @@ export class Kernel {
       flags = flags.substring(1);
     }
 
-    if (isChannel(userOfChannel)) {
+    if (isChannel(userOrChannel)) {
       // channel mode
-      const channel = userOfChannel;
+      const channel = userOrChannel;
 
       let plusMinus: '+' | '-' | undefined;
 
@@ -867,7 +869,7 @@ export class Kernel {
         setAddMessage({
           id: uuidv4(),
           message,
-          target: currentChannelName,
+          target: userOrChannel,
           time: this.tags?.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
@@ -875,7 +877,7 @@ export class Kernel {
       }
     } else {
       // user mode
-      const user = userOfChannel;
+      const user = userOrChannel;
 
       let plusMinus: '+' | '-' | undefined;
 
@@ -949,7 +951,7 @@ export class Kernel {
         setAddMessage({
           id: uuidv4(),
           message,
-          target: userOfChannel,
+          target: currentChannelName,
           time: this.tags?.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
@@ -1087,6 +1089,7 @@ export class Kernel {
   private readonly onPrivMsg = (): void => {
     const serverUserModes = getUserModes();
     const currentChannelName = getCurrentChannelName();
+    const myNick = getCurrentNick();
 
     const target = this.line.shift();
     const message = this.line.join(' ').substring(1);
@@ -1101,7 +1104,7 @@ export class Kernel {
       return;
     }
 
-    const isPrivMessage = target === getCurrentNick();
+    const isPrivMessage = target === myNick;
     const messageTarget = isPrivMessage ? nick : target;
 
     if (!existChannel(messageTarget)) {
@@ -1116,15 +1119,34 @@ export class Kernel {
       setTyping(messageTarget, nick, 'done');
     }
 
+    const messageId = this.tags?.msgid ?? uuidv4();
+    const messageTime = this.tags?.time ?? new Date().toISOString();
+
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: messageId,
       message,
       nick: getUser(nick) ?? nick,
       target: messageTarget,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: messageTime,
       category: MessageCategory.default,
       color: MessageColor.default,
     });
+
+    // Check if user is away and message mentions their nick
+    const userFlags = getCurrentUserFlags();
+    const isAway = userFlags.includes('away');
+    if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
+      addAwayMessage({
+        id: messageId,
+        message,
+        nick: getUser(nick) ?? nick,
+        target: messageTarget,
+        time: messageTime,
+        category: MessageCategory.default,
+        color: MessageColor.default,
+        channel: messageTarget,
+      });
+    }
   };
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving

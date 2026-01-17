@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import Toolbar from '../Toolbar';
 import * as settingsStore from '../../../../store/settings';
 import * as network from '../../../../network/irc/network';
@@ -25,6 +26,14 @@ vi.mock('../../../../store/channels', () => ({
   setAddMessage: vi.fn(),
 }));
 
+const mockClearAwayMessages = vi.fn();
+let mockAwayMessages: unknown[] = [];
+
+vi.mock('../../../../store/awayMessages', () => ({
+  useAwayMessagesStore: (selector: (state: { messages: unknown[] }) => unknown) => selector({ messages: mockAwayMessages }),
+  clearAwayMessages: () => mockClearAwayMessages(),
+}));
+
 vi.mock('uuid', () => ({
   v4: () => 'test-uuid',
 }));
@@ -45,11 +54,14 @@ vi.mock('emoji-picker-react', () => ({
 describe('Toolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAwayMessages = [];
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelName: '#test',
         currentChannelCategory: ChannelCategory.channel,
+        nick: 'testUser',
+        currentUserFlags: [],
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -296,6 +308,8 @@ describe('Toolbar', () => {
         selector({
           currentChannelName: 'Debug',
           currentChannelCategory: ChannelCategory.status,
+          nick: 'testUser',
+          currentUserFlags: [],
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -379,6 +393,454 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :😀');
+    });
+  });
+
+  describe('User avatar', () => {
+    const getAvatarButton = () => {
+      // The avatar button is the first button in the form with data-state attribute
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    it('should render avatar with first letter of nick', () => {
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeInTheDocument();
+      expect(avatarButton?.textContent).toContain('T'); // First letter of 'testUser'
+    });
+
+    it('should display uppercase first letter', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'lowercase',
+          currentUserFlags: [],
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton?.textContent).toContain('L'); // Uppercase L
+    });
+
+    it('should open dropdown menu when clicking avatar', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      // Radix UI dropdown menu renders content in a portal to document.body
+      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
+    });
+
+    it('should show Profile Settings option in menu', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
+    });
+
+    it('should not show Away Messages option when not away', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      expect(document.body.textContent).not.toContain('main.toolbar.awayMessages');
+    });
+
+    it('should not show badge when not away', () => {
+      render(<Toolbar />);
+
+      // Badge should not be visible (no element with the badge class inside avatar)
+      const avatarButton = getAvatarButton();
+      const badge = avatarButton?.querySelector('.bg-red-500');
+      expect(badge).not.toBeInTheDocument();
+    });
+  });
+
+  describe('User avatar when away', () => {
+    const getAvatarButton = () => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    beforeEach(() => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: ['away'],
+        } as unknown as settingsStore.SettingsStore)
+      );
+    });
+
+    it('should show Away Messages option in menu when away', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      expect(document.body.textContent).toContain('main.toolbar.awayMessages');
+    });
+
+    it('should show badge with count when away with messages', () => {
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+        {
+          id: 'msg-2',
+          message: 'testUser are you there?',
+          nick: 'sender2',
+          target: '#test',
+          time: '2024-01-01T12:01:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      // Check for badge with count
+      expect(screen.getByText('2')).toBeInTheDocument();
+    });
+
+    it('should show message count in menu badge when away with messages', async () => {
+      const user = userEvent.setup();
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      // Should show count in menu item as well
+      const menuBadges = screen.getAllByText('1');
+      expect(menuBadges.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Profile settings dialog', () => {
+    const getAvatarButton = () => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    const getMenuItemByText = (text: string): HTMLElement | null => {
+      // Radix UI renders menu items in a portal, search in document.body
+      const menuItems = document.querySelectorAll('[role="menuitem"]');
+      for (const item of menuItems) {
+        if (item.textContent?.includes(text)) {
+          return item as HTMLElement;
+        }
+      }
+      return null;
+    };
+
+    it('should open profile dialog when clicking Profile Settings', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      expect(profileOption).not.toBeNull();
+      await user.click(profileOption!);
+
+      expect(document.body.textContent).toContain('main.toolbar.profileDescription');
+    });
+
+    it('should show nick input in profile dialog', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      // Should have nick input pre-filled - dialog also renders in portal
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      expect(nickInput).not.toBeNull();
+      expect(nickInput.value).toBe('testUser');
+    });
+
+    it('should send NICK command when changing nickname', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+      await user.type(nickInput, 'newNickname');
+
+      const changeButton = screen.getByText('main.toolbar.changeNick');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNickname');
+    });
+
+    it('should not send NICK command when nickname is empty', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+
+      const changeButton = screen.getByText('main.toolbar.changeNick');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
+    });
+
+    it('should not send NICK command when nickname is only whitespace', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+      await user.type(nickInput, '   ');
+
+      const changeButton = screen.getByText('main.toolbar.changeNick');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
+    });
+
+    it('should trim whitespace from nickname', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+      await user.type(nickInput, '  newNick  ');
+
+      const changeButton = screen.getByText('main.toolbar.changeNick');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNick');
+    });
+
+    it('should close dialog after changing nickname', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+      await user.type(nickInput, 'newNickname');
+
+      const changeButton = screen.getByText('main.toolbar.changeNick');
+      await user.click(changeButton);
+
+      // Dialog should be closed
+      expect(document.body.textContent).not.toContain('main.toolbar.profileDescription');
+    });
+
+    it('should send NICK command when pressing Enter in nick input', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const profileOption = getMenuItemByText('main.toolbar.profileSettings');
+      await user.click(profileOption!);
+
+      const nickInput = document.querySelector('#nick') as HTMLInputElement;
+      await user.clear(nickInput);
+      await user.type(nickInput, 'newNickname{Enter}');
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNickname');
+    });
+  });
+
+  describe('Away messages dialog', () => {
+    const getAvatarButton = () => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    const getMenuItemByText = (text: string): HTMLElement | null => {
+      // Radix UI renders menu items in a portal, search in document.body
+      const menuItems = document.querySelectorAll('[role="menuitem"]');
+      for (const item of menuItems) {
+        if (item.textContent?.includes(text)) {
+          return item as HTMLElement;
+        }
+      }
+      return null;
+    };
+
+    beforeEach(() => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: ['away'],
+        } as unknown as settingsStore.SettingsStore)
+      );
+    });
+
+    it('should open away messages dialog when clicking Away Messages', async () => {
+      const user = userEvent.setup();
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const awayOption = getMenuItemByText('main.toolbar.awayMessages');
+      expect(awayOption).not.toBeNull();
+      await user.click(awayOption!);
+
+      expect(document.body.textContent).toContain('main.toolbar.awayMessagesDescription');
+    });
+
+    it('should show no messages text when away messages are empty', async () => {
+      const user = userEvent.setup();
+      mockAwayMessages = [];
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const awayOption = getMenuItemByText('main.toolbar.awayMessages');
+      expect(awayOption).not.toBeNull();
+      await user.click(awayOption!);
+
+      expect(document.body.textContent).toContain('main.toolbar.noAwayMessages');
+    });
+
+    it('should display away messages in dialog', async () => {
+      const user = userEvent.setup();
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const awayOption = getMenuItemByText('main.toolbar.awayMessages');
+      await user.click(awayOption!);
+
+      expect(document.body.textContent).toContain('Hey testUser!');
+      expect(document.body.textContent).toContain('#test');
+    });
+
+    it('should call clearAwayMessages when clicking Mark as Read', async () => {
+      const user = userEvent.setup();
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      await user.click(avatarButton!);
+
+      const awayOption = getMenuItemByText('main.toolbar.awayMessages');
+      await user.click(awayOption!);
+
+      const markAsReadButton = screen.getByText('main.toolbar.markAsRead');
+      await user.click(markAsReadButton);
+
+      expect(mockClearAwayMessages).toHaveBeenCalled();
     });
   });
 });
