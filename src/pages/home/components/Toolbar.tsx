@@ -21,16 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { useAwayMessagesStore, clearAwayMessages } from '../../../store/awayMessages';
-import { Label } from '@/components/ui/label';
+import { useAwayMessagesStore } from '../../../store/awayMessages';
+import ProfileSettings from './ProfileSettings';
+import AwayMessages from './AwayMessages';
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -48,7 +41,6 @@ const Toolbar = () => {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [awayDialogOpen, setAwayDialogOpen] = useState(false);
-  const [newNick, setNewNick] = useState('');
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
@@ -270,28 +262,6 @@ const Toolbar = () => {
     }
   };
 
-  const handleNickChange = (): void => {
-    if (newNick.trim().length > 0) {
-      ircSendRawMessage(`NICK ${newNick.trim()}`);
-      setProfileDialogOpen(false);
-      setNewNick('');
-    }
-  };
-
-  const handleOpenAwayDialog = (): void => {
-    setAwayDialogOpen(true);
-  };
-
-  const handleCloseAwayDialog = (): void => {
-    clearAwayMessages();
-    setAwayDialogOpen(false);
-  };
-
-  const handleOpenProfileDialog = (): void => {
-    setNewNick(nick);
-    setProfileDialogOpen(true);
-  };
-
   return (
     <>
       <form className="px-4 flex" onSubmit={handleSubmit}>
@@ -315,12 +285,12 @@ const Toolbar = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={handleOpenProfileDialog}>
+                <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
                   <UserIcon className="mr-2 h-4 w-4" />
                   {t('main.toolbar.profileSettings')}
                 </DropdownMenuItem>
                 {isAway && (
-                  <DropdownMenuItem onClick={handleOpenAwayDialog}>
+                  <DropdownMenuItem onClick={() => setAwayDialogOpen(true)}>
                     <MessageSquare className="mr-2 h-4 w-4" />
                     {t('main.toolbar.awayMessages')}
                     {awayMessagesCount > 0 && (
@@ -369,73 +339,17 @@ const Toolbar = () => {
       </form>
 
       {/* Profile Settings Dialog */}
-      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('main.toolbar.profileSettings')}</DialogTitle>
-            <DialogDescription>{t('main.toolbar.profileDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="nick" className="text-right">
-                {t('main.toolbar.nick')}
-              </Label>
-              <Input
-                id="nick"
-                value={newNick}
-                onChange={(e) => setNewNick(e.target.value)}
-                className="col-span-3"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleNickChange();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" onClick={handleNickChange}>
-              {t('main.toolbar.changeNick')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ProfileSettings
+        open={profileDialogOpen}
+        onOpenChange={setProfileDialogOpen}
+        currentNick={nick}
+      />
 
       {/* Away Messages Dialog */}
-      <Dialog open={awayDialogOpen} onOpenChange={(open) => !open && handleCloseAwayDialog()}>
-        <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{t('main.toolbar.awayMessages')}</DialogTitle>
-            <DialogDescription>{t('main.toolbar.awayMessagesDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto py-4">
-            {awayMessages.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center">{t('main.toolbar.noAwayMessages')}</p>
-            ) : (
-              <div className="space-y-3">
-                {awayMessages.map((msg) => (
-                  <div key={msg.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span className="font-medium">{msg.channel}</span>
-                      <span>{new Date(msg.time).toLocaleString()}</span>
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}
-                      {msg.message}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="button" onClick={handleCloseAwayDialog}>
-              {t('main.toolbar.markAsRead')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AwayMessages
+        open={awayDialogOpen}
+        onOpenChange={setAwayDialogOpen}
+      />
     </>
   );
 };
