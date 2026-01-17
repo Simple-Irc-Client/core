@@ -431,7 +431,8 @@ describe('Toolbar', () => {
       render(<Toolbar />);
 
       const avatarButton = getAvatarButton();
-      await user.click(avatarButton!);
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
 
       // Radix UI dropdown menu renders content in a portal to document.body
       expect(document.body.textContent).toContain('main.toolbar.profileSettings');
@@ -442,7 +443,8 @@ describe('Toolbar', () => {
       render(<Toolbar />);
 
       const avatarButton = getAvatarButton();
-      await user.click(avatarButton!);
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
 
       expect(document.body.textContent).toContain('main.toolbar.profileSettings');
     });
@@ -452,7 +454,8 @@ describe('Toolbar', () => {
       render(<Toolbar />);
 
       const avatarButton = getAvatarButton();
-      await user.click(avatarButton!);
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
 
       expect(document.body.textContent).not.toContain('main.toolbar.awayMessages');
     });
@@ -489,7 +492,8 @@ describe('Toolbar', () => {
       render(<Toolbar />);
 
       const avatarButton = getAvatarButton();
-      await user.click(avatarButton!);
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
 
       expect(document.body.textContent).toContain('main.toolbar.awayMessages');
     });
@@ -542,7 +546,8 @@ describe('Toolbar', () => {
       render(<Toolbar />);
 
       const avatarButton = getAvatarButton();
-      await user.click(avatarButton!);
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
 
       // Should show count in menu item as well
       const menuBadges = screen.getAllByText('1');
