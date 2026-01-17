@@ -9,7 +9,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useContextMenu } from '../providers/ContextMenuContext';
-import { setAddChannel } from '../store/channels';
+import { setAddChannel, useChannelsStore } from '../store/channels';
 import { ChannelCategory } from '../types';
 import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
 import { ircSendRawMessage } from '../network/irc/network';
@@ -66,6 +66,7 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
 export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
+  const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
     const handlePriv = (): void => {
@@ -133,6 +134,14 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
+    const handleInvite = (channelName: string): void => {
+      ircSendRawMessage(`INVITE ${contextMenuItem} ${channelName}`);
+      handleContextMenuClose();
+    };
+
+    // Get channels the current user is in (excluding privs, status, debug)
+    const userChannels = openChannels.filter((ch) => ch.category === ChannelCategory.channel);
+
     // Check global user registration and feature availability
     const currentNick = getCurrentNick();
     const isCurrentUser = contextMenuItem === currentNick;
@@ -174,6 +183,18 @@ export const ContextMenu = () => {
           <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.whois')}</DropdownMenuItem>
           {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.addfriend')}</DropdownMenuItem>}
           {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.ignore')}</DropdownMenuItem>}
+          {!isCurrentUser && userChannels.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>{t('contextmenu.invite')}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {userChannels.map((channel) => (
+                  <DropdownMenuItem key={channel.name} onClick={() => handleInvite(channel.name)}>
+                    {channel.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
 
           {hasOperatorActions && (
             <>

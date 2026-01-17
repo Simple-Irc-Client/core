@@ -4,6 +4,7 @@ import { ContextMenu } from '../ContextMenu';
 import * as ContextMenuContext from '../../providers/ContextMenuContext';
 import * as settings from '../../store/settings';
 import * as users from '../../store/users';
+import * as channels from '../../store/channels';
 import { ChannelCategory } from '../../types';
 
 // Mock i18next
@@ -329,6 +330,91 @@ describe('ContextMenu', () => {
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.whois');
+    });
+  });
+
+  describe('Invite to channel functionality', () => {
+    const createChannelsStoreMock = (openChannelsShortList: { name: string; category: ChannelCategory; unReadMessages: number }[]) => {
+      return (selector: (state: { openChannelsShortList: typeof openChannelsShortList }) => unknown) => {
+        const state = { openChannelsShortList };
+        return selector(state);
+      };
+    };
+
+    it('should show Invite option when user has channels and target is not current user', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+        { name: '#channel1', category: ChannelCategory.channel, unReadMessages: 0 },
+        { name: '#channel2', category: ChannelCategory.channel, unReadMessages: 0 },
+      ]) as typeof channels.useChannelsStore);
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.invite');
+    });
+
+    it('should not show Invite option for current user', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'currentUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+        { name: '#channel1', category: ChannelCategory.channel, unReadMessages: 0 },
+      ]) as typeof channels.useChannelsStore);
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.invite');
+    });
+
+    it('should not show Invite option when user has no channels', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.invite');
+    });
+
+    it('should not show Invite option when user only has private chats (no channels)', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+        { name: 'someUser', category: ChannelCategory.priv, unReadMessages: 0 },
+        { name: 'Status', category: ChannelCategory.status, unReadMessages: 0 },
+      ]) as typeof channels.useChannelsStore);
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.invite');
     });
   });
 });
