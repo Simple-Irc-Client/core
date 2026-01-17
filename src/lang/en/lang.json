@@ -57,6 +57,7 @@
     "kernel.mode.channel.unknown-params": "{{setBy}} sets mode {{mode}} {{param}}",
     "kernel.276": "* {{user}} {{message}}",
     "kernel.301": "* {{user}} Is away {{reason}}",
+    "kernel.306.you-have-been-marked-as-being-away": "* JYou have been marked as being away",
     "kernel.307": "* {{user}} {{message}}",
     "kernel.307.is-identified-for-this-nick": "Is identified for this nick",
     "kernel.311": "* {{user}} Full hostname: {{host}}",

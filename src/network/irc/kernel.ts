@@ -457,6 +457,9 @@ export class Kernel {
       case RPL_AWAY:
         this.onRaw301();
         break;
+      case RPL_NOWAWAY:
+        this.onRaw306();
+        break;
       case RPL_WHOISREGNICK:
         this.onRaw307();
         break;
@@ -1452,6 +1455,27 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
+  private readonly onRaw306 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+
+    const myNick = this.line.shift();
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'You have been marked as being away') {
+      message = i18next.t('kernel.306.you-have-been-marked-as-being-away');
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.306', { message }),
       target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
