@@ -181,7 +181,7 @@ describe('ProfileSettings', () => {
   });
 
   describe('Dialog state management', () => {
-    it('should update nick input when currentNick prop changes while open', () => {
+    it('should preserve nick input value when currentNick prop changes while open', () => {
       const { rerender } = render(
         <ProfileSettings
           open={true}
@@ -193,6 +193,42 @@ describe('ProfileSettings', () => {
       let nickInput = document.querySelector('#nick') as HTMLInputElement;
       expect(nickInput.value).toBe('oldNick');
 
+      // When currentNick changes while dialog is open, the input should preserve its value
+      // to avoid overwriting any user edits
+      rerender(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="newNick"
+        />
+      );
+
+      nickInput = document.querySelector('#nick') as HTMLInputElement;
+      expect(nickInput.value).toBe('oldNick');
+    });
+
+    it('should reset nick input when dialog is reopened', () => {
+      const { rerender } = render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="firstNick"
+        />
+      );
+
+      let nickInput = document.querySelector('#nick') as HTMLInputElement;
+      expect(nickInput.value).toBe('firstNick');
+
+      // Close the dialog
+      rerender(
+        <ProfileSettings
+          open={false}
+          onOpenChange={mockOnOpenChange}
+          currentNick="newNick"
+        />
+      );
+
+      // Reopen the dialog - should now have the new nick value
       rerender(
         <ProfileSettings
           open={true}
