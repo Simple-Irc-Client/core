@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '../../../store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
 import { ircSendRawMessage } from '../../../network/irc/network';
-import { Send } from 'lucide-react';
+import { Send, Smile } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { setAddMessage } from '../../../store/channels';
@@ -13,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '../../../store/channelList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -21,6 +23,7 @@ const Toolbar = () => {
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
   const [message, setMessage] = useState('');
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
@@ -43,6 +46,12 @@ const Toolbar = () => {
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
   const users = useMemo(() => getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
+
+  const handleEmojiClick = (emojiData: EmojiClickData): void => {
+    setMessage((prev) => prev + emojiData.emoji);
+    setEmojiPickerOpen(false);
+    autocompleteInput.current?.focus();
+  };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
@@ -261,6 +270,16 @@ const Toolbar = () => {
               <Send className="h-4 w-4" />
             </Button>
           )}
+          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button className="mt-1 mb-1" type="button" aria-label="emoticons" variant="ghost" size="icon">
+                <Smile className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <EmojiPicker onEmojiClick={handleEmojiClick} />
+            </PopoverContent>
+          </Popover>
         </>
       )}
     </form>
