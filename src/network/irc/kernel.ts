@@ -949,7 +949,7 @@ export class Kernel {
         setAddMessage({
           id: uuidv4(),
           message,
-          target: currentChannelName,
+          target: userOfChannel,
           time: this.tags?.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
