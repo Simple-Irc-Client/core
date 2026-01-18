@@ -66,6 +66,7 @@
     "kernel.276": "* {{user}} {{message}}",
     "kernel.301": "* {{user}} Jest nieobecny {{reason}}",
     "kernel.307": "* {{user}} {{message}}",
+    "kernel.305.you-are-no-longer-marked-as-being-away": "* Nie jesteś już oznaczony jako nieobecny",
     "kernel.306.you-have-been-marked-as-being-away": "* Jesteś teraz oznaczony jako nieobecny",
     "kernel.307.is-identified-for-this-nick": "Ten nick jest zarejestrowany",
     "kernel.311": "* {{user}} Host: {{host}}",
