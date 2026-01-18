@@ -139,8 +139,10 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
+    const channelName = getCurrentChannelName();
+
     // Get channels the current user is in (excluding privs, status, debug)
-    const userChannels = openChannels.filter((ch) => ch.category === ChannelCategory.channel);
+    const userChannels = openChannels.filter((ch) => ch.category === ChannelCategory.channel).filter((channel) => channel.name !== channelName);
 
     // Check global user registration and feature availability
     const currentNick = getCurrentNick();
@@ -156,7 +158,6 @@ export const ContextMenu = () => {
     // Check channel-specific operator permissions
     const channelCategory = getCurrentChannelCategory();
     const isInChannel = channelCategory === ChannelCategory.channel;
-    const channelName = getCurrentChannelName();
     const currentUserChannelModes = isInChannel ? getCurrentUserChannelModes(channelName) : [];
     const targetUser = getUser(contextMenuItem);
     const targetUserChannelModes = isInChannel && targetUser ? (targetUser.channels.find(ch => ch.name === channelName)?.flags ?? []) : [];
