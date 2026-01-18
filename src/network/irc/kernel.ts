@@ -1494,8 +1494,6 @@ export class Kernel {
 
   // :insomnia.pirc.pl 305 mero-test-2354324234 :You are no longer marked as being away
   private readonly onRaw305 = (): void => {
-    const currentChannelName = getCurrentChannelName();
-
     const myNick = this.line.shift();
     let message = this.line.join(' ').substring(1);
 
@@ -1503,10 +1501,9 @@ export class Kernel {
       message = i18next.t('kernel.305.you-are-no-longer-marked-as-being-away');
     }
 
-    setAddMessage({
+    setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
       message,
-      target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
@@ -1517,8 +1514,6 @@ export class Kernel {
 
   // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
   private readonly onRaw306 = (): void => {
-    const currentChannelName = getCurrentChannelName();
-
     const myNick = this.line.shift();
     let message = this.line.join(' ').substring(1);
 
@@ -1526,10 +1521,9 @@ export class Kernel {
       message = i18next.t('kernel.306.you-have-been-marked-as-being-away');
     }
 
-    setAddMessage({
+    setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
       message,
-      target: currentChannelName,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
