@@ -7,6 +7,7 @@ import { MessageColor } from '../../../config/theme';
 import { useCurrentStore } from '../../../store/current';
 import ImagesPreview from './ImagesPreview';
 import YouTubeThumbnail from './YouTubeThumbnail';
+import MessageText from './MessageText';
 
 const MainViewDebug = ({ message }: { message: Message }) => (
   <div className="py-1 px-4">
@@ -14,7 +15,7 @@ const MainViewDebug = ({ message }: { message: Message }) => (
       <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
       &nbsp;
       {message?.nick !== undefined && <>&lt;{typeof message.nick === 'string' ? message.nick : message.nick.nick}&gt;&nbsp;</>}
-      <span style={{ color: message.color ?? MessageColor.default }}>{message.message}</span>
+      <MessageText text={message.message} color={message.color ?? MessageColor.default} />
     </code>
   </div>
 );
@@ -26,7 +27,7 @@ const MainViewClassic = ({ message }: { message: Message }) => (
       &nbsp; &lt;
       {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
       &gt; &nbsp;
-      <span style={{ color: message.color ?? MessageColor.default }}>{message.message}</span>
+      <MessageText text={message.message} color={message.color ?? MessageColor.default} />
     </div>
     <YouTubeThumbnail text={message.message} />
     <ImagesPreview text={message.message} />
@@ -45,7 +46,9 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
     <>
       {message.category !== MessageCategory.default && (
         <div className="py-1 px-4 pl-16" style={{ color: message.color ?? MessageColor.default }}>
-          <div className="text-sm">{message.message}</div>
+          <div className="text-sm">
+            <MessageText text={message.message} />
+          </div>
         </div>
       )}
       {message.category === MessageCategory.default && (
@@ -76,10 +79,16 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
               </div>
             )}
             <div style={{ color: message.color ?? MessageColor.default }}>
-              {lastNick !== nick && <div className="text-sm">{message.message}</div>}
+              {lastNick !== nick && (
+                <div className="text-sm">
+                  <MessageText text={message.message} />
+                </div>
+              )}
               {lastNick === nick && (
                 <div className="flex items-baseline">
-                  <div className="text-sm flex-1">{message.message}</div>
+                  <div className="text-sm flex-1">
+                    <MessageText text={message.message} />
+                  </div>
                   <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
                     {format(new Date(message.time), 'HH:mm')}
                   </span>
