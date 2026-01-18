@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { setAddMessage } from '../../../store/channels';
-import { getUser, getUsersFromChannelSortedByAZ } from '../../../store/users';
+import { getUser, useUsersStore } from '../../../store/users';
 import { MessageColor } from '../../../config/theme';
 import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '../../../store/channelList';
@@ -68,7 +68,15 @@ const Toolbar = () => {
 
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
-  const users = useMemo(() => getUsersFromChannelSortedByAZ(currentChannelName), [currentChannelName]);
+  const users = useUsersStore((state) =>
+    state.users
+      .filter((user: User) => user.channels.some((channel) => channel.name === currentChannelName))
+      .sort((a: User, b: User) => {
+        const A = a.nick.toLowerCase();
+        const B = b.nick.toLowerCase();
+        return A < B ? -1 : A > B ? 1 : 0;
+      })
+  );
 
   // Reset inactivity timer - called when user sends a message
   const resetInactivityTimer = (): void => {

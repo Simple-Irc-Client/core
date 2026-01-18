@@ -66,7 +66,9 @@ describe('Toolbar', () => {
 
     vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testUser');
 
-    vi.spyOn(users, 'getUsersFromChannelSortedByAZ').mockReturnValue([]);
+    vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
+      selector({ users: [] } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+    );
     vi.spyOn(users, 'getUser').mockReturnValue(undefined);
 
     vi.spyOn(channelList, 'getChannelListSortedByAZ').mockReturnValue([]);
@@ -755,6 +757,301 @@ describe('Toolbar', () => {
 
       // Should NOT send AWAY command because not connected
       expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY');
+    });
+  });
+
+  describe('Autocomplete commands', () => {
+    it('should autocomplete command when pressing Tab after /', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/jo' } });
+      fireEvent.keyUp(input, { key: 'o' }); // Trigger keyUp to set autocompleteMessage
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('/join');
+    });
+
+    it('should cycle through matching commands on multiple Tab presses', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/a' } });
+      fireEvent.keyUp(input, { key: 'a' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('/all');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('/amsg');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('/away');
+    });
+
+    it('should wrap around to first matching command after last match', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/whe' } });
+      fireEvent.keyUp(input, { key: 'e' });
+
+      // First Tab - /whereis (only command starting with /whe)
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('/whereis');
+
+      // Second Tab - wraps back to /whereis
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('/whereis');
+    });
+
+    it('should not autocomplete if no matching command', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/xyz' } });
+      fireEvent.keyUp(input, { key: 'z' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('/xyz');
+    });
+
+    it('should autocomplete command in multi-word message', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'hello /jo' } });
+      fireEvent.keyUp(input, { key: 'o' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('hello /join');
+    });
+  });
+
+  describe('Autocomplete channels', () => {
+    beforeEach(() => {
+      vi.spyOn(channelList, 'getChannelListSortedByAZ').mockReturnValue([
+        { name: '#general', users: 10, topic: 'General chat' },
+        { name: '#help', users: 5, topic: 'Help channel' },
+        { name: '#random', users: 8, topic: 'Random stuff' },
+      ]);
+    });
+
+    it('should autocomplete channel when pressing Tab after #', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '#gen' } });
+      fireEvent.keyUp(input, { key: 'n' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('#general');
+    });
+
+    it('should cycle through matching channels on multiple Tab presses', () => {
+      vi.spyOn(channelList, 'getChannelListSortedByAZ').mockReturnValue([
+        { name: '#help', users: 5, topic: 'Help channel' },
+        { name: '#hello', users: 3, topic: 'Hello channel' },
+        { name: '#helpdesk', users: 2, topic: 'Help desk' },
+      ]);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '#hel' } });
+      fireEvent.keyUp(input, { key: 'l' });
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#help');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#hello');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#helpdesk');
+    });
+
+    it('should wrap around to first matching channel after last match', () => {
+      vi.spyOn(channelList, 'getChannelListSortedByAZ').mockReturnValue([
+        { name: '#alpha', users: 5, topic: '' },
+        { name: '#beta', users: 3, topic: '' },
+      ]);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '#' } });
+      fireEvent.keyUp(input, { key: '#' });
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#alpha');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#beta');
+
+      // Wrap around
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('#alpha');
+    });
+
+    it('should not autocomplete if no matching channel', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '#xyz' } });
+      fireEvent.keyUp(input, { key: 'z' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('#xyz');
+    });
+
+    it('should autocomplete channel in multi-word message', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/join #gen' } });
+      fireEvent.keyUp(input, { key: 'n' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('/join #general');
+    });
+  });
+
+  describe('Autocomplete users', () => {
+    const mockUsersStore = (usersList: { nick: string; ident: string; hostname: string; flags: string[]; channels: { name: string; flags: string[]; maxPermission: number }[] }[]) => {
+      vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
+        selector({ users: usersList } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+      );
+    };
+
+    beforeEach(() => {
+      mockUsersStore([
+        { nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'bob', ident: 'bob', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'charlie', ident: 'charlie', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+      ]);
+    });
+
+    it('should autocomplete user when pressing Tab', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'al' } });
+      fireEvent.keyUp(input, { key: 'l' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('alice');
+    });
+
+    it('should cycle through matching users on multiple Tab presses', () => {
+      mockUsersStore([
+        { nick: 'alex', ident: 'alex', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'alfred', ident: 'alfred', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+      ]);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'al' } });
+      fireEvent.keyUp(input, { key: 'l' });
+
+      // Users are sorted alphabetically: alex, alfred, alice
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('alex');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('alfred');
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('alice');
+    });
+
+    it('should wrap around to first matching user after last match', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'b' } });
+      fireEvent.keyUp(input, { key: 'b' });
+
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('bob');
+
+      // Wrap around (only one user matches 'b')
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('bob');
+    });
+
+    it('should not autocomplete if no matching user', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'xyz' } });
+      fireEvent.keyUp(input, { key: 'z' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('xyz');
+    });
+
+    it('should autocomplete user in multi-word message', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'hello al' } });
+      fireEvent.keyUp(input, { key: 'l' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('hello alice');
+    });
+
+    it('should be case insensitive when matching users', () => {
+      mockUsersStore([
+        { nick: 'Alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+      ]);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'al' } });
+      fireEvent.keyUp(input, { key: 'l' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('Alice');
+    });
+
+    it('should reset autocomplete index when typing different characters', () => {
+      mockUsersStore([
+        { nick: 'alex', ident: 'alex', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+        { nick: 'bob', ident: 'bob', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] },
+      ]);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+
+      // Start autocomplete for 'al'
+      fireEvent.change(input, { target: { value: 'al' } });
+      fireEvent.keyUp(input, { key: 'l' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('alex');
+
+      // Type a new character - should reset
+      fireEvent.change(input, { target: { value: 'bo' } });
+      fireEvent.keyUp(input, { key: 'o' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+      expect(input).toHaveValue('bob');
+    });
+
+    it('should not autocomplete on empty input', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.keyUp(input, { key: '' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('');
     });
   });
 });
