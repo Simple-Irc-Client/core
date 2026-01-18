@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { MessageColor } from '../../../config/theme';
 import { useCurrentStore } from '../../../store/current';
+import ImagesPreview from './ImagesPreview';
 import YouTubeThumbnail from './YouTubeThumbnail';
 
 const MainViewDebug = ({ message }: { message: Message }) => (
@@ -28,6 +29,7 @@ const MainViewClassic = ({ message }: { message: Message }) => (
       <span style={{ color: message.color ?? MessageColor.default }}>{message.message}</span>
     </div>
     <YouTubeThumbnail text={message.message} />
+    <ImagesPreview text={message.message} />
   </div>
 );
 
@@ -85,6 +87,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
               )}
             </div>
             <YouTubeThumbnail text={message.message} />
+            <ImagesPreview text={message.message} />
           </div>
         </div>
       )}
