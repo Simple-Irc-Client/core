@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useAwayMessagesStore, clearAwayMessages } from '../../../store/awayMessages';
+import { format } from 'date-fns';
 
 interface AwayMessagesProps {
   open: boolean;
@@ -48,7 +49,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
                 <div key={msg.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span className="font-medium">{msg.channel}</span>
-                    <span>{new Date(msg.time).toLocaleString()}</span>
+                    <span>{format(new Date(msg.time), 'HH:mm dd-MMM-yyyy')}</span>
                   </div>
                   <div className="text-sm">
                     <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}
