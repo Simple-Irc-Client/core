@@ -31,6 +31,7 @@ const Toolbar = () => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const nick: string = useSettingsStore((state) => state.nick);
+  const currentUserAvatar: string | undefined = useSettingsStore((state) => state.currentUserAvatar);
   const currentUserFlags: string[] = useSettingsStore((state) => state.currentUserFlags);
   const isAway = currentUserFlags.includes('away');
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
@@ -323,9 +324,17 @@ const Toolbar = () => {
                   type="button"
                   className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full mr-2 mt-1 mb-1 hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 >
-                  <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
-                    {nick.substring(0, 1).toUpperCase()}
-                  </span>
+                  {currentUserAvatar ? (
+                    <img
+                      src={currentUserAvatar}
+                      alt={nick}
+                      className="h-full w-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                      {nick.substring(0, 1).toUpperCase()}
+                    </span>
+                  )}
                   {isAway && awayMessagesCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
                       {awayMessagesCount > 99 ? '99+' : awayMessagesCount}

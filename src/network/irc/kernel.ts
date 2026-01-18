@@ -25,6 +25,7 @@ import {
   setCreatorProgress,
   setCreatorStep,
   setCurrentChannelName,
+  setCurrentUserAvatar,
   setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
@@ -774,6 +775,10 @@ export class Kernel {
     if (!isChannel(nickOrChannel)) {
       if (item === 'avatar' && value !== undefined) {
         setUserAvatar(nickOrChannel, value);
+        // Save avatar for current user to display in toolbar
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserAvatar(value);
+        }
       }
       if (item === 'color' && value !== undefined) {
         setUserColor(nickOrChannel, value);

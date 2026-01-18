@@ -39,6 +39,7 @@ export interface SettingsStore {
   watchLimit: number; // WATCH limit from 005, 0 if not supported
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
+  currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
 
   setCreatorCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -61,6 +62,7 @@ export interface SettingsStore {
   setWatchLimit: (limit: number) => void;
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
+  setCurrentUserAvatar: (avatar: string | undefined) => void;
   resetCreatorState: () => void;
 }
 
@@ -88,6 +90,7 @@ export const useSettingsStore = create<SettingsStore>()(
     watchLimit: 0,
     monitorLimit: 0,
     silenceLimit: 0,
+    currentUserAvatar: undefined,
 
     setCreatorCompleted: (status: boolean): void => {
       set(() => ({
@@ -161,6 +164,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setSilenceLimit: (limit: number): void => {
       set(() => ({ silenceLimit: limit }));
     },
+    setCurrentUserAvatar: (avatar: string | undefined): void => {
+      set(() => ({ currentUserAvatar: avatar }));
+    },
     resetCreatorState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -184,6 +190,7 @@ export const useSettingsStore = create<SettingsStore>()(
         watchLimit: 0,
         monitorLimit: 0,
         silenceLimit: 0,
+        currentUserAvatar: undefined,
       }));
     },
   })),
@@ -334,6 +341,10 @@ export const setSilenceLimit = (limit: number): void => {
 
 export const getSilenceLimit = (): number => {
   return useSettingsStore.getState().silenceLimit;
+};
+
+export const setCurrentUserAvatar = (avatar: string | undefined): void => {
+  useSettingsStore.getState().setCurrentUserAvatar(avatar);
 };
 
 export const resetCreatorState = (): void => {
