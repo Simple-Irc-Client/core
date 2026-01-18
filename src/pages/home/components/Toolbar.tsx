@@ -329,30 +329,26 @@ const Toolbar = () => {
         {currentChannelName !== DEBUG_CHANNEL && (
           <>
             {/* User Avatar with Dropdown Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full mr-2 mt-1 mb-1 hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                >
-                  {currentUserAvatar ? (
-                    <img
-                      src={currentUserAvatar}
-                      alt={nick}
-                      className="h-full w-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
-                      {nick.substring(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  {awayMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium">
-                      {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
-                    </span>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
+            <div className="relative mr-2 mt-1 mb-1">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  >
+                    {currentUserAvatar ? (
+                      <img
+                        src={currentUserAvatar}
+                        alt={nick}
+                        className="h-full w-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                        {nick.substring(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
                   <UserIcon className="mr-2 h-4 w-4" />
@@ -368,7 +364,13 @@ const Toolbar = () => {
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+              {awayMessagesCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium">
+                  {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
+                </span>
+              )}
+            </div>
 
             <div className="flex-1 mt-1 mb-1 relative">
               <label htmlFor="message-input" className="absolute -top-5 left-0 text-xs text-gray-600">
