@@ -595,7 +595,7 @@ describe('Toolbar', () => {
       // Fast forward 15 minutes
       vi.advanceTimersByTime(15 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
       expect(mockSetIsAutoAway).toHaveBeenCalledWith(true);
     });
 
@@ -605,7 +605,7 @@ describe('Toolbar', () => {
       // Fast forward 14 minutes
       vi.advanceTimersByTime(14 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
     });
 
     it('should reset inactivity timer when sending a message', () => {
@@ -625,12 +625,12 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(10 * 60 * 1000);
 
       // Should not be away yet because timer was reset
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
 
       // Fast forward another 5 minutes (15 total since last message)
       vi.advanceTimersByTime(5 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
     });
 
     it('should turn off auto-away when user sends a message', () => {
@@ -709,7 +709,7 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(15 * 60 * 1000);
 
       // Should not send AWAY command because user is already away
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
     });
 
     it('should not set auto-away if not connected', () => {
@@ -725,7 +725,7 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(15 * 60 * 1000);
 
       // Should not send AWAY command because not connected
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :Auto away - inactive for 15 minutes');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
     });
 
     it('should not turn off auto-away if not connected', () => {
