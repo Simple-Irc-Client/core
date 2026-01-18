@@ -64,7 +64,7 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
 };
 
 // Helper to calculate optimal context menu position
-const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight: number = 200) => {
+const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight = 200) => {
   const rect = anchorElement.getBoundingClientRect();
   const viewportHeight = window.innerHeight;
   const spaceBelow = viewportHeight - rect.bottom;

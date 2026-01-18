@@ -650,7 +650,7 @@ describe('Main', () => {
 
       const avatarContainer = screen.getByRole('img').parentElement;
       expect(avatarContainer).not.toBeNull();
-      fireEvent.contextMenu(avatarContainer!);
+      if (avatarContainer) fireEvent.contextMenu(avatarContainer);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),

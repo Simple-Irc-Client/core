@@ -466,7 +466,7 @@ describe('ContextMenu', () => {
       render(<ContextMenu />);
       const joinButton = document.body.querySelector('[role="menuitem"]');
       expect(joinButton).not.toBeNull();
-      fireEvent.click(joinButton!);
+      if (joinButton) fireEvent.click(joinButton);
 
       expect(mockIrcSendRawMessage).toHaveBeenCalledWith('JOIN #mychannel');
       expect(mockHandleContextMenuClose).toHaveBeenCalled();
