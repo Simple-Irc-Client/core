@@ -566,6 +566,7 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
     // :insomnia.pirc.pl 404 mero-test-23452345 #sic :You cannot send messages to channels until you've been connected for 30 seconds or more (#sic)    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
     // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
+    // :insomnia.pirc.pl 447 mero-test-2354324234 :Can not change nickname while on #Religie (+N)\r\n
     // :chmurka.pirc.pl 770 sic-test :color
     // :chmurka.pirc.pl 770 sic-test :bot-url
     // :chmurka.pirc.pl 770 sic-test :display-name
