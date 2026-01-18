@@ -1018,7 +1018,7 @@ describe('kernel tests', () => {
   });
 
   it('test raw 305 - no longer away', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
 
@@ -1029,12 +1029,12 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
     expect(mockSetCurrentUserFlag).toHaveBeenCalledWith('away', false);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+    expect(mockSetAddMessageToAllChannels).toHaveBeenNthCalledWith(1, expect.objectContaining({ message: i18next.t("kernel.305.you-are-no-longer-marked-as-being-away") }));
+    expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
   it('test raw 306 - now away', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
 
@@ -1045,8 +1045,8 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
     expect(mockSetCurrentUserFlag).toHaveBeenCalledWith('away', true);
 
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+    expect(mockSetAddMessageToAllChannels).toHaveBeenNthCalledWith(1, expect.objectContaining({ message: i18next.t('kernel.306.you-have-been-marked-as-being-away') }));
+    expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
   it('test raw 307', () => {
