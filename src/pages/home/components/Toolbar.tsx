@@ -68,14 +68,17 @@ const Toolbar = () => {
 
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
-  const users = useUsersStore((state) =>
-    state.users
-      .filter((user: User) => user.channels.some((channel) => channel.name === currentChannelName))
-      .sort((a: User, b: User) => {
-        const A = a.nick.toLowerCase();
-        const B = b.nick.toLowerCase();
-        return A < B ? -1 : A > B ? 1 : 0;
-      })
+  const allUsers = useUsersStore((state) => state.users);
+  const users = useMemo(
+    () =>
+      allUsers
+        .filter((user: User) => user.channels.some((channel) => channel.name === currentChannelName))
+        .sort((a: User, b: User) => {
+          const A = a.nick.toLowerCase();
+          const B = b.nick.toLowerCase();
+          return A < B ? -1 : A > B ? 1 : 0;
+        }),
+    [allUsers, currentChannelName]
   );
 
   // Reset inactivity timer - called when user sends a message
