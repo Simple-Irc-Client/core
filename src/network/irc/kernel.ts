@@ -1511,6 +1511,8 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    setCurrentUserFlag("away", false)
   };
 
   // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
@@ -1532,6 +1534,8 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    setCurrentUserFlag("away", true)
   };
 
   // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
