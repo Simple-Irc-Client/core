@@ -24,7 +24,10 @@ function App() {
           <div style={{backgroundColor: channelsColor}}>
             <Channels />
           </div>
-          <div className="w-full" style={{ height: 'calc(100vh - (64px + 28px + 60px))' }}>
+          {/* 64px - topic height */}
+          {/* 28px - typing height */}
+          {/* 48px - toolbar input height */}
+          <div className="w-full" style={{ height: 'calc(100vh - (64px + 28px + 48px))' }}>
             <Topic />
             <Main />
             <Typing />
