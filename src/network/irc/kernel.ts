@@ -25,6 +25,7 @@ import {
   setCreatorProgress,
   setCreatorStep,
   setCurrentChannelName,
+  setCurrentUserAvatar,
   setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
@@ -46,6 +47,8 @@ import { MessageColor } from '../../config/theme';
 import { defaultChannelTypes, defaultMaxPermission } from '../../config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../../store/channelList';
+import { addAwayMessage } from '../../store/awayMessages';
+import { getCurrentUserFlags } from '../../store/settings';
 
 export interface IrcEvent {
   type: string;
@@ -457,6 +460,12 @@ export class Kernel {
       case RPL_AWAY:
         this.onRaw301();
         break;
+      case RPL_UNAWAY:
+        this.onRaw305();
+        break;
+      case RPL_NOWAWAY:
+        this.onRaw306();
+        break;
       case RPL_WHOISREGNICK:
         this.onRaw307();
         break;
@@ -557,6 +566,7 @@ export class Kernel {
     // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
     // :insomnia.pirc.pl 404 mero-test-23452345 #sic :You cannot send messages to channels until you've been connected for 30 seconds or more (#sic)    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
     // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
+    // :insomnia.pirc.pl 447 mero-test-2354324234 :Can not change nickname while on #Religie (+N)\r\n
     // :chmurka.pirc.pl 770 sic-test :color
     // :chmurka.pirc.pl 770 sic-test :bot-url
     // :chmurka.pirc.pl 770 sic-test :display-name
@@ -766,6 +776,10 @@ export class Kernel {
     if (!isChannel(nickOrChannel)) {
       if (item === 'avatar' && value !== undefined) {
         setUserAvatar(nickOrChannel, value);
+        // Save avatar for current user to display in toolbar
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserAvatar(value);
+        }
       }
       if (item === 'color' && value !== undefined) {
         setUserColor(nickOrChannel, value);
@@ -789,9 +803,9 @@ export class Kernel {
 
     const currentChannelName = getCurrentChannelName();
 
-    const userOfChannel = this.line.shift();
+    const userOrChannel = this.line.shift();
 
-    if (userOfChannel === undefined) {
+    if (userOrChannel === undefined) {
       throw this.assert(this.onMode, 'userOfChannel');
     }
 
@@ -800,9 +814,9 @@ export class Kernel {
       flags = flags.substring(1);
     }
 
-    if (isChannel(userOfChannel)) {
+    if (isChannel(userOrChannel)) {
       // channel mode
-      const channel = userOfChannel;
+      const channel = userOrChannel;
 
       let plusMinus: '+' | '-' | undefined;
 
@@ -864,7 +878,7 @@ export class Kernel {
         setAddMessage({
           id: uuidv4(),
           message,
-          target: currentChannelName,
+          target: userOrChannel,
           time: this.tags?.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
@@ -872,7 +886,7 @@ export class Kernel {
       }
     } else {
       // user mode
-      const user = userOfChannel;
+      const user = userOrChannel;
 
       let plusMinus: '+' | '-' | undefined;
 
@@ -1084,6 +1098,7 @@ export class Kernel {
   private readonly onPrivMsg = (): void => {
     const serverUserModes = getUserModes();
     const currentChannelName = getCurrentChannelName();
+    const myNick = getCurrentNick();
 
     const target = this.line.shift();
     const message = this.line.join(' ').substring(1);
@@ -1098,7 +1113,7 @@ export class Kernel {
       return;
     }
 
-    const isPrivMessage = target === getCurrentNick();
+    const isPrivMessage = target === myNick;
     const messageTarget = isPrivMessage ? nick : target;
 
     if (!existChannel(messageTarget)) {
@@ -1113,15 +1128,34 @@ export class Kernel {
       setTyping(messageTarget, nick, 'done');
     }
 
+    const messageId = this.tags?.msgid ?? uuidv4();
+    const messageTime = this.tags?.time ?? new Date().toISOString();
+
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: messageId,
       message,
       nick: getUser(nick) ?? nick,
       target: messageTarget,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: messageTime,
       category: MessageCategory.default,
       color: MessageColor.default,
     });
+
+    // Check if user is away and message mentions their nick
+    const userFlags = getCurrentUserFlags();
+    const isAway = userFlags.includes('away');
+    if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
+      addAwayMessage({
+        id: messageId,
+        message,
+        nick: getUser(nick) ?? nick,
+        target: messageTarget,
+        time: messageTime,
+        category: MessageCategory.default,
+        color: MessageColor.default,
+        channel: messageTarget,
+      });
+    }
   };
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
@@ -1457,6 +1491,46 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+  };
+
+  // :insomnia.pirc.pl 305 mero-test-2354324234 :You are no longer marked as being away
+  private readonly onRaw305 = (): void => {
+    const myNick = this.line.shift();
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'You are no longer marked as being away') {
+      message = i18next.t('kernel.305.you-are-no-longer-marked-as-being-away');
+    }
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+
+    setCurrentUserFlag("away", false)
+  };
+
+  // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
+  private readonly onRaw306 = (): void => {
+    const myNick = this.line.shift();
+    let message = this.line.join(' ').substring(1);
+
+    if (message === 'You have been marked as being away') {
+      message = i18next.t('kernel.306.you-have-been-marked-as-being-away');
+    }
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+
+    setCurrentUserFlag("away", true)
   };
 
   // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick

@@ -25,7 +25,6 @@ const CreatorServer = () => {
       setServer(formServer);
       const nick = getCurrentNick();
 
-      console.log('sending connect to irc command');
       ircConnect(formServer, nick);
 
       setIsConnecting(true);
