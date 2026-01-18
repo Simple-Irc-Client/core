@@ -373,19 +373,16 @@ const Toolbar = () => {
             </div>
 
             <div className="flex-1 mt-1 mb-1 relative">
-              <label htmlFor="message-input" className="absolute -top-5 left-0 text-xs text-gray-600">
-                {`${t('main.toolbar.write')} ${currentChannelName}`}
-              </label>
               <Input
                 id="message-input"
                 autoFocus
                 value={message}
+                placeholder={`${t('main.toolbar.write')} ${currentChannelName}`}
                 onChange={handleChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
                 autoComplete="off"
                 ref={autocompleteInput}
-                className="px-0"
               />
             </div>
             {message && (
