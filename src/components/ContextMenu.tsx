@@ -63,10 +63,61 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
   };
 };
 
+// Helper to calculate optimal context menu position
+const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight = 200) => {
+  const rect = anchorElement.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  // If there's not enough space below but more space above, position above
+  if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+    return {
+      left: rect.left,
+      top: Math.max(0, rect.top - menuHeight),
+    };
+  }
+
+  // Default: position below
+  return {
+    left: rect.left,
+    top: rect.bottom,
+  };
+};
+
 export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
+
+  if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {
+    const handleJoin = (): void => {
+      ircSendRawMessage(`JOIN ${contextMenuItem}`);
+      handleContextMenuClose();
+    };
+
+    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 80) : null;
+
+    return (
+      <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
+        <DropdownMenuContent
+          style={
+            position
+              ? {
+                  position: 'fixed',
+                  left: `${position.left}px`,
+                  top: `${position.top}px`,
+                }
+              : undefined
+          }
+        >
+          <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleJoin}>{t('contextmenu.channel.join')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
     const handlePriv = (): void => {
@@ -165,28 +216,30 @@ export const ContextMenu = () => {
     const permissions = getOperatorPermissions(currentUserChannelModes, targetUserChannelModes);
     const hasOperatorActions = isInChannel && (permissions.currentLevel >= 2); // At least half-op
 
+    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 300) : null;
+
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
         <DropdownMenuContent
           style={
-            contextMenuAnchorElement
+            position
               ? {
                   position: 'fixed',
-                  left: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().left}px`,
-                  top: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().bottom}px`,
+                  left: `${position.left}px`,
+                  top: `${position.top}px`,
                 }
               : undefined
           }
         >
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {!isCurrentUser && <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.priv')}</DropdownMenuItem>}
-          <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.whois')}</DropdownMenuItem>
-          {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.addfriend')}</DropdownMenuItem>}
-          {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.ignore')}</DropdownMenuItem>}
+          {!isCurrentUser && <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.user.priv')}</DropdownMenuItem>}
+          <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.user.whois')}</DropdownMenuItem>
+          {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.user.addfriend')}</DropdownMenuItem>}
+          {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.user.ignore')}</DropdownMenuItem>}
           {!isCurrentUser && userChannels.length > 0 && (
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>{t('contextmenu.invite')}</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger>{t('contextmenu.user.invite')}</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 {userChannels.map((channel) => (
                   <DropdownMenuItem key={channel.name} onClick={() => handleInvite(channel.name)}>
@@ -201,16 +254,16 @@ export const ContextMenu = () => {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>{t('contextmenu.operator.title')}</DropdownMenuSubTrigger>
+                <DropdownMenuSubTrigger>{t('contextmenu.user.operator.title')}</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {/* Promotion options */}
                   {(permissions.canPromoteToVoice || permissions.canPromoteToHalfOp || permissions.canPromoteToOp || permissions.canPromoteToAdmin || permissions.canPromoteToOwner) && (
                     <>
-                      {permissions.canPromoteToVoice && <DropdownMenuItem onClick={() => handleModeChange('v', true)}>{t('contextmenu.operator.give.voice')}</DropdownMenuItem>}
-                      {permissions.canPromoteToHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', true)}>{t('contextmenu.operator.give.halfop')}</DropdownMenuItem>}
-                      {permissions.canPromoteToOp && <DropdownMenuItem onClick={() => handleModeChange('o', true)}>{t('contextmenu.operator.give.op')}</DropdownMenuItem>}
-                      {permissions.canPromoteToAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', true)}>{t('contextmenu.operator.give.admin')}</DropdownMenuItem>}
-                      {permissions.canPromoteToOwner && <DropdownMenuItem onClick={() => handleModeChange('q', true)}>{t('contextmenu.operator.give.owner')}</DropdownMenuItem>}
+                      {permissions.canPromoteToVoice && <DropdownMenuItem onClick={() => handleModeChange('v', true)}>{t('contextmenu.user.operator.give.voice')}</DropdownMenuItem>}
+                      {permissions.canPromoteToHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', true)}>{t('contextmenu.user.operator.give.halfop')}</DropdownMenuItem>}
+                      {permissions.canPromoteToOp && <DropdownMenuItem onClick={() => handleModeChange('o', true)}>{t('contextmenu.user.operator.give.op')}</DropdownMenuItem>}
+                      {permissions.canPromoteToAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', true)}>{t('contextmenu.user.operator.give.admin')}</DropdownMenuItem>}
+                      {permissions.canPromoteToOwner && <DropdownMenuItem onClick={() => handleModeChange('q', true)}>{t('contextmenu.user.operator.give.owner')}</DropdownMenuItem>}
                       <DropdownMenuSeparator />
                     </>
                   )}
@@ -218,19 +271,19 @@ export const ContextMenu = () => {
                   {/* Demotion options */}
                   {(permissions.canDemoteFromVoice || permissions.canDemoteFromHalfOp || permissions.canDemoteFromOp || permissions.canDemoteFromAdmin || permissions.canDemoteFromOwner) && (
                     <>
-                      {permissions.canDemoteFromOwner && <DropdownMenuItem onClick={() => handleModeChange('q', false)}>{t('contextmenu.operator.remove.owner')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', false)}>{t('contextmenu.operator.remove.admin')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromOp && <DropdownMenuItem onClick={() => handleModeChange('o', false)}>{t('contextmenu.operator.remove.op')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', false)}>{t('contextmenu.operator.remove.halfop')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromVoice && <DropdownMenuItem onClick={() => handleModeChange('v', false)}>{t('contextmenu.operator.remove.voice')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromOwner && <DropdownMenuItem onClick={() => handleModeChange('q', false)}>{t('contextmenu.user.operator.remove.owner')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', false)}>{t('contextmenu.user.operator.remove.admin')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromOp && <DropdownMenuItem onClick={() => handleModeChange('o', false)}>{t('contextmenu.user.operator.remove.op')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', false)}>{t('contextmenu.user.operator.remove.halfop')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromVoice && <DropdownMenuItem onClick={() => handleModeChange('v', false)}>{t('contextmenu.user.operator.remove.voice')}</DropdownMenuItem>}
                       <DropdownMenuSeparator />
                     </>
                   )}
 
                   {/* Kick/Ban options */}
-                  {permissions.canKick && !isCurrentUser && <DropdownMenuItem onClick={handleKick}>{t('contextmenu.operator.kick')}</DropdownMenuItem>}
-                  {permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleBan}>{t('contextmenu.operator.ban')}</DropdownMenuItem>}
-                  {permissions.canKick && permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleKickBan}>{t('contextmenu.operator.kickban')}</DropdownMenuItem>}
+                  {permissions.canKick && !isCurrentUser && <DropdownMenuItem onClick={handleKick}>{t('contextmenu.user.operator.kick')}</DropdownMenuItem>}
+                  {permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleBan}>{t('contextmenu.user.operator.ban')}</DropdownMenuItem>}
+                  {permissions.canKick && permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleKickBan}>{t('contextmenu.user.operator.kickban')}</DropdownMenuItem>}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </>
