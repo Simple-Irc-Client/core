@@ -20,21 +20,13 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
   const { t } = useTranslation();
   const awayMessages = useAwayMessagesStore((state) => state.messages);
 
-  const handleClose = (): void => {
+  const handleMarkAsRead = (): void => {
     clearAwayMessages();
     onOpenChange(false);
   };
 
-  const handleOpenChange = (isOpen: boolean): void => {
-    if (!isOpen) {
-      handleClose();
-    } else {
-      onOpenChange(isOpen);
-    }
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('main.toolbar.awayMessages')}</DialogTitle>
@@ -61,7 +53,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
           )}
         </div>
         <DialogFooter>
-          <Button type="button" onClick={handleClose}>
+          <Button type="button" onClick={handleMarkAsRead}>
             {t('main.toolbar.markAsRead')}
           </Button>
         </DialogFooter>

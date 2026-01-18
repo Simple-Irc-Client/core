@@ -119,5 +119,6 @@
     "contextmenu.operator.kick": "Kick",
     "contextmenu.operator.ban": "Ban",
     "contextmenu.operator.kickban": "Kick & Ban",
-    "contextmenu.invite": "Invite to Channel"
+    "contextmenu.invite": "Invite to Channel",
+    "main.topic.setBy": "Set by {{nick}} on {{date}}"
 }
