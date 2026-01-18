@@ -42,6 +42,7 @@
     "main.toolbar.awayMessagesDescription": "Wiadomości podczas twojej nieobecności",
     "main.toolbar.noAwayMessages": "Brak wiadomości",
     "main.toolbar.markAsRead": "Oznacz jako przeczytane",
+    "main.toolbar.autoAway": "Użytkownik jest nieaktywny od 15 minut",
     "main.channels.title": "Kanały:",
     "main.channels.join": "Dołącz do kanału",
     "main.channels.search": "Szukaj kanałów",

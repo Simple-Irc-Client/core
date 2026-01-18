@@ -98,7 +98,7 @@ const Toolbar = () => {
       const state = useSettingsStore.getState();
       // Only set away if connected and not already away
       if (state.isConnected && !state.currentUserFlags.includes('away')) {
-        ircSendRawMessage('AWAY :Auto away - inactive for 15 minutes');
+        ircSendRawMessage(`AWAY :${t('main.toolbar.autoAway')}`);
         state.setIsAutoAway(true);
       }
     }, AUTO_AWAY_TIMEOUT);

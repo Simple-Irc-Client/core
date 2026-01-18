@@ -42,6 +42,7 @@
     "main.toolbar.awayMessagesDescription": "Messages that mentioned you while you were away",
     "main.toolbar.noAwayMessages": "No away messages",
     "main.toolbar.markAsRead": "Mark as Read",
+    "main.toolbar.autoAway": "Auto away - inactive for 15 minutes",
     "main.channels.title": "Channels:",
     "main.channels.join": "Join channel",
     "main.channels.search": "Search channels",
