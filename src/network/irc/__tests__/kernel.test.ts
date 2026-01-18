@@ -1017,6 +1017,38 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 305 - no longer away', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 305 mero-test :You are no longer marked as being away';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toBeCalledTimes(1);
+    expect(mockSetCurrentUserFlag).toHaveBeenCalledWith('away', false);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw 306 - now away', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+
+    const line = ':bzyk.pirc.pl 306 mero-test :You have been marked as being away';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toBeCalledTimes(1);
+    expect(mockSetCurrentUserFlag).toHaveBeenCalledWith('away', true);
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw 307', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
