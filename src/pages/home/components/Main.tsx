@@ -8,37 +8,81 @@ import { useCurrentStore } from '../../../store/current';
 import ImagesPreview from './ImagesPreview';
 import YouTubeThumbnail from './YouTubeThumbnail';
 import MessageText from './MessageText';
+import { useContextMenu } from '../../../providers/ContextMenuContext';
 
-const MainViewDebug = ({ message }: { message: Message }) => (
-  <div className="py-1 px-4">
-    <code className="text-sm">
-      <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
-      &nbsp;
-      {message?.nick !== undefined && <>&lt;{typeof message.nick === 'string' ? message.nick : message.nick.nick}&gt;&nbsp;</>}
-      <MessageText text={message.message} color={message.color ?? MessageColor.default} />
-    </code>
-  </div>
-);
+const MainViewDebug = ({ message }: { message: Message }) => {
+  const { handleContextMenuUserClick } = useContextMenu();
+  const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
 
-const MainViewClassic = ({ message }: { message: Message }) => (
-  <div className="py-1 px-4">
-    <div className="text-sm">
-      <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
-      &nbsp; &lt;
-      {message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : ''}
-      &gt; &nbsp;
-      <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (nick) {
+      event.preventDefault();
+      handleContextMenuUserClick(event, 'user', nick);
+    }
+  };
+
+  return (
+    <div className="py-1 px-4">
+      <code className="text-sm">
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
+        &nbsp;
+        {nick !== undefined && (
+          <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
+            &lt;{nick}&gt;
+          </span>
+        )}
+        &nbsp;
+        <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+      </code>
     </div>
-    <YouTubeThumbnail text={message.message} />
-    <ImagesPreview text={message.message} />
-  </div>
-);
+  );
+};
+
+const MainViewClassic = ({ message }: { message: Message }) => {
+  const { handleContextMenuUserClick } = useContextMenu();
+  const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
+
+  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (nick) {
+      event.preventDefault();
+      handleContextMenuUserClick(event, 'user', nick);
+    }
+  };
+
+  return (
+    <div className="py-1 px-4">
+      <div className="text-sm">
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
+        &nbsp;
+        {nick !== undefined ? (
+          <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
+            &lt;{nick}&gt;
+          </span>
+        ) : (
+          ''
+        )}
+        &nbsp;
+        <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+      </div>
+      <YouTubeThumbnail text={message.message} />
+      <ImagesPreview text={message.message} />
+    </div>
+  );
+};
 
 const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: string }) => {
+  const { handleContextMenuUserClick } = useContextMenu();
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
   const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
   const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
+
+  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (nick) {
+      event.preventDefault();
+      handleContextMenuUserClick(event, 'user', nick);
+    }
+  };
 
   // TODO fix notice message layout - currently there is no nick displayed
 
@@ -55,7 +99,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
         <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'}`}>
           <div className="w-10 mr-3 flex-shrink-0">
             {lastNick !== nick && (
-              <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full cursor-pointer" onContextMenu={handleNickContextMenu}>
                 {avatar ? (
                   <img className="aspect-square h-full w-full" alt={nick} src={avatar} />
                 ) : (
@@ -69,7 +113,7 @@ const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: str
           <div className="flex-1 min-w-0">
             {lastNick !== nick && (
               <div className="flex items-baseline mb-1">
-                <span className="font-medium text-sm" style={{ color: nickColor }}>
+                <span className="font-medium text-sm cursor-pointer hover:underline" style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
                   {nick}
                 </span>
                 <div className="flex-1" />

@@ -1,10 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { ContextMenu } from '../ContextMenu';
 import * as ContextMenuContext from '../../providers/ContextMenuContext';
 import * as settings from '../../store/settings';
 import * as users from '../../store/users';
 import * as channels from '../../store/channels';
+import * as network from '../../network/irc/network';
 import { ChannelCategory } from '../../types';
 
 // Mock i18next
@@ -84,7 +85,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.priv');
+      expect(document.body.textContent).not.toContain('contextmenu.user.priv');
     });
 
     it('should show Priv option for other users', () => {
@@ -100,7 +101,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.priv');
+      expect(document.body.textContent).toContain('contextmenu.user.priv');
     });
   });
 
@@ -118,7 +119,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.addfriend');
+      expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
     });
 
     it('should not show Add Friend when server does not support WATCH or MONITOR', () => {
@@ -134,7 +135,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.addfriend');
+      expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
     });
 
     it('should show Add Friend when user is registered and MONITOR is supported', () => {
@@ -150,7 +151,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.addfriend');
+      expect(document.body.textContent).toContain('contextmenu.user.addfriend');
     });
 
     it('should not show Add Friend for current user', () => {
@@ -166,7 +167,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.addfriend');
+      expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
     });
   });
 
@@ -184,7 +185,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.ignore');
+      expect(document.body.textContent).not.toContain('contextmenu.user.ignore');
     });
 
     it('should show Ignore when user is registered and SILENCE is supported', () => {
@@ -200,7 +201,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.ignore');
+      expect(document.body.textContent).toContain('contextmenu.user.ignore');
     });
 
     it('should not show Ignore for current user', () => {
@@ -216,7 +217,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.ignore');
+      expect(document.body.textContent).not.toContain('contextmenu.user.ignore');
     });
   });
 
@@ -234,7 +235,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.operator.title');
+      expect(document.body.textContent).not.toContain('contextmenu.user.operator.title');
     });
 
     it('should show operator actions when current user has half-op or higher', () => {
@@ -258,7 +259,7 @@ describe('ContextMenu', () => {
       });
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.operator.title');
+      expect(document.body.textContent).toContain('contextmenu.user.operator.title');
     });
   });
 
@@ -284,9 +285,9 @@ describe('ContextMenu', () => {
       });
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.operator.kick');
-      expect(document.body.textContent).not.toContain('contextmenu.operator.ban');
-      expect(document.body.textContent).not.toContain('contextmenu.operator.kickban');
+      expect(document.body.textContent).not.toContain('contextmenu.user.operator.kick');
+      expect(document.body.textContent).not.toContain('contextmenu.user.operator.ban');
+      expect(document.body.textContent).not.toContain('contextmenu.user.operator.kickban');
     });
 
     it('should show operator actions menu for other users when permissions allow', () => {
@@ -311,7 +312,7 @@ describe('ContextMenu', () => {
 
       render(<ContextMenu />);
       // Operator submenu is shown (kick/ban options are inside the closed submenu)
-      expect(document.body.textContent).toContain('contextmenu.operator.title');
+      expect(document.body.textContent).toContain('contextmenu.user.operator.title');
     });
   });
 
@@ -329,7 +330,7 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.whois');
+      expect(document.body.textContent).toContain('contextmenu.user.whois');
     });
   });
 
@@ -358,7 +359,7 @@ describe('ContextMenu', () => {
       ]) as typeof channels.useChannelsStore);
 
       render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.invite');
+      expect(document.body.textContent).toContain('contextmenu.user.invite');
     });
 
     it('should not show Invite option for current user', () => {
@@ -377,7 +378,7 @@ describe('ContextMenu', () => {
       ]) as typeof channels.useChannelsStore);
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.invite');
+      expect(document.body.textContent).not.toContain('contextmenu.user.invite');
     });
 
     it('should not show Invite option when user has no channels', () => {
@@ -394,7 +395,7 @@ describe('ContextMenu', () => {
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.invite');
+      expect(document.body.textContent).not.toContain('contextmenu.user.invite');
     });
 
     it('should not show Invite option when user only has private chats (no channels)', () => {
@@ -414,7 +415,71 @@ describe('ContextMenu', () => {
       ]) as typeof channels.useChannelsStore);
 
       render(<ContextMenu />);
-      expect(document.body.textContent).not.toContain('contextmenu.invite');
+      expect(document.body.textContent).not.toContain('contextmenu.user.invite');
+    });
+  });
+
+  describe('Channel context menu', () => {
+    const createChannelContextMenuMock = (overrides = {}) => ({
+      contextMenuOpen: true,
+      handleContextMenuClose: mockHandleContextMenuClose,
+      contextMenuAnchorElement: null,
+      contextMenuCategory: 'channel' as const,
+      contextMenuItem: '#testchannel',
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      ...overrides,
+    });
+
+    it('should render channel menu when category is channel', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChannelContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('#testchannel');
+    });
+
+    it('should show Join option for channel', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChannelContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.channel.join');
+    });
+
+    it('should not render channel menu when contextMenuItem is undefined', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChannelContextMenuMock({ contextMenuItem: undefined })
+      );
+
+      const { container } = render(<ContextMenu />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('should call ircSendRawMessage with JOIN command when Join is clicked', () => {
+      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChannelContextMenuMock({ contextMenuItem: '#mychannel' })
+      );
+
+      render(<ContextMenu />);
+      const joinButton = document.body.querySelector('[role="menuitem"]');
+      expect(joinButton).not.toBeNull();
+      fireEvent.click(joinButton!);
+
+      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('JOIN #mychannel');
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should handle channel names with different prefixes', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChannelContextMenuMock({ contextMenuItem: '&localchannel' })
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('&localchannel');
+      expect(document.body.textContent).toContain('contextmenu.channel.join');
     });
   });
 });

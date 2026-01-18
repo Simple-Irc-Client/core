@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useContextMenu } from '../../../providers/ContextMenuContext';
 import { getChannelTypes } from '../../../store/settings';
-import { getUser } from '../../../store/users';
 
 interface MessageTextProps {
   text: string;
@@ -9,7 +8,7 @@ interface MessageTextProps {
 }
 
 interface TextPart {
-  type: 'text' | 'nick' | 'channel';
+  type: 'text' | 'channel';
   value: string;
 }
 
@@ -25,7 +24,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
     const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('');
     const channelPattern = channelTypesEscaped.length > 0 ? `[${channelTypesEscaped}][^\\s,]+` : null;
 
-    // Split text by words to check for nicks and channels
+    // Split text by words to check for channels
     const words = text.split(/(\s+)/);
 
     for (const word of words) {
@@ -44,24 +43,12 @@ const MessageText = ({ text, color }: MessageTextProps) => {
         }
       }
 
-      // Check if it's a known user nick
-      const user = getUser(word);
-      if (user) {
-        result.push({ type: 'nick', value: word });
-        continue;
-      }
-
       // Regular text
       result.push({ type: 'text', value: word });
     }
 
     return result;
   }, [text]);
-
-  const handleNickClick = (event: React.MouseEvent<HTMLElement>, nick: string) => {
-    event.preventDefault();
-    handleContextMenuUserClick(event, 'user', nick);
-  };
 
   const handleChannelClick = (event: React.MouseEvent<HTMLElement>, channel: string) => {
     event.preventDefault();
@@ -71,17 +58,6 @@ const MessageText = ({ text, color }: MessageTextProps) => {
   return (
     <span style={{ color }}>
       {parts.map((part, index) => {
-        if (part.type === 'nick') {
-          return (
-            <span
-              key={index}
-              className="cursor-pointer hover:underline"
-              onContextMenu={(e) => handleNickClick(e, part.value)}
-            >
-              {part.value}
-            </span>
-          );
-        }
         if (part.type === 'channel') {
           return (
             <span
