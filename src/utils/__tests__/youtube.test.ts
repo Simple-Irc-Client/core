@@ -1,7 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { extractYouTubeVideoId, getYouTubeThumbnailUrl } from '../youtube';
+import { extractYouTubeVideoId, extractYouTubeVideoIds, getYouTubeThumbnailUrl } from '../youtube';
 
 describe('youtube utils', () => {
+  describe('extractYouTubeVideoIds', () => {
+    it('should extract multiple video IDs from text', () => {
+      const text = 'Check these: https://youtu.be/dQw4w9WgXcQ and https://youtube.com/watch?v=abc123DEF_-';
+      const result = extractYouTubeVideoIds(text);
+      expect(result).toHaveLength(2);
+      expect(result).toContain('dQw4w9WgXcQ');
+      expect(result).toContain('abc123DEF_-');
+    });
+
+    it('should extract multiple video IDs of different formats', () => {
+      const text = 'https://youtu.be/aaaaaaaaaaa https://youtube.com/v/bbbbbbbbbbb https://youtube.com/watch?v=ccccccccccc';
+      const result = extractYouTubeVideoIds(text);
+      expect(result).toHaveLength(3);
+      expect(result).toContain('aaaaaaaaaaa');
+      expect(result).toContain('bbbbbbbbbbb');
+      expect(result).toContain('ccccccccccc');
+    });
+
+    it('should not include duplicate video IDs', () => {
+      const text = 'https://youtu.be/dQw4w9WgXcQ and https://youtube.com/watch?v=dQw4w9WgXcQ';
+      expect(extractYouTubeVideoIds(text)).toEqual(['dQw4w9WgXcQ']);
+    });
+
+    it('should return empty array for text without YouTube URLs', () => {
+      expect(extractYouTubeVideoIds('Hello, world!')).toEqual([]);
+      expect(extractYouTubeVideoIds('')).toEqual([]);
+    });
+  });
+
   describe('extractYouTubeVideoId', () => {
     it('should extract video ID from youtube.com/watch?v= format', () => {
       expect(extractYouTubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');

@@ -1,28 +1,32 @@
-import { extractYouTubeVideoId, getYouTubeThumbnailUrl } from '../../../utils/youtube';
+import { extractYouTubeVideoIds, getYouTubeThumbnailUrl } from '../../../utils/youtube';
 
 interface YouTubeThumbnailProps {
   text: string;
 }
 
 const YouTubeThumbnail = ({ text }: YouTubeThumbnailProps) => {
-  const videoId = extractYouTubeVideoId(text);
+  const videoIds = extractYouTubeVideoIds(text);
 
-  if (!videoId) {
+  if (videoIds.length === 0) {
     return null;
   }
 
-  const thumbnailUrl = getYouTubeThumbnailUrl(videoId);
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
   return (
-    <div className="mt-2">
-      <a href={videoUrl} target="_blank" rel="noopener noreferrer">
-        <img
-          src={thumbnailUrl}
-          alt="YouTube video thumbnail"
-          className="rounded max-w-[120px] hover:opacity-80 transition-opacity"
-        />
-      </a>
+    <div className="mt-2 flex flex-wrap gap-2">
+      {videoIds.map((videoId) => (
+        <a
+          key={videoId}
+          href={`https://www.youtube.com/watch?v=${videoId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src={getYouTubeThumbnailUrl(videoId)}
+            alt="YouTube video thumbnail"
+            className="rounded max-w-30 hover:opacity-80 transition-opacity"
+          />
+        </a>
+      ))}
     </div>
   );
 };
