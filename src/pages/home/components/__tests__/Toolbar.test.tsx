@@ -449,7 +449,7 @@ describe('Toolbar', () => {
       expect(document.body.textContent).toContain('main.toolbar.profileSettings');
     });
 
-    it('should not show Away Messages option when not away', async () => {
+    it('should not show Away Messages option when no away messages', async () => {
       const user = userEvent.setup();
       render(<Toolbar />);
 
@@ -460,7 +460,7 @@ describe('Toolbar', () => {
       expect(document.body.textContent).not.toContain('main.toolbar.awayMessages');
     });
 
-    it('should not show badge when not away', () => {
+    it('should not show badge when no away messages', () => {
       render(<Toolbar />);
 
       // Badge should not be visible (no element with the badge class inside avatar)
@@ -470,24 +470,26 @@ describe('Toolbar', () => {
     });
   });
 
-  describe('User avatar when away', () => {
+  describe('User avatar with away messages', () => {
     const getAvatarButton = () => {
       const buttons = screen.getAllByRole('button');
       return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
     };
 
-    beforeEach(() => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
-          currentChannelName: '#test',
-          currentChannelCategory: ChannelCategory.channel,
-          nick: 'testUser',
-          currentUserFlags: ['away'],
-        } as unknown as settingsStore.SettingsStore)
-      );
-    });
+    it('should show Away Messages option in menu when there are away messages', async () => {
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
 
-    it('should show Away Messages option in menu when away', async () => {
       const user = userEvent.setup();
       render(<Toolbar />);
 
@@ -498,7 +500,7 @@ describe('Toolbar', () => {
       expect(document.body.textContent).toContain('main.toolbar.awayMessages');
     });
 
-    it('should show badge with count when away with messages', () => {
+    it('should show badge with count when there are away messages', () => {
       mockAwayMessages = [
         {
           id: 'msg-1',
@@ -528,7 +530,7 @@ describe('Toolbar', () => {
       expect(screen.getByText('2')).toBeInTheDocument();
     });
 
-    it('should show message count in menu badge when away with messages', async () => {
+    it('should show message count in menu badge when there are away messages', async () => {
       const user = userEvent.setup();
       mockAwayMessages = [
         {

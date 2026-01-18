@@ -335,7 +335,7 @@ const Toolbar = () => {
                       {nick.substring(0, 1).toUpperCase()}
                     </span>
                   )}
-                  {isAway && awayMessagesCount > 0 && (
+                  {awayMessagesCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
                       {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
                     </span>
@@ -347,15 +347,13 @@ const Toolbar = () => {
                   <UserIcon className="mr-2 h-4 w-4" />
                   {t('main.toolbar.profileSettings')}
                 </DropdownMenuItem>
-                {isAway && (
+                {awayMessagesCount > 0 && (
                   <DropdownMenuItem onClick={() => setAwayDialogOpen(true)}>
                     <MessageSquare className="mr-2 h-4 w-4" />
                     {t('main.toolbar.awayMessages')}
-                    {awayMessagesCount > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                        {awayMessagesCount}
-                      </span>
-                    )}
+                    <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                      {awayMessagesCount}
+                    </span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
