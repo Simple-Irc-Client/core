@@ -1,11 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Users from '../Users';
-import * as settingsStore from '../../../../store/settings';
-import * as currentStore from '../../../../store/current';
-import * as ContextMenuContext from '../../../../providers/ContextMenuContext';
-import { ChannelCategory } from '../../../../types';
-import type { User } from '../../../../types';
+import * as settingsStore from '@/store/settings';
+import * as currentStore from '@/store/current';
+import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import { ChannelCategory } from '@/types';
+import type { User } from '@/types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

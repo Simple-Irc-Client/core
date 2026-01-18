@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Main from '../Main';
-import * as settingsStore from '../../../../store/settings';
-import * as currentStore from '../../../../store/current';
-import * as ContextMenuContext from '../../../../providers/ContextMenuContext';
-import { MessageCategory, type Message, type User } from '../../../../types';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../../config/config';
-import { MessageColor } from '../../../../config/theme';
+import Main from '../Chat';
+import * as settingsStore from '@/store/settings';
+import * as currentStore from '@/store/current';
+import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import { MessageCategory, type Message, type User } from '@/types';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { MessageColor } from '@/config/theme';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();

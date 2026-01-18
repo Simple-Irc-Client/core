@@ -6,7 +6,7 @@ import './i18n';
 import { ChannelsDrawerProvider } from './providers/ChannelsDrawerProvider';
 import { ContextMenuProvider } from './providers/ContextMenuProvider';
 import { ContextMenu } from './components/ContextMenu';
-import MainWindow from './pages/home/Home';
+import MainLayout from './layouts/MainLayout';
 
 function App() {
   return (
@@ -14,7 +14,7 @@ function App() {
       <ContextMenuProvider>
         <ContextMenu />
         <AppNetwork />
-        <MainWindow />
+        <MainLayout />
       </ContextMenuProvider>
     </ChannelsDrawerProvider>
   );

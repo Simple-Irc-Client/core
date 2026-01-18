@@ -1,4 +1,4 @@
-import { websocketHost, websocketPort } from '../../config/config';
+import { websocketHost, websocketPort } from '@/config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 

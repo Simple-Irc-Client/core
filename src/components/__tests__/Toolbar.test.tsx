@@ -2,11 +2,11 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Toolbar from '../Toolbar';
-import * as settingsStore from '../../../../store/settings';
-import * as network from '../../../../network/irc/network';
-import * as users from '../../../../store/users';
-import * as channelList from '../../../../store/channelList';
-import { ChannelCategory } from '../../../../types';
+import * as settingsStore from '@/store/settings';
+import * as network from '@/network/irc/network';
+import * as users from '@/store/users';
+import * as channelList from '@/store/channelList';
+import { ChannelCategory } from '@/types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Creator from '../Creator';
-import * as settingsStore from '../../../store/settings';
+import * as settingsStore from '@/store/settings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

@@ -1,9 +1,9 @@
-import { useSettingsStore } from '../../../store/settings';
-import { ChannelCategory } from '../../../types';
+import { useSettingsStore } from '@/store/settings';
+import { ChannelCategory } from '@/types';
 import { useTranslation } from 'react-i18next';
-import { usersColor, usersTitleColor, usersWidth } from '../../../config/theme';
-import { useCurrentStore } from '../../../store/current';
-import { useContextMenu } from '../../../providers/ContextMenuContext';
+import { usersColor, usersTitleColor, usersWidth } from '@/config/theme';
+import { useCurrentStore } from '@/store/current';
+import { useContextMenu } from '@/providers/ContextMenuContext';
 
 const Users = () => {
   const { t } = useTranslation();

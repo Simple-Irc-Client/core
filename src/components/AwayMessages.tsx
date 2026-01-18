@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useAwayMessagesStore, clearAwayMessages } from '../../../store/awayMessages';
+import { useAwayMessagesStore, clearAwayMessages } from '@/store/awayMessages';
 import { format } from 'date-fns';
 
 interface AwayMessagesProps {

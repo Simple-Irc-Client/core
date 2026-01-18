@@ -8,13 +8,13 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useContextMenu } from '../providers/ContextMenuContext';
-import { setAddChannel, useChannelsStore } from '../store/channels';
-import { ChannelCategory } from '../types';
-import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '../store/settings';
-import { ircSendRawMessage } from '../network/irc/network';
+import { useContextMenu } from '@/providers/ContextMenuContext';
+import { setAddChannel, useChannelsStore } from '@/store/channels';
+import { ChannelCategory } from '@/types';
+import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@/store/settings';
+import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
-import { getCurrentUserChannelModes, getUser } from '../store/users';
+import { getCurrentUserChannelModes, getUser } from '@/store/users';
 
 // Helper to determine what mode hierarchy level a flag represents
 const getModeLevel = (flag: string): number => {

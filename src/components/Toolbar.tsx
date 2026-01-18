@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore } from '../../../store/settings';
-import { ChannelCategory, type ChannelList, MessageCategory, type User } from '../../../types';
-import { ircSendRawMessage } from '../../../network/irc/network';
+import { getCurrentNick, useSettingsStore } from '@/store/settings';
+import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@/types';
+import { ircSendRawMessage } from '@/network/irc/network';
 import { Send, Smile, User as UserIcon, MessageSquare } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { channelCommands, generalCommands, parseMessageToCommand } from '../../../network/irc/command';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
-import { setAddMessage } from '../../../store/channels';
-import { getUser, useUsersStore } from '../../../store/users';
-import { MessageColor } from '../../../config/theme';
+import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { setAddMessage } from '@/store/channels';
+import { getUser, useUsersStore } from '@/store/users';
+import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
-import { getChannelListSortedByAZ } from '../../../store/channelList';
+import { getChannelListSortedByAZ } from '@/store/channelList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
@@ -21,9 +21,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAwayMessagesStore } from '../../../store/awayMessages';
-import ProfileSettings from './ProfileSettings';
-import AwayMessages from './AwayMessages';
+import { useAwayMessagesStore } from '@/store/awayMessages';
+import ProfileSettings from '@/components/ProfileSettings';
+import AwayMessages from '@/components/AwayMessages';
 
 const Toolbar = () => {
   const { t } = useTranslation();

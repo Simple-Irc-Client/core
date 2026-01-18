@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Typing from '../Typing';
-import * as currentStore from '../../../../store/current';
+import * as currentStore from '@/store/current';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({

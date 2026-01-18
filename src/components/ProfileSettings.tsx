@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ircSendRawMessage } from '../../../network/irc/network';
+import { ircSendRawMessage } from '@/network/irc/network';
 import {
   Dialog,
   DialogContent,

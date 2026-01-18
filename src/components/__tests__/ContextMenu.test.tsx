@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { ContextMenu } from '../ContextMenu';
-import * as ContextMenuContext from '../../providers/ContextMenuContext';
-import * as settings from '../../store/settings';
-import * as users from '../../store/users';
-import * as channels from '../../store/channels';
-import * as network from '../../network/irc/network';
-import { ChannelCategory } from '../../types';
+import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as settings from '@/store/settings';
+import * as users from '@/store/users';
+import * as channels from '@/store/channels';
+import * as network from '@/network/irc/network';
+import { ChannelCategory } from '@/types';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({

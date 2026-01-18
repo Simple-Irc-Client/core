@@ -1,4 +1,4 @@
-import { extractImageUrls } from '../../../utils/image';
+import { extractImageUrls } from '@/utils/image';
 
 interface ImagesPreviewProps {
   text: string;

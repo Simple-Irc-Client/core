@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import MessageText from '../MessageText';
-import * as ContextMenuContext from '../../../../providers/ContextMenuContext';
-import * as settings from '../../../../store/settings';
+import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as settings from '@/store/settings';
 
 describe('MessageText', () => {
   const mockHandleContextMenuUserClick = vi.fn();

@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { ircSendPassword } from '../../network/irc/network';
-import { getCurrentNick, setCreatorStep, useSettingsStore } from '../../store/settings';
+import { ircSendPassword } from '@/network/irc/network';
+import { getCurrentNick, setCreatorStep, useSettingsStore } from '@/store/settings';
 
 const CreatorPassword = () => {
   const { t } = useTranslation();

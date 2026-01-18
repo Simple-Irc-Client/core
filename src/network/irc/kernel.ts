@@ -10,7 +10,7 @@ import {
   setTopic,
   setTopicSetBy,
   setTyping,
-} from '../../store/channels';
+} from '@/store/channels';
 import {
   getChannelModes,
   getConnectedTime,
@@ -37,18 +37,18 @@ import {
   setSupportedOption,
   setUserModes,
   setWatchLimit,
-} from '../../store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../../store/users';
-import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../../types';
+} from '@/store/settings';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '@/store/users';
+import { ChannelCategory, MessageCategory, type UserTypingStatus } from '@/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
-import i18next from '../../i18n';
-import { MessageColor } from '../../config/theme';
+import i18next from '@/i18n';
+import { MessageColor } from '@/config/theme';
 import { defaultChannelTypes, defaultMaxPermission } from '../../config/config';
 import { v4 as uuidv4 } from 'uuid';
-import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../../store/channelList';
-import { addAwayMessage } from '../../store/awayMessages';
-import { getCurrentUserFlags } from '../../store/settings';
+import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '@/store/channelList';
+import { addAwayMessage } from '@/store/awayMessages';
+import { getCurrentUserFlags } from '@/store/settings';
 
 export interface IrcEvent {
   type: string;

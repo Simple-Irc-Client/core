@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { setCreatorStep, setNick } from '../../store/settings';
+import { setCreatorStep, setNick } from '@/store/settings';
 
 const CreatorNick = () => {
   const { t } = useTranslation();

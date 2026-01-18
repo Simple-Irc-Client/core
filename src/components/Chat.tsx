@@ -1,16 +1,16 @@
 import { useEffect, useRef } from 'react';
-import { useSettingsStore } from '../../../store/settings';
-import { MessageCategory, type Message } from '../../../types';
+import { useSettingsStore } from '@/store/settings';
+import { MessageCategory, type Message } from '@/types';
 import { format } from 'date-fns';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
-import { MessageColor } from '../../../config/theme';
-import { useCurrentStore } from '../../../store/current';
-import ImagesPreview from './ImagesPreview';
-import YouTubeThumbnail from './YouTubeThumbnail';
-import MessageText from './MessageText';
-import { useContextMenu } from '../../../providers/ContextMenuContext';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { MessageColor } from '@/config/theme';
+import { useCurrentStore } from '@/store/current';
+import ImagesPreview from '@/components/ImagesPreview';
+import YouTubeThumbnail from '@/components/YouTubeThumbnail';
+import MessageText from '@/components/MessageText';
+import { useContextMenu } from '@/providers/ContextMenuContext';
 
-const MainViewDebug = ({ message }: { message: Message }) => {
+const ChatViewDebug = ({ message }: { message: Message }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
 
@@ -38,7 +38,7 @@ const MainViewDebug = ({ message }: { message: Message }) => {
   );
 };
 
-const MainViewClassic = ({ message }: { message: Message }) => {
+const ChatViewClassic = ({ message }: { message: Message }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
 
@@ -70,7 +70,7 @@ const MainViewClassic = ({ message }: { message: Message }) => {
   );
 };
 
-const MainViewModern = ({ message, lastNick }: { message: Message; lastNick: string }) => {
+const ChatViewModern = ({ message, lastNick }: { message: Message; lastNick: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
@@ -153,7 +153,7 @@ const getNickFromMessage = (message: Message | undefined): string => {
   return typeof message.nick === 'string' ? message.nick : message.nick.nick;
 };
 
-const Main = () => {
+const Chat = () => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const messages = useCurrentStore((state) => state.messages);
@@ -170,11 +170,11 @@ const Main = () => {
           const lastNick = getNickFromMessage(messages[index - 1]);
           return (
             <div key={`message-${message.id}`}>
-              {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <MainViewDebug message={message} />}
+              {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <ChatViewDebug message={message} />}
               {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
                 <>
-                  {theme === 'classic' && <MainViewClassic message={message} />}
-                  {theme === 'modern' && <MainViewModern message={message} lastNick={lastNick} />}
+                  {theme === 'classic' && <ChatViewClassic message={message} />}
+                  {theme === 'modern' && <ChatViewModern message={message} lastNick={lastNick} />}
                 </>
               )}
             </div>
@@ -186,4 +186,4 @@ const Main = () => {
   );
 };
 
-export default Main;
+export default Chat;

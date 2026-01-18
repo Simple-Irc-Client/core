@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Channels from '../Channels';
-import * as settingsStore from '../../../../store/settings';
-import * as channelsStore from '../../../../store/channels';
-import * as channelListStore from '../../../../store/channelList';
-import * as ChannelsDrawerContext from '../../../../providers/ChannelsDrawerContext';
-import * as network from '../../../../network/irc/network';
-import { ChannelCategory } from '../../../../types';
-import type { Channel } from '../../../../types';
+import * as settingsStore from '@/store/settings';
+import * as channelsStore from '@/store/channels';
+import * as channelListStore from '@/store/channelList';
+import * as ChannelsDrawerContext from '@/providers/ChannelsDrawerContext';
+import * as network from '@/network/irc/network';
+import { ChannelCategory } from '@/types';
+import type { Channel } from '@/types';
 
 // Mock browser APIs for Popover/Command components
 beforeAll(() => {
@@ -26,7 +26,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('../../../../network/irc/network', () => ({
+vi.mock('@/network/irc/network', () => ({
   ircJoinChannels: vi.fn(),
   ircPartChannel: vi.fn(),
 }));

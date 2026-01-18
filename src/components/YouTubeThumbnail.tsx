@@ -1,4 +1,4 @@
-import { extractYouTubeVideoIds, getYouTubeThumbnailUrl } from '../../../utils/youtube';
+import { extractYouTubeVideoIds, getYouTubeThumbnailUrl } from '@/utils/youtube';
 
 interface YouTubeThumbnailProps {
   text: string;

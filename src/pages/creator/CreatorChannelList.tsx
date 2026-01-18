@@ -4,11 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useTranslation } from 'react-i18next';
-import { ircJoinChannels } from '../../network/irc/network';
-import { useChannelsStore } from '../../store/channels';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../config/config';
-import { setCreatorCompleted } from '../../store/settings';
-import { getChannelListSortedByUsers, useChannelListStore } from '../../store/channelList';
+import { ircJoinChannels } from '@/network/irc/network';
+import { useChannelsStore } from '@/store/channels';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { setCreatorCompleted } from '@/store/settings';
+import { getChannelListSortedByUsers, useChannelListStore } from '@/store/channelList';
 import { X } from 'lucide-react';
 
 const CreatorChannelList = () => {

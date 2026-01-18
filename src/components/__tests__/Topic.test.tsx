@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Topic from '../Topic';
-import * as ChannelsDrawerContext from '../../../../providers/ChannelsDrawerContext';
-import * as currentStore from '../../../../store/current';
-import * as settingsStore from '../../../../store/settings';
-import * as usersStore from '../../../../store/users';
-import * as channelsStore from '../../../../store/channels';
-import * as network from '../../../../network/irc/network';
+import * as ChannelsDrawerContext from '@/providers/ChannelsDrawerContext';
+import * as currentStore from '@/store/current';
+import * as settingsStore from '@/store/settings';
+import * as usersStore from '@/store/users';
+import * as channelsStore from '@/store/channels';
+import * as network from '@/network/irc/network';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,11 +23,11 @@ vi.mock('react-i18next', () => ({
   },
 }));
 
-vi.mock('../../../../network/irc/network', () => ({
+vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
 }));
 
-vi.mock('../../../../store/channels', () => ({
+vi.mock('@/store/channels', () => ({
   getTopicSetBy: vi.fn(() => ''),
   getTopicTime: vi.fn(() => 0),
 }));

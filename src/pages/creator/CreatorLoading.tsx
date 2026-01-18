@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress, getCreatorProgress, resetAndGoToStart } from '../../store/settings';
+import { getIsPasswordRequired, setCreatorStep, useSettingsStore, setCreatorProgress, getCreatorProgress, resetAndGoToStart } from '@/store/settings';
 
 const CreatorLoading = () => {
   const { t } = useTranslation();

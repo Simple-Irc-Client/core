@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useContextMenu } from '../../../providers/ContextMenuContext';
-import { getChannelTypes } from '../../../store/settings';
+import { useContextMenu } from '@/providers/ContextMenuContext';
+import { getChannelTypes } from '@/store/settings';
 
 interface MessageTextProps {
   text: string;

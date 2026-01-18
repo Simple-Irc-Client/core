@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useCurrentStore } from '../../../store/current';
+import { useCurrentStore } from '@/store/current';
 
 const Typing = () => {
   const { t } = useTranslation();
