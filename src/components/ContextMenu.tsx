@@ -63,6 +63,28 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
   };
 };
 
+// Helper to calculate optimal context menu position
+const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight: number = 200) => {
+  const rect = anchorElement.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  // If there's not enough space below but more space above, position above
+  if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+    return {
+      left: rect.left,
+      top: Math.max(0, rect.top - menuHeight),
+    };
+  }
+
+  // Default: position below
+  return {
+    left: rect.left,
+    top: rect.bottom,
+  };
+};
+
 export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
@@ -74,15 +96,17 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
+    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 80) : null;
+
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
         <DropdownMenuContent
           style={
-            contextMenuAnchorElement
+            position
               ? {
                   position: 'fixed',
-                  left: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().left}px`,
-                  top: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().bottom}px`,
+                  left: `${position.left}px`,
+                  top: `${position.top}px`,
                 }
               : undefined
           }
@@ -192,15 +216,17 @@ export const ContextMenu = () => {
     const permissions = getOperatorPermissions(currentUserChannelModes, targetUserChannelModes);
     const hasOperatorActions = isInChannel && (permissions.currentLevel >= 2); // At least half-op
 
+    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 300) : null;
+
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
         <DropdownMenuContent
           style={
-            contextMenuAnchorElement
+            position
               ? {
                   position: 'fixed',
-                  left: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().left}px`,
-                  top: `${(contextMenuAnchorElement as HTMLElement).getBoundingClientRect().bottom}px`,
+                  left: `${position.left}px`,
+                  top: `${position.top}px`,
                 }
               : undefined
           }
