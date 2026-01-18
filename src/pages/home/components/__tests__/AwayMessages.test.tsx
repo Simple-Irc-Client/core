@@ -194,7 +194,7 @@ describe('AwayMessages', () => {
   });
 
   describe('Dialog close behavior', () => {
-    it('should clear messages when dialog is closed via onOpenChange', async () => {
+    it('should not clear messages when dialog is closed via X button', async () => {
       const user = userEvent.setup();
       mockAwayMessages = [
         {
@@ -215,7 +215,7 @@ describe('AwayMessages', () => {
       const closeButton = screen.getByRole('button', { name: /close/i });
       await user.click(closeButton);
 
-      expect(mockClearAwayMessages).toHaveBeenCalled();
+      expect(mockClearAwayMessages).not.toHaveBeenCalled();
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
     });
   });

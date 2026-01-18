@@ -5,10 +5,31 @@ import * as ChannelsDrawerContext from '../../../../providers/ChannelsDrawerCont
 import * as currentStore from '../../../../store/current';
 import * as settingsStore from '../../../../store/settings';
 import * as usersStore from '../../../../store/users';
+import * as channelsStore from '../../../../store/channels';
 import * as network from '../../../../network/irc/network';
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, params?: Record<string, string>) => {
+      if (key === 'main.topic.setBy' && params) {
+        return `Set by ${params.nick} on ${params.date}`;
+      }
+      return key;
+    },
+  }),
+  initReactI18next: {
+    type: '3rdParty',
+    init: vi.fn(),
+  },
+}));
 
 vi.mock('../../../../network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+}));
+
+vi.mock('../../../../store/channels', () => ({
+  getTopicSetBy: vi.fn(() => ''),
+  getTopicTime: vi.fn(() => 0),
 }));
 
 describe('Topic', () => {
@@ -289,6 +310,78 @@ describe('Topic', () => {
 
       const buttons = screen.getAllByRole('button');
       expect(buttons).toHaveLength(1);
+    });
+  });
+
+  describe('Topic tooltip', () => {
+    it('should show tooltip with topic set by info when both nick and time are available', () => {
+      setupMocks({ topic: 'Test Topic' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200); // 2024-01-18 12:00:00 UTC
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      expect(input).toHaveAttribute('title', expect.stringContaining('Set by admin on'));
+    });
+
+    it('should not show tooltip when topicSetBy is empty', () => {
+      setupMocks({ topic: 'Test Topic' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200);
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      expect(input).not.toHaveAttribute('title');
+    });
+
+    it('should not show tooltip when topicTime is 0', () => {
+      setupMocks({ topic: 'Test Topic' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      expect(input).not.toHaveAttribute('title');
+    });
+
+    it('should not show tooltip when both topicSetBy and topicTime are empty/zero', () => {
+      setupMocks({ topic: 'Test Topic' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      expect(input).not.toHaveAttribute('title');
+    });
+
+    it('should format tooltip with date containing day, month and year', () => {
+      setupMocks({ topic: 'Test Topic' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('testuser');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705581000); // 18 Jan 2024
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      const title = input.getAttribute('title');
+      expect(title).toContain('Set by testuser on');
+      expect(title).toContain('18');
+      expect(title).toContain('Jan');
+      expect(title).toContain('2024');
+    });
+
+    it('should call getTopicSetBy and getTopicTime with correct channel name', () => {
+      setupMocks({ topic: 'Test Topic', currentChannelName: '#mychannel' });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
+
+      render(<Topic />);
+
+      expect(channelsStore.getTopicSetBy).toHaveBeenCalledWith('#mychannel');
+      expect(channelsStore.getTopicTime).toHaveBeenCalledWith('#mychannel');
     });
   });
 });

@@ -347,7 +347,7 @@ const Toolbar = () => {
                     </span>
                   )}
                   {awayMessagesCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 px-1 items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
+                    <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium">
                       {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
                     </span>
                   )}

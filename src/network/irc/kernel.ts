@@ -559,6 +559,7 @@ export class Kernel {
     // TODO unknown raw:
     // :irc.swepipe.net 020 * :Please wait while we process your connection.
     // :irc.swepipe.net 042 sic-test 0PNSABVS6 :your unique ID
+    // :insomnia.pirc.pl 317 Merovingian toto 118 1768728754 :seconds idle, signon time\r\n
     // :irc.swepipe.net 324 sic-test #worldchat +tnl 230
     // :irc01-black.librairc.net 324 sic-test #india +BCFGJMNSTfjntx mute:60:80 2:2 60 *4:3 6:6 :2:10:60
     // :services.librairc.net 328 sic-test #india :www.indiachat.co.in

@@ -119,5 +119,6 @@
     "contextmenu.operator.kick": "Wyrzuć",
     "contextmenu.operator.ban": "Zbanuj",
     "contextmenu.operator.kickban": "Wyrzuć i zbanuj",
-    "contextmenu.invite": "Zaproś na kanał"
+    "contextmenu.invite": "Zaproś na kanał",
+    "main.topic.setBy": "Ustawiony przez {{nick}} dnia {{date}}"
 }
