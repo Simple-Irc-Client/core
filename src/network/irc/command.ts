@@ -1,9 +1,9 @@
 import { defaultQuitMessage, STATUS_CHANNEL } from '@/config/config';
-import { useChannelsStore, isChannel, setAddMessage } from '@/store/channels';
-import { MessageCategory } from '@/types';
+import { useChannelsStore, isChannel, setAddMessage } from '@features/channels/store/channels';
+import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageColor } from '@/config/theme';
-import i18next from '@/i18n';
+import i18next from '@/app/i18n';
 
 export const generalCommands = ['/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg', '/whois', '/whereis', '/who'];
 export const channelCommands = ['/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic'];

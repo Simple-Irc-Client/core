@@ -1,10 +1,10 @@
 import React from 'react';
-import Main from '../pages/main/Main';
-import Creator from '../pages/creator/Creator';
-import { useSettingsStore } from '../store/settings';
+import Main from '@/pages/MainPage';
+import WizardPage from '@features/wizard/pages/WizardPage';
+import { useSettingsStore } from '@features/settings/store/settings';
 
 function App() {
-  const isCreatorCompleted = useSettingsStore((state) => state.isCreatorCompleted);
+  const isWizardCompleted = useSettingsStore((state) => state.isWizardCompleted);
 
   const handleNoContextMenu = (event: React.MouseEvent): void => {
     event.preventDefault();
@@ -12,8 +12,8 @@ function App() {
 
   return (
     <div onContextMenu={handleNoContextMenu}>
-      {!isCreatorCompleted && <Creator />}
-      {isCreatorCompleted && <Main />}
+      {!isWizardCompleted && <WizardPage />}
+      {isWizardCompleted && <Main />}
     </div>
   );
 }

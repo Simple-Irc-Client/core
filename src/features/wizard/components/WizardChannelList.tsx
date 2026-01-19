@@ -1,0 +1,134 @@
+import { useMemo, useState } from 'react';
+import { Button } from '@shared/components/ui/button';
+import { Badge } from '@shared/components/ui/badge';
+import { Input } from '@shared/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/components/ui/table';
+import { useTranslation } from 'react-i18next';
+import { ircJoinChannels } from '@/network/irc/network';
+import { useChannelsStore } from '@features/channels/store/channels';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { setWizardCompleted } from '@features/settings/store/settings';
+import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
+import { X } from 'lucide-react';
+
+const WizardChannelList = () => {
+  const { t } = useTranslation();
+
+  const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+
+  const openChannels = useChannelsStore((state) => state.openChannelsShortList);
+
+  // Channels that user manually added (via clicking rows)
+  const [manuallySelectedChannels, setManuallySelectedChannels] = useState<string[]>([]);
+
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const channelList = useMemo(
+    () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
+    [isChannelListLoadingFinished]
+  );
+
+  const filteredChannelList = useMemo(() => {
+    if (!searchQuery) return channelList;
+    const query = searchQuery.toLowerCase();
+    return channelList.filter(
+      (channel) => channel.name.toLowerCase().includes(query) || channel.topic?.toLowerCase().includes(query)
+    );
+  }, [channelList, searchQuery]);
+
+  // Derive selectedChannels from openChannels + manuallySelectedChannels
+  const selectedChannels = useMemo(() => {
+    const fromOpen = openChannels
+      .filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))
+      .map((channel) => channel.name);
+    const combined = new Set([...fromOpen, ...manuallySelectedChannels]);
+    return Array.from(combined);
+  }, [openChannels, manuallySelectedChannels]);
+
+  const handleDelete = (channelName: string) => () => {
+    setManuallySelectedChannels((channels) => channels.filter((channel) => channel !== channelName));
+  };
+
+  const handleRowClick = (channelName: string): void => {
+    if (!selectedChannels.includes(channelName)) {
+      setManuallySelectedChannels((channels) => [...channels, channelName]);
+    }
+  };
+
+  const handleSkip = (): void => {
+    setWizardCompleted(true);
+  };
+
+  const handleJoin = (): void => {
+    ircJoinChannels(selectedChannels);
+    setWizardCompleted(true);
+  };
+
+  return (
+    <>
+      <h1 className="text-2xl font-semibold text-center">{t('wizard.channels.title')}</h1>
+      <div className="mt-8 flex flex-wrap gap-2">
+        {selectedChannels.map((channel) => (
+          <Badge key={channel} variant="outline" className="px-3 py-1">
+            {channel}
+            <button onClick={handleDelete(channel)} className="ml-2 hover:text-destructive">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+      <div className="mt-8 space-y-4">
+        <Input
+          placeholder={t('wizard.channels.toolbar.search.placeholder') ?? 'Search…'}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-sm"
+        />
+        <div className="border rounded-lg" style={{ height: 350, overflow: 'auto' }}>
+          {!isChannelListLoadingFinished ? (
+            <div className="flex items-center justify-center h-full">
+              <p>{t('wizard.channels.loading')}</p>
+            </div>
+          ) : filteredChannelList.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p>{t('wizard.channels.toolbar.search.no.results')}</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[150px]">{t('wizard.channels.column.name')}</TableHead>
+                  <TableHead className="w-[100px]">{t('wizard.channels.column.users')}</TableHead>
+                  <TableHead>{t('wizard.channels.column.topic')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredChannelList.map((channel) => (
+                  <TableRow
+                    key={channel.name}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(channel.name)}
+                  >
+                    <TableCell className="font-medium">{channel.name}</TableCell>
+                    <TableCell>{channel.users}</TableCell>
+                    <TableCell className="truncate max-w-[500px]">{channel.topic}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </div>
+      <div className="flex justify-center gap-4 mt-4">
+        <Button onClick={handleSkip} tabIndex={1} size="lg">
+          {t('wizard.channels.button.skip')}
+        </Button>
+        <Button onClick={handleJoin} tabIndex={2} size="lg" disabled={selectedChannels.length === 0}>
+          {t('wizard.channels.button.join')}
+        </Button>
+      </div>
+    </>
+  );
+};
+
+export default WizardChannelList;

@@ -3,14 +3,14 @@
  */
 import { describe, expect, it, afterEach, vi } from 'vitest';
 import { Kernel } from '../kernel';
-import * as settingsFile from '../../../store/settings';
-import * as channelsFile from '../../../store/channels';
-import * as channelListFile from '../../../store/channelList';
-import * as usersFile from '../../../store/users';
+import * as settingsFile from '@features/settings/store/settings';
+import * as channelsFile from '@features/channels/store/channels';
+import * as channelListFile from '@features/channels/store/channelList';
+import * as usersFile from '@features/users/store/users';
 import * as networkFile from '../network';
-import i18next from '../../../i18n';
+import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
-import { ChannelCategory } from '../../../types';
+import { ChannelCategory } from '@shared/types';
 
 describe('kernel tests', () => {
   const defaultUserModes = [
@@ -140,15 +140,15 @@ describe('kernel tests', () => {
   it('test raw ERROR #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => true);
-    const mockSetCreatorProgress = vi.spyOn(settingsFile, 'setCreatorProgress').mockImplementation(() => {});
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
+    const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
-    expect(mockSetCreatorProgress).toHaveBeenCalledTimes(0);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardProgress).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -159,16 +159,16 @@ describe('kernel tests', () => {
   it('test raw ERROR #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => false);
-    const mockSetCreatorProgress = vi.spyOn(settingsFile, 'setCreatorProgress').mockImplementation(() => {});
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
+    const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
-    expect(mockSetCreatorProgress).toHaveBeenCalledTimes(1);
-    expect(mockSetCreatorProgress).toHaveBeenCalledWith(0, 'Nie udało się połączyć z serwerem - Closing Link: [1.1.1.1] (Registration Timeout)');
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardProgress).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardProgress).toHaveBeenCalledWith(0, 'Nie udało się połączyć z serwerem - Closing Link: [1.1.1.1] (Registration Timeout)');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -480,7 +480,7 @@ describe('kernel tests', () => {
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
-    const mockSetSetCreatorStep = vi.spyOn(settingsFile, 'setCreatorStep').mockImplementation(() => {});
+    const mockSetSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
     const line =
       '@draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
@@ -494,8 +494,8 @@ describe('kernel tests', () => {
     expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
     expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
 
-    expect(mockSetSetCreatorStep).toHaveBeenCalledTimes(1);
-    expect(mockSetSetCreatorStep).toHaveBeenCalledWith('password');
+    expect(mockSetSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetSetWizardStep).toHaveBeenCalledWith('password');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
@@ -507,7 +507,7 @@ describe('kernel tests', () => {
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => false);
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockGetConnectedTime = vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
     const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
@@ -519,7 +519,7 @@ describe('kernel tests', () => {
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
 
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
 
@@ -535,7 +535,7 @@ describe('kernel tests', () => {
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => false);
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockGetConnectedTime = vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
     const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
@@ -547,7 +547,7 @@ describe('kernel tests', () => {
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
 
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
 
@@ -1461,14 +1461,14 @@ describe('kernel tests', () => {
   it('test raw 432 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => true);
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
 
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'ioiijhjkkljkljlkj :Erroneous Nickname' }));
@@ -1478,14 +1478,14 @@ describe('kernel tests', () => {
   it('test raw 432 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => false);
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
 
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'ioiijhjkkljkljlkj :Erroneous Nickname' }));
@@ -1495,14 +1495,14 @@ describe('kernel tests', () => {
   it('test raw 432 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockGetIsCreatorCompleted = vi.spyOn(settingsFile, 'getIsCreatorCompleted').mockImplementation(() => true);
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
 
     const line = `:insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user`;
 
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
-    expect(mockGetIsCreatorCompleted).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Merovingian :Nickname is unavailable: Being held for registered user' }));
