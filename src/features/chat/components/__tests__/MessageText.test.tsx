@@ -3,6 +3,7 @@ import { render, fireEvent } from '@testing-library/react';
 import MessageText from '../MessageText';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as settings from '@features/settings/store/settings';
+import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 
 describe('MessageText', () => {
   const mockHandleContextMenuUserClick = vi.fn();
@@ -194,6 +195,135 @@ describe('MessageText', () => {
       const { getByText } = render(<MessageText text="Join +modeless channel" />);
 
       expect(getByText('+modeless')).toHaveClass('cursor-pointer');
+    });
+  });
+
+  describe('IRC formatting', () => {
+    it('should render bold text with font-weight bold', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.BOLD}`} />
+      );
+
+      const boldSpan = container.querySelector('span[style*="font-weight"]');
+      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan?.textContent).toBe('bold');
+    });
+
+    it('should render italic text with font-style italic', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.ITALIC}italic${IRC_FORMAT.ITALIC}`} />
+      );
+
+      const italicSpan = container.querySelector('span[style*="font-style"]');
+      expect(italicSpan).toHaveStyle({ fontStyle: 'italic' });
+    });
+
+    it('should render underlined text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.UNDERLINE}underline${IRC_FORMAT.UNDERLINE}`} />
+      );
+
+      const underlineSpan = container.querySelector('span[style*="text-decoration"]');
+      expect(underlineSpan).toHaveStyle({ textDecoration: 'underline' });
+    });
+
+    it('should render colored text with foreground color', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      // Color code 4 is red (#FF0000)
+      const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}4red`} />);
+
+      const coloredSpan = container.querySelector('span[style*="color"]');
+      expect(coloredSpan).toHaveStyle({ color: '#FF0000' });
+      expect(coloredSpan?.textContent).toBe('red');
+    });
+
+    it('should render text with background color', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      // Color code 4,2 is red on blue
+      const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}4,2text`} />);
+
+      const coloredSpan = container.querySelector('span[style*="background-color"]');
+      expect(coloredSpan).toHaveStyle({ backgroundColor: '#00007F' });
+    });
+
+    it('should render hex colored text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.HEX_COLOR}FF5500orange`} />
+      );
+
+      const coloredSpan = container.querySelector('span[style*="color"]');
+      expect(coloredSpan).toHaveStyle({ color: '#FF5500' });
+    });
+
+    it('should render monospace text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.MONOSPACE}code${IRC_FORMAT.MONOSPACE}`} />
+      );
+
+      const monoSpan = container.querySelector('span[style*="font-family"]');
+      expect(monoSpan).toHaveStyle({ fontFamily: 'monospace' });
+    });
+
+    it('should render strikethrough text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.STRIKETHROUGH}strike${IRC_FORMAT.STRIKETHROUGH}`} />
+      );
+
+      const strikeSpan = container.querySelector('span[style*="text-decoration"]');
+      expect(strikeSpan).toHaveStyle({ textDecoration: 'line-through' });
+    });
+
+    it('should handle combined formatting (bold + italic)', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.BOLD}${IRC_FORMAT.ITALIC}bold+italic`} />
+      );
+
+      const styledSpan = container.querySelector('span[style*="font-weight"]');
+      expect(styledSpan).toHaveStyle({ fontWeight: 'bold', fontStyle: 'italic' });
+    });
+
+    it('should reset formatting after reset code', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.RESET} normal`} />
+      );
+
+      // Check that bold text has bold style and normal text doesn't
+      const boldSpan = container.querySelector('span[style*="font-weight"]');
+      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan?.textContent).toBe('bold');
+
+      // The entire text content should be preserved
+      expect(container.textContent).toBe('bold normal');
+    });
+
+    it('should preserve text content when stripping formatting', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText
+          text={`${IRC_FORMAT.BOLD}Hello${IRC_FORMAT.BOLD} ${IRC_FORMAT.COLOR}4World${IRC_FORMAT.COLOR}`}
+        />
+      );
+
+      expect(container.textContent).toBe('Hello World');
     });
   });
 });
