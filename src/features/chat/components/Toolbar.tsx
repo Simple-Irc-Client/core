@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { Send, Smile, User as UserIcon, MessageSquare } from 'lucide-react';
+import { Send, Smile, User as UserIcon, MessageSquare, Moon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -365,6 +365,11 @@ const Toolbar = () => {
                 )}
               </DropdownMenuContent>
               </DropdownMenu>
+              {isAway && (
+                <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500">
+                  <Moon className="h-2.5 w-2.5 text-white" />
+                </span>
+              )}
               {awayMessagesCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium">
                   {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
