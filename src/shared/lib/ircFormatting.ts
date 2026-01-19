@@ -12,7 +12,7 @@ export const IRC_FORMAT = {
 } as const;
 
 // Standard mIRC color palette (0-15)
-const IRC_COLORS: Record<number, string> = {
+export const IRC_COLORS: Record<number, string> = {
   0: '#FFFFFF', // White
   1: '#000000', // Black
   2: '#00007F', // Blue (Navy)
@@ -32,7 +32,7 @@ const IRC_COLORS: Record<number, string> = {
 };
 
 // Extended color palette (16-98)
-const IRC_EXTENDED_COLORS: Record<number, string> = {
+export const IRC_EXTENDED_COLORS: Record<number, string> = {
   16: '#470000', 17: '#472100', 18: '#474700', 19: '#324700', 20: '#004700', 21: '#00472c',
   22: '#004747', 23: '#002747', 24: '#000047', 25: '#2e0047', 26: '#470047', 27: '#47002a',
   28: '#740000', 29: '#743a00', 30: '#747400', 31: '#517400', 32: '#007400', 33: '#007449',

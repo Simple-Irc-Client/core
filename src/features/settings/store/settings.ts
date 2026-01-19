@@ -16,6 +16,13 @@ export interface WizardProgress {
   label?: string;
 }
 
+export interface FontFormatting {
+  colorCode: number | null; // IRC color code (0-98) or null for no color
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+}
+
 export interface SettingsStore {
   isConnecting: boolean;
   isConnected: boolean;
@@ -40,6 +47,7 @@ export interface SettingsStore {
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
+  fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -63,6 +71,7 @@ export interface SettingsStore {
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
+  setFontFormatting: (formatting: Partial<FontFormatting>) => void;
   resetWizardState: () => void;
 }
 
@@ -91,6 +100,7 @@ export const useSettingsStore = create<SettingsStore>()(
     monitorLimit: 0,
     silenceLimit: 0,
     currentUserAvatar: undefined,
+    fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -167,6 +177,11 @@ export const useSettingsStore = create<SettingsStore>()(
     setCurrentUserAvatar: (avatar: string | undefined): void => {
       set(() => ({ currentUserAvatar: avatar }));
     },
+    setFontFormatting: (formatting: Partial<FontFormatting>): void => {
+      set((state) => ({
+        fontFormatting: { ...state.fontFormatting, ...formatting },
+      }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -191,6 +206,7 @@ export const useSettingsStore = create<SettingsStore>()(
         monitorLimit: 0,
         silenceLimit: 0,
         currentUserAvatar: undefined,
+        fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
       }));
     },
   })),
@@ -345,6 +361,14 @@ export const getSilenceLimit = (): number => {
 
 export const setCurrentUserAvatar = (avatar: string | undefined): void => {
   useSettingsStore.getState().setCurrentUserAvatar(avatar);
+};
+
+export const setFontFormatting = (formatting: Partial<FontFormatting>): void => {
+  useSettingsStore.getState().setFontFormatting(formatting);
+};
+
+export const getFontFormatting = (): FontFormatting => {
+  return useSettingsStore.getState().fontFormatting;
 };
 
 export const resetWizardState = (): void => {

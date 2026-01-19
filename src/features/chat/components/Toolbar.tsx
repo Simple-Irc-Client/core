@@ -24,6 +24,10 @@ import {
 import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
 import ProfileSettings from '@features/settings/components/ProfileSettings';
 import AwayMessages from '@features/channels/components/AwayMessages';
+import ColorPicker from './ColorPicker';
+import StylePicker from './StylePicker';
+import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
+import type { FontFormatting } from '@features/settings/store/settings';
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -36,12 +40,15 @@ const Toolbar = () => {
   const isAway = currentUserFlags.includes('away');
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
+  const fontFormatting = useSettingsStore((state) => state.fontFormatting);
 
   const awayMessages = useAwayMessagesStore((state) => state.messages);
   const awayMessagesCount = awayMessages.length;
 
   const [message, setMessage] = useState('');
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [stylePickerOpen, setStylePickerOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [awayDialogOpen, setAwayDialogOpen] = useState(false);
   const autocompleteMessage = useRef('');
@@ -56,6 +63,33 @@ const Toolbar = () => {
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+  // Apply IRC formatting codes to message based on current settings
+  const applyFormatting = (text: string, formatting: FontFormatting): string => {
+    let prefix = '';
+    let suffix = '';
+
+    if (formatting.bold) {
+      prefix += IRC_FORMAT.BOLD;
+      suffix = IRC_FORMAT.BOLD + suffix;
+    }
+    if (formatting.italic) {
+      prefix += IRC_FORMAT.ITALIC;
+      suffix = IRC_FORMAT.ITALIC + suffix;
+    }
+    if (formatting.underline) {
+      prefix += IRC_FORMAT.UNDERLINE;
+      suffix = IRC_FORMAT.UNDERLINE + suffix;
+    }
+    if (formatting.colorCode !== null) {
+      // Use two-digit format for color codes
+      const colorStr = formatting.colorCode.toString().padStart(2, '0');
+      prefix += IRC_FORMAT.COLOR + colorStr;
+      suffix = IRC_FORMAT.COLOR + suffix;
+    }
+
+    return prefix + text + suffix;
+  };
 
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
@@ -140,14 +174,25 @@ const Toolbar = () => {
 
     let payload = '';
     if (message.startsWith('/')) {
+      // Commands are sent without formatting
       payload = parseMessageToCommand(currentChannelName, message);
     } else {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
         const nick = getCurrentNick();
 
+        // Check if any formatting is applied
+        const hasFormatting =
+          fontFormatting.bold ||
+          fontFormatting.italic ||
+          fontFormatting.underline ||
+          fontFormatting.colorCode !== null;
+
+        // Apply formatting to the message for sending
+        const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
+
         setAddMessage({
           id: uuidv4(),
-          message,
+          message: formattedMessage,
           nick: getUser(nick) ?? nick,
           target: currentChannelName,
           time: new Date().toISOString(),
@@ -155,7 +200,7 @@ const Toolbar = () => {
           color: MessageColor.default,
         });
 
-        payload = `PRIVMSG ${currentChannelName} :${message}`;
+        payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
       }
     }
     ircSendRawMessage(payload);
@@ -405,6 +450,8 @@ const Toolbar = () => {
                 <EmojiPicker onEmojiClick={handleEmojiClick} />
               </PopoverContent>
             </Popover>
+            <ColorPicker open={colorPickerOpen} onOpenChange={setColorPickerOpen} />
+            <StylePicker open={stylePickerOpen} onOpenChange={setStylePickerOpen} />
           </>
         )}
       </form>

@@ -122,5 +122,14 @@
     "contextmenu.user.operator.kickban": "Wyrzuć i zbanuj",
     "contextmenu.user.invite": "Zaproś na kanał",
     "contextmenu.channel.join": "Dołącz",
-    "main.topic.setBy": "Ustawiony przez {{nick}} dnia {{date}}"
+    "main.topic.setBy": "Ustawiony przez {{nick}} dnia {{date}}",
+    "main.toolbar.textColor": "Kolor tekstu",
+    "main.toolbar.textColorAriaLabel": "kolor tekstu",
+    "main.toolbar.color": "Kolor {{code}}",
+    "main.toolbar.clearColor": "Usuń kolor",
+    "main.toolbar.textStyle": "Styl tekstu",
+    "main.toolbar.textStyleAriaLabel": "styl tekstu",
+    "main.toolbar.bold": "Pogrubienie",
+    "main.toolbar.italic": "Kursywa",
+    "main.toolbar.underline": "Podkreślenie"
 }

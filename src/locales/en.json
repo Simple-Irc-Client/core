@@ -122,5 +122,14 @@
     "contextmenu.user.operator.kickban": "Kick & Ban",
     "contextmenu.user.invite": "Invite to Channel",
     "contextmenu.channel.join": "Join",
-    "main.topic.setBy": "Set by {{nick}} on {{date}}"
+    "main.topic.setBy": "Set by {{nick}} on {{date}}",
+    "main.toolbar.textColor": "Text Color",
+    "main.toolbar.textColorAriaLabel": "text color",
+    "main.toolbar.color": "Color {{code}}",
+    "main.toolbar.clearColor": "Clear Color",
+    "main.toolbar.textStyle": "Text Style",
+    "main.toolbar.textStyleAriaLabel": "text style",
+    "main.toolbar.bold": "Bold",
+    "main.toolbar.italic": "Italic",
+    "main.toolbar.underline": "Underline"
 }
