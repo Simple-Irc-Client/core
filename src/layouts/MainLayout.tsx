@@ -1,5 +1,5 @@
 import React from 'react';
-import Main from '@/pages/MainPage';
+import MainPage from '@/pages/MainPage';
 import WizardPage from '@features/wizard/pages/WizardPage';
 import { useSettingsStore } from '@features/settings/store/settings';
 
@@ -13,7 +13,7 @@ function App() {
   return (
     <div onContextMenu={handleNoContextMenu}>
       {!isWizardCompleted && <WizardPage />}
-      {isWizardCompleted && <Main />}
+      {isWizardCompleted && <MainPage />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { AppNetwork } from './AppNetwork';
+import { Network } from './Network';
 
 import './i18n';
 
@@ -12,7 +12,7 @@ function App() {
     <ChannelsDrawerProvider>
       <ContextMenuProvider>
         <ContextMenu />
-        <AppNetwork />
+        <Network />
         <MainLayout />
       </ContextMenuProvider>
     </ChannelsDrawerProvider>

@@ -8,7 +8,7 @@ import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
 
-export const AppNetwork = () => {
+export const Network = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
 
   useEffect(() => {

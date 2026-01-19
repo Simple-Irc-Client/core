@@ -6,7 +6,7 @@ import Topic from '@features/chat/components/Topic';
 import Users from '@features/users/components/Users';
 import { channelsColor } from '@/config/theme';
 
-function Main() {
+function MainPage() {
   return (
     <div className="flex h-screen">
       <div style={{ backgroundColor: channelsColor }}>
@@ -26,4 +26,4 @@ function Main() {
   );
 }
 
-export default Main;
+export default MainPage;
