@@ -61,6 +61,9 @@ describe('Toolbar', () => {
         nick: 'testUser',
         currentUserFlags: [],
         isConnected: true,
+        isAutoAway: false,
+        fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        setFontFormatting: vi.fn(),
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -311,6 +314,7 @@ describe('Toolbar', () => {
           currentChannelCategory: ChannelCategory.status,
           nick: 'testUser',
           currentUserFlags: [],
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -419,6 +423,7 @@ describe('Toolbar', () => {
           currentChannelCategory: ChannelCategory.channel,
           nick: 'lowercase',
           currentUserFlags: [],
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -496,6 +501,7 @@ describe('Toolbar', () => {
           currentUserFlags: ['away'],
           isAutoAway: false,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -516,6 +522,7 @@ describe('Toolbar', () => {
           currentUserFlags: ['away'],
           isAutoAway: false,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -536,6 +543,7 @@ describe('Toolbar', () => {
           currentUserFlags: [],
           isAutoAway: false,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -555,6 +563,7 @@ describe('Toolbar', () => {
           currentUserFlags: ['away'],
           isAutoAway: false,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -596,6 +605,7 @@ describe('Toolbar', () => {
           currentUserFlags: ['away'],
           isAutoAway: true,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -615,6 +625,7 @@ describe('Toolbar', () => {
           currentUserFlags: ['r', 'away', 'someOtherFlag'],
           isAutoAway: false,
           isConnected: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -727,6 +738,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -797,6 +809,7 @@ describe('Toolbar', () => {
           isAutoAway: true,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -829,6 +842,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
@@ -892,6 +906,7 @@ describe('Toolbar', () => {
           isAutoAway: true,
           isConnected: false,
           setIsAutoAway: mockSetIsAutoAway,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
 
