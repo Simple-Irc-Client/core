@@ -67,10 +67,10 @@ export interface FormattedSegment {
 
 function getColorFromCode(code: number): string | null {
   if (code >= 0 && code <= 15) {
-    return IRC_COLORS[code];
+    return IRC_COLORS[code] ?? null;
   }
   if (code >= 16 && code <= 98) {
-    return IRC_EXTENDED_COLORS[code];
+    return IRC_EXTENDED_COLORS[code] ?? null;
   }
   if (code === 99) {
     return null; // Default/transparent
@@ -164,10 +164,10 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
         // Parse foreground color (1-2 digits)
         let fgStr = '';
         // Read up to 2 digits for foreground
-        if (i < text.length && /\d/.test(text[i])) {
+        if (i < text.length && /\d/.test(text[i] as string)) {
           fgStr += text[i];
           i++;
-          if (i < text.length && /\d/.test(text[i])) {
+          if (i < text.length && /\d/.test(text[i] as string)) {
             fgStr += text[i];
             i++;
           }
@@ -182,10 +182,10 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
             i++; // Skip comma
             let bgStr = '';
             // Read up to 2 digits for background
-            if (i < text.length && /\d/.test(text[i])) {
+            if (i < text.length && /\d/.test(text[i] as string)) {
               bgStr += text[i];
               i++;
-              if (i < text.length && /\d/.test(text[i])) {
+              if (i < text.length && /\d/.test(text[i] as string)) {
                 bgStr += text[i];
                 i++;
               }
