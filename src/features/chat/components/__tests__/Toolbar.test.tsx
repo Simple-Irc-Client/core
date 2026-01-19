@@ -470,6 +470,159 @@ describe('Toolbar', () => {
       const badge = avatarButton?.querySelector('.bg-red-500');
       expect(badge).not.toBeInTheDocument();
     });
+
+    it('should not show away icon when user is not away', () => {
+      render(<Toolbar />);
+
+      // Away icon (moon) should not be visible
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).not.toBeInTheDocument();
+    });
+  });
+
+  describe('User avatar away status indicator', () => {
+    const getAvatarContainer = () => {
+      // The avatar container is the relative div that contains the badges
+      return document.querySelector('.relative.mr-2');
+    };
+
+    it('should show away icon (moon) when user is away', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: ['away'],
+          isAutoAway: false,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      // Away icon should be visible with yellow background
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).toBeInTheDocument();
+    });
+
+    it('should position away icon on top-left of avatar', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: ['away'],
+          isAutoAway: false,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).toHaveClass('-top-1');
+      expect(awayIcon).toHaveClass('-left-1');
+    });
+
+    it('should not show away icon when user is not away', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: [],
+          isAutoAway: false,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).not.toBeInTheDocument();
+    });
+
+    it('should show both away icon and message count badge simultaneously', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: ['away'],
+          isAutoAway: false,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Hey testUser!',
+          nick: 'sender1',
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<Toolbar />);
+
+      const avatarContainer = getAvatarContainer();
+
+      // Away icon on left (yellow)
+      const awayIcon = avatarContainer?.querySelector('.bg-yellow-500');
+      expect(awayIcon).toBeInTheDocument();
+      expect(awayIcon).toHaveClass('-left-1');
+
+      // Message count badge on right (red)
+      const messageBadge = avatarContainer?.querySelector('.bg-red-500');
+      expect(messageBadge).toBeInTheDocument();
+      expect(messageBadge).toHaveClass('-right-1');
+    });
+
+    it('should show away icon for auto-away status', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: ['away'],
+          isAutoAway: true,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).toBeInTheDocument();
+    });
+
+    it('should show away icon with other user flags present', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserAvatar: undefined,
+          currentUserFlags: ['r', 'away', 'someOtherFlag'],
+          isAutoAway: false,
+          isConnected: true,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const awayIcon = document.querySelector('.bg-yellow-500');
+      expect(awayIcon).toBeInTheDocument();
+    });
   });
 
   describe('User avatar with away messages', () => {
