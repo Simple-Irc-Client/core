@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vite
 import type { Server } from '../servers';
 
 // Mock config before importing network module
-vi.mock('../../../config/config', () => ({
+vi.mock('@/config/config', () => ({
   websocketHost: 'localhost',
   websocketPort: 8080,
   defaultIRCPort: 6667,

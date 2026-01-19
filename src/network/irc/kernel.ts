@@ -10,20 +10,20 @@ import {
   setTopic,
   setTopicSetBy,
   setTyping,
-} from '../../store/channels';
+} from '@features/channels/store/channels';
 import {
   getChannelModes,
   getConnectedTime,
   getCurrentChannelName,
   getCurrentNick,
-  getIsCreatorCompleted,
+  getIsWizardCompleted,
   getUserModes,
   isSupportedOption,
   setChannelModes,
   setChannelTypes,
   setConnectedTime,
-  setCreatorProgress,
-  setCreatorStep,
+  setWizardProgress,
+  setWizardStep,
   setCurrentChannelName,
   setCurrentUserAvatar,
   setCurrentUserFlag,
@@ -37,18 +37,18 @@ import {
   setSupportedOption,
   setUserModes,
   setWatchLimit,
-} from '../../store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '../../store/users';
-import { ChannelCategory, MessageCategory, type UserTypingStatus } from '../../types';
+} from '@features/settings/store/settings';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '@features/users/store/users';
+import { ChannelCategory, MessageCategory, type UserTypingStatus } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
-import i18next from '../../i18n';
-import { MessageColor } from '../../config/theme';
-import { defaultChannelTypes, defaultMaxPermission } from '../../config/config';
+import i18next from '@/app/i18n';
+import { MessageColor } from '@/config/theme';
+import { defaultChannelTypes, defaultMaxPermission } from '@/config/config';
 import { v4 as uuidv4 } from 'uuid';
-import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '../../store/channelList';
-import { addAwayMessage } from '../../store/awayMessages';
-import { getCurrentUserFlags } from '../../store/settings';
+import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '@features/channels/store/channelList';
+import { addAwayMessage } from '@features/channels/store/awayMessages';
+import { getCurrentUserFlags } from '@features/settings/store/settings';
 
 export interface IrcEvent {
   type: string;
@@ -641,8 +641,8 @@ export class Kernel {
       color: MessageColor.error,
     });
 
-    if (!getIsCreatorCompleted()) {
-      setCreatorProgress(0, i18next.t('creator.loading.error', { message }));
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
     }
   };
 
@@ -1021,10 +1021,10 @@ export class Kernel {
 
     if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
       setIsPasswordRequired(true);
-      setCreatorStep('password');
+      setWizardStep('password');
     }
 
-    if (list.test(message) && target === getCurrentNick() && !getIsCreatorCompleted()) {
+    if (list.test(message) && target === getCurrentNick() && !getIsWizardCompleted()) {
       const regexpGroups = list.exec(message)?.groups;
       const seconds = regexpGroups?.secs1 ?? regexpGroups?.secs2;
 
@@ -1882,8 +1882,8 @@ export class Kernel {
       color: MessageColor.error,
     });
 
-    if (!getIsCreatorCompleted()) {
-      setCreatorProgress(0, i18next.t('creator.loading.error', { message }));
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
     }
   };
 

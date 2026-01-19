@@ -3,9 +3,9 @@
  */
 import { describe, expect, it, beforeEach } from 'vitest';
 import { parseMessageToCommand } from '../command';
-import { useChannelsStore } from '../../../store/channels';
-import { useSettingsStore } from '../../../store/settings';
-import { ChannelCategory } from '../../../types';
+import { useChannelsStore } from '@features/channels/store/channels';
+import { useSettingsStore } from '@features/settings/store/settings';
+import { ChannelCategory } from '@shared/types';
 
 describe('command tests', () => {
   beforeEach(() => {
