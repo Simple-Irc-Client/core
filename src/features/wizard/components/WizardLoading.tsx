@@ -20,18 +20,24 @@ const WizardLoading = () => {
 
   useEffect(() => {
     if (!isConnecting) {
-      setIsTimedOut(false);
       return undefined;
     }
+
+    const resetTimeout = setTimeout(() => {
+      setIsTimedOut(false);
+    }, 0);
 
     const timeout = setTimeout(() => {
       setIsTimedOut(true);
     }, CONNECTION_TIMEOUT_MS);
 
     return () => {
+      clearTimeout(resetTimeout);
       clearTimeout(timeout);
     };
   }, [isConnecting]);
+
+  const showTimeoutUI = isTimedOut && isConnecting;
 
   useEffect(() => {
     if (isConnecting) {
@@ -82,15 +88,15 @@ const WizardLoading = () => {
     <div className="w-full mt-8">
       <Progress value={wizardProgress.value * 30} />
       {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
-      {isTimedOut && (
+      {showTimeoutUI && (
         <p className="text-center mt-4 text-muted-foreground">{t('wizard.loading.timeout')}</p>
       )}
-      {(wizardProgress.value === 0 || isTimedOut) && (
+      {(wizardProgress.value === 0 || showTimeoutUI) && (
         <div className="flex gap-4 mt-8">
           <Button onClick={handleGoBack} variant="outline" className="flex-1">
             {t('wizard.loading.button.goBack')}
           </Button>
-          {isTimedOut && (
+          {showTimeoutUI && (
             <Button onClick={handleReconnect} className="flex-1">
               {t('wizard.loading.button.reconnect')}
             </Button>
