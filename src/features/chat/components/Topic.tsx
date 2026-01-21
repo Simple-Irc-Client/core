@@ -51,14 +51,15 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 
   return (
     <>
-      <Input
-        value={editedTopic}
-        onChange={(e) => setEditedTopic(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={!canEditTopic}
-        className="mb-4 mt-1 flex-1 min-h-12"
-        title={topicTooltip}
-      />
+      <div className="flex-1" title={topicTooltip}>
+        <Input
+          value={editedTopic}
+          onChange={(e) => setEditedTopic(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={!canEditTopic}
+          className="mb-4 mt-1 min-h-12"
+        />
+      </div>
       {canEditTopic && editedTopic !== topic && (
         <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
           <Save className="h-4 w-4" />
