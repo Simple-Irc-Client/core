@@ -322,7 +322,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).toHaveAttribute('title', expect.stringContaining('Set by admin on'));
+      expect(input.parentElement).toHaveAttribute('title', expect.stringContaining('Set by admin on'));
     });
 
     it('should not show tooltip when topicSetBy is empty', () => {
@@ -333,7 +333,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toHaveAttribute('title');
+      expect(input.parentElement).not.toHaveAttribute('title');
     });
 
     it('should not show tooltip when topicTime is 0', () => {
@@ -344,7 +344,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toHaveAttribute('title');
+      expect(input.parentElement).not.toHaveAttribute('title');
     });
 
     it('should not show tooltip when both topicSetBy and topicTime are empty/zero', () => {
@@ -355,7 +355,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toHaveAttribute('title');
+      expect(input.parentElement).not.toHaveAttribute('title');
     });
 
     it('should format tooltip with date containing day, month and year', () => {
@@ -366,7 +366,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      const title = input.getAttribute('title');
+      const title = input.parentElement?.getAttribute('title');
       expect(title).toContain('Set by testuser on');
       expect(title).toContain('18');
       expect(title).toContain('Jan');
