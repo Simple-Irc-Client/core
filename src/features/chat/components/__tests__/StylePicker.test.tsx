@@ -104,8 +104,8 @@ describe('StylePicker', () => {
     it('should toggle bold on when clicking bold button', () => {
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const boldButton = screen.getByText('main.toolbar.bold').closest('button');
-      fireEvent.click(boldButton!);
+      const boldButton = screen.getByText('main.toolbar.bold').closest('button') as HTMLButtonElement;
+      fireEvent.click(boldButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ bold: true });
     });
@@ -120,8 +120,8 @@ describe('StylePicker', () => {
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const boldButton = screen.getByText('main.toolbar.bold').closest('button');
-      fireEvent.click(boldButton!);
+      const boldButton = screen.getByText('main.toolbar.bold').closest('button') as HTMLButtonElement;
+      fireEvent.click(boldButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ bold: false });
     });
@@ -146,8 +146,8 @@ describe('StylePicker', () => {
     it('should toggle italic on when clicking italic button', () => {
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const italicButton = screen.getByText('main.toolbar.italic').closest('button');
-      fireEvent.click(italicButton!);
+      const italicButton = screen.getByText('main.toolbar.italic').closest('button') as HTMLButtonElement;
+      fireEvent.click(italicButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ italic: true });
     });
@@ -162,8 +162,8 @@ describe('StylePicker', () => {
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const italicButton = screen.getByText('main.toolbar.italic').closest('button');
-      fireEvent.click(italicButton!);
+      const italicButton = screen.getByText('main.toolbar.italic').closest('button') as HTMLButtonElement;
+      fireEvent.click(italicButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ italic: false });
     });
@@ -173,8 +173,8 @@ describe('StylePicker', () => {
     it('should toggle underline on when clicking underline button', () => {
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const underlineButton = screen.getByText('main.toolbar.underline').closest('button');
-      fireEvent.click(underlineButton!);
+      const underlineButton = screen.getByText('main.toolbar.underline').closest('button') as HTMLButtonElement;
+      fireEvent.click(underlineButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ underline: true });
     });
@@ -189,8 +189,8 @@ describe('StylePicker', () => {
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const underlineButton = screen.getByText('main.toolbar.underline').closest('button');
-      fireEvent.click(underlineButton!);
+      const underlineButton = screen.getByText('main.toolbar.underline').closest('button') as HTMLButtonElement;
+      fireEvent.click(underlineButton);
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ underline: false });
     });
@@ -222,8 +222,8 @@ describe('StylePicker', () => {
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
-      const italicButton = screen.getByText('main.toolbar.italic').closest('button');
-      fireEvent.click(italicButton!);
+      const italicButton = screen.getByText('main.toolbar.italic').closest('button') as HTMLButtonElement;
+      fireEvent.click(italicButton);
 
       // Should only toggle italic, not affect other styles
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ italic: true });

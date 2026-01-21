@@ -76,7 +76,7 @@ describe('ColorPicker', () => {
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
       const colorButtons = screen.getAllByRole('button').filter((btn) => btn.hasAttribute('title'));
-      fireEvent.click(colorButtons[4]!); // Click color code 4 (red)
+      fireEvent.click(colorButtons[4] as HTMLButtonElement); // Click color code 4 (red)
 
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ colorCode: 4 });
     });
@@ -85,7 +85,7 @@ describe('ColorPicker', () => {
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
       const colorButtons = screen.getAllByRole('button').filter((btn) => btn.hasAttribute('title'));
-      fireEvent.click(colorButtons[0]!);
+      fireEvent.click(colorButtons[0] as HTMLButtonElement);
 
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
     });
