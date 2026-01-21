@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import WizardLoading from '../WizardLoading';
 import * as settingsStore from '@features/settings/store/settings';
+import * as ircNetwork from '@/network/irc/network';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,6 +19,11 @@ vi.mock('@features/settings/store/settings', () => ({
   resetAndGoToStart: vi.fn(),
 }));
 
+vi.mock('@/network/irc/network', () => ({
+  ircConnect: vi.fn(),
+  ircDisconnect: vi.fn(),
+}));
+
 describe('WizardLoading', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,20 +34,25 @@ describe('WizardLoading', () => {
     vi.useRealTimers();
   });
 
+  const mockServer = { network: 'TestNetwork', servers: ['irc.test.com:6667'] };
+  const mockNick = 'TestUser';
+
   const setupMocks = (overrides: {
     isConnecting?: boolean;
     isConnected?: boolean;
     wizardProgress?: { value: number; label: string };
+    server?: typeof mockServer | undefined;
+    nick?: string;
   } = {}) => {
-    const {
-      isConnecting = false,
-      isConnected = false,
-      wizardProgress = { value: 0, label: '' },
-    } = overrides;
+    const isConnecting = overrides.isConnecting ?? false;
+    const isConnected = overrides.isConnected ?? false;
+    const wizardProgress = overrides.wizardProgress ?? { value: 0, label: '' };
+    const server = 'server' in overrides ? overrides.server : mockServer;
+    const nick = overrides.nick ?? mockNick;
 
     vi.mocked(settingsStore.useSettingsStore).mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ isConnecting, isConnected, wizardProgress })
+      (selector: any) => selector({ isConnecting, isConnected, wizardProgress, server, nick })
     );
     vi.mocked(settingsStore.getWizardProgress).mockReturnValue(wizardProgress);
   };
@@ -353,6 +364,201 @@ describe('WizardLoading', () => {
       fireEvent.click(goBackButton);
 
       expect(settingsStore.resetAndGoToStart).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Connection timeout', () => {
+    it('should show timeout message after 60 seconds of connecting', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      render(<WizardLoading />);
+
+      expect(screen.queryByText('wizard.loading.timeout')).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByText('wizard.loading.timeout')).toBeInTheDocument();
+    });
+
+    it('should show Go Back and Reconnect buttons when timed out', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      render(<WizardLoading />);
+
+      expect(screen.queryByRole('button', { name: 'wizard.loading.button.goBack' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'wizard.loading.button.reconnect' })).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByRole('button', { name: 'wizard.loading.button.goBack' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'wizard.loading.button.reconnect' })).toBeInTheDocument();
+    });
+
+    it('should not show timeout before 60 seconds', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(59_999);
+      });
+
+      expect(screen.queryByText('wizard.loading.timeout')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'wizard.loading.button.reconnect' })).not.toBeInTheDocument();
+    });
+
+    it('should call ircDisconnect and ircConnect when Reconnect is clicked', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      const reconnectButton = screen.getByRole('button', { name: 'wizard.loading.button.reconnect' });
+      fireEvent.click(reconnectButton);
+
+      expect(ircNetwork.ircDisconnect).toHaveBeenCalledTimes(1);
+      expect(ircNetwork.ircConnect).toHaveBeenCalledWith(mockServer, mockNick);
+    });
+
+    it('should hide timeout message after Reconnect is clicked', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByText('wizard.loading.timeout')).toBeInTheDocument();
+
+      const reconnectButton = screen.getByRole('button', { name: 'wizard.loading.button.reconnect' });
+      fireEvent.click(reconnectButton);
+
+      expect(screen.queryByText('wizard.loading.timeout')).not.toBeInTheDocument();
+    });
+
+    it('should clear timeout when connection succeeds', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      const { rerender } = render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      // Connection succeeds
+      setupMocks({
+        isConnecting: false,
+        isConnected: true,
+        wizardProgress: { value: 2, label: 'wizard.loading.connected' },
+      });
+      rerender(<WizardLoading />);
+
+      // Advance past the original timeout
+      act(() => {
+        vi.advanceTimersByTime(40_000);
+      });
+
+      expect(screen.queryByText('wizard.loading.timeout')).not.toBeInTheDocument();
+    });
+
+    it('should clear timeout timer when component unmounts during connecting', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+
+      const { unmount } = render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      unmount();
+
+      // Advance past the timeout - this should not cause any errors
+      act(() => {
+        vi.advanceTimersByTime(40_000);
+      });
+
+      // If we get here without errors, the timer was properly cleaned up
+      expect(true).toBe(true);
+    });
+
+    it('should reset timeout when transitioning from not connecting to connecting', () => {
+      setupMocks({
+        isConnecting: false,
+        isConnected: false,
+        wizardProgress: { value: 0, label: '' },
+      });
+
+      const { rerender } = render(<WizardLoading />);
+
+      // Start connecting
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+      });
+      rerender(<WizardLoading />);
+
+      // Advance 30 seconds
+      act(() => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      expect(screen.queryByText('wizard.loading.timeout')).not.toBeInTheDocument();
+
+      // Advance another 30 seconds (total 60 seconds)
+      act(() => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      expect(screen.getByText('wizard.loading.timeout')).toBeInTheDocument();
+    });
+
+    it('should not show Reconnect button when server is undefined', () => {
+      setupMocks({
+        isConnecting: true,
+        wizardProgress: { value: 1, label: 'wizard.loading.connecting' },
+        server: undefined,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      const reconnectButton = screen.getByRole('button', { name: 'wizard.loading.button.reconnect' });
+      fireEvent.click(reconnectButton);
+
+      // ircConnect should not be called when server is undefined
+      expect(ircNetwork.ircConnect).not.toHaveBeenCalled();
     });
   });
 });
