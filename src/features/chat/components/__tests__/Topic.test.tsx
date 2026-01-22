@@ -7,6 +7,7 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as usersStore from '@features/users/store/users';
 import * as channelsStore from '@features/channels/store/channels';
 import * as network from '@/network/irc/network';
+import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -72,14 +73,23 @@ describe('Topic', () => {
   };
 
   describe('Basic rendering', () => {
-    it('should render the topic input', () => {
-      setupMocks({ topic: 'Test Topic' });
+    it('should render the topic input when user can edit', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
 
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
       expect(input).toBeInTheDocument();
       expect(input).toHaveValue('Test Topic');
+    });
+
+    it('should render formatted topic text when user cannot edit', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: [] });
+
+      render(<Topic />);
+
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
 
     it('should render the menu button', () => {
@@ -91,8 +101,8 @@ describe('Topic', () => {
       expect(buttons.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should display empty topic when no topic is set', () => {
-      setupMocks({ topic: '' });
+    it('should display empty topic when no topic is set and user can edit', () => {
+      setupMocks({ topic: '', userFlags: ['o'] });
 
       render(<Topic />);
 
@@ -102,58 +112,58 @@ describe('Topic', () => {
   });
 
   describe('Edit permissions', () => {
-    it('should disable input when user has no edit permissions', () => {
+    it('should show formatted text (no input) when user has no edit permissions', () => {
       setupMocks({ topic: 'Test Topic', userFlags: [] });
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input).toBeDisabled();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
 
-    it('should enable input when user has "o" (operator) flag', () => {
+    it('should show input when user has "o" (operator) flag', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
 
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toBeDisabled();
+      expect(input).toBeInTheDocument();
     });
 
-    it('should enable input when user has "a" (admin) flag', () => {
+    it('should show input when user has "a" (admin) flag', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['a'] });
 
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toBeDisabled();
+      expect(input).toBeInTheDocument();
     });
 
-    it('should enable input when user has "q" (owner) flag', () => {
+    it('should show input when user has "q" (owner) flag', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['q'] });
 
       render(<Topic />);
 
       const input = screen.getByRole('textbox');
-      expect(input).not.toBeDisabled();
+      expect(input).toBeInTheDocument();
     });
 
-    it('should disable input when user only has "v" (voice) flag', () => {
+    it('should show formatted text (no input) when user only has "v" (voice) flag', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['v'] });
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input).toBeDisabled();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
 
-    it('should disable input when user only has "h" (half-op) flag', () => {
+    it('should show formatted text (no input) when user only has "h" (half-op) flag', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['h'] });
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input).toBeDisabled();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
   });
 
@@ -231,14 +241,13 @@ describe('Topic', () => {
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
     });
 
-    it('should not send TOPIC command when Enter is pressed but user cannot edit', () => {
+    it('should not show input when user cannot edit (no keypress possible)', () => {
       setupMocks({ topic: 'Original Topic', currentChannelName: '#mychannel', userFlags: [] });
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      fireEvent.keyDown(input, { key: 'Enter' });
-
+      // No input is rendered when user cannot edit
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
       expect(network.ircSendRawMessage).not.toHaveBeenCalled();
     });
 
@@ -322,7 +331,7 @@ describe('Topic', () => {
 
   describe('Topic tooltip', () => {
     it('should render tooltip content when both nick and time are available', () => {
-      setupMocks({ topic: 'Test Topic' });
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200); // 2024-01-18 12:00:00 UTC
 
@@ -332,7 +341,7 @@ describe('Topic', () => {
     });
 
     it('should not render tooltip content when topicSetBy is empty', () => {
-      setupMocks({ topic: 'Test Topic' });
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200);
 
@@ -342,7 +351,7 @@ describe('Topic', () => {
     });
 
     it('should not render tooltip content when topicTime is 0', () => {
-      setupMocks({ topic: 'Test Topic' });
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
 
@@ -352,7 +361,7 @@ describe('Topic', () => {
     });
 
     it('should not render tooltip content when both topicSetBy and topicTime are empty/zero', () => {
-      setupMocks({ topic: 'Test Topic' });
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
 
@@ -362,7 +371,7 @@ describe('Topic', () => {
     });
 
     it('should format tooltip with date containing day, month and year', () => {
-      setupMocks({ topic: 'Test Topic' });
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('testuser');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705581000); // 18 Jan 2024
 
@@ -376,7 +385,7 @@ describe('Topic', () => {
     });
 
     it('should call getTopicSetBy and getTopicTime with correct channel name', () => {
-      setupMocks({ topic: 'Test Topic', currentChannelName: '#mychannel' });
+      setupMocks({ topic: 'Test Topic', currentChannelName: '#mychannel', userFlags: ['o'] });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
 
@@ -384,6 +393,119 @@ describe('Topic', () => {
 
       expect(channelsStore.getTopicSetBy).toHaveBeenCalledWith('#mychannel');
       expect(channelsStore.getTopicTime).toHaveBeenCalledWith('#mychannel');
+    });
+  });
+
+  describe('IRC formatting in topic', () => {
+    it('should render bold text with font-weight bold', () => {
+      setupMocks({ topic: `${IRC_FORMAT.BOLD}bold topic${IRC_FORMAT.BOLD}`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const boldSpan = container.querySelector('span[style*="font-weight"]');
+      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan?.textContent).toBe('bold topic');
+    });
+
+    it('should render italic text with font-style italic', () => {
+      setupMocks({ topic: `${IRC_FORMAT.ITALIC}italic topic${IRC_FORMAT.ITALIC}`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const italicSpan = container.querySelector('span[style*="font-style"]');
+      expect(italicSpan).toHaveStyle({ fontStyle: 'italic' });
+    });
+
+    it('should render underlined text', () => {
+      setupMocks({ topic: `${IRC_FORMAT.UNDERLINE}underlined${IRC_FORMAT.UNDERLINE}`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const underlineSpan = container.querySelector('span[style*="text-decoration"]');
+      expect(underlineSpan).toHaveStyle({ textDecoration: 'underline' });
+    });
+
+    it('should render colored text with foreground color', () => {
+      // Color code 4 is red (#FF0000)
+      setupMocks({ topic: `${IRC_FORMAT.COLOR}4red topic`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const coloredSpan = container.querySelector('span[style*="color"]');
+      expect(coloredSpan).toHaveStyle({ color: '#FF0000' });
+      expect(coloredSpan?.textContent).toBe('red topic');
+    });
+
+    it('should render text with background color', () => {
+      // Color code 4,2 is red on blue
+      setupMocks({ topic: `${IRC_FORMAT.COLOR}4,2colored bg`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const coloredSpan = container.querySelector('span[style*="background-color"]');
+      expect(coloredSpan).toHaveStyle({ backgroundColor: '#00007F' });
+    });
+
+    it('should render hex colored text', () => {
+      setupMocks({ topic: `${IRC_FORMAT.HEX_COLOR}FF5500orange topic`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const coloredSpan = container.querySelector('span[style*="color"]');
+      expect(coloredSpan).toHaveStyle({ color: '#FF5500' });
+    });
+
+    it('should render monospace text', () => {
+      setupMocks({ topic: `${IRC_FORMAT.MONOSPACE}code${IRC_FORMAT.MONOSPACE}`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const monoSpan = container.querySelector('span[style*="font-family"]');
+      expect(monoSpan).toHaveStyle({ fontFamily: 'monospace' });
+    });
+
+    it('should render strikethrough text', () => {
+      setupMocks({ topic: `${IRC_FORMAT.STRIKETHROUGH}strike${IRC_FORMAT.STRIKETHROUGH}`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const strikeSpan = container.querySelector('span[style*="text-decoration"]');
+      expect(strikeSpan).toHaveStyle({ textDecoration: 'line-through' });
+    });
+
+    it('should handle combined formatting (bold + italic)', () => {
+      setupMocks({ topic: `${IRC_FORMAT.BOLD}${IRC_FORMAT.ITALIC}bold+italic`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const styledSpan = container.querySelector('span[style*="font-weight"]');
+      expect(styledSpan).toHaveStyle({ fontWeight: 'bold', fontStyle: 'italic' });
+    });
+
+    it('should reset formatting after reset code', () => {
+      setupMocks({ topic: `${IRC_FORMAT.BOLD}bold${IRC_FORMAT.RESET} normal`, userFlags: [] });
+
+      const { container } = render(<Topic />);
+
+      const boldSpan = container.querySelector('span[style*="font-weight"]');
+      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan?.textContent).toBe('bold');
+
+      // The entire text content should be preserved
+      expect(container.textContent).toContain('bold');
+      expect(container.textContent).toContain('normal');
+    });
+
+    it('should preserve text content when stripping formatting', () => {
+      setupMocks({
+        topic: `${IRC_FORMAT.BOLD}Hello${IRC_FORMAT.BOLD} ${IRC_FORMAT.COLOR}4World${IRC_FORMAT.COLOR}`,
+        userFlags: [],
+      });
+
+      const { container } = render(<Topic />);
+
+      expect(container.textContent).toContain('Hello');
+      expect(container.textContent).toContain('World');
     });
   });
 });
