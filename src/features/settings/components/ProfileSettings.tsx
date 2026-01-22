@@ -13,6 +13,8 @@ import {
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
+import { Switch } from '@shared/components/ui/switch';
+import { cn } from '@shared/lib/utils';
 
 interface ProfileSettingsProps {
   open: boolean;
@@ -30,6 +32,10 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const [newNick, setNewNick] = useState(currentNick);
   const supportedOptions = useSettingsStore((state) => state.supportedOptions);
   const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
+  const theme = useSettingsStore((state) => state.theme);
+  const setTheme = useSettingsStore((state) => state.setTheme);
+  const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
+  const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
 
   const isAvatarSupported = supportedOptions.includes('metadata-avatar');
@@ -95,6 +101,44 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             />
           </div>
         )}
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label className="text-right">
+            {t('main.toolbar.layout')}
+          </Label>
+          <div className="col-span-3 flex gap-2">
+            <Button
+              type="button"
+              variant={theme === 'classic' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTheme('classic')}
+              className={cn('flex-1', theme === 'classic' && 'pointer-events-none')}
+              data-testid="layout-classic"
+            >
+              {t('main.toolbar.layoutClassic')}
+            </Button>
+            <Button
+              type="button"
+              variant={theme === 'modern' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTheme('modern')}
+              className={cn('flex-1', theme === 'modern' && 'pointer-events-none')}
+              data-testid="layout-modern"
+            >
+              {t('main.toolbar.layoutModern')}
+            </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="hide-avatars" className="text-right">
+            {t('main.toolbar.hideAvatars')}
+          </Label>
+          <Switch
+            id="hide-avatars"
+            checked={hideAvatarsInUsersList}
+            onCheckedChange={setHideAvatarsInUsersList}
+            data-testid="hide-avatars-toggle"
+          />
+        </div>
       </div>
       <DialogFooter>
         {isAvatarSupported && (

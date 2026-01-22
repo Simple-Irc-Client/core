@@ -31,12 +31,14 @@ describe('Users', () => {
   const setupMocks = (overrides: {
     currentChannelCategory?: ChannelCategory;
     users?: User[];
+    hideAvatarsInUsersList?: boolean;
   } = {}) => {
-    const { currentChannelCategory = ChannelCategory.channel, users = [] } = overrides;
+    const { currentChannelCategory = ChannelCategory.channel, users = [], hideAvatarsInUsersList = false } = overrides;
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelCategory,
+        hideAvatarsInUsersList,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -295,6 +297,71 @@ describe('Users', () => {
 
       expect(screen.getByAltText('WithAvatar')).toBeInTheDocument();
       expect(screen.getByText('N')).toBeInTheDocument();
+    });
+  });
+
+  describe('Hide avatars setting', () => {
+    it('should show avatars when hideAvatarsInUsersList is false', () => {
+      setupMocks({
+        users: [createUser({ nick: 'Alice', avatar: 'https://example.com/avatar.png' })],
+        hideAvatarsInUsersList: false,
+      });
+
+      render(<Users />);
+
+      expect(screen.getByAltText('Alice')).toBeInTheDocument();
+    });
+
+    it('should hide avatars when hideAvatarsInUsersList is true', () => {
+      setupMocks({
+        users: [createUser({ nick: 'Alice', avatar: 'https://example.com/avatar.png' })],
+        hideAvatarsInUsersList: true,
+      });
+
+      render(<Users />);
+
+      expect(screen.queryByAltText('Alice')).not.toBeInTheDocument();
+    });
+
+    it('should hide initial placeholders when hideAvatarsInUsersList is true', () => {
+      setupMocks({
+        users: [createUser({ nick: 'Alice' })],
+        hideAvatarsInUsersList: true,
+      });
+
+      render(<Users />);
+
+      // The initial "A" should not be visible
+      expect(screen.queryByText('A')).not.toBeInTheDocument();
+      // But the full nick should still be visible
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+    });
+
+    it('should still display user nicknames when avatars are hidden', () => {
+      setupMocks({
+        users: [
+          createUser({ nick: 'Alice' }),
+          createUser({ nick: 'Bob' }),
+        ],
+        hideAvatarsInUsersList: true,
+      });
+
+      render(<Users />);
+
+      expect(screen.getByText('Alice')).toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+    });
+
+    it('should apply custom color to nickname when avatars are hidden', () => {
+      setupMocks({
+        users: [createUser({ nick: 'Alice', color: '#ff0000' })],
+        hideAvatarsInUsersList: true,
+      });
+
+      render(<Users />);
+
+      const nickElement = screen.getByText('Alice');
+      expect(nickElement).toHaveStyle({ color: '#ff0000' });
     });
   });
 });

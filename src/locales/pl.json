@@ -138,5 +138,9 @@
     "main.toolbar.italic": "Kursywa",
     "main.toolbar.underline": "Podkreślenie",
     "main.toolbar.darkMode": "Tryb ciemny",
-    "main.toolbar.lightMode": "Tryb jasny"
+    "main.toolbar.lightMode": "Tryb jasny",
+    "main.toolbar.layout": "Układ",
+    "main.toolbar.layoutClassic": "Klasyczny",
+    "main.toolbar.layoutModern": "Nowoczesny",
+    "main.toolbar.hideAvatars": "Ukryj awatary na liście użytkowników"
 }

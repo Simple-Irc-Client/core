@@ -49,6 +49,7 @@ export interface SettingsStore {
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
+  hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -75,6 +76,7 @@ export interface SettingsStore {
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
   setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
+  setHideAvatarsInUsersList: (hide: boolean) => void;
   resetWizardState: () => void;
 }
 
@@ -105,6 +107,7 @@ export const useSettingsStore = create<SettingsStore>()(
     currentUserAvatar: undefined,
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
+    hideAvatarsInUsersList: false,
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -192,6 +195,9 @@ export const useSettingsStore = create<SettingsStore>()(
     toggleDarkMode: (): void => {
       set((state) => ({ isDarkMode: !state.isDarkMode }));
     },
+    setHideAvatarsInUsersList: (hide: boolean): void => {
+      set(() => ({ hideAvatarsInUsersList: hide }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -218,6 +224,7 @@ export const useSettingsStore = create<SettingsStore>()(
         currentUserAvatar: undefined,
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         isDarkMode: false,
+        hideAvatarsInUsersList: false,
       }));
     },
   })),
@@ -396,6 +403,14 @@ export const toggleDarkMode = (): void => {
 
 export const getIsDarkMode = (): boolean => {
   return useSettingsStore.getState().isDarkMode;
+};
+
+export const setHideAvatarsInUsersList = (hide: boolean): void => {
+  useSettingsStore.getState().setHideAvatarsInUsersList(hide);
+};
+
+export const getHideAvatarsInUsersList = (): boolean => {
+  return useSettingsStore.getState().hideAvatarsInUsersList;
 };
 
 export const resetAndGoToStart = (): void => {

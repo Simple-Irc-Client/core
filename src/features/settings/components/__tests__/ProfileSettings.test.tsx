@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfileSettings from '../ProfileSettings';
 import * as network from '@/network/irc/network';
+import { useSettingsStore } from '@features/settings/store/settings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -19,6 +20,11 @@ describe('ProfileSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({
+      supportedOptions: [],
+      currentUserAvatar: undefined,
+      theme: 'modern',
+    });
   });
 
   describe('Dialog rendering', () => {
@@ -239,6 +245,201 @@ describe('ProfileSettings', () => {
 
       nickInput = document.querySelector('#nick') as HTMLInputElement;
       expect(nickInput.value).toBe('newNick');
+    });
+  });
+
+  describe('Layout switch functionality', () => {
+    it('should render layout switch buttons', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('layout-classic')).toBeInTheDocument();
+      expect(screen.getByTestId('layout-modern')).toBeInTheDocument();
+    });
+
+    it('should show Modern as selected when theme is modern', () => {
+      useSettingsStore.setState({ theme: 'modern' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const modernButton = screen.getByTestId('layout-modern');
+      const classicButton = screen.getByTestId('layout-classic');
+
+      // Modern should have default variant (not outline)
+      expect(modernButton).not.toHaveClass('border-input');
+      expect(classicButton).toHaveClass('border-input');
+    });
+
+    it('should show Classic as selected when theme is classic', () => {
+      useSettingsStore.setState({ theme: 'classic' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const modernButton = screen.getByTestId('layout-modern');
+      const classicButton = screen.getByTestId('layout-classic');
+
+      // Classic should have default variant (not outline)
+      expect(classicButton).not.toHaveClass('border-input');
+      expect(modernButton).toHaveClass('border-input');
+    });
+
+    it('should switch to classic layout when Classic button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ theme: 'modern' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const classicButton = screen.getByTestId('layout-classic');
+      await user.click(classicButton);
+
+      expect(useSettingsStore.getState().theme).toBe('classic');
+    });
+
+    it('should switch to modern layout when Modern button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ theme: 'classic' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const modernButton = screen.getByTestId('layout-modern');
+      await user.click(modernButton);
+
+      expect(useSettingsStore.getState().theme).toBe('modern');
+    });
+
+    it('should display translated layout labels', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('main.toolbar.layout');
+      expect(document.body.textContent).toContain('main.toolbar.layoutClassic');
+      expect(document.body.textContent).toContain('main.toolbar.layoutModern');
+    });
+  });
+
+  describe('Hide avatars toggle', () => {
+    it('should render hide avatars toggle', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('hide-avatars-toggle')).toBeInTheDocument();
+    });
+
+    it('should display translated hide avatars label', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('main.toolbar.hideAvatars');
+    });
+
+    it('should show unchecked state when hideAvatarsInUsersList is false', () => {
+      useSettingsStore.setState({ hideAvatarsInUsersList: false });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-avatars-toggle');
+      expect(toggle).toHaveAttribute('data-state', 'unchecked');
+    });
+
+    it('should show checked state when hideAvatarsInUsersList is true', () => {
+      useSettingsStore.setState({ hideAvatarsInUsersList: true });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-avatars-toggle');
+      expect(toggle).toHaveAttribute('data-state', 'checked');
+    });
+
+    it('should toggle hideAvatarsInUsersList when clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ hideAvatarsInUsersList: false });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-avatars-toggle');
+      await user.click(toggle);
+
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
+    });
+
+    it('should toggle hideAvatarsInUsersList from true to false when clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ hideAvatarsInUsersList: true });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-avatars-toggle');
+      await user.click(toggle);
+
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(false);
     });
   });
 });
