@@ -356,6 +356,23 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA replaces {size} in avatar URL', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Qbick avatar * :https://usercontent.irccloud-cdn.com/avatar/s{size}/FxI0nUto';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('Qbick', 'https://usercontent.irccloud-cdn.com/avatar/s64/FxI0nUto');
+    expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
@@ -1593,6 +1610,20 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Merovingian', 'https://www.gravatar.com/avatar/8fadd198f40929e83421dd81e36f5637.jpg');
+    expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 761 replaces {size} in avatar URL', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Qbick Avatar * :https://usercontent.irccloud-cdn.com/avatar/s{size}/FxI0nUto';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('Qbick', 'https://usercontent.irccloud-cdn.com/avatar/s64/FxI0nUto');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);

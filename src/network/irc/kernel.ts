@@ -779,10 +779,11 @@ export class Kernel {
 
     if (!isChannel(nickOrChannel)) {
       if (item === 'avatar' && value !== undefined) {
-        setUserAvatar(nickOrChannel, value);
+        const avatarUrl = value.replace('{size}', '64');
+        setUserAvatar(nickOrChannel, avatarUrl);
         // Save avatar for current user to display in toolbar
         if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserAvatar(value);
+          setCurrentUserAvatar(avatarUrl);
         }
       }
       if (item === 'color' && value !== undefined) {
@@ -2048,9 +2049,10 @@ export class Kernel {
     }
 
     if (item === 'avatar' && value !== undefined) {
-      setUserAvatar(nick, value);
+      const avatarUrl = value.replace('{size}', '64');
+      setUserAvatar(nick, avatarUrl);
       if (nick.toLowerCase() === getCurrentNick().toLowerCase()) {
-        setCurrentUserAvatar(value);
+        setCurrentUserAvatar(avatarUrl);
       }
     }
     if (item === 'color' && value !== undefined) {
