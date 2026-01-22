@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type KeyboardEvent, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
 import { Menu, Save } from 'lucide-react';
@@ -13,8 +13,43 @@ import { Input } from '@shared/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { format } from 'date-fns';
 import type { TFunction } from 'i18next';
+import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
 
 const TOPIC_EDIT_FLAGS = ['q', 'a', 'o'];
+
+function getStyleFromFormatState(state: FormatState): CSSProperties {
+  const style: CSSProperties = {};
+
+  if (state.bold) style.fontWeight = 'bold';
+  if (state.italic) style.fontStyle = 'italic';
+  if (state.underline && state.strikethrough) {
+    style.textDecoration = 'underline line-through';
+  } else if (state.underline) {
+    style.textDecoration = 'underline';
+  } else if (state.strikethrough) {
+    style.textDecoration = 'line-through';
+  }
+  if (state.monospace) style.fontFamily = 'monospace';
+
+  let fg = state.foreground;
+  let bg = state.background;
+  if (state.reverse) [fg, bg] = [bg, fg];
+  if (fg) style.color = fg;
+  if (bg) style.backgroundColor = bg;
+
+  return style;
+}
+
+function renderFormattedSegments(segments: FormattedSegment[]): React.ReactNode[] {
+  return segments.map((segment, idx) => {
+    const style = getStyleFromFormatState(segment.style);
+    return (
+      <span key={idx} style={Object.keys(style).length > 0 ? style : undefined}>
+        {segment.text}
+      </span>
+    );
+  });
+}
 
 const formatTopicTooltip = (channelName: string, t: TFunction): string | undefined => {
   const topicSetBy = getTopicSetBy(channelName);
@@ -53,6 +88,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
   };
 
   const topicTooltip = formatTopicTooltip(currentChannelName, t);
+  const formattedSegments = parseIrcFormatting(topic);
 
   return (
     <>
@@ -60,13 +96,18 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex-1">
-              <Input
-                value={editedTopic}
-                onChange={(e) => setEditedTopic(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={!canEditTopic}
-                className="mb-4 mt-1 min-h-12"
-              />
+              {canEditTopic ? (
+                <Input
+                  value={editedTopic}
+                  onChange={(e) => setEditedTopic(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="mb-4 mt-1 min-h-12"
+                />
+              ) : (
+                <div className="mb-4 mt-1 min-h-12 w-full flex items-center px-3 text-sm truncate rounded-md border border-input bg-transparent shadow-sm">
+                  {renderFormattedSegments(formattedSegments)}
+                </div>
+              )}
             </div>
           </TooltipTrigger>
           {topicTooltip && <TooltipContent>{topicTooltip}</TooltipContent>}
