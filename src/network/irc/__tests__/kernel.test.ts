@@ -1619,4 +1619,76 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
+
+  it('test raw 770 avatar', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':jowisz.pirc.pl 770 Merovingian :avatar';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-avatar');
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 770 status', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':jowisz.pirc.pl 770 Merovingian :status';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-status');
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 770 display-name', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':jowisz.pirc.pl 770 Merovingian :display-name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-display-name');
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 761 sets currentUserAvatar for current user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    const mockSetCurrentUserAvatar = vi.spyOn(settingsFile, 'setCurrentUserAvatar').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+
+    const line = ':insomnia.pirc.pl 761 TestUser TestUser Avatar * :https://example.com/avatar.png';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('TestUser', 'https://example.com/avatar.png');
+    expect(mockSetCurrentUserAvatar).toHaveBeenCalledWith('https://example.com/avatar.png');
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+  });
+
+  it('test raw 761 does not set currentUserAvatar for other user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    const mockSetCurrentUserAvatar = vi.spyOn(settingsFile, 'setCurrentUserAvatar').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+
+    const line = ':insomnia.pirc.pl 761 TestUser OtherUser Avatar * :https://example.com/avatar.png';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('OtherUser', 'https://example.com/avatar.png');
+    expect(mockSetCurrentUserAvatar).not.toHaveBeenCalled();
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+  });
 });

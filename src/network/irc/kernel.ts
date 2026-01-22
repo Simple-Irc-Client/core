@@ -547,6 +547,9 @@ export class Kernel {
       case RPL_METADATAEND:
         this.onRaw762();
         break;
+      case RPL_METADATASUBOK:
+        this.onRaw770();
+        break;
       case '766':
         this.onRaw766();
         break;
@@ -2046,6 +2049,9 @@ export class Kernel {
 
     if (item === 'avatar' && value !== undefined) {
       setUserAvatar(nick, value);
+      if (nick.toLowerCase() === getCurrentNick().toLowerCase()) {
+        setCurrentUserAvatar(value);
+      }
     }
     if (item === 'color' && value !== undefined) {
       setUserColor(nick, value);
@@ -2060,5 +2066,17 @@ export class Kernel {
   // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
   private readonly onRaw766 = (): void => {
     //
+  };
+
+  // :jowisz.pirc.pl 770 Merovingian :avatar
+  // :jowisz.pirc.pl 770 Merovingian :status
+  // :jowisz.pirc.pl 770 Merovingian :bot
+  private readonly onRaw770 = (): void => {
+    this.line.shift(); // myNick
+    const metadataItem = this.line.join(' ').substring(1).toLowerCase();
+
+    if (metadataItem.length > 0) {
+      setSupportedOption(`metadata-${metadataItem}`);
+    }
   };
 }
