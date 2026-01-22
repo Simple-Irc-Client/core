@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore, resetAndGoToStart } from '@features/settings/store/settings';
+import { getCurrentNick, useSettingsStore, resetAndGoToStart, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { Send, Smile, User as UserIcon, MessageSquare, Moon, LogOut } from 'lucide-react';
+import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -42,6 +42,7 @@ const Toolbar = () => {
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
+  const isDarkMode = useSettingsStore((state) => state.isDarkMode);
 
   const awayMessages = useAwayMessagesStore((state) => state.messages);
   const awayMessagesCount = awayMessages.length;
@@ -389,7 +390,7 @@ const Toolbar = () => {
                         className="h-full w-full object-cover rounded-full"
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
                         {nick.substring(0, 1).toUpperCase()}
                       </span>
                     )}
@@ -409,6 +410,14 @@ const Toolbar = () => {
                     </span>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={toggleDarkMode}>
+                  {isDarkMode ? (
+                    <Sun className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Moon className="mr-2 h-4 w-4" />
+                  )}
+                  {isDarkMode ? t('main.toolbar.lightMode') : t('main.toolbar.darkMode')}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={resetAndGoToStart}>
                   <LogOut className="mr-2 h-4 w-4" />

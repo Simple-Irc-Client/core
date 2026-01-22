@@ -1285,4 +1285,83 @@ describe('Toolbar', () => {
       expect(separator).toBeInTheDocument();
     });
   });
+
+  describe('Dark mode toggle', () => {
+    const getAvatarButton = () => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    it('should show dark mode option in dropdown menu when in light mode', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isDarkMode: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('main.toolbar.darkMode');
+    });
+
+    it('should show light mode option in dropdown menu when in dark mode', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isDarkMode: true,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('main.toolbar.lightMode');
+    });
+
+    it('should call toggleDarkMode when clicking the dark mode option', async () => {
+      const mockToggleDarkMode = vi.fn();
+      vi.spyOn(settingsStore, 'toggleDarkMode').mockImplementation(mockToggleDarkMode);
+
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isDarkMode: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const darkModeItem = screen.getByText('main.toolbar.darkMode');
+      await user.click(darkModeItem);
+
+      expect(mockToggleDarkMode).toHaveBeenCalledTimes(1);
+    });
+  });
 });

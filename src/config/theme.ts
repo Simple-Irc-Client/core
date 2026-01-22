@@ -1,25 +1,21 @@
-export const channelsTitleColor = '#e0e0e0';
-export const channelsColor = '#eeeeee';
-export const usersTitleColor = 'white';
-export const usersColor = 'white';
 
-export const channelsWidth = 200;
+export const channelsWidth = 201;
 export const usersWidth = 300;
 
 export const MessageColor = {
-  serverFrom: '#000000',
-  serverTo: '#2e7d32',
-  time: '#666666',
-  default: '#000000',
-  join: '#009300',
-  part: '#4733FF',
-  quit: '#00007F',
-  kick: '#00007F',
-  mode: '#009300',
-  notice: '#0066FF',
-  info: '#666666',
-  me: '#800080',
-  error: '#ff0000',
+  serverFrom: 'var(--msg-server-from)',
+  serverTo: 'var(--msg-server-to)',
+  time: 'var(--msg-time)',
+  default: 'var(--msg-default)',
+  join: 'var(--msg-join)',
+  part: 'var(--msg-part)',
+  quit: 'var(--msg-quit)',
+  kick: 'var(--msg-kick)',
+  mode: 'var(--msg-mode)',
+  notice: 'var(--msg-notice)',
+  info: 'var(--msg-info)',
+  me: 'var(--msg-me)',
+  error: 'var(--msg-error)',
 } as const;
 
 export type MessageColor = (typeof MessageColor)[keyof typeof MessageColor];

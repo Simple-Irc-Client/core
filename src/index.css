@@ -47,6 +47,20 @@
 
 :root {
   --radius: 0.625rem;
+  /* Message colors - light mode */
+  --msg-server-from: #000000;
+  --msg-server-to: #2e7d32;
+  --msg-time: #666666;
+  --msg-default: #000000;
+  --msg-join: #009300;
+  --msg-part: #4733FF;
+  --msg-quit: #00007F;
+  --msg-kick: #00007F;
+  --msg-mode: #009300;
+  --msg-notice: #0066FF;
+  --msg-info: #666666;
+  --msg-me: #800080;
+  --msg-error: #ff0000;
   --background: oklch(0.99 0.005 125); /* Very light green-tinted white */
   --foreground: oklch(0.2 0.05 280); /* Dark purple #261A37 */
   --card: oklch(1 0 0);
@@ -81,6 +95,20 @@
 }
 
 .dark {
+  /* Message colors - dark mode */
+  --msg-server-from: #ffffff;
+  --msg-server-to: #81c784;
+  --msg-time: #999999;
+  --msg-default: #ffffff;
+  --msg-join: #66ff66;
+  --msg-part: #8a7fff;
+  --msg-quit: #6666ff;
+  --msg-kick: #6666ff;
+  --msg-mode: #66ff66;
+  --msg-notice: #66aaff;
+  --msg-info: #999999;
+  --msg-me: #cc66cc;
+  --msg-error: #ff6666;
   --background: oklch(0.15 0.05 280); /* Dark purple #261A37 */
   --foreground: oklch(0.99 0.005 264); /* Almost white #FEFEFE */
   --card: oklch(0.22 0.05 280);
