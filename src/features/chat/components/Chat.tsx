@@ -103,7 +103,7 @@ const ChatViewModern = ({ message, lastNick }: { message: Message; lastNick: str
                 {avatar ? (
                   <img className="aspect-square h-full w-full" alt={nick} src={avatar} />
                 ) : (
-                  <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200">
+                  <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
                     {avatarLetter}
                   </span>
                 )}

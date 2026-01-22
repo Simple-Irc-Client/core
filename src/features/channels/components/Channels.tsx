@@ -25,10 +25,7 @@ const Channels = () => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const channelsList = useMemo(
-    () => (isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []),
-    [isChannelListLoadingFinished]
-  );
+  const channelsList = useMemo(() => (isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []), [isChannelListLoadingFinished]);
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [open, setOpen] = useState(false);
@@ -83,12 +80,7 @@ const Channels = () => {
       }}
     >
       {isChannelsDrawerOpen && (
-        <div
-          className="md:bg-opacity-100"
-          style={{
-            minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '',
-          }}
-        >
+        <div className="md:bg-opacity-100">
           <div className="mb-4 md:bg-opacity-100">
             <h3 className="text-sm font-medium p-4">{t('main.channels.title')}</h3>
           </div>
@@ -111,7 +103,7 @@ const Channels = () => {
                   }}
                   className={cn(
                     'w-full flex items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800',
-                    currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700'
+                    currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
                   )}
                 >
                   <span className="min-w-[30px]">{getChannelIcon(channel.category)}</span>
