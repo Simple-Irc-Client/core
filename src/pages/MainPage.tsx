@@ -4,14 +4,11 @@ import Typing from '@features/chat/components/Typing';
 import Toolbar from '@features/chat/components/Toolbar';
 import Topic from '@features/chat/components/Topic';
 import Users from '@features/users/components/Users';
-import { channelsColor } from '@/config/theme';
 
 function MainPage() {
   return (
     <div className="flex h-screen">
-      <div style={{ backgroundColor: channelsColor }}>
-        <Channels />
-      </div>
+      <Channels />
       {/* 64px - topic height */}
       {/* 28px - typing height */}
       {/* 48px - toolbar input height */}

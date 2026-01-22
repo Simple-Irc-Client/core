@@ -48,6 +48,7 @@ export interface SettingsStore {
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
+  isDarkMode: boolean; // Whether dark mode is enabled
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -72,6 +73,8 @@ export interface SettingsStore {
   setSilenceLimit: (limit: number) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
+  setIsDarkMode: (isDarkMode: boolean) => void;
+  toggleDarkMode: () => void;
   resetWizardState: () => void;
 }
 
@@ -101,6 +104,7 @@ export const useSettingsStore = create<SettingsStore>()(
     silenceLimit: 0,
     currentUserAvatar: undefined,
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+    isDarkMode: false,
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -182,6 +186,12 @@ export const useSettingsStore = create<SettingsStore>()(
         fontFormatting: { ...state.fontFormatting, ...formatting },
       }));
     },
+    setIsDarkMode: (isDarkMode: boolean): void => {
+      set(() => ({ isDarkMode }));
+    },
+    toggleDarkMode: (): void => {
+      set((state) => ({ isDarkMode: !state.isDarkMode }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -207,6 +217,7 @@ export const useSettingsStore = create<SettingsStore>()(
         silenceLimit: 0,
         currentUserAvatar: undefined,
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        isDarkMode: false,
       }));
     },
   })),
@@ -373,6 +384,18 @@ export const getFontFormatting = (): FontFormatting => {
 
 export const resetWizardState = (): void => {
   useSettingsStore.getState().resetWizardState();
+};
+
+export const setIsDarkMode = (isDarkMode: boolean): void => {
+  useSettingsStore.getState().setIsDarkMode(isDarkMode);
+};
+
+export const toggleDarkMode = (): void => {
+  useSettingsStore.getState().toggleDarkMode();
+};
+
+export const getIsDarkMode = (): boolean => {
+  return useSettingsStore.getState().isDarkMode;
 };
 
 export const resetAndGoToStart = (): void => {

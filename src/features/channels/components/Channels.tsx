@@ -4,7 +4,7 @@ import { setCurrentChannelName, useSettingsStore } from '@features/settings/stor
 import { ChannelCategory, type Channel } from '@shared/types';
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
-import { channelsWidth, channelsTitleColor } from '@/config/theme';
+import { channelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -77,7 +77,7 @@ const Channels = () => {
 
   return (
     <div
-      className={cn('overflow-y-auto transition-all duration-300', isChannelsDrawerOpen ? 'w-auto' : 'w-0')}
+      className={cn('border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300', isChannelsDrawerOpen ? 'w-auto' : 'w-0')}
       style={{
         minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '0',
       }}
@@ -89,7 +89,7 @@ const Channels = () => {
             minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '',
           }}
         >
-          <div className="mb-4 md:bg-opacity-100" style={{ backgroundColor: channelsTitleColor }}>
+          <div className="mb-4 md:bg-opacity-100">
             <h3 className="text-sm font-medium p-4">{t('main.channels.title')}</h3>
           </div>
           <div>
@@ -110,8 +110,8 @@ const Channels = () => {
                     handleListItemClick(channel);
                   }}
                   className={cn(
-                    'w-full flex items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100',
-                    currentChannelName === channel.name && 'bg-gray-200'
+                    'w-full flex items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800',
+                    currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700'
                   )}
                 >
                   <span className="min-w-[30px]">{getChannelIcon(channel.category)}</span>

@@ -34,6 +34,9 @@ import {
   getMonitorLimit,
   setSilenceLimit,
   getSilenceLimit,
+  setIsDarkMode,
+  toggleDarkMode,
+  getIsDarkMode,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -83,6 +86,7 @@ describe('settings store', () => {
       watchLimit: 0,
       monitorLimit: 0,
       silenceLimit: 0,
+      isDarkMode: false,
     });
     vi.clearAllMocks();
   });
@@ -398,6 +402,36 @@ describe('settings store', () => {
       useSettingsStore.getState().resetWizardState();
 
       expect(useSettingsStore.getState().isAutoAway).toBe(false);
+    });
+  });
+
+  describe('dark mode', () => {
+    it('should set isDarkMode to true', () => {
+      setIsDarkMode(true);
+      expect(getIsDarkMode()).toBe(true);
+    });
+
+    it('should set isDarkMode to false', () => {
+      setIsDarkMode(true);
+      setIsDarkMode(false);
+      expect(getIsDarkMode()).toBe(false);
+    });
+
+    it('should toggle dark mode', () => {
+      expect(getIsDarkMode()).toBe(false);
+
+      toggleDarkMode();
+      expect(getIsDarkMode()).toBe(true);
+
+      toggleDarkMode();
+      expect(getIsDarkMode()).toBe(false);
+    });
+
+    it('should reset isDarkMode on resetWizardState', () => {
+      setIsDarkMode(true);
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getIsDarkMode()).toBe(false);
     });
   });
 });

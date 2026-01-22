@@ -136,5 +136,7 @@
     "main.toolbar.textStyleAriaLabel": "text style",
     "main.toolbar.bold": "Bold",
     "main.toolbar.italic": "Italic",
-    "main.toolbar.underline": "Underline"
+    "main.toolbar.underline": "Underline",
+    "main.toolbar.darkMode": "Dark Mode",
+    "main.toolbar.lightMode": "Light Mode"
 }

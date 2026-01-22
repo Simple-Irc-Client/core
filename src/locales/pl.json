@@ -136,5 +136,7 @@
     "main.toolbar.textStyleAriaLabel": "styl tekstu",
     "main.toolbar.bold": "Pogrubienie",
     "main.toolbar.italic": "Kursywa",
-    "main.toolbar.underline": "Podkreślenie"
+    "main.toolbar.underline": "Podkreślenie",
+    "main.toolbar.darkMode": "Tryb ciemny",
+    "main.toolbar.lightMode": "Tryb jasny"
 }
