@@ -62,7 +62,7 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
   const date = new Date(topicTime * 1000);
   return t('main.topic.setBy', {
     nick: topicSetBy,
-    date: format(date, 'dd/MMM/yyyy HH:mm'),
+    date: format(date, 'd MMM yyyy HH:mm'),
     interpolation: { escapeValue: false },
   });
 };
