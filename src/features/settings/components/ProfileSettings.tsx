@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ircSendRawMessage } from '@/network/irc/network';
+import { useSettingsStore } from '@features/settings/store/settings';
 import {
   Dialog,
   DialogContent,
@@ -27,12 +28,27 @@ interface ProfileSettingsContentProps {
 const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsContentProps) => {
   const { t } = useTranslation();
   const [newNick, setNewNick] = useState(currentNick);
+  const supportedOptions = useSettingsStore((state) => state.supportedOptions);
+  const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
+  const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
+
+  const isAvatarSupported = supportedOptions.includes('metadata-avatar');
 
   const handleNickChange = (): void => {
     if (newNick.trim().length > 0) {
       ircSendRawMessage(`NICK ${newNick.trim()}`);
       onOpenChange(false);
     }
+  };
+
+  const handleAvatarChange = (): void => {
+    const trimmedAvatar = newAvatar.trim();
+    if (trimmedAvatar.length > 0) {
+      ircSendRawMessage(`METADATA * SET avatar ${trimmedAvatar}`);
+    } else {
+      ircSendRawMessage('METADATA * SET avatar');
+    }
+    onOpenChange(false);
   };
 
   return (
@@ -59,8 +75,33 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             }}
           />
         </div>
+        {isAvatarSupported && (
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="avatar" className="text-right">
+              {t('main.toolbar.avatar')}
+            </Label>
+            <Input
+              id="avatar"
+              value={newAvatar}
+              onChange={(e) => setNewAvatar(e.target.value)}
+              className="col-span-3"
+              placeholder="https://example.com/avatar.png"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAvatarChange();
+                }
+              }}
+            />
+          </div>
+        )}
       </div>
       <DialogFooter>
+        {isAvatarSupported && (
+          <Button type="button" variant="outline" onClick={handleAvatarChange}>
+            {t('main.toolbar.changeAvatar')}
+          </Button>
+        )}
         <Button type="button" onClick={handleNickChange}>
           {t('main.toolbar.changeNick')}
         </Button>
