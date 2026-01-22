@@ -23,6 +23,13 @@ vi.mock('react-i18next', () => ({
   },
 }));
 
+vi.mock('@shared/components/ui/tooltip', () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <span data-testid="tooltip-content">{children}</span>,
+}));
+
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
 }));
@@ -314,48 +321,44 @@ describe('Topic', () => {
   });
 
   describe('Topic tooltip', () => {
-    it('should show tooltip with topic set by info when both nick and time are available', () => {
+    it('should render tooltip content when both nick and time are available', () => {
       setupMocks({ topic: 'Test Topic' });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200); // 2024-01-18 12:00:00 UTC
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input.parentElement).toHaveAttribute('title', expect.stringContaining('Set by admin on'));
+      expect(screen.getByText(/Set by admin on/)).toBeInTheDocument();
     });
 
-    it('should not show tooltip when topicSetBy is empty', () => {
+    it('should not render tooltip content when topicSetBy is empty', () => {
       setupMocks({ topic: 'Test Topic' });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(1705579200);
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input.parentElement).not.toHaveAttribute('title');
+      expect(screen.queryByText(/Set by/)).not.toBeInTheDocument();
     });
 
-    it('should not show tooltip when topicTime is 0', () => {
+    it('should not render tooltip content when topicTime is 0', () => {
       setupMocks({ topic: 'Test Topic' });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input.parentElement).not.toHaveAttribute('title');
+      expect(screen.queryByText(/Set by/)).not.toBeInTheDocument();
     });
 
-    it('should not show tooltip when both topicSetBy and topicTime are empty/zero', () => {
+    it('should not render tooltip content when both topicSetBy and topicTime are empty/zero', () => {
       setupMocks({ topic: 'Test Topic' });
       vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('');
       vi.mocked(channelsStore.getTopicTime).mockReturnValue(0);
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      expect(input.parentElement).not.toHaveAttribute('title');
+      expect(screen.queryByText(/Set by/)).not.toBeInTheDocument();
     });
 
     it('should format tooltip with date containing day, month and year', () => {
@@ -365,12 +368,11 @@ describe('Topic', () => {
 
       render(<Topic />);
 
-      const input = screen.getByRole('textbox');
-      const title = input.parentElement?.getAttribute('title');
-      expect(title).toContain('Set by testuser on');
-      expect(title).toContain('18');
-      expect(title).toContain('Jan');
-      expect(title).toContain('2024');
+      const tooltipText = screen.getByText(/Set by testuser on/);
+      expect(tooltipText).toBeInTheDocument();
+      expect(tooltipText.textContent).toContain('18');
+      expect(tooltipText.textContent).toContain('Jan');
+      expect(tooltipText.textContent).toContain('2024');
     });
 
     it('should call getTopicSetBy and getTopicTime with correct channel name', () => {
