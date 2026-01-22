@@ -11,6 +11,7 @@ const Users = () => {
   const { handleContextMenuUserClick } = useContextMenu();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const users = useCurrentStore((state) => state.users);
 
   return (
@@ -34,15 +35,17 @@ const Users = () => {
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
                 >
-                  <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
-                    {user.avatar ? (
-                      <img className="aspect-square h-full w-full" alt={user.nick} src={user.avatar} />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                        {user.nick.substring(0, 1).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
+                  {!hideAvatarsInUsersList && (
+                    <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
+                      {user.avatar ? (
+                        <img className="aspect-square h-full w-full" alt={user.nick} src={user.avatar} />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                          {user.nick.substring(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
                     {user.nick}
                   </span>

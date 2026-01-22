@@ -138,5 +138,9 @@
     "main.toolbar.italic": "Italic",
     "main.toolbar.underline": "Underline",
     "main.toolbar.darkMode": "Dark Mode",
-    "main.toolbar.lightMode": "Light Mode"
+    "main.toolbar.lightMode": "Light Mode",
+    "main.toolbar.layout": "Layout",
+    "main.toolbar.layoutClassic": "Classic",
+    "main.toolbar.layoutModern": "Modern",
+    "main.toolbar.hideAvatars": "Hide avatars in users list"
 }

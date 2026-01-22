@@ -37,6 +37,8 @@ import {
   setIsDarkMode,
   toggleDarkMode,
   getIsDarkMode,
+  setHideAvatarsInUsersList,
+  getHideAvatarsInUsersList,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -432,6 +434,30 @@ describe('settings store', () => {
       useSettingsStore.getState().resetWizardState();
 
       expect(getIsDarkMode()).toBe(false);
+    });
+  });
+
+  describe('hide avatars in users list', () => {
+    it('should set hideAvatarsInUsersList to true', () => {
+      setHideAvatarsInUsersList(true);
+      expect(getHideAvatarsInUsersList()).toBe(true);
+    });
+
+    it('should set hideAvatarsInUsersList to false', () => {
+      setHideAvatarsInUsersList(true);
+      setHideAvatarsInUsersList(false);
+      expect(getHideAvatarsInUsersList()).toBe(false);
+    });
+
+    it('should default hideAvatarsInUsersList to false', () => {
+      expect(getHideAvatarsInUsersList()).toBe(false);
+    });
+
+    it('should reset hideAvatarsInUsersList on resetWizardState', () => {
+      setHideAvatarsInUsersList(true);
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getHideAvatarsInUsersList()).toBe(false);
     });
   });
 });
