@@ -10,6 +10,7 @@ import { ircSendRawMessage } from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { format } from 'date-fns';
 import type { TFunction } from 'i18next';
 
@@ -24,7 +25,11 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
   }
 
   const date = new Date(topicTime * 1000);
-  return t('main.topic.setBy', { nick: topicSetBy, date: format(date, 'dd/MMM/yyyy HH:mm') });
+  return t('main.topic.setBy', {
+    nick: topicSetBy,
+    date: format(date, 'dd/MMM/yyyy HH:mm'),
+    interpolation: { escapeValue: false },
+  });
 };
 
 // Inner component that resets when topic changes via key prop
@@ -51,15 +56,22 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 
   return (
     <>
-      <div className="flex-1" title={topicTooltip}>
-        <Input
-          value={editedTopic}
-          onChange={(e) => setEditedTopic(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={!canEditTopic}
-          className="mb-4 mt-1 min-h-12"
-        />
-      </div>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex-1">
+              <Input
+                value={editedTopic}
+                onChange={(e) => setEditedTopic(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={!canEditTopic}
+                className="mb-4 mt-1 min-h-12"
+              />
+            </div>
+          </TooltipTrigger>
+          {topicTooltip && <TooltipContent>{topicTooltip}</TooltipContent>}
+        </Tooltip>
+      </TooltipProvider>
       {canEditTopic && editedTopic !== topic && (
         <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
           <Save className="h-4 w-4" />
