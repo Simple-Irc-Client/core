@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
+import { getCurrentNick, useSettingsStore, resetAndGoToStart } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { Send, Smile, User as UserIcon, MessageSquare, Moon } from 'lucide-react';
+import { Send, Smile, User as UserIcon, MessageSquare, Moon, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -19,6 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
@@ -408,6 +409,11 @@ const Toolbar = () => {
                     </span>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={resetAndGoToStart}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t('main.toolbar.disconnect')}
+                </DropdownMenuItem>
               </DropdownMenuContent>
               </DropdownMenu>
               {isAway && (

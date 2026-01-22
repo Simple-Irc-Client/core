@@ -22,6 +22,15 @@ vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
 }));
 
+const mockResetAndGoToStart = vi.fn();
+vi.mock('@features/settings/store/settings', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@features/settings/store/settings')>();
+  return {
+    ...actual,
+    resetAndGoToStart: () => mockResetAndGoToStart(),
+  };
+});
+
 vi.mock('@features/channels/store/channels', () => ({
   setAddMessage: vi.fn(),
 }));
@@ -1220,6 +1229,60 @@ describe('Toolbar', () => {
       fireEvent.keyDown(input, { key: 'Tab' });
 
       expect(input).toHaveValue('');
+    });
+  });
+
+  describe('Disconnect button', () => {
+    const getAvatarButton = () => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
+    };
+
+    beforeEach(() => {
+      mockResetAndGoToStart.mockClear();
+    });
+
+    it('should show Disconnect option in avatar dropdown menu', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('main.toolbar.disconnect');
+    });
+
+    it('should call resetAndGoToStart when clicking Disconnect', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      // Find and click the Disconnect menu item
+      const disconnectItem = screen.getByText('main.toolbar.disconnect');
+      await user.click(disconnectItem);
+
+      expect(mockResetAndGoToStart).toHaveBeenCalledTimes(1);
+    });
+
+    it('should show Disconnect option with separator from other menu items', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      // Verify both Profile Settings and Disconnect are in the menu
+      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
+      expect(document.body.textContent).toContain('main.toolbar.disconnect');
+
+      // Check that a separator exists (Radix UI renders it with role="separator")
+      const separator = document.querySelector('[role="separator"]');
+      expect(separator).toBeInTheDocument();
     });
   });
 });
