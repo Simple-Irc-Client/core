@@ -101,15 +101,16 @@ describe('Channels', () => {
       expect(screen.getByText('main.channels.title')).toBeInTheDocument();
     });
 
-    it('should not render channels list when drawer is closed', () => {
+    it('should have hidden class when drawer is closed', () => {
       setupMocks({
         isChannelsDrawerOpen: false,
         openChannelsShort: [createChannel({ name: '#general' })],
       });
 
-      render(<Channels />);
+      const { container } = render(<Channels />);
 
-      expect(screen.queryByText('main.channels.title')).not.toBeInTheDocument();
+      // When drawer is closed, the container should have 'hidden' class (visible only on lg+)
+      expect(container.firstChild).toHaveClass('hidden');
     });
 
     it('should render channel buttons', () => {

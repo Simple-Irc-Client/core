@@ -109,12 +109,14 @@ describe('Chat tests', () => {
       expect(container.textContent).toContain('Third message');
     });
 
-    it('should call scrollIntoView on render', () => {
+    it('should scroll to bottom on render', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
-      render(<Main />);
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
 
-      expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+      // scrollTop should be set to scrollHeight (scroll to bottom)
+      expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
   });
 
