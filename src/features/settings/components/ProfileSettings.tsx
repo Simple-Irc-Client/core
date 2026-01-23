@@ -36,6 +36,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setTheme = useSettingsStore((state) => state.setTheme);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
+  const fontSize = useSettingsStore((state) => state.fontSize);
+  const setFontSize = useSettingsStore((state) => state.setFontSize);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
 
   const isAvatarSupported = supportedOptions.includes('metadata-avatar');
@@ -138,6 +140,43 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           <Label htmlFor="hide-avatars">
             {t('main.toolbar.hideAvatars')}
           </Label>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label className="text-right">
+            {t('main.toolbar.fontSize')}
+          </Label>
+          <div className="col-span-3 flex gap-2">
+            <Button
+              type="button"
+              variant={fontSize === 'small' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFontSize('small')}
+              className={cn('flex-1', fontSize === 'small' && 'pointer-events-none')}
+              data-testid="font-size-small"
+            >
+              {t('main.toolbar.fontSizeSmall')}
+            </Button>
+            <Button
+              type="button"
+              variant={fontSize === 'medium' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFontSize('medium')}
+              className={cn('flex-1', fontSize === 'medium' && 'pointer-events-none')}
+              data-testid="font-size-medium"
+            >
+              {t('main.toolbar.fontSizeMedium')}
+            </Button>
+            <Button
+              type="button"
+              variant={fontSize === 'large' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFontSize('large')}
+              className={cn('flex-1', fontSize === 'large' && 'pointer-events-none')}
+              data-testid="font-size-large"
+            >
+              {t('main.toolbar.fontSizeLarge')}
+            </Button>
+          </div>
         </div>
       </div>
       <DialogFooter>

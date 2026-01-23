@@ -24,6 +24,8 @@ describe('ProfileSettings', () => {
       supportedOptions: [],
       currentUserAvatar: undefined,
       theme: 'modern',
+      fontSize: 'medium',
+      hideAvatarsInUsersList: false,
     });
   });
 
@@ -440,6 +442,154 @@ describe('ProfileSettings', () => {
       await user.click(toggle);
 
       expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(false);
+    });
+  });
+
+  describe('Font size picker', () => {
+    it('should render font size buttons', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('font-size-small')).toBeInTheDocument();
+      expect(screen.getByTestId('font-size-medium')).toBeInTheDocument();
+      expect(screen.getByTestId('font-size-large')).toBeInTheDocument();
+    });
+
+    it('should display translated font size labels', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('main.toolbar.fontSize');
+      expect(document.body.textContent).toContain('main.toolbar.fontSizeSmall');
+      expect(document.body.textContent).toContain('main.toolbar.fontSizeMedium');
+      expect(document.body.textContent).toContain('main.toolbar.fontSizeLarge');
+    });
+
+    it('should show Medium as selected when fontSize is medium', () => {
+      useSettingsStore.setState({ fontSize: 'medium' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const smallButton = screen.getByTestId('font-size-small');
+      const mediumButton = screen.getByTestId('font-size-medium');
+      const largeButton = screen.getByTestId('font-size-large');
+
+      // Medium should have default variant (not outline)
+      expect(mediumButton).not.toHaveClass('border-input');
+      expect(smallButton).toHaveClass('border-input');
+      expect(largeButton).toHaveClass('border-input');
+    });
+
+    it('should show Small as selected when fontSize is small', () => {
+      useSettingsStore.setState({ fontSize: 'small' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const smallButton = screen.getByTestId('font-size-small');
+      const mediumButton = screen.getByTestId('font-size-medium');
+      const largeButton = screen.getByTestId('font-size-large');
+
+      // Small should have default variant (not outline)
+      expect(smallButton).not.toHaveClass('border-input');
+      expect(mediumButton).toHaveClass('border-input');
+      expect(largeButton).toHaveClass('border-input');
+    });
+
+    it('should show Large as selected when fontSize is large', () => {
+      useSettingsStore.setState({ fontSize: 'large' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const smallButton = screen.getByTestId('font-size-small');
+      const mediumButton = screen.getByTestId('font-size-medium');
+      const largeButton = screen.getByTestId('font-size-large');
+
+      // Large should have default variant (not outline)
+      expect(largeButton).not.toHaveClass('border-input');
+      expect(smallButton).toHaveClass('border-input');
+      expect(mediumButton).toHaveClass('border-input');
+    });
+
+    it('should switch to small font size when Small button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ fontSize: 'medium' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const smallButton = screen.getByTestId('font-size-small');
+      await user.click(smallButton);
+
+      expect(useSettingsStore.getState().fontSize).toBe('small');
+    });
+
+    it('should switch to medium font size when Medium button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ fontSize: 'small' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const mediumButton = screen.getByTestId('font-size-medium');
+      await user.click(mediumButton);
+
+      expect(useSettingsStore.getState().fontSize).toBe('medium');
+    });
+
+    it('should switch to large font size when Large button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ fontSize: 'medium' });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const largeButton = screen.getByTestId('font-size-large');
+      await user.click(largeButton);
+
+      expect(useSettingsStore.getState().fontSize).toBe('large');
     });
   });
 });

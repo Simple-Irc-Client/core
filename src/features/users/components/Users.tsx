@@ -1,5 +1,11 @@
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type UserMode } from '@shared/types';
+
+const fontSizeClasses: Record<FontSize, string> = {
+  small: 'text-xs',
+  medium: 'text-sm',
+  large: 'text-base',
+};
 import { useTranslation } from 'react-i18next';
 import { usersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
@@ -49,7 +55,9 @@ const Users = () => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const userModes = useSettingsStore((state) => state.userModes);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
+  const fontSize = useSettingsStore((state) => state.fontSize);
   const users = useCurrentStore((state) => state.users);
+  const fontSizeClass = fontSizeClasses[fontSize];
 
   return (
     <>
@@ -57,7 +65,7 @@ const Users = () => {
         <div className="hidden sm:block border-l border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ minWidth: `${usersWidth}px` }}>
           <div>
             <div className="mb-4">
-              <h3 className="text-sm font-medium p-4">{t('main.users.title')}</h3>
+              <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.users.title')}</h3>
             </div>
             <div className="space-y-1">
               {users.map((user) => (
@@ -85,7 +93,7 @@ const Users = () => {
                   )}
                   <div className="flex items-center gap-1">
                     {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
-                    <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
+                    <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
                       {user.nick}
                     </span>
                   </div>

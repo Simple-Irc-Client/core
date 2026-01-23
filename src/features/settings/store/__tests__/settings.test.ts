@@ -39,6 +39,8 @@ import {
   getIsDarkMode,
   setHideAvatarsInUsersList,
   getHideAvatarsInUsersList,
+  setFontSize,
+  getFontSize,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -89,6 +91,7 @@ describe('settings store', () => {
       monitorLimit: 0,
       silenceLimit: 0,
       isDarkMode: false,
+      fontSize: 'medium',
     });
     vi.clearAllMocks();
   });
@@ -458,6 +461,35 @@ describe('settings store', () => {
       useSettingsStore.getState().resetWizardState();
 
       expect(getHideAvatarsInUsersList()).toBe(false);
+    });
+  });
+
+  describe('font size', () => {
+    it('should set fontSize to small', () => {
+      setFontSize('small');
+      expect(getFontSize()).toBe('small');
+    });
+
+    it('should set fontSize to medium', () => {
+      setFontSize('small');
+      setFontSize('medium');
+      expect(getFontSize()).toBe('medium');
+    });
+
+    it('should set fontSize to large', () => {
+      setFontSize('large');
+      expect(getFontSize()).toBe('large');
+    });
+
+    it('should default fontSize to medium', () => {
+      expect(getFontSize()).toBe('medium');
+    });
+
+    it('should reset fontSize on resetWizardState', () => {
+      setFontSize('large');
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getFontSize()).toBe('medium');
     });
   });
 });

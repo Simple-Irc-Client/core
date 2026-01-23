@@ -23,6 +23,8 @@ export interface FontFormatting {
   underline: boolean;
 }
 
+export type FontSize = 'small' | 'medium' | 'large';
+
 export interface SettingsStore {
   isConnecting: boolean;
   isConnected: boolean;
@@ -50,6 +52,7 @@ export interface SettingsStore {
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
+  fontSize: FontSize; // Font size for chat, users list, and channels list
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -77,6 +80,7 @@ export interface SettingsStore {
   setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
+  setFontSize: (fontSize: FontSize) => void;
   resetWizardState: () => void;
 }
 
@@ -108,6 +112,7 @@ export const useSettingsStore = create<SettingsStore>()(
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
     hideAvatarsInUsersList: false,
+    fontSize: 'medium',
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -198,6 +203,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setHideAvatarsInUsersList: (hide: boolean): void => {
       set(() => ({ hideAvatarsInUsersList: hide }));
     },
+    setFontSize: (fontSize: FontSize): void => {
+      set(() => ({ fontSize }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -225,6 +233,7 @@ export const useSettingsStore = create<SettingsStore>()(
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         isDarkMode: false,
         hideAvatarsInUsersList: false,
+        fontSize: 'medium',
       }));
     },
   })),
@@ -411,6 +420,14 @@ export const setHideAvatarsInUsersList = (hide: boolean): void => {
 
 export const getHideAvatarsInUsersList = (): boolean => {
   return useSettingsStore.getState().hideAvatarsInUsersList;
+};
+
+export const setFontSize = (fontSize: FontSize): void => {
+  useSettingsStore.getState().setFontSize(fontSize);
+};
+
+export const getFontSize = (): FontSize => {
+  return useSettingsStore.getState().fontSize;
 };
 
 export const resetAndGoToStart = (): void => {
