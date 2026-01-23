@@ -142,5 +142,9 @@
     "main.toolbar.layout": "Układ",
     "main.toolbar.layoutClassic": "Klasyczny",
     "main.toolbar.layoutModern": "Nowoczesny",
-    "main.toolbar.hideAvatars": "Ukryj awatary na liście użytkowników"
+    "main.toolbar.hideAvatars": "Ukryj awatary na liście użytkowników",
+    "main.toolbar.fontSize": "Rozmiar czcionki",
+    "main.toolbar.fontSizeSmall": "Mały",
+    "main.toolbar.fontSizeMedium": "Średni",
+    "main.toolbar.fontSizeLarge": "Duży"
 }

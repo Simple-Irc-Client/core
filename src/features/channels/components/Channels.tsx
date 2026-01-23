@@ -1,7 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
-import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
+import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
+
+const fontSizeClasses: Record<FontSize, string> = {
+  small: 'text-xs',
+  medium: 'text-sm',
+  large: 'text-base',
+};
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth } from '@/config/theme';
@@ -19,7 +25,9 @@ const Channels = () => {
   const { t } = useTranslation();
 
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const fontSize = useSettingsStore((state) => state.fontSize);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
+  const fontSizeClass = fontSizeClasses[fontSize];
 
   const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
 
@@ -88,7 +96,7 @@ const Channels = () => {
     >
       <div>
           <div className="mb-4 md:bg-opacity-100">
-            <h3 className="text-sm font-medium p-4">{t('main.channels.title')}</h3>
+            <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.channels.title')}</h3>
           </div>
           <div>
             {openChannelsShort.map((channel) => (
@@ -108,7 +116,7 @@ const Channels = () => {
                     handleListItemClick(channel);
                   }}
                   className={cn(
-                    'w-full flex items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800',
+                    `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-gray-100 dark:hover:bg-gray-800`,
                     currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
                   )}
                 >
@@ -142,7 +150,7 @@ const Channels = () => {
             <div className="relative px-4 py-2">
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between text-sm h-9">
+                  <Button variant="outline" role="combobox" aria-expanded={open} className={`w-full justify-between ${fontSizeClass} h-9`}>
                     {t('main.channels.join')}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>

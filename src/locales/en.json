@@ -142,5 +142,9 @@
     "main.toolbar.layout": "Layout",
     "main.toolbar.layoutClassic": "Classic",
     "main.toolbar.layoutModern": "Modern",
-    "main.toolbar.hideAvatars": "Hide avatars in users list"
+    "main.toolbar.hideAvatars": "Hide avatars in users list",
+    "main.toolbar.fontSize": "Font Size",
+    "main.toolbar.fontSizeSmall": "Small",
+    "main.toolbar.fontSizeMedium": "Medium",
+    "main.toolbar.fontSizeLarge": "Large"
 }
