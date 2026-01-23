@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { MessageCategory, type Message } from '@shared/types';
 import { format } from 'date-fns';
@@ -159,14 +159,24 @@ const Chat = () => {
   const messages = useCurrentStore((state) => state.messages);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
+  const isUserScrolledUp = useRef(false);
+
+  const handleScroll = useCallback(() => {
     if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      isUserScrolledUp.current = distanceFromBottom > 50;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (containerRef.current && !isUserScrolledUp.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   });
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto relative break-anywhere">
+    <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto relative break-anywhere">
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]);
