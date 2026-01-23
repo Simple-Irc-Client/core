@@ -170,13 +170,17 @@ const Chat = () => {
   }, []);
 
   useEffect(() => {
+    isUserScrolledUp.current = false;
+  }, [currentChannelName]);
+
+  useEffect(() => {
     if (containerRef.current && !isUserScrolledUp.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   });
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto relative break-anywhere">
+    <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]);
