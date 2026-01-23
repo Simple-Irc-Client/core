@@ -22,8 +22,8 @@ const ChatViewDebug = ({ message }: { message: Message }) => {
   };
 
   return (
-    <div className="py-1 px-4">
-      <code className="text-sm">
+    <div className="py-1 px-4 overflow-hidden">
+      <code className="text-sm break-all">
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
         &nbsp;
         {nick !== undefined && (
@@ -158,13 +158,15 @@ const Chat = () => {
   const theme: string = useSettingsStore((state) => state.theme);
   const messages = useCurrentStore((state) => state.messages);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    scrollRef.current?.scrollIntoView();
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   });
 
   return (
-    <div className="h-full overflow-y-auto relative break-anywhere">
+    <div ref={containerRef} className="h-full overflow-y-auto relative break-anywhere">
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]);
@@ -180,7 +182,6 @@ const Chat = () => {
             </div>
           );
         })}
-        <div ref={scrollRef} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React, { type FC, type PropsWithChildren, useState, useMemo, useCallback 
 import { ChannelsDrawerContext } from './ChannelsDrawerContext';
 
 export const ChannelsDrawerProvider: FC<PropsWithChildren> = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleChannelsDrawerStatus = useCallback((): void => {
     setIsOpen(!isOpen);

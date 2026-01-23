@@ -68,7 +68,7 @@ const WizardServer = () => {
             </Command>
           </PopoverContent>
         </Popover>
-        <Button onClick={handleClick} type="button" className="w-[300px] mt-8 mb-4" disabled={formServer == null}>
+        <Button type="submit" className="w-[300px] mt-8 mb-4" disabled={formServer == null}>
           {t('wizard.server.button.next')}
         </Button>
       </form>

@@ -95,7 +95,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {canEditTopic ? (
                 <Input
                   value={editedTopic}
@@ -131,8 +131,8 @@ const Topic = () => {
   const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
 
   return (
-    <div className="px-4 flex h-16">
-      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 md:hidden">
+    <div className="px-4 flex h-16 min-w-0">
+      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 md:hidden shrink-0">
         <Menu className="h-4 w-4" />
       </Button>
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}

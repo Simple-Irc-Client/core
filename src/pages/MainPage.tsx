@@ -7,14 +7,13 @@ import Users from '@features/users/components/Users';
 
 function MainPage() {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Channels />
-      {/* 64px - topic height */}
-      {/* 28px - typing height */}
-      {/* 48px - toolbar input height */}
-      <div className="w-full" style={{ height: 'calc(100vh - (64px + 28px + 48px))' }}>
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         <Topic />
-        <Chat />
+        <div className="flex-1 overflow-hidden">
+          <Chat />
+        </div>
         <Typing />
         <Toolbar />
       </div>

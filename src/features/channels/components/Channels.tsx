@@ -21,7 +21,7 @@ const Channels = () => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
 
-  const { isChannelsDrawerOpen } = useChannelsDrawer();
+  const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
@@ -55,6 +55,10 @@ const Channels = () => {
 
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
+    // Close drawer on mobile (below sm breakpoint)
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      setChannelsDrawerStatus();
+    }
   };
 
   const getChannelIcon = (category: ChannelCategory | undefined) => {
@@ -74,7 +78,10 @@ const Channels = () => {
 
   return (
     <div
-      className={cn('border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300', isChannelsDrawerOpen ? 'w-auto' : 'w-0')}
+      className={cn(
+        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300',
+        isChannelsDrawerOpen ? 'w-auto' : 'w-0 hidden sm:block',
+      )}
       style={{
         minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '0',
       }}
