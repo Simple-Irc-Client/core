@@ -56,7 +56,7 @@ const Channels = () => {
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
     // Close drawer on mobile (below sm breakpoint)
-    if (window.matchMedia('(max-width: 639px)').matches) {
+    if (window.matchMedia?.('(max-width: 639px)').matches) {
       setChannelsDrawerStatus();
     }
   };
