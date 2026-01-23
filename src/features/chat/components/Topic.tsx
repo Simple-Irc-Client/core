@@ -101,10 +101,10 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
                   value={editedTopic}
                   onChange={(e) => setEditedTopic(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="mb-4 mt-1 min-h-12"
+                  className="min-h-12"
                 />
               ) : (
-                <div className="mb-4 mt-1 min-h-12 w-full flex items-center px-3 text-sm truncate rounded-md border border-input bg-transparent shadow-sm">
+                <div className="min-h-12 w-full flex items-center px-3 text-sm truncate rounded-md border border-input bg-transparent shadow-sm">
                   {renderFormattedSegments(formattedSegments)}
                 </div>
               )}
@@ -131,8 +131,8 @@ const Topic = () => {
   const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
 
   return (
-    <div className="px-4 flex h-16 min-w-0">
-      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0">
+    <div className="px-4 flex h-16 min-w-0 items-center">
+      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2">
         <Menu className="h-4 w-4" />
       </Button>
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}

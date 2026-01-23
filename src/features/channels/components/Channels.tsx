@@ -55,8 +55,8 @@ const Channels = () => {
 
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
-    // Close drawer on mobile (below sm breakpoint)
-    if (window.matchMedia?.('(max-width: 639px)').matches) {
+    // Close drawer on mobile/tablet (below lg breakpoint)
+    if (window.matchMedia?.('(max-width: 1023px)').matches) {
       setChannelsDrawerStatus();
     }
   };
@@ -80,14 +80,13 @@ const Channels = () => {
     <div
       className={cn(
         'border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300',
-        isChannelsDrawerOpen ? 'w-auto' : 'w-0 hidden sm:block',
+        !isChannelsDrawerOpen && 'hidden lg:block',
       )}
       style={{
-        minWidth: isChannelsDrawerOpen ? `${channelsWidth}px` : '0',
+        minWidth: `${channelsWidth}px`,
       }}
     >
-      {isChannelsDrawerOpen && (
-        <div className="md:bg-opacity-100">
+      <div>
           <div className="mb-4 md:bg-opacity-100">
             <h3 className="text-sm font-medium p-4">{t('main.channels.title')}</h3>
           </div>
@@ -177,7 +176,6 @@ const Channels = () => {
             </div>
           </div>
         </div>
-      )}
     </div>
   );
 };
