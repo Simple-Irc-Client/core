@@ -132,7 +132,7 @@ const Topic = () => {
 
   return (
     <div className="px-4 flex h-16 min-w-0">
-      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 md:hidden shrink-0">
+      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0">
         <Menu className="h-4 w-4" />
       </Button>
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
