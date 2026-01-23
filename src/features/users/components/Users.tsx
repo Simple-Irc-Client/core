@@ -6,29 +6,38 @@ import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic } from 'lucide-react';
 
-const getModeIcon = (flags: string[], userModes: UserMode[]) => {
+const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   if (flags.length === 0 || userModes.length === 0) return null;
 
-  // Find the highest priority flag (userModes are ordered by priority)
+  const icons: React.ReactNode[] = [];
+
+  // Iterate through all modes in priority order and collect matching icons
   for (const mode of userModes) {
     if (flags.includes(mode.flag)) {
       switch (mode.symbol) {
         case '~':
-          return <span title="Owner"><Crown className="h-4 w-4 text-yellow-500" /></span>;
+          icons.push(<span key={mode.flag} title="Owner"><Crown className="h-4 w-4 text-yellow-500" /></span>);
+          break;
         case '&':
-          return <span title="Admin"><ShieldCheck className="h-4 w-4 text-purple-500" /></span>;
+          icons.push(<span key={mode.flag} title="Admin"><ShieldCheck className="h-4 w-4 text-purple-500" /></span>);
+          break;
         case '@':
-          return <span title="Operator"><Shield className="h-4 w-4 text-green-500" /></span>;
+          icons.push(<span key={mode.flag} title="Operator"><Shield className="h-4 w-4 text-green-500" /></span>);
+          break;
         case '%':
-          return <span title="Half-Op"><ShieldHalf className="h-4 w-4 text-blue-500" /></span>;
+          icons.push(<span key={mode.flag} title="Half-Op"><ShieldHalf className="h-4 w-4 text-blue-500" /></span>);
+          break;
         case '+':
-          return <span title="Voice"><Mic className="h-4 w-4 text-gray-500" /></span>;
+          icons.push(<span key={mode.flag} title="Voice"><Mic className="h-4 w-4 text-gray-500" /></span>);
+          break;
         default:
-          return <span className="text-xs font-bold" title={mode.flag}>{mode.symbol}</span>;
+          icons.push(<span key={mode.flag} className="text-xs font-bold" title={mode.flag}>{mode.symbol}</span>);
+          break;
       }
     }
   }
-  return null;
+
+  return icons.length > 0 ? icons : null;
 };
 
 const Users = () => {
@@ -75,7 +84,7 @@ const Users = () => {
                     </div>
                   )}
                   <div className="flex items-center gap-1">
-                    {getModeIcon(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
+                    {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
                     <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
                       {user.nick}
                     </span>

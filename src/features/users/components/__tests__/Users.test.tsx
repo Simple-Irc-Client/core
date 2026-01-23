@@ -489,7 +489,7 @@ describe('Users', () => {
       expect(screen.queryByTitle('Voice')).not.toBeInTheDocument();
     });
 
-    it('should display only the highest priority icon when user has multiple flags', () => {
+    it('should display all permission icons when user has multiple flags', () => {
       setupMocks({
         currentChannelName: '#test',
         users: [
@@ -502,9 +502,26 @@ describe('Users', () => {
 
       render(<Users />);
 
-      // Should show operator icon (higher priority than voice)
+      // Should show both operator and voice icons
       expect(screen.getByTitle('Operator')).toBeInTheDocument();
-      expect(screen.queryByTitle('Voice')).not.toBeInTheDocument();
+      expect(screen.getByTitle('Voice')).toBeInTheDocument();
+    });
+
+    it('should display all icons for user with half-op and voice', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'halfopvoice',
+            channels: [{ name: '#test', flags: ['h', 'v'], maxPermission: 253 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Half-Op')).toBeInTheDocument();
+      expect(screen.getByTitle('Voice')).toBeInTheDocument();
     });
 
     it('should not display icon when user is not in the current channel', () => {
