@@ -128,16 +128,16 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="hide-avatars" className="text-right">
-            {t('main.toolbar.hideAvatars')}
-          </Label>
+        <div className="flex items-center gap-4">
           <Switch
             id="hide-avatars"
             checked={hideAvatarsInUsersList}
             onCheckedChange={setHideAvatarsInUsersList}
             data-testid="hide-avatars-toggle"
           />
+          <Label htmlFor="hide-avatars">
+            {t('main.toolbar.hideAvatars')}
+          </Label>
         </div>
       </div>
       <DialogFooter>
