@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { useSettingsStore } from '@features/settings/store/settings';
 import {
   Dialog,
   DialogContent,
