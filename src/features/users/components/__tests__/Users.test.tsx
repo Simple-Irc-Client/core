@@ -5,7 +5,7 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import { ChannelCategory } from '@shared/types';
-import type { User } from '@shared/types';
+import type { User, UserMode } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -28,16 +28,34 @@ describe('Users', () => {
     vi.clearAllMocks();
   });
 
+  const defaultUserModes: UserMode[] = [
+    { flag: 'q', symbol: '~' },
+    { flag: 'a', symbol: '&' },
+    { flag: 'o', symbol: '@' },
+    { flag: 'h', symbol: '%' },
+    { flag: 'v', symbol: '+' },
+  ];
+
   const setupMocks = (overrides: {
     currentChannelCategory?: ChannelCategory;
+    currentChannelName?: string;
+    userModes?: UserMode[];
     users?: User[];
     hideAvatarsInUsersList?: boolean;
   } = {}) => {
-    const { currentChannelCategory = ChannelCategory.channel, users = [], hideAvatarsInUsersList = false } = overrides;
+    const {
+      currentChannelCategory = ChannelCategory.channel,
+      currentChannelName = '#test',
+      userModes = defaultUserModes,
+      users = [],
+      hideAvatarsInUsersList = false,
+    } = overrides;
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelCategory,
+        currentChannelName,
+        userModes,
         hideAvatarsInUsersList,
       } as unknown as settingsStore.SettingsStore)
     );
@@ -362,6 +380,189 @@ describe('Users', () => {
 
       const nickElement = screen.getByText('Alice');
       expect(nickElement).toHaveStyle({ color: '#ff0000' });
+    });
+  });
+
+  describe('Permission icons', () => {
+    it('should display Crown icon for owner (~)', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'owner',
+            channels: [{ name: '#test', flags: ['q'], maxPermission: 256 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const iconWrapper = screen.getByTitle('Owner');
+      expect(iconWrapper).toBeInTheDocument();
+    });
+
+    it('should display ShieldCheck icon for admin (&)', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'admin',
+            channels: [{ name: '#test', flags: ['a'], maxPermission: 255 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const iconWrapper = screen.getByTitle('Admin');
+      expect(iconWrapper).toBeInTheDocument();
+    });
+
+    it('should display Shield icon for operator (@)', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'operator',
+            channels: [{ name: '#test', flags: ['o'], maxPermission: 254 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const iconWrapper = screen.getByTitle('Operator');
+      expect(iconWrapper).toBeInTheDocument();
+    });
+
+    it('should display ShieldHalf icon for half-op (%)', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'halfop',
+            channels: [{ name: '#test', flags: ['h'], maxPermission: 253 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const iconWrapper = screen.getByTitle('Half-Op');
+      expect(iconWrapper).toBeInTheDocument();
+    });
+
+    it('should display Mic icon for voice (+)', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'voiced',
+            channels: [{ name: '#test', flags: ['v'], maxPermission: 252 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const iconWrapper = screen.getByTitle('Voice');
+      expect(iconWrapper).toBeInTheDocument();
+    });
+
+    it('should not display any icon for users without flags', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'regular',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.queryByTitle('Owner')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Admin')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Operator')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Half-Op')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Voice')).not.toBeInTheDocument();
+    });
+
+    it('should display all permission icons when user has multiple flags', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'multimode',
+            channels: [{ name: '#test', flags: ['o', 'v'], maxPermission: 254 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      // Should show both operator and voice icons
+      expect(screen.getByTitle('Operator')).toBeInTheDocument();
+      expect(screen.getByTitle('Voice')).toBeInTheDocument();
+    });
+
+    it('should display all icons for user with half-op and voice', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'halfopvoice',
+            channels: [{ name: '#test', flags: ['h', 'v'], maxPermission: 253 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Half-Op')).toBeInTheDocument();
+      expect(screen.getByTitle('Voice')).toBeInTheDocument();
+    });
+
+    it('should not display icon when user is not in the current channel', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'other',
+            channels: [{ name: '#other', flags: ['o'], maxPermission: 254 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.queryByTitle('Operator')).not.toBeInTheDocument();
+    });
+
+    it('should display correct icons for multiple users with different permissions', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'owner',
+            channels: [{ name: '#test', flags: ['q'], maxPermission: 256 }],
+          }),
+          createUser({
+            nick: 'op',
+            channels: [{ name: '#test', flags: ['o'], maxPermission: 254 }],
+          }),
+          createUser({
+            nick: 'regular',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Owner')).toBeInTheDocument();
+      expect(screen.getByTitle('Operator')).toBeInTheDocument();
     });
   });
 });

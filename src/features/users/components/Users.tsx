@@ -1,9 +1,44 @@
 import { useSettingsStore } from '@features/settings/store/settings';
-import { ChannelCategory } from '@shared/types';
+import { ChannelCategory, type UserMode } from '@shared/types';
 import { useTranslation } from 'react-i18next';
 import { usersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
+import { Crown, ShieldCheck, Shield, ShieldHalf, Mic } from 'lucide-react';
+
+const getModeIcons = (flags: string[], userModes: UserMode[]) => {
+  if (flags.length === 0 || userModes.length === 0) return null;
+
+  const icons: React.ReactNode[] = [];
+
+  // Iterate through all modes in priority order and collect matching icons
+  for (const mode of userModes) {
+    if (flags.includes(mode.flag)) {
+      switch (mode.symbol) {
+        case '~':
+          icons.push(<span key={mode.flag} title="Owner"><Crown className="h-4 w-4 text-yellow-500" /></span>);
+          break;
+        case '&':
+          icons.push(<span key={mode.flag} title="Admin"><ShieldCheck className="h-4 w-4 text-purple-500" /></span>);
+          break;
+        case '@':
+          icons.push(<span key={mode.flag} title="Operator"><Shield className="h-4 w-4 text-green-500" /></span>);
+          break;
+        case '%':
+          icons.push(<span key={mode.flag} title="Half-Op"><ShieldHalf className="h-4 w-4 text-blue-500" /></span>);
+          break;
+        case '+':
+          icons.push(<span key={mode.flag} title="Voice"><Mic className="h-4 w-4 text-gray-500" /></span>);
+          break;
+        default:
+          icons.push(<span key={mode.flag} className="text-xs font-bold" title={mode.flag}>{mode.symbol}</span>);
+          break;
+      }
+    }
+  }
+
+  return icons.length > 0 ? icons : null;
+};
 
 const Users = () => {
   const { t } = useTranslation();
@@ -11,6 +46,8 @@ const Users = () => {
   const { handleContextMenuUserClick } = useContextMenu();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const userModes = useSettingsStore((state) => state.userModes);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const users = useCurrentStore((state) => state.users);
 
@@ -46,9 +83,12 @@ const Users = () => {
                       )}
                     </div>
                   )}
-                  <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
-                    {user.nick}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
+                    <span className="text-sm" style={{ color: user.color ?? 'inherit' }}>
+                      {user.nick}
+                    </span>
+                  </div>
                 </button>
               ))}
             </div>
