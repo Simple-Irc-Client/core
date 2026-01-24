@@ -74,13 +74,29 @@ export interface User {
   ident: string;
   hostname: string;
   /**
-   * ircv3
+   * IRCv3 - User's avatar URL from metadata
    */
   avatar?: string;
   /**
-   * ircv3
+   * IRCv3 - User's color preference from metadata
    */
   color?: string;
+  /**
+   * IRCv3 - User's account name (from account-notify/account-tag)
+   */
+  account?: string;
+  /**
+   * IRCv3 - User's real name (from extended-join/SETNAME)
+   */
+  realname?: string;
+  /**
+   * IRCv3 - Whether the user is away (from away-notify)
+   */
+  away?: boolean;
+  /**
+   * IRCv3 - User's away reason (from away-notify)
+   */
+  awayReason?: string;
   /**
    * Global flags - like Away
    */
