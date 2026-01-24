@@ -8,9 +8,11 @@ const fontSizeClasses: Record<FontSize, string> = {
   large: 'text-base',
 };
 import { format } from 'date-fns';
+import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
+import Avatar from '@shared/components/Avatar';
 import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
 import MessageText from './MessageText';
@@ -30,7 +32,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
   return (
     <div className="py-1 px-4 overflow-hidden">
       <code className={`${fontSizeClass} break-all`}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined && (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
@@ -58,7 +60,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   return (
     <div className="py-1 px-4">
       <div className={fontSizeClass}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined ? (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
@@ -105,15 +107,13 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
         <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'}`}>
           <div className="w-10 mr-3 flex-shrink-0">
             {lastNick !== nick && (
-              <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full cursor-pointer" onContextMenu={handleNickContextMenu}>
-                {avatar ? (
-                  <img className="aspect-square h-full w-full" alt={nick} src={avatar} />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                    {avatarLetter}
-                  </span>
-                )}
-              </div>
+              <Avatar
+                src={avatar}
+                alt={nick}
+                fallbackLetter={avatarLetter}
+                className="h-10 w-10 cursor-pointer"
+                onContextMenu={handleNickContextMenu}
+              />
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -124,7 +124,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                 </span>
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                  {format(new Date(message.time), 'HH:mm')}
+                  {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
                 </span>
               </div>
             )}
@@ -140,7 +140,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                     <MessageText text={message.message} />
                   </div>
                   <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                    {format(new Date(message.time), 'HH:mm')}
+                    {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
                   </span>
                 </div>
               )}
@@ -186,6 +186,24 @@ const Chat = () => {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   });
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const content = container.firstElementChild;
+    if (!content) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!isUserScrolledUp.current) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+
+    resizeObserver.observe(content);
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   return (
     <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto overflow-x-hidden relative break-all">

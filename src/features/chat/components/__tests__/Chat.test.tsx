@@ -32,9 +32,21 @@ const createUserNick = (overrides: Partial<User> = {}): User => ({
 describe('Chat tests', () => {
   const mockHandleContextMenuUserClick = vi.fn();
   const mockHandleContextMenuClose = vi.fn();
+  let resizeObserverCallback: ResizeObserverCallback;
+  const mockResizeObserverDisconnect = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock ResizeObserver
+    global.ResizeObserver = class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeObserverCallback = callback;
+      }
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = mockResizeObserverDisconnect;
+    } as unknown as typeof ResizeObserver;
 
     // Default context menu mock for all tests
     vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue({
@@ -379,6 +391,32 @@ describe('Chat tests', () => {
       expect(img).toHaveAttribute('alt', 'ImageUser');
     });
 
+    it('should display fallback letter when avatar fails to load', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Test',
+            nick: createUserNick({ nick: 'BrokenAvatar', avatar: 'http://example.com/broken.png' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      // Initially shows the image
+      const img = screen.getByRole('img');
+      expect(img).toBeInTheDocument();
+
+      // Simulate image load error (404 or network error)
+      fireEvent.error(img);
+
+      // After error, should show fallback letter instead of image
+      expect(screen.getByText('B')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
     it('should apply nick color from User object', () => {
       setupMocks({
         theme: 'modern',
@@ -707,6 +745,95 @@ describe('Chat tests', () => {
         'user',
         'ObjectUser'
       );
+    });
+  });
+
+  describe('Scroll behavior with content resize', () => {
+    it('should set up ResizeObserver on mount', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+      const content = scrollContainer.firstElementChild;
+
+      // ResizeObserver should observe the content element
+      expect(content).toBeTruthy();
+      // Callback should be set (ResizeObserver was instantiated)
+      expect(resizeObserverCallback).toBeDefined();
+    });
+
+    it('should scroll to bottom when content resizes and user has not scrolled up', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      // Simulate content height increase (e.g., image loaded)
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+      scrollContainer.scrollTop = 500;
+
+      // Trigger ResizeObserver callback
+      resizeObserverCallback([], {} as ResizeObserver);
+
+      expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
+    });
+
+    it('should not scroll to bottom when content resizes and user has scrolled up', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      // Simulate scroll container dimensions
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+
+      // User scrolls up (more than 50px from bottom)
+      scrollContainer.scrollTop = 400; // distanceFromBottom = 1000 - 400 - 400 = 200 > 50
+      fireEvent.scroll(scrollContainer);
+
+      const scrollTopBeforeResize = scrollContainer.scrollTop;
+
+      // Trigger ResizeObserver callback (simulating image load)
+      resizeObserverCallback([], {} as ResizeObserver);
+
+      // Should NOT scroll to bottom since user scrolled up
+      expect(scrollContainer.scrollTop).toBe(scrollTopBeforeResize);
+    });
+
+    it('should disconnect ResizeObserver on unmount', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { unmount } = render(<Main />);
+
+      unmount();
+
+      expect(mockResizeObserverDisconnect).toHaveBeenCalled();
+    });
+
+    it('should reset scroll position when changing channels', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { container, rerender } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      // Simulate scroll container dimensions
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+
+      // User scrolls up
+      scrollContainer.scrollTop = 400;
+      fireEvent.scroll(scrollContainer);
+
+      // Change channel
+      setupMocks({ currentChannelName: '#other', messages: [createMessage({ id: '2' })] });
+      rerender(<Main />);
+
+      // Trigger ResizeObserver callback (simulating images loading in new channel)
+      resizeObserverCallback([], {} as ResizeObserver);
+
+      // Should scroll to bottom since channel changed resets isUserScrolledUp
+      expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
   });
 });

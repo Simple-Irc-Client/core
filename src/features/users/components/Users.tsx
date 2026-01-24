@@ -11,6 +11,7 @@ import { usersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic } from 'lucide-react';
+import Avatar from '@shared/components/Avatar';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   if (flags.length === 0 || userModes.length === 0) return null;
@@ -81,15 +82,12 @@ const Users = () => {
                   className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
                 >
                   {!hideAvatarsInUsersList && (
-                    <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full">
-                      {user.avatar ? (
-                        <img className="aspect-square h-full w-full" alt={user.nick} src={user.avatar} />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                          {user.nick.substring(0, 1).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
+                    <Avatar
+                      src={user.avatar}
+                      alt={user.nick}
+                      fallbackLetter={user.nick.substring(0, 1).toUpperCase()}
+                      className="h-10 w-10"
+                    />
                   )}
                   <div className="flex items-center gap-1">
                     {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}

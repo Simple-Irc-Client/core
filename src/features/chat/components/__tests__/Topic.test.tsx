@@ -40,6 +40,11 @@ vi.mock('@features/channels/store/channels', () => ({
   getTopicTime: vi.fn(() => 0),
 }));
 
+vi.mock('@/shared/lib/dateLocale', async () => {
+  const { enUS } = await import('date-fns/locale');
+  return { getDateFnsLocale: () => enUS };
+});
+
 describe('Topic', () => {
   const mockSetChannelsDrawerStatus = vi.fn();
 

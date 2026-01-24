@@ -6,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@shared/components/ui/dialog';
@@ -74,7 +73,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             id="nick"
             value={newNick}
             onChange={(e) => setNewNick(e.target.value)}
-            className="col-span-3"
+            className="col-span-2"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -82,6 +81,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               }
             }}
           />
+          <Button type="button" size="sm" onClick={handleNickChange}>
+            {t('main.toolbar.changeNick')}
+          </Button>
         </div>
         {isAvatarSupported && (
           <div className="grid grid-cols-4 items-center gap-4">
@@ -92,7 +94,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               id="avatar"
               value={newAvatar}
               onChange={(e) => setNewAvatar(e.target.value)}
-              className="col-span-3"
+              className="col-span-2"
               placeholder="https://example.com/avatar.png"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -101,6 +103,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
                 }
               }}
             />
+            <Button type="button" variant="outline" size="sm" onClick={handleAvatarChange}>
+              {t('main.toolbar.changeAvatar')}
+            </Button>
           </div>
         )}
         <div className="grid grid-cols-4 items-center gap-4">
@@ -179,16 +184,6 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         </div>
       </div>
-      <DialogFooter>
-        {isAvatarSupported && (
-          <Button type="button" variant="outline" onClick={handleAvatarChange}>
-            {t('main.toolbar.changeAvatar')}
-          </Button>
-        )}
-        <Button type="button" onClick={handleNickChange}>
-          {t('main.toolbar.changeNick')}
-        </Button>
-      </DialogFooter>
     </>
   );
 };

@@ -10,6 +10,7 @@ import {
 import { Button } from '@shared/components/ui/button';
 import { useAwayMessagesStore, clearAwayMessages } from '@features/channels/store/awayMessages';
 import { format, isToday } from 'date-fns';
+import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 
 interface AwayMessagesProps {
   open: boolean;
@@ -41,7 +42,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
                 <div key={msg.id} className="border rounded-lg p-3">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                     <span className="font-medium">{msg.channel}</span>
-                    <span>{format(new Date(msg.time), isToday(new Date(msg.time)) ? 'HH:mm' : 'HH:mm (d MMM yyyy)')}</span>
+                    <span>{format(new Date(msg.time), isToday(new Date(msg.time)) ? 'HH:mm' : 'HH:mm (d MMM yyyy)', { locale: getDateFnsLocale() })}</span>
                   </div>
                   <div className="text-sm">
                     <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}

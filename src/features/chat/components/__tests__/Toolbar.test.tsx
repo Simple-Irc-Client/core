@@ -1286,6 +1286,174 @@ describe('Toolbar', () => {
     });
   });
 
+  describe('Typing indicator', () => {
+    it('should send typing=active TAGMSG when user starts typing', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'H' } });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=active;+typing=active TAGMSG #test',
+        true
+      );
+    });
+
+    it('should only send typing=active once, not on every keystroke', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+
+      // First keystroke
+      fireEvent.change(input, { target: { value: 'H' } });
+      // Second keystroke
+      fireEvent.change(input, { target: { value: 'He' } });
+      // Third keystroke
+      fireEvent.change(input, { target: { value: 'Hel' } });
+
+      // Should only have been called once with the typing=active message
+      const typingCalls = (network.ircSendRawMessage as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (call) => call[0] === '@+draft/typing=active;+typing=active TAGMSG #test'
+      );
+      expect(typingCalls).toHaveLength(1);
+    });
+
+    it('should send typing=done TAGMSG when message is submitted', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello world' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=done;+typing=done TAGMSG #test',
+        true
+      );
+    });
+
+    it('should not send typing TAGMSG for STATUS_CHANNEL', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: 'Status',
+          currentChannelCategory: ChannelCategory.status,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(
+        expect.stringContaining('TAGMSG'),
+        expect.anything()
+      );
+    });
+
+    it('should not send typing TAGMSG for DEBUG_CHANNEL', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: 'Debug',
+          currentChannelCategory: ChannelCategory.status,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      // DEBUG_CHANNEL doesn't render the input, so nothing to test for typing
+      const input = screen.queryByRole('textbox');
+      expect(input).not.toBeInTheDocument();
+    });
+
+    it('should reset typing status and send typing=done when message is sent', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+
+      // Start typing
+      fireEvent.change(input, { target: { value: 'Hello' } });
+
+      // Submit message
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Verify typing=done was sent
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=done;+typing=done TAGMSG #test',
+        true
+      );
+
+      // Clear mocks and type again - should send typing=active again
+      vi.clearAllMocks();
+      fireEvent.change(input, { target: { value: 'New message' } });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=active;+typing=active TAGMSG #test',
+        true
+      );
+    });
+
+    it('should send typing indicator to correct channel', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#mychannel',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=active;+typing=active TAGMSG #mychannel',
+        true
+      );
+    });
+
+    it('should send typing indicator for private messages', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: 'someuser',
+          currentChannelCategory: ChannelCategory.priv,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello' } });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        '@+draft/typing=active;+typing=active TAGMSG someuser',
+        true
+      );
+    });
+  });
+
   describe('Dark mode toggle', () => {
     const getAvatarButton = () => {
       const buttons = screen.getAllByRole('button');

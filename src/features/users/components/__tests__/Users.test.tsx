@@ -137,6 +137,25 @@ describe('Users', () => {
       expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.png');
     });
 
+    it('should display fallback letter when avatar fails to load', () => {
+      setupMocks({
+        users: [createUser({ nick: 'BrokenUser', avatar: 'https://example.com/broken.png' })],
+      });
+
+      render(<Users />);
+
+      // Initially shows the image
+      const img = screen.getByRole('img');
+      expect(img).toBeInTheDocument();
+
+      // Simulate image load error (404 or network error)
+      fireEvent.error(img);
+
+      // After error, should show fallback letter instead of image
+      expect(screen.getByText('B')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
     it('should apply custom color to user nickname', () => {
       setupMocks({
         users: [createUser({ nick: 'user1', color: '#ff0000' })],
