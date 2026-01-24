@@ -749,20 +749,30 @@ describe('Chat tests', () => {
   });
 
   describe('Scroll behavior on channel change', () => {
-    let rafCallback: FrameRequestCallback | null = null;
+    const rafCallbacks: { current: FrameRequestCallback | null } = { current: null };
     let originalRaf: typeof requestAnimationFrame;
+
+    const executeRafCallback = () => {
+      if (rafCallbacks.current) {
+        rafCallbacks.current(performance.now());
+      }
+    };
+
+    const clearRafCallback = () => {
+      rafCallbacks.current = null;
+    };
 
     beforeEach(() => {
       originalRaf = global.requestAnimationFrame;
       global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-        rafCallback = callback;
+        rafCallbacks.current = callback;
         return 1;
       });
     });
 
     afterEach(() => {
       global.requestAnimationFrame = originalRaf;
-      rafCallback = null;
+      rafCallbacks.current = null;
     });
 
     it('should use requestAnimationFrame to scroll to bottom on channel change', () => {
@@ -771,7 +781,7 @@ describe('Chat tests', () => {
       const { rerender } = render(<Main />);
 
       // Clear the initial raf call
-      rafCallback = null;
+      clearRafCallback();
       vi.mocked(global.requestAnimationFrame).mockClear();
 
       // Change channel
@@ -780,7 +790,7 @@ describe('Chat tests', () => {
 
       // requestAnimationFrame should be called on channel change
       expect(global.requestAnimationFrame).toHaveBeenCalled();
-      expect(rafCallback).not.toBeNull();
+      expect(rafCallbacks.current).not.toBeNull();
     });
 
     it('should scroll to bottom when requestAnimationFrame callback executes after channel change', () => {
@@ -798,7 +808,7 @@ describe('Chat tests', () => {
       fireEvent.scroll(scrollContainer);
 
       // Clear the raf callback and mock
-      rafCallback = null;
+      clearRafCallback();
       vi.mocked(global.requestAnimationFrame).mockClear();
 
       // Change channel
@@ -806,9 +816,7 @@ describe('Chat tests', () => {
       rerender(<Main />);
 
       // Execute the raf callback (simulates browser executing after DOM update)
-      if (rafCallback) {
-        rafCallback(performance.now());
-      }
+      executeRafCallback();
 
       // Should scroll to bottom
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
@@ -829,16 +837,14 @@ describe('Chat tests', () => {
       fireEvent.scroll(scrollContainer);
 
       // Clear raf
-      rafCallback = null;
+      clearRafCallback();
 
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
 
       // Execute raf callback
-      if (rafCallback) {
-        rafCallback(performance.now());
-      }
+      executeRafCallback();
 
       // Trigger ResizeObserver (simulating content update)
       resizeObserverCallback([], {} as ResizeObserver);
@@ -857,16 +863,14 @@ describe('Chat tests', () => {
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
       Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
 
-      rafCallback = null;
+      clearRafCallback();
 
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
 
       // Execute raf callback to trigger programmatic scroll
-      if (rafCallback) {
-        rafCallback(performance.now());
-      }
+      executeRafCallback();
 
       // Simulate scroll event that would normally be triggered by scrollTop assignment
       // This tests that the scroll position is maintained after the raf executes
@@ -887,9 +891,7 @@ describe('Chat tests', () => {
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 500, configurable: true });
 
       // Execute initial raf callback
-      if (rafCallback) {
-        rafCallback(performance.now());
-      }
+      executeRafCallback();
 
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
