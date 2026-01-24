@@ -1,6 +1,8 @@
 import { websocketHost, websocketPort } from '@/config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
+import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
+import { setSaslCredentials, resetSaslState, clearSaslCredentials } from './sasl';
 
 // Native WebSocket connection
 let sicSocket: WebSocket | null = null;
@@ -101,6 +103,11 @@ export const ircDisconnect = (): void => {
   // Clear the message queue
   queueIrcMessages.length = 0;
 
+  // Reset IRCv3 state
+  resetCapabilityState();
+  resetSaslState();
+  clearSaslCredentials();
+
   // Close the WebSocket connection if it exists
   if (sicSocket) {
     sicSocket.close();
@@ -133,8 +140,41 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   sendMessage(command);
 };
 
+/**
+ * Store credentials for SASL authentication during CAP negotiation.
+ * Call this before connecting to enable SASL auth.
+ * @param account - The account name (usually same as nick)
+ * @param password - The account password
+ */
+export const ircSetSaslCredentials = (account: string, password: string): void => {
+  setSaslCredentials(account, password);
+};
+
+/**
+ * Send password to authenticate with NickServ.
+ * This is used as a fallback when SASL is not available.
+ * @param password - The account password
+ */
 export const ircSendPassword = (password: string): void => {
+  // Use NickServ IDENTIFY as fallback when SASL is not available
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${password}`);
+};
+
+/**
+ * Authenticate using either SASL (if available) or NickServ fallback.
+ * @param account - The account name
+ * @param password - The account password
+ */
+export const ircAuthenticate = (account: string, password: string): void => {
+  if (isCapabilityEnabled('sasl')) {
+    // SASL should have already authenticated during CAP negotiation
+    // If we get here, something went wrong - try NickServ
+    console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
+    ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
+  } else {
+    // No SASL, use NickServ
+    ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
+  }
 };
 
 export const ircSendList = (): void => {
@@ -163,6 +203,97 @@ export const ircRequestMetadata = (): void => {
 
 export const ircRequestMetadataList = (nick: string): void => {
   ircSendRawMessage(`METADATA ${nick} LIST`, true);
+};
+
+/**
+ * Request chat history for a target (channel or user)
+ * https://ircv3.net/specs/extensions/chathistory
+ *
+ * @param target - Channel or nick to get history for
+ * @param subcommand - LATEST, BEFORE, AFTER, AROUND, BETWEEN
+ * @param timestamp - Reference timestamp (ISO 8601 or msgid)
+ * @param limit - Maximum number of messages to return
+ */
+export const ircRequestChatHistory = (
+  target: string,
+  subcommand: 'LATEST' | 'BEFORE' | 'AFTER' | 'AROUND' = 'LATEST',
+  timestamp?: string,
+  limit = 50,
+): void => {
+  if (subcommand === 'LATEST') {
+    // CHATHISTORY LATEST <target> * <limit>
+    ircSendRawMessage(`CHATHISTORY LATEST ${target} * ${limit}`);
+  } else if (timestamp) {
+    // CHATHISTORY BEFORE/AFTER/AROUND <target> timestamp=<ts> <limit>
+    ircSendRawMessage(`CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${limit}`);
+  }
+};
+
+/**
+ * Request chat history between two timestamps
+ * @param target - Channel or nick
+ * @param startTime - Start timestamp (ISO 8601)
+ * @param endTime - End timestamp (ISO 8601)
+ * @param limit - Maximum number of messages
+ */
+export const ircRequestChatHistoryBetween = (
+  target: string,
+  startTime: string,
+  endTime: string,
+  limit = 50,
+): void => {
+  ircSendRawMessage(`CHATHISTORY BETWEEN ${target} timestamp=${startTime} timestamp=${endTime} ${limit}`);
+};
+
+/**
+ * Request available chat history targets
+ */
+export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): void => {
+  if (timestamp) {
+    ircSendRawMessage(`CHATHISTORY TARGETS timestamp=${timestamp} ${limit}`);
+  } else {
+    ircSendRawMessage(`CHATHISTORY TARGETS * ${limit}`);
+  }
+};
+
+/**
+ * Add nicks to the MONITOR list
+ * https://ircv3.net/specs/extensions/monitor.html
+ * @param nicks - Array of nicks to monitor
+ */
+export const ircMonitorAdd = (nicks: string[]): void => {
+  if (nicks.length === 0) return;
+  ircSendRawMessage(`MONITOR + ${nicks.join(',')}`);
+};
+
+/**
+ * Remove nicks from the MONITOR list
+ * @param nicks - Array of nicks to stop monitoring
+ */
+export const ircMonitorRemove = (nicks: string[]): void => {
+  if (nicks.length === 0) return;
+  ircSendRawMessage(`MONITOR - ${nicks.join(',')}`);
+};
+
+/**
+ * Clear the entire MONITOR list
+ */
+export const ircMonitorClear = (): void => {
+  ircSendRawMessage('MONITOR C');
+};
+
+/**
+ * Request the current MONITOR list
+ */
+export const ircMonitorList = (): void => {
+  ircSendRawMessage('MONITOR L');
+};
+
+/**
+ * Request status of all monitored nicks
+ */
+export const ircMonitorStatus = (): void => {
+  ircSendRawMessage('MONITOR S');
 };
 
 export const ircSendRawMessage = (data: string, queue?: boolean): void => {

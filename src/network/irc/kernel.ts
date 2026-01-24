@@ -38,10 +38,39 @@ import {
   setUserModes,
   setWatchLimit,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor } from '@features/users/store/users';
-import { ChannelCategory, MessageCategory, type UserTypingStatus } from '@shared/types';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
+import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
+import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
+import {
+  addAvailableCapabilities,
+  endCapNegotiation,
+  getCapabilitiesToRequest,
+  isCapabilityEnabled,
+  markCapabilitiesAcknowledged,
+  markCapabilitiesRequested,
+  parseCapabilityList,
+  removeCapabilities,
+  setAwaitingMoreCaps,
+} from './capabilities';
+import {
+  getSaslAccount,
+  getSaslPassword,
+  getSaslState,
+  handleSaslChallenge,
+  setAuthenticatedAccount,
+  setSaslState,
+} from './sasl';
+import {
+  startBatch,
+  endBatch,
+  addToBatch,
+  getMessageBatchId,
+  resolveLabeledResponse,
+  BATCH_TYPES,
+  type BatchState,
+} from './batch';
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { defaultChannelTypes, defaultMaxPermission } from '@/config/config';
@@ -373,7 +402,24 @@ export class Kernel {
       color: MessageColor.serverFrom,
     });
 
+    // Check if this message belongs to an active batch
+    // BATCH commands themselves should not be buffered
+    if (command !== 'BATCH') {
+      const batchId = getMessageBatchId({ tags, sender, command, line: [...line] });
+      if (batchId) {
+        // Buffer this message for later processing when batch ends
+        addToBatch(batchId, { tags, sender, command, line: [...line] });
+        return;
+      }
+    }
+
     switch (command) {
+      case 'ACCOUNT':
+        this.onAccount();
+        break;
+      case 'AUTHENTICATE':
+        this.onAuthenticate();
+        break;
       case 'AWAY':
         this.onAway();
         break;
@@ -382,6 +428,9 @@ export class Kernel {
         break;
       case 'CAP':
         this.onCap();
+        break;
+      case 'CHGHOST':
+        this.onChghost();
         break;
       case 'ERROR':
         this.onError();
@@ -424,6 +473,9 @@ export class Kernel {
         break;
       case 'QUIT':
         this.onQuit();
+        break;
+      case 'SETNAME':
+        this.onSetname();
         break;
       case 'TAGMSG':
         this.onTagMsg();
@@ -589,6 +641,49 @@ export class Kernel {
         this.onRaw766();
         break;
 
+      // SASL authentication responses
+      case RPL_LOGGEDIN:
+        this.onRaw900();
+        break;
+      case RPL_LOGGEDOUT:
+        this.onRaw901();
+        break;
+      case ERR_NICKLOCKED:
+        this.onRaw902();
+        break;
+      case RPL_SASLSUCCESS:
+        this.onRaw903();
+        break;
+      case ERR_SASLFAIL:
+        this.onRaw904();
+        break;
+      case ERR_SASLTOOLONG:
+        this.onRaw905();
+        break;
+      case ERR_SASLABORTED:
+        this.onRaw906();
+        break;
+      case ERR_SASLALREADY:
+        this.onRaw907();
+        break;
+
+      // MONITOR responses
+      case RPL_MONONLINE:
+        this.onRaw730();
+        break;
+      case RPL_MONOFFLINE:
+        this.onRaw731();
+        break;
+      case RPL_MONLIST:
+        this.onRaw732();
+        break;
+      case RPL_ENDOFMONLIST:
+        this.onRaw733();
+        break;
+      case ERR_MONLISTFULL:
+        this.onRaw734();
+        break;
+
       default:
         console.log(`unknown irc event: ${JSON.stringify(event)}`);
         break;
@@ -619,51 +714,535 @@ export class Kernel {
     // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
   };
 
+  // IRCv3 account-notify: User logs in or out of their account
+  // :nick!user@host ACCOUNT accountname
+  // :nick!user@host ACCOUNT *  (logged out)
+  private readonly onAccount = (): void => {
+    const { nick } = parseNick(this.sender, getUserModes());
+    const account = this.line[0];
+
+    if (!account || account === '*') {
+      // User logged out
+      setUserAccount(nick, null);
+    } else {
+      setUserAccount(nick, account);
+    }
+  };
+
+  // IRCv3 away-notify: User away status changes
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
   // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
   private readonly onAway = (): void => {
-    //
+    const { nick } = parseNick(this.sender, getUserModes());
+    const reason = this.line.length > 0 ? this.line.join(' ').replace(/^:/, '') : undefined;
+
+    if (reason) {
+      // User is away
+      setUserAway(nick, true, reason);
+    } else {
+      // User is back (no reason = not away)
+      setUserAway(nick, false);
+    }
   };
 
   // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
   // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
+  // BATCH +reference type [params...]
+  // BATCH -reference
   private readonly onBatch = (): void => {
-    //
+    const reference = this.line.shift();
+
+    if (!reference) return;
+
+    if (reference.startsWith('+')) {
+      // Start batch
+      const id = reference.substring(1);
+      const type = this.line.shift() ?? '';
+      const params = [...this.line];
+
+      // Get the label tag for labeled-response correlation
+      const label = this.tags?.label;
+
+      startBatch(id, type, params, label);
+    } else if (reference.startsWith('-')) {
+      // End batch
+      const id = reference.substring(1);
+      const batch = endBatch(id);
+
+      if (batch) {
+        this.processBatch(batch);
+      }
+    }
   };
 
-  // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor
-  // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
-  // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag
-  private readonly onCap = (): void => {
-    const user = this.line.shift();
-    const type = this.line.shift(); // LS, ACK, NAK, LIST, NEW, DEL
+  /** Process a completed batch based on its type */
+  private readonly processBatch = (batch: BatchState): void => {
+    switch (batch.type) {
+      case BATCH_TYPES.CHATHISTORY:
+        this.processChatHistoryBatch(batch);
+        break;
+      case BATCH_TYPES.LABELED_RESPONSE:
+        this.processLabeledResponseBatch(batch);
+        break;
+      case BATCH_TYPES.NETJOIN:
+      case BATCH_TYPES.NETSPLIT:
+        // Process each message individually (they're JOIN/QUIT messages)
+        for (const message of batch.messages) {
+          this.processBufferedMessage(message);
+        }
+        break;
+      default:
+        // Unknown batch type - process messages individually
+        for (const message of batch.messages) {
+          this.processBufferedMessage(message);
+        }
+    }
+  };
 
-    if (user !== '*' || type !== 'LS') {
+  /** Process chathistory batch - insert messages at beginning of channel */
+  private readonly processChatHistoryBatch = (batch: BatchState): void => {
+    const target = batch.params[0];
+    if (!target) return;
+
+    // Process each message in the batch
+    // Messages in chathistory are in chronological order (oldest first)
+    for (const message of batch.messages) {
+      this.processBufferedMessage(message);
+    }
+  };
+
+  /** Process labeled-response batch */
+  private readonly processLabeledResponseBatch = (batch: BatchState): void => {
+    if (batch.referenceTag) {
+      resolveLabeledResponse(batch.referenceTag, batch);
+    }
+
+    // Also process the messages normally
+    for (const message of batch.messages) {
+      this.processBufferedMessage(message);
+    }
+  };
+
+  /** Process a buffered message from a batch */
+  private readonly processBufferedMessage = (message: ParsedIrcRawMessage): void => {
+    // Re-process the message through the normal handler
+    // Store current state
+    const prevTags = this.tags;
+    const prevSender = this.sender;
+    const prevCommand = this.command;
+    const prevLine = this.line;
+
+    // Set up for processing
+    this.tags = message.tags;
+    this.sender = message.sender;
+    this.command = message.command;
+    this.line = [...message.line];
+
+    // Process based on command (simplified - just handle main ones)
+    switch (message.command) {
+      case 'PRIVMSG':
+        this.onPrivMsg();
+        break;
+      case 'NOTICE':
+        this.onNotice();
+        break;
+      case 'JOIN':
+        this.onJoin();
+        break;
+      case 'PART':
+        this.onPart();
+        break;
+      case 'QUIT':
+        this.onQuit();
+        break;
+      case 'NICK':
+        this.onNick();
+        break;
+      case 'TOPIC':
+        this.onTopic();
+        break;
+      case 'MODE':
+        this.onMode();
+        break;
+    }
+
+    // Restore state
+    this.tags = prevTags;
+    this.sender = prevSender;
+    this.command = prevCommand;
+    this.line = prevLine;
+  };
+
+  // IRCv3 chghost: User's username or hostname changed
+  // :nick!user@host CHGHOST newuser newhost
+  private readonly onChghost = (): void => {
+    const { nick } = parseNick(this.sender, getUserModes());
+    const newIdent = this.line[0];
+    const newHostname = this.line[1];
+
+    if (newIdent && newHostname) {
+      setUserHost(nick, newIdent, newHostname);
+
+      // Display message in shared channels
+      const channels = getUserChannels(nick);
+      for (const channelName of channels) {
+        setAddMessage({
+          id: this.tags?.msgid ?? uuidv4(),
+          message: i18next.t('kernel.chghost', { nick, ident: newIdent, hostname: newHostname }),
+          target: channelName,
+          time: this.tags?.time ?? new Date().toISOString(),
+          category: MessageCategory.info,
+          color: MessageColor.info,
+        });
+      }
+    }
+  };
+
+  // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 ...
+  // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log
+  // :saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join ...
+  // :server CAP * NAK :some-cap
+  // :server CAP * NEW :new-cap
+  // :server CAP * DEL :removed-cap
+  private readonly onCap = (): void => {
+    const target = this.line.shift(); // '*' or nick
+    const subcommand = this.line.shift()?.toUpperCase(); // LS, ACK, NAK, LIST, NEW, DEL
+
+    if (!subcommand) return;
+
+    switch (subcommand) {
+      case 'LS':
+      case 'LIST': {
+        // Check if this is a multiline response (has '*' before the cap list)
+        const isMultiline = this.line?.[0] === '*';
+        if (isMultiline) {
+          this.line.shift();
+          setAwaitingMoreCaps(true);
+        } else {
+          setAwaitingMoreCaps(false);
+        }
+
+        // Parse capabilities
+        const capString = this.line.join(' ');
+        const caps = parseCapabilityList(capString);
+        addAvailableCapabilities(caps);
+
+        // If this is the last line, request capabilities
+        if (!isMultiline) {
+          this.requestCapabilities();
+        }
+        break;
+      }
+
+      case 'ACK': {
+        // Server acknowledged our capability request
+        const capString = this.line.join(' ');
+        const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
+        const ackCaps = cleanString.split(' ').filter((c) => c.length > 0);
+
+        markCapabilitiesAcknowledged(ackCaps);
+
+        // Mark capabilities as supported options for backward compatibility
+        for (const cap of ackCaps) {
+          setSupportedOption(cap);
+        }
+
+        // Handle special capabilities
+        if (isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
+          ircRequestMetadata();
+          setSupportedOption('metadata');
+        }
+
+        // If SASL is acknowledged and we have credentials, start authentication
+        if (isCapabilityEnabled('sasl') && getSaslAccount() && getSaslPassword()) {
+          this.startSaslAuthentication();
+        } else {
+          // No SASL or no credentials, end CAP negotiation
+          this.endCapNegotiation();
+        }
+        break;
+      }
+
+      case 'NAK': {
+        // Server rejected our capability request
+        const capString = this.line.join(' ');
+        const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
+        const nakCaps = cleanString.split(' ').filter((c) => c.length > 0);
+
+        console.warn('CAP NAK - capabilities rejected:', nakCaps);
+
+        // End negotiation even if some caps were rejected
+        this.endCapNegotiation();
+        break;
+      }
+
+      case 'NEW': {
+        // Server advertises new capabilities (cap-notify)
+        const capString = this.line.join(' ');
+        const caps = parseCapabilityList(capString);
+        addAvailableCapabilities(caps);
+
+        // Request new capabilities if we want them
+        const toRequest = getCapabilitiesToRequest();
+        if (toRequest.length > 0) {
+          ircSendRawMessage(`CAP REQ :${toRequest.join(' ')}`);
+          markCapabilitiesRequested(toRequest);
+        }
+        break;
+      }
+
+      case 'DEL': {
+        // Server removes capabilities (cap-notify)
+        const capString = this.line.join(' ');
+        const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
+        const delCaps = cleanString.split(' ').filter((c) => c.length > 0);
+
+        removeCapabilities(delCaps);
+        break;
+      }
+    }
+  };
+
+  /** Request desired capabilities from server */
+  private readonly requestCapabilities = (): void => {
+    const toRequest = getCapabilitiesToRequest();
+
+    if (toRequest.length > 0) {
+      ircSendRawMessage(`CAP REQ :${toRequest.join(' ')}`);
+      markCapabilitiesRequested(toRequest);
+    } else {
+      // No capabilities to request, end negotiation
+      this.endCapNegotiation();
+    }
+  };
+
+  /** Start SASL authentication */
+  private readonly startSaslAuthentication = (): void => {
+    setSaslState('requested');
+    // Request PLAIN mechanism (most widely supported)
+    ircSendRawMessage('AUTHENTICATE PLAIN');
+  };
+
+  /** End CAP negotiation and continue with registration */
+  private readonly endCapNegotiation = (): void => {
+    endCapNegotiation();
+    ircSendRawMessage('CAP END');
+  };
+
+  // AUTHENTICATE + (server ready for credentials)
+  // AUTHENTICATE <base64 challenge> (for mechanisms that need it)
+  private readonly onAuthenticate = (): void => {
+    const challenge = this.line[0] ?? '+';
+
+    if (getSaslState() !== 'requested' && getSaslState() !== 'authenticating') {
+      // Not expecting authentication
       return;
     }
 
-    if (this.line?.[0] === '*') {
-      this.line.shift();
+    setSaslState('authenticating');
+
+    const responses = handleSaslChallenge(challenge, 'PLAIN');
+
+    if (responses === null) {
+      // Abort authentication
+      ircSendRawMessage('AUTHENTICATE *');
+      setSaslState('failed');
+      this.endCapNegotiation();
+      return;
     }
 
-    const caps: Record<string, string> = {};
+    // Send response(s)
+    for (const response of responses) {
+      ircSendRawMessage(`AUTHENTICATE ${response}`);
+    }
+  };
 
-    const capList = this.line.join(' ').substring(1).split(' ');
-    for (const cap of capList) {
-      if (!cap.includes('=')) {
-        caps[cap] = '';
-      } else {
-        const key = cap.substring(0, cap.indexOf('='));
-        const value = cap.substring(cap.indexOf('=') + 1);
-        caps[key] = value;
+  // :server 900 <nick> <nick>!<ident>@<host> <account> :You are now logged in as <account>
+  private readonly onRaw900 = (): void => {
+    const account = this.line[2] ?? null;
+    setAuthenticatedAccount(account);
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.loggedIn', { account }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 901 <nick> <nick>!<ident>@<host> :You are now logged out
+  private readonly onRaw901 = (): void => {
+    setAuthenticatedAccount(null);
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.loggedOut'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 902 <nick> :You must use a nick assigned to you
+  private readonly onRaw902 = (): void => {
+    setSaslState('failed');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.nickLocked'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    this.endCapNegotiation();
+  };
+
+  // :server 903 <nick> :SASL authentication successful
+  private readonly onRaw903 = (): void => {
+    setSaslState('success');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.success'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+
+    this.endCapNegotiation();
+  };
+
+  // :server 904 <nick> :SASL authentication failed
+  private readonly onRaw904 = (): void => {
+    setSaslState('failed');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.failed'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    this.endCapNegotiation();
+  };
+
+  // :server 905 <nick> :SASL message too long
+  private readonly onRaw905 = (): void => {
+    setSaslState('failed');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.tooLong'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    this.endCapNegotiation();
+  };
+
+  // :server 906 <nick> :SASL authentication aborted
+  private readonly onRaw906 = (): void => {
+    setSaslState('failed');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.sasl.aborted'),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+
+    this.endCapNegotiation();
+  };
+
+  // :server 907 <nick> :You have already authenticated using SASL
+  private readonly onRaw907 = (): void => {
+    // Already authenticated, just continue
+    setSaslState('success');
+    this.endCapNegotiation();
+  };
+
+  // MONITOR responses
+  // :server 730 <nick> :nick1!user@host,nick2!user@host
+  private readonly onRaw730 = (): void => {
+    // RPL_MONONLINE - users are online
+    const userList = this.line.slice(1).join(' ').replace(/^:/, '');
+    if (!userList) return;
+
+    const users = userList.split(',');
+    const nicks: string[] = [];
+    const userStrings: string[] = [];
+
+    for (const user of users) {
+      const nick = user.split('!')[0];
+      if (nick) {
+        nicks.push(nick);
+        userStrings.push(user);
       }
     }
 
-    const capsKeys = Object.keys(caps);
-    if (capsKeys.includes('draft/metadata')) {
-      ircRequestMetadata();
-      setSupportedOption('metadata');
+    if (nicks.length > 0) {
+      setMultipleMonitorOnline(nicks, userStrings);
     }
+  };
+
+  // :server 731 <nick> :nick1,nick2,nick3
+  private readonly onRaw731 = (): void => {
+    // RPL_MONOFFLINE - users are offline
+    const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
+    if (!nickList) return;
+
+    const nicks = nickList.split(',').filter((n) => n.length > 0);
+
+    if (nicks.length > 0) {
+      setMultipleMonitorOffline(nicks);
+    }
+  };
+
+  // :server 732 <nick> :nick1,nick2,nick3
+  private readonly onRaw732 = (): void => {
+    // RPL_MONLIST - list of monitored nicks
+    const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
+    if (!nickList) return;
+
+    const nicks = nickList.split(',').filter((n) => n.length > 0);
+
+    for (const nick of nicks) {
+      addMonitoredNick(nick);
+    }
+  };
+
+  // :server 733 <nick> :End of MONITOR list
+  private readonly onRaw733 = (): void => {
+    // RPL_ENDOFMONLIST - end of monitor list
+    // Nothing to do, just marks end of list
+  };
+
+  // :server 734 <nick> <limit> <nicks> :Monitor list is full
+  private readonly onRaw734 = (): void => {
+    // ERR_MONLISTFULL - cannot add more nicks to monitor
+    const limit = this.line[1];
+    const nicks = this.line[2];
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.monitor.listFull', { limit, nicks }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
   };
 
   // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
@@ -1153,18 +1732,35 @@ export class Kernel {
       return;
     }
 
+    // IRCv3 echo-message: When this is our own message echoed back by the server
+    // We use the server-provided msgid and timestamp for accurate message ordering
+    const isEchoMessage = nick === myNick && isCapabilityEnabled('echo-message');
+
+    // Common IRC services - don't create query windows for echoed messages to these
+    const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
+    const isServiceTarget = IRC_SERVICES.includes(target.toLowerCase());
+
+    // Skip echoed messages to IRC services (they may contain passwords)
+    if (isEchoMessage && isServiceTarget) {
+      return;
+    }
+
     const isPrivMessage = target === myNick;
+    // For echo-message to a channel, target is the channel
+    // For regular private message, target is our nick
     const messageTarget = isPrivMessage ? nick : target;
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
     }
 
-    if (messageTarget !== currentChannelName) {
+    // Don't increase unread count for our own echoed messages
+    if (messageTarget !== currentChannelName && !isEchoMessage) {
       setIncreaseUnreadMessages(messageTarget);
     }
 
-    if (messageTarget === currentChannelName) {
+    // Clear typing indicator (but not for our own echoed messages)
+    if (messageTarget === currentChannelName && !isEchoMessage) {
       setTyping(messageTarget, nick, 'done');
     }
 
@@ -1181,20 +1777,22 @@ export class Kernel {
       color: MessageColor.default,
     });
 
-    // Check if user is away and message mentions their nick
-    const userFlags = getCurrentUserFlags();
-    const isAway = userFlags.includes('away');
-    if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
-      addAwayMessage({
-        id: messageId,
-        message,
-        nick: getUser(nick) ?? nick,
-        target: messageTarget,
-        time: messageTime,
-        category: MessageCategory.default,
-        color: MessageColor.default,
-        channel: messageTarget,
-      });
+    // Check if user is away and message mentions their nick (not for echoed messages)
+    if (!isEchoMessage) {
+      const userFlags = getCurrentUserFlags();
+      const isAway = userFlags.includes('away');
+      if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
+        addAwayMessage({
+          id: messageId,
+          message,
+          nick: getUser(nick) ?? nick,
+          target: messageTarget,
+          time: messageTime,
+          category: MessageCategory.default,
+          color: MessageColor.default,
+          channel: messageTarget,
+        });
+      }
     }
   };
 
@@ -1213,6 +1811,30 @@ export class Kernel {
     };
 
     setQuitUser(nick, message);
+  };
+
+  // IRCv3 setname: User changed their real name
+  // :nick!user@host SETNAME :New Real Name
+  private readonly onSetname = (): void => {
+    const { nick } = parseNick(this.sender, getUserModes());
+    const realname = this.line.join(' ').replace(/^:/, '');
+
+    if (realname) {
+      setUserRealname(nick, realname);
+
+      // Display message in shared channels
+      const channels = getUserChannels(nick);
+      for (const channelName of channels) {
+        setAddMessage({
+          id: this.tags?.msgid ?? uuidv4(),
+          message: i18next.t('kernel.setname', { nick, realname }),
+          target: channelName,
+          time: this.tags?.time ?? new Date().toISOString(),
+          category: MessageCategory.info,
+          color: MessageColor.info,
+        });
+      }
+    }
   };
 
   // @+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie

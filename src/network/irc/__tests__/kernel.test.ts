@@ -91,15 +91,17 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
+    // CAP LS with multiline indicator (*) - should buffer capabilities, not call setSupportedOption yet
     const line =
       ':chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 unrealircd.org/plaintext-policy=user=allow,oper=deny,server=deny unrealircd.org/history-storage=memory draft/metadata-notify-2 draft/metadata=maxsub=10 pirc.pl/killme away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify sasl=EXTERNAL,PLAIN setname tls chghost account-notify message-tags batch server-time account-tag echo-message labeled-response draft/chathistory draft/extended-monitor';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockSetSupportedOption).toBeCalledTimes(1);
-    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata');
-    expect(mockIrcRequestMetadata).toBeCalledTimes(1);
+    // CAP LS with multiline (*) should not trigger CAP REQ yet - waiting for more caps
+    expect(mockSetSupportedOption).toBeCalledTimes(0);
+    expect(mockIrcRequestMetadata).toBeCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -125,13 +127,21 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
+    // CAP ACK - server acknowledged capabilities, should call setSupportedOption for each
     const line = ':saturn.pirc.pl CAP sic-test ACK :away-notify invite-notify extended-join userhost-in-names multi-prefix cap-notify account-notify message-tags batch server-time account-tag';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockSetSupportedOption).toBeCalledTimes(0);
+    // Should call setSupportedOption for each ACKed capability (11 caps)
+    expect(mockSetSupportedOption).toBeCalledTimes(11);
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('away-notify');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('message-tags');
+    // No draft/metadata in ACK, so no ircRequestMetadata call
     expect(mockIrcRequestMetadata).toBeCalledTimes(0);
+    // Should send CAP END after ACK
+    expect(mockIrcSendRawMessage).toHaveBeenCalledWith('CAP END');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);

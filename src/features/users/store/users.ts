@@ -16,6 +16,10 @@ interface UsersStore {
   setJoinUser: (nick: string, channelName: string) => void;
   setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
+  setUserAccount: (nick: string, account: string | null) => void;
+  setUserAway: (nick: string, away: boolean, reason?: string) => void;
+  setUserHost: (nick: string, ident: string, hostname: string) => void;
+  setUserRealname: (nick: string, realname: string) => void;
   setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
   setClearAll: () => void;
 }
@@ -87,6 +91,46 @@ export const useUsersStore = create<UsersStore>()(
             return user;
           }
           return { ...user, color };
+        }),
+      }));
+    },
+    setUserAccount: (nick: string, account: string | null): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, account: account ?? undefined };
+        }),
+      }));
+    },
+    setUserAway: (nick: string, away: boolean, reason?: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, away, awayReason: reason };
+        }),
+      }));
+    },
+    setUserHost: (nick: string, ident: string, hostname: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, ident, hostname };
+        }),
+      }));
+    },
+    setUserRealname: (nick: string, realname: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, realname };
         }),
       }));
     },
@@ -256,6 +300,36 @@ export const setUserColor = (nick: string, color: string): void => {
   if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
+};
+
+export const setUserAccount = (nick: string, account: string | null): void => {
+  useUsersStore.getState().setUserAccount(nick, account);
+};
+
+export const setUserAway = (nick: string, away: boolean, reason?: string): void => {
+  useUsersStore.getState().setUserAway(nick, away, reason);
+
+  const channels = getUser(nick)?.channels ?? [];
+  const currentChannelName = getCurrentChannelName();
+
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
+};
+
+export const setUserHost = (nick: string, ident: string, hostname: string): void => {
+  useUsersStore.getState().setUserHost(nick, ident, hostname);
+
+  const channels = getUser(nick)?.channels ?? [];
+  const currentChannelName = getCurrentChannelName();
+
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
+};
+
+export const setUserRealname = (nick: string, realname: string): void => {
+  useUsersStore.getState().setUserRealname(nick, realname);
 };
 
 export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
