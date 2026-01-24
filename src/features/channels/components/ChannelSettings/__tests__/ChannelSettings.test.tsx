@@ -32,7 +32,7 @@ vi.mock('@shared/components/ui/dialog', () => ({
 }));
 
 vi.mock('@shared/components/ui/tabs', () => ({
-  Tabs: ({ children, value, onValueChange }: { children: React.ReactNode; value: string; onValueChange: (v: string) => void }) => (
+  Tabs: ({ children, value }: { children: React.ReactNode; value: string }) => (
     <div data-testid="tabs" data-value={value}>{children}</div>
   ),
   TabsList: ({ children }: { children: React.ReactNode }) => <div data-testid="tabs-list">{children}</div>,

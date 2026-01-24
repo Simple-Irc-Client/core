@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import UsersTab from '../tabs/UsersTab';
 import * as network from '@/network/irc/network';
 import * as usersStore from '@features/users/store/users';
+import type { User } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -61,7 +62,7 @@ vi.mock('@features/settings/store/settings', () => ({
 describe('UsersTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(mockUsers as any);
+    vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(mockUsers as User[]);
     vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['o']);
   });
 
@@ -200,7 +201,7 @@ describe('UsersTab', () => {
           channels: [{ name: '#test', flags: ['o'] }],
         },
       ];
-      vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(usersWithVoice as any);
+      vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(usersWithVoice as User[]);
 
       render(<UsersTab channelName="#test" />);
 
@@ -230,7 +231,7 @@ describe('UsersTab', () => {
         { nick: 'Operator', channels: [{ name: '#test', flags: ['o'] }] },
         { nick: 'testuser', channels: [{ name: '#test', flags: ['q'] }] },
       ];
-      vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(users as any);
+      vi.spyOn(usersStore, 'getUsersFromChannelSortedByMode').mockReturnValue(users as User[]);
 
       render(<UsersTab channelName="#test" />);
 

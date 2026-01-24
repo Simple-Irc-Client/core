@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { useSettingsStore } from '@features/settings/store/settings';
@@ -33,26 +33,21 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const [key, setKey] = useState('');
   const [rawModes, setRawModes] = useState('');
 
-  // Update local state when channelModes changes
-  useEffect(() => {
-    if (channelModes.l !== undefined) {
-      setLimit(String(channelModes.l));
-    } else {
-      setLimit('');
-    }
-    if (channelModes.k !== undefined) {
-      setKey(String(channelModes.k));
-    } else {
-      setKey('');
-    }
-
-    // Build raw modes string from current modes
+  // Derive initial values from channelModes
+  const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
+  const initialKey = useMemo(() => (channelModes.k !== undefined ? String(channelModes.k) : ''), [channelModes.k]);
+  const initialRawModes = useMemo(() => {
     const flags = Object.entries(channelModes)
       .filter(([, value]) => value === true)
-      .map(([key]) => key)
+      .map(([k]) => k)
       .join('');
-    setRawModes(flags ? `+${flags}` : '');
+    return flags ? `+${flags}` : '';
   }, [channelModes]);
+
+  // Use derived values when local state is empty (not being edited)
+  const displayLimit = limit || initialLimit;
+  const displayKey = key || initialKey;
+  const displayRawModes = rawModes || initialRawModes;
 
   const handleFlagToggle = (flag: string, enabled: boolean) => {
     const mode = enabled ? `+${flag}` : `-${flag}`;
@@ -134,7 +129,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             <Input
               id="limit"
               type="number"
-              value={limit}
+              value={displayLimit}
               onChange={(e) => setLimit(e.target.value)}
               className="w-24"
               placeholder="0"
@@ -159,7 +154,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             <Input
               id="key"
               type="text"
-              value={key}
+              value={displayKey}
               onChange={(e) => setKey(e.target.value)}
               className="flex-1"
               placeholder="********"
@@ -184,7 +179,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           <Input
             id="raw-modes"
             type="text"
-            value={rawModes}
+            value={displayRawModes}
             onChange={(e) => setRawModes(e.target.value)}
             className="flex-1"
             placeholder="+ntis-mp"

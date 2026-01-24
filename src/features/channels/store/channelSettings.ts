@@ -92,13 +92,12 @@ export const useChannelSettingsStore = create<ChannelSettingsStore>()(
 
     updateChannelMode: (mode: string, value: string | boolean | null): void => {
       set((state) => {
-        const newModes = { ...state.channelModes };
         if (value === null || value === false) {
-          delete newModes[mode];
-        } else {
-          newModes[mode] = value;
+          const { [mode]: _removed, ...rest } = state.channelModes;
+          void _removed; // Intentionally unused - removing mode from object
+          return { channelModes: rest };
         }
-        return { channelModes: newModes };
+        return { channelModes: { ...state.channelModes, [mode]: value } };
       });
     },
 
