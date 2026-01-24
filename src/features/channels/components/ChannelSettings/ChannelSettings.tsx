@@ -12,7 +12,6 @@ import { useChannelSettingsStore, clearChannelSettingsStore, type ActiveTab } fr
 import { ircSendRawMessage } from '@/network/irc/network';
 import ModesTab from './tabs/ModesTab';
 import ListsTab from './tabs/ListsTab';
-import UsersTab from './tabs/UsersTab';
 
 interface ChannelSettingsProps {
   open: boolean;
@@ -69,15 +68,12 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
         <DialogDescription>{t('channelSettings.description')}</DialogDescription>
       </DialogHeader>
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="modes" data-testid="tab-modes">
             {t('channelSettings.tabs.modes')}
           </TabsTrigger>
           <TabsTrigger value="lists" data-testid="tab-lists">
             {t('channelSettings.tabs.lists')}
-          </TabsTrigger>
-          <TabsTrigger value="users" data-testid="tab-users">
-            {t('channelSettings.tabs.users')}
           </TabsTrigger>
         </TabsList>
         <div className="min-h-[445px]">
@@ -86,9 +82,6 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
           </TabsContent>
           <TabsContent value="lists">
             <ListsTab channelName={channelName} />
-          </TabsContent>
-          <TabsContent value="users">
-            <UsersTab channelName={channelName} />
           </TabsContent>
         </div>
       </Tabs>

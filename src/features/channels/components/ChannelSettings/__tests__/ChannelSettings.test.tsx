@@ -137,7 +137,6 @@ describe('ChannelSettings', () => {
 
       expect(screen.getByTestId('tab-modes')).toBeInTheDocument();
       expect(screen.getByTestId('tab-lists')).toBeInTheDocument();
-      expect(screen.getByTestId('tab-users')).toBeInTheDocument();
     });
   });
 
