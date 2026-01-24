@@ -92,16 +92,18 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     }
   };
 
+  const showAvatarLayout = message.category === MessageCategory.default || message.category === MessageCategory.me;
+
   return (
     <>
-      {message.category !== MessageCategory.default && (
+      {!showAvatarLayout && (
         <div className="py-1 px-4 pl-16" style={{ color: message.color ?? MessageColor.default }}>
           <div className={fontSizeClass}>
             <MessageText text={message.message} />
           </div>
         </div>
       )}
-      {message.category === MessageCategory.default && (
+      {showAvatarLayout && (
         <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'}`}>
           <div className="w-10 mr-3 flex-shrink-0">
             {lastNick !== nick && (
