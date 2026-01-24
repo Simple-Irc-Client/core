@@ -423,14 +423,16 @@ export class Kernel {
     this.command = command;
     this.line = line;
 
-    setAddMessage({
-      id: uuidv4(),
-      message: `>> ${this.eventLine}`,
-      target: DEBUG_CHANNEL,
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.serverFrom,
-    });
+    if (import.meta.env.DEV) {
+      setAddMessage({
+        id: uuidv4(),
+        message: `>> ${this.eventLine}`,
+        target: DEBUG_CHANNEL,
+        time: new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.serverFrom,
+      });
+    }
 
     // Check if this message belongs to an active batch
     // BATCH commands themselves should not be buffered
