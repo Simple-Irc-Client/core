@@ -12,6 +12,7 @@ import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { format } from 'date-fns';
+import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
 
@@ -62,7 +63,7 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
   const date = new Date(topicTime * 1000);
   return t('main.topic.setBy', {
     nick: topicSetBy,
-    date: format(date, 'd MMM yyyy HH:mm'),
+    date: format(date, 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }),
     interpolation: { escapeValue: false },
   });
 };

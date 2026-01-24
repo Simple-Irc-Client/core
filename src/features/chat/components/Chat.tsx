@@ -8,6 +8,7 @@ const fontSizeClasses: Record<FontSize, string> = {
   large: 'text-base',
 };
 import { format } from 'date-fns';
+import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
@@ -31,7 +32,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
   return (
     <div className="py-1 px-4 overflow-hidden">
       <code className={`${fontSizeClass} break-all`}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss')}</span>
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined && (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
@@ -59,7 +60,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   return (
     <div className="py-1 px-4">
       <div className={fontSizeClass}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm')}</span>
+        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined ? (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
@@ -123,7 +124,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                 </span>
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                  {format(new Date(message.time), 'HH:mm')}
+                  {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
                 </span>
               </div>
             )}
@@ -139,7 +140,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                     <MessageText text={message.message} />
                   </div>
                   <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                    {format(new Date(message.time), 'HH:mm')}
+                    {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
                   </span>
                 </div>
               )}
