@@ -180,9 +180,10 @@ describe('ListsTab', () => {
     it('should send MODE -b command when removing ban', () => {
       render(<ListsTab channelName="#test" />);
 
+      // List is sorted by setTime descending, so troll!*@* (newer) is first
       fireEvent.click(screen.getByTestId('remove-entry-0'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -b *!*@bad.host');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -b troll!*@*');
     });
 
     it('should render remove buttons for each entry', () => {

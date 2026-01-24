@@ -26,16 +26,22 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
   const [newEntry, setNewEntry] = useState('');
 
   const getActiveList = (): ListEntry[] => {
+    let list: ListEntry[];
     switch (activeListType) {
       case 'b':
-        return banList;
+        list = banList;
+        break;
       case 'e':
-        return exceptionList;
+        list = exceptionList;
+        break;
       case 'I':
-        return inviteList;
+        list = inviteList;
+        break;
       default:
         return [];
     }
+    // Sort by setTime descending (latest first)
+    return [...list].sort((a, b) => b.setTime - a.setTime);
   };
 
   const isActiveListLoading = (): boolean => {
