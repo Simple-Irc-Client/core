@@ -920,6 +920,29 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw TAGMSG for private message uses sender nick as channel', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+
+    // When Bob sends a typing notification in a private message, the IRC target is our nick
+    const line = '@+draft/typing=active;+typing=active;msgid=abc123;time=2023-03-04T19:16:23.158Z :Bob!~bob@host TAGMSG MyNick';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalled();
+
+    // The typing should be stored under Bob's nick (the sender), not MyNick (the target)
+    // This matches how PRIVMSG stores messages in a PRIV window named after the sender
+    expect(mockSetTyping).toHaveBeenCalledTimes(1);
+    expect(mockSetTyping).toHaveBeenCalledWith('Bob', 'Bob', 'active');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);

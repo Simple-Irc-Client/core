@@ -2234,10 +2234,10 @@ export class Kernel {
   private readonly onTagMsg = (): void => {
     const serverUserModes = getUserModes();
 
-    const channel = this.line.shift();
+    const target = this.line.shift();
 
-    if (channel === undefined) {
-      throw this.assert(this.onTagMsg, 'channel');
+    if (target === undefined) {
+      throw this.assert(this.onTagMsg, 'target');
     }
 
     const { nick } = parseNick(this.sender, serverUserModes);
@@ -2246,6 +2246,10 @@ export class Kernel {
     if (status === undefined) {
       return;
     }
+
+    // For private messages, target is our nick but the channel is stored under the sender's nick
+    const isPrivMessage = target === getCurrentNick();
+    const channel = isPrivMessage ? nick : target;
 
     setTyping(channel, nick, status as UserTypingStatus);
   };

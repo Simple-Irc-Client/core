@@ -515,6 +515,222 @@ describe('Chat tests', () => {
       const coloredDiv = container.querySelector(`div[style*="color"]`);
       expect(coloredDiv).toHaveStyle({ color: MessageColor.error });
     });
+
+    describe('/me messages (MessageCategory.me)', () => {
+      it('should show avatar for /me messages', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: createUserNick({ nick: 'ActionUser', avatar: 'http://example.com/avatar.png' }),
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        const avatar = screen.getByRole('img');
+        expect(avatar).toHaveAttribute('src', 'http://example.com/avatar.png');
+        expect(avatar).toHaveAttribute('alt', 'ActionUser');
+      });
+
+      it('should show nick for /me messages', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        expect(screen.getByText('ActionUser')).toBeInTheDocument();
+      });
+
+      it('should show avatar fallback letter for /me messages without avatar', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        expect(screen.getByText('A')).toBeInTheDocument();
+      });
+
+      it('should apply /me message color', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        const { container } = render(<Main />);
+
+        expect(container.textContent).toContain('waves hello');
+        const coloredDiv = container.querySelector(`div[style*="color"]`);
+        expect(coloredDiv).toHaveStyle({ color: MessageColor.me });
+      });
+
+      it('should group consecutive /me messages from same user', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+            createMessage({
+              id: '2',
+              message: 'dances around',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        // Nick should appear only once (grouped)
+        const nicks = screen.getAllByText('ActionUser');
+        expect(nicks.length).toBe(1);
+      });
+
+      it('should group /me messages with regular messages from same user', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Hello everyone',
+              nick: 'TestUser',
+              category: MessageCategory.default,
+            }),
+            createMessage({
+              id: '2',
+              message: 'waves hello',
+              nick: 'TestUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        // Nick should appear only once (grouped with previous message)
+        const nicks = screen.getAllByText('TestUser');
+        expect(nicks.length).toBe(1);
+      });
+
+      it('should show nick again when /me message is from different user', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Hello',
+              nick: 'User1',
+              category: MessageCategory.default,
+            }),
+            createMessage({
+              id: '2',
+              message: 'waves at User1',
+              nick: 'User2',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        const { container } = render(<Main />);
+
+        expect(container.textContent).toContain('User1');
+        expect(container.textContent).toContain('User2');
+      });
+
+      it('should trigger context menu on right-click on nick in /me message', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: 'ActionUser',
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        const nickElement = screen.getByText('ActionUser');
+        fireEvent.contextMenu(nickElement);
+
+        expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+          expect.any(Object),
+          'user',
+          'ActionUser'
+        );
+      });
+
+      it('should trigger context menu on right-click on avatar in /me message', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'waves hello',
+              nick: createUserNick({ nick: 'ActionUser', avatar: 'http://example.com/avatar.png' }),
+              category: MessageCategory.me,
+              color: MessageColor.me,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        const avatarContainer = screen.getByRole('img').parentElement;
+        expect(avatarContainer).not.toBeNull();
+        if (avatarContainer) fireEvent.contextMenu(avatarContainer);
+
+        expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+          expect.any(Object),
+          'user',
+          'ActionUser'
+        );
+      });
+    });
   });
 
   describe('Edge cases', () => {
