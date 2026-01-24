@@ -173,7 +173,7 @@ describe('channelSettings store', () => {
       setChannelSettingsModes({ n: true, t: true });
       addToChannelSettingsBanList({ mask: '*!*@test', setBy: 'admin', setTime: 123 });
       setChannelSettingsIsLoading(true);
-      useChannelSettingsStore.getState().setActiveTab('users');
+      useChannelSettingsStore.getState().setActiveTab('lists');
 
       // Clear store
       clearChannelSettingsStore();

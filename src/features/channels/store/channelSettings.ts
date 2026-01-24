@@ -7,7 +7,7 @@ export interface ListEntry {
   setTime: number;
 }
 
-export type ActiveTab = 'modes' | 'lists' | 'users';
+export type ActiveTab = 'modes' | 'lists';
 export type ActiveListType = 'b' | 'e' | 'I';
 
 export interface ChannelSettingsStore {
