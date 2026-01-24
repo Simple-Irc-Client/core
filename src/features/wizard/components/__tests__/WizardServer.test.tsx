@@ -81,6 +81,7 @@ vi.mock('@/network/irc/servers', () => ({
       servers: ['irc.testnet3.org'],
     },
   ],
+  serverIcons: {},
 }));
 
 describe('WizardServer', () => {

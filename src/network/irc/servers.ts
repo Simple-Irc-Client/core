@@ -3,10 +3,26 @@ export interface Server {
   default: number;
   encoding: string;
   flags?: number;
+  icon?: string;
   loginType?: number;
   network: string;
   servers: string[];
 }
+
+export const serverIcons: Record<string, string> = {
+  // Libera.Chat - simplified version of official logo (mountains with sunrise, purple/pink)
+  'Libera.Chat': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#1a1a2e"/><path d="M6 22l7-10 5 4 8-10v16H6z" fill="#55f"/><path d="M8 22l5-7 4 3 7-8v12H8z" fill="#f5d"/></svg>`,
+  // OFTC - Open and Free Technology Community, green representing open source
+  OFTC: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#064e3b"/><circle cx="16" cy="16" r="8" fill="none" stroke="#10b981" stroke-width="2"/><circle cx="16" cy="16" r="4" fill="#10b981"/></svg>`,
+  // EFnet - oldest network (1990), classic blue
+  EFnet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#1e3a5f"/><path d="M8 8h16v4H12v4h10v4H12v4h12v4H8z" fill="#60a5fa"/></svg>`,
+  // IRCNet - European network, amber/gold
+  IRCNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#451a03"/><path d="M10 8h4v16h-4zM16 8h6a4 4 0 010 8h-6v8h-0V8zm4 4v4h2a2 2 0 000-4z" fill="#fbbf24"/></svg>`,
+  // Rizon - anime community, stylized R with red
+  Rizon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#450a0a"/><path d="M10 8h8a5 5 0 013 9l4 7h-5l-3.5-6H14v6h-4V8zm4 4v4h4a2 2 0 000-4z" fill="#f87171"/></svg>`,
+  // QuakeNet - gaming network, three dots like Quake logo
+  QuakeNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#042f2e"/><circle cx="16" cy="10" r="3" fill="#2dd4bf"/><circle cx="10" cy="22" r="3" fill="#2dd4bf"/><circle cx="22" cy="22" r="3" fill="#2dd4bf"/></svg>`,
+};
 
 export const servers: Server[] = [
   {
@@ -372,6 +388,14 @@ export const servers: Server[] = [
     flags: 19,
     network: 'LibraIRC',
     servers: ['irc.librairc.net'],
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
+    flags: 23,
+    loginType: 6,
+    network: 'Libera.Chat',
+    servers: ['irc.libera.chat'],
   },
   {
     default: 0,
