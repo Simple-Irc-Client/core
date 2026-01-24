@@ -187,9 +187,9 @@ describe('sasl', () => {
       const response = handleSaslChallenge('+', 'PLAIN');
 
       expect(response).not.toBeNull();
-      expect(response!.length).toBeGreaterThan(0);
+      expect(response).toHaveLength(1);
       // Verify the response is base64 encoded credentials
-      const decoded = atob(response![0]!);
+      const decoded = atob(response?.[0] ?? '');
       expect(decoded).toBe('\0testuser\0testpass');
     });
 
@@ -201,8 +201,8 @@ describe('sasl', () => {
     it('should return null for unknown mechanism', () => {
       setSaslCredentials('user', 'pass');
 
-      // Cast to any to test unknown mechanism
-      const response = handleSaslChallenge('+', 'UNKNOWN' as any);
+      // Cast to test unknown mechanism
+      const response = handleSaslChallenge('+', 'UNKNOWN' as 'PLAIN');
       expect(response).toBeNull();
     });
 

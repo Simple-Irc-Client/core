@@ -91,7 +91,7 @@ describe('kernel tests', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
-    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
     // CAP LS with multiline indicator (*) - should buffer capabilities, not call setSupportedOption yet
     const line =

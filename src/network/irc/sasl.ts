@@ -65,7 +65,7 @@ export const resetSaslState = (): void => {
  * @param authzid - Authorization identity (usually same as account, or empty)
  * @returns Base64 encoded SASL PLAIN payload
  */
-export const encodeSaslPlain = (account: string, password: string, authzid: string = ''): string => {
+export const encodeSaslPlain = (account: string, password: string, authzid = ''): string => {
   // PLAIN format: [authzid] NUL authcid NUL passwd
   const payload = `${authzid}\0${account}\0${password}`;
   return btoa(payload);

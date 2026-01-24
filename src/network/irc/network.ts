@@ -218,7 +218,7 @@ export const ircRequestChatHistory = (
   target: string,
   subcommand: 'LATEST' | 'BEFORE' | 'AFTER' | 'AROUND' = 'LATEST',
   timestamp?: string,
-  limit: number = 50,
+  limit = 50,
 ): void => {
   if (subcommand === 'LATEST') {
     // CHATHISTORY LATEST <target> * <limit>
@@ -240,7 +240,7 @@ export const ircRequestChatHistoryBetween = (
   target: string,
   startTime: string,
   endTime: string,
-  limit: number = 50,
+  limit = 50,
 ): void => {
   ircSendRawMessage(`CHATHISTORY BETWEEN ${target} timestamp=${startTime} timestamp=${endTime} ${limit}`);
 };
@@ -248,7 +248,7 @@ export const ircRequestChatHistoryBetween = (
 /**
  * Request available chat history targets
  */
-export const ircRequestChatHistoryTargets = (timestamp?: string, limit: number = 50): void => {
+export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): void => {
   if (timestamp) {
     ircSendRawMessage(`CHATHISTORY TARGETS timestamp=${timestamp} ${limit}`);
   } else {

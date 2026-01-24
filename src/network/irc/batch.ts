@@ -31,11 +31,11 @@ export const BATCH_TYPES = {
 } as const;
 
 // Active batches being assembled
-const activeBatches: Map<string, BatchState> = new Map();
+const activeBatches = new Map<string, BatchState>();
 
 // Callbacks for batch completion
 type BatchCallback = (batch: BatchState) => void;
-const batchCallbacks: Map<string, BatchCallback> = new Map();
+const batchCallbacks = new Map<string, BatchCallback>();
 
 /**
  * Start a new batch
@@ -152,7 +152,7 @@ interface PendingLabel {
   timeout: ReturnType<typeof setTimeout>;
 }
 
-const pendingLabels: Map<string, PendingLabel> = new Map();
+const pendingLabels = new Map<string, PendingLabel>();
 
 /**
  * Generate a unique label for labeled-response
@@ -167,7 +167,7 @@ export const generateLabel = (): string => {
  * @param timeoutMs - Timeout in milliseconds (default 30s)
  * @returns Promise that resolves when labeled-response batch completes
  */
-export const registerLabeledResponse = (label: string, timeoutMs: number = 30000): Promise<BatchState> => {
+export const registerLabeledResponse = (label: string, timeoutMs = 30000): Promise<BatchState> => {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       pendingLabels.delete(label);
@@ -196,7 +196,7 @@ export const resolveLabeledResponse = (label: string, batch: BatchState): void =
  * Clear all pending labeled responses (on disconnect)
  */
 export const clearPendingLabels = (): void => {
-  for (const [label, pending] of pendingLabels) {
+  for (const [, pending] of pendingLabels) {
     clearTimeout(pending.timeout);
     pending.reject(new Error('Disconnected'));
   }
