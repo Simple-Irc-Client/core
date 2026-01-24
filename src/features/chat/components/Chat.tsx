@@ -92,8 +92,6 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     }
   };
 
-  // TODO fix notice message layout - currently there is no nick displayed
-
   return (
     <>
       {message.category !== MessageCategory.default && (
