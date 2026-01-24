@@ -193,7 +193,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(2); // Menu button + Save button
+      expect(buttons.length).toBe(3); // Menu button + Save button + Settings button
     });
 
     it('should not show save button when topic is unchanged', () => {
@@ -202,7 +202,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(1); // Only menu button
+      expect(buttons.length).toBe(2); // Menu button + Settings button (no save)
     });
 
     it('should not show save button when user cannot edit', () => {
@@ -228,8 +228,8 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(2);
-      fireEvent.click(buttons[1] as HTMLElement);
+      expect(buttons).toHaveLength(3); // Menu + Save + Settings
+      fireEvent.click(buttons[1] as HTMLElement); // Save button is second
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
     });
