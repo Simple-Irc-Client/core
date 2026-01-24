@@ -2477,7 +2477,7 @@ describe('kernel tests', () => {
 
   describe('Private message user list population', () => {
     it('should add both sender and receiver to users list when creating new priv channel', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
@@ -2491,7 +2491,7 @@ describe('kernel tests', () => {
       // Mock getHasUser to return false (users don't exist yet)
       vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-      const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello there';
 
