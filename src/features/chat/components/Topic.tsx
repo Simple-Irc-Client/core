@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
+import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 
 const TOPIC_EDIT_FLAGS = ['q', 'a', 'o'];
 
@@ -137,6 +138,7 @@ const Topic = () => {
         <Menu className="h-4 w-4" />
       </Button>
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
+      {!isDebugChannel && <ChannelSettingsButton channelName={currentChannelName} />}
     </div>
   );
 };

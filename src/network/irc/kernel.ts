@@ -49,6 +49,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getCurrentUserFlags } from '@features/settings/store/settings';
+import {
+  addToChannelSettingsBanList,
+  addToChannelSettingsExceptionList,
+  addToChannelSettingsInviteList,
+  setChannelSettingsBanList,
+  setChannelSettingsExceptionList,
+  setChannelSettingsInviteList,
+  setChannelSettingsModes,
+  setChannelSettingsIsLoading,
+  setChannelSettingsIsBanListLoading,
+  setChannelSettingsIsExceptionListLoading,
+  setChannelSettingsIsInviteListLoading,
+  useChannelSettingsStore,
+} from '@features/channels/store/channelSettings';
 
 export interface IrcEvent {
   type: string;
@@ -501,6 +515,27 @@ export class Kernel {
         break;
       case RPL_TOPICWHOTIME:
         this.onRaw333();
+        break;
+      case RPL_CHANNELMODEIS:
+        this.onRaw324();
+        break;
+      case RPL_INVITELIST:
+        this.onRaw346();
+        break;
+      case RPL_ENDOFINVITELIST:
+        this.onRaw347();
+        break;
+      case RPL_EXCEPTLIST:
+        this.onRaw348();
+        break;
+      case RPL_ENDOFEXCEPTLIST:
+        this.onRaw349();
+        break;
+      case RPL_BANLIST:
+        this.onRaw367();
+        break;
+      case RPL_ENDOFBANLIST:
+        this.onRaw368();
         break;
       case RPL_WHOISBOT:
         this.onRaw335();
@@ -2080,5 +2115,126 @@ export class Kernel {
     if (metadataItem.length > 0) {
       setSupportedOption(`metadata-${metadataItem}`);
     }
+  };
+
+  // :server 324 mynick #channel +tnl 50
+  // :chmurka.pirc.pl 324 sic-test #sic +nt
+  private readonly onRaw324 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let modesString = this.line.shift() ?? '';
+
+    if (channel === undefined) {
+      return;
+    }
+
+    // Check if this is for the channel settings dialog
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel !== channel) {
+      return;
+    }
+
+    // Parse modes string like "+ntl" with params like "50"
+    const modes: Record<string, string | boolean> = {};
+    const serverChannelModes = getChannelModes();
+
+    if (modesString.startsWith('+')) {
+      modesString = modesString.substring(1);
+    }
+
+    let paramIndex = 0;
+    for (const flag of modesString.split('')) {
+      const type = channelModeType(flag, serverChannelModes, getUserModes());
+
+      if (type === 'B' || type === 'C') {
+        // Modes that take a parameter
+        const param = this.line[paramIndex];
+        if (param !== undefined) {
+          modes[flag] = param;
+          paramIndex++;
+        }
+      } else if (type === 'D') {
+        // Simple flag modes
+        modes[flag] = true;
+      }
+    }
+
+    setChannelSettingsModes(modes);
+    setChannelSettingsIsLoading(false);
+  };
+
+  // :server 346 mynick #channel mask!*@* setter 1234567890
+  private readonly onRaw346 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mask = this.line.shift();
+    const setBy = this.line.shift() ?? '';
+    const setTime = Number(this.line.shift() ?? '0');
+
+    if (channel === undefined || mask === undefined) {
+      return;
+    }
+
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel !== channel) {
+      return;
+    }
+
+    addToChannelSettingsInviteList({ mask, setBy, setTime });
+  };
+
+  // :server 347 mynick #channel :End of Channel Invite List
+  private readonly onRaw347 = (): void => {
+    setChannelSettingsIsInviteListLoading(false);
+  };
+
+  // :server 348 mynick #channel mask!*@* setter 1234567890
+  private readonly onRaw348 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mask = this.line.shift();
+    const setBy = this.line.shift() ?? '';
+    const setTime = Number(this.line.shift() ?? '0');
+
+    if (channel === undefined || mask === undefined) {
+      return;
+    }
+
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel !== channel) {
+      return;
+    }
+
+    addToChannelSettingsExceptionList({ mask, setBy, setTime });
+  };
+
+  // :server 349 mynick #channel :End of Channel Exception List
+  private readonly onRaw349 = (): void => {
+    setChannelSettingsIsExceptionListLoading(false);
+  };
+
+  // :server 367 mynick #channel mask!*@* setter 1234567890
+  private readonly onRaw367 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mask = this.line.shift();
+    const setBy = this.line.shift() ?? '';
+    const setTime = Number(this.line.shift() ?? '0');
+
+    if (channel === undefined || mask === undefined) {
+      return;
+    }
+
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel !== channel) {
+      return;
+    }
+
+    addToChannelSettingsBanList({ mask, setBy, setTime });
+  };
+
+  // :server 368 mynick #channel :End of Channel Ban List
+  private readonly onRaw368 = (): void => {
+    setChannelSettingsIsBanListLoading(false);
   };
 }
