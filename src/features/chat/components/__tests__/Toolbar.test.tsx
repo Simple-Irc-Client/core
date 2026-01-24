@@ -7,7 +7,6 @@ import * as network from '@/network/irc/network';
 import * as users from '@features/users/store/users';
 import * as channelList from '@features/channels/store/channelList';
 import * as capabilities from '@/network/irc/capabilities';
-import * as _channelsStore from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
