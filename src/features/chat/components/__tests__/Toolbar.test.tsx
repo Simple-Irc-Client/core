@@ -6,6 +6,8 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
 import * as users from '@features/users/store/users';
 import * as channelList from '@features/channels/store/channelList';
+import * as capabilities from '@/network/irc/capabilities';
+import * as channelsStore from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
@@ -31,8 +33,13 @@ vi.mock('@features/settings/store/settings', async (importOriginal) => {
   };
 });
 
+const mockSetAddMessage = vi.fn();
 vi.mock('@features/channels/store/channels', () => ({
-  setAddMessage: vi.fn(),
+  setAddMessage: (...args: unknown[]) => mockSetAddMessage(...args),
+}));
+
+vi.mock('@/network/irc/capabilities', () => ({
+  isCapabilityEnabled: vi.fn(),
 }));
 
 let mockAwayMessages: unknown[] = [];
@@ -62,6 +69,8 @@ describe('Toolbar', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAwayMessages = [];
+    mockSetAddMessage.mockClear();
+    vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
@@ -1530,6 +1539,72 @@ describe('Toolbar', () => {
       await user.click(darkModeItem);
 
       expect(mockToggleDarkMode).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Echo-message capability handling', () => {
+    it('should add message locally when echo-message capability is NOT enabled', () => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello world' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Message should be added locally
+      expect(mockSetAddMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'Hello world',
+          target: '#test',
+        })
+      );
+    });
+
+    it('should NOT add message locally when echo-message capability is enabled', () => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(true);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello world' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Message should NOT be added locally (server echo will add it)
+      expect(mockSetAddMessage).not.toHaveBeenCalled();
+    });
+
+    it('should still send PRIVMSG to server regardless of echo-message capability', () => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(true);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hello world' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // PRIVMSG should still be sent to server
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :Hello world');
+    });
+
+    it('should check specifically for echo-message capability', () => {
+      const mockIsCapabilityEnabled = vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Test message' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('echo-message');
     });
   });
 });

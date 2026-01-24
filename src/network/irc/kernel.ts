@@ -2034,6 +2034,22 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+
+      // For private messages, add both participants to the channel's user list
+      if (isPrivMessage) {
+        // Add the other person
+        if (getHasUser(nick)) {
+          setJoinUser(nick, messageTarget);
+        } else {
+          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+        // Add myself
+        if (getHasUser(myNick)) {
+          setJoinUser(myNick, messageTarget);
+        } else {
+          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+      }
     }
 
     // Don't increase unread count for our own echoed messages
@@ -2136,6 +2152,22 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+
+      // For private messages, add both participants to the channel's user list
+      if (isPrivMessage) {
+        // Add the other person
+        if (getHasUser(nick)) {
+          setJoinUser(nick, messageTarget);
+        } else {
+          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+        // Add myself
+        if (getHasUser(myNick)) {
+          setJoinUser(myNick, messageTarget);
+        } else {
+          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+      }
     }
 
     if (messageTarget !== currentChannelName) {

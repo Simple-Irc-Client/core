@@ -482,4 +482,126 @@ describe('ContextMenu', () => {
       expect(document.body.textContent).toContain('contextmenu.channel.join');
     });
   });
+
+  describe('Private message user list population', () => {
+    const createChannelsStoreMock = (openChannelsShortList: { name: string; category: ChannelCategory; unReadMessages: number }[]) => {
+      return (selector: (state: { openChannelsShortList: typeof openChannelsShortList }) => unknown) => {
+        const state = { openChannelsShortList };
+        return selector(state);
+      };
+    };
+
+    it('should add both users to channel when clicking Priv - users do not exist', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+
+      // Users don't exist
+      vi.spyOn(users, 'getHasUser').mockReturnValue(false);
+      const mockSetAddUser = vi.spyOn(users, 'setAddUser').mockImplementation(() => {});
+      const mockSetJoinUser = vi.spyOn(users, 'setJoinUser').mockImplementation(() => {});
+      const mockSetAddChannel = vi.spyOn(channels, 'setAddChannel').mockImplementation(() => {});
+
+      render(<ContextMenu />);
+
+      // Click the Priv option
+      const privButton = document.body.querySelector('[role="menuitem"]');
+      expect(privButton?.textContent).toContain('contextmenu.user.priv');
+      if (privButton) fireEvent.click(privButton);
+
+      // Should create the priv channel
+      expect(mockSetAddChannel).toHaveBeenCalledWith('otherUser', ChannelCategory.priv);
+
+      // Should add both users since they don't exist
+      expect(mockSetAddUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nick: 'otherUser',
+          channels: [expect.objectContaining({ name: 'otherUser' })],
+        })
+      );
+      expect(mockSetAddUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nick: 'currentUser',
+          channels: [expect.objectContaining({ name: 'otherUser' })],
+        })
+      );
+      expect(mockSetJoinUser).not.toHaveBeenCalled();
+    });
+
+    it('should use setJoinUser when users already exist', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+
+      // Users already exist
+      vi.spyOn(users, 'getHasUser').mockReturnValue(true);
+      const mockSetAddUser = vi.spyOn(users, 'setAddUser').mockImplementation(() => {});
+      const mockSetJoinUser = vi.spyOn(users, 'setJoinUser').mockImplementation(() => {});
+      vi.spyOn(channels, 'setAddChannel').mockImplementation(() => {});
+
+      render(<ContextMenu />);
+
+      // Click the Priv option
+      const privButton = document.body.querySelector('[role="menuitem"]');
+      if (privButton) fireEvent.click(privButton);
+
+      // Should use setJoinUser since users exist
+      expect(mockSetJoinUser).toHaveBeenCalledWith('otherUser', 'otherUser');
+      expect(mockSetJoinUser).toHaveBeenCalledWith('currentUser', 'otherUser');
+      expect(mockSetAddUser).not.toHaveBeenCalled();
+    });
+
+    it('should handle mixed case where one user exists and one does not', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+
+      // otherUser exists, currentUser does not
+      vi.spyOn(users, 'getHasUser').mockImplementation((nick: string) => nick === 'otherUser');
+      const mockSetAddUser = vi.spyOn(users, 'setAddUser').mockImplementation(() => {});
+      const mockSetJoinUser = vi.spyOn(users, 'setJoinUser').mockImplementation(() => {});
+      vi.spyOn(channels, 'setAddChannel').mockImplementation(() => {});
+
+      render(<ContextMenu />);
+
+      // Click the Priv option
+      const privButton = document.body.querySelector('[role="menuitem"]');
+      if (privButton) fireEvent.click(privButton);
+
+      // otherUser exists, so use setJoinUser
+      expect(mockSetJoinUser).toHaveBeenCalledWith('otherUser', 'otherUser');
+
+      // currentUser doesn't exist, so use setAddUser
+      expect(mockSetAddUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nick: 'currentUser',
+          channels: [expect.objectContaining({ name: 'otherUser' })],
+        })
+      );
+    });
+  });
 });
