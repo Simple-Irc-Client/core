@@ -427,6 +427,42 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
+  it('test raw MODE channel complex with multiple mode types', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+    const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    // CHANMODES from PIRC.pl: beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ
+    const mockGetChannelModes = vi.spyOn(settingsFile, 'getChannelModes').mockImplementation(() => ({
+      A: ['b', 'e', 'I'],
+      B: ['f', 'k', 'L'],
+      C: ['l', 'H'],
+      D: ['c', 'd', 'i', 'm', 'n', 'p', 'r', 's', 't', 'z', 'B', 'C', 'D', 'G', 'K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'V', 'Z'],
+    }));
+
+    // Complex MODE line: +rBCfHl-o with params for f, H, l, and o
+    const line = '@draft/bot;bot;msgid=gdT3UNkBQco30FbIJuhORn;time=2026-01-15T19:58:12.349Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +rBCfHl-o [4j#R3,4k#K3,6m#M1,3n#N3,6t]:6 15:9999m 99 zsfsesefesfesfefs';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetChannelModes).toHaveBeenCalled();
+    expect(mockGetUserModes).toHaveBeenCalled();
+    expect(mockIsChannel).toHaveBeenCalled();
+
+    // The -o mode should update the user 'zsfsesefesfesfefs', not anyone else
+    expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(1);
+    expect(mockSetUpdateUserFlag).toHaveBeenCalledWith('zsfsesefesfesfefs', '#sic', '-', 'o', defaultUserModes);
+
+    // Check that the message for -o mentions the correct user
+    expect(mockSetAddMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: '#sic',
+        message: expect.stringContaining('zsfsesefesfesfefs'),
+      })
+    );
+  });
+
   it('test raw NICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
