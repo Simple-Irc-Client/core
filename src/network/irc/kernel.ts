@@ -42,7 +42,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -1547,6 +1547,10 @@ export class Kernel {
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
+      }
+      // Request channel history if chathistory capability is enabled
+      if (isCapabilityEnabled('draft/chathistory')) {
+        ircRequestChatHistory(channel, 'LATEST', undefined, 50);
       }
     }
   };

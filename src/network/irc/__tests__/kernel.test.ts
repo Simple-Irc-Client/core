@@ -8,6 +8,7 @@ import * as channelsFile from '@features/channels/store/channels';
 import * as channelListFile from '@features/channels/store/channelList';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '../network';
+import * as capabilitiesFile from '../capabilities';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { ChannelCategory } from '@shared/types';
@@ -283,6 +284,56 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw JOIN self with chathistory enabled', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIrcRequestChatHistory = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+    const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    const mockIsCapabilityEnabled = vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/chathistory');
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#mychannel', ChannelCategory.channel);
+
+    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #mychannel');
+    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(2, 'WHO #mychannel %chtsunfra,152');
+
+    // Verify chathistory request is made when capability is enabled
+    expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('draft/chathistory');
+    expect(mockIrcRequestChatHistory).toHaveBeenCalledWith('#mychannel', 'LATEST', undefined, 50);
+    expect(mockIrcRequestChatHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw JOIN self without chathistory capability', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIrcRequestChatHistory = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+    const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    const mockIsCapabilityEnabled = vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#mychannel', ChannelCategory.channel);
+
+    // Verify chathistory request is NOT made when capability is disabled
+    expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('draft/chathistory');
+    expect(mockIrcRequestChatHistory).not.toHaveBeenCalled();
   });
 
   it('test raw KICK #1', () => {
@@ -2316,5 +2367,42 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: expect.stringContaining('PLAIN') }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  // ==================== i18n HTML entities tests ====================
+
+  it('test i18n does not escape HTML entities in interpolated values', () => {
+    // Test that URLs with special characters are not HTML-escaped
+    // This verifies the fix for escapeValue: false in i18n config
+    const url = 'https://thelounge.chat';
+    const message = i18next.t('kernel.quit', { nick: 'user', reason: ` (Quit: ${url})` });
+
+    // The URL should NOT be escaped to &#x2F;&#x2F;
+    expect(message).toContain('https://thelounge.chat');
+    expect(message).not.toContain('&#x2F;');
+    expect(message).not.toContain('&#');
+  });
+
+  it('test i18n preserves special characters in quit messages', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#test']);
+    const mockSetQuitUser = vi.spyOn(usersFile, 'setQuitUser').mockImplementation(() => {});
+
+    const line = ':testuser!~test@host.example QUIT :The Lounge - https://thelounge.chat';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // Verify the message contains the actual URL, not HTML entities
+    expect(mockSetAddMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('https://thelounge.chat'),
+      }),
+    );
+    expect(mockSetAddMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.not.stringContaining('&#x2F;'),
+      }),
+    );
   });
 });
