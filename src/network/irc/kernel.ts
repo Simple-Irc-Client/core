@@ -382,7 +382,9 @@ export class Kernel {
   }
 
   private readonly handleConnect = (): void => {
-    setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    if (import.meta.env.DEV) {
+      setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    }
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
     setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
   };

@@ -14,7 +14,7 @@ export const Network = () => {
   useEffect(() => {
     const onServerEvent = (data: IrcEvent): void => {
       // messages sent to server
-      if (data?.line !== undefined) {
+      if (import.meta.env.DEV && data?.line !== undefined) {
         setAddMessage({
           id: uuidv4(),
           message: `<< ${data.line?.trim()}`,
