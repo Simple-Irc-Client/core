@@ -376,6 +376,14 @@ export const servers: Server[] = [
   {
     default: 0,
     encoding: 'utf8',
+    flags: 23,
+    loginType: 6,
+    network: 'Libera.Chat',
+    servers: ['irc.libera.chat'],
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
     flags: 19,
     network: 'LinkNet',
     servers: ['irc.link-net.org:7000'],
