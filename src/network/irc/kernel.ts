@@ -3670,7 +3670,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const server = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3749,7 +3749,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const nick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3765,7 +3765,7 @@ export class Kernel {
   private readonly onRaw411 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3801,7 +3801,7 @@ export class Kernel {
   private readonly onRaw417 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3837,7 +3837,7 @@ export class Kernel {
   // :server 422 mynick :MOTD File is missing
   private readonly onRaw422 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3852,7 +3852,7 @@ export class Kernel {
   // :server 431 mynick :No nickname given
   private readonly onRaw431 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3896,7 +3896,7 @@ export class Kernel {
   private readonly onRaw436 = (): void => {
     const myNick = this.line.shift();
     const nick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3955,7 +3955,7 @@ export class Kernel {
   private readonly onRaw447 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3972,7 +3972,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3987,7 +3987,7 @@ export class Kernel {
   // :server 451 * :You have not registered
   private readonly onRaw451 = (): void => {
     const asterisk = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4023,7 +4023,7 @@ export class Kernel {
   // :server 462 mynick :You may not reregister
   private readonly onRaw462 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4061,7 +4061,7 @@ export class Kernel {
   // :server 465 mynick :You are banned from this server
   private readonly onRaw465 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4102,7 +4102,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const modeChar = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4140,7 +4140,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4158,7 +4158,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const channel = this.line.shift();
     const mask = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4174,7 +4174,7 @@ export class Kernel {
   private readonly onRaw481 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4210,7 +4210,7 @@ export class Kernel {
   private readonly onRaw501 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4226,7 +4226,7 @@ export class Kernel {
   private readonly onRaw502 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4243,7 +4243,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const topic = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    const message = this.line.join(' ').replace(/^:/, '');
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
