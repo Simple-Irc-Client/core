@@ -382,7 +382,9 @@ export class Kernel {
   }
 
   private readonly handleConnect = (): void => {
-    setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    if (import.meta.env.DEV) {
+      setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
+    }
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
     setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
   };
@@ -421,14 +423,16 @@ export class Kernel {
     this.command = command;
     this.line = line;
 
-    setAddMessage({
-      id: uuidv4(),
-      message: `>> ${this.eventLine}`,
-      target: DEBUG_CHANNEL,
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.serverFrom,
-    });
+    if (import.meta.env.DEV) {
+      setAddMessage({
+        id: uuidv4(),
+        message: `>> ${this.eventLine}`,
+        target: DEBUG_CHANNEL,
+        time: new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.serverFrom,
+      });
+    }
 
     // Check if this message belongs to an active batch
     // BATCH commands themselves should not be buffered
@@ -2034,6 +2038,22 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+
+      // For private messages, add both participants to the channel's user list
+      if (isPrivMessage) {
+        // Add the other person
+        if (getHasUser(nick)) {
+          setJoinUser(nick, messageTarget);
+        } else {
+          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+        // Add myself
+        if (getHasUser(myNick)) {
+          setJoinUser(myNick, messageTarget);
+        } else {
+          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+      }
     }
 
     // Don't increase unread count for our own echoed messages
@@ -2136,6 +2156,22 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+
+      // For private messages, add both participants to the channel's user list
+      if (isPrivMessage) {
+        // Add the other person
+        if (getHasUser(nick)) {
+          setJoinUser(nick, messageTarget);
+        } else {
+          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+        // Add myself
+        if (getHasUser(myNick)) {
+          setJoinUser(myNick, messageTarget);
+        } else {
+          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
+        }
+      }
     }
 
     if (messageTarget !== currentChannelName) {

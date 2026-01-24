@@ -14,7 +14,7 @@ import { ChannelCategory } from '@shared/types';
 import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
-import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
+import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
 
 // Helper to determine what mode hierarchy level a flag represents
 const getModeLevel = (flag: string): number => {
@@ -122,6 +122,22 @@ export const ContextMenu = () => {
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
     const handlePriv = (): void => {
       setAddChannel(contextMenuItem, ChannelCategory.priv);
+
+      // Add both participants to the channel's user list
+      const myNick = getCurrentNick();
+      // Add the other person
+      if (getHasUser(contextMenuItem)) {
+        setJoinUser(contextMenuItem, contextMenuItem);
+      } else {
+        setAddUser({ nick: contextMenuItem, ident: '', hostname: '', flags: [], channels: [{ name: contextMenuItem, flags: [], maxPermission: -1 }] });
+      }
+      // Add myself
+      if (getHasUser(myNick)) {
+        setJoinUser(myNick, contextMenuItem);
+      } else {
+        setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: contextMenuItem, flags: [], maxPermission: -1 }] });
+      }
+
       setCurrentChannelName(contextMenuItem, ChannelCategory.priv);
       handleContextMenuClose();
     };

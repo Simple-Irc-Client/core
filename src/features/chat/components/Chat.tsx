@@ -177,6 +177,12 @@ const Chat = () => {
 
   useEffect(() => {
     isUserScrolledUp.current = false;
+    // Use requestAnimationFrame to ensure DOM has updated before scrolling
+    requestAnimationFrame(() => {
+      if (containerRef.current) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
+    });
   }, [currentChannelName]);
 
   useEffect(() => {
