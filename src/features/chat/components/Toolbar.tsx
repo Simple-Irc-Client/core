@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore, resetAndGoToStart, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage } from '@/network/irc/network';
+import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
@@ -192,15 +193,19 @@ const Toolbar = () => {
         // Apply formatting to the message for sending
         const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
 
-        setAddMessage({
-          id: uuidv4(),
-          message: formattedMessage,
-          nick: getUser(nick) ?? nick,
-          target: currentChannelName,
-          time: new Date().toISOString(),
-          category: MessageCategory.default,
-          color: MessageColor.default,
-        });
+        // Only add message locally if echo-message capability is NOT enabled
+        // When echo-message is enabled, the server will echo the message back and we'll add it then
+        if (!isCapabilityEnabled('echo-message')) {
+          setAddMessage({
+            id: uuidv4(),
+            message: formattedMessage,
+            nick: getUser(nick) ?? nick,
+            target: currentChannelName,
+            time: new Date().toISOString(),
+            category: MessageCategory.default,
+            color: MessageColor.default,
+          });
+        }
 
         payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
       }
