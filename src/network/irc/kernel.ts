@@ -2077,8 +2077,8 @@ export class Kernel {
     const myNick = getCurrentNick();
     const currentChannelName = getCurrentChannelName();
 
-    // Remove \x01 characters and parse CTCP command
-    const ctcpContent = message.replace(/\x01/g, '');
+    // Remove \x01 (CTCP delimiter) characters and parse CTCP command
+    const ctcpContent = message.split('\x01').join('');
     const spaceIndex = ctcpContent.indexOf(' ');
     const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
     const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
