@@ -527,6 +527,9 @@ export class Kernel {
       case RPL_ISUPPORT:
         this.onRaw005();
         break;
+      case '250':
+        this.onRaw250();
+        break;
       case '251':
         this.onRaw251();
         break;
@@ -1804,6 +1807,10 @@ export class Kernel {
 
         // https://docs.inspircd.org/4/user-modes/
         switch (flag) {
+          case 'i': // RFC 1459: Invisible - hides user from /who and /whois by non-opers.
+          case 'w': // RFC 1459: Wallops - receives wallops messages.
+          case 'o': // RFC 1459: Operator - marks the user as an IRC operator.
+          case 's': // RFC 1459: Server notices - receives server notices.
           case 'B': // Marks the user as a bot.
           case 'c': // Requires other users to have a common channel before they can message this user.
           case 'd': // Prevents the user from receiving channel messages.
@@ -2348,6 +2355,22 @@ export class Kernel {
         }
       }
     }
+  };
+
+  // :tantalum.libera.chat 250 Merovingian :Highest connection count: 2682 (2681 clients) (389463 connections received)
+  private readonly onRaw250 = (): void => {
+    const myNick = this.line.shift();
+
+    const message = this.line.join(' ').substring(1);
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
   };
 
   // :saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers

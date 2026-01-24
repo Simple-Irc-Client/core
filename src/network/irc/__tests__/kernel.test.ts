@@ -454,6 +454,63 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
+  it('test raw MODE user +i (invisible)', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':Merovingian!~Merovingi@45.142.162.33 MODE Merovingian +i';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +i' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw MODE user +iw (invisible and wallops)', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = '@time=2026-01-24T21:57:51.724Z :Merovingian MODE Merovingian :+iw';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +i' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +w' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
+  });
+
+  it('test raw MODE user +o (operator)', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':server MODE Merovingian +o';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +o' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw MODE user +s (server notices)', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':Merovingian MODE Merovingian +s';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +s' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('test raw MODE channel user #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
@@ -1011,6 +1068,18 @@ describe('kernel tests', () => {
           'MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server',
       }),
     );
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw 250', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    const line = ':tantalum.libera.chat 250 Merovingian :Highest connection count: 2682 (2681 clients) (389463 connections received)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Highest connection count: 2682 (2681 clients) (389463 connections received)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
