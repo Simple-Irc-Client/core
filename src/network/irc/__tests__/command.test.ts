@@ -128,4 +128,105 @@ describe('command tests', () => {
     expect(messages?.length).toBeGreaterThan(0);
     expect(messages?.[0]?.message).toStrictEqual('--- Dostępne komendy ---'); // Polish is default language
   });
+
+  // Services commands tests
+  it('test ns command', () => {
+    expect(parseMessageToCommand('#channel', '/ns identify password')).toStrictEqual('PRIVMSG NickServ :identify password');
+    expect(parseMessageToCommand('#channel', '/ns')).toStrictEqual('PRIVMSG NickServ :HELP');
+  });
+
+  it('test cs command', () => {
+    expect(parseMessageToCommand('#channel', '/cs op #channel nick')).toStrictEqual('PRIVMSG ChanServ :op #channel nick');
+    expect(parseMessageToCommand('#channel', '/cs')).toStrictEqual('PRIVMSG ChanServ :HELP');
+  });
+
+  it('test hs command', () => {
+    expect(parseMessageToCommand('#channel', '/hs on')).toStrictEqual('PRIVMSG HostServ :on');
+  });
+
+  it('test bs command', () => {
+    expect(parseMessageToCommand('#channel', '/bs assign #channel bot')).toStrictEqual('PRIVMSG BotServ :assign #channel bot');
+  });
+
+  it('test ms command', () => {
+    expect(parseMessageToCommand('#channel', '/ms list')).toStrictEqual('PRIVMSG MemoServ :list');
+  });
+
+  // General commands tests
+  it('test notice command', () => {
+    expect(parseMessageToCommand('#channel', '/notice')).toStrictEqual('notice');
+    expect(parseMessageToCommand('#channel', '/notice user1')).toStrictEqual('notice user1');
+    expect(parseMessageToCommand('#channel', '/notice user1 Hello there!')).toStrictEqual('NOTICE user1 :Hello there!');
+  });
+
+  it('test nick command', () => {
+    expect(parseMessageToCommand('#channel', '/nick')).toStrictEqual('nick');
+    expect(parseMessageToCommand('#channel', '/nick newNick')).toStrictEqual('NICK newNick');
+  });
+
+  it('test mode command', () => {
+    expect(parseMessageToCommand('#channel', '/mode #channel +o nick')).toStrictEqual('MODE #channel +o nick');
+    expect(parseMessageToCommand('#channel', '/mode nick +i')).toStrictEqual('MODE nick +i');
+    expect(parseMessageToCommand('#channel', '/mode')).toStrictEqual('MODE ');
+  });
+
+  it('test whowas command', () => {
+    expect(parseMessageToCommand('#channel', '/whowas')).toStrictEqual('whowas');
+    expect(parseMessageToCommand('#channel', '/whowas oldnick')).toStrictEqual('WHOWAS oldnick');
+  });
+
+  it('test names command', () => {
+    expect(parseMessageToCommand('#channel', '/names')).toStrictEqual('NAMES');
+    expect(parseMessageToCommand('#channel', '/names #otherchannel')).toStrictEqual('NAMES #otherchannel');
+  });
+
+  it('test knock command', () => {
+    expect(parseMessageToCommand('#channel', '/knock')).toStrictEqual('knock');
+    expect(parseMessageToCommand('#channel', '/knock #secretchannel')).toStrictEqual('KNOCK #secretchannel');
+    expect(parseMessageToCommand('#channel', '/knock #secretchannel Please let me in')).toStrictEqual('KNOCK #secretchannel :Please let me in');
+  });
+
+  it('test watch command', () => {
+    expect(parseMessageToCommand('#channel', '/watch')).toStrictEqual('WATCH L');
+    expect(parseMessageToCommand('#channel', '/watch +friend')).toStrictEqual('WATCH +friend');
+    expect(parseMessageToCommand('#channel', '/watch -friend')).toStrictEqual('WATCH -friend');
+  });
+
+  // Quick mode commands tests
+  it('test op command', () => {
+    expect(parseMessageToCommand('#channel', '/op')).toStrictEqual('op');
+    expect(parseMessageToCommand('#channel', '/op user1')).toStrictEqual('MODE #channel +o user1');
+  });
+
+  it('test deop command', () => {
+    expect(parseMessageToCommand('#channel', '/deop')).toStrictEqual('deop');
+    expect(parseMessageToCommand('#channel', '/deop user1')).toStrictEqual('MODE #channel -o user1');
+  });
+
+  it('test voice command', () => {
+    expect(parseMessageToCommand('#channel', '/voice')).toStrictEqual('voice');
+    expect(parseMessageToCommand('#channel', '/voice user1')).toStrictEqual('MODE #channel +v user1');
+  });
+
+  it('test devoice command', () => {
+    expect(parseMessageToCommand('#channel', '/devoice')).toStrictEqual('devoice');
+    expect(parseMessageToCommand('#channel', '/devoice user1')).toStrictEqual('MODE #channel -v user1');
+  });
+
+  it('test halfop command', () => {
+    expect(parseMessageToCommand('#channel', '/halfop')).toStrictEqual('halfop');
+    expect(parseMessageToCommand('#channel', '/halfop user1')).toStrictEqual('MODE #channel +h user1');
+  });
+
+  it('test dehalfop command', () => {
+    expect(parseMessageToCommand('#channel', '/dehalfop')).toStrictEqual('dehalfop');
+    expect(parseMessageToCommand('#channel', '/dehalfop user1')).toStrictEqual('MODE #channel -h user1');
+  });
+
+  // Channel-only commands should not work on Status channel
+  it('test channel-only commands on Status channel', () => {
+    expect(parseMessageToCommand('Status', '/op user1')).toStrictEqual('op user1');
+    expect(parseMessageToCommand('Status', '/voice user1')).toStrictEqual('voice user1');
+    expect(parseMessageToCommand('Status', '/kick user1')).toStrictEqual('kick user1');
+  });
 });

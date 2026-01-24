@@ -73,7 +73,7 @@ import {
 } from './batch';
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
-import { defaultChannelTypes, defaultMaxPermission } from '@/config/config';
+import { defaultChannelTypes, defaultMaxPermission, clientVersion, clientSourceUrl } from '@/config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
@@ -931,6 +931,52 @@ export class Kernel {
       // Additional SASL
       case RPL_SASLMECHS:
         this.onRaw908();
+        break;
+
+      // User modes
+      case RPL_UMODEIS:
+        this.onRaw221();
+        break;
+
+      // WATCH responses (friend list)
+      case RPL_REAWAY:
+        this.onRaw597();
+        break;
+      case RPL_GONEAWAY:
+        this.onRaw598();
+        break;
+      case RPL_NOTAWAY:
+        this.onRaw599();
+        break;
+      case RPL_LOGON:
+        this.onRaw600();
+        break;
+      case RPL_LOGOFF:
+        this.onRaw601();
+        break;
+      case RPL_WATCHOFF:
+        this.onRaw602();
+        break;
+      case RPL_WATCHSTAT:
+        this.onRaw603();
+        break;
+      case RPL_NOWON:
+        this.onRaw604();
+        break;
+      case RPL_NOWOFF:
+        this.onRaw605();
+        break;
+      case RPL_WATCHLIST:
+        this.onRaw606();
+        break;
+      case RPL_ENDOFWATCHLIST:
+        this.onRaw607();
+        break;
+      case RPL_CLEARWATCH:
+        this.onRaw608();
+        break;
+      case RPL_NOWISAWAY:
+        this.onRaw609();
         break;
 
       default:
@@ -1957,7 +2003,7 @@ export class Kernel {
     }
 
     if (message.startsWith('\x01')) {
-      // ignore CTCP messages
+      this.handleCtcp(nick, target, message);
       return;
     }
 
@@ -2023,6 +2069,81 @@ export class Kernel {
         });
       }
     }
+  };
+
+  // Handle CTCP (Client-To-Client Protocol) messages
+  // CTCP messages are wrapped in \x01 characters: \x01COMMAND params\x01
+  private readonly handleCtcp = (nick: string, target: string, message: string): void => {
+    const myNick = getCurrentNick();
+    const currentChannelName = getCurrentChannelName();
+
+    // Remove \x01 (CTCP delimiter) characters and parse CTCP command
+    const ctcpContent = message.split('\x01').join('');
+    const spaceIndex = ctcpContent.indexOf(' ');
+    const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
+    const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
+
+    switch (ctcpCommand.toUpperCase()) {
+      case 'ACTION':
+        this.handleCtcpAction(nick, target, ctcpParams, myNick, currentChannelName);
+        break;
+      case 'VERSION':
+        this.ctcpReply(nick, 'VERSION', clientVersion);
+        break;
+      case 'TIME':
+        this.ctcpReply(nick, 'TIME', new Date().toString());
+        break;
+      case 'PING':
+        this.ctcpReply(nick, 'PING', ctcpParams);
+        break;
+      case 'USERINFO':
+        this.ctcpReply(nick, 'USERINFO', myNick);
+        break;
+      case 'SOURCE':
+        this.ctcpReply(nick, 'SOURCE', clientSourceUrl);
+        break;
+      case 'CLIENTINFO':
+        this.ctcpReply(nick, 'CLIENTINFO', 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO');
+        break;
+      default:
+        // Unknown CTCP, ignore silently
+        break;
+    }
+  };
+
+  // Send CTCP reply via NOTICE
+  private readonly ctcpReply = (target: string, command: string, response: string): void => {
+    ircSendRawMessage(`NOTICE ${target} :\x01${command} ${response}\x01`);
+  };
+
+  // Handle CTCP ACTION (/me command)
+  private readonly handleCtcpAction = (
+    nick: string,
+    target: string,
+    action: string,
+    myNick: string,
+    currentChannelName: string
+  ): void => {
+    const isPrivMessage = target === myNick;
+    const messageTarget = isPrivMessage ? nick : target;
+
+    if (!existChannel(messageTarget)) {
+      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
+    }
+
+    if (messageTarget !== currentChannelName) {
+      setIncreaseUnreadMessages(messageTarget);
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: action,
+      nick: getUser(nick) ?? nick,
+      target: messageTarget,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.me,
+      color: MessageColor.me,
+    });
   };
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
@@ -3172,6 +3293,22 @@ export class Kernel {
     });
   };
 
+  // RPL_UMODEIS (221) - User modes reply
+  // :server 221 yournick +iwx
+  private readonly onRaw221 = (): void => {
+    const myNick = this.line.shift();
+    const modes = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.221', { modes, defaultValue: `Your user modes: ${modes}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
   // :server 242 nick :Server Up 14 days, 2:34:56
   private readonly onRaw242 = (): void => {
     const myNick = this.line.shift();
@@ -4253,6 +4390,212 @@ export class Kernel {
       category: MessageCategory.error,
       color: MessageColor.error,
     });
+  };
+
+  // WATCH responses (597-609) - Friend list notifications
+  // :server 597 yournick nick ident host timestamp :is now away
+  private readonly onRaw597 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User is now away again (after returning)
+    if (nick) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 598 yournick nick ident host timestamp :went away
+  private readonly onRaw598 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User went away
+    if (nick) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 599 yournick nick ident host timestamp :is no longer away
+  private readonly onRaw599 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User is back from away
+    if (nick) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchback', { nick, defaultValue: `${nick} is no longer away` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 600 yournick nick ident host timestamp :logged on
+  private readonly onRaw600 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User came online - use monitor store for consistency
+    if (nick) {
+      setMultipleMonitorOnline([nick]);
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 601 yournick nick ident host timestamp :logged off
+  private readonly onRaw601 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User went offline
+    if (nick) {
+      setMultipleMonitorOffline([nick]);
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 602 yournick nick ident host timestamp :stopped watching
+  private readonly onRaw602 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // Stopped watching nick
+    if (nick) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchremoved', { nick, defaultValue: `Stopped watching ${nick}` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 603 yournick :You have X and are on Y WATCH entries
+  private readonly onRaw603 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+    // Watch statistics
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 604 yournick nick ident host timestamp :is online
+  private readonly onRaw604 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User is currently online (when adding to watch list)
+    if (nick) {
+      setMultipleMonitorOnline([nick]);
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 605 yournick nick * * 0 :is offline
+  private readonly onRaw605 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User is currently offline (when adding to watch list)
+    if (nick) {
+      setMultipleMonitorOffline([nick]);
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 606 yournick :nick1 nick2 nick3
+  private readonly onRaw606 = (): void => {
+    const myNick = this.line.shift();
+    const nicks = this.line.join(' ').replace(/^:/, '');
+    // Watch list entries
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.watchlist', { nicks, defaultValue: `Watch list: ${nicks}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 607 yournick :End of WATCH list
+  private readonly onRaw607 = (): void => {
+    // End of watch list - nothing specific to do
+  };
+
+  // :server 608 yournick :Watch list cleared
+  private readonly onRaw608 = (): void => {
+    const myNick = this.line.shift();
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.watchcleared', { defaultValue: 'Watch list cleared' }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 609 yournick nick ident host timestamp :is away
+  private readonly onRaw609 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    // User is currently away (when adding to watch list)
+    if (nick) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
+        target: STATUS_CHANNEL,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
   };
 
   // :server 704 mynick topic :help text start
