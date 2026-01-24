@@ -3,6 +3,7 @@
     "wizard.nick.nick": "Podaj swój pseudonim",
     "wizard.nick.button.next": "Dalej",
     "wizard.server.title": "Witaj",
+    "wizard.server.subtitle": "Wybierz swój serwer",
     "wizard.server.server": "Wybierz serwer rozmów",
     "wizard.server.popular": "Popularne serwery",
     "wizard.server.all": "Wszystkie serwery",

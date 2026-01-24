@@ -3,6 +3,7 @@
     "wizard.nick.nick": "Enter your nickname",
     "wizard.nick.button.next": "Next",
     "wizard.server.title": "Hello",
+    "wizard.server.subtitle": "Choose your server",
     "wizard.server.server": "Select a server from the list",
     "wizard.server.popular": "Popular servers",
     "wizard.server.all": "All servers",

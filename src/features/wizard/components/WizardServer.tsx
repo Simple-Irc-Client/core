@@ -72,6 +72,7 @@ const WizardServer = () => {
   return (
     <>
       <h1 className="text-2xl font-semibold text-center">{t('wizard.server.title')}</h1>
+      <p className="text-muted-foreground text-center mt-2">{t('wizard.server.subtitle')}</p>
       <form className="mt-8 flex flex-col items-center" onSubmit={handleSubmit}>
         <div className="w-[300px] mb-4">
           <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.popular')}</p>
