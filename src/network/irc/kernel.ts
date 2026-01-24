@@ -1736,6 +1736,15 @@ export class Kernel {
     // We use the server-provided msgid and timestamp for accurate message ordering
     const isEchoMessage = nick === myNick && isCapabilityEnabled('echo-message');
 
+    // Common IRC services - don't create query windows for echoed messages to these
+    const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
+    const isServiceTarget = IRC_SERVICES.includes(target.toLowerCase());
+
+    // Skip echoed messages to IRC services (they may contain passwords)
+    if (isEchoMessage && isServiceTarget) {
+      return;
+    }
+
     const isPrivMessage = target === myNick;
     // For echo-message to a channel, target is the channel
     // For regular private message, target is our nick
