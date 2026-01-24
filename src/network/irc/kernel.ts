@@ -3293,6 +3293,22 @@ export class Kernel {
     });
   };
 
+  // RPL_UMODEIS (221) - User modes reply
+  // :server 221 yournick +iwx
+  private readonly onRaw221 = (): void => {
+    const myNick = this.line.shift();
+    const modes = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.221', { modes, defaultValue: `Your user modes: ${modes}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
   // :server 242 nick :Server Up 14 days, 2:34:56
   private readonly onRaw242 = (): void => {
     const myNick = this.line.shift();
@@ -4376,126 +4392,6 @@ export class Kernel {
     });
   };
 
-  // :server 704 mynick topic :help text start
-  private readonly onRaw704 = (): void => {
-    const currentChannelName = getCurrentChannelName();
-    const myNick = this.line.shift();
-    const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: `[${topic}] ${message}`,
-      target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // :server 705 mynick topic :help text line
-  private readonly onRaw705 = (): void => {
-    const currentChannelName = getCurrentChannelName();
-    const myNick = this.line.shift();
-    const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message,
-      target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // :server 706 mynick topic :End of /HELP
-  private readonly onRaw706 = (): void => {
-    const currentChannelName = getCurrentChannelName();
-    const myNick = this.line.shift();
-    const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: `[${topic}] ${message}`,
-      target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // :server 728 mynick #channel q mask setter timestamp
-  private readonly onRaw728 = (): void => {
-    const myNick = this.line.shift();
-    const channel = this.line.shift();
-    const mode = this.line.shift(); // usually 'q' for quiet
-    const mask = this.line.shift();
-    const setBy = this.line.shift() ?? '';
-    const setTime = Number(this.line.shift() ?? '0');
-
-    if (channel === undefined || mask === undefined) {
-      return;
-    }
-
-    // For channel settings quiet list (if supported)
-    const settingsChannel = useChannelSettingsStore.getState().channelName;
-    if (settingsChannel === channel) {
-      // Could add to a quiet list in channel settings if implemented
-    }
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.728', { channel, mask, setBy, defaultValue: `${channel} quiet: ${mask} (set by ${setBy})` }),
-      target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // :server 729 mynick #channel q :End of Channel Quiet List
-  private readonly onRaw729 = (): void => {
-    const myNick = this.line.shift();
-    const channel = this.line.shift();
-    const mode = this.line.shift();
-    // End of quiet list - nothing specific to do
-  };
-
-  // :server 908 mynick PLAIN,EXTERNAL :are available SASL mechanisms
-  private readonly onRaw908 = (): void => {
-    const myNick = this.line.shift();
-    const mechanisms = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
-      target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
-  // RPL_UMODEIS (221) - User modes reply
-  // :server 221 yournick +iwx
-  private readonly onRaw221 = (): void => {
-    const myNick = this.line.shift();
-    const modes = this.line.join(' ').replace(/^:/, '');
-
-    setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t('kernel.221', { modes, defaultValue: `Your user modes: ${modes}` }),
-      target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
-
   // WATCH responses (597-609) - Friend list notifications
   // :server 597 yournick nick ident host timestamp :is now away
   private readonly onRaw597 = (): void => {
@@ -4700,5 +4596,109 @@ export class Kernel {
         color: MessageColor.info,
       });
     }
+  };
+
+  // :server 704 mynick topic :help text start
+  private readonly onRaw704 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `[${topic}] ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 705 mynick topic :help text line
+  private readonly onRaw705 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 706 mynick topic :End of /HELP
+  private readonly onRaw706 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `[${topic}] ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 728 mynick #channel q mask setter timestamp
+  private readonly onRaw728 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mode = this.line.shift(); // usually 'q' for quiet
+    const mask = this.line.shift();
+    const setBy = this.line.shift() ?? '';
+    const setTime = Number(this.line.shift() ?? '0');
+
+    if (channel === undefined || mask === undefined) {
+      return;
+    }
+
+    // For channel settings quiet list (if supported)
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel === channel) {
+      // Could add to a quiet list in channel settings if implemented
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.728', { channel, mask, setBy, defaultValue: `${channel} quiet: ${mask} (set by ${setBy})` }),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 729 mynick #channel q :End of Channel Quiet List
+  private readonly onRaw729 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mode = this.line.shift();
+    // End of quiet list - nothing specific to do
+  };
+
+  // :server 908 mynick PLAIN,EXTERNAL :are available SASL mechanisms
+  private readonly onRaw908 = (): void => {
+    const myNick = this.line.shift();
+    const mechanisms = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
   };
 }
