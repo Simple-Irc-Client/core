@@ -4,13 +4,21 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Input } from '@shared/components/ui/input';
 import { useTranslation } from 'react-i18next';
-import { type Server, servers } from '@/network/irc/servers';
+import { type Server, servers, serverIcons } from '@/network/irc/servers';
 import { getCurrentNick, setWizardStep, setIsConnecting, setServer } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 
 const POPULAR_NETWORKS = ['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet'];
+
+const ServerIcon = ({ server }: { server: Server }) => {
+  const svg = serverIcons[server.network];
+  if (!svg) return null;
+
+  const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  return <img src={dataUri} alt="" className="w-4 h-4" />;
+};
 
 const WizardServer = () => {
   const { t } = useTranslation();
@@ -84,7 +92,9 @@ const WizardServer = () => {
                 variant={formServer?.network === server.network && !isCustom ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleSelectServer(server)}
+                className="gap-2"
               >
+                <ServerIcon server={server} />
                 {server.network}
               </Button>
             ))}
@@ -113,7 +123,8 @@ const WizardServer = () => {
                         onSelect={() => handleSelectServer(server)}
                       >
                         <Check className={cn('mr-2 h-4 w-4', formServer?.network === server.network && !isCustom ? 'opacity-100' : 'opacity-0')} />
-                        {server.network}
+                        <ServerIcon server={server} />
+                        <span className="ml-2">{server.network}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -125,7 +136,8 @@ const WizardServer = () => {
                         onSelect={() => handleSelectServer(server)}
                       >
                         <Check className={cn('mr-2 h-4 w-4', formServer?.network === server.network && !isCustom ? 'opacity-100' : 'opacity-0')} />
-                        {server.network}
+                        <ServerIcon server={server} />
+                        <span className="ml-2">{server.network}</span>
                       </CommandItem>
                     ))}
                   </CommandGroup>
