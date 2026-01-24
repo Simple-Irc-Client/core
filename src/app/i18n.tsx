@@ -13,6 +13,12 @@ const resources = {
   },
 };
 
-i18n.use(initReactI18next).init({ resources, lng: 'pl' });
+i18n.use(initReactI18next).init({
+  resources,
+  lng: 'pl',
+  interpolation: {
+    escapeValue: false, // Disable HTML escaping - React already escapes output
+  },
+});
 
 export default i18n;

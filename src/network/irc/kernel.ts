@@ -42,7 +42,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -75,6 +75,8 @@ import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { defaultChannelTypes, defaultMaxPermission } from '@/config/config';
 import { v4 as uuidv4 } from 'uuid';
+import { format } from 'date-fns';
+import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getCurrentUserFlags } from '@features/settings/store/settings';
@@ -307,6 +309,32 @@ const ERR_SASLABORTED = '906';
 const ERR_SASLALREADY = '907';
 const ERR_CANNOTDOCOMMAND = '972';
 const ERR_CANNOTCHANGECHANMODE = '974';
+
+// Additional numerics from modern IRC spec
+const RPL_BOUNCE = '010';
+const RPL_PROCESSING = '020';
+const RPL_YOURID = '042';
+const RPL_STATSCOMMANDS = '212';
+const RPL_STATSUPTIME = '242';
+const RPL_ENDOFSTATS = '219';
+const RPL_ADMINME = '256';
+const RPL_ADMINLOC1 = '257';
+const RPL_ADMINLOC2 = '258';
+const RPL_ADMINEMAIL = '259';
+const RPL_WHOISACTUALLY = '338';
+const ERR_NORECIPIENT = '411';
+const ERR_INPUTTOOLONG = '417';
+const ERR_BADCHANMASK = '476';
+const ERR_HELPNOTFOUND = '524';
+const ERR_INVALIDKEY = '525';
+const RPL_STARTTLS = '670';
+const ERR_STARTTLS = '691';
+const ERR_INVALIDMODEPARAM = '696';
+const RPL_HELPSTART = '704';
+const RPL_HELPTXT = '705';
+const RPL_ENDOFHELP = '706';
+const ERR_NOPRIVS = '723';
+const RPL_SASLMECHS = '908';
 
 export class Kernel {
   private tags: Record<string, string>;
@@ -684,34 +712,231 @@ export class Kernel {
         this.onRaw734();
         break;
 
+      // Server info and admin
+      case RPL_BOUNCE:
+        this.onRaw010();
+        break;
+      case RPL_PROCESSING:
+        this.onRaw020();
+        break;
+      case RPL_YOURID:
+        this.onRaw042();
+        break;
+      case RPL_STATSCOMMANDS:
+        this.onRaw212();
+        break;
+      case RPL_ENDOFSTATS:
+        this.onRaw219();
+        break;
+      case RPL_STATSUPTIME:
+        this.onRaw242();
+        break;
+      case RPL_ADMINME:
+        this.onRaw256();
+        break;
+      case RPL_ADMINLOC1:
+        this.onRaw257();
+        break;
+      case RPL_ADMINLOC2:
+        this.onRaw258();
+        break;
+      case RPL_ADMINEMAIL:
+        this.onRaw259();
+        break;
+
+      // WHOIS additional replies
+      case RPL_WHOWASUSER:
+        this.onRaw314();
+        break;
+      case RPL_WHOISIDLE:
+        this.onRaw317();
+        break;
+      case RPL_WHOISLOGGEDIN:
+        this.onRaw330();
+        break;
+      case RPL_WHOISACTUALLY:
+        this.onRaw338();
+        break;
+      case RPL_WHOISCOUNTRY:
+        this.onRaw344();
+        break;
+      case RPL_ENDOFWHOWAS:
+        this.onRaw369();
+        break;
+      case RPL_WHOISHOST:
+        this.onRaw378();
+        break;
+      case RPL_WHOISMODES:
+        this.onRaw379();
+        break;
+
+      // Channel info
+      case RPL_CHANNEL_URL:
+        this.onRaw328();
+        break;
+      case RPL_CREATIONTIME:
+        this.onRaw329();
+        break;
+      case RPL_INVITING:
+        this.onRaw341();
+        break;
+      case RPL_VERSION:
+        this.onRaw351();
+        break;
+      case RPL_WHOSPCRPL:
+        this.onRaw354();
+        break;
+      case RPL_LINKS:
+        this.onRaw364();
+        break;
+      case RPL_ENDOFLINKS:
+        this.onRaw365();
+        break;
+      case RPL_INFO:
+        this.onRaw371();
+        break;
+      case RPL_ENDOFINFO:
+        this.onRaw374();
+        break;
+      case RPL_YOUREOPER:
+        this.onRaw381();
+        break;
+      case RPL_REHASHING:
+        this.onRaw382();
+        break;
+      case RPL_TIME:
+        this.onRaw391();
+        break;
+
+      // Error responses
+      case ERR_NOSUCHNICK:
+        this.onRaw401();
+        break;
+      case ERR_NOSUCHSERVER:
+        this.onRaw402();
+        break;
+      case ERR_NOSUCHCHANNEL:
+        this.onRaw403();
+        break;
+      case ERR_CANNOTSENDTOCHAN:
+        this.onRaw404();
+        break;
+      case ERR_TOOMANYCHANNELS:
+        this.onRaw405();
+        break;
+      case ERR_WASNOSUCHNICK:
+        this.onRaw406();
+        break;
+      case ERR_NORECIPIENT:
+        this.onRaw411();
+        break;
+      case ERR_ERR_NOTEXTTOSEND:
+        this.onRaw412();
+        break;
+      case ERR_INPUTTOOLONG:
+        this.onRaw417();
+        break;
+      case ERR_UNKNOWNCOMMAND:
+        this.onRaw421();
+        break;
+      case ERR_NOMOTD:
+        this.onRaw422();
+        break;
+      case ERR_NONICKNAMEGIVEN:
+        this.onRaw431();
+        break;
+      case ERR_NICKNAMEINUSE:
+        this.onRaw433();
+        break;
+      case ERR_NICKCOLLISION:
+        this.onRaw436();
+        break;
+      case ERR_USERNOTINCHANNEL:
+        this.onRaw441();
+        break;
+      case ERR_USERONCHANNEL:
+        this.onRaw443();
+        break;
+      case ERR_NONICKCHANGE:
+        this.onRaw447();
+        break;
+      case ERR_FORBIDDENCHANNEL:
+        this.onRaw448();
+        break;
+      case ERR_NOTREGISTERED:
+        this.onRaw451();
+        break;
+      case ERR_NEEDMOREPARAMS:
+        this.onRaw461();
+        break;
+      case ERR_ALREADYREGISTRED:
+        this.onRaw462();
+        break;
+      case ERR_PASSWDMISMATCH:
+        this.onRaw464();
+        break;
+      case ERR_YOUREBANNEDCREEP:
+        this.onRaw465();
+        break;
+      case ERR_CHANNELISFULL:
+        this.onRaw471();
+        break;
+      case ERR_UNKNOWNMODE:
+        this.onRaw472();
+        break;
+      case ERR_BADCHANNELKEY:
+        this.onRaw475();
+        break;
+      case ERR_BADCHANMASK:
+        this.onRaw476();
+        break;
+      case ERR_BANLISTFULL:
+        this.onRaw478();
+        break;
+      case ERR_NOPRIVILEGES:
+        this.onRaw481();
+        break;
+      case ERR_CHANOPRIVSNEEDED:
+        this.onRaw482();
+        break;
+      case ERR_UMODEUNKNOWNFLAG:
+        this.onRaw501();
+        break;
+      case ERR_USERSDONTMATCH:
+        this.onRaw502();
+        break;
+
+      // Help system
+      case ERR_HELPNOTFOUND:
+        this.onRaw524();
+        break;
+      case RPL_HELPSTART:
+        this.onRaw704();
+        break;
+      case RPL_HELPTXT:
+        this.onRaw705();
+        break;
+      case RPL_ENDOFHELP:
+        this.onRaw706();
+        break;
+
+      // Quiet list
+      case RPL_QUIETLIST:
+        this.onRaw728();
+        break;
+      case RPL_ENDOFQUIETLIST:
+        this.onRaw729();
+        break;
+
+      // Additional SASL
+      case RPL_SASLMECHS:
+        this.onRaw908();
+        break;
+
       default:
         console.log(`unknown irc event: ${JSON.stringify(event)}`);
         break;
     }
-
-    // TODO unknown raw:
-    // :irc.swepipe.net 020 * :Please wait while we process your connection.
-    // :irc.swepipe.net 042 sic-test 0PNSABVS6 :your unique ID
-    // :insomnia.pirc.pl 317 Merovingian toto 118 1768728754 :seconds idle, signon time\r\n
-    // :irc.swepipe.net 324 sic-test #worldchat +tnl 230
-    // :irc01-black.librairc.net 324 sic-test #india +BCFGJMNSTfjntx mute:60:80 2:2 60 *4:3 6:6 :2:10:60
-    // :services.librairc.net 328 sic-test #india :www.indiachat.co.in
-    // :chmurka.pirc.pl 329 sic-test #sic 1676587044
-    // :insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki PIRC.pl "JAKNEK"
-    // :insomnia.pirc.pl 404 mero-test-23452345 #sic :You cannot send messages to channels until you've been connected for 30 seconds or more (#sic)    // :chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)
-    // :hiena.pirc.pl 421 dasdasdsadasdasdsadas JOIN :You must be connected for at least 15 seconds before you can use this command
-    // :insomnia.pirc.pl 447 mero-test-2354324234 :Can not change nickname while on #Religie (+N)\r\n
-    // :chmurka.pirc.pl 770 sic-test :color
-    // :chmurka.pirc.pl 770 sic-test :bot-url
-    // :chmurka.pirc.pl 770 sic-test :display-name
-    // :chmurka.pirc.pl 770 sic-test :homepage
-    // :chmurka.pirc.pl 770 sic-test :bot
-    // :chmurka.pirc.pl 770 sic-test :status
-    // :chmurka.pirc.pl 770 sic-test :avatar
-
-    // whois:
-    // :chmurka.pirc.pl 330 sic-test Noop Noop :is logged in as
-    // :jowisz.pirc.pl 344 sic-test Merovingian PL :is connecting from Poland
   };
 
   // IRCv3 account-notify: User logs in or out of their account
@@ -1322,6 +1547,10 @@ export class Kernel {
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
+      }
+      // Request channel history if chathistory capability is enabled
+      if (isCapabilityEnabled('draft/chathistory')) {
+        ircRequestChatHistory(channel, 'LATEST', undefined, 50);
       }
     }
   };
@@ -2858,5 +3087,1275 @@ export class Kernel {
   // :server 368 mynick #channel :End of Channel Ban List
   private readonly onRaw368 = (): void => {
     setChannelSettingsIsBanListLoading(false);
+  };
+
+  // ============================================
+  // Additional IRC numerics from modern spec
+  // ============================================
+
+  // :server 010 * <hostname> <port> :Server redirect
+  private readonly onRaw010 = (): void => {
+    const asterisk = this.line.shift();
+    const hostname = this.line.shift();
+    const port = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.010', { hostname, port, message, defaultValue: `Server redirect: ${hostname}:${port} ${message}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 020 * :Please wait while we process your connection.
+  private readonly onRaw020 = (): void => {
+    const asterisk = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 042 nick uniqueID :your unique ID
+  private readonly onRaw042 = (): void => {
+    const myNick = this.line.shift();
+    const uniqueId = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${uniqueId} ${message}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 212 nick COMMAND count bytes remote_count
+  private readonly onRaw212 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 219 nick type :End of STATS report
+  private readonly onRaw219 = (): void => {
+    const myNick = this.line.shift();
+    const statsType = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${statsType} ${message}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 242 nick :Server Up 14 days, 2:34:56
+  private readonly onRaw242 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 256 nick :Administrative info about server
+  private readonly onRaw256 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 257 nick :Location line 1
+  private readonly onRaw257 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 258 nick :Location line 2
+  private readonly onRaw258 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 259 nick :Admin email
+  private readonly onRaw259 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 314 nick user host * :realname (WHOWAS reply)
+  private readonly onRaw314 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const host = this.line.join(' ');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.314', { user, host, defaultValue: `${user} was ${host}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 317 mynick user idle signon :seconds idle, signon time
+  private readonly onRaw317 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const idleSeconds = Number(this.line.shift() ?? '0');
+    const signonTime = Number(this.line.shift() ?? '0');
+
+    const idleFormatted = this.formatDuration(idleSeconds);
+    const signonDate = signonTime > 0 ? format(new Date(signonTime * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }) : '';
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // Helper to format seconds into human readable duration
+  private readonly formatDuration = (seconds: number): string => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    const parts: string[] = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+
+    return parts.join(' ');
+  };
+
+  // :server 328 mynick #channel :http://channel-url.com
+  private readonly onRaw328 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const url = this.line.join(' ').replace(/^:/, '');
+
+    if (channel) {
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.328', { channel, url, defaultValue: `Channel URL: ${url}` }),
+        target: channel,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 329 mynick #channel timestamp
+  private readonly onRaw329 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const timestamp = Number(this.line.shift() ?? '0');
+
+    if (channel && timestamp > 0) {
+      const createdDate = format(new Date(timestamp * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() });
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.329', { channel, created: createdDate, defaultValue: `Channel created: ${createdDate}` }),
+        target: channel,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+    }
+  };
+
+  // :server 330 mynick user account :is logged in as
+  private readonly onRaw330 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const account = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'is logged in as') {
+      message = i18next.t('kernel.330.is-logged-in-as', { defaultValue: 'is logged in as' });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.330', { user, account, message, defaultValue: `${user} ${message} ${account}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 338 mynick user actualuser@actualhost actualIP :Actual user@host, Actual IP
+  private readonly onRaw338 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const actualUserHost = this.line.shift();
+    const actualIP = this.line.shift();
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.338', { user, actualUserHost, actualIP, defaultValue: `${user} ${actualUserHost} ${actualIP}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 341 mynick invitedUser #channel
+  private readonly onRaw341 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const invitedUser = this.line.shift();
+    const channel = this.line.shift();
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.341', { user: invitedUser, channel, defaultValue: `Inviting ${invitedUser} to ${channel}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 344 mynick user country :is connecting from Country
+  private readonly onRaw344 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const country = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.344', { user, country, message, defaultValue: `${user} ${message} ${country}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 351 mynick version.debuglevel server :comments
+  private readonly onRaw351 = (): void => {
+    const myNick = this.line.shift();
+    const version = this.line.shift();
+    const server = this.line.shift();
+    const comments = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${server} ${version} ${comments}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 354 mynick querytype channel user host server nick flags hopcount :realname (WHOX reply)
+  private readonly onRaw354 = (): void => {
+    const myNick = this.line.shift();
+    const queryType = this.line.shift();
+    const channel = this.line.shift();
+    const ident = this.line.shift();
+    const hostname = this.line.shift();
+    const server = this.line.shift();
+    const nick = this.line.shift();
+    const flags = this.line.shift() ?? '';
+    const hopcount = this.line.shift();
+    const realname = this.line.join(' ').replace(/^:/, '');
+
+    if (!nick || !channel) return;
+
+    const serverPrefixes = getUserModes();
+
+    // Parse flags to extract user modes (H=here, G=gone/away, *=oper, @%+ = channel modes)
+    const channelFlags: string[] = [];
+    let isAway = false;
+
+    for (const flag of flags.split('')) {
+      if (flag === 'G') {
+        isAway = true;
+      } else if (serverPrefixes.some(p => p.symbol === flag)) {
+        channelFlags.push(flag);
+      }
+    }
+
+    // Update or add user
+    if (getHasUser(nick)) {
+      setUserHost(nick, ident ?? '', hostname ?? '');
+      if (realname) setUserRealname(nick, realname);
+      if (isAway) setUserAway(nick, true);
+    } else {
+      setAddUser({
+        nick,
+        ident: ident ?? '',
+        hostname: hostname ?? '',
+        flags: [],
+        channels: [{
+          name: channel,
+          flags: channelFlags,
+          maxPermission: calculateMaxPermission(channelFlags, serverPrefixes),
+        }],
+      });
+    }
+  };
+
+  // :server 364 mynick mask server :hopcount info
+  private readonly onRaw364 = (): void => {
+    const myNick = this.line.shift();
+    const mask = this.line.shift();
+    const server = this.line.shift();
+    const info = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${mask} ${server} ${info}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 365 mynick mask :End of /LINKS list
+  private readonly onRaw365 = (): void => {
+    const myNick = this.line.shift();
+    const mask = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${mask} ${message}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 369 mynick nick :End of WHOWAS
+  private readonly onRaw369 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `* ${nick} ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 371 mynick :info line
+  private readonly onRaw371 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 374 mynick :End of INFO list
+  private readonly onRaw374 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 378 mynick nick :is connecting from *@host IP
+  private readonly onRaw378 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.378', { user, message, defaultValue: `* ${user} ${message}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 379 mynick nick :is using modes +iwx
+  private readonly onRaw379 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const user = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.379', { user, message, defaultValue: `* ${user} ${message}` }),
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 381 mynick :You are now an IRC operator
+  private readonly onRaw381 = (): void => {
+    const myNick = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'You are now an IRC operator') {
+      message = i18next.t('kernel.381.you-are-now-an-irc-operator', { defaultValue: message });
+    }
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 382 mynick config.conf :Rehashing
+  private readonly onRaw382 = (): void => {
+    const myNick = this.line.shift();
+    const configFile = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${configFile} ${message}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 391 mynick server :timestamp
+  private readonly onRaw391 = (): void => {
+    const myNick = this.line.shift();
+    const server = this.line.shift();
+    const timeString = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.391', { server, time: timeString, defaultValue: `${server}: ${timeString}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // Error numerics
+  // :server 401 mynick target :No such nick/channel
+  private readonly onRaw401 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const target = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'No such nick/channel') {
+      message = i18next.t('kernel.401.no-such-nick-channel', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${target}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 402 mynick server :No such server
+  private readonly onRaw402 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const server = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${server}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 403 mynick #channel :No such channel
+  private readonly onRaw403 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'No such channel') {
+      message = i18next.t('kernel.403.no-such-channel', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 404 mynick #channel :Cannot send to channel
+  private readonly onRaw404 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Cannot send to channel') {
+      message = i18next.t('kernel.404.cannot-send-to-channel', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: channel ?? STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 405 mynick #channel :You have joined too many channels
+  private readonly onRaw405 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'You have joined too many channels') {
+      message = i18next.t('kernel.405.too-many-channels', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 406 mynick nick :There was no such nickname
+  private readonly onRaw406 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 411 mynick :No recipient given
+  private readonly onRaw411 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 412 mynick :No text to send
+  private readonly onRaw412 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'No text to send') {
+      message = i18next.t('kernel.412.no-text-to-send', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 417 mynick :Input line was too long
+  private readonly onRaw417 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 421 mynick COMMAND :Unknown command
+  private readonly onRaw421 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const command = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Unknown command') {
+      message = i18next.t('kernel.421.unknown-command', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${command}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 422 mynick :MOTD File is missing
+  private readonly onRaw422 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 431 mynick :No nickname given
+  private readonly onRaw431 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
+    }
+  };
+
+  // :server 433 * nick :Nickname is already in use
+  private readonly onRaw433 = (): void => {
+    const asterisk = this.line.shift();
+    const nick = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Nickname is already in use') {
+      message = i18next.t('kernel.433.nickname-in-use', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick}: ${message}`,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message: `${nick}: ${message}` }));
+    }
+  };
+
+  // :server 436 mynick nick :Nickname collision KILL
+  private readonly onRaw436 = (): void => {
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick}: ${message}`,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 441 mynick nick #channel :They aren't on that channel
+  private readonly onRaw441 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === "They aren't on that channel") {
+      message = i18next.t('kernel.441.not-on-channel', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick} ${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 443 mynick nick #channel :is already on channel
+  private readonly onRaw443 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const nick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'is already on channel') {
+      message = i18next.t('kernel.443.already-on-channel', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${nick} ${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 447 mynick :Cannot change nickname while on #channel (+N)
+  private readonly onRaw447 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 448 mynick channel :Cannot join channel: invalid name
+  private readonly onRaw448 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 451 * :You have not registered
+  private readonly onRaw451 = (): void => {
+    const asterisk = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 461 mynick COMMAND :Not enough parameters
+  private readonly onRaw461 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const command = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Not enough parameters') {
+      message = i18next.t('kernel.461.not-enough-parameters', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${command}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 462 mynick :You may not reregister
+  private readonly onRaw462 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 464 * :Password incorrect
+  private readonly onRaw464 = (): void => {
+    const asterisk = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Password incorrect') {
+      message = i18next.t('kernel.464.password-incorrect', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
+    }
+  };
+
+  // :server 465 mynick :You are banned from this server
+  private readonly onRaw465 = (): void => {
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessageToAllChannels({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+
+    if (!getIsWizardCompleted()) {
+      setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
+    }
+  };
+
+  // :server 471 mynick #channel :Cannot join channel (+l)
+  private readonly onRaw471 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Cannot join channel (+l)') {
+      message = i18next.t('kernel.471.channel-full', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 472 mynick char :is unknown mode char to me
+  private readonly onRaw472 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const modeChar = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${modeChar}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 475 mynick #channel :Cannot join channel (+k)
+  private readonly onRaw475 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === 'Cannot join channel (+k)') {
+      message = i18next.t('kernel.475.bad-channel-key', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 476 mynick #channel :Bad Channel Mask
+  private readonly onRaw476 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 478 mynick #channel mask :Channel ban list is full
+  private readonly onRaw478 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mask = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel} ${mask}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 481 mynick :Permission Denied- You're not an IRC operator
+  private readonly onRaw481 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 482 mynick #channel :You're not channel operator
+  private readonly onRaw482 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    let message = this.line.join(' ').replace(/^:/, '');
+
+    if (message === "You're not channel operator") {
+      message = i18next.t('kernel.482.not-channel-operator', { defaultValue: message });
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${channel}: ${message}`,
+      target: channel ?? STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 501 mynick :Unknown MODE flag
+  private readonly onRaw501 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 502 mynick :Cannot change mode for other users
+  private readonly onRaw502 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 524 mynick topic :Help not found
+  private readonly onRaw524 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `${topic}: ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.error,
+      color: MessageColor.error,
+    });
+  };
+
+  // :server 704 mynick topic :help text start
+  private readonly onRaw704 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `[${topic}] ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 705 mynick topic :help text line
+  private readonly onRaw705 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 706 mynick topic :End of /HELP
+  private readonly onRaw706 = (): void => {
+    const currentChannelName = getCurrentChannelName();
+    const myNick = this.line.shift();
+    const topic = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: `[${topic}] ${message}`,
+      target: currentChannelName,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 728 mynick #channel q mask setter timestamp
+  private readonly onRaw728 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mode = this.line.shift(); // usually 'q' for quiet
+    const mask = this.line.shift();
+    const setBy = this.line.shift() ?? '';
+    const setTime = Number(this.line.shift() ?? '0');
+
+    if (channel === undefined || mask === undefined) {
+      return;
+    }
+
+    // For channel settings quiet list (if supported)
+    const settingsChannel = useChannelSettingsStore.getState().channelName;
+    if (settingsChannel === channel) {
+      // Could add to a quiet list in channel settings if implemented
+    }
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.728', { channel, mask, setBy, defaultValue: `${channel} quiet: ${mask} (set by ${setBy})` }),
+      target: channel,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  // :server 729 mynick #channel q :End of Channel Quiet List
+  private readonly onRaw729 = (): void => {
+    const myNick = this.line.shift();
+    const channel = this.line.shift();
+    const mode = this.line.shift();
+    // End of quiet list - nothing specific to do
+  };
+
+  // :server 908 mynick PLAIN,EXTERNAL :are available SASL mechanisms
+  private readonly onRaw908 = (): void => {
+    const myNick = this.line.shift();
+    const mechanisms = this.line.shift();
+    const message = this.line.join(' ').replace(/^:/, '');
+
+    setAddMessage({
+      id: this.tags?.msgid ?? uuidv4(),
+      message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
+      target: STATUS_CHANNEL,
+      time: this.tags?.time ?? new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
   };
 }
