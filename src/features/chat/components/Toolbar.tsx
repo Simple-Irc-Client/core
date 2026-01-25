@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/p
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { setAddMessage } from '@features/channels/store/channels';
+import { setDraft, getDraft } from '@features/chat/store/drafts';
 import { getUser, useUsersStore } from '@features/users/store/users';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
@@ -64,6 +65,7 @@ const Toolbar = () => {
   const historyIndex = useRef(-1);
   const currentInputBeforeHistory = useRef('');
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previousChannelRef = useRef<string>(currentChannelName);
 
   const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
@@ -153,6 +155,28 @@ const Toolbar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Save draft when switching channels and restore draft for new channel
+  useEffect(() => {
+    const previousChannel = previousChannelRef.current;
+
+    if (previousChannel !== currentChannelName) {
+      // Save current message as draft for the previous channel
+      setDraft(previousChannel, message);
+
+      // Restore draft for the new channel
+      const draft = getDraft(currentChannelName);
+      setMessage(draft);
+
+      // Reset history navigation when switching channels
+      historyIndex.current = -1;
+      currentInputBeforeHistory.current = '';
+
+      // Update ref to current channel
+      previousChannelRef.current = currentChannelName;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChannelName]);
+
   const handleEmojiClick = (emojiData: EmojiClickData): void => {
     setMessage((prev) => prev + emojiData.emoji);
     setEmojiPickerOpen(false);
@@ -230,6 +254,9 @@ const Toolbar = () => {
 
     // Reset the inactivity timer
     resetInactivityTimer();
+
+    // Clear draft for current channel since message was sent
+    setDraft(currentChannelName, '');
 
     setMessage('');
   };
