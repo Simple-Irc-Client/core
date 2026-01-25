@@ -90,12 +90,20 @@ const Users = () => {
                     />
                   )}
                   <div className="flex items-center gap-1">
-                    {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
-                    {user.away && (
-                      <span title={user.awayReason || 'Away'}>
-                        <Moon className="h-4 w-4 text-yellow-500" />
-                      </span>
-                    )}
+                    {(() => {
+                      const channelFlags = user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [];
+                      const isAway = user.away || channelFlags.includes('a');
+                      return (
+                        <>
+                          {getModeIcons(channelFlags, userModes)}
+                          {isAway && (
+                            <span title={user.awayReason || 'Away'}>
+                              <Moon className="h-4 w-4 text-yellow-500" />
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                     <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
                       {user.nick}
                     </span>

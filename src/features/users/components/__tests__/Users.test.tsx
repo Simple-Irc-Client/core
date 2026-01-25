@@ -584,4 +584,161 @@ describe('Users', () => {
       expect(screen.getByTitle('Operator')).toBeInTheDocument();
     });
   });
+
+  describe('Away status icon', () => {
+    it('should display away icon when user.away is true', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayUser',
+            away: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should display away icon when user has +a flag', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayFlagUser',
+            channels: [{ name: '#test', flags: ['a'], maxPermission: -1 }],
+          }),
+        ],
+        userModes: [], // No user modes to avoid Admin icon conflict
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should display away reason as tooltip when available', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayUser',
+            away: true,
+            awayReason: 'Gone fishing',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Gone fishing')).toBeInTheDocument();
+    });
+
+    it('should display "Away" as default tooltip when no reason provided', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayUser',
+            away: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should not display away icon when user is not away', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'activeUser',
+            away: false,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.queryByTitle('Away')).not.toBeInTheDocument();
+    });
+
+    it('should display away icon when either user.away or +a flag is present', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayBoth',
+            away: true,
+            channels: [{ name: '#test', flags: ['a'], maxPermission: -1 }],
+          }),
+        ],
+        userModes: [], // No user modes to avoid Admin icon conflict
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should display away icon alongside permission icons', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'awayOp',
+            away: true,
+            channels: [{ name: '#test', flags: ['o'], maxPermission: 254 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Operator')).toBeInTheDocument();
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should display away icons for multiple away users', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'away1',
+            away: true,
+            awayReason: 'Lunch break',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+          createUser({
+            nick: 'active',
+            away: false,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+          createUser({
+            nick: 'away2',
+            away: true,
+            awayReason: 'Meeting',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Lunch break')).toBeInTheDocument();
+      expect(screen.getByTitle('Meeting')).toBeInTheDocument();
+      // Only 2 away icons should be present
+      const awayIcons = screen.getAllByTitle(/Lunch break|Meeting/);
+      expect(awayIcons).toHaveLength(2);
+    });
+  });
 });
