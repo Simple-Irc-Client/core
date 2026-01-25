@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { usersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { Crown, ShieldCheck, Shield, ShieldHalf, Mic } from 'lucide-react';
+import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon } from 'lucide-react';
 import Avatar from '@shared/components/Avatar';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
@@ -91,6 +91,11 @@ const Users = () => {
                   )}
                   <div className="flex items-center gap-1">
                     {getModeIcons(user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [], userModes)}
+                    {user.away && (
+                      <span title={user.awayReason || 'Away'}>
+                        <Moon className="h-4 w-4 text-yellow-500" />
+                      </span>
+                    )}
                     <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
                       {user.nick}
                     </span>
