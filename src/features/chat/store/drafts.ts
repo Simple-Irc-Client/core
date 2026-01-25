@@ -27,10 +27,11 @@ export const useDraftsStore = create<DraftsStore>()(
     },
 
     clearDraft: (channelName: string): void => {
-      set((state) => {
-        const { [channelName]: _, ...rest } = state.drafts;
-        return { drafts: rest };
-      });
+      set((state) => ({
+        drafts: Object.fromEntries(
+          Object.entries(state.drafts).filter(([key]) => key !== channelName)
+        ),
+      }));
     },
 
     clearAll: (): void => {
