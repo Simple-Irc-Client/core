@@ -2593,6 +2593,7 @@ export class Kernel {
     });
 
     setCurrentUserFlag("away", false)
+    if (myNick) setUserAway(myNick, false);
   };
 
   // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
@@ -2613,6 +2614,7 @@ export class Kernel {
     });
 
     setCurrentUserFlag("away", true)
+    if (myNick) setUserAway(myNick, true);
   };
 
   // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
