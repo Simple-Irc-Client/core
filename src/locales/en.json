@@ -61,6 +61,7 @@
     "main.channels.no-results": "No channels found",
     "main.users.title": "Users:",
     "main.user-typing": "is typing...",
+    "main.chat.messageReceived": "Message received by server",
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.nick": "{{from}} has changed his nickname to {{to}}",

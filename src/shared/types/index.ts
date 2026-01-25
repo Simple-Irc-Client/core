@@ -42,6 +42,10 @@ export interface Message {
   time: string;
   category: MessageCategory;
   color?: MessageColor;
+  /**
+   * IRCv3 echo-message: true when this message was confirmed by the server
+   */
+  echoed?: boolean;
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

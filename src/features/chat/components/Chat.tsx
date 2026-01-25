@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { MessageCategory, type Message } from '@shared/types';
 
@@ -17,6 +18,8 @@ import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
 import MessageText from './MessageText';
 import { useContextMenu } from '@/providers/ContextMenuContext';
+import { CheckCheck } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
@@ -78,6 +81,20 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   );
 };
 
+const EchoedIndicator = () => {
+  const { t } = useTranslation();
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <CheckCheck className="h-3 w-3 inline-block ml-1" style={{ color: MessageColor.time }} />
+        </TooltipTrigger>
+        <TooltipContent>{t('main.chat.messageReceived')}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+};
+
 const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message; lastNick: string; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
@@ -125,6 +142,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
                   {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
+                  {message.echoed && <EchoedIndicator />}
                 </span>
               </div>
             )}
@@ -141,6 +159,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                   </div>
                   <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
                     {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
+                    {message.echoed && <EchoedIndicator />}
                   </span>
                 </div>
               )}
