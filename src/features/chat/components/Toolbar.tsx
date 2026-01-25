@@ -256,7 +256,7 @@ const Toolbar = () => {
         const newMessage = autocompleteMessage.current.split(' ');
         newMessage.pop();
         newMessage.push(command);
-        setMessage(newMessage.join(' '));
+        setMessage(newMessage.join(' ') + ' ');
 
         return true;
       }
@@ -272,7 +272,7 @@ const Toolbar = () => {
         const newMessage = autocompleteMessage.current.split(' ');
         newMessage.pop();
         newMessage.push(channel.name);
-        setMessage(newMessage.join(' '));
+        setMessage(newMessage.join(' ') + ' ');
 
         return true;
       }
@@ -288,7 +288,7 @@ const Toolbar = () => {
         const newMessage = autocompleteMessage.current.split(' ');
         newMessage.pop();
         newMessage.push(user.nick);
-        setMessage(newMessage.join(' '));
+        setMessage(newMessage.join(' ') + ' ');
 
         return true;
       }
