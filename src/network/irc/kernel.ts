@@ -2077,6 +2077,7 @@ export class Kernel {
       time: messageTime,
       category: MessageCategory.default,
       color: MessageColor.default,
+      echoed: isEchoMessage,
     });
 
     // Check if user is away and message mentions their nick (not for echoed messages)

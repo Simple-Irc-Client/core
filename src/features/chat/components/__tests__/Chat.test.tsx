@@ -1113,6 +1113,126 @@ describe('Chat tests', () => {
     });
   });
 
+  describe('Echo message indicator in modern view', () => {
+    it('should display echoed indicator when message has echoed=true', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
+      });
+
+      const { container } = render(<Main />);
+
+      // Should find the CheckCheck icon (lucide-react renders as svg)
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).toBeInTheDocument();
+    });
+
+    it('should not display echoed indicator when message has echoed=false', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Not echoed message', nick: 'TestUser', echoed: false })],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).not.toBeInTheDocument();
+    });
+
+    it('should not display echoed indicator when echoed is undefined', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Regular message', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).not.toBeInTheDocument();
+    });
+
+    it('should display echoed indicator for grouped messages (same user)', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'First message', nick: 'TestUser', echoed: true }),
+          createMessage({ id: '2', message: 'Second message', nick: 'TestUser', echoed: true }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      // Both messages should have the indicator
+      const checkIcons = container.querySelectorAll('svg.lucide-check-check');
+      expect(checkIcons.length).toBe(2);
+    });
+
+    it('should display echoed indicator only for echoed messages in mixed list', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Echoed message', nick: 'User1', echoed: true }),
+          createMessage({ id: '2', message: 'Not echoed message', nick: 'User2', echoed: false }),
+          createMessage({ id: '3', message: 'Another echoed message', nick: 'User3', echoed: true }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcons = container.querySelectorAll('svg.lucide-check-check');
+      expect(checkIcons.length).toBe(2);
+    });
+
+    it('should not display echoed indicator in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).not.toBeInTheDocument();
+    });
+
+    it('should not display echoed indicator in debug view', () => {
+      setupMocks({
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).not.toBeInTheDocument();
+    });
+
+    it('should have tooltip trigger on echoed indicator', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
+      });
+
+      const { container } = render(<Main />);
+
+      // Tooltip trigger wraps the icon
+      const triggerButton = container.querySelector('[data-state]');
+      expect(triggerButton).toBeInTheDocument();
+    });
+
+    it('should display echoed indicator with correct styling', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
+      });
+
+      const { container } = render(<Main />);
+
+      const checkIcon = container.querySelector('svg.lucide-check-check');
+      expect(checkIcon).toHaveClass('h-3', 'w-3', 'inline-block', 'ml-1');
+    });
+  });
+
   describe('Scroll behavior with content resize', () => {
     it('should set up ResizeObserver on mount', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });

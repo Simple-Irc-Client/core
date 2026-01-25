@@ -61,6 +61,7 @@
     "main.channels.no-results": "Nie znaleziono kanałów",
     "main.users.title": "Użytkownicy:",
     "main.user-typing": "pisze...",
+    "main.chat.messageReceived": "Wiadomość odebrana przez serwer",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",
