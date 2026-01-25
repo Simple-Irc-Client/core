@@ -2251,6 +2251,12 @@ export class Kernel {
     const isPrivMessage = target === getCurrentNick();
     const channel = isPrivMessage ? nick : target;
 
+    // For private messages, create the PRIV channel if it doesn't exist
+    // This allows typing to work even before the first message is received
+    if (isPrivMessage && !existChannel(channel)) {
+      setAddChannel(channel, ChannelCategory.priv);
+    }
+
     setTyping(channel, nick, status as UserTypingStatus);
   };
 
