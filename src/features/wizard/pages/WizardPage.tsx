@@ -10,29 +10,29 @@ const Wizard = () => {
 
   return (
     <div className={`mx-auto ${wizardStep === 'channels' ? 'max-w-screen-md' : 'max-w-screen-sm'}`}>
-      <div className="h-screen flex flex-col items-center">
+      <div className="h-screen flex flex-col items-center pb-[15%]">
         {wizardStep === 'nick' && (
-          <div className="mt-auto md:mt-[30%] mb-auto">
+          <div className="my-auto">
             <WizardNick />
           </div>
         )}
         {wizardStep === 'server' && (
-          <div className="mt-auto md:mt-[30%] mb-auto">
+          <div className="my-auto">
             <WizardServer />
           </div>
         )}
         {wizardStep === 'password' && (
-          <div className="mt-auto md:mt-[30%] mb-auto">
+          <div className="my-auto">
             <WizardPassword />
           </div>
         )}
         {wizardStep === 'loading' && (
-          <div className="mt-auto md:mt-[30%] mb-auto w-full">
+          <div className="my-auto w-full">
             <WizardLoading />
           </div>
         )}
         {wizardStep === 'channels' && (
-          <div className="mt-auto md:mt-[25%] mb-auto w-full">
+          <div className="my-auto w-full">
             <WizardChannelList />
           </div>
         )}
