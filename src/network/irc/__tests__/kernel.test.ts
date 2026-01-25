@@ -946,9 +946,9 @@ describe('kernel tests', () => {
   });
 
   it('test raw TAGMSG for private message creates PRIV channel if not exists', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
     const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
