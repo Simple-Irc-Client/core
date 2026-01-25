@@ -954,7 +954,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'o' }); // Trigger keyUp to set autocompleteMessage
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('/join');
+      expect(input).toHaveValue('/join ');
     });
 
     it('should cycle through matching commands on multiple Tab presses', () => {
@@ -965,13 +965,13 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'a' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('/all');
+      expect(input).toHaveValue('/all ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('/amsg');
+      expect(input).toHaveValue('/amsg ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('/away');
+      expect(input).toHaveValue('/away ');
     });
 
     it('should wrap around to first matching command after last match', () => {
@@ -983,11 +983,11 @@ describe('Toolbar', () => {
 
       // First Tab - /whereis (only command starting with /whe)
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('/whereis');
+      expect(input).toHaveValue('/whereis ');
 
       // Second Tab - wraps back to /whereis
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('/whereis');
+      expect(input).toHaveValue('/whereis ');
     });
 
     it('should not autocomplete if no matching command', () => {
@@ -1009,7 +1009,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'o' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('hello /join');
+      expect(input).toHaveValue('hello /join ');
     });
   });
 
@@ -1030,7 +1030,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'n' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('#general');
+      expect(input).toHaveValue('#general ');
     });
 
     it('should cycle through matching channels on multiple Tab presses', () => {
@@ -1047,13 +1047,13 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'l' });
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#help');
+      expect(input).toHaveValue('#help ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#hello');
+      expect(input).toHaveValue('#hello ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#helpdesk');
+      expect(input).toHaveValue('#helpdesk ');
     });
 
     it('should wrap around to first matching channel after last match', () => {
@@ -1069,14 +1069,14 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: '#' });
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#alpha');
+      expect(input).toHaveValue('#alpha ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#beta');
+      expect(input).toHaveValue('#beta ');
 
       // Wrap around
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('#alpha');
+      expect(input).toHaveValue('#alpha ');
     });
 
     it('should not autocomplete if no matching channel', () => {
@@ -1098,7 +1098,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'n' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('/join #general');
+      expect(input).toHaveValue('/join #general ');
     });
   });
 
@@ -1125,7 +1125,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'l' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('alice');
+      expect(input).toHaveValue('alice ');
     });
 
     it('should cycle through matching users on multiple Tab presses', () => {
@@ -1143,13 +1143,13 @@ describe('Toolbar', () => {
 
       // Users are sorted alphabetically: alex, alfred, alice
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('alex');
+      expect(input).toHaveValue('alex ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('alfred');
+      expect(input).toHaveValue('alfred ');
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('alice');
+      expect(input).toHaveValue('alice ');
     });
 
     it('should wrap around to first matching user after last match', () => {
@@ -1160,11 +1160,11 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'b' });
 
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('bob');
+      expect(input).toHaveValue('bob ');
 
       // Wrap around (only one user matches 'b')
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('bob');
+      expect(input).toHaveValue('bob ');
     });
 
     it('should not autocomplete if no matching user', () => {
@@ -1186,7 +1186,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'l' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('hello alice');
+      expect(input).toHaveValue('hello alice ');
     });
 
     it('should be case insensitive when matching users', () => {
@@ -1201,7 +1201,7 @@ describe('Toolbar', () => {
       fireEvent.keyUp(input, { key: 'l' });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      expect(input).toHaveValue('Alice');
+      expect(input).toHaveValue('Alice ');
     });
 
     it('should reset autocomplete index when typing different characters', () => {
@@ -1219,13 +1219,13 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'al' } });
       fireEvent.keyUp(input, { key: 'l' });
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('alex');
+      expect(input).toHaveValue('alex ');
 
       // Type a new character - should reset
       fireEvent.change(input, { target: { value: 'bo' } });
       fireEvent.keyUp(input, { key: 'o' });
       fireEvent.keyDown(input, { key: 'Tab' });
-      expect(input).toHaveValue('bob');
+      expect(input).toHaveValue('bob ');
     });
 
     it('should not autocomplete on empty input', () => {
