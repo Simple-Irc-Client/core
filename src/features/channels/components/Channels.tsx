@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
-import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
+import { useChannelsDrawer } from '@/providers/DrawersContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { getChannelListSortedByAZ, useChannelListStore } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';

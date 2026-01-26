@@ -4,7 +4,7 @@ import Channels from '../Channels';
 import * as settingsStore from '@features/settings/store/settings';
 import * as channelsStore from '@features/channels/store/channels';
 import * as channelListStore from '@features/channels/store/channelList';
-import * as ChannelsDrawerContext from '@/providers/ChannelsDrawerContext';
+import * as DrawersContext from '@/providers/DrawersContext';
 import * as network from '@/network/irc/network';
 import { ChannelCategory } from '@shared/types';
 import type { Channel } from '@shared/types';
@@ -71,7 +71,7 @@ describe('Channels', () => {
       (selector: any) => selector({ openChannelsShortList: openChannelsShort })
     );
 
-    vi.spyOn(ChannelsDrawerContext, 'useChannelsDrawer').mockReturnValue({
+    vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen,
       setChannelsDrawerStatus: vi.fn(),
     });

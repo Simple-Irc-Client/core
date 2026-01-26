@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { useUsersDrawer } from '@/providers/UsersDrawerContext';
+import { useUsersDrawer } from '@/providers/DrawersContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';

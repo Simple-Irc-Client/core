@@ -1,6 +1,6 @@
 
 export const channelsWidth = 201;
-export const usersWidth = 300;
+export const usersWidth = 250;
 
 export const MessageColor = {
   serverFrom: 'var(--msg-server-from)',
