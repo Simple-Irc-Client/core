@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendRawMessage, ircConnect } from '@/network/irc/network';
 import { useSettingsStore } from '@features/settings/store/settings';
 import {
   Dialog,
@@ -38,6 +38,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const fontSize = useSettingsStore((state) => state.fontSize);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
+  const isConnected = useSettingsStore((state) => state.isConnected);
+  const server = useSettingsStore((state) => state.server);
+  const nick = useSettingsStore((state) => state.nick);
 
   const isAvatarSupported = supportedOptions.includes('metadata-avatar');
 
@@ -58,6 +61,13 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
     onOpenChange(false);
   };
 
+  const handleConnect = (): void => {
+    if (server && nick) {
+      ircConnect(server, nick);
+      onOpenChange(false);
+    }
+  };
+
   return (
     <>
       <DialogHeader>
@@ -65,6 +75,13 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
         <DialogDescription>{t('main.toolbar.profileDescription')}</DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 py-4">
+        {!isConnected && server && nick && (
+          <div className="flex justify-center">
+            <Button type="button" onClick={handleConnect} data-testid="connect-button">
+              {t('main.toolbar.connect')}
+            </Button>
+          </div>
+        )}
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="nick" className="text-right">
             {t('main.toolbar.nick')}

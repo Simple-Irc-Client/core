@@ -13,6 +13,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+  ircConnect: vi.fn(),
 }));
 
 describe('ProfileSettings', () => {
@@ -590,6 +591,149 @@ describe('ProfileSettings', () => {
       await user.click(largeButton);
 
       expect(useSettingsStore.getState().fontSize).toBe('large');
+    });
+  });
+
+  describe('Connect button', () => {
+    const mockServer = {
+      default: 0,
+      encoding: 'utf8',
+      network: 'TestNet',
+      servers: ['irc.test.net:6667'],
+    };
+
+    it('should show Connect button when disconnected and server/nick are available', () => {
+      useSettingsStore.setState({
+        isConnected: false,
+        server: mockServer,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('connect-button')).toBeInTheDocument();
+    });
+
+    it('should not show Connect button when connected', () => {
+      useSettingsStore.setState({
+        isConnected: true,
+        server: mockServer,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.queryByTestId('connect-button')).not.toBeInTheDocument();
+    });
+
+    it('should not show Connect button when server is undefined', () => {
+      useSettingsStore.setState({
+        isConnected: false,
+        server: undefined,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.queryByTestId('connect-button')).not.toBeInTheDocument();
+    });
+
+    it('should not show Connect button when nick is empty', () => {
+      useSettingsStore.setState({
+        isConnected: false,
+        server: mockServer,
+        nick: '',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.queryByTestId('connect-button')).not.toBeInTheDocument();
+    });
+
+    it('should call ircConnect when Connect button is clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        isConnected: false,
+        server: mockServer,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const connectButton = screen.getByTestId('connect-button');
+      await user.click(connectButton);
+
+      expect(network.ircConnect).toHaveBeenCalledWith(mockServer, 'testUser');
+    });
+
+    it('should close dialog after clicking Connect button', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        isConnected: false,
+        server: mockServer,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const connectButton = screen.getByTestId('connect-button');
+      await user.click(connectButton);
+
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should display translated Connect label', () => {
+      useSettingsStore.setState({
+        isConnected: false,
+        server: mockServer,
+        nick: 'testUser',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('connect-button').textContent).toBe('main.toolbar.connect');
     });
   });
 });
