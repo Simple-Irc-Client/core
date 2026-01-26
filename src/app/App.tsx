@@ -4,6 +4,7 @@ import { Network } from './Network';
 import './i18n';
 
 import { ChannelsDrawerProvider } from '@/providers/ChannelsDrawerProvider';
+import { UsersDrawerProvider } from '@/providers/UsersDrawerProvider';
 import { ContextMenuProvider } from '@/providers/ContextMenuProvider';
 import { ContextMenu } from '@/shared/components/ContextMenu';
 import MainLayout from '@/layouts/MainLayout';
@@ -22,11 +23,13 @@ function App() {
 
   return (
     <ChannelsDrawerProvider>
-      <ContextMenuProvider>
-        <ContextMenu />
-        <Network />
-        <MainLayout />
-      </ContextMenuProvider>
+      <UsersDrawerProvider>
+        <ContextMenuProvider>
+          <ContextMenu />
+          <Network />
+          <MainLayout />
+        </ContextMenuProvider>
+      </UsersDrawerProvider>
     </ChannelsDrawerProvider>
   );
 }

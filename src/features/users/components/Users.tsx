@@ -10,7 +10,9 @@ import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useUsersDrawer } from '@/providers/UsersDrawerContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon } from 'lucide-react';
+import { cn } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
@@ -55,6 +57,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
   const { handleContextMenuUserClick } = useContextMenu();
+  const { isUsersDrawerOpen } = useUsersDrawer();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
@@ -67,7 +70,13 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   return (
     <>
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
-        <div className="hidden sm:block border-l border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}>
+        <div
+          className={cn(
+            'border-l border-gray-200 dark:border-gray-700 overflow-y-auto',
+            !isUsersDrawerOpen && 'hidden lg:block',
+          )}
+          style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
+        >
           <div>
             <div className="mb-4">
               <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.users.title')}</h3>
