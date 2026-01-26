@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Topic from '../Topic';
-import * as ChannelsDrawerContext from '@/providers/ChannelsDrawerContext';
+import * as DrawersContext from '@/providers/DrawersContext';
 import * as currentStore from '@features/chat/store/current';
 import * as settingsStore from '@features/settings/store/settings';
 import * as usersStore from '@features/users/store/users';
@@ -55,13 +55,21 @@ describe('Topic', () => {
   const setupMocks = (overrides: {
     topic?: string;
     currentChannelName?: string;
+    currentChannelCategory?: string;
     userFlags?: string[];
+    isChannelsDrawerOpen?: boolean;
+    isUsersDrawerOpen?: boolean;
   } = {}) => {
-    const { topic = '', currentChannelName = '#test', userFlags = [] } = overrides;
+    const { topic = '', currentChannelName = '#test', currentChannelCategory = 'channel', userFlags = [], isChannelsDrawerOpen = false, isUsersDrawerOpen = false } = overrides;
 
-    vi.spyOn(ChannelsDrawerContext, 'useChannelsDrawer').mockReturnValue({
-      isChannelsDrawerOpen: false,
+    vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
+      isChannelsDrawerOpen,
       setChannelsDrawerStatus: mockSetChannelsDrawerStatus,
+    });
+
+    vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
+      isUsersDrawerOpen,
+      setUsersDrawerStatus: vi.fn(),
     });
 
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
@@ -71,6 +79,7 @@ describe('Topic', () => {
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelName,
+        currentChannelCategory,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -193,7 +202,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(3); // Menu button + Save button + Settings button
+      expect(buttons.length).toBe(4); // Menu button + Save button + Settings button + Users button
     });
 
     it('should not show save button when topic is unchanged', () => {
@@ -202,7 +211,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(2); // Menu button + Settings button (no save)
+      expect(buttons.length).toBe(3); // Menu button + Settings button + Users button (no save)
     });
 
     it('should not show save button when user cannot edit', () => {
@@ -214,7 +223,7 @@ describe('Topic', () => {
       // The save button should not appear regardless
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(1); // Only menu button
+      expect(buttons.length).toBe(2); // Menu button + Users button
     });
   });
 
@@ -228,7 +237,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(3); // Menu + Save + Settings
+      expect(buttons).toHaveLength(4); // Menu + Save + Settings + Users
       fireEvent.click(buttons[1] as HTMLElement); // Save button is second
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
@@ -287,7 +296,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(1);
+      expect(buttons).toHaveLength(2); // Menu + Users (no settings without permissions)
       fireEvent.click(buttons[0] as HTMLElement);
 
       expect(mockSetChannelsDrawerStatus).toHaveBeenCalledTimes(1);
@@ -296,7 +305,7 @@ describe('Topic', () => {
 
   describe('Debug channel', () => {
     it('should not render input for Debug channel', () => {
-      setupMocks({ currentChannelName: 'Debug' });
+      setupMocks({ currentChannelName: 'Debug', currentChannelCategory: 'debug' });
 
       render(<Topic />);
 
@@ -305,7 +314,7 @@ describe('Topic', () => {
     });
 
     it('should still render menu button for Debug channel', () => {
-      setupMocks({ currentChannelName: 'Debug' });
+      setupMocks({ currentChannelName: 'Debug', currentChannelCategory: 'debug' });
 
       render(<Topic />);
 
@@ -316,7 +325,7 @@ describe('Topic', () => {
 
   describe('Status channel', () => {
     it('should not render input for Status channel', () => {
-      setupMocks({ currentChannelName: 'Status' });
+      setupMocks({ currentChannelName: 'Status', currentChannelCategory: 'status' });
 
       render(<Topic />);
 
@@ -324,8 +333,8 @@ describe('Topic', () => {
       expect(input).not.toBeInTheDocument();
     });
 
-    it('should still render menu button for Debug channel', () => {
-      setupMocks({ currentChannelName: 'Status' });
+    it('should still render menu button for Status channel', () => {
+      setupMocks({ currentChannelName: 'Status', currentChannelCategory: 'status' });
 
       render(<Topic />);
 
@@ -511,6 +520,75 @@ describe('Topic', () => {
 
       expect(container.textContent).toContain('Hello');
       expect(container.textContent).toContain('World');
+    });
+  });
+
+  describe('Drawer open state', () => {
+    it('should show topic input when channels drawer is open', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: true });
+
+      render(<Topic />);
+
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+
+    it('should show topic input when users drawer is open', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isUsersDrawerOpen: true });
+
+      render(<Topic />);
+
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+
+    it('should show formatted topic text when channels drawer is open', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: [], isChannelsDrawerOpen: true });
+
+      render(<Topic />);
+
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
+    });
+
+    it('should show formatted topic text when users drawer is open', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: [], isUsersDrawerOpen: true });
+
+      render(<Topic />);
+
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
+    });
+
+    it('should show topic input when both drawers are closed', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: false, isUsersDrawerOpen: false });
+
+      render(<Topic />);
+
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
+    });
+
+    it('should hide all drawer buttons when channels drawer is open (close button is inside drawer)', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: true });
+
+      render(<Topic />);
+
+      const buttons = screen.queryAllByRole('button');
+      expect(buttons).toHaveLength(0); // No drawer buttons - close button is inside Channels drawer
+    });
+
+    it('should hide all drawer buttons when users drawer is open (close button is inside drawer)', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isUsersDrawerOpen: true });
+
+      render(<Topic />);
+
+      const buttons = screen.queryAllByRole('button');
+      expect(buttons).toHaveLength(0); // No drawer buttons - close button is inside Users drawer
+    });
+
+    it('should show both drawer buttons when no drawer is open', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: false, isUsersDrawerOpen: false });
+
+      render(<Topic />);
+
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(3); // Menu + Settings + Users
     });
   });
 });

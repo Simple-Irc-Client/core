@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
-import { Menu, Save } from 'lucide-react';
+import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
+import { Menu, Save, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { getCurrentUserChannelModes } from '@features/users/store/users';
@@ -127,18 +127,29 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 const Topic = () => {
   const topic: string = useCurrentStore((state) => state.topic);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
-  const { setChannelsDrawerStatus } = useChannelsDrawer();
+  const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
+  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
   const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
+  const showUsersToggle = currentChannelCategory === 'channel' || currentChannelCategory === 'priv';
+  const isAnyDrawerOpen = isChannelsDrawerOpen || isUsersDrawerOpen;
 
   return (
     <div className="px-4 flex h-16 min-w-0 items-center">
-      <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2">
-        <Menu className="h-4 w-4" />
-      </Button>
+      {!isAnyDrawerOpen && (
+        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2">
+          <Menu className="h-4 w-4" />
+        </Button>
+      )}
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
-      {!isDebugChannel && <ChannelSettingsButton channelName={currentChannelName} />}
+      {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
+      {showUsersToggle && !isAnyDrawerOpen && (
+        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-12 lg:hidden shrink-0 ml-2">
+          <Users className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };

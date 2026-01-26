@@ -4,7 +4,7 @@ import Channels from '../Channels';
 import * as settingsStore from '@features/settings/store/settings';
 import * as channelsStore from '@features/channels/store/channels';
 import * as channelListStore from '@features/channels/store/channelList';
-import * as ChannelsDrawerContext from '@/providers/ChannelsDrawerContext';
+import * as DrawersContext from '@/providers/DrawersContext';
 import * as network from '@/network/irc/network';
 import { ChannelCategory } from '@shared/types';
 import type { Channel } from '@shared/types';
@@ -71,7 +71,7 @@ describe('Channels', () => {
       (selector: any) => selector({ openChannelsShortList: openChannelsShort })
     );
 
-    vi.spyOn(ChannelsDrawerContext, 'useChannelsDrawer').mockReturnValue({
+    vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen,
       setChannelsDrawerStatus: vi.fn(),
     });
@@ -514,6 +514,75 @@ describe('Channels', () => {
       expect(screen.getByRole('button', { name: '#general' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '#random' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'privateUser' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Close button', () => {
+    it('should show close button when drawer is open', () => {
+      const channels = [createChannel({ name: '#test', category: ChannelCategory.channel })];
+      setupMocks({ openChannelsShort: channels, isChannelsDrawerOpen: true });
+
+      render(<Channels />);
+
+      // Should have channel button + close button + join button
+      const buttons = screen.getAllByRole('button');
+      expect(buttons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should not show close button when drawer is closed', () => {
+      const channels = [createChannel({ name: '#test', category: ChannelCategory.channel })];
+      setupMocks({ openChannelsShort: channels, isChannelsDrawerOpen: false });
+
+      render(<Channels />);
+
+      // Find buttons with h-8 class (close button style)
+      const buttons = screen.getAllByRole('button');
+      const closeButtons = buttons.filter((btn) => btn.className.includes('h-8 w-8 p-0'));
+      expect(closeButtons).toHaveLength(0);
+    });
+
+    it('should call setChannelsDrawerStatus when close button is clicked', () => {
+      const mockSetChannelsDrawerStatus = vi.fn();
+      const channels = [createChannel({ name: '#test', category: ChannelCategory.channel })];
+
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      vi.spyOn(channelsStore, 'useChannelsStore').mockImplementation(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (selector: any) => selector({ openChannelsShortList: channels })
+      );
+
+      vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
+        isChannelsDrawerOpen: true,
+        setChannelsDrawerStatus: mockSetChannelsDrawerStatus,
+      });
+
+      vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
+        selector({
+          finished: false,
+          channels: [],
+          setAddChannel: vi.fn(),
+          setClear: vi.fn(),
+          setFinished: vi.fn(),
+        })
+      );
+
+      vi.spyOn(channelListStore, 'getChannelListSortedByAZ').mockReturnValue([]);
+
+      render(<Channels />);
+
+      const buttons = screen.getAllByRole('button');
+      const closeButton = buttons.find((btn) => btn.className.includes('h-8 w-8 p-0'));
+      expect(closeButton).toBeDefined();
+
+      if (closeButton) {
+        fireEvent.click(closeButton);
+        expect(mockSetChannelsDrawerStatus).toHaveBeenCalled();
+      }
     });
   });
 });

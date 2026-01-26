@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
-import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
+import { useChannelsDrawer } from '@/providers/DrawersContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { getChannelListSortedByAZ, useChannelListStore } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
@@ -91,8 +91,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   return (
     <div
       className={cn(
-        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto',
+        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
         !isChannelsDrawerOpen && 'hidden lg:block',
+        isChannelsDrawerOpen && 'absolute left-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
       )}
       style={{
         width: `${width}px`,
@@ -100,8 +101,13 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       }}
     >
       <div>
-          <div className="mb-4 md:bg-opacity-100">
-            <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.channels.title')}</h3>
+          <div className="mb-4 flex items-center justify-between p-4">
+            <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
+            {isChannelsDrawerOpen && (
+              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div>
             {openChannelsShort.map((channel) => (

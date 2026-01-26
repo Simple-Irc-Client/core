@@ -4,6 +4,7 @@ import Users from '../Users';
 import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as DrawersContext from '@/providers/DrawersContext';
 import { ChannelCategory } from '@shared/types';
 import type { User, UserMode } from '@shared/types';
 
@@ -24,6 +25,7 @@ const createUser = (overrides: Partial<User> & { nick: string }): User => ({
 
 describe('Users', () => {
   const mockHandleContextMenuUserClick = vi.fn();
+  const mockSetUsersDrawerStatus = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -43,6 +45,7 @@ describe('Users', () => {
     userModes?: UserMode[];
     users?: User[];
     hideAvatarsInUsersList?: boolean;
+    isUsersDrawerOpen?: boolean;
   } = {}) => {
     const {
       currentChannelCategory = ChannelCategory.channel,
@@ -50,6 +53,7 @@ describe('Users', () => {
       userModes = defaultUserModes,
       users = [],
       hideAvatarsInUsersList = false,
+      isUsersDrawerOpen = false,
     } = overrides;
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
@@ -82,6 +86,11 @@ describe('Users', () => {
       contextMenuItem: undefined,
       handleContextMenuUserClick: mockHandleContextMenuUserClick,
       handleContextMenuClose: vi.fn(),
+    });
+
+    vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
+      isUsersDrawerOpen,
+      setUsersDrawerStatus: mockSetUsersDrawerStatus,
     });
   };
 
@@ -740,6 +749,54 @@ describe('Users', () => {
       // Only 2 away icons should be present
       const awayIcons = screen.getAllByTitle(/Lunch break|Meeting/);
       expect(awayIcons).toHaveLength(2);
+    });
+  });
+
+  describe('Close button', () => {
+    it('should show close button when drawer is open', () => {
+      setupMocks({
+        users: [createUser({ nick: 'testUser' })],
+        isUsersDrawerOpen: true,
+      });
+
+      render(<Users />);
+
+      // Find the close button (X icon) - it's the only button with no visible text besides user buttons
+      const buttons = screen.getAllByRole('button');
+      // Should have user button + close button
+      expect(buttons.length).toBeGreaterThan(1);
+    });
+
+    it('should not show close button when drawer is closed', () => {
+      setupMocks({
+        users: [createUser({ nick: 'testUser' })],
+        isUsersDrawerOpen: false,
+      });
+
+      render(<Users />);
+
+      // Only user buttons should be present
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(1); // Only the user button
+    });
+
+    it('should call setUsersDrawerStatus when close button is clicked', () => {
+      setupMocks({
+        users: [createUser({ nick: 'testUser' })],
+        isUsersDrawerOpen: true,
+      });
+
+      render(<Users />);
+
+      const buttons = screen.getAllByRole('button');
+      // Find the close button (smaller one in header, not the user button)
+      const closeButton = buttons.find((btn) => btn.className.includes('h-8'));
+      expect(closeButton).toBeDefined();
+
+      if (closeButton) {
+        fireEvent.click(closeButton);
+        expect(mockSetUsersDrawerStatus).toHaveBeenCalled();
+      }
     });
   });
 });

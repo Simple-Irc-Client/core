@@ -10,8 +10,11 @@ import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon } from 'lucide-react';
+import { useUsersDrawer } from '@/providers/DrawersContext';
+import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X } from 'lucide-react';
+import { cn } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
+import { Button } from '@shared/components/ui/button';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   if (flags.length === 0 || userModes.length === 0) return null;
@@ -55,6 +58,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
   const { handleContextMenuUserClick } = useContextMenu();
+  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
@@ -67,10 +71,22 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   return (
     <>
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
-        <div className="hidden sm:block border-l border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}>
+        <div
+          className={cn(
+            'border-l border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
+            !isUsersDrawerOpen && 'hidden lg:block',
+            isUsersDrawerOpen && 'absolute right-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
+          )}
+          style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
+        >
           <div>
-            <div className="mb-4">
-              <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.users.title')}</h3>
+            <div className="mb-4 flex items-center justify-between p-4">
+              <h3 className={`${fontSizeClass} font-medium`}>{t('main.users.title')}</h3>
+              {isUsersDrawerOpen && (
+                <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <div className="space-y-1">
               {users.map((user) => (

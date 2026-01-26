@@ -3,7 +3,7 @@ import { Network } from './Network';
 
 import './i18n';
 
-import { ChannelsDrawerProvider } from '@/providers/ChannelsDrawerProvider';
+import { DrawersProvider } from '@/providers/DrawersProvider';
 import { ContextMenuProvider } from '@/providers/ContextMenuProvider';
 import { ContextMenu } from '@/shared/components/ContextMenu';
 import MainLayout from '@/layouts/MainLayout';
@@ -21,13 +21,13 @@ function App() {
   }, [isDarkMode]);
 
   return (
-    <ChannelsDrawerProvider>
+    <DrawersProvider>
       <ContextMenuProvider>
         <ContextMenu />
         <Network />
         <MainLayout />
       </ContextMenuProvider>
-    </ChannelsDrawerProvider>
+    </DrawersProvider>
   );
 }
 

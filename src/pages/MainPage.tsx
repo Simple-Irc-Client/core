@@ -24,15 +24,17 @@ function MainPage() {
     <div className="flex h-screen overflow-hidden">
       <Channels width={channelsWidth} />
       <ResizeHandle onResize={handleChannelsResize} direction="right" className="hidden lg:block" />
-      <div className="flex-1 flex flex-col min-w-0 h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Topic />
-        <div className="flex-1 overflow-hidden">
-          <Chat />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <Chat />
+          </div>
+          <Typing />
+          <Toolbar />
         </div>
-        <Typing />
-        <Toolbar />
       </div>
-      <ResizeHandle onResize={handleUsersResize} direction="left" className="hidden sm:block" />
+      <ResizeHandle onResize={handleUsersResize} direction="left" className="hidden lg:block" />
       <Users width={usersWidth} />
     </div>
   );
