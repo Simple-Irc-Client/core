@@ -101,8 +101,13 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       }}
     >
       <div>
-          <div className="mb-4 md:bg-opacity-100">
-            <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.channels.title')}</h3>
+          <div className="mb-4 flex items-center justify-between p-4">
+            <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
+            {isChannelsDrawerOpen && (
+              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           <div>
             {openChannelsShort.map((channel) => (

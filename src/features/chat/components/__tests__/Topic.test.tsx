@@ -524,38 +524,36 @@ describe('Topic', () => {
   });
 
   describe('Drawer open state', () => {
-    it('should hide topic input when channels drawer is open', () => {
+    it('should show topic input when channels drawer is open', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: true });
 
       render(<Topic />);
 
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-      expect(screen.queryByText('Test Topic')).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should hide topic input when users drawer is open', () => {
+    it('should show topic input when users drawer is open', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['o'], isUsersDrawerOpen: true });
 
       render(<Topic />);
 
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-      expect(screen.queryByText('Test Topic')).not.toBeInTheDocument();
+      expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should hide formatted topic text when channels drawer is open', () => {
+    it('should show formatted topic text when channels drawer is open', () => {
       setupMocks({ topic: 'Test Topic', userFlags: [], isChannelsDrawerOpen: true });
 
       render(<Topic />);
 
-      expect(screen.queryByText('Test Topic')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
 
-    it('should hide formatted topic text when users drawer is open', () => {
+    it('should show formatted topic text when users drawer is open', () => {
       setupMocks({ topic: 'Test Topic', userFlags: [], isUsersDrawerOpen: true });
 
       render(<Topic />);
 
-      expect(screen.queryByText('Test Topic')).not.toBeInTheDocument();
+      expect(screen.getByText('Test Topic')).toBeInTheDocument();
     });
 
     it('should show topic input when both drawers are closed', () => {
@@ -566,22 +564,22 @@ describe('Topic', () => {
       expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it('should show menu button and hide users button when channels drawer is open', () => {
+    it('should hide all drawer buttons when channels drawer is open (close button is inside drawer)', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['o'], isChannelsDrawerOpen: true });
 
       render(<Topic />);
 
-      const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(1); // Only menu button
+      const buttons = screen.queryAllByRole('button');
+      expect(buttons).toHaveLength(0); // No drawer buttons - close button is inside Channels drawer
     });
 
-    it('should hide menu button and show users button when users drawer is open', () => {
+    it('should hide all drawer buttons when users drawer is open (close button is inside drawer)', () => {
       setupMocks({ topic: 'Test Topic', userFlags: ['o'], isUsersDrawerOpen: true });
 
       render(<Topic />);
 
-      const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(1); // Only users button
+      const buttons = screen.queryAllByRole('button');
+      expect(buttons).toHaveLength(0); // No drawer buttons - close button is inside Users drawer
     });
 
     it('should show both drawer buttons when no drawer is open', () => {

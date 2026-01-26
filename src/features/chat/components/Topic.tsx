@@ -138,14 +138,14 @@ const Topic = () => {
 
   return (
     <div className="px-4 flex h-16 min-w-0 items-center">
-      {!isUsersDrawerOpen && (
+      {!isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2">
           <Menu className="h-4 w-4" />
         </Button>
       )}
-      {!isDebugChannel && !isAnyDrawerOpen && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
+      {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
       {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
-      {showUsersToggle && !isChannelsDrawerOpen && (
+      {showUsersToggle && !isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-12 lg:hidden shrink-0 ml-2">
           <Users className="h-4 w-4" />
         </Button>
