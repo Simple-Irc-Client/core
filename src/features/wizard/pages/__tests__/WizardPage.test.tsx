@@ -7,6 +7,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: { type: '3rdParty', init: () => {} },
 }));
 
 // Mock child components - paths are relative to the source file being imported
