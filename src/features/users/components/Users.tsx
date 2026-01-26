@@ -72,8 +72,9 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
         <div
           className={cn(
-            'border-l border-gray-200 dark:border-gray-700 overflow-y-auto',
+            'border-l border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
             !isUsersDrawerOpen && 'hidden lg:block',
+            isUsersDrawerOpen && 'absolute right-0 top-16 bottom-0 z-20 lg:relative lg:top-0 lg:z-auto',
           )}
           style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
         >

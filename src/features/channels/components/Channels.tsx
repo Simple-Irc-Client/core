@@ -91,8 +91,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   return (
     <div
       className={cn(
-        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto',
+        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
         !isChannelsDrawerOpen && 'hidden lg:block',
+        isChannelsDrawerOpen && 'absolute left-0 top-16 bottom-0 z-20 lg:relative lg:top-0 lg:z-auto',
       )}
       style={{
         width: `${width}px`,
