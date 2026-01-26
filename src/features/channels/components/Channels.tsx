@@ -10,7 +10,7 @@ const fontSizeClasses: Record<FontSize, string> = {
 };
 import { useTranslation } from 'react-i18next';
 import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
-import { channelsWidth } from '@/config/theme';
+import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/ChannelsDrawerContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -21,7 +21,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { cn } from '@shared/lib/utils';
 
-const Channels = () => {
+interface ChannelsProps {
+  width?: number;
+}
+
+const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { t } = useTranslation();
 
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
@@ -87,11 +91,12 @@ const Channels = () => {
   return (
     <div
       className={cn(
-        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-all duration-300',
+        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto',
         !isChannelsDrawerOpen && 'hidden lg:block',
       )}
       style={{
-        minWidth: `${channelsWidth}px`,
+        width: `${width}px`,
+        minWidth: `${defaultChannelsWidth}px`,
       }}
     >
       <div>

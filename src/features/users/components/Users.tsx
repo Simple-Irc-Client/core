@@ -7,7 +7,7 @@ const fontSizeClasses: Record<FontSize, string> = {
   large: 'text-base',
 };
 import { useTranslation } from 'react-i18next';
-import { usersWidth } from '@/config/theme';
+import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon } from 'lucide-react';
@@ -47,7 +47,11 @@ const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   return icons.length > 0 ? icons : null;
 };
 
-const Users = () => {
+interface UsersProps {
+  width?: number;
+}
+
+const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
   const { handleContextMenuUserClick } = useContextMenu();
@@ -63,7 +67,7 @@ const Users = () => {
   return (
     <>
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
-        <div className="hidden sm:block border-l border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ minWidth: `${usersWidth}px` }}>
+        <div className="hidden sm:block border-l border-gray-200 dark:border-gray-700 overflow-y-auto" style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}>
           <div>
             <div className="mb-4">
               <h3 className={`${fontSizeClass} font-medium p-4`}>{t('main.users.title')}</h3>
