@@ -14,8 +14,8 @@ let isConnecting = false;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 
-// Inactivity timeout - show disconnection message after 300 seconds of no activity
-const INACTIVITY_TIMEOUT_MS = 300 * 1000;
+// Inactivity timeout - show disconnection message after 120 seconds of no activity
+const INACTIVITY_TIMEOUT_MS = 120 * 1000;
 let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const showDisconnectionMessage = (): void => {

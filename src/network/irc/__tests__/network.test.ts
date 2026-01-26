@@ -592,9 +592,9 @@ describe('network', () => {
   });
 
   describe('inactivity timeout', () => {
-    const INACTIVITY_TIMEOUT_MS = 300 * 1000; // 300 seconds
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000; // 120 seconds
 
-    it('should show disconnection message after 300 seconds of inactivity', () => {
+    it('should show disconnection message after 120 seconds of inactivity', () => {
       const socket = getSocket();
       socket.onopen?.();
 
@@ -617,8 +617,8 @@ describe('network', () => {
       const socket = getSocket();
       socket.onopen?.();
 
-      // Advance time to 200 seconds
-      vi.advanceTimersByTime(200 * 1000);
+      // Advance time to 60 seconds
+      vi.advanceTimersByTime(60 * 1000);
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
 
       // Receive a message - this should reset the timeout
@@ -626,12 +626,12 @@ describe('network', () => {
         data: JSON.stringify({ event: 'test', data: {} }),
       });
 
-      // Advance time to 200 seconds again (400 seconds total from start)
-      vi.advanceTimersByTime(200 * 1000);
+      // Advance time to 60 seconds again (120 seconds total from start)
+      vi.advanceTimersByTime(60 * 1000);
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
 
-      // Advance to trigger timeout (300 seconds from last message)
-      vi.advanceTimersByTime(100 * 1000);
+      // Advance to trigger timeout (120 seconds from last message)
+      vi.advanceTimersByTime(60 * 1000);
       expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
     });
 
@@ -639,14 +639,14 @@ describe('network', () => {
       const socket = getSocket();
       socket.onopen?.();
 
-      // Advance time to 200 seconds
-      vi.advanceTimersByTime(200 * 1000);
+      // Advance time to 60 seconds
+      vi.advanceTimersByTime(60 * 1000);
 
       // Close socket - should clear timeout
       socket.onclose?.();
 
       // Advance past original timeout
-      vi.advanceTimersByTime(200 * 1000);
+      vi.advanceTimersByTime(120 * 1000);
 
       // Should not have triggered because socket was closed
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
@@ -656,14 +656,14 @@ describe('network', () => {
       const socket = getSocket();
       socket.onopen?.();
 
-      // Advance time to 200 seconds
-      vi.advanceTimersByTime(200 * 1000);
+      // Advance time to 60 seconds
+      vi.advanceTimersByTime(60 * 1000);
 
       // Disconnect - should clear timeout
       network.ircDisconnect();
 
       // Advance past original timeout
-      vi.advanceTimersByTime(200 * 1000);
+      vi.advanceTimersByTime(120 * 1000);
 
       // Should not have triggered because we disconnected
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
