@@ -8,6 +8,24 @@ vi.mock('@/config/config', () => ({
   defaultIRCPort: 6667,
 }));
 
+// Mock channels store
+const mockSetAddMessageToAllChannels = vi.fn();
+vi.mock('@features/channels/store/channels', () => ({
+  setAddMessageToAllChannels: (msg: unknown) => mockSetAddMessageToAllChannels(msg),
+}));
+
+// Mock i18next
+vi.mock('@/app/i18n', () => ({
+  default: {
+    t: (key: string) => key,
+  },
+}));
+
+// Mock uuid
+vi.mock('uuid', () => ({
+  v4: () => 'test-uuid-1234',
+}));
+
 // Mock WebSocket interface
 interface MockWebSocket {
   url: string;
@@ -62,6 +80,7 @@ describe('network', () => {
     vi.resetModules();
     vi.useFakeTimers();
     lastCreatedSocket = null;
+    mockSetAddMessageToAllChannels.mockClear();
     network = await import('../network');
   });
 
@@ -569,6 +588,92 @@ describe('network', () => {
       });
 
       expect(messageHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('inactivity timeout', () => {
+    const INACTIVITY_TIMEOUT_MS = 300 * 1000; // 300 seconds
+
+    it('should show disconnection message after 300 seconds of inactivity', () => {
+      const socket = getSocket();
+      socket.onopen?.();
+
+      // Advance time to just before timeout
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1);
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+
+      // Advance time to trigger timeout
+      vi.advanceTimersByTime(1);
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith({
+        id: 'test-uuid-1234',
+        message: 'kernel.inactivityTimeout',
+        time: expect.any(String),
+        category: 'error',
+      });
+    });
+
+    it('should reset timeout when message is received', () => {
+      const socket = getSocket();
+      socket.onopen?.();
+
+      // Advance time to 200 seconds
+      vi.advanceTimersByTime(200 * 1000);
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+
+      // Receive a message - this should reset the timeout
+      socket.onmessage?.({
+        data: JSON.stringify({ event: 'test', data: {} }),
+      });
+
+      // Advance time to 200 seconds again (400 seconds total from start)
+      vi.advanceTimersByTime(200 * 1000);
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+
+      // Advance to trigger timeout (300 seconds from last message)
+      vi.advanceTimersByTime(100 * 1000);
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+    });
+
+    it('should clear timeout when socket closes', () => {
+      const socket = getSocket();
+      socket.onopen?.();
+
+      // Advance time to 200 seconds
+      vi.advanceTimersByTime(200 * 1000);
+
+      // Close socket - should clear timeout
+      socket.onclose?.();
+
+      // Advance past original timeout
+      vi.advanceTimersByTime(200 * 1000);
+
+      // Should not have triggered because socket was closed
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    });
+
+    it('should clear timeout when ircDisconnect is called', () => {
+      const socket = getSocket();
+      socket.onopen?.();
+
+      // Advance time to 200 seconds
+      vi.advanceTimersByTime(200 * 1000);
+
+      // Disconnect - should clear timeout
+      network.ircDisconnect();
+
+      // Advance past original timeout
+      vi.advanceTimersByTime(200 * 1000);
+
+      // Should not have triggered because we disconnected
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    });
+
+    it('should not show message if no socket was opened', () => {
+      // Don't call onopen, just advance time
+      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS + 1000);
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
     });
   });
 });

@@ -3,12 +3,43 @@ import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
 import { setSaslCredentials, resetSaslState, clearSaslCredentials } from './sasl';
+import { setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { v4 as uuidv4 } from 'uuid';
+import { MessageCategory } from '@shared/types';
+import i18next from '@/app/i18n';
 
 // Native WebSocket connection
 let sicSocket: WebSocket | null = null;
 let isConnecting = false;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
+
+// Inactivity timeout - show disconnection message after 300 seconds of no activity
+const INACTIVITY_TIMEOUT_MS = 300 * 1000;
+let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const showDisconnectionMessage = (): void => {
+  setAddMessageToAllChannels({
+    id: uuidv4(),
+    message: i18next.t('kernel.inactivityTimeout'),
+    time: new Date().toISOString(),
+    category: MessageCategory.error,
+  });
+};
+
+const resetInactivityTimeout = (): void => {
+  if (inactivityTimeoutId !== null) {
+    clearTimeout(inactivityTimeoutId);
+  }
+  inactivityTimeoutId = setTimeout(showDisconnectionMessage, INACTIVITY_TIMEOUT_MS);
+};
+
+const clearInactivityTimeout = (): void => {
+  if (inactivityTimeoutId !== null) {
+    clearTimeout(inactivityTimeoutId);
+    inactivityTimeoutId = null;
+  }
+};
 
 // Initialize WebSocket connection
 export const initWebSocket = (): WebSocket => {
@@ -32,10 +63,12 @@ export const initWebSocket = (): WebSocket => {
   sicSocket.onopen = () => {
     isConnecting = false;
     console.log('WebSocket connected');
+    resetInactivityTimeout();
     triggerEvent('connect', {});
   };
 
   sicSocket.onmessage = (event) => {
+    resetInactivityTimeout();
     try {
       const data = JSON.parse(event.data as string) as { event?: string; data?: unknown };
       if (data.event) {
@@ -54,6 +87,7 @@ export const initWebSocket = (): WebSocket => {
 
   sicSocket.onclose = () => {
     isConnecting = false;
+    clearInactivityTimeout();
     console.log('WebSocket disconnected');
     triggerEvent('close', {});
     sicSocket = null;
@@ -102,6 +136,9 @@ export const isConnected = (): boolean => {
 export const ircDisconnect = (): void => {
   // Clear the message queue
   queueIrcMessages.length = 0;
+
+  // Clear inactivity timeout
+  clearInactivityTimeout();
 
   // Reset IRCv3 state
   resetCapabilityState();
