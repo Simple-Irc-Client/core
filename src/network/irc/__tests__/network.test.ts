@@ -82,7 +82,9 @@ Object.assign(MockWebSocketClass, {
 vi.stubGlobal('WebSocket', MockWebSocketClass);
 
 // Helper to flush pending promises (works with fake timers)
-const flushPromises = (): Promise<void> => vi.advanceTimersByTimeAsync(0);
+const flushPromises = async (): Promise<void> => {
+  await vi.advanceTimersByTimeAsync(0);
+};
 
 describe('network', () => {
   let network: typeof import('../network');
