@@ -63,6 +63,10 @@ export interface Channel {
   name: string;
   category: ChannelCategory;
   unReadMessages: number;
+  /**
+   * IRCv3 - Channel's avatar URL from metadata
+   */
+  avatar?: string;
 }
 
 export interface ChannelExtended extends Channel {

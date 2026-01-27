@@ -239,6 +239,7 @@
     "channelSettings.modes.private": "Private",
     "channelSettings.modes.userLimit": "User Limit (+l)",
     "channelSettings.modes.channelKey": "Channel Key (+k)",
+    "channelSettings.modes.avatar": "Avatar",
     "channelSettings.modes.rawModes": "Raw Modes",
     "channelSettings.modes.rawModesDescription": "Edit directly to set/unset multiple modes at once",
     "channelSettings.lists.bans": "Bans",

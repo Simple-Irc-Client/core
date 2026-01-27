@@ -28,10 +28,14 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const isLoading = useChannelSettingsStore((state) => state.isLoading);
   const channelModes = useChannelSettingsStore((state) => state.channelModes);
   const serverChannelModes = useSettingsStore((state) => state.channelModes);
+  const supportedOptions = useSettingsStore((state) => state.supportedOptions);
 
   const [limit, setLimit] = useState('');
   const [key, setKey] = useState('');
   const [rawModes, setRawModes] = useState('');
+  const [avatar, setAvatar] = useState('');
+
+  const isAvatarSupported = supportedOptions?.includes('metadata-avatar') ?? false;
 
   // Derive initial values from channelModes
   const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
@@ -74,6 +78,18 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const handleClearKey = () => {
     ircSendRawMessage(`MODE ${channelName} -k *`);
     setKey('');
+  };
+
+  const handleSetAvatar = () => {
+    const trimmedAvatar = avatar.trim();
+    if (trimmedAvatar.length > 0) {
+      ircSendRawMessage(`METADATA ${channelName} SET avatar ${trimmedAvatar}`);
+    }
+  };
+
+  const handleClearAvatar = () => {
+    ircSendRawMessage(`METADATA ${channelName} SET avatar`);
+    setAvatar('');
   };
 
   const handleApplyRawModes = () => {
@@ -165,6 +181,31 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               {t('channelSettings.actions.set')}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={handleClearKey} data-testid="key-clear">
+              {t('channelSettings.actions.clear')}
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Channel Avatar (IRCv3 metadata) */}
+        {isAvatarSupported ? (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="avatar" className="w-24 shrink-0">
+              {t('channelSettings.modes.avatar')}
+            </Label>
+            <Input
+              id="avatar"
+              type="text"
+              value={avatar}
+              onChange={(e) => setAvatar(e.target.value)}
+              className="flex-1"
+              placeholder="https://example.com/avatar.png"
+              onKeyDown={(e) => e.key === 'Enter' && handleSetAvatar()}
+              data-testid="avatar-input"
+            />
+            <Button type="button" size="sm" onClick={handleSetAvatar} data-testid="avatar-set">
+              {t('channelSettings.actions.set')}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={handleClearAvatar} data-testid="avatar-clear">
               {t('channelSettings.actions.clear')}
             </Button>
           </div>

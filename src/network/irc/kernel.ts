@@ -5,6 +5,7 @@ import {
   setAddChannel,
   setAddMessage,
   setAddMessageToAllChannels,
+  setChannelAvatar,
   setIncreaseUnreadMessages,
   setRemoveChannel,
   setTopic,
@@ -1677,6 +1678,7 @@ export class Kernel {
 
   // https://ircv3.net/specs/core/metadata-3.2
   // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
+  // :netsplit.pirc.pl METADATA #channel avatar * :https://example.com/channel-avatar.png
   private readonly onMetadata = (): void => {
     const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
@@ -1688,7 +1690,14 @@ export class Kernel {
       return;
     }
 
-    if (!isChannel(nickOrChannel)) {
+    if (isChannel(nickOrChannel)) {
+      // Handle channel metadata
+      if (item === 'avatar' && value !== undefined) {
+        const avatarUrl = value.replace('{size}', '64');
+        setChannelAvatar(nickOrChannel, avatarUrl);
+      }
+    } else {
+      // Handle user metadata
       if (item === 'avatar' && value !== undefined) {
         const avatarUrl = value.replace('{size}', '64');
         setUserAvatar(nickOrChannel, avatarUrl);
