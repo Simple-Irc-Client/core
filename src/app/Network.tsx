@@ -7,6 +7,7 @@ import { DEBUG_CHANNEL } from '@/config/config';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
+import * as Sentry from '@sentry/react';
 
 export const Network = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
@@ -31,6 +32,12 @@ export const Network = () => {
       try {
         new Kernel(data).handle();
       } catch (err) {
+        Sentry.captureException(err, {
+          extra: {
+            eventType: data?.type,
+            eventLine: data?.line,
+          },
+        });
         console.warn(err);
       }
     };

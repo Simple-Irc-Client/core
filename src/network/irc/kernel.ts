@@ -94,6 +94,7 @@ import {
   setChannelSettingsIsInviteListLoading,
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
+import * as Sentry from '@sentry/react';
 
 export interface IrcEvent {
   type: string;
@@ -356,8 +357,17 @@ export class Kernel {
   }
 
   // eslint-disable-next-line
-  assert = (func: Function, variable: string): Error => {
-    return new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
+  private logParseError = (func: Function, variable: string): void => {
+    const error = new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
+    Sentry.captureException(error, {
+      extra: {
+        eventLine: this.eventLine,
+        command: this.command,
+        sender: this.sender,
+        tags: this.tags,
+      },
+    });
+    console.error(error.message, { line: this.eventLine });
   };
 
   handle(): void {
@@ -1548,7 +1558,8 @@ export class Kernel {
     const channel = this.line.shift()?.substring(1);
 
     if (channel === undefined) {
-      throw this.assert(this.onInvite, 'channel');
+      this.logParseError(this.onInvite, 'channel');
+      return;
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
@@ -1570,7 +1581,8 @@ export class Kernel {
     const { nick, ident, hostname } = parseNick(this.sender, getUserModes());
 
     if (channel === undefined) {
-      throw this.assert(this.onJoin, 'channel');
+      this.logParseError(this.onJoin, 'channel');
+      return;
     }
 
     if (channel.startsWith(':')) {
@@ -1617,11 +1629,13 @@ export class Kernel {
     const reason = this.line.join(' ').substring(1) ?? '';
 
     if (kicked === undefined) {
-      throw this.assert(this.onKick, 'kicked');
+      this.logParseError(this.onKick, 'kicked');
+      return;
     }
 
     if (channel === undefined) {
-      throw this.assert(this.onKick, 'channel');
+      this.logParseError(this.onKick, 'channel');
+      return;
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
@@ -1670,7 +1684,8 @@ export class Kernel {
     const value = this.line.shift()?.substring(1);
 
     if (nickOrChannel === undefined) {
-      throw this.assert(this.onMetadata, 'nickOrChannel');
+      this.logParseError(this.onMetadata, 'nickOrChannel');
+      return;
     }
 
     if (!isChannel(nickOrChannel)) {
@@ -1707,7 +1722,8 @@ export class Kernel {
     const userOrChannel = this.line.shift();
 
     if (userOrChannel === undefined) {
-      throw this.assert(this.onMode, 'userOfChannel');
+      this.logParseError(this.onMode, 'userOfChannel');
+      return;
     }
 
     let flags = this.line.shift() ?? '';
@@ -1880,7 +1896,8 @@ export class Kernel {
     const newNick = this.line.shift()?.substring(1);
 
     if (newNick === undefined) {
-      throw this.assert(this.onNick, 'newNick');
+      this.logParseError(this.onNick, 'newNick');
+      return;
     }
 
     const channels = getUserChannels(this.sender);
@@ -1916,7 +1933,8 @@ export class Kernel {
     const target = this.line.shift();
 
     if (target === undefined) {
-      throw this.assert(this.onNotice, 'target');
+      this.logParseError(this.onNotice, 'target');
+      return;
     }
 
     const message = this.line.join(' ').substring(1);
@@ -1960,7 +1978,8 @@ export class Kernel {
     const reason = this.line.join(' ').substring(1) ?? '';
 
     if (channel === undefined) {
-      throw this.assert(this.onPart, 'channel');
+      this.logParseError(this.onPart, 'channel');
+      return;
     }
 
     if (channel.startsWith(':')) {
@@ -2010,7 +2029,8 @@ export class Kernel {
     const { nick } = parseNick(this.sender, serverUserModes);
 
     if (target === undefined) {
-      throw this.assert(this.onPrivMsg, 'target');
+      this.logParseError(this.onPrivMsg, 'target');
+      return;
     }
 
     if (message.startsWith('\x01')) {
@@ -2238,7 +2258,8 @@ export class Kernel {
     const target = this.line.shift();
 
     if (target === undefined) {
-      throw this.assert(this.onTagMsg, 'target');
+      this.logParseError(this.onTagMsg, 'target');
+      return;
     }
 
     const { nick } = parseNick(this.sender, serverUserModes);
@@ -2268,7 +2289,8 @@ export class Kernel {
     const topic = this.line.join(' ').substring(1);
 
     if (channel === undefined) {
-      throw this.assert(this.onTopic, 'channel');
+      this.logParseError(this.onTopic, 'channel');
+      return;
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
@@ -2790,7 +2812,8 @@ export class Kernel {
     const topic = this.line.join(' ')?.substring(1);
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw332, 'channel');
+      this.logParseError(this.onRaw332, 'channel');
+      return;
     }
 
     setTopic(channel, topic);
@@ -2804,10 +2827,12 @@ export class Kernel {
     const setTime = Number(this.line.shift() ?? '0');
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw333, 'channel');
+      this.logParseError(this.onRaw333, 'channel');
+      return;
     }
     if (setBy === undefined) {
-      throw this.assert(this.onRaw333, 'setBy');
+      this.logParseError(this.onRaw333, 'setBy');
+      return;
     }
 
     setTopicSetBy(channel, setBy, setTime);
@@ -2839,7 +2864,8 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw353, 'channel');
+      this.logParseError(this.onRaw353, 'channel');
+      return;
     }
 
     for (let user of this.line) {
@@ -2948,7 +2974,8 @@ export class Kernel {
     const nick = this.line.shift();
 
     if (nick === undefined) {
-      throw this.assert(this.onRaw432, 'nick');
+      this.logParseError(this.onRaw432, 'nick');
+      return;
     }
 
     let message = this.line.join(' ');
@@ -2978,7 +3005,8 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw442, 'channel');
+      this.logParseError(this.onRaw442, 'channel');
+      return;
     }
 
     let message = this.line.join(' ');
@@ -3008,7 +3036,8 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw473, 'channel');
+      this.logParseError(this.onRaw473, 'channel');
+      return;
     }
 
     let message = this.line.join(' ');
@@ -3038,7 +3067,8 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw474, 'channel');
+      this.logParseError(this.onRaw474, 'channel');
+      return;
     }
 
     let message = this.line.join(' ');
@@ -3068,7 +3098,8 @@ export class Kernel {
     const channel = this.line.shift();
 
     if (channel === undefined) {
-      throw this.assert(this.onRaw477, 'channel');
+      this.logParseError(this.onRaw477, 'channel');
+      return;
     }
 
     let message = this.line.join(' ');
@@ -3124,7 +3155,8 @@ export class Kernel {
     const value = this.line.shift()?.substring(1);
 
     if (nick === undefined) {
-      throw this.assert(this.onRaw761, 'nick');
+      this.logParseError(this.onRaw761, 'nick');
+      return;
     }
 
     if (item === 'avatar' && value !== undefined) {
