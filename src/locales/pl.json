@@ -239,6 +239,7 @@
     "channelSettings.modes.private": "Prywatny",
     "channelSettings.modes.userLimit": "Limit użytkowników (+l)",
     "channelSettings.modes.channelKey": "Hasło kanału (+k)",
+    "channelSettings.modes.avatar": "Awatar",
     "channelSettings.modes.rawModes": "Tryby surowe",
     "channelSettings.modes.rawModesDescription": "Edytuj bezpośrednio aby ustawić/usunąć wiele trybów naraz",
     "channelSettings.lists.bans": "Bany",

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
+import Avatar from '@shared/components/Avatar';
 
 const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
@@ -131,7 +132,18 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
                   )}
                 >
-                  <span className="min-w-[30px]">{getChannelIcon(channel.category)}</span>
+                  <span className="min-w-[30px] flex items-center justify-center">
+                    {channel.avatar ? (
+                      <Avatar
+                        src={channel.avatar}
+                        alt={channel.name}
+                        fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
+                        className="h-4 w-4"
+                      />
+                    ) : (
+                      getChannelIcon(channel.category)
+                    )}
+                  </span>
                   <span className="flex-1">{channel.name}</span>
                 </button>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">

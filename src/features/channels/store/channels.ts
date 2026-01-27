@@ -17,6 +17,7 @@ interface ChannelsStore {
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
+  setChannelAvatar: (channelName: string, avatar: string) => void;
   setClearAll: () => void;
 }
 
@@ -143,6 +144,24 @@ export const useChannelsStore = create<ChannelsStore>()(
           }
 
           return { ...channel, unReadMessages: channel.unReadMessages + 1 };
+        }),
+      }));
+    },
+    setChannelAvatar: (channelName: string, avatar: string) => {
+      set((state) => ({
+        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
+          if (channel.name !== channelName) {
+            return channel;
+          }
+
+          return { ...channel, avatar };
+        }),
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (channel.name !== channelName) {
+            return channel;
+          }
+
+          return { ...channel, avatar };
         }),
       }));
     },
@@ -277,6 +296,10 @@ export const setClearUnreadMessages = (channelName: string): void => {
 
 export const setIncreaseUnreadMessages = (channelName: string): void => {
   useChannelsStore.getState().setIncreaseUnreadMessages(channelName);
+};
+
+export const setChannelAvatar = (channelName: string, avatar: string): void => {
+  useChannelsStore.getState().setChannelAvatar(channelName, avatar);
 };
 
 export const isPriv = (channelName: string): boolean => {
