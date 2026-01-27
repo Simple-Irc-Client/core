@@ -6,6 +6,14 @@ vi.mock('@/config/config', () => ({
   websocketHost: 'localhost',
   websocketPort: 8080,
   defaultIRCPort: 6667,
+  encryptionKey: 'test-key',
+}));
+
+// Mock encryption module to pass through unencrypted for testing
+vi.mock('@/network/encryption', () => ({
+  initEncryption: vi.fn().mockResolvedValue(undefined),
+  encryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.stringify(data))),
+  decryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.parse(data))),
 }));
 
 // Mock channels store
@@ -73,6 +81,9 @@ Object.assign(MockWebSocketClass, {
 // Assign mock to global
 vi.stubGlobal('WebSocket', MockWebSocketClass);
 
+// Helper to flush pending promises (works with fake timers)
+const flushPromises = (): Promise<void> => vi.advanceTimersByTimeAsync(0);
+
 describe('network', () => {
   let network: typeof import('../network');
 
@@ -124,7 +135,7 @@ describe('network', () => {
   });
 
   describe('on/off event handlers', () => {
-    it('should register and call event handlers', () => {
+    it('should register and call event handlers', async () => {
       const handler = vi.fn();
       network.on('custom-event', handler);
 
@@ -134,10 +145,11 @@ describe('network', () => {
         data: JSON.stringify({ event: 'custom-event', data: { foo: 'bar' } }),
       });
 
+      await flushPromises();
       expect(handler).toHaveBeenCalledWith({ foo: 'bar' });
     });
 
-    it('should remove event handlers with off', () => {
+    it('should remove event handlers with off', async () => {
       const handler = vi.fn();
       network.on('custom-event', handler);
       network.off('custom-event', handler);
@@ -147,6 +159,7 @@ describe('network', () => {
         data: JSON.stringify({ event: 'custom-event', data: {} }),
       });
 
+      await flushPromises();
       expect(handler).not.toHaveBeenCalled();
     });
 
@@ -180,7 +193,7 @@ describe('network', () => {
   });
 
   describe('ircConnect', () => {
-    it('should send connect command with server details', () => {
+    it('should send connect command with server details', async () => {
       const socket = getSocket();
 
       const server: Server = {
@@ -191,6 +204,7 @@ describe('network', () => {
       };
 
       network.ircConnect(server, 'testNick');
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -210,7 +224,7 @@ describe('network', () => {
       );
     });
 
-    it('should use default port when not specified', () => {
+    it('should use default port when not specified', async () => {
       const socket = getSocket();
 
       const server: Server = {
@@ -221,6 +235,7 @@ describe('network', () => {
       };
 
       network.ircConnect(server, 'testNick');
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -261,10 +276,11 @@ describe('network', () => {
   });
 
   describe('ircSendPassword', () => {
-    it('should send IDENTIFY command to NickServ', () => {
+    it('should send IDENTIFY command to NickServ', async () => {
       const socket = getSocket();
 
       network.ircSendPassword('myPassword');
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -281,10 +297,11 @@ describe('network', () => {
   });
 
   describe('ircSendList', () => {
-    it('should send LIST command', () => {
+    it('should send LIST command', async () => {
       const socket = getSocket();
 
       network.ircSendList();
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -301,10 +318,11 @@ describe('network', () => {
   });
 
   describe('ircSendNamesXProto', () => {
-    it('should send PROTOCTL NAMESX command', () => {
+    it('should send PROTOCTL NAMESX command', async () => {
       const socket = getSocket();
 
       network.ircSendNamesXProto();
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -321,10 +339,11 @@ describe('network', () => {
   });
 
   describe('ircJoinChannels', () => {
-    it('should send JOIN command for single channel', () => {
+    it('should send JOIN command for single channel', async () => {
       const socket = getSocket();
 
       network.ircJoinChannels(['#test']);
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -339,10 +358,11 @@ describe('network', () => {
       );
     });
 
-    it('should send JOIN command for multiple channels', () => {
+    it('should send JOIN command for multiple channels', async () => {
       const socket = getSocket();
 
       network.ircJoinChannels(['#test', '#foo', '#bar']);
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -359,10 +379,11 @@ describe('network', () => {
   });
 
   describe('ircPartChannel', () => {
-    it('should send PART command', () => {
+    it('should send PART command', async () => {
       const socket = getSocket();
 
       network.ircPartChannel('#test');
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -379,7 +400,7 @@ describe('network', () => {
   });
 
   describe('ircRequestMetadataItem', () => {
-    it('should send METADATA GET command to queue', () => {
+    it('should send METADATA GET command to queue', async () => {
       const socket = getSocket();
 
       network.ircRequestMetadataItem('someUser', 'avatar');
@@ -389,6 +410,7 @@ describe('network', () => {
 
       // Advance timer to trigger queue processing
       vi.advanceTimersByTime(300);
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -405,10 +427,11 @@ describe('network', () => {
   });
 
   describe('ircRequestMetadata', () => {
-    it('should send METADATA SUB command', () => {
+    it('should send METADATA SUB command', async () => {
       const socket = getSocket();
 
       network.ircRequestMetadata();
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -425,13 +448,14 @@ describe('network', () => {
   });
 
   describe('ircRequestMetadataList', () => {
-    it('should send METADATA LIST command to queue', () => {
+    it('should send METADATA LIST command to queue', async () => {
       const socket = getSocket();
 
       network.ircRequestMetadataList('someUser');
 
       // Queued messages are sent via interval
       vi.advanceTimersByTime(300);
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -448,10 +472,11 @@ describe('network', () => {
   });
 
   describe('ircSendRawMessage', () => {
-    it('should send raw message', () => {
+    it('should send raw message', async () => {
       const socket = getSocket();
 
       network.ircSendRawMessage('PRIVMSG #test :Hello world');
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -466,15 +491,16 @@ describe('network', () => {
       );
     });
 
-    it('should not send empty messages', () => {
+    it('should not send empty messages', async () => {
       const socket = getSocket();
 
       network.ircSendRawMessage('');
+      await flushPromises();
 
       expect(socket.send).not.toHaveBeenCalled();
     });
 
-    it('should queue message when queue flag is true', () => {
+    it('should queue message when queue flag is true', async () => {
       const socket = getSocket();
 
       network.ircSendRawMessage('TEST MESSAGE', true);
@@ -484,6 +510,7 @@ describe('network', () => {
 
       // Advance timer to trigger queue processing
       vi.advanceTimersByTime(300);
+      await flushPromises();
 
       expect(socket.send).toHaveBeenCalledWith(
         JSON.stringify({
@@ -498,12 +525,13 @@ describe('network', () => {
       );
     });
 
-    it('should not send when socket is not open', () => {
+    it('should not send when socket is not open', async () => {
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const socket = getSocket();
       socket.readyState = 0; // CONNECTING
 
       network.ircSendRawMessage('TEST');
+      await flushPromises();
 
       expect(socket.send).not.toHaveBeenCalled();
       expect(consoleSpy).toHaveBeenCalledWith(
@@ -516,12 +544,13 @@ describe('network', () => {
   });
 
   describe('WebSocket events', () => {
-    it('should trigger connect event on socket open', () => {
+    it('should trigger connect event on socket open', async () => {
       const connectHandler = vi.fn();
       network.on('connect', connectHandler);
 
       const socket = getSocket();
       socket.onopen?.();
+      await flushPromises();
 
       expect(connectHandler).toHaveBeenCalledWith({});
     });
@@ -547,7 +576,7 @@ describe('network', () => {
       expect(errorHandler).toHaveBeenCalledWith(mockError);
     });
 
-    it('should parse and trigger events from incoming messages', () => {
+    it('should parse and trigger events from incoming messages', async () => {
       const messageHandler = vi.fn();
       network.on('irc-message', messageHandler);
 
@@ -556,18 +585,18 @@ describe('network', () => {
       socket.onmessage?.({
         data: JSON.stringify({ event: 'irc-message', data: { text: 'hello' } }),
       });
+      await flushPromises();
 
       expect(messageHandler).toHaveBeenCalledWith({ text: 'hello' });
     });
 
-    it('should handle invalid JSON in messages gracefully', () => {
+    it('should handle invalid JSON in messages gracefully', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const socket = getSocket();
 
-      expect(() => {
-        socket.onmessage?.({ data: 'invalid json' });
-      }).not.toThrow();
+      socket.onmessage?.({ data: 'invalid json' });
+      await flushPromises();
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Failed to parse WebSocket message:',
@@ -577,7 +606,7 @@ describe('network', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should ignore messages without event field', () => {
+    it('should ignore messages without event field', async () => {
       const messageHandler = vi.fn();
       network.on('some-event', messageHandler);
 
@@ -586,6 +615,7 @@ describe('network', () => {
       socket.onmessage?.({
         data: JSON.stringify({ data: { text: 'hello' } }),
       });
+      await flushPromises();
 
       expect(messageHandler).not.toHaveBeenCalled();
     });
@@ -594,9 +624,10 @@ describe('network', () => {
   describe('inactivity timeout', () => {
     const INACTIVITY_TIMEOUT_MS = 120 * 1000; // 120 seconds
 
-    it('should show disconnection message after 120 seconds of inactivity', () => {
+    it('should show disconnection message after 120 seconds of inactivity', async () => {
       const socket = getSocket();
       socket.onopen?.();
+      await flushPromises();
 
       // Advance time to just before timeout
       vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1);
@@ -613,9 +644,10 @@ describe('network', () => {
       });
     });
 
-    it('should reset timeout when message is received', () => {
+    it('should reset timeout when message is received', async () => {
       const socket = getSocket();
       socket.onopen?.();
+      await flushPromises();
 
       // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
@@ -625,6 +657,7 @@ describe('network', () => {
       socket.onmessage?.({
         data: JSON.stringify({ event: 'test', data: {} }),
       });
+      await flushPromises();
 
       // Advance time to 60 seconds again (120 seconds total from start)
       vi.advanceTimersByTime(60 * 1000);
@@ -635,9 +668,10 @@ describe('network', () => {
       expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
     });
 
-    it('should clear timeout when socket closes', () => {
+    it('should clear timeout when socket closes', async () => {
       const socket = getSocket();
       socket.onopen?.();
+      await flushPromises();
 
       // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
@@ -652,9 +686,10 @@ describe('network', () => {
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
     });
 
-    it('should clear timeout when ircDisconnect is called', () => {
+    it('should clear timeout when ircDisconnect is called', async () => {
       const socket = getSocket();
       socket.onopen?.();
+      await flushPromises();
 
       // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
