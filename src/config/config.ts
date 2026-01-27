@@ -10,6 +10,9 @@ export const clientSourceUrl = 'https://simpleircclient.com';
 export const websocketPort = 8667;
 export const websocketHost = 'localhost';
 
+// AES-256-GCM encryption key (must match backend)
+export const encryptionKey = 'K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=';
+
 export const defaultIRCPort = 6667;
 
 export const maxMessages = 300;
