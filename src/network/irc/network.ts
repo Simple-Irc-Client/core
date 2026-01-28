@@ -3,6 +3,8 @@ import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
 import { setSaslCredentials, resetSaslState, clearSaslCredentials } from './sasl';
+import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
+import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
@@ -94,7 +96,8 @@ export const initWebSocket = (): WebSocket => {
     isConnecting = false;
     clearInactivityTimeout();
     console.log('WebSocket disconnected');
-    triggerEvent('close', {});
+    // Trigger as sic-irc-event so the kernel receives it and handles STS reconnection
+    triggerEvent('sic-irc-event', { type: 'close' });
     sicSocket = null;
   };
 
@@ -149,6 +152,7 @@ export const ircDisconnect = (): void => {
   resetCapabilityState();
   resetSaslState();
   clearSaslCredentials();
+  resetSTSSessionState();
 
   // Close the WebSocket connection if it exists
   if (sicSocket) {
@@ -159,6 +163,22 @@ export const ircDisconnect = (): void => {
   isConnecting = false;
 };
 
+/**
+ * Send a disconnect command to the backend without closing the WebSocket.
+ * Used for STS upgrades where we need to gracefully close the IRC connection
+ * but keep the WebSocket open for immediate reconnection.
+ * @param reason - Optional quit reason
+ */
+export const ircSendDisconnectCommand = (reason?: string): void => {
+  const command = {
+    type: 'disconnect',
+    event: {
+      quitReason: reason,
+    },
+  };
+  sendMessage(command);
+};
+
 const queueIrcMessages: unknown[] = [];
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
@@ -166,6 +186,22 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
+
+  const host = singleServer.host;
+
+  // Check for existing STS policy
+  if (hasValidSTSPolicy(host)) {
+    const policy = getSTSPolicy(host);
+    if (policy) {
+      // Connect with TLS using stored policy
+      setCurrentConnectionInfo(host, true);
+      ircConnectWithTLS(currentServer, nick, policy.port);
+      return;
+    }
+  }
+
+  // Track non-TLS connection
+  setCurrentConnectionInfo(host, false);
 
   const command = {
     type: 'connect',
@@ -175,6 +211,39 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
         host: singleServer.host,
         port: singleServer.port,
         encoding: currentServer?.encoding,
+        tls: false,
+      },
+    },
+  };
+
+  sendMessage(command);
+};
+
+/**
+ * Connect to IRC server with TLS enabled.
+ * Used for STS upgrades and when connecting to servers with known STS policies.
+ * @param currentServer - Server configuration
+ * @param nick - Nickname to use
+ * @param port - Optional TLS port (overrides server port)
+ */
+export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: number): void => {
+  const singleServer = parseServer(currentServer);
+  if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
+    throw new Error('Unable to connect to IRC network - server host is empty');
+  }
+
+  // Track TLS connection
+  setCurrentConnectionInfo(singleServer.host, true);
+
+  const command = {
+    type: 'connect',
+    event: {
+      nick,
+      server: {
+        host: singleServer.host,
+        port: port ?? singleServer.port,
+        encoding: currentServer?.encoding,
+        tls: true,
       },
     },
   };

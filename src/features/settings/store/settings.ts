@@ -310,6 +310,10 @@ export const getCurrentNick = (): string => {
   return useSettingsStore.getState().nick;
 };
 
+export const getServer = (): Server | undefined => {
+  return useSettingsStore.getState().server;
+};
+
 export const getCurrentChannelName = (): string => {
   return useSettingsStore.getState().currentChannelName;
 };

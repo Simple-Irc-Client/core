@@ -9,6 +9,7 @@ import * as channelListFile from '@features/channels/store/channelList';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '../network';
 import * as capabilitiesFile from '../capabilities';
+import * as stsFile from '../sts';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
 import { ChannelCategory } from '@shared/types';
@@ -53,6 +54,72 @@ describe('kernel tests', () => {
     expect(mockSetIsConnected).toBeCalledWith(false);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.disconnected') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  it('test close during STS upgrade should not show disconnected', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
+      host: 'irc.test.com',
+      port: 6697,
+      reason: 'sts_upgrade',
+    }));
+
+    new Kernel({ type: 'close' }).handle();
+
+    // Should set connecting state, not disconnected
+    expect(mockGetPendingSTSUpgrade).toHaveBeenCalled();
+    expect(mockSetIsConnecting).toBeCalledWith(true);
+    expect(mockSetIsConnected).toBeCalledWith(false);
+    // Should NOT show disconnected message
+    expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+  });
+
+  it('test connected clears pending STS upgrade', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockClearPendingSTSUpgrade = vi.spyOn(stsFile, 'clearPendingSTSUpgrade').mockImplementation(() => {});
+    const mockResetSTSRetries = vi.spyOn(stsFile, 'resetSTSRetries').mockImplementation(() => {});
+
+    new Kernel({ type: 'connected' }).handle();
+
+    expect(mockSetIsConnecting).toBeCalledWith(false);
+    expect(mockSetIsConnected).toBeCalledWith(true);
+    expect(mockSetConnectedTime).toBeCalledTimes(1);
+    // Should clear STS state on successful connection
+    expect(mockClearPendingSTSUpgrade).toHaveBeenCalledTimes(1);
+    expect(mockResetSTSRetries).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.connected') }));
+  });
+
+  it('test socket close during STS upgrade does not clear pending upgrade', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+      network: 'TestNetwork',
+      servers: ['irc.test.com:6667'],
+      default: 0,
+      encoding: 'utf-8',
+    }));
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
+      host: 'irc.test.com',
+      port: 6697,
+      reason: 'sts_upgrade',
+    }));
+    const mockClearPendingSTSUpgrade = vi.spyOn(stsFile, 'clearPendingSTSUpgrade').mockImplementation(() => {});
+    const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
+    vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
+
+    new Kernel({ type: 'socket close' }).handle();
+
+    expect(mockGetPendingSTSUpgrade).toHaveBeenCalled();
+    expect(mockIncrementSTSRetries).toHaveBeenCalledTimes(1);
+    // Should NOT clear pending upgrade - handleDisconnected needs it
+    expect(mockClearPendingSTSUpgrade).not.toHaveBeenCalled();
+    expect(mockSetIsConnecting).toBeCalledWith(true);
   });
 
   it('test raw AWAY #1', () => {
@@ -185,6 +252,32 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: 'Closing Link: [1.1.1.1] (Registration Timeout)' }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw ERROR skipped during STS upgrade', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
+    const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
+    const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
+      host: 'irc.test.com',
+      port: 6697,
+      reason: 'sts_upgrade',
+    }));
+
+    const line = 'ERROR :Closing Link: [1.1.1.1] (Upgrading to secure connection)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // Should skip showing error during STS upgrade
+    expect(mockGetPendingSTSUpgrade).toHaveBeenCalledTimes(1);
+    expect(mockGetIsWizardCompleted).not.toHaveBeenCalled();
+    expect(mockSetWizardProgress).not.toHaveBeenCalled();
+    expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+
+    // Debug message should still be logged
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
   it('test raw INVITE', () => {

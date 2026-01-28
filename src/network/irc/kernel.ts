@@ -18,6 +18,7 @@ import {
   getCurrentChannelName,
   getCurrentNick,
   getIsWizardCompleted,
+  getServer,
   getUserModes,
   isSupportedOption,
   setChannelModes,
@@ -43,7 +44,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircSendDisconnectCommand } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -63,6 +64,19 @@ import {
   setAuthenticatedAccount,
   setSaslState,
 } from './sasl';
+import {
+  parseSTSValue,
+  createSTSPolicy,
+  isCurrentConnectionSecure,
+  getCurrentConnectionHost,
+  setPendingSTSUpgrade,
+  getPendingSTSUpgrade,
+  clearPendingSTSUpgrade,
+  incrementSTSRetries,
+  resetSTSRetries,
+  hasExhaustedSTSRetries,
+} from './sts';
+import { setSTSPolicy } from './store/stsStore';
 import {
   startBatch,
   endBatch,
@@ -382,6 +396,9 @@ export class Kernel {
       case 'close':
         this.handleDisconnected();
         break;
+      case 'socket close':
+        this.handleSocketClose();
+        break;
       case 'raw':
         if (this.event?.line !== undefined) {
           this.handleRaw(this.event.line);
@@ -405,6 +422,10 @@ export class Kernel {
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
 
+    // Clear any pending STS upgrade now that we're connected
+    clearPendingSTSUpgrade();
+    resetSTSRetries();
+
     setAddMessageToAllChannels({
       id: uuidv4(),
       message: i18next.t('kernel.connected'),
@@ -415,8 +436,21 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
+    // Check if this is part of an STS upgrade - if so, show connecting state
+    const stsUpgrade = getPendingSTSUpgrade();
+    if (stsUpgrade) {
+      // During STS upgrade, set isConnecting true to show loading UI
+      // Pending upgrade will be cleared in handleConnected on successful TLS connection
+      setIsConnecting(true);
+      setIsConnected(false);
+      return;
+    }
+
     setIsConnecting(false);
     setIsConnected(false);
+
+    // Reset STS retries on WebSocket disconnect
+    resetSTSRetries();
 
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -425,6 +459,49 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+  };
+
+  /**
+   * Handle IRC socket close event from backend.
+   * This is triggered when the IRC connection closes (not the WebSocket).
+   * Used for STS upgrade reconnection.
+   */
+  private readonly handleSocketClose = (): void => {
+    // Check for pending STS upgrade
+    const stsUpgrade = getPendingSTSUpgrade();
+    if (stsUpgrade) {
+      // Check if we've exhausted retries
+      if (hasExhaustedSTSRetries()) {
+        clearPendingSTSUpgrade();
+        resetSTSRetries();
+        setIsConnecting(false);
+        setAddMessageToAllChannels({
+          id: uuidv4(),
+          message: i18next.t('kernel.stsUpgradeFailed'),
+          time: new Date().toISOString(),
+          category: MessageCategory.error,
+          color: MessageColor.error,
+        });
+        return;
+      }
+
+      incrementSTSRetries();
+      // Don't clear pending upgrade here - handleDisconnected needs it to avoid showing "Disconnected"
+      // It will be cleared in handleConnected on successful TLS connection
+
+      // Get server and nick for reconnection
+      const server = getServer();
+      const nick = getCurrentNick();
+
+      if (server && nick) {
+        // Keep connecting state visible during STS upgrade
+        setIsConnecting(true);
+        // Brief delay before reconnect with TLS
+        setTimeout(() => {
+          ircConnectWithTLS(server, nick, stsUpgrade.port);
+        }, 1000);
+      }
+    }
   };
 
   private readonly handleRaw = (event: string): void => {
@@ -1216,6 +1293,46 @@ export class Kernel {
         const caps = parseCapabilityList(capString);
         addAvailableCapabilities(caps);
 
+        // Check for STS capability - must upgrade to TLS if present and not already secure
+        if (caps['sts'] && !isCurrentConnectionSecure()) {
+          const parsed = parseSTSValue(caps['sts']);
+          const host = getCurrentConnectionHost();
+          if (parsed && host) {
+            // Store the STS policy
+            const policy = createSTSPolicy(host, parsed);
+            setSTSPolicy(host, policy);
+
+            // Queue upgrade - disconnect and reconnect with TLS
+            setPendingSTSUpgrade({
+              host,
+              port: parsed.port,
+              reason: 'sts_upgrade',
+            });
+
+            // Notify user
+            setAddMessageToAllChannels({
+              id: uuidv4(),
+              message: i18next.t('kernel.stsUpgrade', { port: parsed.port }),
+              time: new Date().toISOString(),
+              category: MessageCategory.info,
+              color: MessageColor.info,
+            });
+
+            // Send disconnect command to backend without closing WebSocket
+            // Reconnection will happen when we receive 'socket close' event
+            ircSendDisconnectCommand(i18next.t('kernel.stsUpgradeReason'));
+            return;
+          }
+        } else if (caps['sts'] && isCurrentConnectionSecure()) {
+          // Already on TLS, just update the policy duration
+          const parsed = parseSTSValue(caps['sts']);
+          const host = getCurrentConnectionHost();
+          if (parsed && host) {
+            const policy = createSTSPolicy(host, parsed);
+            setSTSPolicy(host, policy);
+          }
+        }
+
         // If this is the last line, request capabilities
         if (!isMultiline) {
           this.requestCapabilities();
@@ -1538,6 +1655,11 @@ export class Kernel {
   // ERROR :Closing Link: [unknown@185.251.84.36] (SSL_do_accept failed)
   private readonly onError = (): void => {
     const message = this.line.join(' ').substring(1);
+
+    // Skip showing error during STS upgrade (server sends ERROR when we disconnect)
+    if (getPendingSTSUpgrade()) {
+      return;
+    }
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
