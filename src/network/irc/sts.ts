@@ -105,7 +105,7 @@ let pendingSTSUpgrade: STSUpgradeRequest | null = null;
 
 // Current connection info for STS detection
 let currentConnectionHost: string | null = null;
-let currentConnectionTLS: boolean = false;
+let currentConnectionTLS = false;
 
 // STS upgrade retry tracking
 let stsUpgradeRetries = 0;

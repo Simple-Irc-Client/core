@@ -41,8 +41,9 @@ export const useSTSStore = create<STSStore>()(
         removePolicy: (host: string) =>
           set(
             (state) => {
-              const newPolicies = { ...state.policies };
-              delete newPolicies[host.toLowerCase()];
+              const key = host.toLowerCase();
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              const { [key]: _removed, ...newPolicies } = state.policies;
               return { policies: newPolicies };
             },
             false,

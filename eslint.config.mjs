@@ -7,6 +7,9 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default defineConfig(
+  {
+    ignores: ['dist/**'],
+  },
   eslint.configs.recommended,
   reactHooks.configs.flat.recommended,
   tseslint.configs.strict,
