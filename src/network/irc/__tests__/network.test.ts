@@ -219,6 +219,7 @@ describe('network', () => {
                 host: 'irc.test.net',
                 port: 6667,
                 encoding: 'utf8',
+                tls: false,
               },
             },
           },
@@ -250,6 +251,7 @@ describe('network', () => {
                 host: 'irc.test.net',
                 port: 6667,
                 encoding: 'utf8',
+                tls: false,
               },
             },
           },
@@ -557,14 +559,14 @@ describe('network', () => {
       expect(connectHandler).toHaveBeenCalledWith({});
     });
 
-    it('should trigger close event on socket close', () => {
-      const closeHandler = vi.fn();
-      network.on('close', closeHandler);
+    it('should trigger sic-irc-event with close type on socket close', () => {
+      const ircEventHandler = vi.fn();
+      network.on('sic-irc-event', ircEventHandler);
 
       const socket = getSocket();
       socket.onclose?.();
 
-      expect(closeHandler).toHaveBeenCalledWith({});
+      expect(ircEventHandler).toHaveBeenCalledWith({ type: 'close' });
     });
 
     it('should trigger error event on socket error', () => {

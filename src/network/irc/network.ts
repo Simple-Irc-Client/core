@@ -96,7 +96,8 @@ export const initWebSocket = (): WebSocket => {
     isConnecting = false;
     clearInactivityTimeout();
     console.log('WebSocket disconnected');
-    triggerEvent('close', {});
+    // Trigger as sic-irc-event so the kernel receives it and handles STS reconnection
+    triggerEvent('sic-irc-event', { type: 'close' });
     sicSocket = null;
   };
 
@@ -160,6 +161,22 @@ export const ircDisconnect = (): void => {
   }
 
   isConnecting = false;
+};
+
+/**
+ * Send a disconnect command to the backend without closing the WebSocket.
+ * Used for STS upgrades where we need to gracefully close the IRC connection
+ * but keep the WebSocket open for immediate reconnection.
+ * @param reason - Optional quit reason
+ */
+export const ircSendDisconnectCommand = (reason?: string): void => {
+  const command = {
+    type: 'disconnect',
+    event: {
+      quitReason: reason,
+    },
+  };
+  sendMessage(command);
 };
 
 const queueIrcMessages: unknown[] = [];

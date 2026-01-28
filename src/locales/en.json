@@ -150,6 +150,7 @@
     "kernel.watchcleared": "Watch list cleared",
     "kernel.stsUpgrade": "Server requires secure connection. Reconnecting to port {{port}} with TLS...",
     "kernel.stsUpgradeFailed": "Failed to establish secure connection after multiple attempts",
+    "kernel.stsUpgradeReason": "Upgrading to secure connection",
     "help.title": "--- Available Commands ---",
     "help.cmd.all": "Send message to all open channels",
     "help.cmd.away": "Set or clear away status",

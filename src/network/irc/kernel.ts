@@ -44,7 +44,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircDisconnect, ircConnectWithTLS } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircSendDisconnectCommand } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -396,6 +396,9 @@ export class Kernel {
       case 'close':
         this.handleDisconnected();
         break;
+      case 'socket close':
+        this.handleSocketClose();
+        break;
       case 'raw':
         if (this.event?.line !== undefined) {
           this.handleRaw(this.event.line);
@@ -429,9 +432,37 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
+    // Check if this is part of an STS upgrade - if so, show connecting state
+    const stsUpgrade = getPendingSTSUpgrade();
+    if (stsUpgrade) {
+      // During STS upgrade, set isConnecting true to show loading UI
+      // Don't clear the pending upgrade - handleSocketClose will use it
+      setIsConnecting(true);
+      setIsConnected(false);
+      return;
+    }
+
     setIsConnecting(false);
     setIsConnected(false);
 
+    // Reset STS retries on WebSocket disconnect
+    resetSTSRetries();
+
+    setAddMessageToAllChannels({
+      id: uuidv4(),
+      message: i18next.t('kernel.disconnected'),
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  /**
+   * Handle IRC socket close event from backend.
+   * This is triggered when the IRC connection closes (not the WebSocket).
+   * Used for STS upgrade reconnection.
+   */
+  private readonly handleSocketClose = (): void => {
     // Check for pending STS upgrade
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
@@ -439,6 +470,7 @@ export class Kernel {
       if (hasExhaustedSTSRetries()) {
         clearPendingSTSUpgrade();
         resetSTSRetries();
+        setIsConnecting(false);
         setAddMessageToAllChannels({
           id: uuidv4(),
           message: i18next.t('kernel.stsUpgradeFailed'),
@@ -457,24 +489,14 @@ export class Kernel {
       const nick = getCurrentNick();
 
       if (server && nick) {
-        // Brief delay before reconnect
+        // Keep connecting state visible during STS upgrade
+        setIsConnecting(true);
+        // Brief delay before reconnect with TLS
         setTimeout(() => {
           ircConnectWithTLS(server, nick, stsUpgrade.port);
         }, 1000);
-        return; // Don't show disconnect message for STS upgrade
       }
     }
-
-    // Reset STS retries on normal disconnect
-    resetSTSRetries();
-
-    setAddMessageToAllChannels({
-      id: uuidv4(),
-      message: i18next.t('kernel.disconnected'),
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
   };
 
   private readonly handleRaw = (event: string): void => {
@@ -1291,8 +1313,9 @@ export class Kernel {
               color: MessageColor.info,
             });
 
-            // Disconnect - reconnection will happen in disconnect handler
-            ircDisconnect();
+            // Send disconnect command to backend without closing WebSocket
+            // Reconnection will happen when we receive 'socket close' event
+            ircSendDisconnectCommand(i18next.t('kernel.stsUpgradeReason'));
             return;
           }
         } else if (caps['sts'] && isCurrentConnectionSecure()) {
