@@ -4,6 +4,7 @@ import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { getIsPasswordRequired, setWizardStep, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart } from '@features/settings/store/settings';
 import { ircConnect, ircDisconnect } from '@/network/irc/network';
+import { getPendingSTSUpgrade } from '@/network/irc/sts';
 
 const CONNECTION_TIMEOUT_MS = 60_000;
 
@@ -66,7 +67,8 @@ const WizardLoading = () => {
     }
 
     // Read current value via getter to avoid dependency
-    if (!isConnecting && !isConnected && getWizardProgress().value !== 0) {
+    // Skip showing "Disconnected" if there's a pending STS upgrade (reconnecting with TLS)
+    if (!isConnecting && !isConnected && getWizardProgress().value !== 0 && !getPendingSTSUpgrade()) {
       setWizardProgress(0, t('wizard.loading.disconnected'));
     }
     return undefined;

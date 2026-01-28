@@ -3,6 +3,7 @@ import { render, screen, act, fireEvent } from '@testing-library/react';
 import WizardLoading from '../WizardLoading';
 import * as settingsStore from '@features/settings/store/settings';
 import * as ircNetwork from '@/network/irc/network';
+import * as stsModule from '@/network/irc/sts';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -22,6 +23,10 @@ vi.mock('@features/settings/store/settings', () => ({
 vi.mock('@/network/irc/network', () => ({
   ircConnect: vi.fn(),
   ircDisconnect: vi.fn(),
+}));
+
+vi.mock('@/network/irc/sts', () => ({
+  getPendingSTSUpgrade: vi.fn(),
 }));
 
 describe('WizardLoading', () => {
@@ -252,6 +257,8 @@ describe('WizardLoading', () => {
 
   describe('Disconnected state', () => {
     it('should call setWizardProgress with disconnected message when disconnected and progress is not 0', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue(null);
+
       setupMocks({
         isConnecting: false,
         isConnected: false,
@@ -264,6 +271,8 @@ describe('WizardLoading', () => {
     });
 
     it('should not call setWizardProgress when disconnected but progress is already 0', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue(null);
+
       setupMocks({
         isConnecting: false,
         isConnected: false,
@@ -272,6 +281,25 @@ describe('WizardLoading', () => {
 
       render(<WizardLoading />);
 
+      expect(settingsStore.setWizardProgress).not.toHaveBeenCalled();
+    });
+
+    it('should not call setWizardProgress with disconnected message during STS upgrade', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue({
+        host: 'irc.test.com',
+        port: 6697,
+        reason: 'sts_upgrade',
+      });
+
+      setupMocks({
+        isConnecting: false,
+        isConnected: false,
+        wizardProgress: { value: 2, label: 'Some label' },
+      });
+
+      render(<WizardLoading />);
+
+      // Should not show disconnected message during STS upgrade
       expect(settingsStore.setWizardProgress).not.toHaveBeenCalled();
     });
   });
@@ -296,6 +324,8 @@ describe('WizardLoading', () => {
     });
 
     it('should handle transition from connected to disconnected', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue(null);
+
       setupMocks({
         isConnected: true,
       });

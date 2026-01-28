@@ -422,6 +422,10 @@ export class Kernel {
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
 
+    // Clear any pending STS upgrade now that we're connected
+    clearPendingSTSUpgrade();
+    resetSTSRetries();
+
     setAddMessageToAllChannels({
       id: uuidv4(),
       message: i18next.t('kernel.connected'),
@@ -436,7 +440,7 @@ export class Kernel {
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
       // During STS upgrade, set isConnecting true to show loading UI
-      // Don't clear the pending upgrade - handleSocketClose will use it
+      // Pending upgrade will be cleared in handleConnected on successful TLS connection
       setIsConnecting(true);
       setIsConnected(false);
       return;
@@ -482,7 +486,8 @@ export class Kernel {
       }
 
       incrementSTSRetries();
-      clearPendingSTSUpgrade();
+      // Don't clear pending upgrade here - handleDisconnected needs it to avoid showing "Disconnected"
+      // It will be cleared in handleConnected on successful TLS connection
 
       // Get server and nick for reconnection
       const server = getServer();
@@ -1650,6 +1655,11 @@ export class Kernel {
   // ERROR :Closing Link: [unknown@185.251.84.36] (SSL_do_accept failed)
   private readonly onError = (): void => {
     const message = this.line.join(' ').substring(1);
+
+    // Skip showing error during STS upgrade (server sends ERROR when we disconnect)
+    if (getPendingSTSUpgrade()) {
+      return;
+    }
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
