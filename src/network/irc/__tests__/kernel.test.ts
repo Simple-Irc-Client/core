@@ -97,7 +97,12 @@ describe('kernel tests', () => {
 
   it('test socket close during STS upgrade does not clear pending upgrade', () => {
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({ network: 'TestNetwork', servers: ['irc.test.com:6667'] }));
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+      network: 'TestNetwork',
+      servers: ['irc.test.com:6667'],
+      default: 0,
+      encoding: 'utf-8',
+    }));
     vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
