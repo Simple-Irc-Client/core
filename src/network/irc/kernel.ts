@@ -18,6 +18,7 @@ import {
   getCurrentChannelName,
   getCurrentNick,
   getIsWizardCompleted,
+  getServer,
   getUserModes,
   isSupportedOption,
   setChannelModes,
@@ -43,7 +44,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircDisconnect, ircConnectWithTLS } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -63,6 +64,19 @@ import {
   setAuthenticatedAccount,
   setSaslState,
 } from './sasl';
+import {
+  parseSTSValue,
+  createSTSPolicy,
+  isCurrentConnectionSecure,
+  getCurrentConnectionHost,
+  setPendingSTSUpgrade,
+  getPendingSTSUpgrade,
+  clearPendingSTSUpgrade,
+  incrementSTSRetries,
+  resetSTSRetries,
+  hasExhaustedSTSRetries,
+} from './sts';
+import { setSTSPolicy } from './store/stsStore';
 import {
   startBatch,
   endBatch,
@@ -417,6 +431,42 @@ export class Kernel {
   private readonly handleDisconnected = (): void => {
     setIsConnecting(false);
     setIsConnected(false);
+
+    // Check for pending STS upgrade
+    const stsUpgrade = getPendingSTSUpgrade();
+    if (stsUpgrade) {
+      // Check if we've exhausted retries
+      if (hasExhaustedSTSRetries()) {
+        clearPendingSTSUpgrade();
+        resetSTSRetries();
+        setAddMessageToAllChannels({
+          id: uuidv4(),
+          message: i18next.t('kernel.stsUpgradeFailed'),
+          time: new Date().toISOString(),
+          category: MessageCategory.error,
+          color: MessageColor.error,
+        });
+        return;
+      }
+
+      incrementSTSRetries();
+      clearPendingSTSUpgrade();
+
+      // Get server and nick for reconnection
+      const server = getServer();
+      const nick = getCurrentNick();
+
+      if (server && nick) {
+        // Brief delay before reconnect
+        setTimeout(() => {
+          ircConnectWithTLS(server, nick, stsUpgrade.port);
+        }, 1000);
+        return; // Don't show disconnect message for STS upgrade
+      }
+    }
+
+    // Reset STS retries on normal disconnect
+    resetSTSRetries();
 
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -1215,6 +1265,45 @@ export class Kernel {
         const capString = this.line.join(' ');
         const caps = parseCapabilityList(capString);
         addAvailableCapabilities(caps);
+
+        // Check for STS capability - must upgrade to TLS if present and not already secure
+        if (caps['sts'] && !isCurrentConnectionSecure()) {
+          const parsed = parseSTSValue(caps['sts']);
+          const host = getCurrentConnectionHost();
+          if (parsed && host) {
+            // Store the STS policy
+            const policy = createSTSPolicy(host, parsed);
+            setSTSPolicy(host, policy);
+
+            // Queue upgrade - disconnect and reconnect with TLS
+            setPendingSTSUpgrade({
+              host,
+              port: parsed.port,
+              reason: 'sts_upgrade',
+            });
+
+            // Notify user
+            setAddMessageToAllChannels({
+              id: uuidv4(),
+              message: i18next.t('kernel.stsUpgrade', { port: parsed.port }),
+              time: new Date().toISOString(),
+              category: MessageCategory.info,
+              color: MessageColor.info,
+            });
+
+            // Disconnect - reconnection will happen in disconnect handler
+            ircDisconnect();
+            return;
+          }
+        } else if (caps['sts'] && isCurrentConnectionSecure()) {
+          // Already on TLS, just update the policy duration
+          const parsed = parseSTSValue(caps['sts']);
+          const host = getCurrentConnectionHost();
+          if (parsed && host) {
+            const policy = createSTSPolicy(host, parsed);
+            setSTSPolicy(host, policy);
+          }
+        }
 
         // If this is the last line, request capabilities
         if (!isMultiline) {

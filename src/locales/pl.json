@@ -148,6 +148,8 @@
     "kernel.watchremoved": "Przestano obserwować {{nick}}",
     "kernel.watchlist": "Lista obserwowanych: {{nicks}}",
     "kernel.watchcleared": "Lista obserwowanych wyczyszczona",
+    "kernel.stsUpgrade": "Serwer wymaga bezpiecznego połączenia. Ponowne łączenie na port {{port}} z TLS...",
+    "kernel.stsUpgradeFailed": "Nie udało się nawiązać bezpiecznego połączenia po kilku próbach",
     "help.title": "--- Dostępne komendy ---",
     "help.cmd.all": "Wyślij wiadomość do wszystkich otwartych kanałów",
     "help.cmd.away": "Ustaw lub wyczyść status nieobecności",
