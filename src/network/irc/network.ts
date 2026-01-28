@@ -9,7 +9,7 @@ import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
-import { initEncryption, encryptMessage, decryptMessage } from '@/network/encryption';
+import { initEncryption, encryptMessage, decryptMessage, isEncryptionAvailable } from '@/network/encryption';
 
 // Native WebSocket connection
 let sicSocket: WebSocket | null = null;
@@ -67,8 +67,10 @@ export const initWebSocket = (): WebSocket => {
     isConnecting = false;
     console.log('WebSocket connected');
 
-    await initEncryption(encryptionKey);
-    console.log('Encryption enabled');
+    if (encryptionKey) {
+      await initEncryption(encryptionKey);
+      console.log('Encryption enabled');
+    }
 
     resetInactivityTimeout();
     triggerEvent('connect', {});
@@ -77,7 +79,12 @@ export const initWebSocket = (): WebSocket => {
   sicSocket.onmessage = async (event) => {
     resetInactivityTimeout();
     try {
-      const data = (await decryptMessage(event.data as string)) as { event?: string; data?: unknown };
+      let data: { event?: string; data?: unknown };
+      if (isEncryptionAvailable()) {
+        data = (await decryptMessage(event.data as string)) as { event?: string; data?: unknown };
+      } else {
+        data = JSON.parse(event.data as string) as { event?: string; data?: unknown };
+      }
       if (data.event) {
         triggerEvent(data.event, data.data);
       }
@@ -429,8 +436,12 @@ export const ircSendRawMessage = (data: string, queue?: boolean): void => {
 const sendMessage = async (message: unknown): Promise<void> => {
   const socket = getSocket();
   if (socket.readyState === WebSocket.OPEN) {
-    const encrypted = await encryptMessage({ event: 'sic-client-event', data: message });
-    socket.send(encrypted);
+    const payload = { event: 'sic-client-event', data: message };
+    if (isEncryptionAvailable()) {
+      socket.send(await encryptMessage(payload));
+    } else {
+      socket.send(JSON.stringify(payload));
+    }
   } else {
     console.warn('WebSocket is not connected. Message not sent:', message);
   }
@@ -451,7 +462,11 @@ setInterval(async function networkSendQueueMessages() {
   }
   const socket = getSocket();
   if (socket.readyState === WebSocket.OPEN) {
-    const encrypted = await encryptMessage({ event: 'sic-client-event', data: message });
-    socket.send(encrypted);
+    const payload = { event: 'sic-client-event', data: message };
+    if (isEncryptionAvailable()) {
+      socket.send(await encryptMessage(payload));
+    } else {
+      socket.send(JSON.stringify(payload));
+    }
   }
 }, 300);

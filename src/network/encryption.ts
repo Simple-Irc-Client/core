@@ -1,6 +1,13 @@
 let encryptionKey: CryptoKey | null = null;
 
 /**
+ * Check if encryption is available (key has been initialized)
+ */
+export function isEncryptionAvailable(): boolean {
+  return encryptionKey !== null;
+}
+
+/**
  * Convert base64 to Uint8Array (browser-compatible)
  */
 function base64ToBytes(base64: string): Uint8Array {

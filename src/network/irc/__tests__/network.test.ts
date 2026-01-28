@@ -14,6 +14,7 @@ vi.mock('@/network/encryption', () => ({
   initEncryption: vi.fn().mockResolvedValue(undefined),
   encryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.stringify(data))),
   decryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.parse(data))),
+  isEncryptionAvailable: vi.fn().mockReturnValue(false),
 }));
 
 // Mock channels store
