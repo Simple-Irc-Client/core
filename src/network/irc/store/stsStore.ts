@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import type { STSPolicy } from '../sts';
 
 interface STSStore {
@@ -21,67 +21,63 @@ interface STSStore {
   clearAllPolicies: () => void;
 }
 
+// STS policies are now session-only (not persisted to localStorage)
+// This prevents connection issues on startup when saved STS policies
+// may be stale or the server configuration has changed
 export const useSTSStore = create<STSStore>()(
   devtools(
-    persist(
-      (set, get) => ({
-        policies: {},
+    (set, get) => ({
+      policies: {},
 
-        setPolicy: (host: string, policy: STSPolicy) =>
-          set(
-            (state) => ({
-              policies: { ...state.policies, [host.toLowerCase()]: policy },
-            }),
-            false,
-            'setPolicy'
-          ),
+      setPolicy: (host: string, policy: STSPolicy) =>
+        set(
+          (state) => ({
+            policies: { ...state.policies, [host.toLowerCase()]: policy },
+          }),
+          false,
+          'setPolicy'
+        ),
 
-        getPolicy: (host: string) => get().policies[host.toLowerCase()],
+      getPolicy: (host: string) => get().policies[host.toLowerCase()],
 
-        removePolicy: (host: string) =>
-          set(
-            (state) => {
-              const key = host.toLowerCase();
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const { [key]: _removed, ...newPolicies } = state.policies;
-              return { policies: newPolicies };
-            },
-            false,
-            'removePolicy'
-          ),
+      removePolicy: (host: string) =>
+        set(
+          (state) => {
+            const key = host.toLowerCase();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [key]: _removed, ...newPolicies } = state.policies;
+            return { policies: newPolicies };
+          },
+          false,
+          'removePolicy'
+        ),
 
-        removeExpiredPolicies: () =>
-          set(
-            (state) => {
-              const now = Date.now();
-              const validPolicies: Record<string, STSPolicy> = {};
-              for (const [host, policy] of Object.entries(state.policies)) {
-                // expiresAt=0 means indefinite (never expires)
-                if (policy.expiresAt === 0 || policy.expiresAt > now) {
-                  validPolicies[host] = policy;
-                }
+      removeExpiredPolicies: () =>
+        set(
+          (state) => {
+            const now = Date.now();
+            const validPolicies: Record<string, STSPolicy> = {};
+            for (const [host, policy] of Object.entries(state.policies)) {
+              // expiresAt=0 means indefinite (never expires)
+              if (policy.expiresAt === 0 || policy.expiresAt > now) {
+                validPolicies[host] = policy;
               }
-              return { policies: validPolicies };
-            },
-            false,
-            'removeExpiredPolicies'
-          ),
+            }
+            return { policies: validPolicies };
+          },
+          false,
+          'removeExpiredPolicies'
+        ),
 
-        hasValidPolicy: (host: string) => {
-          const policy = get().policies[host.toLowerCase()];
-          if (!policy) return false;
-          // expiresAt=0 means indefinite (always valid)
-          return policy.expiresAt === 0 || policy.expiresAt > Date.now();
-        },
+      hasValidPolicy: (host: string) => {
+        const policy = get().policies[host.toLowerCase()];
+        if (!policy) return false;
+        // expiresAt=0 means indefinite (always valid)
+        return policy.expiresAt === 0 || policy.expiresAt > Date.now();
+      },
 
-        clearAllPolicies: () => set({ policies: {} }, false, 'clearAllPolicies'),
-      }),
-      {
-        name: 'sic-sts-policies',
-        storage: createJSONStorage(() => localStorage),
-        version: 1,
-      }
-    ),
+      clearAllPolicies: () => set({ policies: {} }, false, 'clearAllPolicies'),
+    }),
     { name: 'STSStore' }
   )
 );
