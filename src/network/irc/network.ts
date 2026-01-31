@@ -65,11 +65,15 @@ export const initWebSocket = (): WebSocket => {
 
   sicSocket.onopen = async () => {
     isConnecting = false;
-    console.log('WebSocket connected');
+    if (!process.env?.CI) {
+      console.log('WebSocket connected');
+    }
 
     if (encryptionKey) {
       await initEncryption(encryptionKey);
-      console.log('Encryption enabled');
+      if (!process.env?.CI) {
+        console.log('Encryption enabled');
+      }
     }
 
     resetInactivityTimeout();
@@ -89,20 +93,26 @@ export const initWebSocket = (): WebSocket => {
         triggerEvent(data.event, data.data);
       }
     } catch (err) {
-      console.error('Failed to parse WebSocket message:', err);
+      if (!process.env?.CI) {
+        console.error('Failed to parse WebSocket message:', err);
+      }
     }
   };
 
   sicSocket.onerror = (error) => {
     isConnecting = false;
-    console.error('WebSocket error:', error);
+    if (!process.env?.CI) {
+      console.error('WebSocket error:', error);
+    }
     triggerEvent('error', error);
   };
 
   sicSocket.onclose = () => {
     isConnecting = false;
     clearInactivityTimeout();
-    console.log('WebSocket disconnected');
+    if (!process.env?.CI) {
+      console.log('WebSocket disconnected');
+    }
     // Trigger as sic-irc-event so the kernel receives it and handles STS reconnection
     triggerEvent('sic-irc-event', { type: 'close' });
     sicSocket = null;
@@ -291,7 +301,9 @@ export const ircAuthenticate = (account: string, password: string): void => {
   if (isCapabilityEnabled('sasl')) {
     // SASL should have already authenticated during CAP negotiation
     // If we get here, something went wrong - try NickServ
-    console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
+    if (!process.env?.CI) {
+      console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
+    }
     ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
   } else {
     // No SASL, use NickServ
@@ -447,7 +459,9 @@ const sendMessage = async (message: unknown): Promise<void> => {
       socket.send(JSON.stringify(payload));
     }
   } else {
-    console.warn('WebSocket is not connected. Message not sent:', message);
+    if (!process.env?.CI) {
+      console.warn('WebSocket is not connected. Message not sent:', message);
+    }
   }
 };
 

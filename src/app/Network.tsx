@@ -38,7 +38,9 @@ export const Network = () => {
             eventLine: data?.line,
           },
         });
-        console.warn(err);
+        if (!process.env?.CI) {
+          console.warn(err);
+        }
       }
     };
 
@@ -50,7 +52,9 @@ export const Network = () => {
       initWebSocket();
     } catch (err) {
       // Connection already in progress, that's fine
-      console.debug('WebSocket initialization:', err);
+      if (!process.env?.CI) {
+        console.debug('WebSocket initialization:', err);
+      }
     }
 
     return () => {
