@@ -1,4 +1,4 @@
-import { websocketHost, websocketPort, encryptionKey } from '@/config/config';
+import { websocketHost, websocketPort, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode } from '@/config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
@@ -61,13 +61,27 @@ export const initWebSocket = (): WebSocket => {
   }
 
   isConnecting = true;
-  sicSocket = new WebSocket(`ws://${websocketHost}:${websocketPort}/SimpleIrcClient`);
+
+  // Determine WebSocket URL based on gateway mode
+  let wsUrl: string;
+  if (isGatewayMode()) {
+    // Gateway mode: connect to public gateway without encryption
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    wsUrl = `${protocol}//${gatewayHost}:${gatewayPort}${gatewayPath}`;
+    console.log('Gateway mode: connecting to', wsUrl);
+  } else {
+    // Local mode: connect to local network backend with encryption
+    wsUrl = `ws://${websocketHost}:${websocketPort}/SimpleIrcClient`;
+  }
+
+  sicSocket = new WebSocket(wsUrl);
 
   sicSocket.onopen = async () => {
     isConnecting = false;
     console.log('WebSocket connected');
 
-    if (encryptionKey) {
+    // Only enable encryption in non-gateway mode
+    if (!isGatewayMode() && encryptionKey) {
       await initEncryption(encryptionKey);
       console.log('Encryption enabled');
     }

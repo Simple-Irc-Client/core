@@ -8,6 +8,7 @@
     "start": "vite",
     "dev": "vite serve",
     "build": "tsc && vite build",
+    "build:gateway": "tsc && vite build --mode gateway",
     "preview": "vite preview",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
