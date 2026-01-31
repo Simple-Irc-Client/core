@@ -382,7 +382,9 @@ export class Kernel {
         tags: this.tags,
       },
     });
-    console.error(error.message, { line: this.eventLine });
+    if (!process.env?.CI) {
+      console.error(error.message, { line: this.eventLine });
+    }
   };
 
   handle(): void {
@@ -1075,7 +1077,9 @@ export class Kernel {
         break;
 
       default:
-        console.log(`unknown irc event: ${JSON.stringify(event)}`);
+        if (!process.env?.CI) {
+          console.log(`unknown irc event: ${JSON.stringify(event)}`);
+        }
         break;
     }
   };
@@ -1375,7 +1379,9 @@ export class Kernel {
         const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
         const nakCaps = cleanString.split(' ').filter((c) => c.length > 0);
 
-        console.warn('CAP NAK - capabilities rejected:', nakCaps);
+        if (!process.env?.CI) {
+          console.warn('CAP NAK - capabilities rejected:', nakCaps);
+        }
 
         // End negotiation even if some caps were rejected
         this.endCapNegotiation();
@@ -1919,7 +1925,9 @@ export class Kernel {
           }
           default:
             message = i18next.t('kernel.mode.channel.unknown', { channel, setBy: nick, mode });
-            console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            if (!process.env?.CI) {
+              console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            }
             break;
         }
 
@@ -1988,7 +1996,9 @@ export class Kernel {
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
-            console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            if (!process.env?.CI) {
+              console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            }
             break;
         }
 
