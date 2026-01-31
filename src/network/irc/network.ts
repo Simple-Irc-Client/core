@@ -213,9 +213,10 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   }
 
   const host = singleServer.host;
+  const useTLS = singleServer.tls ?? false;
 
-  // Check for existing STS policy
-  if (hasValidSTSPolicy(host)) {
+  // Check for existing STS policy (only if not already using TLS)
+  if (!useTLS && hasValidSTSPolicy(host)) {
     const policy = getSTSPolicy(host);
     if (policy) {
       // Connect with TLS using stored policy
@@ -225,8 +226,8 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     }
   }
 
-  // Track non-TLS connection
-  setCurrentConnectionInfo(host, false);
+  // Track connection TLS status
+  setCurrentConnectionInfo(host, useTLS);
 
   const command = {
     type: 'connect',
@@ -236,7 +237,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
         host: singleServer.host,
         port: singleServer.port,
         encoding: currentServer?.encoding,
-        tls: false,
+        tls: useTLS,
       },
     },
   };

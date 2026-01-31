@@ -38,7 +38,7 @@ describe('helper tests', () => {
           network: 'test',
           servers: ['irc.example.com'],
         },
-        { host: 'irc.example.com', port: 6667 },
+        { host: 'irc.example.com', port: 6667, tls: false },
       ],
       [
         {
@@ -48,7 +48,7 @@ describe('helper tests', () => {
           network: 'test',
           servers: ['irc1.example.com', 'irc1.example.com'],
         },
-        { host: 'irc1.example.com', port: 6667 },
+        { host: 'irc1.example.com', port: 6667, tls: false },
       ],
       [
         {
@@ -58,7 +58,7 @@ describe('helper tests', () => {
           network: 'test',
           servers: ['irc1.example.com:1234', 'irc1.example.com:567'],
         },
-        { host: 'irc1.example.com', port: 1234 },
+        { host: 'irc1.example.com', port: 1234, tls: false },
       ],
       [
         {
@@ -68,7 +68,41 @@ describe('helper tests', () => {
           network: 'test',
           servers: ['irc1.example.com:', 'irc1.example.com:'],
         },
-        { host: 'irc1.example.com', port: 6667 },
+        { host: 'irc1.example.com', port: 6667, tls: false },
+      ],
+      // TLS with + prefix
+      [
+        {
+          default: 0,
+          encoding: 'utf8',
+          flags: 19,
+          network: 'test',
+          servers: ['+irc.example.com'],
+        },
+        { host: 'irc.example.com', port: 6697, tls: true },
+      ],
+      // TLS with + prefix and custom port
+      [
+        {
+          default: 0,
+          encoding: 'utf8',
+          flags: 19,
+          network: 'test',
+          servers: ['+irc.example.com:7000'],
+        },
+        { host: 'irc.example.com', port: 7000, tls: true },
+      ],
+      // TLS from server config
+      [
+        {
+          default: 0,
+          encoding: 'utf8',
+          flags: 19,
+          network: 'test',
+          servers: ['irc.example.com'],
+          tls: true,
+        },
+        { host: 'irc.example.com', port: 6697, tls: true },
       ],
     ];
     for (const test of tests) {

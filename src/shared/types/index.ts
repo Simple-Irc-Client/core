@@ -3,6 +3,7 @@ import { type MessageColor } from '@/config/theme';
 export interface SingleServer {
   host?: string;
   port: number;
+  tls?: boolean;
 }
 
 export interface ParsedIrcRawMessage {

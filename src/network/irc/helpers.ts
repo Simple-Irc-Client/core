@@ -3,7 +3,12 @@ import { type Server } from './servers';
 import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '@shared/types';
 
 /**
- *
+ * Parse server string into SingleServer object
+ * Supports formats:
+ * - "host" (uses default port 6667, no TLS)
+ * - "host:port" (no TLS)
+ * - "+host" (TLS on default TLS port 6697)
+ * - "+host:port" (TLS on specified port)
  * @param currentServer
  * @returns
  */
@@ -18,14 +23,22 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
     return undefined;
   }
 
-  let serverHost: string | undefined = firstServer;
-  let serverPort: string | undefined = `${defaultIRCPort}`;
-
-  if (firstServer.includes(':')) {
-    [serverHost, serverPort] = firstServer.split(':');
+  // Check for TLS prefix (+)
+  let tls = currentServer.tls ?? false;
+  let serverString = firstServer;
+  if (serverString.startsWith('+')) {
+    tls = true;
+    serverString = serverString.substring(1);
   }
 
-  return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`) };
+  let serverHost: string | undefined = serverString;
+  let serverPort: string | undefined = tls ? '6697' : `${defaultIRCPort}`;
+
+  if (serverString.includes(':')) {
+    [serverHost, serverPort] = serverString.split(':');
+  }
+
+  return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`), tls };
 };
 
 /**
