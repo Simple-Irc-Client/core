@@ -16,7 +16,6 @@ vi.mock('@features/settings/store/settings', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   isConnected: vi.fn(),
-  isWebSocketConnecting: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
 }));
@@ -33,10 +32,9 @@ describe('WizardInit', () => {
     vi.clearAllMocks();
   });
 
-  describe('When WebSocket is connecting', () => {
+  describe('When loading (default state)', () => {
     beforeEach(() => {
       (network.isConnected as Mock).mockReturnValue(false);
-      (network.isWebSocketConnecting as Mock).mockReturnValue(true);
     });
 
     it('should render the loading message', () => {
@@ -89,26 +87,40 @@ describe('WizardInit', () => {
     });
   });
 
-  describe('When WebSocket is not connected and not connecting', () => {
+  describe('When error event fires (connection failed)', () => {
     beforeEach(() => {
       (network.isConnected as Mock).mockReturnValue(false);
-      (network.isWebSocketConnecting as Mock).mockReturnValue(false);
     });
 
-    it('should render the error title', () => {
+    const renderAndTriggerError = () => {
       render(<WizardInit />);
+
+      // Get the callback that was registered with on('error', ...)
+      const onCall = (network.on as Mock).mock.calls.find(
+        (call) => call[0] === 'error'
+      );
+      const errorCallback = onCall?.[1];
+
+      // Simulate the error event
+      act(() => {
+        errorCallback?.();
+      });
+    };
+
+    it('should render the error title after error', () => {
+      renderAndTriggerError();
 
       expect(screen.getByText('wizard.init.title')).toBeInTheDocument();
     });
 
-    it('should render the error message', () => {
-      render(<WizardInit />);
+    it('should render the error message after error', () => {
+      renderAndTriggerError();
 
       expect(screen.getByText('wizard.init.message')).toBeInTheDocument();
     });
 
-    it('should render the retry button', () => {
-      render(<WizardInit />);
+    it('should render the retry button after error', () => {
+      renderAndTriggerError();
 
       expect(screen.getByText('wizard.init.button.retry')).toBeInTheDocument();
     });
@@ -141,7 +153,7 @@ describe('WizardInit', () => {
     });
 
     it('should reload the page when retry button is clicked', () => {
-      render(<WizardInit />);
+      renderAndTriggerError();
 
       const retryButton = screen.getByText('wizard.init.button.retry');
       fireEvent.click(retryButton);
@@ -168,7 +180,6 @@ describe('WizardInit', () => {
   describe('When WebSocket is connected', () => {
     beforeEach(() => {
       (network.isConnected as Mock).mockReturnValue(true);
-      (network.isWebSocketConnecting as Mock).mockReturnValue(false);
     });
 
     it('should render nothing', () => {
@@ -205,28 +216,38 @@ describe('WizardInit', () => {
   describe('Accessibility', () => {
     beforeEach(() => {
       (network.isConnected as Mock).mockReturnValue(false);
-      (network.isWebSocketConnecting as Mock).mockReturnValue(false);
     });
 
-    it('should have centered content', () => {
+    it('should have centered content in error state', () => {
       render(<WizardInit />);
+
+      // Trigger error to show error UI
+      const onCall = (network.on as Mock).mock.calls.find(
+        (call) => call[0] === 'error'
+      );
+      const errorCallback = onCall?.[1];
+      act(() => {
+        errorCallback?.();
+      });
 
       const container = screen.getByText('wizard.init.title').parentElement;
       expect(container).toHaveClass('flex', 'flex-col', 'items-center');
     });
 
-    it('should have proper heading level', () => {
+    it('should have proper heading level in error state', () => {
       render(<WizardInit />);
+
+      // Trigger error to show error UI
+      const onCall = (network.on as Mock).mock.calls.find(
+        (call) => call[0] === 'error'
+      );
+      const errorCallback = onCall?.[1];
+      act(() => {
+        errorCallback?.();
+      });
 
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toHaveTextContent('wizard.init.title');
-    });
-  });
-
-  describe('Loading state accessibility', () => {
-    beforeEach(() => {
-      (network.isConnected as Mock).mockReturnValue(false);
-      (network.isWebSocketConnecting as Mock).mockReturnValue(true);
     });
 
     it('should have centered content in loading state', () => {

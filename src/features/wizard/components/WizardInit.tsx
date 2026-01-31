@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@shared/components/ui/button';
 import { Progress } from '@shared/components/ui/progress';
 import { setWizardStep } from '@features/settings/store/settings';
-import { isConnected as isWebSocketConnected, isWebSocketConnecting, on, off } from '@/network/irc/network';
+import { isConnected as isWebSocketConnected, on, off } from '@/network/irc/network';
 
 const WizardInit = () => {
   const { t } = useTranslation();
-  const [isLoading, setIsLoading] = useState(() => isWebSocketConnecting());
+  // Default to loading state - only show error after explicit error event
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if already connected
