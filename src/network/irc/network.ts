@@ -179,7 +179,14 @@ export const ircDisconnect = (): void => {
   clearSaslCredentials();
   resetSTSSessionState();
 
-  // Close the WebSocket connection if it exists
+  // In gateway mode, send disconnect command but keep WebSocket open
+  if (isGatewayMode()) {
+    ircSendDisconnectCommand();
+    isConnecting = false;
+    return;
+  }
+
+  // In local mode, close the WebSocket connection
   if (sicSocket) {
     sicSocket.close();
     sicSocket = null;
