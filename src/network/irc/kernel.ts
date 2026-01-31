@@ -407,7 +407,9 @@ export class Kernel {
         }
         break;
       default:
-        console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`);
+        if (!process.env?.CI) {
+          console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`);
+        }
     }
   }
 
