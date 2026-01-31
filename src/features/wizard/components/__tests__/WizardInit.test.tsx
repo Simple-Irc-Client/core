@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import WizardInit from '../WizardInit';
 import * as settingsStore from '@features/settings/store/settings';
@@ -30,23 +30,22 @@ Object.defineProperty(window, 'location', {
 describe('WizardInit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
-  describe('When loading (default state)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('When waiting for connection (default state)', () => {
     beforeEach(() => {
       (network.isConnected as Mock).mockReturnValue(false);
     });
 
-    it('should render the loading message', () => {
-      render(<WizardInit />);
+    it('should render nothing while waiting', () => {
+      const { container } = render(<WizardInit />);
 
-      expect(screen.getByText('wizard.init.loading')).toBeInTheDocument();
-    });
-
-    it('should render a progress bar', () => {
-      render(<WizardInit />);
-
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(container).toBeEmptyDOMElement();
     });
 
     it('should not render the error title', () => {
@@ -61,10 +60,22 @@ describe('WizardInit', () => {
       expect(screen.queryByText('wizard.init.button.retry')).not.toBeInTheDocument();
     });
 
+    it('should register connect event listener', () => {
+      render(<WizardInit />);
+
+      expect(network.on).toHaveBeenCalledWith('connect', expect.any(Function));
+    });
+
     it('should register error event listener', () => {
       render(<WizardInit />);
 
       expect(network.on).toHaveBeenCalledWith('error', expect.any(Function));
+    });
+
+    it('should not call setWizardStep on mount', () => {
+      render(<WizardInit />);
+
+      expect(settingsStore.setWizardStep).not.toHaveBeenCalled();
     });
 
     it('should show error when error event fires', () => {
@@ -84,6 +95,30 @@ describe('WizardInit', () => {
       // Now should show error UI
       expect(screen.getByText('wizard.init.title')).toBeInTheDocument();
       expect(screen.getByText('wizard.init.button.retry')).toBeInTheDocument();
+    });
+
+    it('should navigate to nick step when connect event fires', () => {
+      render(<WizardInit />);
+
+      // Get the callback that was registered with on('connect', ...)
+      const onCall = (network.on as Mock).mock.calls.find(
+        (call) => call[0] === 'connect'
+      );
+      const connectCallback = onCall?.[1];
+
+      // Simulate the connect event
+      connectCallback?.();
+
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('nick');
+    });
+
+    it('should unregister event listeners on unmount', () => {
+      const { unmount } = render(<WizardInit />);
+
+      unmount();
+
+      expect(network.off).toHaveBeenCalledWith('connect', expect.any(Function));
+      expect(network.off).toHaveBeenCalledWith('error', expect.any(Function));
     });
   });
 
@@ -125,33 +160,6 @@ describe('WizardInit', () => {
       expect(screen.getByText('wizard.init.button.retry')).toBeInTheDocument();
     });
 
-    it('should not call setWizardStep on mount', () => {
-      render(<WizardInit />);
-
-      expect(settingsStore.setWizardStep).not.toHaveBeenCalled();
-    });
-
-    it('should register connect event listener on mount', () => {
-      render(<WizardInit />);
-
-      expect(network.on).toHaveBeenCalledWith('connect', expect.any(Function));
-    });
-
-    it('should register error event listener on mount', () => {
-      render(<WizardInit />);
-
-      expect(network.on).toHaveBeenCalledWith('error', expect.any(Function));
-    });
-
-    it('should unregister event listeners on unmount', () => {
-      const { unmount } = render(<WizardInit />);
-
-      unmount();
-
-      expect(network.off).toHaveBeenCalledWith('connect', expect.any(Function));
-      expect(network.off).toHaveBeenCalledWith('error', expect.any(Function));
-    });
-
     it('should reload the page when retry button is clicked', () => {
       renderAndTriggerError();
 
@@ -161,19 +169,104 @@ describe('WizardInit', () => {
       expect(mockReload).toHaveBeenCalled();
     });
 
-    it('should navigate to nick step when connect event fires', () => {
+    it('should have centered content', () => {
+      renderAndTriggerError();
+
+      const container = screen.getByText('wizard.init.title').parentElement;
+      expect(container).toHaveClass('flex', 'flex-col', 'items-center');
+    });
+
+    it('should have proper heading level', () => {
+      renderAndTriggerError();
+
+      const heading = screen.getByRole('heading', { level: 1 });
+      expect(heading).toHaveTextContent('wizard.init.title');
+    });
+  });
+
+  describe('Delayed loading message', () => {
+    beforeEach(() => {
+      (network.isConnected as Mock).mockReturnValue(false);
+    });
+
+    it('should not show loading message before 3 seconds', () => {
       render(<WizardInit />);
 
-      // Get the callback that was registered with on('connect', ...)
+      // Advance time by 2.9 seconds
+      act(() => {
+        vi.advanceTimersByTime(2900);
+      });
+
+      expect(screen.queryByText('wizard.init.loading')).not.toBeInTheDocument();
+    });
+
+    it('should show loading message after 3 seconds', () => {
+      render(<WizardInit />);
+
+      // Advance time by 3 seconds
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      expect(screen.getByText('wizard.init.loading')).toBeInTheDocument();
+    });
+
+    it('should not show loading message if connect event fires before 3 seconds', () => {
+      render(<WizardInit />);
+
+      // Advance time by 1 second
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      // Simulate connect event
       const onCall = (network.on as Mock).mock.calls.find(
         (call) => call[0] === 'connect'
       );
       const connectCallback = onCall?.[1];
+      act(() => {
+        connectCallback?.();
+      });
 
-      // Simulate the connect event
-      connectCallback?.();
+      // Advance past 3 seconds
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
 
-      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('nick');
+      expect(screen.queryByText('wizard.init.loading')).not.toBeInTheDocument();
+    });
+
+    it('should not show loading message if error event fires before 3 seconds', () => {
+      render(<WizardInit />);
+
+      // Advance time by 1 second
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      // Simulate error event
+      const onCall = (network.on as Mock).mock.calls.find(
+        (call) => call[0] === 'error'
+      );
+      const errorCallback = onCall?.[1];
+      act(() => {
+        errorCallback?.();
+      });
+
+      // Should show error, not loading
+      expect(screen.queryByText('wizard.init.loading')).not.toBeInTheDocument();
+      expect(screen.getByText('wizard.init.title')).toBeInTheDocument();
+    });
+
+    it('should clear loading timeout on unmount', () => {
+      const { unmount } = render(<WizardInit />);
+
+      unmount();
+
+      // Advance past 3 seconds - should not cause errors
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
     });
   });
 
@@ -204,57 +297,6 @@ describe('WizardInit', () => {
       render(<WizardInit />);
 
       expect(screen.queryByText('wizard.init.button.retry')).not.toBeInTheDocument();
-    });
-
-    it('should not render the loading message', () => {
-      render(<WizardInit />);
-
-      expect(screen.queryByText('wizard.init.loading')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Accessibility', () => {
-    beforeEach(() => {
-      (network.isConnected as Mock).mockReturnValue(false);
-    });
-
-    it('should have centered content in error state', () => {
-      render(<WizardInit />);
-
-      // Trigger error to show error UI
-      const onCall = (network.on as Mock).mock.calls.find(
-        (call) => call[0] === 'error'
-      );
-      const errorCallback = onCall?.[1];
-      act(() => {
-        errorCallback?.();
-      });
-
-      const container = screen.getByText('wizard.init.title').parentElement;
-      expect(container).toHaveClass('flex', 'flex-col', 'items-center');
-    });
-
-    it('should have proper heading level in error state', () => {
-      render(<WizardInit />);
-
-      // Trigger error to show error UI
-      const onCall = (network.on as Mock).mock.calls.find(
-        (call) => call[0] === 'error'
-      );
-      const errorCallback = onCall?.[1];
-      act(() => {
-        errorCallback?.();
-      });
-
-      const heading = screen.getByRole('heading', { level: 1 });
-      expect(heading).toHaveTextContent('wizard.init.title');
-    });
-
-    it('should have centered content in loading state', () => {
-      render(<WizardInit />);
-
-      const container = screen.getByText('wizard.init.loading').parentElement;
-      expect(container).toHaveClass('flex', 'flex-col', 'items-center');
     });
   });
 });
