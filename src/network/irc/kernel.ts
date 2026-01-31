@@ -436,13 +436,11 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
-    // Check if this is part of an STS upgrade - if so, show connecting state
+    // Check if this is part of an STS upgrade - if so, trigger reconnection with TLS
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
-      // During STS upgrade, set isConnecting true to show loading UI
-      // Pending upgrade will be cleared in handleConnected on successful TLS connection
-      setIsConnecting(true);
-      setIsConnected(false);
+      // Delegate to handleSocketClose which handles STS reconnection
+      this.handleSocketClose();
       return;
     }
 

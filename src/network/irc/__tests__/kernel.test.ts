@@ -56,22 +56,31 @@ describe('kernel tests', () => {
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
-  it('test close during STS upgrade should not show disconnected', () => {
+  it('test close during STS upgrade should trigger STS reconnection', () => {
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
       port: 6697,
       reason: 'sts_upgrade',
     }));
+    const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
+    vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+      default: 0,
+      encoding: 'utf8',
+      network: 'test',
+      servers: ['irc.test.com'],
+    }));
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
 
     new Kernel({ type: 'close' }).handle();
 
-    // Should set connecting state, not disconnected
+    // Should delegate to handleSocketClose for STS reconnection
     expect(mockGetPendingSTSUpgrade).toHaveBeenCalled();
+    expect(mockIncrementSTSRetries).toHaveBeenCalledTimes(1);
     expect(mockSetIsConnecting).toBeCalledWith(true);
-    expect(mockSetIsConnected).toBeCalledWith(false);
     // Should NOT show disconnected message
     expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
   });
