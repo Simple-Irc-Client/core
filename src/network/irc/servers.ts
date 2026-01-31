@@ -7,6 +7,7 @@ export interface Server {
   loginType?: number;
   network: string;
   servers: string[];
+  tls?: boolean;
 }
 
 export const serverIcons: Record<string, string> = {
@@ -467,7 +468,8 @@ export const servers: Server[] = [
     encoding: 'utf8',
     flags: 95,
     network: 'PIRC.PL',
-    servers: ['irc.pirc.pl'],
+    servers: ['+irc.pirc.pl'],
+    tls: true,
   },
   {
     default: 0,
