@@ -7,6 +7,10 @@ vi.mock('@/config/config', () => ({
   websocketPort: 8080,
   defaultIRCPort: 6667,
   encryptionKey: 'test-key',
+  gatewayHost: '',
+  gatewayPort: 8667,
+  gatewayPath: '/irc',
+  isGatewayMode: () => false,
 }));
 
 // Mock encryption module to pass through unencrypted for testing
