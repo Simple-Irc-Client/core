@@ -393,6 +393,8 @@ export class Kernel {
       case 'connected':
         this.handleConnected();
         break;
+      case 'socket connected':
+        break;
       case 'close':
         this.handleDisconnected();
         break;
