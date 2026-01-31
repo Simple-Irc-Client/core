@@ -1,5 +1,6 @@
 import { useSettingsStore } from '@features/settings/store/settings';
 import WizardChannelList from '../components/WizardChannelList';
+import WizardInit from '../components/WizardInit';
 import WizardNick from '../components/WizardNick';
 import WizardPassword from '../components/WizardPassword';
 import WizardServer from '../components/WizardServer';
@@ -11,6 +12,11 @@ const Wizard = () => {
   return (
     <div className={`mx-auto ${wizardStep === 'channels' ? 'max-w-screen-md' : 'max-w-screen-sm'}`}>
       <div className="h-screen flex flex-col items-center pb-[15%]">
+        {wizardStep === 'init' && (
+          <div className="my-auto">
+            <WizardInit />
+          </div>
+        )}
         {wizardStep === 'nick' && (
           <div className="my-auto">
             <WizardNick />

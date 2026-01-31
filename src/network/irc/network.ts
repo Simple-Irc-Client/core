@@ -148,6 +148,10 @@ export const isConnected = (): boolean => {
   return sicSocket !== null && sicSocket.readyState === WebSocket.OPEN;
 };
 
+export const isWebSocketConnecting = (): boolean => {
+  return isConnecting || (sicSocket !== null && sicSocket.readyState === WebSocket.CONNECTING);
+};
+
 export const ircDisconnect = (): void => {
   // Clear the message queue
   queueIrcMessages.length = 0;

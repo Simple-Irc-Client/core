@@ -1,4 +1,8 @@
 {
+    "wizard.init.title": "Something went wrong",
+    "wizard.init.message": "Unable to connect to the server. Please make sure the backend is running.",
+    "wizard.init.button.retry": "Retry",
+    "wizard.init.loading": "Starting application...",
     "wizard.nick.title": "Hello",
     "wizard.nick.nick": "Enter your nickname",
     "wizard.nick.button.next": "Next",
@@ -21,6 +25,7 @@
     "wizard.loading.passwordIsNotRequired": "Password is not required",
     "wizard.loading.error": "Failed to connect to the server - {{message}}",
     "wizard.loading.timeout": "Connection is taking longer than expected",
+    "wizard.loading.websocketError": "Something went wrong",
     "wizard.loading.button.goBack": "Go Back",
     "wizard.loading.button.reconnect": "Reconnect",
     "wizard.password.title": "The selected nickname is password protected",

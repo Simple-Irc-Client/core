@@ -1,4 +1,8 @@
 {
+    "wizard.init.title": "Coś poszło nie tak",
+    "wizard.init.message": "Nie można połączyć się z serwerem. Upewnij się, że backend jest uruchomiony.",
+    "wizard.init.button.retry": "Spróbuj ponownie",
+    "wizard.init.loading": "Uruchamianie aplikacji...",
     "wizard.nick.title": "Witaj",
     "wizard.nick.nick": "Podaj swój pseudonim",
     "wizard.nick.button.next": "Dalej",
@@ -21,6 +25,7 @@
     "wizard.loading.passwordIsNotRequired": "Hasło nie jest wymagane",
     "wizard.loading.error": "Nie udało się połączyć z serwerem - {{message}}",
     "wizard.loading.timeout": "Połączenie trwa dłużej niż oczekiwano",
+    "wizard.loading.websocketError": "Coś poszło nie tak",
     "wizard.loading.button.goBack": "Wróć",
     "wizard.loading.button.reconnect": "Połącz ponownie",
     "wizard.password.title": "Wybrany pseudonim jest chroniony hasłem",
