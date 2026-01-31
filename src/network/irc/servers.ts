@@ -468,8 +468,7 @@ export const servers: Server[] = [
     encoding: 'utf8',
     flags: 95,
     network: 'PIRC.PL',
-    servers: ['+irc.pirc.pl'],
-    tls: true,
+    servers: ['irc.pirc.pl'],
   },
   {
     default: 0,
