@@ -14,6 +14,17 @@ vi.stubGlobal('console', {
   info: vi.fn(),
 });
 
+// Mock navigator.language for consistent i18n behavior in tests
+// Use Polish to match existing test expectations
+Object.defineProperty(navigator, 'language', {
+  value: 'pl',
+  configurable: true,
+});
+Object.defineProperty(navigator, 'languages', {
+  value: ['pl'],
+  configurable: true,
+});
+
 afterEach(() => {
   cleanup();
 });
