@@ -16,7 +16,7 @@
     "wizard.server.host": "Adres serwera",
     "wizard.server.port": "Port",
     "wizard.server.connectionType": "Typ połączenia",
-    "wizard.server.connectionType.backend": "Normalny",
+    "wizard.server.connectionType.backend": "Standardowy",
     "wizard.server.connectionType.websocket": "WebSocket",
     "wizard.server.button.next": "Dalej",
     "wizard.server.message.no.options": "Brak wyników",
