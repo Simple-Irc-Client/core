@@ -28,8 +28,8 @@ const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 // Current connection mode: 'backend' for proxy connection, 'websocket' for direct connection
 let currentConnectionMode: ConnectionType = 'backend';
 
-// Inactivity timeout - show disconnection message after 120 seconds of no activity
-const INACTIVITY_TIMEOUT_MS = 120 * 1000;
+// Inactivity timeout - show disconnection message after 180 seconds of no activity
+const INACTIVITY_TIMEOUT_MS = 180 * 1000;
 let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 const showDisconnectionMessage = (): void => {

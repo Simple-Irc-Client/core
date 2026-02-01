@@ -73,7 +73,7 @@
     "main.chat.messageReceived": "Wiadomość odebrana przez serwer",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
-    "kernel.inactivityTimeout": "Utracono połączenie - brak aktywności z serwera przez 2 minuty",
+    "kernel.inactivityTimeout": "Utracono połączenie - brak aktywności z serwera przez 3 minuty",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",
     "kernel.join": "{{nick}} dołączył do kanału",
     "kernel.part": "{{nick}} opuścił kanał{{reason}}",
