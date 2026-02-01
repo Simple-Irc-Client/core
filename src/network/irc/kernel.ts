@@ -2140,7 +2140,8 @@ export class Kernel {
 
   // PING :F549DB3
   private readonly onPing = (): void => {
-    //
+    const param = this.line[0] ?? '';
+    ircSendRawMessage(`PONG ${param}`);
   };
 
   // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686

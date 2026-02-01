@@ -1,5 +1,8 @@
+export type ConnectionType = 'backend' | 'websocket';
+
 export interface Server {
   command?: string;
+  connectionType?: ConnectionType;
   default: number;
   encoding: string;
   flags?: number;
@@ -8,6 +11,7 @@ export interface Server {
   network: string;
   servers: string[];
   tls?: boolean;
+  websocketUrl?: string;
 }
 
 export const serverIcons: Record<string, string> = {
@@ -200,6 +204,26 @@ export const servers: Server[] = [
     flags: 19,
     network: 'EnterTheGame',
     servers: ['irc.enterthegame.com'],
+  },
+  {
+    default: 0,
+    encoding: 'utf8',
+    flags: 23,
+    loginType: 6,
+    network: 'Ergo Chat',
+    servers: ['irc.ergo.chat'],
+    tls: true,
+  },
+  {
+    connectionType: 'websocket',
+    default: 0,
+    encoding: 'utf8',
+    flags: 23,
+    loginType: 6,
+    network: 'Ergo Chat Testnet',
+    servers: ['testnet.ergo.chat'],
+    tls: true,
+    websocketUrl: 'wss://testnet.ergo.chat/webirc',
   },
   {
     default: 0,

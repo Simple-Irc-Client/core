@@ -13,6 +13,23 @@ vi.mock('@/config/config', () => ({
   isGatewayMode: () => false,
 }));
 
+// Mock directWebSocket module
+const mockInitDirectWebSocket = vi.fn();
+const mockSendDirectRaw = vi.fn();
+const mockIsDirectConnected = vi.fn().mockReturnValue(false);
+const mockIsDirectConnecting = vi.fn().mockReturnValue(false);
+const mockDisconnectDirect = vi.fn();
+const mockSetDirectEventCallback = vi.fn();
+
+vi.mock('../directWebSocket', () => ({
+  initDirectWebSocket: (...args: unknown[]) => mockInitDirectWebSocket(...args),
+  sendDirectRaw: (...args: unknown[]) => mockSendDirectRaw(...args),
+  isDirectConnected: () => mockIsDirectConnected(),
+  isDirectConnecting: () => mockIsDirectConnecting(),
+  disconnectDirect: (...args: unknown[]) => mockDisconnectDirect(...args),
+  setDirectEventCallback: (...args: unknown[]) => mockSetDirectEventCallback(...args),
+}));
+
 // Mock encryption module to pass through unencrypted for testing
 vi.mock('@/network/encryption', () => ({
   initEncryption: vi.fn().mockResolvedValue(undefined),
@@ -99,6 +116,13 @@ describe('network', () => {
     vi.useFakeTimers();
     lastCreatedSocket = null;
     mockSetAddMessageToAllChannels.mockClear();
+    // Clear direct WebSocket mocks
+    mockInitDirectWebSocket.mockClear();
+    mockSendDirectRaw.mockClear();
+    mockIsDirectConnected.mockClear().mockReturnValue(false);
+    mockIsDirectConnecting.mockClear().mockReturnValue(false);
+    mockDisconnectDirect.mockClear();
+    mockSetDirectEventCallback.mockClear();
     network = await import('../network');
   });
 
@@ -197,6 +221,116 @@ describe('network', () => {
       socket.readyState = 1; // OPEN
       expect(network.isConnected()).toBe(true);
     });
+
+    it('should check direct WebSocket when in websocket mode', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      mockIsDirectConnected.mockReturnValue(true);
+
+      expect(network.isConnected()).toBe(true);
+      expect(mockIsDirectConnected).toHaveBeenCalled();
+    });
+
+    it('should return false from direct WebSocket when not connected', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      mockIsDirectConnected.mockReturnValue(false);
+
+      expect(network.isConnected()).toBe(false);
+    });
+  });
+
+  describe('isWebSocketConnecting', () => {
+    it('should check direct WebSocket when in websocket mode', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      mockIsDirectConnecting.mockReturnValue(true);
+
+      expect(network.isWebSocketConnecting()).toBe(true);
+      expect(mockIsDirectConnecting).toHaveBeenCalled();
+    });
+  });
+
+  describe('ircDisconnect', () => {
+    it('should call disconnectDirect when in websocket mode', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      mockDisconnectDirect.mockClear();
+
+      network.ircDisconnect();
+
+      expect(mockDisconnectDirect).toHaveBeenCalled();
+    });
+
+    it('should not close backend socket when in websocket mode', () => {
+      const socket = getSocket();
+
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      socket.close.mockClear();
+
+      network.ircDisconnect();
+
+      // Backend socket should not be closed
+      expect(socket.close).not.toHaveBeenCalled();
+    });
+
+    it('should close backend socket when in backend mode', () => {
+      const socket = getSocket();
+
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      };
+
+      network.ircConnect(server, 'testNick');
+
+      network.ircDisconnect();
+
+      expect(socket.close).toHaveBeenCalled();
+    });
   });
 
   describe('ircConnect', () => {
@@ -280,6 +414,43 @@ describe('network', () => {
     it('should throw error when server is undefined', () => {
       expect(() => network.ircConnect(undefined as unknown as Server, 'testNick')).toThrow(
         'Unable to connect to IRC network - server host is empty'
+      );
+    });
+
+    it('should route to direct WebSocket when connectionType is websocket', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+
+      expect(mockSetDirectEventCallback).toHaveBeenCalledWith(network.triggerEvent);
+      expect(mockInitDirectWebSocket).toHaveBeenCalledWith(server, 'testNick');
+    });
+
+    it('should not send backend command when using direct WebSocket', async () => {
+      const socket = getSocket();
+
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      await flushPromises();
+
+      // Backend socket should not receive a connect command
+      expect(socket.send).not.toHaveBeenCalledWith(
+        expect.stringContaining('"type":"connect"')
       );
     });
   });
@@ -549,6 +720,48 @@ describe('network', () => {
       );
 
       consoleSpy.mockRestore();
+    });
+
+    it('should route to direct WebSocket when in websocket mode', async () => {
+      // First connect with a websocket server to set the mode
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      mockSendDirectRaw.mockClear();
+
+      network.ircSendRawMessage('PRIVMSG #test :Hello');
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG #test :Hello');
+    });
+
+    it('should not send to backend when in websocket mode', async () => {
+      const socket = getSocket();
+
+      // Connect with a websocket server to set the mode
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      network.ircConnect(server, 'testNick');
+      socket.send.mockClear();
+
+      network.ircSendRawMessage('PRIVMSG #test :Hello');
+      await flushPromises();
+
+      // Backend socket should not receive the message
+      expect(socket.send).not.toHaveBeenCalled();
     });
   });
 
