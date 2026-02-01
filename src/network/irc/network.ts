@@ -1,5 +1,5 @@
 import { websocketHost, websocketPort, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode } from '@/config/config';
-import { type Server } from './servers';
+import { type Server, type ConnectionType } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
 import { setSaslCredentials, resetSaslState, clearSaslCredentials } from './sasl';
@@ -10,12 +10,23 @@ import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
 import { initEncryption, encryptMessage, decryptMessage, isEncryptionAvailable } from '@/network/encryption';
+import {
+  initDirectWebSocket,
+  sendDirectRaw,
+  isDirectConnected,
+  isDirectConnecting,
+  disconnectDirect,
+  setDirectEventCallback,
+} from './directWebSocket';
 
 // Native WebSocket connection
 let sicSocket: WebSocket | null = null;
 let isConnecting = false;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
+
+// Current connection mode: 'backend' for proxy connection, 'websocket' for direct connection
+let currentConnectionMode: ConnectionType = 'backend';
 
 // Inactivity timeout - show disconnection message after 120 seconds of no activity
 const INACTIVITY_TIMEOUT_MS = 120 * 1000;
@@ -127,7 +138,7 @@ export const initWebSocket = (): WebSocket => {
 
 // Event handler management
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const triggerEvent = (eventName: string, data: any) => {
+export const triggerEvent = (eventName: string, data: any) => {
   const handlers = eventHandlers[eventName] || [];
   handlers.forEach((handler) => handler(data));
 };
@@ -159,10 +170,16 @@ export const getSocket = () => {
 };
 
 export const isConnected = (): boolean => {
+  if (currentConnectionMode === 'websocket') {
+    return isDirectConnected();
+  }
   return sicSocket !== null && sicSocket.readyState === WebSocket.OPEN;
 };
 
 export const isWebSocketConnecting = (): boolean => {
+  if (currentConnectionMode === 'websocket') {
+    return isDirectConnecting();
+  }
   return isConnecting || (sicSocket !== null && sicSocket.readyState === WebSocket.CONNECTING);
 };
 
@@ -178,6 +195,13 @@ export const ircDisconnect = (): void => {
   resetSaslState();
   clearSaslCredentials();
   resetSTSSessionState();
+
+  // Handle direct WebSocket mode
+  if (currentConnectionMode === 'websocket') {
+    disconnectDirect();
+    currentConnectionMode = 'backend'; // Reset so WizardInit works correctly
+    return;
+  }
 
   // In gateway mode, send disconnect command but keep WebSocket open
   if (isGatewayMode()) {
@@ -221,6 +245,20 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
 
   const host = singleServer.host;
   const useTLS = singleServer.tls ?? false;
+
+  // Check if this is a direct WebSocket connection
+  if (currentServer.connectionType === 'websocket') {
+    currentConnectionMode = 'websocket';
+    // Set up the event callback so direct WebSocket can trigger events
+    setDirectEventCallback(triggerEvent);
+    // Track connection TLS status
+    setCurrentConnectionInfo(host, useTLS);
+    initDirectWebSocket(currentServer, nick);
+    return;
+  }
+
+  // Backend proxy connection
+  currentConnectionMode = 'backend';
 
   // Check for existing STS policy (only if not already using TLS)
   if (!useTLS && hasValidSTSPolicy(host)) {
@@ -445,6 +483,14 @@ export const ircSendRawMessage = (data: string, queue?: boolean): void => {
     return;
   }
 
+  // Direct WebSocket mode: send raw IRC command without JSON wrapping
+  if (currentConnectionMode === 'websocket') {
+    // For direct WebSocket, we don't support queuing (yet)
+    sendDirectRaw(data);
+    return;
+  }
+
+  // Backend proxy mode: wrap in JSON command
   const command = {
     type: 'raw',
     event: {

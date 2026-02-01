@@ -4,7 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Input } from '@shared/components/ui/input';
 import { useTranslation } from 'react-i18next';
-import { type Server, servers, serverIcons } from '@/network/irc/servers';
+import { type Server, type ConnectionType, servers, serverIcons } from '@/network/irc/servers';
 import { getCurrentNick, setWizardStep, setIsConnecting, setServer } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -28,6 +28,7 @@ const WizardServer = () => {
   const [isCustom, setIsCustom] = useState(false);
   const [customHost, setCustomHost] = useState('');
   const [customPort, setCustomPort] = useState('6667');
+  const [connectionType, setConnectionType] = useState<ConnectionType>('backend');
 
   const popularServers = servers.filter((s) => POPULAR_NETWORKS.includes(s.network));
   const otherServers = servers.filter((s) => !POPULAR_NETWORKS.includes(s.network));
@@ -43,10 +44,13 @@ const WizardServer = () => {
     if (isCustom && customHost) {
       const hostWithPort = customPort && customPort !== '6667' ? `${customHost}:${customPort}` : customHost;
       serverToConnect = {
+        connectionType,
         default: 0,
         encoding: 'utf8',
         network: customHost,
         servers: [hostWithPort],
+        tls: connectionType === 'websocket', // Default to TLS for WebSocket connections
+        websocketUrl: connectionType === 'websocket' ? `wss://${customHost}${customPort && customPort !== '443' ? `:${customPort}` : ''}/` : undefined,
       };
     } else {
       serverToConnect = formServer;
@@ -117,11 +121,7 @@ const WizardServer = () => {
                   <CommandEmpty>{t('wizard.server.message.no.options')}</CommandEmpty>
                   <CommandGroup heading={t('wizard.server.popular')}>
                     {popularServers.map((server) => (
-                      <CommandItem
-                        key={server.network}
-                        value={server.network}
-                        onSelect={() => handleSelectServer(server)}
-                      >
+                      <CommandItem key={server.network} value={server.network} onSelect={() => handleSelectServer(server)}>
                         <Check className={cn('mr-2 h-4 w-4', formServer?.network === server.network && !isCustom ? 'opacity-100' : 'opacity-0')} />
                         <ServerIcon server={server} />
                         <span className="ml-2">{server.network}</span>
@@ -130,11 +130,7 @@ const WizardServer = () => {
                   </CommandGroup>
                   <CommandGroup heading={t('wizard.server.other')}>
                     {otherServers.map((server) => (
-                      <CommandItem
-                        key={server.network}
-                        value={server.network}
-                        onSelect={() => handleSelectServer(server)}
-                      >
+                      <CommandItem key={server.network} value={server.network} onSelect={() => handleSelectServer(server)}>
                         <Check className={cn('mr-2 h-4 w-4', formServer?.network === server.network && !isCustom ? 'opacity-100' : 'opacity-0')} />
                         <ServerIcon server={server} />
                         <span className="ml-2">{server.network}</span>
@@ -155,19 +151,31 @@ const WizardServer = () => {
               value={customHost}
               onChange={(e) => {
                 setCustomHost(e.target.value);
-                if (e.target.value) handleCustomToggle();
+                if (e.target.value) {
+                  handleCustomToggle();
+                } else {
+                  setIsCustom(false);
+                }
               }}
-              onFocus={handleCustomToggle}
               className="flex-1"
             />
-            <Input
-              placeholder={t('wizard.server.port') ?? '6667'}
-              value={customPort}
-              onChange={(e) => setCustomPort(e.target.value)}
-              className="w-20"
-            />
+            <Input placeholder={t('wizard.server.port') ?? '6667'} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className="w-20" />
           </div>
         </div>
+
+        {isCustom && (
+          <div className="w-[300px] mb-4">
+            <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.connectionType')}</p>
+            <div className="flex gap-2">
+              <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1">
+                {t('wizard.server.connectionType.backend')}
+              </Button>
+              <Button type="button" variant={connectionType === 'websocket' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('websocket')} className="flex-1">
+                {t('wizard.server.connectionType.websocket')}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <Button type="submit" className="w-[300px] mt-4 mb-4" disabled={!isValid}>
           {t('wizard.server.button.next')}

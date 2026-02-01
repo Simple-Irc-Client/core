@@ -401,4 +401,178 @@ describe('WizardServer', () => {
       expect(settingsStore.setServer).toHaveBeenCalledWith(mockServers[2]);
     });
   });
+
+  describe('Custom server with connection type', () => {
+    it('should show connection type selector when custom host is entered', () => {
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      expect(screen.getByText('wizard.server.connectionType')).toBeInTheDocument();
+      expect(screen.getByText('wizard.server.connectionType.backend')).toBeInTheDocument();
+      expect(screen.getByText('wizard.server.connectionType.websocket')).toBeInTheDocument();
+    });
+
+    it('should not show connection type selector when custom host is empty', () => {
+      render(<WizardServer />);
+
+      expect(screen.queryByText('wizard.server.connectionType')).not.toBeInTheDocument();
+    });
+
+    it('should default to backend connection type', () => {
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const backendButton = screen.getByText('wizard.server.connectionType.backend');
+      // The default button should have the "default" variant (not outline)
+      expect(backendButton.closest('button')).not.toHaveClass('border-input');
+    });
+
+    it('should enable next button when custom host is entered', () => {
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      expect(button).not.toBeDisabled();
+    });
+
+    it('should create backend server config by default', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionType: 'backend',
+          network: 'custom.irc.net',
+          servers: ['custom.irc.net'],
+        })
+      );
+    });
+
+    it('should create websocket server config when websocket is selected', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      // Set port to 443 (default for wss) to get clean URL
+      const portInput = screen.getByPlaceholderText('wizard.server.port');
+      fireEvent.change(portInput, { target: { value: '443' } });
+
+      const websocketButton = screen.getByText('wizard.server.connectionType.websocket');
+      fireEvent.click(websocketButton);
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionType: 'websocket',
+          network: 'custom.irc.net',
+          servers: ['custom.irc.net:443'],
+          tls: true,
+          websocketUrl: 'wss://custom.irc.net/',
+        })
+      );
+    });
+
+    it('should include custom port in websocket URL', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const portInput = screen.getByPlaceholderText('wizard.server.port');
+      fireEvent.change(portInput, { target: { value: '8080' } });
+
+      const websocketButton = screen.getByText('wizard.server.connectionType.websocket');
+      fireEvent.click(websocketButton);
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionType: 'websocket',
+          websocketUrl: 'wss://custom.irc.net:8080/',
+        })
+      );
+    });
+
+    it('should include custom port in servers array for backend', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const portInput = screen.getByPlaceholderText('wizard.server.port');
+      fireEvent.change(portInput, { target: { value: '7000' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          servers: ['custom.irc.net:7000'],
+        })
+      );
+    });
+
+    it('should allow switching between connection types', () => {
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      // Click websocket
+      const websocketButton = screen.getByText('wizard.server.connectionType.websocket');
+      fireEvent.click(websocketButton);
+
+      // Click backend
+      const backendButton = screen.getByText('wizard.server.connectionType.backend');
+      fireEvent.click(backendButton);
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionType: 'backend',
+        })
+      );
+    });
+
+    it('should clear custom mode when selecting a predefined server', () => {
+      render(<WizardServer />);
+
+      // Enter custom server
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      // Connection type selector should be visible
+      expect(screen.getByText('wizard.server.connectionType')).toBeInTheDocument();
+
+      // Select a predefined server from popover
+      const combobox = screen.getByRole('combobox');
+      fireEvent.click(combobox);
+      fireEvent.click(screen.getByText('TestNet1'));
+
+      // Connection type selector should be hidden now
+      expect(screen.queryByText('wizard.server.connectionType')).not.toBeInTheDocument();
+    });
+  });
 });
