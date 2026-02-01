@@ -93,3 +93,51 @@ export async function decryptMessage(encryptedBase64: string): Promise<unknown> 
   return JSON.parse(new TextDecoder().decode(decrypted));
 }
 
+/**
+ * Encrypt a raw string to base64 (no JSON wrapping)
+ */
+export async function encryptString(data: string): Promise<string> {
+  if (!encryptionKey) {
+    throw new Error('Encryption not initialized');
+  }
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const messageBytes = new TextEncoder().encode(data);
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    encryptionKey,
+    messageBytes
+  );
+
+  // Combine IV + encrypted data
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  return bytesToBase64(combined);
+}
+
+/**
+ * Decrypt a base64 string back to raw string (no JSON parsing)
+ */
+export async function decryptString(encryptedBase64: string): Promise<string> {
+  if (!encryptionKey) {
+    throw new Error('Encryption not initialized');
+  }
+
+  const combined = base64ToBytes(encryptedBase64);
+
+  // Extract IV (first 12 bytes) and encrypted data
+  const iv = combined.slice(0, 12);
+  const encryptedData = combined.slice(12);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    encryptionKey,
+    encryptedData
+  );
+
+  return new TextDecoder().decode(decrypted);
+}
+

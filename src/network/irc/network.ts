@@ -17,6 +17,7 @@ import {
   isDirectConnecting,
   disconnectDirect,
   setDirectEventCallback,
+  setDirectEncryption,
 } from './directWebSocket';
 
 // Native WebSocket connection
@@ -82,7 +83,7 @@ export const initWebSocket = (): WebSocket => {
     console.log('Gateway mode: connecting to', wsUrl);
   } else {
     // Local mode: connect to local network backend with encryption
-    wsUrl = `ws://${websocketHost}:${websocketPort}/SimpleIrcClient`;
+    wsUrl = `ws://${websocketHost}:${websocketPort}/webirc`;
   }
 
   sicSocket = new WebSocket(wsUrl);
@@ -251,6 +252,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     currentConnectionMode = 'websocket';
     // Set up the event callback so direct WebSocket can trigger events
     setDirectEventCallback(triggerEvent);
+    setDirectEncryption(false); // No encryption for direct WebSocket to IRC servers
     // Track connection TLS status
     setCurrentConnectionInfo(host, useTLS);
     initDirectWebSocket(currentServer, nick);
@@ -262,6 +264,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     currentConnectionMode = 'websocket';
     // Set up the event callback so direct WebSocket can trigger events
     setDirectEventCallback(triggerEvent);
+    setDirectEncryption(false); // No encryption for gateway mode
     // Track connection TLS status
     setCurrentConnectionInfo(host, useTLS);
 
@@ -286,37 +289,56 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     return;
   }
 
-  // Local backend proxy connection (JSON protocol)
-  currentConnectionMode = 'backend';
+  // Local backend mode: use direct IRC protocol with encryption
+  currentConnectionMode = 'websocket';
+  setDirectEventCallback(triggerEvent);
 
   // Check for existing STS policy (only if not already using TLS)
+  let effectiveTLS = useTLS;
+  let effectivePort = singleServer.port;
   if (!useTLS && hasValidSTSPolicy(host)) {
     const policy = getSTSPolicy(host);
     if (policy) {
-      // Connect with TLS using stored policy
+      effectiveTLS = true;
+      effectivePort = policy.port;
       setCurrentConnectionInfo(host, true);
-      ircConnectWithTLS(currentServer, nick, policy.port);
-      return;
     }
   }
 
   // Track connection TLS status
-  setCurrentConnectionInfo(host, useTLS);
+  setCurrentConnectionInfo(host, effectiveTLS);
 
-  const command = {
-    type: 'connect',
-    event: {
-      nick,
-      server: {
-        host: singleServer.host,
-        port: singleServer.port,
-        encoding: currentServer?.encoding,
-        tls: useTLS,
-      },
-    },
-  };
+  // Initialize encryption for local backend
+  if (encryptionKey) {
+    initEncryption(encryptionKey).then(() => {
+      setDirectEncryption(true);
+      console.log('Encryption enabled for local backend');
+      connectToLocalBackend();
+    });
+  } else {
+    setDirectEncryption(false);
+    connectToLocalBackend();
+  }
 
-  sendMessage(command);
+  function connectToLocalBackend() {
+    // Construct local backend WebSocket URL with query parameters
+    const params = new URLSearchParams({
+      host,
+      port: String(effectivePort),
+      tls: String(effectiveTLS),
+      encoding: currentServer?.encoding ?? 'utf8',
+    });
+    const backendWebSocketUrl = `ws://${websocketHost}:${websocketPort}/webirc?${params.toString()}`;
+
+    // Create a server config for the backend connection
+    const backendServer: Server = {
+      ...currentServer,
+      connectionType: 'websocket',
+      websocketUrl: backendWebSocketUrl,
+    };
+
+    initDirectWebSocket(backendServer, nick);
+  }
 };
 
 /**
@@ -332,23 +354,19 @@ export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: nu
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
-  // Track TLS connection
-  setCurrentConnectionInfo(singleServer.host, true);
-
-  const command = {
-    type: 'connect',
-    event: {
-      nick,
-      server: {
-        host: singleServer.host,
-        port: port ?? singleServer.port,
-        encoding: currentServer?.encoding,
-        tls: true,
-      },
-    },
+  // Create a modified server with TLS enabled and optional port override
+  const tlsServer: Server = {
+    ...currentServer,
+    tls: true,
   };
 
-  sendMessage(command);
+  // Override port if specified (for STS upgrades)
+  if (port !== undefined) {
+    tlsServer.servers = [`${singleServer.host}:${port}`];
+  }
+
+  // Use the main connect function which handles direct WebSocket
+  ircConnect(tlsServer, nick);
 };
 
 /**

@@ -20,6 +20,7 @@ const mockIsDirectConnected = vi.fn().mockReturnValue(false);
 const mockIsDirectConnecting = vi.fn().mockReturnValue(false);
 const mockDisconnectDirect = vi.fn();
 const mockSetDirectEventCallback = vi.fn();
+const mockSetDirectEncryption = vi.fn();
 
 vi.mock('../directWebSocket', () => ({
   initDirectWebSocket: (...args: unknown[]) => mockInitDirectWebSocket(...args),
@@ -28,6 +29,7 @@ vi.mock('../directWebSocket', () => ({
   isDirectConnecting: () => mockIsDirectConnecting(),
   disconnectDirect: (...args: unknown[]) => mockDisconnectDirect(...args),
   setDirectEventCallback: (...args: unknown[]) => mockSetDirectEventCallback(...args),
+  setDirectEncryption: (...args: unknown[]) => mockSetDirectEncryption(...args),
 }));
 
 // Mock encryption module to pass through unencrypted for testing
@@ -123,6 +125,7 @@ describe('network', () => {
     mockIsDirectConnecting.mockClear().mockReturnValue(false);
     mockDisconnectDirect.mockClear();
     mockSetDirectEventCallback.mockClear();
+    mockSetDirectEncryption.mockClear();
     network = await import('../network');
   });
 
@@ -143,7 +146,7 @@ describe('network', () => {
     it('should create a new WebSocket connection', () => {
       const socket = getSocket();
       expect(socket).toBeDefined();
-      expect(socket.url).toBe('ws://localhost:8080/SimpleIrcClient');
+      expect(socket.url).toBe('ws://localhost:8080/webirc');
     });
 
     it('should return existing socket if already open', () => {
@@ -315,9 +318,7 @@ describe('network', () => {
       expect(socket.close).not.toHaveBeenCalled();
     });
 
-    it('should close backend socket when in backend mode', () => {
-      const socket = getSocket();
-
+    it('should call disconnectDirect when connecting via local backend', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -326,17 +327,18 @@ describe('network', () => {
       };
 
       network.ircConnect(server, 'testNick');
+      await flushPromises();
+      mockDisconnectDirect.mockClear();
 
       network.ircDisconnect();
 
-      expect(socket.close).toHaveBeenCalled();
+      // Local backend mode now uses websocket mode with direct WebSocket
+      expect(mockDisconnectDirect).toHaveBeenCalled();
     });
   });
 
   describe('ircConnect', () => {
-    it('should send connect command with server details', async () => {
-      const socket = getSocket();
-
+    it('should use direct WebSocket for local backend mode', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -347,28 +349,27 @@ describe('network', () => {
       network.ircConnect(server, 'testNick');
       await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'connect',
-            event: {
-              nick: 'testNick',
-              server: {
-                host: 'irc.test.net',
-                port: 6667,
-                encoding: 'utf8',
-                tls: false,
-              },
-            },
-          },
-        })
+      // Local backend now uses direct WebSocket with encryption
+      expect(mockSetDirectEventCallback).toHaveBeenCalledWith(network.triggerEvent);
+      expect(mockSetDirectEncryption).toHaveBeenCalledWith(true);
+      expect(mockInitDirectWebSocket).toHaveBeenCalledWith(
+        expect.objectContaining({
+          connectionType: 'websocket',
+          websocketUrl: expect.stringContaining('ws://localhost:8080/webirc?'),
+        }),
+        'testNick'
       );
+
+      // Verify query parameters in WebSocket URL
+      const callArgs = mockInitDirectWebSocket.mock.calls[0] as [Server, string];
+      const url = new URL(callArgs[0].websocketUrl as string);
+      expect(url.searchParams.get('host')).toBe('irc.test.net');
+      expect(url.searchParams.get('port')).toBe('6667');
+      expect(url.searchParams.get('tls')).toBe('false');
+      expect(url.searchParams.get('encoding')).toBe('utf8');
     });
 
     it('should use default port when not specified', async () => {
-      const socket = getSocket();
-
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -379,23 +380,12 @@ describe('network', () => {
       network.ircConnect(server, 'testNick');
       await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'connect',
-            event: {
-              nick: 'testNick',
-              server: {
-                host: 'irc.test.net',
-                port: 6667,
-                encoding: 'utf8',
-                tls: false,
-              },
-            },
-          },
-        })
-      );
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+
+      // Verify default port is used
+      const callArgs = mockInitDirectWebSocket.mock.calls[0] as [Server, string];
+      const url = new URL(callArgs[0].websocketUrl as string);
+      expect(url.searchParams.get('port')).toBe('6667');
     });
 
     it('should throw error when server host is empty', () => {

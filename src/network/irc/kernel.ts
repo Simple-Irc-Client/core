@@ -44,7 +44,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircSendDisconnectCommand } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -1319,9 +1319,9 @@ export class Kernel {
               color: MessageColor.info,
             });
 
-            // Send disconnect command to backend without closing WebSocket
+            // Disconnect from server
             // Reconnection will happen when we receive 'socket close' event
-            ircSendDisconnectCommand(i18next.t('kernel.stsUpgradeReason'));
+            ircDisconnect();
             return;
           }
         } else if (caps['sts'] && isCurrentConnectionSecure()) {

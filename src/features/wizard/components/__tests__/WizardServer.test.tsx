@@ -23,7 +23,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircConnect: vi.fn(),
+  ircConnect: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
@@ -314,7 +314,7 @@ describe('WizardServer', () => {
         callOrder.push('getCurrentNick');
         return 'TestNick';
       });
-      vi.mocked(network.ircConnect).mockImplementation(() => {
+      vi.mocked(network.ircConnect).mockImplementation(async () => {
         callOrder.push('ircConnect');
       });
       vi.mocked(settingsStore.setIsConnecting).mockImplementation(() => {

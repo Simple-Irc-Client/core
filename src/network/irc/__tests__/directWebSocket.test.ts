@@ -146,7 +146,7 @@ describe('directWebSocket', () => {
       );
     });
 
-    it('should send CAP LS, NICK, and USER on connection open', () => {
+    it('should send CAP LS, NICK, and USER on connection open', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -157,14 +157,14 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
 
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('CAP LS 302');
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('NICK TestNick');
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('USER TestNick 0 * :TestNick');
     });
 
-    it('should trigger connect event on socket open', () => {
+    it('should trigger connect event on socket open', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -175,7 +175,7 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
 
       expect(eventCallback).toHaveBeenCalledWith('connect', {});
     });
@@ -194,7 +194,7 @@ describe('directWebSocket', () => {
       const firstSocket = lastCreatedSocket;
 
       // Simulate connection established to clear isDirectConnectingFlag
-      firstSocket?.onopen?.();
+      await firstSocket?.onopen?.();
 
       directWebSocket.initDirectWebSocket(server, 'TestNick2');
 
@@ -203,7 +203,7 @@ describe('directWebSocket', () => {
   });
 
   describe('sendDirectRaw', () => {
-    it('should send raw IRC command without newline', () => {
+    it('should send raw IRC command without newline', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -214,10 +214,10 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
-      directWebSocket.sendDirectRaw('PRIVMSG #test :Hello');
+      await directWebSocket.sendDirectRaw('PRIVMSG #test :Hello');
 
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('PRIVMSG #test :Hello');
     });
@@ -325,7 +325,7 @@ describe('directWebSocket', () => {
   });
 
   describe('disconnectDirect', () => {
-    it('should send QUIT and close socket', () => {
+    it('should send QUIT and close socket', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -336,16 +336,16 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
-      directWebSocket.disconnectDirect();
+      await directWebSocket.disconnectDirect();
 
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('QUIT');
       expect(lastCreatedSocket?.close).toHaveBeenCalled();
     });
 
-    it('should send QUIT with reason when provided', () => {
+    it('should send QUIT with reason when provided', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -356,21 +356,21 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
-      directWebSocket.disconnectDirect('Goodbye!');
+      await directWebSocket.disconnectDirect('Goodbye!');
 
       expect(lastCreatedSocket?.send).toHaveBeenCalledWith('QUIT :Goodbye!');
     });
 
-    it('should handle disconnect when no socket exists', () => {
-      expect(() => directWebSocket.disconnectDirect()).not.toThrow();
+    it('should handle disconnect when no socket exists', async () => {
+      await expect(directWebSocket.disconnectDirect()).resolves.toBeUndefined();
     });
   });
 
   describe('IRC message handling', () => {
-    const connectAndGetSocket = (): MockWebSocket => {
+    const connectAndGetSocket = async (): Promise<MockWebSocket> => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -381,7 +381,7 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      lastCreatedSocket?.onopen?.();
+      await lastCreatedSocket?.onopen?.();
       eventCallback.mockClear();
 
       if (!lastCreatedSocket) {
@@ -390,8 +390,8 @@ describe('directWebSocket', () => {
       return lastCreatedSocket;
     };
 
-    it('should pass PING through to kernel (kernel handles PONG response)', () => {
-      const socket = connectAndGetSocket();
+    it('should pass PING through to kernel (kernel handles PONG response)', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({ data: 'PING :server123' });
 
@@ -401,8 +401,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should send raw IRC messages to kernel as raw events', () => {
-      const socket = connectAndGetSocket();
+    it('should send raw IRC messages to kernel as raw events', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({ data: ':nick!user@host PRIVMSG #channel :Hello world' });
 
@@ -412,8 +412,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should send numeric replies to kernel as raw events', () => {
-      const socket = connectAndGetSocket();
+    it('should send numeric replies to kernel as raw events', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({ data: ':server 001 TestNick :Welcome to the network' });
 
@@ -423,8 +423,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should handle batched messages separated by newlines', () => {
-      const socket = connectAndGetSocket();
+    it('should handle batched messages separated by newlines', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({
         data: ':nick1!user@host PRIVMSG #channel :Message 1\r\n:nick2!user@host PRIVMSG #channel :Message 2',
@@ -441,8 +441,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should handle messages with IRCv3 tags', () => {
-      const socket = connectAndGetSocket();
+    it('should handle messages with IRCv3 tags', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({
         data: '@time=2023-01-01T12:00:00.000Z;msgid=abc123 :nick!user@host PRIVMSG #channel :Hello',
@@ -454,8 +454,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should trigger connected event when RPL_WELCOME (001) is received', () => {
-      const socket = connectAndGetSocket();
+    it('should trigger connected event when RPL_WELCOME (001) is received', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({ data: ':server 001 TestNick :Welcome to the network' });
 
@@ -467,8 +467,8 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should trigger connected event for 001 with IRCv3 tags', () => {
-      const socket = connectAndGetSocket();
+    it('should trigger connected event for 001 with IRCv3 tags', async () => {
+      const socket = await connectAndGetSocket();
 
       socket.onmessage?.({
         data: '@time=2023-01-01T12:00:00.000Z :server 001 TestNick :Welcome',
@@ -477,8 +477,8 @@ describe('directWebSocket', () => {
       expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connected' });
     });
 
-    it('should only trigger connected event once', () => {
-      const socket = connectAndGetSocket();
+    it('should only trigger connected event once', async () => {
+      const socket = await connectAndGetSocket();
 
       // First 001 message
       socket.onmessage?.({ data: ':server 001 TestNick :Welcome' });

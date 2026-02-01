@@ -9,7 +9,7 @@ import { defaultChannelTypes } from '@/config/config';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { ircDisconnect } from '@/network/irc/network';
 
-export type WizardStep = 'init' | 'nick' | 'server' | 'loading' | 'password' | 'channels';
+export type WizardStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
 export interface WizardProgress {
   value: number;
@@ -89,7 +89,7 @@ export const useSettingsStore = create<SettingsStore>()(
     isConnecting: false,
     isConnected: false,
     isWizardCompleted: false,
-    wizardStep: 'init',
+    wizardStep: 'nick',
     nick: '',
     server: undefined,
     isPasswordRequired: undefined,
@@ -211,7 +211,7 @@ export const useSettingsStore = create<SettingsStore>()(
         isConnecting: false,
         isConnected: false,
         isWizardCompleted: false,
-        wizardStep: 'init',
+        wizardStep: 'nick',
         nick: '',
         server: undefined,
         isPasswordRequired: undefined,
