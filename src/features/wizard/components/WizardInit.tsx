@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@shared/components/ui/button';
 import { setWizardStep } from '@features/settings/store/settings';
 import { isConnected as isWebSocketConnected, on, off } from '@/network/irc/network';
+import { isGatewayMode } from '@/config/config';
 
 const WizardInit = () => {
   const { t } = useTranslation();
@@ -12,6 +13,13 @@ const WizardInit = () => {
   const [showLoading, setShowLoading] = useState(false);
 
   useEffect(() => {
+    // In gateway mode, skip waiting for WebSocket - proceed directly
+    // The WebSocket connection will be made when user selects a server
+    if (isGatewayMode()) {
+      setWizardStep('nick');
+      return undefined;
+    }
+
     // Check if already connected
     if (isWebSocketConnected()) {
       setWizardStep('nick');
