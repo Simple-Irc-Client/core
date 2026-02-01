@@ -9,7 +9,7 @@ vi.mock('@/config/config', () => ({
   encryptionKey: 'test-key',
   gatewayHost: '',
   gatewayPort: 8667,
-  gatewayPath: '/irc',
+  gatewayPath: '/webirc',
   isGatewayMode: () => false,
 }));
 
