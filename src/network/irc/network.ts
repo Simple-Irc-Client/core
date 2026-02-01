@@ -1,4 +1,4 @@
-import { websocketHost, websocketPort, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode, websocketPath } from '@/config/config';
+import { localBackendHost, localBackendPort, localBackendPath, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode, defaultQuitMessage } from '@/config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
@@ -94,8 +94,8 @@ export const ircDisconnect = (): void => {
   clearSaslCredentials();
   resetSTSSessionState();
 
-  // Disconnect direct WebSocket
-  disconnectDirect();
+  // Disconnect direct WebSocket with quit message
+  disconnectDirect(defaultQuitMessage);
 };
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
@@ -178,7 +178,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       tls: String(effectiveTLS),
       encoding: currentServer?.encoding ?? 'utf8',
     });
-    const backendWebSocketUrl = `ws://${websocketHost}:${websocketPort}/${websocketPath}?${params.toString()}`;
+    const backendWebSocketUrl = `ws://${localBackendHost}:${localBackendPort}/${localBackendPath}?${params.toString()}`;
 
     const backendServer: Server = {
       ...currentServer,

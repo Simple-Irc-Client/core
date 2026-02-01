@@ -3,14 +3,16 @@ import type { Server } from '../servers';
 
 // Mock config before importing network module
 vi.mock('@/config/config', () => ({
-  websocketHost: 'localhost',
-  websocketPort: 8080,
+  localBackendHost: 'localhost',
+  localBackendPort: 8080,
+  localBackendPath: 'webirc',
   defaultIRCPort: 6667,
   encryptionKey: 'test-key',
   gatewayHost: '',
   gatewayPort: 8667,
   gatewayPath: '/webirc',
   isGatewayMode: () => false,
+  defaultQuitMessage: 'Simple Irc Client ( https://simpleircclient.com )',
 }));
 
 // Mock directWebSocket module
