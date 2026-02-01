@@ -1,12 +1,24 @@
 import { type Server } from './servers';
 import { parseServer } from './helpers';
+import { encryptString, decryptString, isEncryptionAvailable } from '@/network/encryption';
 
 // Direct WebSocket connection to IRC server (bypassing backend)
 let directSocket: WebSocket | null = null;
 let isDirectConnectingFlag = false;
 
+// Encryption mode for local backend connections
+let useEncryption = false;
+
 // Event callback for IRC events (set by network.ts)
 let eventCallback: ((eventName: string, data: unknown) => void) | null = null;
+
+/**
+ * Enable or disable encryption for WebSocket messages.
+ * Used for local backend connections that require encryption.
+ */
+export const setDirectEncryption = (enabled: boolean): void => {
+  useEncryption = enabled;
+};
 
 /**
  * Set the event callback for IRC events.
@@ -63,22 +75,33 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
   console.log('Direct WebSocket: connecting to', wsUrl);
   directSocket = new WebSocket(wsUrl);
 
-  directSocket.onopen = () => {
+  directSocket.onopen = async () => {
     isDirectConnectingFlag = false;
     console.log('Direct WebSocket connected');
 
     // Send CAP LS to start capability negotiation
-    sendDirectRaw('CAP LS 302');
+    await sendDirectRaw('CAP LS 302');
 
     // Send NICK and USER
-    sendDirectRaw(`NICK ${nick}`);
-    sendDirectRaw(`USER ${nick} 0 * :${nick}`);
+    await sendDirectRaw(`NICK ${nick}`);
+    await sendDirectRaw(`USER ${nick} 0 * :${nick}`);
 
     triggerDirectEvent('connect', {});
   };
 
-  directSocket.onmessage = (event) => {
-    const data = event.data as string;
+  directSocket.onmessage = async (event) => {
+    let data = event.data as string;
+
+    // Decrypt if encryption is enabled
+    if (useEncryption && isEncryptionAvailable()) {
+      try {
+        data = await decryptString(data);
+      } catch (err) {
+        console.error('Failed to decrypt WebSocket message:', err);
+        return;
+      }
+    }
+
     // IRC messages are separated by \r\n, but WebSocket messages come one at a time
     // However, some servers might batch messages, so split just in case
     const lines = data.split(/\r?\n/).filter((line) => line.length > 0);
@@ -150,15 +173,21 @@ const handleIrcMessage = (line: string): void => {
 /**
  * Send a raw IRC command over the direct WebSocket.
  * No \n is needed at the end (WebSocket messages are discrete).
+ * If encryption is enabled, the message will be encrypted before sending.
  */
-export const sendDirectRaw = (data: string): void => {
+export const sendDirectRaw = async (data: string): Promise<void> => {
   if (!directSocket || directSocket.readyState !== WebSocket.OPEN) {
     console.warn('Direct WebSocket not connected. Message not sent:', data);
     return;
   }
 
   // console.log('Direct WS ->', data);
-  directSocket.send(data);
+  if (useEncryption && isEncryptionAvailable()) {
+    const encrypted = await encryptString(data);
+    directSocket.send(encrypted);
+  } else {
+    directSocket.send(data);
+  }
 };
 
 /**
@@ -177,18 +206,14 @@ export const isDirectConnecting = (): boolean => {
 
 /**
  * Disconnect the direct WebSocket connection.
- * Sends QUIT command before closing.
+ * Just closes the WebSocket - the server/backend handles QUIT.
  */
-export const disconnectDirect = (reason?: string): void => {
+export const disconnectDirect = (): void => {
   if (directSocket) {
-    if (directSocket.readyState === WebSocket.OPEN) {
-      // Send QUIT command
-      const quitMsg = reason ? `QUIT :${reason}` : 'QUIT';
-      sendDirectRaw(quitMsg);
-    }
     directSocket.close();
     directSocket = null;
   }
   isDirectConnectingFlag = false;
   hasReceivedWelcome = false;
+  useEncryption = false;
 };

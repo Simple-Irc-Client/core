@@ -7,8 +7,9 @@ export const defaultQuitMessage = 'Simple Irc Client ( https://simpleircclient.c
 export const clientVersion = 'Simple IRC Client';
 export const clientSourceUrl = 'https://simpleircclient.com';
 
-export const websocketPort = 8667;
-export const websocketHost = 'localhost';
+export const localBackendPort = 8667;
+export const localBackendHost = 'localhost';
+export const localBackendPath = 'webirc';
 
 // Gateway configuration (for web client connecting to public gateway)
 // When gatewayHost is set, the client will connect to the gateway instead of localhost
