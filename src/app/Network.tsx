@@ -3,7 +3,7 @@ import { useSettingsStore } from '@features/settings/store/settings';
 import { setAddMessage } from '@features/channels/store/channels';
 import { ircSendList, initWebSocket, on, off, isConnected } from '@/network/irc/network';
 import { type IrcEvent, Kernel } from '@/network/irc/kernel';
-import { DEBUG_CHANNEL } from '@/config/config';
+import { DEBUG_CHANNEL, isGatewayMode } from '@/config/config';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
@@ -45,12 +45,16 @@ export const Network = () => {
     on('sic-irc-event', onIrcEvent);
     on('sic-server-event', onServerEvent);
 
-    // Initialize WebSocket connection
-    try {
-      initWebSocket();
-    } catch (err) {
-      // Connection already in progress, that's fine
-      console.debug('WebSocket initialization:', err);
+    // Initialize WebSocket connection (only in non-gateway mode)
+    // In gateway mode, the connection is established when ircConnect() is called
+    // because we need server info for the query parameters
+    if (!isGatewayMode()) {
+      try {
+        initWebSocket();
+      } catch (err) {
+        // Connection already in progress, that's fine
+        console.debug('WebSocket initialization:', err);
+      }
     }
 
     return () => {
