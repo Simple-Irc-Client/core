@@ -1302,8 +1302,7 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'H' } });
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=active;+typing=active TAGMSG #test',
-        true
+        '@+draft/typing=active;+typing=active TAGMSG #test'
       );
     });
 
@@ -1336,8 +1335,7 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=done;+typing=done TAGMSG #test',
-        true
+        '@+draft/typing=done;+typing=done TAGMSG #test'
       );
     });
 
@@ -1399,8 +1397,7 @@ describe('Toolbar', () => {
 
       // Verify typing=done was sent
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=done;+typing=done TAGMSG #test',
-        true
+        '@+draft/typing=done;+typing=done TAGMSG #test'
       );
 
       // Clear mocks and type again - should send typing=active again
@@ -1408,8 +1405,7 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'New message' } });
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=active;+typing=active TAGMSG #test',
-        true
+        '@+draft/typing=active;+typing=active TAGMSG #test'
       );
     });
 
@@ -1432,8 +1428,7 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'Hello' } });
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=active;+typing=active TAGMSG #mychannel',
-        true
+        '@+draft/typing=active;+typing=active TAGMSG #mychannel'
       );
     });
 
@@ -1456,8 +1451,7 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'Hello' } });
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith(
-        '@+draft/typing=active;+typing=active TAGMSG someuser',
-        true
+        '@+draft/typing=active;+typing=active TAGMSG someuser'
       );
     });
   });

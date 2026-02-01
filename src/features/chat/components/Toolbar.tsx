@@ -188,7 +188,7 @@ const Toolbar = () => {
 
     if (typingStatus.current !== 'active' && ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
       typingStatus.current = 'active';
-      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`, true);
+      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
   };
 
@@ -238,7 +238,7 @@ const Toolbar = () => {
 
     if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
       typingStatus.current = 'done';
-      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`, true);
+      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
 
     // Add message to history (max 10 items)

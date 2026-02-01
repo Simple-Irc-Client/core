@@ -45,9 +45,6 @@ export const Network = () => {
     on('sic-irc-event', onIrcEvent);
     on('sic-server-event', onServerEvent);
 
-    // WebSocket connection is established when ircConnect() is called
-    // because we need server info for the query parameters
-
     return () => {
       off('sic-irc-event', onIrcEvent);
       off('sic-server-event', onServerEvent);

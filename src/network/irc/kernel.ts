@@ -1319,8 +1319,8 @@ export class Kernel {
               color: MessageColor.info,
             });
 
-            // Disconnect from server
-            // Reconnection will happen when we receive 'socket close' event
+            // Disconnect and reconnect with TLS
+            // Reconnection will happen when we receive 'close' event
             ircDisconnect();
             return;
           }

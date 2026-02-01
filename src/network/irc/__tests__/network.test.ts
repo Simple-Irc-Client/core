@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { Server } from '../servers';
 
 // Mock config before importing network module
@@ -32,11 +32,9 @@ vi.mock('../directWebSocket', () => ({
   setDirectEncryption: (...args: unknown[]) => mockSetDirectEncryption(...args),
 }));
 
-// Mock encryption module to pass through unencrypted for testing
+// Mock encryption module
 vi.mock('@/network/encryption', () => ({
   initEncryption: vi.fn().mockResolvedValue(undefined),
-  encryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.stringify(data))),
-  decryptMessage: vi.fn().mockImplementation((data) => Promise.resolve(JSON.parse(data))),
   isEncryptionAvailable: vi.fn().mockReturnValue(false),
 }));
 
@@ -58,53 +56,6 @@ vi.mock('uuid', () => ({
   v4: () => 'test-uuid-1234',
 }));
 
-// Mock WebSocket interface
-interface MockWebSocket {
-  url: string;
-  readyState: number;
-  onopen: (() => void) | null;
-  onmessage: ((event: { data: string }) => void) | null;
-  onerror: ((error: Event) => void) | null;
-  onclose: (() => void) | null;
-  send: Mock;
-  close: Mock;
-}
-
-// Store for created mock sockets
-let lastCreatedSocket: MockWebSocket | null = null;
-
-const setLastCreatedSocket = (socket: MockWebSocket) => {
-  lastCreatedSocket = socket;
-};
-
-// Mock WebSocket class
-class MockWebSocketClass implements MockWebSocket {
-  url: string;
-  readyState = 1; // OPEN
-  onopen: (() => void) | null = null;
-  onmessage: ((event: { data: string }) => void) | null = null;
-  onerror: ((error: Event) => void) | null = null;
-  onclose: (() => void) | null = null;
-  send: Mock = vi.fn();
-  close: Mock = vi.fn();
-
-  constructor(url: string) {
-    this.url = url;
-    setLastCreatedSocket(this);
-  }
-}
-
-// Add static properties
-Object.assign(MockWebSocketClass, {
-  CONNECTING: 0,
-  OPEN: 1,
-  CLOSING: 2,
-  CLOSED: 3,
-});
-
-// Assign mock to global
-vi.stubGlobal('WebSocket', MockWebSocketClass);
-
 // Helper to flush pending promises (works with fake timers)
 const flushPromises = async (): Promise<void> => {
   await vi.advanceTimersByTimeAsync(0);
@@ -116,9 +67,7 @@ describe('network', () => {
   beforeEach(async () => {
     vi.resetModules();
     vi.useFakeTimers();
-    lastCreatedSocket = null;
     mockSetAddMessageToAllChannels.mockClear();
-    // Clear direct WebSocket mocks
     mockInitDirectWebSocket.mockClear();
     mockSendDirectRaw.mockClear();
     mockIsDirectConnected.mockClear().mockReturnValue(false);
@@ -134,66 +83,23 @@ describe('network', () => {
     vi.clearAllMocks();
   });
 
-  const getSocket = (): MockWebSocket => {
-    network.initWebSocket();
-    if (!lastCreatedSocket) {
-      throw new Error('Socket was not created');
-    }
-    return lastCreatedSocket;
-  };
-
-  describe('initWebSocket', () => {
-    it('should create a new WebSocket connection', () => {
-      const socket = getSocket();
-      expect(socket).toBeDefined();
-      expect(socket.url).toBe('ws://localhost:8080/webirc');
-    });
-
-    it('should return existing socket if already open', () => {
-      const socket1 = getSocket();
-      socket1.readyState = 1; // OPEN
-
-      network.initWebSocket();
-      // Should not create a new socket
-      expect(lastCreatedSocket).toBe(socket1);
-    });
-
-    it('should return existing socket if connecting', () => {
-      const socket1 = getSocket();
-      socket1.readyState = 0; // CONNECTING
-
-      network.initWebSocket();
-      // Should not create a new socket
-      expect(lastCreatedSocket).toBe(socket1);
-    });
-  });
-
   describe('on/off event handlers', () => {
-    it('should register and call event handlers', async () => {
+    it('should register and call event handlers', () => {
       const handler = vi.fn();
       network.on('custom-event', handler);
 
-      // Manually trigger onmessage to fire custom event
-      const socket = getSocket();
-      socket.onmessage?.({
-        data: JSON.stringify({ event: 'custom-event', data: { foo: 'bar' } }),
-      });
+      network.triggerEvent('custom-event', { foo: 'bar' });
 
-      await flushPromises();
       expect(handler).toHaveBeenCalledWith({ foo: 'bar' });
     });
 
-    it('should remove event handlers with off', async () => {
+    it('should remove event handlers with off', () => {
       const handler = vi.fn();
       network.on('custom-event', handler);
       network.off('custom-event', handler);
 
-      const socket = getSocket();
-      socket.onmessage?.({
-        data: JSON.stringify({ event: 'custom-event', data: {} }),
-      });
+      network.triggerEvent('custom-event', {});
 
-      await flushPromises();
       expect(handler).not.toHaveBeenCalled();
     });
 
@@ -203,136 +109,30 @@ describe('network', () => {
     });
   });
 
-  describe('getSocket', () => {
-    it('should return existing socket or create new one', () => {
-      const socket = network.getSocket();
-      expect(socket).toBeDefined();
-    });
-  });
-
   describe('isConnected', () => {
-    it('should return false when socket is not open', async () => {
-      // Need fresh module without socket initialized
-      vi.resetModules();
-      const freshNetwork = await import('../network');
-      // Don't init socket, check isConnected
-      expect(freshNetwork.isConnected()).toBe(false);
-    });
-
-    it('should return true when socket is open', () => {
-      const socket = getSocket();
-      socket.readyState = 1; // OPEN
-      expect(network.isConnected()).toBe(true);
-    });
-
-    it('should check direct WebSocket when in websocket mode', () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
+    it('should delegate to isDirectConnected', () => {
       mockIsDirectConnected.mockReturnValue(true);
-
       expect(network.isConnected()).toBe(true);
       expect(mockIsDirectConnected).toHaveBeenCalled();
     });
 
-    it('should return false from direct WebSocket when not connected', () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
+    it('should return false when not connected', () => {
       mockIsDirectConnected.mockReturnValue(false);
-
       expect(network.isConnected()).toBe(false);
     });
   });
 
   describe('isWebSocketConnecting', () => {
-    it('should check direct WebSocket when in websocket mode', () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
+    it('should delegate to isDirectConnecting', () => {
       mockIsDirectConnecting.mockReturnValue(true);
-
       expect(network.isWebSocketConnecting()).toBe(true);
       expect(mockIsDirectConnecting).toHaveBeenCalled();
     });
   });
 
   describe('ircDisconnect', () => {
-    it('should call disconnectDirect when in websocket mode', () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
-      mockDisconnectDirect.mockClear();
-
+    it('should call disconnectDirect', () => {
       network.ircDisconnect();
-
-      expect(mockDisconnectDirect).toHaveBeenCalled();
-    });
-
-    it('should not close backend socket when in websocket mode', () => {
-      const socket = getSocket();
-
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
-      socket.close.mockClear();
-
-      network.ircDisconnect();
-
-      // Backend socket should not be closed
-      expect(socket.close).not.toHaveBeenCalled();
-    });
-
-    it('should call disconnectDirect when connecting via local backend', async () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['irc.test.net:6667'],
-      };
-
-      network.ircConnect(server, 'testNick');
-      await flushPromises();
-      mockDisconnectDirect.mockClear();
-
-      network.ircDisconnect();
-
-      // Local backend mode now uses websocket mode with direct WebSocket
       expect(mockDisconnectDirect).toHaveBeenCalled();
     });
   });
@@ -349,7 +149,6 @@ describe('network', () => {
       network.ircConnect(server, 'testNick');
       await flushPromises();
 
-      // Local backend now uses direct WebSocket with encryption
       expect(mockSetDirectEventCallback).toHaveBeenCalledWith(network.triggerEvent);
       expect(mockSetDirectEncryption).toHaveBeenCalledWith(true);
       expect(mockInitDirectWebSocket).toHaveBeenCalledWith(
@@ -420,432 +219,106 @@ describe('network', () => {
       network.ircConnect(server, 'testNick');
 
       expect(mockSetDirectEventCallback).toHaveBeenCalledWith(network.triggerEvent);
+      expect(mockSetDirectEncryption).toHaveBeenCalledWith(false);
       expect(mockInitDirectWebSocket).toHaveBeenCalledWith(server, 'testNick');
-    });
-
-    it('should not send backend command when using direct WebSocket', async () => {
-      const socket = getSocket();
-
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
-      await flushPromises();
-
-      // Backend socket should not receive a connect command
-      expect(socket.send).not.toHaveBeenCalledWith(
-        expect.stringContaining('"type":"connect"')
-      );
     });
   });
 
   describe('ircSendPassword', () => {
-    it('should send IDENTIFY command to NickServ', async () => {
-      const socket = getSocket();
-
+    it('should send IDENTIFY command to NickServ', () => {
       network.ircSendPassword('myPassword');
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'PRIVMSG NickServ :IDENTIFY myPassword\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY myPassword');
     });
   });
 
   describe('ircSendList', () => {
-    it('should send LIST command', async () => {
-      const socket = getSocket();
-
+    it('should send LIST command', () => {
       network.ircSendList();
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'LIST\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('LIST');
     });
   });
 
   describe('ircSendNamesXProto', () => {
-    it('should send PROTOCTL NAMESX command', async () => {
-      const socket = getSocket();
-
+    it('should send PROTOCTL NAMESX command', () => {
       network.ircSendNamesXProto();
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'PROTOCTL NAMESX\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PROTOCTL NAMESX');
     });
   });
 
   describe('ircJoinChannels', () => {
-    it('should send JOIN command for single channel', async () => {
-      const socket = getSocket();
-
+    it('should send JOIN command for single channel', () => {
       network.ircJoinChannels(['#test']);
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'JOIN #test\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('JOIN #test');
     });
 
-    it('should send JOIN command for multiple channels', async () => {
-      const socket = getSocket();
-
+    it('should send JOIN command for multiple channels', () => {
       network.ircJoinChannels(['#test', '#foo', '#bar']);
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'JOIN #test,#foo,#bar\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('JOIN #test,#foo,#bar');
     });
   });
 
   describe('ircPartChannel', () => {
-    it('should send PART command', async () => {
-      const socket = getSocket();
-
+    it('should send PART command', () => {
       network.ircPartChannel('#test');
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'PART #test\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PART #test');
     });
   });
 
   describe('ircRequestMetadataItem', () => {
-    it('should send METADATA GET command to queue', async () => {
-      const socket = getSocket();
-
+    it('should send METADATA GET command', () => {
       network.ircRequestMetadataItem('someUser', 'avatar');
 
-      // Queued messages are sent via interval, not immediately
-      expect(socket.send).not.toHaveBeenCalled();
-
-      // Advance timer to trigger queue processing
-      vi.advanceTimersByTime(300);
-      await flushPromises();
-
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'METADATA someUser GET avatar\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('METADATA someUser GET avatar');
     });
   });
 
   describe('ircRequestMetadata', () => {
-    it('should send METADATA SUB command', async () => {
-      const socket = getSocket();
-
+    it('should send METADATA SUB command', () => {
       network.ircRequestMetadata();
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'METADATA * SUB avatar status bot homepage display-name bot-url color\n',
-            },
-          },
-        })
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(
+        'METADATA * SUB avatar status bot homepage display-name bot-url color'
       );
     });
   });
 
   describe('ircRequestMetadataList', () => {
-    it('should send METADATA LIST command to queue', async () => {
-      const socket = getSocket();
-
+    it('should send METADATA LIST command', () => {
       network.ircRequestMetadataList('someUser');
 
-      // Queued messages are sent via interval
-      vi.advanceTimersByTime(300);
-      await flushPromises();
-
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'METADATA someUser LIST\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('METADATA someUser LIST');
     });
   });
 
   describe('ircSendRawMessage', () => {
-    it('should send raw message', async () => {
-      const socket = getSocket();
-
+    it('should send raw message via sendDirectRaw', () => {
       network.ircSendRawMessage('PRIVMSG #test :Hello world');
-      await flushPromises();
 
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'PRIVMSG #test :Hello world\n',
-            },
-          },
-        })
-      );
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG #test :Hello world');
     });
 
-    it('should not send empty messages', async () => {
-      const socket = getSocket();
-
+    it('should not send empty messages', () => {
       network.ircSendRawMessage('');
-      await flushPromises();
 
-      expect(socket.send).not.toHaveBeenCalled();
-    });
-
-    it('should queue message when queue flag is true', async () => {
-      const socket = getSocket();
-
-      network.ircSendRawMessage('TEST MESSAGE', true);
-
-      // Should not be sent immediately
-      expect(socket.send).not.toHaveBeenCalled();
-
-      // Advance timer to trigger queue processing
-      vi.advanceTimersByTime(300);
-      await flushPromises();
-
-      expect(socket.send).toHaveBeenCalledWith(
-        JSON.stringify({
-          event: 'sic-client-event',
-          data: {
-            type: 'raw',
-            event: {
-              rawData: 'TEST MESSAGE\n',
-            },
-          },
-        })
-      );
-    });
-
-    it('should not send when socket is not open', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const socket = getSocket();
-      socket.readyState = 0; // CONNECTING
-
-      network.ircSendRawMessage('TEST');
-      await flushPromises();
-
-      expect(socket.send).not.toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'WebSocket is not connected. Message not sent:',
-        expect.any(Object)
-      );
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should route to direct WebSocket when in websocket mode', async () => {
-      // First connect with a websocket server to set the mode
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
-      mockSendDirectRaw.mockClear();
-
-      network.ircSendRawMessage('PRIVMSG #test :Hello');
-
-      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG #test :Hello');
-    });
-
-    it('should not send to backend when in websocket mode', async () => {
-      const socket = getSocket();
-
-      // Connect with a websocket server to set the mode
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      network.ircConnect(server, 'testNick');
-      socket.send.mockClear();
-
-      network.ircSendRawMessage('PRIVMSG #test :Hello');
-      await flushPromises();
-
-      // Backend socket should not receive the message
-      expect(socket.send).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('WebSocket events', () => {
-    it('should trigger connect event on socket open', async () => {
-      const connectHandler = vi.fn();
-      network.on('connect', connectHandler);
-
-      const socket = getSocket();
-      socket.onopen?.();
-      await flushPromises();
-
-      expect(connectHandler).toHaveBeenCalledWith({});
-    });
-
-    it('should trigger sic-irc-event with close type on socket close', () => {
-      const ircEventHandler = vi.fn();
-      network.on('sic-irc-event', ircEventHandler);
-
-      const socket = getSocket();
-      socket.onclose?.();
-
-      expect(ircEventHandler).toHaveBeenCalledWith({ type: 'close' });
-    });
-
-    it('should trigger error event on socket error', () => {
-      const errorHandler = vi.fn();
-      network.on('error', errorHandler);
-
-      const socket = getSocket();
-      const mockError = new Event('error');
-      socket.onerror?.(mockError);
-
-      expect(errorHandler).toHaveBeenCalledWith(mockError);
-    });
-
-    it('should parse and trigger events from incoming messages', async () => {
-      const messageHandler = vi.fn();
-      network.on('irc-message', messageHandler);
-
-      const socket = getSocket();
-
-      socket.onmessage?.({
-        data: JSON.stringify({ event: 'irc-message', data: { text: 'hello' } }),
-      });
-      await flushPromises();
-
-      expect(messageHandler).toHaveBeenCalledWith({ text: 'hello' });
-    });
-
-    it('should handle invalid JSON in messages gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-      const socket = getSocket();
-
-      socket.onmessage?.({ data: 'invalid json' });
-      await flushPromises();
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to parse WebSocket message:',
-        expect.any(Error)
-      );
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should ignore messages without event field', async () => {
-      const messageHandler = vi.fn();
-      network.on('some-event', messageHandler);
-
-      const socket = getSocket();
-
-      socket.onmessage?.({
-        data: JSON.stringify({ data: { text: 'hello' } }),
-      });
-      await flushPromises();
-
-      expect(messageHandler).not.toHaveBeenCalled();
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
     });
   });
 
   describe('inactivity timeout', () => {
     const INACTIVITY_TIMEOUT_MS = 180 * 1000; // 180 seconds
 
-    it('should show disconnection message after 120 seconds of inactivity', async () => {
-      const socket = getSocket();
-      socket.onopen?.();
-      await flushPromises();
+    it('should show disconnection message after timeout', () => {
+      network.resetInactivityTimeout();
 
-      // Advance time to just before timeout
       vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS - 1);
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
 
-      // Advance time to trigger timeout
       vi.advanceTimersByTime(1);
       expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
       expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith({
@@ -856,69 +329,41 @@ describe('network', () => {
       });
     });
 
-    it('should reset timeout when message is received', async () => {
-      const socket = getSocket();
-      socket.onopen?.();
-      await flushPromises();
+    it('should reset timeout when resetInactivityTimeout is called', () => {
+      network.resetInactivityTimeout();
 
-      // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
 
-      // Receive a message - this should reset the timeout
-      socket.onmessage?.({
-        data: JSON.stringify({ event: 'test', data: {} }),
-      });
-      await flushPromises();
+      network.resetInactivityTimeout();
 
-      // Advance time to 60 seconds again (180 seconds total from start)
       vi.advanceTimersByTime(60 * 1000);
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
 
-      // Advance to trigger timeout (180 seconds from last message)
       vi.advanceTimersByTime(120 * 1000);
       expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
     });
 
-    it('should clear timeout when socket closes', async () => {
-      const socket = getSocket();
-      socket.onopen?.();
-      await flushPromises();
+    it('should clear timeout when clearInactivityTimeout is called', () => {
+      network.resetInactivityTimeout();
 
-      // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
 
-      // Close socket - should clear timeout
-      socket.onclose?.();
+      network.clearInactivityTimeout();
 
-      // Advance past original timeout
       vi.advanceTimersByTime(180 * 1000);
 
-      // Should not have triggered because socket was closed
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
     });
 
-    it('should clear timeout when ircDisconnect is called', async () => {
-      const socket = getSocket();
-      socket.onopen?.();
-      await flushPromises();
+    it('should clear timeout when ircDisconnect is called', () => {
+      network.resetInactivityTimeout();
 
-      // Advance time to 60 seconds
       vi.advanceTimersByTime(60 * 1000);
 
-      // Disconnect - should clear timeout
       network.ircDisconnect();
 
-      // Advance past original timeout
       vi.advanceTimersByTime(180 * 1000);
-
-      // Should not have triggered because we disconnected
-      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
-    });
-
-    it('should not show message if no socket was opened', () => {
-      // Don't call onopen, just advance time
-      vi.advanceTimersByTime(INACTIVITY_TIMEOUT_MS + 1000);
 
       expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
     });
