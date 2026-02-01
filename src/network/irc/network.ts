@@ -257,7 +257,36 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     return;
   }
 
-  // Backend proxy connection
+  // Gateway mode: use direct IRC protocol with gateway proxy
+  if (isGatewayMode()) {
+    currentConnectionMode = 'websocket';
+    // Set up the event callback so direct WebSocket can trigger events
+    setDirectEventCallback(triggerEvent);
+    // Track connection TLS status
+    setCurrentConnectionInfo(host, useTLS);
+
+    // Construct gateway WebSocket URL with query parameters
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const params = new URLSearchParams({
+      host: singleServer.host,
+      port: String(singleServer.port),
+      tls: String(useTLS),
+      encoding: currentServer?.encoding ?? 'utf8',
+    });
+    const gatewayWebSocketUrl = `${protocol}//${gatewayHost}:${gatewayPort}${gatewayPath}?${params.toString()}`;
+
+    // Create a server config for the gateway connection
+    const gatewayServer: Server = {
+      ...currentServer,
+      connectionType: 'websocket',
+      websocketUrl: gatewayWebSocketUrl,
+    };
+
+    initDirectWebSocket(gatewayServer, nick);
+    return;
+  }
+
+  // Local backend proxy connection (JSON protocol)
   currentConnectionMode = 'backend';
 
   // Check for existing STS policy (only if not already using TLS)

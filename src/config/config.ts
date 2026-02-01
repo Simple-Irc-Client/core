@@ -15,7 +15,7 @@ export const websocketHost = 'localhost';
 // and encryption will be disabled (gateway doesn't use encryption)
 export const gatewayHost = import.meta.env.VITE_GATEWAY_HOST || '';
 export const gatewayPort = Number(import.meta.env.VITE_GATEWAY_PORT) || 8667;
-export const gatewayPath = import.meta.env.VITE_GATEWAY_PATH || '/irc';
+export const gatewayPath = import.meta.env.VITE_GATEWAY_PATH || '/webirc';
 
 // Check if we're in gateway mode (connecting to public gateway)
 export const isGatewayMode = (): boolean => gatewayHost !== '';
