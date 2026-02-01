@@ -12,7 +12,6 @@ vi.mock('@/config/config', () => ({
   gatewayPort: 8667,
   gatewayPath: '/webirc',
   isGatewayMode: () => false,
-  defaultQuitMessage: 'Simple Irc Client ( https://simpleircclient.com )',
 }));
 
 // Mock directWebSocket module

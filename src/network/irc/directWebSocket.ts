@@ -206,15 +206,10 @@ export const isDirectConnecting = (): boolean => {
 
 /**
  * Disconnect the direct WebSocket connection.
- * Sends QUIT command before closing.
+ * Just closes the WebSocket - the server/backend handles QUIT.
  */
-export const disconnectDirect = async (reason?: string): Promise<void> => {
+export const disconnectDirect = (): void => {
   if (directSocket) {
-    if (directSocket.readyState === WebSocket.OPEN) {
-      // Send QUIT command
-      const quitMsg = reason ? `QUIT :${reason}` : 'QUIT';
-      await sendDirectRaw(quitMsg);
-    }
     directSocket.close();
     directSocket = null;
   }

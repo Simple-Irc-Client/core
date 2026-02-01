@@ -325,7 +325,7 @@ describe('directWebSocket', () => {
   });
 
   describe('disconnectDirect', () => {
-    it('should send QUIT and close socket', async () => {
+    it('should close socket without sending QUIT', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -339,33 +339,15 @@ describe('directWebSocket', () => {
       await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
-      await directWebSocket.disconnectDirect();
+      directWebSocket.disconnectDirect();
 
-      expect(lastCreatedSocket?.send).toHaveBeenCalledWith('QUIT');
+      // Should not send QUIT - server/backend handles it
+      expect(lastCreatedSocket?.send).not.toHaveBeenCalled();
       expect(lastCreatedSocket?.close).toHaveBeenCalled();
     });
 
-    it('should send QUIT with reason when provided', async () => {
-      const server: Server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['testnet.example.com'],
-        connectionType: 'websocket',
-        websocketUrl: 'wss://testnet.example.com/',
-      };
-
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
-      await lastCreatedSocket?.onopen?.();
-      lastCreatedSocket?.send.mockClear();
-
-      await directWebSocket.disconnectDirect('Goodbye!');
-
-      expect(lastCreatedSocket?.send).toHaveBeenCalledWith('QUIT :Goodbye!');
-    });
-
-    it('should handle disconnect when no socket exists', async () => {
-      await expect(directWebSocket.disconnectDirect()).resolves.toBeUndefined();
+    it('should handle disconnect when no socket exists', () => {
+      expect(() => directWebSocket.disconnectDirect()).not.toThrow();
     });
   });
 
