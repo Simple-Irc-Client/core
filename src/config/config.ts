@@ -9,6 +9,7 @@ export const clientSourceUrl = 'https://simpleircclient.com';
 
 export const websocketPort = 8667;
 export const websocketHost = 'localhost';
+export const websocketPath = 'webirc';
 
 // Gateway configuration (for web client connecting to public gateway)
 // When gatewayHost is set, the client will connect to the gateway instead of localhost
