@@ -744,34 +744,6 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
-  it('test raw NOTICE #2', () => {
-    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
-    const mockSetSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
-
-    const line =
-      '@draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
-
-    new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-
-    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
-    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
-
-    expect(mockSetSetWizardStep).toHaveBeenCalledTimes(1);
-    expect(mockSetSetWizardStep).toHaveBeenCalledWith('password');
-
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,' }));
-    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
-  });
-
   it('test raw NOTICE #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
@@ -826,6 +798,141 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw NOTICE password required - Polish version', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = ':NickServ!NickServ@services.example.com NOTICE TestUser :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie, zaloguj się za pomocą /msg NickServ IDENTIFY hasło.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie, zaloguj się za pomocą /msg NickServ IDENTIFY hasło.' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw NOTICE password required - English version 1', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = ':NickServ!NickServ@services.example.com NOTICE TestUser :This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+
+
+  it('test raw NOTICE password required - English version 2', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = ':NickServ!NickServ@services.example.com NOTICE TestUser :This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY password.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw NOTICE password required - should not trigger for non-NickServ messages', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = ':ChanServ!ChanServ@services.example.com NOTICE TestUser :This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    // getCurrentNick is not called for non-NickServ messages since the condition nick === 'NickServ' fails early
+    expect(mockGetCurrentNick).not.toHaveBeenCalled();
+
+    // Should NOT trigger password required logic for non-NickServ messages
+    expect(mockSetIsPasswordRequired).not.toHaveBeenCalled();
+    expect(mockSetWizardStep).not.toHaveBeenCalled();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw NOTICE password required - should not trigger for different target', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = ':NickServ!NickServ@services.example.com NOTICE OtherUser :This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
+
+    // Should NOT trigger password required logic for different target
+    expect(mockSetIsPasswordRequired).not.toHaveBeenCalled();
+    expect(mockSetWizardStep).not.toHaveBeenCalled();
+
+    // Message should still be added to debug channel and current channel (normal NOTICE behavior)
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
   it('test raw PART #1', () => {
