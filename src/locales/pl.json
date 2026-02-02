@@ -264,5 +264,15 @@
     "channelSettings.actions.set": "Ustaw",
     "channelSettings.actions.clear": "Wyczyść",
     "channelSettings.actions.apply": "Zastosuj",
-    "channelSettings.actions.add": "Dodaj"
+    "channelSettings.actions.add": "Dodaj",
+    "channelListDialog.title": "Dołącz do kanałów",
+    "channelListDialog.description": "Wybierz kanały z poniższej listy",
+    "channelListDialog.search.placeholder": "Szukaj kanałów...",
+    "channelListDialog.loading": "Ładowanie kanałów...",
+    "channelListDialog.noResults": "Nie znaleziono kanałów",
+    "channelListDialog.column.name": "Nazwa",
+    "channelListDialog.column.users": "Użytkownicy",
+    "channelListDialog.column.topic": "Temat",
+    "channelListDialog.button.cancel": "Anuluj",
+    "channelListDialog.button.join": "Dołącz"
 }

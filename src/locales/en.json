@@ -264,5 +264,15 @@
     "channelSettings.actions.set": "Set",
     "channelSettings.actions.clear": "Clear",
     "channelSettings.actions.apply": "Apply",
-    "channelSettings.actions.add": "Add"
+    "channelSettings.actions.add": "Add",
+    "channelListDialog.title": "Join Channels",
+    "channelListDialog.description": "Select channels to join from the list below",
+    "channelListDialog.search.placeholder": "Search channels...",
+    "channelListDialog.loading": "Loading channels...",
+    "channelListDialog.noResults": "No channels found",
+    "channelListDialog.column.name": "Name",
+    "channelListDialog.column.users": "Users",
+    "channelListDialog.column.topic": "Topic",
+    "channelListDialog.button.cancel": "Cancel",
+    "channelListDialog.button.join": "Join"
 }
