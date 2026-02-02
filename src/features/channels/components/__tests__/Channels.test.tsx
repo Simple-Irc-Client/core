@@ -9,7 +9,7 @@ import * as network from '@/network/irc/network';
 import { ChannelCategory } from '@shared/types';
 import type { Channel } from '@shared/types';
 
-// Mock browser APIs for Popover/Command components
+// Mock browser APIs for Dialog components
 beforeAll(() => {
   global.ResizeObserver = class ResizeObserver {
     observe() {}
@@ -86,7 +86,7 @@ describe('Channels', () => {
       })
     );
 
-    vi.spyOn(channelListStore, 'getChannelListSortedByAZ').mockReturnValue(channelsList);
+    vi.spyOn(channelListStore, 'getChannelListSortedByUsers').mockReturnValue(channelsList);
   };
 
   describe('Basic rendering', () => {
@@ -129,13 +129,12 @@ describe('Channels', () => {
       expect(screen.getByRole('button', { name: '#channel3' })).toBeInTheDocument();
     });
 
-    it('should render join channel button', () => {
+    it('should render add channel button', () => {
       setupMocks();
 
       render(<Channels />);
 
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-      expect(screen.getByText('main.channels.join')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.join' })).toBeInTheDocument();
     });
   });
 
@@ -409,8 +408,8 @@ describe('Channels', () => {
     });
   });
 
-  describe('Join channel popover', () => {
-    it('should open popover when join button is clicked', () => {
+  describe('Join channel dialog', () => {
+    it('should open dialog when add button is clicked', () => {
       setupMocks({
         isChannelListLoadingFinished: true,
         channelsList: [{ name: '#newchannel', users: 10, topic: '' }],
@@ -418,13 +417,13 @@ describe('Channels', () => {
 
       render(<Channels />);
 
-      const joinButton = screen.getByRole('combobox');
-      fireEvent.click(joinButton);
+      const addButton = screen.getByRole('button', { name: 'main.channels.join' });
+      fireEvent.click(addButton);
 
-      expect(screen.getByPlaceholderText('main.channels.search')).toBeInTheDocument();
+      expect(screen.getByText('channelListDialog.title')).toBeInTheDocument();
     });
 
-    it('should display available channels in popover', () => {
+    it('should display available channels in dialog', () => {
       setupMocks({
         isChannelListLoadingFinished: true,
         channelsList: [
@@ -435,11 +434,11 @@ describe('Channels', () => {
 
       render(<Channels />);
 
-      const joinButton = screen.getByRole('combobox');
-      fireEvent.click(joinButton);
+      const addButton = screen.getByRole('button', { name: 'main.channels.join' });
+      fireEvent.click(addButton);
 
-      expect(screen.getByText('#available1')).toBeInTheDocument();
-      expect(screen.getByText('#available2')).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: '#available1' })).toBeInTheDocument();
+      expect(screen.getByRole('cell', { name: '#available2' })).toBeInTheDocument();
     });
 
     it('should filter out already open channels from the list', () => {
@@ -454,30 +453,15 @@ describe('Channels', () => {
 
       render(<Channels />);
 
-      const joinButton = screen.getByRole('combobox');
-      fireEvent.click(joinButton);
-
-      // #alreadyopen should appear as a channel button, not in the popover list
+      // #alreadyopen should appear as a channel button in sidebar before opening dialog
       expect(screen.getByRole('button', { name: '#alreadyopen' })).toBeInTheDocument();
-      // #available should only appear in the popover
-      expect(screen.getByText('#available')).toBeInTheDocument();
-    });
 
-    it('should call ircJoinChannels when selecting a channel', () => {
-      setupMocks({
-        isChannelListLoadingFinished: true,
-        channelsList: [{ name: '#newchannel', users: 10, topic: '' }],
-      });
+      const addButton = screen.getByRole('button', { name: 'main.channels.join' });
+      fireEvent.click(addButton);
 
-      render(<Channels />);
-
-      const joinButton = screen.getByRole('combobox');
-      fireEvent.click(joinButton);
-
-      const channelOption = screen.getByText('#newchannel');
-      fireEvent.click(channelOption);
-
-      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#newchannel']);
+      // In the dialog table, only #available should be visible as a table cell
+      expect(screen.getByRole('cell', { name: '#available' })).toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: '#alreadyopen' })).not.toBeInTheDocument();
     });
 
     it('should show no results message when channel list is empty', () => {
@@ -488,10 +472,10 @@ describe('Channels', () => {
 
       render(<Channels />);
 
-      const joinButton = screen.getByRole('combobox');
-      fireEvent.click(joinButton);
+      const addButton = screen.getByRole('button', { name: 'main.channels.join' });
+      fireEvent.click(addButton);
 
-      expect(screen.getByText('main.channels.no-results')).toBeInTheDocument();
+      expect(screen.getByText('channelListDialog.noResults')).toBeInTheDocument();
     });
   });
 

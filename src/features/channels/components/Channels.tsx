@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Hash, Home, Wrench, User, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Hash, Home, Wrench, User, X, Plus } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
@@ -15,12 +15,12 @@ import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/DrawersContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
-import { getChannelListSortedByAZ, useChannelListStore } from '@features/channels/store/channelList';
+import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
 import { Badge } from '@shared/components/ui/badge';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@shared/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { cn } from '@shared/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
+import ChannelListDialog from '@shared/components/ChannelListDialog';
 
 interface ChannelsProps {
   width?: number;
@@ -38,10 +38,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const channelsList = useMemo(() => (isChannelListLoadingFinished ? (getChannelListSortedByAZ() ?? []) : []), [isChannelListLoadingFinished]);
+  const channelsList = useMemo(() => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []), [isChannelListLoadingFinished]);
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const openChannelNames = useMemo(() => openChannelsShort.map((ch) => ch.name), [openChannelsShort]);
 
   const handleHover = (channel: string, visible: boolean): void => {
     if (visible) {
@@ -59,10 +61,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     }
   };
 
-  const handleJoinChannel = (channel: string): void => {
-    if (channel.length !== 0) {
-      ircJoinChannels([channel]);
-      setOpen(false);
+  const handleJoinChannels = (channels: string[]): void => {
+    if (channels.length > 0) {
+      ircJoinChannels(channels);
     }
   };
 
@@ -103,7 +104,25 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     >
       <div>
           <div className="mb-4 flex items-center justify-between p-4">
-            <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setDialogOpen(true)}
+                      aria-label={t('main.channels.join')}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('main.channels.join')}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             {isChannelsDrawerOpen && (
               <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
                 <X className="h-4 w-4" />
@@ -170,43 +189,16 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                 </div>
               </div>
             ))}
-            <div className="relative px-4 py-2">
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" aria-expanded={open} className={`w-full justify-between ${fontSizeClass} h-9`}>
-                    {t('main.channels.join')}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0">
-                  <Command>
-                    <CommandInput placeholder={t('main.channels.search') ?? ''} />
-                    <CommandList>
-                      <CommandEmpty>{t('main.channels.no-results')}</CommandEmpty>
-                      <CommandGroup>
-                        {channelsList
-                          .filter((option) => !openChannelsShort.map((ch) => ch.name).includes(option.name))
-                          .map((option) => (
-                            <CommandItem
-                              key={option.name}
-                              value={option.name}
-                              onSelect={(currentValue) => {
-                                handleJoinChannel(currentValue);
-                                setOpen(false);
-                              }}
-                            >
-                              <Check className={cn('mr-2 h-4 w-4 opacity-0')} />
-                              {option.name}
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
           </div>
         </div>
+      <ChannelListDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        channelList={channelsList}
+        isLoading={!isChannelListLoadingFinished}
+        onJoin={handleJoinChannels}
+        excludeChannels={openChannelNames}
+      />
     </div>
   );
 };
