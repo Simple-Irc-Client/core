@@ -34,7 +34,16 @@ export default defineConfig(({ command }) => {
         host: true,
         hmr: false,
       },
-      base: './'
+      base: './',
+      build: {
+        rollupOptions: {
+          output: {
+            entryFileNames: 'assets/[name].js',
+            chunkFileNames: 'assets/[name].js',
+            assetFileNames: 'assets/[name][extname]',
+          },
+        },
+      },
     }
   }
 });
