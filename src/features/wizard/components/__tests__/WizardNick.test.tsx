@@ -2,6 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardNick from '../WizardNick';
 import * as settingsStore from '@features/settings/store/settings';
+import * as resolveServerModule from '@shared/lib/resolveServerFromParams';
+import * as network from '@/network/irc/network';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -12,6 +14,16 @@ vi.mock('react-i18next', () => ({
 vi.mock('@features/settings/store/settings', () => ({
   setNick: vi.fn(),
   setWizardStep: vi.fn(),
+  setServer: vi.fn(),
+  setIsConnecting: vi.fn(),
+}));
+
+vi.mock('@/network/irc/network', () => ({
+  ircConnect: vi.fn(),
+}));
+
+vi.mock('@shared/lib/resolveServerFromParams', () => ({
+  resolveServerFromParams: vi.fn(() => undefined),
 }));
 
 describe('WizardNick', () => {
@@ -202,6 +214,42 @@ describe('WizardNick', () => {
 
       const input = screen.getByLabelText('wizard.nick.nick');
       expect(input).toHaveAttribute('autocomplete', 'nick');
+    });
+  });
+
+  describe('Server query param', () => {
+    it('should skip server step and connect directly when resolveServerFromParams returns a server', () => {
+      const mockServer = { network: 'Libera.Chat', connectionType: 'backend' as const, default: 0, encoding: 'utf8', servers: ['irc.libera.chat'] };
+      vi.mocked(resolveServerModule.resolveServerFromParams).mockReturnValue(mockServer);
+
+      render(<WizardNick />);
+
+      const input = screen.getByLabelText('wizard.nick.nick');
+      fireEvent.change(input, { target: { value: 'MyNick' } });
+
+      const button = screen.getByText('wizard.nick.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(mockServer);
+      expect(network.ircConnect).toHaveBeenCalledWith(mockServer, 'MyNick');
+      expect(settingsStore.setIsConnecting).toHaveBeenCalledWith(true);
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('loading');
+    });
+
+    it('should go to server step when resolveServerFromParams returns undefined', () => {
+      vi.mocked(resolveServerModule.resolveServerFromParams).mockReturnValue(undefined);
+
+      render(<WizardNick />);
+
+      const input = screen.getByLabelText('wizard.nick.nick');
+      fireEvent.change(input, { target: { value: 'MyNick' } });
+
+      const button = screen.getByText('wizard.nick.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).not.toHaveBeenCalled();
+      expect(network.ircConnect).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('server');
     });
   });
 

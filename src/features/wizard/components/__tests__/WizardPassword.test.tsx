@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import WizardPassword from '../WizardPassword';
 import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
+import * as queryParams from '@shared/lib/queryParams';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -17,12 +18,18 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendPassword: vi.fn(),
+  ircJoinChannels: vi.fn(),
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
   setWizardStep: vi.fn(),
+  setWizardCompleted: vi.fn(),
   useSettingsStore: vi.fn(),
   getCurrentNick: vi.fn(),
+}));
+
+vi.mock('@shared/lib/queryParams', () => ({
+  getChannelParam: vi.fn(() => undefined),
 }));
 
 describe('WizardPassword', () => {
@@ -285,6 +292,75 @@ describe('WizardPassword', () => {
 
       const input = screen.getByLabelText('wizard.password.password');
       expect(input).toHaveAttribute('autocomplete', 'password');
+    });
+  });
+
+  describe('Channel query param', () => {
+    it('should join channel and complete wizard when channel param exists', () => {
+      setupMocks();
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general']);
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#general']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
+      expect(settingsStore.setWizardStep).not.toHaveBeenCalled();
+    });
+
+    it('should join multiple channels when comma-separated', () => {
+      setupMocks();
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general', '#help']);
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#general', '#help']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
+    });
+
+    it('should navigate to channels step when no channel param exists', () => {
+      setupMocks();
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(undefined);
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(network.ircJoinChannels).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardCompleted).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('channels');
+    });
+
+    it('should join channel when nick has timed out', () => {
+      setupMocks('InitialNick');
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#testing']);
+
+      const { rerender } = render(<WizardPassword />);
+
+      setupMocks('NewNick');
+      rerender(<WizardPassword />);
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(network.ircSendPassword).not.toHaveBeenCalled();
+      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#testing']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
     });
   });
 

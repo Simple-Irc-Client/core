@@ -3,6 +3,7 @@ import { render, screen, act, fireEvent } from '@testing-library/react';
 import WizardLoading from '../WizardLoading';
 import * as settingsStore from '@features/settings/store/settings';
 import * as ircNetwork from '@/network/irc/network';
+import * as queryParams from '@shared/lib/queryParams';
 import * as stsModule from '@/network/irc/sts';
 
 vi.mock('react-i18next', () => ({
@@ -14,6 +15,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('@features/settings/store/settings', () => ({
   getIsPasswordRequired: vi.fn(),
   setWizardStep: vi.fn(),
+  setWizardCompleted: vi.fn(),
   setWizardProgress: vi.fn(),
   getWizardProgress: vi.fn(),
   useSettingsStore: vi.fn(),
@@ -23,6 +25,11 @@ vi.mock('@features/settings/store/settings', () => ({
 vi.mock('@/network/irc/network', () => ({
   ircConnect: vi.fn(),
   ircDisconnect: vi.fn(),
+  ircJoinChannels: vi.fn(),
+}));
+
+vi.mock('@shared/lib/queryParams', () => ({
+  getChannelParam: vi.fn(() => undefined),
 }));
 
 vi.mock('@/network/irc/sts', () => ({
@@ -412,6 +419,83 @@ describe('WizardLoading', () => {
       fireEvent.click(goBackButton);
 
       expect(settingsStore.resetAndGoToStart).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Channel query param', () => {
+    it('should join channel and complete wizard when channel param exists', () => {
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(false);
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general']);
+
+      setupMocks({
+        isConnected: true,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(ircNetwork.ircJoinChannels).toHaveBeenCalledWith(['#general']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
+      expect(settingsStore.setWizardStep).not.toHaveBeenCalled();
+    });
+
+    it('should join multiple channels when comma-separated', () => {
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(false);
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general', '#help', '#random']);
+
+      setupMocks({
+        isConnected: true,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(ircNetwork.ircJoinChannels).toHaveBeenCalledWith(['#general', '#help', '#random']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
+    });
+
+    it('should navigate to channels step when no channel param exists', () => {
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(false);
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(undefined);
+
+      setupMocks({
+        isConnected: true,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(ircNetwork.ircJoinChannels).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardCompleted).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('channels');
+    });
+
+    it('should not check channel param if password is required', () => {
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(true);
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general']);
+
+      setupMocks({
+        isConnected: true,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(queryParams.getChannelParam).not.toHaveBeenCalled();
+      expect(ircNetwork.ircJoinChannels).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardCompleted).not.toHaveBeenCalled();
     });
   });
 
