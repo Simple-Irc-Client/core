@@ -42,7 +42,11 @@ const WizardLoading = () => {
 
   useEffect(() => {
     if (isConnecting) {
-      setWizardProgress(1, t('wizard.loading.connecting'));
+      if (getPendingSTSUpgrade()) {
+        setWizardProgress(4 / 3, t('wizard.loading.connectingSecure'));
+      } else {
+        setWizardProgress(1, t('wizard.loading.connecting'));
+      }
       return undefined;
     }
 

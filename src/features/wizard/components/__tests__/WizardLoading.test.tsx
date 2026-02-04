@@ -284,6 +284,22 @@ describe('WizardLoading', () => {
       expect(settingsStore.setWizardProgress).not.toHaveBeenCalled();
     });
 
+    it('should call setWizardProgress with secure connecting message during STS upgrade', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue({
+        host: 'irc.test.com',
+        port: 6697,
+        reason: 'sts_upgrade',
+      });
+
+      setupMocks({
+        isConnecting: true,
+      });
+
+      render(<WizardLoading />);
+
+      expect(settingsStore.setWizardProgress).toHaveBeenCalledWith(4 / 3, 'wizard.loading.connectingSecure');
+    });
+
     it('should not call setWizardProgress with disconnected message during STS upgrade', () => {
       vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue({
         host: 'irc.test.com',
@@ -306,6 +322,8 @@ describe('WizardLoading', () => {
 
   describe('State transitions', () => {
     it('should handle transition from connecting to connected', () => {
+      vi.mocked(stsModule.getPendingSTSUpgrade).mockReturnValue(null);
+
       setupMocks({
         isConnecting: true,
       });

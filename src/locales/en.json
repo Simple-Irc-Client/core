@@ -21,6 +21,7 @@
     "wizard.server.button.next": "Next",
     "wizard.server.message.no.options": "No results",
     "wizard.loading.connecting": "Connecting to server",
+    "wizard.loading.connectingSecure": "Connecting to secure server",
     "wizard.loading.connected": "Connected",
     "wizard.loading.disconnected": "Disconnected",
     "wizard.loading.isPasswordRequired": "Checking if password is required",
