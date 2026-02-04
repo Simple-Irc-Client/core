@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Progress } from '@shared/components/ui/progress';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setWizardStep, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart } from '@features/settings/store/settings';
-import { ircConnect, ircDisconnect } from '@/network/irc/network';
+import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart } from '@features/settings/store/settings';
+import { ircConnect, ircDisconnect, ircJoinChannels } from '@/network/irc/network';
+import { getChannelParam } from '@shared/lib/queryParams';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
 
 const CONNECTION_TIMEOUT_MS = 60_000;
@@ -60,7 +61,13 @@ const WizardLoading = () => {
       const timeout5 = setTimeout(() => {
         const isPasswordRequired = getIsPasswordRequired();
         if (isPasswordRequired === false || isPasswordRequired === undefined) {
-          setWizardStep('channels');
+          const channels = getChannelParam();
+          if (channels) {
+            ircJoinChannels(channels);
+            setWizardCompleted(true);
+          } else {
+            setWizardStep('channels');
+          }
         }
       }, 5_000); // 5 sec
 
@@ -76,7 +83,8 @@ const WizardLoading = () => {
       setWizardProgress(0, t('wizard.loading.disconnected'));
     }
     return undefined;
-  }, [isConnecting, isConnected, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnecting, isConnected]);
 
   const handleGoBack = (): void => {
     resetAndGoToStart();

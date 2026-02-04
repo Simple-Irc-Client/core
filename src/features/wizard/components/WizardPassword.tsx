@@ -3,8 +3,9 @@ import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { ircSendPassword } from '@/network/irc/network';
-import { getCurrentNick, setWizardStep, useSettingsStore } from '@features/settings/store/settings';
+import { ircSendPassword, ircJoinChannels } from '@/network/irc/network';
+import { getCurrentNick, setWizardStep, setWizardCompleted, useSettingsStore } from '@features/settings/store/settings';
+import { getChannelParam } from '@shared/lib/queryParams';
 
 const WizardPassword = () => {
   const { t } = useTranslation();
@@ -27,7 +28,13 @@ const WizardPassword = () => {
     if (initialNick === nick) {
       ircSendPassword(password);
     }
-    setWizardStep('channels');
+    const channels = getChannelParam();
+    if (channels) {
+      ircJoinChannels(channels);
+      setWizardCompleted(true);
+    } else {
+      setWizardStep('channels');
+    }
   };
 
   return (
