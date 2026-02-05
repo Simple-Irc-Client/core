@@ -4,6 +4,7 @@ import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as usersStore from '@features/users/store/users';
 import { MessageCategory, type Message, type User } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
@@ -84,6 +85,22 @@ describe('Chat tests', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (selector: any) => selector({ messages })
     );
+
+    // Mock getUser function for display name tests
+    vi.spyOn(usersStore, 'getUser').mockImplementation((nick: string) => {
+      // Return a mock user with display name if it was set in the message
+      const messageWithUser = messages.find(msg => 
+        typeof msg.nick !== 'string' && msg.nick?.nick === nick
+      );
+      
+      // If we found a message with this user, return the user object
+      if (messageWithUser && typeof messageWithUser.nick !== 'string') {
+        return messageWithUser.nick;
+      }
+      
+      // Otherwise return undefined
+      return undefined;
+    });
   };
 
   describe('Basic rendering', () => {
@@ -1319,6 +1336,73 @@ describe('Chat tests', () => {
 
       // Should scroll to bottom since channel changed resets isUserScrolledUp
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
+    });
+
+    it('should display user display names in messages when available', () => {
+      const userWithDisplayName = createUserNick({ 
+        nick: 'testUser',
+        displayName: 'Test Display Name'
+      });
+
+      setupMocks({
+        messages: [
+          createMessage({ 
+            id: '1', 
+            message: 'Hello', 
+            nick: userWithDisplayName
+          })
+        ]
+      });
+
+      render(<Main />);
+
+      // Should display the display name
+      expect(screen.getByText('Test Display Name')).toBeInTheDocument();
+      // Should not display the original nick
+      expect(screen.queryByText('testUser')).not.toBeInTheDocument();
+    });
+
+    it('should display user nick in messages when display name is not available', () => {
+      const userWithoutDisplayName = createUserNick({ 
+        nick: 'testUser'
+      });
+
+      setupMocks({
+        messages: [
+          createMessage({ 
+            id: '1', 
+            message: 'Hello', 
+            nick: userWithoutDisplayName
+          })
+        ]
+      });
+
+      render(<Main />);
+
+      // Should display the nick
+      expect(screen.getByText('testUser')).toBeInTheDocument();
+    });
+
+    it('should handle empty display name in messages gracefully', () => {
+      const userWithEmptyDisplayName = createUserNick({ 
+        nick: 'testUser',
+        displayName: ''
+      });
+
+      setupMocks({
+        messages: [
+          createMessage({ 
+            id: '1', 
+            message: 'Hello', 
+            nick: userWithEmptyDisplayName
+          })
+        ]
+      });
+
+      render(<Main />);
+
+      // Should fall back to nick when display name is empty
+      expect(screen.getByText('testUser')).toBeInTheDocument();
     });
   });
 });

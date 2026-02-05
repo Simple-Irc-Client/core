@@ -71,6 +71,19 @@ describe('Channels', () => {
       (selector: any) => selector({ openChannelsShortList: openChannelsShort })
     );
 
+    // Mock getChannel function for display name tests
+    vi.spyOn(channelsStore, 'getChannel').mockImplementation((channelName: string) => {
+      const channel = openChannelsShort.find((channel) => channel.name === channelName);
+      return channel ? {
+        ...channel,
+        messages: [],
+        topic: '',
+        topicSetBy: '',
+        topicSetTime: 0,
+        typing: [],
+      } : undefined;
+    });
+
     vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen,
       setChannelsDrawerStatus: vi.fn(),
@@ -567,6 +580,55 @@ describe('Channels', () => {
         fireEvent.click(closeButton);
         expect(mockSetChannelsDrawerStatus).toHaveBeenCalled();
       }
+    });
+
+    it('should display channel display names when available', () => {
+      setupMocks({
+        openChannelsShort: [
+          createChannel({ 
+            name: '#test',
+            displayName: 'Test Display Channel'
+          })
+        ],
+      });
+
+      render(<Channels />);
+
+      // Should display the display name
+      expect(screen.getByText('Test Display Channel')).toBeInTheDocument();
+      // Should not display the original channel name
+      expect(screen.queryByText('#test')).not.toBeInTheDocument();
+    });
+
+    it('should display channel name when display name is not available', () => {
+      setupMocks({
+        openChannelsShort: [
+          createChannel({ 
+            name: '#test'
+          })
+        ],
+      });
+
+      render(<Channels />);
+
+      // Should display the channel name
+      expect(screen.getByText('#test')).toBeInTheDocument();
+    });
+
+    it('should handle empty display name gracefully', () => {
+      setupMocks({
+        openChannelsShort: [
+          createChannel({ 
+            name: '#test',
+            displayName: ''
+          })
+        ],
+      });
+
+      render(<Channels />);
+
+      // Should fall back to channel name when display name is empty
+      expect(screen.getByText('#test')).toBeInTheDocument();
     });
   });
 });

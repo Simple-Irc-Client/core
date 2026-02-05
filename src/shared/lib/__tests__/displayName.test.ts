@@ -47,6 +47,22 @@ describe('displayName utility functions', () => {
       const result = getUserDisplayName('nonExistentUser');
       expect(result).toBe('nonExistentUser');
     });
+
+    it('should return nick when display name is empty string', () => {
+      const mockUser = {
+        nick: 'testUser',
+        ident: 'test',
+        hostname: 'example.com',
+        displayName: '',
+        flags: [],
+        channels: [],
+      };
+
+      vi.spyOn(usersStore, 'getUser').mockReturnValue(mockUser);
+      
+      const result = getUserDisplayName('testUser');
+      expect(result).toBe('testUser');
+    });
   });
 
   describe('getChannelDisplayName', () => {
@@ -92,6 +108,25 @@ describe('displayName utility functions', () => {
       
       const result = getChannelDisplayName('#nonExistentChannel');
       expect(result).toBe('#nonExistentChannel');
+    });
+
+    it('should return channel name when display name is empty string', () => {
+      const mockChannel = {
+        name: '#testChannel',
+        category: 'channel' as const,
+        unReadMessages: 0,
+        displayName: '',
+        messages: [],
+        topic: '',
+        topicSetBy: '',
+        topicSetTime: 0,
+        typing: [],
+      };
+
+      vi.spyOn(channelsStore, 'getChannel').mockReturnValue(mockChannel);
+      
+      const result = getChannelDisplayName('#testChannel');
+      expect(result).toBe('#testChannel');
     });
   });
 });

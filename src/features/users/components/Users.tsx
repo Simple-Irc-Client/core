@@ -15,6 +15,7 @@ import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X } from 'lucide-rea
 import { cn } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
+import { getUserDisplayName } from '@shared/lib/displayName';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   if (flags.length === 0 || userModes.length === 0) return null;
@@ -104,8 +105,8 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                   {!hideAvatarsInUsersList && (
                     <Avatar
                       src={user.avatar}
-                      alt={user.nick}
-                      fallbackLetter={user.nick.substring(0, 1).toUpperCase()}
+                      alt={getUserDisplayName(user.nick)}
+                      fallbackLetter={getUserDisplayName(user.nick).substring(0, 1).toUpperCase()}
                       className="h-10 w-10"
                     />
                   )}
@@ -125,7 +126,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                       );
                     })()}
                     <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
-                      {user.nick}
+                      {getUserDisplayName(user.nick)}
                     </span>
                   </div>
                 </button>

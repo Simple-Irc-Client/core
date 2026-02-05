@@ -5,6 +5,7 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as DrawersContext from '@/providers/DrawersContext';
+import * as usersStore from '@features/users/store/users';
 import { ChannelCategory } from '@shared/types';
 import type { User, UserMode } from '@shared/types';
 
@@ -78,6 +79,11 @@ describe('Users', () => {
         setClearAll: vi.fn(),
       })
     );
+
+    // Mock getUser function for display name tests
+    vi.spyOn(usersStore, 'getUser').mockImplementation((nick: string) => {
+      return users.find((user) => user.nick === nick);
+    });
 
     vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue({
       contextMenuAnchorElement: null,
@@ -797,6 +803,55 @@ describe('Users', () => {
         fireEvent.click(closeButton);
         expect(mockSetUsersDrawerStatus).toHaveBeenCalled();
       }
+    });
+
+    it('should display user display names when available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser',
+            displayName: 'Test Display Name'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should display the display name
+      expect(screen.getByRole('button', { name: /Test Display Name/i })).toBeInTheDocument();
+      // Should not display the original nick
+      expect(screen.queryByRole('button', { name: /testUser/i })).not.toBeInTheDocument();
+    });
+
+    it('should display user nick when display name is not available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should display the nick
+      expect(screen.getByRole('button', { name: /testUser/i })).toBeInTheDocument();
+    });
+
+    it('should handle empty display name gracefully', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser',
+            displayName: ''
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should fall back to nick when display name is empty
+      expect(screen.getByRole('button', { name: /testUser/i })).toBeInTheDocument();
     });
   });
 });

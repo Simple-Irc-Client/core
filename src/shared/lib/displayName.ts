@@ -12,7 +12,7 @@ import { getChannel } from '@features/channels/store/channels';
  */
 export const getUserDisplayName = (nick: string): string => {
   const user = getUser(nick);
-  return user?.displayName ?? nick;
+  return user?.displayName || nick;
 };
 
 /**
@@ -22,5 +22,5 @@ export const getUserDisplayName = (nick: string): string => {
  */
 export const getChannelDisplayName = (channelName: string): string => {
   const channel = getChannel(channelName);
-  return channel?.displayName ?? channelName;
+  return channel?.displayName || channelName;
 };
