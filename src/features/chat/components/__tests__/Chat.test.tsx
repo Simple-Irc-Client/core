@@ -1404,5 +1404,52 @@ describe('Chat tests', () => {
       // Should fall back to nick when display name is empty
       expect(screen.getByText('testUser')).toBeInTheDocument();
     });
+
+    it('should use display name for avatar letter when available', () => {
+      const userWithDisplayName = createUserNick({ 
+        nick: 'testUser',
+        displayName: 'Test Display Name'
+      });
+
+      setupMocks({
+        messages: [
+          createMessage({ 
+            id: '1', 
+            message: 'Hello', 
+            nick: userWithDisplayName
+          })
+        ]
+      });
+
+      render(<Main />);
+
+      // Should use 'T' (first letter of display name) for avatar
+      const avatar = screen.getByText('T');
+      expect(avatar).toBeInTheDocument();
+      expect(avatar.tagName).toBe('SPAN'); // Avatar fallback letter
+    });
+
+    it('should use nick for avatar letter when display name is not available', () => {
+      const userWithoutDisplayName = createUserNick({ 
+        nick: 'testUser'
+      });
+
+      setupMocks({
+        messages: [
+          createMessage({ 
+            id: '1', 
+            message: 'Hello', 
+            nick: userWithoutDisplayName
+          })
+        ]
+      });
+
+      render(<Main />);
+
+      // Should use 't' (first letter of nick) for avatar
+      const avatar = screen.getByText('t');
+      expect(avatar).toBeInTheDocument();
+      expect(avatar.tagName).toBe('SPAN'); // Avatar fallback letter
+    });
   });
 });

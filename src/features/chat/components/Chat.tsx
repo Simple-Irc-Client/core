@@ -103,7 +103,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
   const displayNick = nick ? getUserDisplayName(nick) : '';
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
-  const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
+  const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : getUserDisplayName(message.nick.nick).substring(0, 1)) : '';
   const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {

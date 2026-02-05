@@ -405,6 +405,76 @@ describe('Users', () => {
       expect(screen.getByText('Bob')).toBeInTheDocument();
     });
 
+    it('should use display name for user avatar letter when available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser',
+            displayName: 'Test Display Name'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should use 'T' (first letter of display name) for avatar
+      const avatarLetter = screen.getByText('T');
+      expect(avatarLetter).toBeInTheDocument();
+      expect(avatarLetter.tagName).toBe('SPAN'); // Avatar fallback letter
+    });
+
+    it('should use nick for user avatar letter when display name is not available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should use 'T' (first letter of nick, uppercase) for avatar
+      const avatarLetter = screen.getByText('T');
+      expect(avatarLetter).toBeInTheDocument();
+      expect(avatarLetter.tagName).toBe('SPAN'); // Avatar fallback letter
+    });
+
+    it('should use display name for user avatar alt text when available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser',
+            displayName: 'Test Display Name',
+            avatar: 'https://example.com/avatar.png'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should use display name for avatar alt text
+      const avatar = screen.getByRole('img');
+      expect(avatar).toHaveAttribute('alt', 'Test Display Name');
+    });
+
+    it('should use nick for user avatar alt text when display name is not available', () => {
+      setupMocks({
+        users: [
+          createUser({ 
+            nick: 'testUser',
+            avatar: 'https://example.com/avatar.png'
+          })
+        ],
+      });
+
+      render(<Users />);
+
+      // Should use nick for avatar alt text
+      const avatar = screen.getByRole('img');
+      expect(avatar).toHaveAttribute('alt', 'testUser');
+    });
+
     it('should apply custom color to nickname when avatars are hidden', () => {
       setupMocks({
         users: [createUser({ nick: 'Alice', color: '#ff0000' })],
