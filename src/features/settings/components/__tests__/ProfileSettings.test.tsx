@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfileSettings from '../ProfileSettings';
 import * as network from '@/network/irc/network';
@@ -26,6 +26,8 @@ describe('ProfileSettings', () => {
       currentUserAvatar: undefined,
       currentUserDisplayName: undefined,
       currentUserStatus: undefined,
+      currentUserHomepage: undefined,
+      currentUserColor: undefined,
       theme: 'modern',
       fontSize: 'medium',
       hideAvatarsInUsersList: false,
@@ -42,8 +44,8 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
-      expect(document.body.textContent).toContain('main.toolbar.profileDescription');
+      expect(document.body.textContent).toContain('profileSettings.title');
+      expect(document.body.textContent).toContain('profileSettings.description');
     });
 
     it('should not render dialog content when open is false', () => {
@@ -55,7 +57,7 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).not.toContain('main.toolbar.profileDescription');
+      expect(document.body.textContent).not.toContain('profileSettings.description');
     });
 
     it('should show nick input pre-filled with currentNick', () => {
@@ -88,7 +90,7 @@ describe('ProfileSettings', () => {
       await user.clear(nickInput);
       await user.type(nickInput, 'newNickname');
 
-      const changeButton = screen.getByText('main.toolbar.changeNick');
+      const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNickname');
@@ -107,7 +109,7 @@ describe('ProfileSettings', () => {
       const nickInput = document.querySelector('#nick') as HTMLInputElement;
       await user.clear(nickInput);
 
-      const changeButton = screen.getByText('main.toolbar.changeNick');
+      const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
@@ -127,7 +129,7 @@ describe('ProfileSettings', () => {
       await user.clear(nickInput);
       await user.type(nickInput, '   ');
 
-      const changeButton = screen.getByText('main.toolbar.changeNick');
+      const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
@@ -147,7 +149,7 @@ describe('ProfileSettings', () => {
       await user.clear(nickInput);
       await user.type(nickInput, '  newNick  ');
 
-      const changeButton = screen.getByText('main.toolbar.changeNick');
+      const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNick');
@@ -167,7 +169,7 @@ describe('ProfileSettings', () => {
       await user.clear(nickInput);
       await user.type(nickInput, 'newNickname');
 
-      const changeButton = screen.getByText('main.toolbar.changeNick');
+      const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
@@ -350,9 +352,9 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('main.toolbar.layout');
-      expect(document.body.textContent).toContain('main.toolbar.layoutClassic');
-      expect(document.body.textContent).toContain('main.toolbar.layoutModern');
+      expect(document.body.textContent).toContain('profileSettings.layout');
+      expect(document.body.textContent).toContain('profileSettings.layoutClassic');
+      expect(document.body.textContent).toContain('profileSettings.layoutModern');
     });
   });
 
@@ -378,7 +380,7 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('main.toolbar.hideAvatars');
+      expect(document.body.textContent).toContain('profileSettings.hideAvatars');
     });
 
     it('should show unchecked state when hideAvatarsInUsersList is false', () => {
@@ -472,10 +474,10 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('main.toolbar.fontSize');
-      expect(document.body.textContent).toContain('main.toolbar.fontSizeSmall');
-      expect(document.body.textContent).toContain('main.toolbar.fontSizeMedium');
-      expect(document.body.textContent).toContain('main.toolbar.fontSizeLarge');
+      expect(document.body.textContent).toContain('profileSettings.fontSize');
+      expect(document.body.textContent).toContain('profileSettings.fontSizeSmall');
+      expect(document.body.textContent).toContain('profileSettings.fontSizeMedium');
+      expect(document.body.textContent).toContain('profileSettings.fontSizeLarge');
     });
 
     it('should show Medium as selected when fontSize is medium', () => {
@@ -735,7 +737,7 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(screen.getByTestId('connect-button').textContent).toBe('main.toolbar.connect');
+      expect(screen.getByTestId('connect-button').textContent).toBe('currentUser.connect');
     });
   });
 
@@ -803,7 +805,7 @@ describe('ProfileSettings', () => {
       const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
       await user.type(displayNameInput, 'New Display Name');
 
-      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      const changeButton = screen.getByText('profileSettings.changeDisplayName');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name :New Display Name');
@@ -827,7 +829,7 @@ describe('ProfileSettings', () => {
       const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
       await user.clear(displayNameInput);
 
-      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      const changeButton = screen.getByText('profileSettings.changeDisplayName');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name');
@@ -848,7 +850,7 @@ describe('ProfileSettings', () => {
       const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
       await user.type(displayNameInput, 'New Display Name');
 
-      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      const changeButton = screen.getByText('profileSettings.changeDisplayName');
       await user.click(changeButton);
 
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
@@ -883,7 +885,7 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('main.toolbar.displayName');
+      expect(document.body.textContent).toContain('profileSettings.displayName');
     });
   });
 
@@ -951,7 +953,7 @@ describe('ProfileSettings', () => {
       const statusInput = document.querySelector('#status') as HTMLInputElement;
       await user.type(statusInput, 'On vacation');
 
-      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      const changeButton = screen.getByText('profileSettings.changeStatus');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :On vacation');
@@ -975,7 +977,7 @@ describe('ProfileSettings', () => {
       const statusInput = document.querySelector('#status') as HTMLInputElement;
       await user.clear(statusInput);
 
-      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      const changeButton = screen.getByText('profileSettings.changeStatus');
       await user.click(changeButton);
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status');
@@ -996,7 +998,7 @@ describe('ProfileSettings', () => {
       const statusInput = document.querySelector('#status') as HTMLInputElement;
       await user.type(statusInput, 'New Status');
 
-      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      const changeButton = screen.getByText('profileSettings.changeStatus');
       await user.click(changeButton);
 
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
@@ -1018,6 +1020,281 @@ describe('ProfileSettings', () => {
       await user.type(statusInput, 'New Status{Enter}');
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :New Status');
+    });
+  });
+
+  describe('Homepage change functionality', () => {
+    it('should not show homepage field when metadata-homepage is not supported', () => {
+      useSettingsStore.setState({ supportedOptions: [] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage');
+      expect(homepageInput).toBeNull();
+    });
+
+    it('should show homepage field when metadata-homepage is supported', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage');
+      expect(homepageInput).not.toBeNull();
+    });
+
+    it('should pre-fill homepage input with current homepage', () => {
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-homepage'],
+        currentUserHomepage: 'https://example.com',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      expect(homepageInput.value).toBe('https://example.com');
+    });
+
+    it('should send METADATA SET homepage command when changing homepage', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'https://mywebsite.com');
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage https://mywebsite.com');
+    });
+
+    it('should send METADATA SET homepage without value to clear homepage', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-homepage'],
+        currentUserHomepage: 'https://old-website.com',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.clear(homepageInput);
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage');
+    });
+
+    it('should close dialog after changing homepage', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'https://example.com');
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should send METADATA SET homepage command when pressing Enter', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'https://example.com{Enter}');
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage https://example.com');
+    });
+
+    it('should display translated homepage labels', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('profileSettings.homepage');
+      expect(document.body.textContent).toContain('profileSettings.changeHomepage');
+    });
+  });
+
+  describe('Color change functionality', () => {
+    it('should not show color field when metadata-color is not supported', () => {
+      useSettingsStore.setState({ supportedOptions: [] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const colorInput = document.querySelector('#color');
+      expect(colorInput).toBeNull();
+    });
+
+    it('should show color field when metadata-color is supported', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const colorInput = document.querySelector('#color');
+      expect(colorInput).not.toBeNull();
+    });
+
+    it('should pre-fill color input with current color', () => {
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-color'],
+        currentUserColor: '#ff0000',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const colorInput = document.querySelector('#color') as HTMLInputElement;
+      expect(colorInput.value).toBe('#ff0000');
+    });
+
+    it('should send METADATA SET color command when changing color', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const colorInput = document.querySelector('#color') as HTMLInputElement;
+      // Simulate color input change using fireEvent for color inputs
+      fireEvent.change(colorInput, { target: { value: '#00ff00' } });
+
+      const changeButton = screen.getByText('profileSettings.changeColor');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET color #00ff00');
+    });
+
+    it('should close dialog after changing color', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-color'],
+        currentUserColor: '#ff0000',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const changeButton = screen.getByText('profileSettings.changeColor');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should display translated color labels', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('profileSettings.nickColor');
+      expect(document.body.textContent).toContain('profileSettings.changeColor');
+    });
+
+    it('should default to black color when no color is set', () => {
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-color'],
+        currentUserColor: undefined,
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const colorInput = document.querySelector('#color') as HTMLInputElement;
+      expect(colorInput.value).toBe('#000000');
     });
   });
 });

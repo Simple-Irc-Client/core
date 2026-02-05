@@ -51,6 +51,8 @@ export interface SettingsStore {
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
   currentUserStatus: string | undefined; // Current user's status text from metadata
+  currentUserHomepage: string | undefined; // Current user's homepage URL from metadata
+  currentUserColor: string | undefined; // Current user's nick color from metadata
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
@@ -80,6 +82,8 @@ export interface SettingsStore {
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
   setCurrentUserStatus: (status: string | undefined) => void;
+  setCurrentUserHomepage: (homepage: string | undefined) => void;
+  setCurrentUserColor: (color: string | undefined) => void;
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
   setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
@@ -115,6 +119,8 @@ export const useSettingsStore = create<SettingsStore>()(
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
     currentUserStatus: undefined,
+    currentUserHomepage: undefined,
+    currentUserColor: undefined,
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
     hideAvatarsInUsersList: false,
@@ -201,6 +207,12 @@ export const useSettingsStore = create<SettingsStore>()(
     setCurrentUserStatus: (status: string | undefined): void => {
       set(() => ({ currentUserStatus: status }));
     },
+    setCurrentUserHomepage: (homepage: string | undefined): void => {
+      set(() => ({ currentUserHomepage: homepage }));
+    },
+    setCurrentUserColor: (color: string | undefined): void => {
+      set(() => ({ currentUserColor: color }));
+    },
     setFontFormatting: (formatting: Partial<FontFormatting>): void => {
       set((state) => ({
         fontFormatting: { ...state.fontFormatting, ...formatting },
@@ -244,6 +256,8 @@ export const useSettingsStore = create<SettingsStore>()(
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
         currentUserStatus: undefined,
+        currentUserHomepage: undefined,
+        currentUserColor: undefined,
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         isDarkMode: false,
         hideAvatarsInUsersList: false,
@@ -422,6 +436,22 @@ export const setCurrentUserStatus = (status: string | undefined): void => {
 
 export const getCurrentUserStatus = (): string | undefined => {
   return useSettingsStore.getState().currentUserStatus;
+};
+
+export const setCurrentUserHomepage = (homepage: string | undefined): void => {
+  useSettingsStore.getState().setCurrentUserHomepage(homepage);
+};
+
+export const getCurrentUserHomepage = (): string | undefined => {
+  return useSettingsStore.getState().currentUserHomepage;
+};
+
+export const setCurrentUserColor = (color: string | undefined): void => {
+  useSettingsStore.getState().setCurrentUserColor(color);
+};
+
+export const getCurrentUserColor = (): string | undefined => {
+  return useSettingsStore.getState().currentUserColor;
 };
 
 export const setFontFormatting = (formatting: Partial<FontFormatting>): void => {

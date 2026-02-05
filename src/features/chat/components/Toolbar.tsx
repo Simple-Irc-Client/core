@@ -137,7 +137,7 @@ const Toolbar = () => {
       const state = useSettingsStore.getState();
       // Only set away if connected and not already away
       if (state.isConnected && !state.currentUserFlags.includes('away')) {
-        ircSendRawMessage(`AWAY :${t('main.toolbar.autoAway')}`);
+        ircSendRawMessage(`AWAY :${t('currentUser.autoAway')}`);
         state.setIsAutoAway(true);
       }
     }, AUTO_AWAY_TIMEOUT);
@@ -431,12 +431,12 @@ const Toolbar = () => {
               <DropdownMenuContent align="start">
                 <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
                   <UserIcon className="mr-2 h-4 w-4" />
-                  {t('main.toolbar.profileSettings')}
+                  {t('profileSettings.title')}
                 </DropdownMenuItem>
                 {awayMessagesCount > 0 && (
                   <DropdownMenuItem onClick={() => setAwayDialogOpen(true)}>
                     <MessageSquare className="mr-2 h-4 w-4" />
-                    {t('main.toolbar.awayMessages')}
+                    {t('currentUser.awayMessages')}
                     <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                       {awayMessagesCount}
                     </span>
@@ -448,12 +448,12 @@ const Toolbar = () => {
                   ) : (
                     <Moon className="mr-2 h-4 w-4" />
                   )}
-                  {isDarkMode ? t('main.toolbar.lightMode') : t('main.toolbar.darkMode')}
+                  {isDarkMode ? t('currentUser.lightMode') : t('currentUser.darkMode')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={resetAndGoToStart}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t('main.toolbar.disconnect')}
+                  {t('currentUser.disconnect')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
               </DropdownMenu>

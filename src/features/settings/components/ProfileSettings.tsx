@@ -33,6 +33,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
   const currentUserDisplayName = useSettingsStore((state) => state.currentUserDisplayName);
   const currentUserStatus = useSettingsStore((state) => state.currentUserStatus);
+  const currentUserHomepage = useSettingsStore((state) => state.currentUserHomepage);
+  const currentUserColor = useSettingsStore((state) => state.currentUserColor);
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
@@ -42,6 +44,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
   const [newDisplayName, setNewDisplayName] = useState(currentUserDisplayName ?? '');
   const [newStatus, setNewStatus] = useState(currentUserStatus ?? '');
+  const [newHomepage, setNewHomepage] = useState(currentUserHomepage ?? '');
+  const [newColor, setNewColor] = useState(currentUserColor ?? '');
   const isConnected = useSettingsStore((state) => state.isConnected);
   const server = useSettingsStore((state) => state.server);
   const nick = useSettingsStore((state) => state.nick);
@@ -49,6 +53,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const isAvatarSupported = supportedOptions.includes('metadata-avatar');
   const isDisplayNameSupported = supportedOptions.includes('metadata-display-name');
   const isStatusSupported = supportedOptions.includes('metadata-status');
+  const isHomepageSupported = supportedOptions.includes('metadata-homepage');
+  const isColorSupported = supportedOptions.includes('metadata-color');
 
   const handleNickChange = (): void => {
     if (newNick.trim().length > 0) {
@@ -87,6 +93,26 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
     onOpenChange(false);
   };
 
+  const handleHomepageChange = (): void => {
+    const trimmedHomepage = newHomepage.trim();
+    if (trimmedHomepage.length > 0) {
+      ircSendRawMessage(`METADATA * SET homepage ${trimmedHomepage}`);
+    } else {
+      ircSendRawMessage('METADATA * SET homepage');
+    }
+    onOpenChange(false);
+  };
+
+  const handleColorChange = (): void => {
+    const trimmedColor = newColor.trim();
+    if (trimmedColor.length > 0) {
+      ircSendRawMessage(`METADATA * SET color ${trimmedColor}`);
+    } else {
+      ircSendRawMessage('METADATA * SET color');
+    }
+    onOpenChange(false);
+  };
+
   const handleConnect = (): void => {
     if (server && nick) {
       ircConnect(server, nick);
@@ -97,20 +123,20 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{t('main.toolbar.profileSettings')}</DialogTitle>
-        <DialogDescription>{t('main.toolbar.profileDescription')}</DialogDescription>
+        <DialogTitle>{t('profileSettings.title')}</DialogTitle>
+        <DialogDescription>{t('profileSettings.description')}</DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 py-4">
         {!isConnected && server && nick && (
           <div className="flex justify-center">
             <Button type="button" onClick={handleConnect} data-testid="connect-button">
-              {t('main.toolbar.connect')}
+              {t('currentUser.connect')}
             </Button>
           </div>
         )}
         <div className="grid grid-cols-4 items-center gap-4">
           <Label htmlFor="nick" className="text-right">
-            {t('main.toolbar.nick')}
+            {t('profileSettings.nick')}
           </Label>
           <Input
             id="nick"
@@ -125,13 +151,13 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             }}
           />
           <Button type="button" size="sm" onClick={handleNickChange}>
-            {t('main.toolbar.changeNick')}
+            {t('profileSettings.changeNick')}
           </Button>
         </div>
         {isAvatarSupported && (
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="avatar" className="text-right">
-              {t('main.toolbar.avatar')}
+              {t('profileSettings.avatar')}
             </Label>
             <Input
               id="avatar"
@@ -147,21 +173,44 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               }}
             />
             <Button type="button" variant="outline" size="sm" onClick={handleAvatarChange}>
-              {t('main.toolbar.changeAvatar')}
+              {t('profileSettings.changeAvatar')}
+            </Button>
+          </div>
+        )}
+        {isColorSupported && (
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="color" className="text-right">
+              {t('profileSettings.nickColor')}
+            </Label>
+            <Input
+              id="color"
+              type="color"
+              value={newColor || '#000000'}
+              onChange={(e) => setNewColor(e.target.value)}
+              className="col-span-2 h-10 cursor-pointer"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleColorChange();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleColorChange}>
+              {t('profileSettings.changeColor')}
             </Button>
           </div>
         )}
         {isDisplayNameSupported && (
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="displayName" className="text-right">
-              {t('main.toolbar.displayName')}
+              {t('profileSettings.displayName')}
             </Label>
             <Input
               id="displayName"
               value={newDisplayName}
               onChange={(e) => setNewDisplayName(e.target.value)}
               className="col-span-2"
-              placeholder={t('main.toolbar.displayNamePlaceholder')}
+              placeholder={t('profileSettings.displayNamePlaceholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -170,21 +219,21 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               }}
             />
             <Button type="button" variant="outline" size="sm" onClick={handleDisplayNameChange}>
-              {t('main.toolbar.changeDisplayName')}
+              {t('profileSettings.changeDisplayName')}
             </Button>
           </div>
         )}
         {isStatusSupported && (
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="status" className="text-right">
-              {t('main.toolbar.status')}
+              {t('profileSettings.status')}
             </Label>
             <Input
               id="status"
               value={newStatus}
               onChange={(e) => setNewStatus(e.target.value)}
               className="col-span-2"
-              placeholder={t('main.toolbar.statusPlaceholder')}
+              placeholder={t('profileSettings.statusPlaceholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -193,13 +242,36 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               }}
             />
             <Button type="button" variant="outline" size="sm" onClick={handleStatusChange}>
-              {t('main.toolbar.changeStatus')}
+              {t('profileSettings.changeStatus')}
+            </Button>
+          </div>
+        )}
+        {isHomepageSupported && (
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="homepage" className="text-right">
+              {t('profileSettings.homepage')}
+            </Label>
+            <Input
+              id="homepage"
+              value={newHomepage}
+              onChange={(e) => setNewHomepage(e.target.value)}
+              className="col-span-2"
+              placeholder={t('profileSettings.homepagePlaceholder')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleHomepageChange();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleHomepageChange}>
+              {t('profileSettings.changeHomepage')}
             </Button>
           </div>
         )}
         <div className="grid grid-cols-4 items-center gap-4">
           <Label className="text-right">
-            {t('main.toolbar.layout')}
+            {t('profileSettings.layout')}
           </Label>
           <div className="col-span-3 flex gap-2">
             <Button
@@ -210,7 +282,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               className={cn('flex-1', theme === 'classic' && 'pointer-events-none')}
               data-testid="layout-classic"
             >
-              {t('main.toolbar.layoutClassic')}
+              {t('profileSettings.layoutClassic')}
             </Button>
             <Button
               type="button"
@@ -220,7 +292,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               className={cn('flex-1', theme === 'modern' && 'pointer-events-none')}
               data-testid="layout-modern"
             >
-              {t('main.toolbar.layoutModern')}
+              {t('profileSettings.layoutModern')}
             </Button>
           </div>
         </div>
@@ -232,12 +304,12 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             data-testid="hide-avatars-toggle"
           />
           <Label htmlFor="hide-avatars">
-            {t('main.toolbar.hideAvatars')}
+            {t('profileSettings.hideAvatars')}
           </Label>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
           <Label className="text-right">
-            {t('main.toolbar.fontSize')}
+            {t('profileSettings.fontSize')}
           </Label>
           <div className="col-span-3 flex gap-2">
             <Button
@@ -248,7 +320,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               className={cn('flex-1', fontSize === 'small' && 'pointer-events-none')}
               data-testid="font-size-small"
             >
-              {t('main.toolbar.fontSizeSmall')}
+              {t('profileSettings.fontSizeSmall')}
             </Button>
             <Button
               type="button"
@@ -258,7 +330,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               className={cn('flex-1', fontSize === 'medium' && 'pointer-events-none')}
               data-testid="font-size-medium"
             >
-              {t('main.toolbar.fontSizeMedium')}
+              {t('profileSettings.fontSizeMedium')}
             </Button>
             <Button
               type="button"
@@ -268,7 +340,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               className={cn('flex-1', fontSize === 'large' && 'pointer-events-none')}
               data-testid="font-size-large"
             >
-              {t('main.toolbar.fontSizeLarge')}
+              {t('profileSettings.fontSizeLarge')}
             </Button>
           </div>
         </div>
