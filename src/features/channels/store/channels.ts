@@ -14,10 +14,13 @@ interface ChannelsStore {
   setTopic: (channelName: string, newTopic: string) => void;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
   setAddMessage: (newMessage: Message) => void;
+  /** IRCv3 message-tags (typing) */
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
+  /** IRCv3 METADATA */
   setChannelAvatar: (channelName: string, avatar: string) => void;
+  /** IRCv3 METADATA */
   setChannelDisplayName: (channelName: string, displayName: string) => void;
   setClearAll: () => void;
 }

@@ -14,14 +14,23 @@ interface UsersStore {
   setQuitUser: (nick: string) => void;
   setRenameUser: (from: string, to: string) => void;
   setJoinUser: (nick: string, channelName: string) => void;
+  /** IRCv3 METADATA */
   setUserAvatar: (nick: string, avatar: string) => void;
+  /** IRCv3 METADATA */
   setUserColor: (nick: string, color: string) => void;
+  /** IRCv3 account-notify / account-tag */
   setUserAccount: (nick: string, account: string | null) => void;
+  /** IRCv3 away-notify */
   setUserAway: (nick: string, away: boolean, reason?: string) => void;
   setUserHost: (nick: string, ident: string, hostname: string) => void;
+  /** IRCv3 extended-join / SETNAME */
   setUserRealname: (nick: string, realname: string) => void;
+  /** IRCv3 METADATA */
   setUserDisplayName: (nick: string, displayName: string) => void;
+  /** IRCv3 METADATA */
   setUserStatus: (nick: string, status: string | undefined) => void;
+  /** IRCv3 METADATA */
+  setUserHomepage: (nick: string, homepage: string | undefined) => void;
   setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
   setClearAll: () => void;
 }
@@ -153,6 +162,16 @@ export const useUsersStore = create<UsersStore>()(
             return user;
           }
           return { ...user, status };
+        }),
+      }));
+    },
+    setUserHomepage: (nick: string, homepage: string | undefined): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, homepage };
         }),
       }));
     },
@@ -374,6 +393,10 @@ export const setUserStatus = (nick: string, status: string | undefined): void =>
   if (channels.map((channel) => channel.name).includes(currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
+};
+
+export const setUserHomepage = (nick: string, homepage: string | undefined): void => {
+  useUsersStore.getState().setUserHomepage(nick, homepage);
 };
 
 export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {

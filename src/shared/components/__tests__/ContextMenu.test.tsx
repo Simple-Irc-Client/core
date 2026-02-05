@@ -335,6 +335,55 @@ describe('ContextMenu', () => {
     });
   });
 
+  describe('Visit Homepage option', () => {
+    it('should show Visit Homepage when user has homepage', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'otherUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [],
+        homepage: 'https://example.com',
+      });
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.user.homepage');
+    });
+
+    it('should not show Visit Homepage when user has no homepage', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'otherUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [],
+      });
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.user.homepage');
+    });
+  });
+
   describe('Invite to channel functionality', () => {
     const createChannelsStoreMock = (openChannelsShortList: { name: string; category: ChannelCategory; unReadMessages: number }[]) => {
       return (selector: (state: { openChannelsShortList: typeof openChannelsShortList }) => unknown) => {

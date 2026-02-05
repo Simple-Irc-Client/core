@@ -359,6 +359,30 @@ describe('users store', () => {
     });
   });
 
+  describe('setUserHomepage', () => {
+    it('should set user homepage', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserHomepage('TestUser', 'https://example.com');
+
+      expect(getUser('TestUser')?.homepage).toBe('https://example.com');
+    });
+
+    it('should clear user homepage with undefined', () => {
+      const user = createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]);
+      user.homepage = 'https://example.com';
+      useUsersStore.getState().setAddUser(user);
+
+      useUsersStore.getState().setUserHomepage('TestUser', undefined);
+
+      expect(getUser('TestUser')?.homepage).toBeUndefined();
+    });
+  });
+
   describe('setUpdateUserFlag', () => {
     it('should add flag to user channel', () => {
       useUsersStore.getState().setAddUser(createUser('TestUser', [

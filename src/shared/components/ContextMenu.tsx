@@ -14,6 +14,7 @@ import { ChannelCategory } from '@shared/types';
 import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
+import { ExternalLink } from 'lucide-react';
 import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
 
 // Helper to determine what mode hierarchy level a flag represents
@@ -147,6 +148,14 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
+    const handleVisitHomepage = (): void => {
+      const user = getUser(contextMenuItem);
+      if (user?.homepage) {
+        window.open(user.homepage, '_blank', 'noopener,noreferrer');
+      }
+      handleContextMenuClose();
+    };
+
     const handleAddFriend = (): void => {
       const watchLimit = getWatchLimit();
       const monitorLimit = getMonitorLimit();
@@ -228,6 +237,7 @@ export const ContextMenu = () => {
     const currentUserChannelModes = isInChannel ? getCurrentUserChannelModes(channelName) : [];
     const targetUser = getUser(contextMenuItem);
     const targetUserChannelModes = isInChannel && targetUser ? (targetUser.channels.find(ch => ch.name === channelName)?.flags ?? []) : [];
+    const userHomepage = targetUser?.homepage;
 
     const permissions = getOperatorPermissions(currentUserChannelModes, targetUserChannelModes);
     const hasOperatorActions = isInChannel && (permissions.currentLevel >= 2); // At least half-op
@@ -249,6 +259,12 @@ export const ContextMenu = () => {
         >
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {userHomepage && (
+            <DropdownMenuItem onClick={handleVisitHomepage} title={userHomepage}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              {t('contextmenu.user.homepage')}
+            </DropdownMenuItem>
+          )}
           {!isCurrentUser && <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.user.priv')}</DropdownMenuItem>}
           <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.user.whois')}</DropdownMenuItem>
           {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.user.addfriend')}</DropdownMenuItem>}
