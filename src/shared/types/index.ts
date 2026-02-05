@@ -68,6 +68,10 @@ export interface Channel {
    * IRCv3 - Channel's avatar URL from metadata
    */
   avatar?: string;
+  /**
+   * IRCv3 - Channel's display name from METADATA
+   */
+  displayName?: string;
 }
 
 export interface ChannelExtended extends Channel {
@@ -106,6 +110,10 @@ export interface User {
    * IRCv3 - User's away reason (from away-notify)
    */
   awayReason?: string;
+  /**
+   * IRCv3 - User's display name from METADATA
+   */
+  displayName?: string;
   /**
    * Global flags - like Away
    */

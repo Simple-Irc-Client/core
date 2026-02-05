@@ -24,6 +24,7 @@ describe('ProfileSettings', () => {
     useSettingsStore.setState({
       supportedOptions: [],
       currentUserAvatar: undefined,
+      currentUserDisplayName: undefined,
       theme: 'modern',
       fontSize: 'medium',
       hideAvatarsInUsersList: false,
@@ -734,6 +735,154 @@ describe('ProfileSettings', () => {
       );
 
       expect(screen.getByTestId('connect-button').textContent).toBe('main.toolbar.connect');
+    });
+  });
+
+  describe('Display name change functionality', () => {
+    it('should not show display name field when metadata-display-name is not supported', () => {
+      useSettingsStore.setState({ supportedOptions: [] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName');
+      expect(displayNameInput).toBeNull();
+    });
+
+    it('should show display name field when metadata-display-name is supported', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName');
+      expect(displayNameInput).not.toBeNull();
+    });
+
+    it('should pre-fill display name input with current display name', () => {
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-display-name'],
+        currentUserDisplayName: 'John Doe',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
+      expect(displayNameInput.value).toBe('John Doe');
+    });
+
+    it('should send METADATA SET display-name command when changing display name', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
+      await user.type(displayNameInput, 'New Display Name');
+
+      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name :New Display Name');
+    });
+
+    it('should send METADATA SET display-name without value to clear display name', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-display-name'],
+        currentUserDisplayName: 'Old Name',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
+      await user.clear(displayNameInput);
+
+      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name');
+    });
+
+    it('should close dialog after changing display name', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
+      await user.type(displayNameInput, 'New Display Name');
+
+      const changeButton = screen.getByText('main.toolbar.changeDisplayName');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should send METADATA SET display-name command when pressing Enter', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
+      await user.type(displayNameInput, 'New Name{Enter}');
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name :New Name');
+    });
+
+    it('should display translated display name label', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('main.toolbar.displayName');
     });
   });
 });

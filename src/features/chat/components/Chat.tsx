@@ -20,10 +20,12 @@ import MessageText from './MessageText';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
+import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
-  const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
+  const nick = getNickFromMessage(message);
+  const displayNick = getDisplayNickFromMessage(message);
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -39,7 +41,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
         &nbsp;
         {nick !== undefined && (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
-            &lt;{nick}&gt;
+            &lt;{displayNick}&gt;
           </span>
         )}
         &nbsp;
@@ -51,7 +53,8 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
 
 const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
-  const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
+  const nick = getNickFromMessage(message);
+  const displayNick = getDisplayNickFromMessage(message);
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -67,7 +70,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
         &nbsp;
         {nick !== undefined ? (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
-            &lt;{nick}&gt;
+            &lt;{displayNick}&gt;
           </span>
         ) : (
           ''
@@ -97,9 +100,10 @@ const EchoedIndicator = () => {
 
 const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message; lastNick: string; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
-  const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
+  const nick = getNickFromMessage(message) ?? '';
+  const displayNick = getDisplayNickFromMessage(message);
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
-  const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
+  const avatarLetter = getDisplayNickFromMessage(message).substring(0, 1);
   const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -126,7 +130,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
             {lastNick !== nick && (
               <Avatar
                 src={avatar}
-                alt={nick}
+                alt={displayNick}
                 fallbackLetter={avatarLetter}
                 className="h-10 w-10 cursor-pointer"
                 onContextMenu={handleNickContextMenu}
@@ -137,7 +141,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
             {lastNick !== nick && (
               <div className="flex items-baseline mb-1">
                 <span className={`font-medium ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
-                  {nick}
+                  {displayNick}
                 </span>
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
@@ -171,11 +175,6 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
       )}
     </>
   );
-};
-
-const getNickFromMessage = (message: Message | undefined): string => {
-  if (!message?.nick) return '';
-  return typeof message.nick === 'string' ? message.nick : message.nick.nick;
 };
 
 const Chat = () => {
@@ -234,7 +233,7 @@ const Chat = () => {
     <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
-          const lastNick = getNickFromMessage(messages[index - 1]);
+          const lastNick = getNickFromMessage(messages[index - 1]) ?? '';
           return (
             <div key={`message-${message.id}`}>
               {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <ChatViewDebug message={message} fontSizeClass={fontSizeClass} />}

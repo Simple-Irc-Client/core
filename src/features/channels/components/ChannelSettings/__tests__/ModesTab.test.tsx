@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ModesTab from '../tabs/ModesTab';
 import * as network from '@/network/irc/network';
@@ -24,10 +24,13 @@ vi.mock('@features/channels/store/channelSettings', () => ({
   ),
 }));
 
+import { useSettingsStore } from '@features/settings/store/settings';
+
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: vi.fn((selector) =>
     selector({
       channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+      supportedOptions: [],
     })
   ),
 }));
@@ -192,6 +195,81 @@ describe('ModesTab', () => {
       fireEvent.keyDown(input, { key: 'Enter' });
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s-p');
+    });
+  });
+
+  describe('display name setting', () => {
+    beforeEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: ['metadata-display-name'],
+        } as never)
+      );
+    });
+
+    afterEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+    });
+
+    it('should render display name input when metadata-display-name is supported', () => {
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.getByTestId('displayName-input')).toBeInTheDocument();
+    });
+
+    it('should send METADATA SET display-name command with colon prefix', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('displayName-input');
+      fireEvent.change(input, { target: { value: 'My Channel Name' } });
+      fireEvent.click(screen.getByTestId('displayName-set'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name :My Channel Name');
+    });
+
+    it('should send METADATA SET display-name without value when clearing', () => {
+      render(<ModesTab channelName="#test" />);
+
+      fireEvent.click(screen.getByTestId('displayName-clear'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name');
+    });
+
+    it('should set display name when pressing Enter', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('displayName-input');
+      fireEvent.change(input, { target: { value: 'Test Display Name' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name :Test Display Name');
+    });
+
+    it('should display translated display name label', () => {
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.getByText('channelSettings.modes.displayName')).toBeInTheDocument();
+    });
+  });
+
+  describe('display name not supported', () => {
+    it('should not render display name input when metadata-display-name is not supported', () => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.queryByTestId('displayName-input')).not.toBeInTheDocument();
     });
   });
 

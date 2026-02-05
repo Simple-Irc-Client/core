@@ -163,7 +163,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                       getChannelIcon(channel.category)
                     )}
                   </span>
-                  <span className="flex-1">{channel.name}</span>
+                  <span className="flex-1">{channel.displayName || channel.name}</span>
                 </button>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
