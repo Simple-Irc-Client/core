@@ -109,24 +109,31 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                       className="h-10 w-10"
                     />
                   )}
-                  <div className="flex items-center gap-1">
-                    {(() => {
-                      const channelFlags = user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [];
-                      const isAway = user.away || channelFlags.includes('a');
-                      return (
-                        <>
-                          {getModeIcons(channelFlags, userModes)}
-                          {isAway && (
-                            <span title={user.awayReason || 'Away'}>
-                              <Moon className="h-4 w-4 text-yellow-500" />
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
-                    <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
-                      {user.displayName || user.nick}
-                    </span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const channelFlags = user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [];
+                        const isAway = user.away || channelFlags.includes('a');
+                        return (
+                          <>
+                            {getModeIcons(channelFlags, userModes)}
+                            {isAway && (
+                              <span title={user.awayReason || 'Away'}>
+                                <Moon className="h-4 w-4 text-yellow-500" />
+                              </span>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
+                        {user.displayName || user.nick}
+                      </span>
+                    </div>
+                    {user.status && (
+                      <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                        {user.status}
+                      </span>
+                    )}
                   </div>
                 </button>
               ))}

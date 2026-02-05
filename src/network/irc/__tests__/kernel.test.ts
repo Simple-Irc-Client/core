@@ -587,6 +587,62 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA status for user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop status * :Working from home';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserStatus).toHaveBeenCalledWith('Noop', 'Working from home');
+    expect(mockSetUserStatus).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA status with spaces', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop status * :On vacation until Monday';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserStatus).toHaveBeenCalledWith('Noop', 'On vacation until Monday');
+    expect(mockSetUserStatus).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA status clears for current user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
+    const mockSetCurrentUserStatus = vi.spyOn(settingsFile, 'setCurrentUserStatus').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA TestUser status * :';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalled();
+
+    expect(mockSetUserStatus).toHaveBeenCalledWith('TestUser', undefined);
+    expect(mockSetUserStatus).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentUserStatus).toHaveBeenCalledWith(undefined);
+    expect(mockSetCurrentUserStatus).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');

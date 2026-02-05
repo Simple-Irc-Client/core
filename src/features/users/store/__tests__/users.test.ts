@@ -323,6 +323,42 @@ describe('users store', () => {
     });
   });
 
+  describe('setUserStatus', () => {
+    it('should set user status', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserStatus('TestUser', 'Working from home');
+
+      expect(getUser('TestUser')?.status).toBe('Working from home');
+    });
+
+    it('should update existing user status', () => {
+      const user = createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]);
+      user.status = 'Old status';
+      useUsersStore.getState().setAddUser(user);
+
+      useUsersStore.getState().setUserStatus('TestUser', 'New status');
+
+      expect(getUser('TestUser')?.status).toBe('New status');
+    });
+
+    it('should clear user status with undefined', () => {
+      const user = createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]);
+      user.status = 'Some status';
+      useUsersStore.getState().setAddUser(user);
+
+      useUsersStore.getState().setUserStatus('TestUser', undefined);
+
+      expect(getUser('TestUser')?.status).toBeUndefined();
+    });
+  });
+
   describe('setUpdateUserFlag', () => {
     it('should add flag to user channel', () => {
       useUsersStore.getState().setAddUser(createUser('TestUser', [

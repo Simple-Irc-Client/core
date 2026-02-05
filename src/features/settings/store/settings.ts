@@ -50,6 +50,7 @@ export interface SettingsStore {
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
+  currentUserStatus: string | undefined; // Current user's status text from metadata
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
@@ -78,6 +79,7 @@ export interface SettingsStore {
   setSilenceLimit: (limit: number) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
+  setCurrentUserStatus: (status: string | undefined) => void;
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
   setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
@@ -112,6 +114,7 @@ export const useSettingsStore = create<SettingsStore>()(
     silenceLimit: 0,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
+    currentUserStatus: undefined,
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
     hideAvatarsInUsersList: false,
@@ -195,6 +198,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setCurrentUserDisplayName: (displayName: string | undefined): void => {
       set(() => ({ currentUserDisplayName: displayName }));
     },
+    setCurrentUserStatus: (status: string | undefined): void => {
+      set(() => ({ currentUserStatus: status }));
+    },
     setFontFormatting: (formatting: Partial<FontFormatting>): void => {
       set((state) => ({
         fontFormatting: { ...state.fontFormatting, ...formatting },
@@ -237,6 +243,7 @@ export const useSettingsStore = create<SettingsStore>()(
         silenceLimit: 0,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
+        currentUserStatus: undefined,
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         isDarkMode: false,
         hideAvatarsInUsersList: false,
@@ -407,6 +414,14 @@ export const setCurrentUserDisplayName = (displayName: string | undefined): void
 
 export const getCurrentUserDisplayName = (): string | undefined => {
   return useSettingsStore.getState().currentUserDisplayName;
+};
+
+export const setCurrentUserStatus = (status: string | undefined): void => {
+  useSettingsStore.getState().setCurrentUserStatus(status);
+};
+
+export const getCurrentUserStatus = (): string | undefined => {
+  return useSettingsStore.getState().currentUserStatus;
 };
 
 export const setFontFormatting = (formatting: Partial<FontFormatting>): void => {

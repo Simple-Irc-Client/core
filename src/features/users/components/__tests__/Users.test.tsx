@@ -799,4 +799,66 @@ describe('Users', () => {
       }
     });
   });
+
+  describe('User status display', () => {
+    it('should display user status when available', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'statusUser',
+            status: 'Working from home',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByText('Working from home')).toBeInTheDocument();
+    });
+
+    it('should not display status area when status is empty', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'noStatusUser',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      // User name should be there
+      expect(screen.getByText('noStatusUser')).toBeInTheDocument();
+      // But no status text
+      expect(screen.queryByText('Working from home')).not.toBeInTheDocument();
+    });
+
+    it('should display status below nickname', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'userWithStatus',
+            status: 'On vacation',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const nickname = screen.getByText('userWithStatus');
+      const status = screen.getByText('On vacation');
+
+      expect(nickname).toBeInTheDocument();
+      expect(status).toBeInTheDocument();
+      // Status should be in a separate element (flex-col layout puts it below)
+      expect(status.className).toContain('text-xs');
+      expect(status.className).toContain('text-muted-foreground');
+    });
+  });
 });

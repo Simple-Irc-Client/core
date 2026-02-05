@@ -30,6 +30,7 @@ import {
   setCurrentChannelName,
   setCurrentUserAvatar,
   setCurrentUserDisplayName,
+  setCurrentUserStatus,
   setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
@@ -42,7 +43,7 @@ import {
   setUserModes,
   setWatchLimit,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
@@ -1849,6 +1850,15 @@ export class Kernel {
         // Save display name for current user to display in toolbar
         if (nickOrChannel === getCurrentNick()) {
           setCurrentUserDisplayName(value);
+        }
+      }
+      if (item === 'status') {
+        // Empty string means status is being cleared
+        const statusValue = value === '' ? undefined : value;
+        setUserStatus(nickOrChannel, statusValue);
+        // Save status for current user to display in toolbar
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserStatus(statusValue);
         }
       }
     }

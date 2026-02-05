@@ -25,6 +25,7 @@ describe('ProfileSettings', () => {
       supportedOptions: [],
       currentUserAvatar: undefined,
       currentUserDisplayName: undefined,
+      currentUserStatus: undefined,
       theme: 'modern',
       fontSize: 'medium',
       hideAvatarsInUsersList: false,
@@ -883,6 +884,140 @@ describe('ProfileSettings', () => {
       );
 
       expect(document.body.textContent).toContain('main.toolbar.displayName');
+    });
+  });
+
+  describe('Status change functionality', () => {
+    it('should not show status field when metadata-status is not supported', () => {
+      useSettingsStore.setState({ supportedOptions: [] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status');
+      expect(statusInput).toBeNull();
+    });
+
+    it('should show status field when metadata-status is supported', () => {
+      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status');
+      expect(statusInput).not.toBeNull();
+    });
+
+    it('should pre-fill status input with current status', () => {
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-status'],
+        currentUserStatus: 'Working from home',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status') as HTMLInputElement;
+      expect(statusInput.value).toBe('Working from home');
+    });
+
+    it('should send METADATA SET status command when changing status', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status') as HTMLInputElement;
+      await user.type(statusInput, 'On vacation');
+
+      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :On vacation');
+    });
+
+    it('should send METADATA SET status without value to clear status', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-status'],
+        currentUserStatus: 'Old Status',
+      });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status') as HTMLInputElement;
+      await user.clear(statusInput);
+
+      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status');
+    });
+
+    it('should close dialog after changing status', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status') as HTMLInputElement;
+      await user.type(statusInput, 'New Status');
+
+      const changeButton = screen.getByText('main.toolbar.changeStatus');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('should send METADATA SET status command when pressing Enter', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const statusInput = document.querySelector('#status') as HTMLInputElement;
+      await user.type(statusInput, 'New Status{Enter}');
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :New Status');
     });
   });
 });

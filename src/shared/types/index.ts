@@ -115,6 +115,10 @@ export interface User {
    */
   displayName?: string;
   /**
+   * IRCv3 - User's status text from METADATA
+   */
+  status?: string;
+  /**
    * Global flags - like Away
    */
   flags: string[];
