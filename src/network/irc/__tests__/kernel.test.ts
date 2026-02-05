@@ -643,6 +643,40 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA homepage for user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop homepage * :https://example.com';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserHomepage).toHaveBeenCalledWith('Noop', 'https://example.com');
+    expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA homepage clears with empty value', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA TestUser homepage * :';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserHomepage).toHaveBeenCalledWith('TestUser', undefined);
+    expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');

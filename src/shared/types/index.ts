@@ -119,6 +119,10 @@ export interface User {
    */
   status?: string;
   /**
+   * IRCv3 - User's homepage URL from METADATA
+   */
+  homepage?: string;
+  /**
    * Global flags - like Away
    */
   flags: string[];

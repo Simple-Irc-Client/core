@@ -203,6 +203,7 @@
     "help.cmd.whowas": "Pobierz historyczne informacje o użytkowniku",
     "contextmenu.user.priv": "Rozmowa prywatna",
     "contextmenu.user.whois": "Informacje",
+    "contextmenu.user.homepage": "Odwiedź stronę",
     "contextmenu.user.addfriend": "Dodaj do znajomych",
     "contextmenu.user.ignore": "Ignoruj",
     "contextmenu.user.operator.title": "Akcje operatora",

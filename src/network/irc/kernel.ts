@@ -43,7 +43,7 @@ import {
   setUserModes,
   setWatchLimit,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
@@ -1860,6 +1860,10 @@ export class Kernel {
         if (nickOrChannel === getCurrentNick()) {
           setCurrentUserStatus(statusValue);
         }
+      }
+      if (item === 'homepage') {
+        const homepageValue = value === '' ? undefined : value;
+        setUserHomepage(nickOrChannel, homepageValue);
       }
     }
   };
