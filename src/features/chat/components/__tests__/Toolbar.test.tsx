@@ -459,7 +459,7 @@ describe('Toolbar', () => {
       await user.click(avatarButton as HTMLElement);
 
       // Radix UI dropdown menu renders content in a portal to document.body
-      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
+      expect(document.body.textContent).toContain('profileSettings.title');
     });
 
     it('should show Profile Settings option in menu', async () => {
@@ -470,7 +470,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
+      expect(document.body.textContent).toContain('profileSettings.title');
     });
 
     it('should not show Away Messages option when no away messages', async () => {
@@ -481,7 +481,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).not.toContain('main.toolbar.awayMessages');
+      expect(document.body.textContent).not.toContain('currentUser.awayMessages');
     });
 
     it('should not show badge when no away messages', () => {
@@ -680,7 +680,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).toContain('main.toolbar.awayMessages');
+      expect(document.body.textContent).toContain('currentUser.awayMessages');
     });
 
     it('should show badge with count when there are away messages', () => {
@@ -777,7 +777,7 @@ describe('Toolbar', () => {
       // Fast forward 15 minutes
       vi.advanceTimersByTime(15 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :currentUser.autoAway');
       expect(mockSetIsAutoAway).toHaveBeenCalledWith(true);
     });
 
@@ -787,7 +787,7 @@ describe('Toolbar', () => {
       // Fast forward 14 minutes
       vi.advanceTimersByTime(14 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
     });
 
     it('should reset inactivity timer when sending a message', () => {
@@ -807,12 +807,12 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(10 * 60 * 1000);
 
       // Should not be away yet because timer was reset
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
 
       // Fast forward another 5 minutes (15 total since last message)
       vi.advanceTimersByTime(5 * 60 * 1000);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :currentUser.autoAway');
     });
 
     it('should turn off auto-away when user sends a message', () => {
@@ -893,7 +893,7 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(15 * 60 * 1000);
 
       // Should not send AWAY command because user is already away
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
     });
 
     it('should not set auto-away if not connected', () => {
@@ -909,7 +909,7 @@ describe('Toolbar', () => {
       vi.advanceTimersByTime(15 * 60 * 1000);
 
       // Should not send AWAY command because not connected
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :main.toolbar.autoAway');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
     });
 
     it('should not turn off auto-away if not connected', () => {
@@ -1258,7 +1258,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).toContain('main.toolbar.disconnect');
+      expect(document.body.textContent).toContain('currentUser.disconnect');
     });
 
     it('should call resetAndGoToStart when clicking Disconnect', async () => {
@@ -1270,7 +1270,7 @@ describe('Toolbar', () => {
       await user.click(avatarButton as HTMLElement);
 
       // Find and click the Disconnect menu item
-      const disconnectItem = screen.getByText('main.toolbar.disconnect');
+      const disconnectItem = screen.getByText('currentUser.disconnect');
       await user.click(disconnectItem);
 
       expect(mockResetAndGoToStart).toHaveBeenCalledTimes(1);
@@ -1285,8 +1285,8 @@ describe('Toolbar', () => {
       await user.click(avatarButton as HTMLElement);
 
       // Verify both Profile Settings and Disconnect are in the menu
-      expect(document.body.textContent).toContain('main.toolbar.profileSettings');
-      expect(document.body.textContent).toContain('main.toolbar.disconnect');
+      expect(document.body.textContent).toContain('profileSettings.title');
+      expect(document.body.textContent).toContain('currentUser.disconnect');
 
       // Check that a separator exists (Radix UI renders it with role="separator")
       const separator = document.querySelector('[role="separator"]');
@@ -1481,7 +1481,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).toContain('main.toolbar.darkMode');
+      expect(document.body.textContent).toContain('currentUser.darkMode');
     });
 
     it('should show light mode option in dropdown menu when in dark mode', async () => {
@@ -1503,7 +1503,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      expect(document.body.textContent).toContain('main.toolbar.lightMode');
+      expect(document.body.textContent).toContain('currentUser.lightMode');
     });
 
     it('should call toggleDarkMode when clicking the dark mode option', async () => {
@@ -1528,7 +1528,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      const darkModeItem = screen.getByText('main.toolbar.darkMode');
+      const darkModeItem = screen.getByText('currentUser.darkMode');
       await user.click(darkModeItem);
 
       expect(mockToggleDarkMode).toHaveBeenCalledTimes(1);

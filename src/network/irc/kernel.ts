@@ -31,6 +31,8 @@ import {
   setCurrentUserAvatar,
   setCurrentUserDisplayName,
   setCurrentUserStatus,
+  setCurrentUserHomepage,
+  setCurrentUserColor,
   setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
@@ -1842,8 +1844,15 @@ export class Kernel {
           setCurrentUserAvatar(avatarUrl);
         }
       }
-      if (item === 'color' && value !== undefined) {
-        setUserColor(nickOrChannel, value);
+      if (item === 'color') {
+        const colorValue = value === '' ? undefined : value;
+        if (colorValue !== undefined) {
+          setUserColor(nickOrChannel, colorValue);
+        }
+        // Save color for current user to display in profile settings
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserColor(colorValue);
+        }
       }
       if (item === 'display-name' && value !== undefined) {
         setUserDisplayName(nickOrChannel, value);
@@ -1864,6 +1873,10 @@ export class Kernel {
       if (item === 'homepage') {
         const homepageValue = value === '' ? undefined : value;
         setUserHomepage(nickOrChannel, homepageValue);
+        // Save homepage for current user to display in profile settings
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserHomepage(homepageValue);
+        }
       }
     }
   };

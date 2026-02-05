@@ -33,14 +33,14 @@ describe('AwayMessages', () => {
     it('should render dialog when open is true', () => {
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      expect(document.body.textContent).toContain('main.toolbar.awayMessages');
-      expect(document.body.textContent).toContain('main.toolbar.awayMessagesDescription');
+      expect(document.body.textContent).toContain('currentUser.awayMessages');
+      expect(document.body.textContent).toContain('currentUser.awayMessagesDescription');
     });
 
     it('should not render dialog when open is false', () => {
       render(<AwayMessages open={false} onOpenChange={mockOnOpenChange} />);
 
-      expect(document.body.textContent).not.toContain('main.toolbar.awayMessagesDescription');
+      expect(document.body.textContent).not.toContain('currentUser.awayMessagesDescription');
     });
 
     it('should show no messages text when away messages are empty', () => {
@@ -48,13 +48,13 @@ describe('AwayMessages', () => {
 
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      expect(document.body.textContent).toContain('main.toolbar.noAwayMessages');
+      expect(document.body.textContent).toContain('currentUser.noAwayMessages');
     });
 
     it('should show Mark as Read button', () => {
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      expect(screen.getByText('main.toolbar.markAsRead')).toBeInTheDocument();
+      expect(screen.getByText('currentUser.markAsRead')).toBeInTheDocument();
     });
   });
 
@@ -150,7 +150,7 @@ describe('AwayMessages', () => {
 
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      const markAsReadButton = screen.getByText('main.toolbar.markAsRead');
+      const markAsReadButton = screen.getByText('currentUser.markAsRead');
       await user.click(markAsReadButton);
 
       expect(mockClearAwayMessages).toHaveBeenCalled();
@@ -162,7 +162,7 @@ describe('AwayMessages', () => {
 
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      const markAsReadButton = screen.getByText('main.toolbar.markAsRead');
+      const markAsReadButton = screen.getByText('currentUser.markAsRead');
       await user.click(markAsReadButton);
 
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
@@ -185,7 +185,7 @@ describe('AwayMessages', () => {
 
       render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
 
-      const markAsReadButton = screen.getByText('main.toolbar.markAsRead');
+      const markAsReadButton = screen.getByText('currentUser.markAsRead');
       await user.click(markAsReadButton);
 
       expect(mockClearAwayMessages).toHaveBeenCalled();

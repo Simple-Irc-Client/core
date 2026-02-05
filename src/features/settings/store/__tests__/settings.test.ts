@@ -41,6 +41,10 @@ import {
   getHideAvatarsInUsersList,
   setFontSize,
   getFontSize,
+  setCurrentUserHomepage,
+  getCurrentUserHomepage,
+  setCurrentUserColor,
+  getCurrentUserColor,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -92,6 +96,8 @@ describe('settings store', () => {
       silenceLimit: 0,
       isDarkMode: false,
       fontSize: 'medium',
+      currentUserHomepage: undefined,
+      currentUserColor: undefined,
     });
     vi.clearAllMocks();
   });
@@ -490,6 +496,54 @@ describe('settings store', () => {
       useSettingsStore.getState().resetWizardState();
 
       expect(getFontSize()).toBe('medium');
+    });
+  });
+
+  describe('current user homepage', () => {
+    it('should set currentUserHomepage', () => {
+      setCurrentUserHomepage('https://example.com');
+      expect(getCurrentUserHomepage()).toBe('https://example.com');
+    });
+
+    it('should clear currentUserHomepage with undefined', () => {
+      setCurrentUserHomepage('https://example.com');
+      setCurrentUserHomepage(undefined);
+      expect(getCurrentUserHomepage()).toBeUndefined();
+    });
+
+    it('should default currentUserHomepage to undefined', () => {
+      expect(getCurrentUserHomepage()).toBeUndefined();
+    });
+
+    it('should reset currentUserHomepage on resetWizardState', () => {
+      setCurrentUserHomepage('https://example.com');
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getCurrentUserHomepage()).toBeUndefined();
+    });
+  });
+
+  describe('current user color', () => {
+    it('should set currentUserColor', () => {
+      setCurrentUserColor('#ff5500');
+      expect(getCurrentUserColor()).toBe('#ff5500');
+    });
+
+    it('should clear currentUserColor with undefined', () => {
+      setCurrentUserColor('#ff5500');
+      setCurrentUserColor(undefined);
+      expect(getCurrentUserColor()).toBeUndefined();
+    });
+
+    it('should default currentUserColor to undefined', () => {
+      expect(getCurrentUserColor()).toBeUndefined();
+    });
+
+    it('should reset currentUserColor on resetWizardState', () => {
+      setCurrentUserColor('#ff5500');
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getCurrentUserColor()).toBeUndefined();
     });
   });
 });

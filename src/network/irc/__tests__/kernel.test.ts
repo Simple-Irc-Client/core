@@ -677,6 +677,88 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA homepage saves for current user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    const mockSetCurrentUserHomepage = vi.spyOn(settingsFile, 'setCurrentUserHomepage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA TestUser homepage * :https://mywebsite.com';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalled();
+
+    expect(mockSetUserHomepage).toHaveBeenCalledWith('TestUser', 'https://mywebsite.com');
+    expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentUserHomepage).toHaveBeenCalledWith('https://mywebsite.com');
+    expect(mockSetCurrentUserHomepage).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA color for user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :#ff5500';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('Noop', '#ff5500');
+    expect(mockSetUserColor).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA color saves for current user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA TestUser color * :#00ff00';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalled();
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('TestUser', '#00ff00');
+    expect(mockSetUserColor).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentUserColor).toHaveBeenCalledWith('#00ff00');
+    expect(mockSetCurrentUserColor).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA color clears for current user', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA TestUser color * :';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIsChannel).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentNick).toHaveBeenCalled();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
+    expect(mockSetCurrentUserColor).toHaveBeenCalledWith(undefined);
+    expect(mockSetCurrentUserColor).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');

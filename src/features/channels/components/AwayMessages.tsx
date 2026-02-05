@@ -30,12 +30,12 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>{t('main.toolbar.awayMessages')}</DialogTitle>
-          <DialogDescription>{t('main.toolbar.awayMessagesDescription')}</DialogDescription>
+          <DialogTitle>{t('currentUser.awayMessages')}</DialogTitle>
+          <DialogDescription>{t('currentUser.awayMessagesDescription')}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto py-4">
           {awayMessages.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center">{t('main.toolbar.noAwayMessages')}</p>
+            <p className="text-sm text-muted-foreground text-center">{t('currentUser.noAwayMessages')}</p>
           ) : (
             <div className="space-y-3">
               {awayMessages.map((msg) => (
@@ -55,7 +55,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
         </div>
         <DialogFooter>
           <Button type="button" onClick={handleMarkAsRead}>
-            {t('main.toolbar.markAsRead')}
+            {t('currentUser.markAsRead')}
           </Button>
         </DialogFooter>
       </DialogContent>
