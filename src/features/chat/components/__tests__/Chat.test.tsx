@@ -1321,4 +1321,159 @@ describe('Chat tests', () => {
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
   });
+
+  describe('Display name support', () => {
+    it('should display displayName instead of nick when available in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.queryByText('john')).not.toBeInTheDocument();
+    });
+
+    it('should display displayName instead of nick when available in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('<John Doe>')).toBeInTheDocument();
+    });
+
+    it('should display displayName instead of nick when available in debug view', () => {
+      setupMocks({
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Debug message',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('<John Doe>')).toBeInTheDocument();
+    });
+
+    it('should use displayName for avatar fallback letter', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      // Avatar fallback letter should be 'J' from 'John Doe', not 'j' from 'john'
+      expect(screen.getByText('J')).toBeInTheDocument();
+    });
+
+    it('should fall back to nick when displayName is not set', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('john')).toBeInTheDocument();
+    });
+
+    it('should fall back to nick when displayName is empty string', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john', displayName: '' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('john')).toBeInTheDocument();
+    });
+
+    it('should still use nick for context menu even when displayName is shown', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Hello world',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      const nickElement = screen.getByText('John Doe');
+      fireEvent.contextMenu(nickElement);
+
+      // Context menu should receive the actual nick, not displayName
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'john'
+      );
+    });
+
+    it('should group messages by nick, not by displayName', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'First message',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+          createMessage({
+            id: '2',
+            message: 'Second message',
+            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      // displayName should appear only once due to grouping
+      const displayNames = screen.getAllByText('John Doe');
+      expect(displayNames.length).toBe(1);
+    });
+  });
 });

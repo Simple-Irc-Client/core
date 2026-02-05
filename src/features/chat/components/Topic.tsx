@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
+import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 
 const TOPIC_EDIT_FLAGS = ['q', 'a', 'o'];
@@ -63,7 +64,7 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
 
   const date = new Date(topicTime * 1000);
   return t('main.topic.setBy', {
-    nick: topicSetBy,
+    nick: getUserDisplayName(topicSetBy),
     date: format(date, 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }),
     interpolation: { escapeValue: false },
   });

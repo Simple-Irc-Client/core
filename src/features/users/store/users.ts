@@ -20,6 +20,7 @@ interface UsersStore {
   setUserAway: (nick: string, away: boolean, reason?: string) => void;
   setUserHost: (nick: string, ident: string, hostname: string) => void;
   setUserRealname: (nick: string, realname: string) => void;
+  setUserDisplayName: (nick: string, displayName: string) => void;
   setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
   setClearAll: () => void;
 }
@@ -131,6 +132,16 @@ export const useUsersStore = create<UsersStore>()(
             return user;
           }
           return { ...user, realname };
+        }),
+      }));
+    },
+    setUserDisplayName: (nick: string, displayName: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, displayName };
         }),
       }));
     },
@@ -330,6 +341,17 @@ export const setUserHost = (nick: string, ident: string, hostname: string): void
 
 export const setUserRealname = (nick: string, realname: string): void => {
   useUsersStore.getState().setUserRealname(nick, realname);
+};
+
+export const setUserDisplayName = (nick: string, displayName: string): void => {
+  useUsersStore.getState().setUserDisplayName(nick, displayName);
+
+  const channels = getUser(nick)?.channels ?? [];
+  const currentChannelName = getCurrentChannelName();
+
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
 };
 
 export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {

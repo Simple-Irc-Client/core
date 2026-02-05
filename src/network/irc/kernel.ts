@@ -6,6 +6,7 @@ import {
   setAddMessage,
   setAddMessageToAllChannels,
   setChannelAvatar,
+  setChannelDisplayName,
   setIncreaseUnreadMessages,
   setRemoveChannel,
   setTopic,
@@ -40,7 +41,7 @@ import {
   setUserModes,
   setWatchLimit,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
@@ -1802,11 +1803,18 @@ export class Kernel {
   // https://ircv3.net/specs/core/metadata-3.2
   // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
   // :netsplit.pirc.pl METADATA #channel avatar * :https://example.com/channel-avatar.png
+  // :netsplit.pirc.pl METADATA Noop display-name * :John Doe
   private readonly onMetadata = (): void => {
     const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
-    const value = this.line.shift()?.substring(1);
+
+    // Handle trailing parameter (value may contain spaces)
+    let value = this.line.shift();
+    if (value?.startsWith(':')) {
+      value = value.substring(1) + (this.line.length > 0 ? ' ' + this.line.join(' ') : '');
+      this.line = [];
+    }
 
     if (nickOrChannel === undefined) {
       this.logParseError(this.onMetadata, 'nickOrChannel');
@@ -1818,6 +1826,9 @@ export class Kernel {
       if (item === 'avatar' && value !== undefined) {
         const avatarUrl = value.replace('{size}', '64');
         setChannelAvatar(nickOrChannel, avatarUrl);
+      }
+      if (item === 'display-name' && value !== undefined) {
+        setChannelDisplayName(nickOrChannel, value);
       }
     } else {
       // Handle user metadata
@@ -1831,6 +1842,9 @@ export class Kernel {
       }
       if (item === 'color' && value !== undefined) {
         setUserColor(nickOrChannel, value);
+      }
+      if (item === 'display-name' && value !== undefined) {
+        setUserDisplayName(nickOrChannel, value);
       }
     }
   };

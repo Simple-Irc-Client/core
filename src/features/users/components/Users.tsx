@@ -104,8 +104,8 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                   {!hideAvatarsInUsersList && (
                     <Avatar
                       src={user.avatar}
-                      alt={user.nick}
-                      fallbackLetter={user.nick.substring(0, 1).toUpperCase()}
+                      alt={user.displayName || user.nick}
+                      fallbackLetter={(user.displayName || user.nick).substring(0, 1).toUpperCase()}
                       className="h-10 w-10"
                     />
                   )}
@@ -125,7 +125,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                       );
                     })()}
                     <span className={fontSizeClass} style={{ color: user.color ?? 'inherit' }}>
-                      {user.nick}
+                      {user.displayName || user.nick}
                     </span>
                   </div>
                 </button>
