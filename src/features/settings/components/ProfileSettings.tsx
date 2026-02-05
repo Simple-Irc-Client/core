@@ -32,6 +32,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const supportedOptions = useSettingsStore((state) => state.supportedOptions);
   const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
   const currentUserDisplayName = useSettingsStore((state) => state.currentUserDisplayName);
+  const currentUserStatus = useSettingsStore((state) => state.currentUserStatus);
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
@@ -40,12 +41,14 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
   const [newDisplayName, setNewDisplayName] = useState(currentUserDisplayName ?? '');
+  const [newStatus, setNewStatus] = useState(currentUserStatus ?? '');
   const isConnected = useSettingsStore((state) => state.isConnected);
   const server = useSettingsStore((state) => state.server);
   const nick = useSettingsStore((state) => state.nick);
 
   const isAvatarSupported = supportedOptions.includes('metadata-avatar');
   const isDisplayNameSupported = supportedOptions.includes('metadata-display-name');
+  const isStatusSupported = supportedOptions.includes('metadata-status');
 
   const handleNickChange = (): void => {
     if (newNick.trim().length > 0) {
@@ -70,6 +73,16 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
       ircSendRawMessage(`METADATA * SET display-name :${trimmedDisplayName}`);
     } else {
       ircSendRawMessage('METADATA * SET display-name');
+    }
+    onOpenChange(false);
+  };
+
+  const handleStatusChange = (): void => {
+    const trimmedStatus = newStatus.trim();
+    if (trimmedStatus.length > 0) {
+      ircSendRawMessage(`METADATA * SET status :${trimmedStatus}`);
+    } else {
+      ircSendRawMessage('METADATA * SET status');
     }
     onOpenChange(false);
   };
@@ -158,6 +171,29 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             />
             <Button type="button" variant="outline" size="sm" onClick={handleDisplayNameChange}>
               {t('main.toolbar.changeDisplayName')}
+            </Button>
+          </div>
+        )}
+        {isStatusSupported && (
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="status" className="text-right">
+              {t('main.toolbar.status')}
+            </Label>
+            <Input
+              id="status"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value)}
+              className="col-span-2"
+              placeholder={t('main.toolbar.statusPlaceholder')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleStatusChange();
+                }
+              }}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={handleStatusChange}>
+              {t('main.toolbar.changeStatus')}
             </Button>
           </div>
         )}
