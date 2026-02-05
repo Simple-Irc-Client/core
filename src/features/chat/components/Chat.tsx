@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { MessageCategory, type Message } from '@shared/types';
+import { getUserDisplayName } from '@shared/lib/displayName';
 
 const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
@@ -24,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
+  const displayNick = nick ? getUserDisplayName(nick) : '';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -39,7 +41,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
         &nbsp;
         {nick !== undefined && (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
-            &lt;{nick}&gt;
+            &lt;{displayNick}&gt;
           </span>
         )}
         &nbsp;
@@ -52,6 +54,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
 const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : undefined;
+  const displayNick = nick ? getUserDisplayName(nick) : '';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -67,7 +70,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
         &nbsp;
         {nick !== undefined ? (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
-            &lt;{nick}&gt;
+            &lt;{displayNick}&gt;
           </span>
         ) : (
           ''
@@ -98,6 +101,7 @@ const EchoedIndicator = () => {
 const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message; lastNick: string; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = message.nick !== undefined ? (typeof message.nick === 'string' ? message.nick : message.nick.nick) : '';
+  const displayNick = nick ? getUserDisplayName(nick) : '';
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
   const avatarLetter = message?.nick !== undefined ? (typeof message.nick === 'string' ? message.nick.substring(0, 1) : message.nick.nick.substring(0, 1)) : '';
   const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
@@ -126,7 +130,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
             {lastNick !== nick && (
               <Avatar
                 src={avatar}
-                alt={nick}
+                alt={displayNick}
                 fallbackLetter={avatarLetter}
                 className="h-10 w-10 cursor-pointer"
                 onContextMenu={handleNickContextMenu}
@@ -137,7 +141,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
             {lastNick !== nick && (
               <div className="flex items-baseline mb-1">
                 <span className={`font-medium ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
-                  {nick}
+                  {displayNick}
                 </span>
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>

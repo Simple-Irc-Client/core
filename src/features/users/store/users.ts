@@ -16,6 +16,7 @@ interface UsersStore {
   setJoinUser: (nick: string, channelName: string) => void;
   setUserAvatar: (nick: string, avatar: string) => void;
   setUserColor: (nick: string, color: string) => void;
+  setUserDisplayName: (nick: string, displayName: string) => void;
   setUserAccount: (nick: string, account: string | null) => void;
   setUserAway: (nick: string, away: boolean, reason?: string) => void;
   setUserHost: (nick: string, ident: string, hostname: string) => void;
@@ -91,6 +92,16 @@ export const useUsersStore = create<UsersStore>()(
             return user;
           }
           return { ...user, color };
+        }),
+      }));
+    },
+    setUserDisplayName: (nick: string, displayName: string): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick) {
+            return user;
+          }
+          return { ...user, displayName };
         }),
       }));
     },
@@ -293,6 +304,17 @@ export const setUserAvatar = (nick: string, avatar: string): void => {
 
 export const setUserColor = (nick: string, color: string): void => {
   useUsersStore.getState().setUserColor(nick, color);
+
+  const channels = getUser(nick)?.channels ?? [];
+  const currentChannelName = getCurrentChannelName();
+
+  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
+};
+
+export const setUserDisplayName = (nick: string, displayName: string): void => {
+  useUsersStore.getState().setUserDisplayName(nick, displayName);
 
   const channels = getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();

@@ -21,6 +21,7 @@ import { Badge } from '@shared/components/ui/badge';
 import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import ChannelListDialog from '@shared/components/ChannelListDialog';
+import { getChannelDisplayName } from '@shared/lib/displayName';
 
 interface ChannelsProps {
   width?: number;
@@ -155,15 +156,15 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     {channel.avatar ? (
                       <Avatar
                         src={channel.avatar}
-                        alt={channel.name}
-                        fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
+                        alt={getChannelDisplayName(channel.name)}
+                        fallbackLetter={getChannelDisplayName(channel.name).substring(0, 1).toUpperCase()}
                         className="h-4 w-4"
                       />
                     ) : (
                       getChannelIcon(channel.category)
                     )}
                   </span>
-                  <span className="flex-1">{channel.name}</span>
+                  <span className="flex-1">{getChannelDisplayName(channel.name)}</span>
                 </button>
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                   {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (

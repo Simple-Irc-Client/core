@@ -8,6 +8,7 @@ import { getCurrentUserChannelModes } from '@features/users/store/users';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
+import { getUserDisplayName } from '@shared/lib/displayName';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
@@ -63,7 +64,7 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
 
   const date = new Date(topicTime * 1000);
   return t('main.topic.setBy', {
-    nick: topicSetBy,
+    nick: getUserDisplayName(topicSetBy),
     date: format(date, 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }),
     interpolation: { escapeValue: false },
   });

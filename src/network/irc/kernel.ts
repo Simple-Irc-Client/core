@@ -6,6 +6,7 @@ import {
   setAddMessage,
   setAddMessageToAllChannels,
   setChannelAvatar,
+  setChannelDisplayName,
   setIncreaseUnreadMessages,
   setRemoveChannel,
   setTopic,
@@ -40,7 +41,7 @@ import {
   setUserModes,
   setWatchLimit,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserDisplayName, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
@@ -1806,7 +1807,14 @@ export class Kernel {
     const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
-    const value = this.line.shift()?.substring(1);
+    
+    // Handle trailing parameter (starts with colon) - join remaining parts
+    let value = this.line.shift();
+    if (value?.startsWith(':')) {
+      // This is the trailing parameter, join it with any remaining parts
+      value = value.substring(1) + (this.line.length > 0 ? ' ' + this.line.join(' ') : '');
+      this.line = []; // Clear remaining parts
+    }
 
     if (nickOrChannel === undefined) {
       this.logParseError(this.onMetadata, 'nickOrChannel');
@@ -1818,6 +1826,9 @@ export class Kernel {
       if (item === 'avatar' && value !== undefined) {
         const avatarUrl = value.replace('{size}', '64');
         setChannelAvatar(nickOrChannel, avatarUrl);
+      }
+      if (item === 'display-name' && value !== undefined) {
+        setChannelDisplayName(nickOrChannel, value);
       }
     } else {
       // Handle user metadata
@@ -1831,6 +1842,9 @@ export class Kernel {
       }
       if (item === 'color' && value !== undefined) {
         setUserColor(nickOrChannel, value);
+      }
+      if (item === 'display-name' && value !== undefined) {
+        setUserDisplayName(nickOrChannel, value);
       }
     }
   };

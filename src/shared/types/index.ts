@@ -68,6 +68,10 @@ export interface Channel {
    * IRCv3 - Channel's avatar URL from metadata
    */
   avatar?: string;
+  /**
+   * IRCv3 - Channel's display name from metadata
+   */
+  displayName?: string;
 }
 
 export interface ChannelExtended extends Channel {
@@ -90,6 +94,10 @@ export interface User {
    * IRCv3 - User's color preference from metadata
    */
   color?: string;
+  /**
+   * IRCv3 - User's display name from metadata
+   */
+  displayName?: string;
   /**
    * IRCv3 - User's account name (from account-notify/account-tag)
    */
