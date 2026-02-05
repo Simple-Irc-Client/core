@@ -29,6 +29,7 @@ import {
   setWizardStep,
   setCurrentChannelName,
   setCurrentUserAvatar,
+  setCurrentUserDisplayName,
   setCurrentUserFlag,
   setIsConnected,
   setIsConnecting,
@@ -1845,6 +1846,10 @@ export class Kernel {
       }
       if (item === 'display-name' && value !== undefined) {
         setUserDisplayName(nickOrChannel, value);
+        // Save display name for current user to display in toolbar
+        if (nickOrChannel === getCurrentNick()) {
+          setCurrentUserDisplayName(value);
+        }
       }
     }
   };

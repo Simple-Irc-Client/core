@@ -34,8 +34,10 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const [key, setKey] = useState('');
   const [rawModes, setRawModes] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [displayName, setDisplayName] = useState('');
 
   const isAvatarSupported = supportedOptions?.includes('metadata-avatar') ?? false;
+  const isDisplayNameSupported = supportedOptions?.includes('metadata-display-name') ?? false;
 
   // Derive initial values from channelModes
   const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
@@ -90,6 +92,18 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const handleClearAvatar = () => {
     ircSendRawMessage(`METADATA ${channelName} SET avatar`);
     setAvatar('');
+  };
+
+  const handleSetDisplayName = () => {
+    const trimmedDisplayName = displayName.trim();
+    if (trimmedDisplayName.length > 0) {
+      ircSendRawMessage(`METADATA ${channelName} SET display-name :${trimmedDisplayName}`);
+    }
+  };
+
+  const handleClearDisplayName = () => {
+    ircSendRawMessage(`METADATA ${channelName} SET display-name`);
+    setDisplayName('');
   };
 
   const handleApplyRawModes = () => {
@@ -206,6 +220,31 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               {t('channelSettings.actions.set')}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={handleClearAvatar} data-testid="avatar-clear">
+              {t('channelSettings.actions.clear')}
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Channel Display Name (IRCv3 metadata) */}
+        {isDisplayNameSupported ? (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="displayName" className="w-24 shrink-0">
+              {t('channelSettings.modes.displayName')}
+            </Label>
+            <Input
+              id="displayName"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="flex-1"
+              placeholder={t('channelSettings.modes.displayNamePlaceholder')}
+              onKeyDown={(e) => e.key === 'Enter' && handleSetDisplayName()}
+              data-testid="displayName-input"
+            />
+            <Button type="button" size="sm" onClick={handleSetDisplayName} data-testid="displayName-set">
+              {t('channelSettings.actions.set')}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={handleClearDisplayName} data-testid="displayName-clear">
               {t('channelSettings.actions.clear')}
             </Button>
           </div>
