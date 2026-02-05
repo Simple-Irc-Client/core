@@ -1,10 +1,23 @@
-let encryptionKey: CryptoKey | null = null;
+let cryptoKey: CryptoKey | null = null;
 
 /**
  * Check if encryption is available (key has been initialized)
  */
 export function isEncryptionAvailable(): boolean {
-  return encryptionKey !== null;
+  return cryptoKey !== null;
+}
+
+/**
+ * Initialize encryption with a random session key.
+ * Used when backend encryption key isn't configured but encryption is needed.
+ */
+export async function initSessionEncryption(): Promise<void> {
+  if (cryptoKey !== null) return; // Already initialized
+
+  // Generate random 256-bit key for session
+  const rawKey = crypto.getRandomValues(new Uint8Array(32));
+  const base64Key = bytesToBase64(rawKey);
+  await initEncryption(base64Key);
 }
 
 /**
@@ -36,7 +49,7 @@ function bytesToBase64(bytes: Uint8Array): string {
  */
 export async function initEncryption(base64Key: string): Promise<void> {
   const keyData = base64ToBytes(base64Key);
-  encryptionKey = await crypto.subtle.importKey(
+  cryptoKey = await crypto.subtle.importKey(
     'raw',
     keyData.buffer as ArrayBuffer,
     { name: 'AES-GCM', length: 256 },
@@ -49,7 +62,7 @@ export async function initEncryption(base64Key: string): Promise<void> {
  * Encrypt a message object to base64 string
  */
 export async function encryptMessage(data: unknown): Promise<string> {
-  if (!encryptionKey) {
+  if (!cryptoKey) {
     throw new Error('Encryption not initialized');
   }
 
@@ -58,7 +71,7 @@ export async function encryptMessage(data: unknown): Promise<string> {
 
   const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
-    encryptionKey,
+    cryptoKey,
     messageBytes
   );
 
@@ -74,7 +87,7 @@ export async function encryptMessage(data: unknown): Promise<string> {
  * Decrypt a base64 string back to message object
  */
 export async function decryptMessage(encryptedBase64: string): Promise<unknown> {
-  if (!encryptionKey) {
+  if (!cryptoKey) {
     throw new Error('Encryption not initialized');
   }
 
@@ -86,7 +99,7 @@ export async function decryptMessage(encryptedBase64: string): Promise<unknown> 
 
   const decrypted = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv },
-    encryptionKey,
+    cryptoKey,
     encryptedData
   );
 
@@ -97,7 +110,7 @@ export async function decryptMessage(encryptedBase64: string): Promise<unknown> 
  * Encrypt a raw string to base64 (no JSON wrapping)
  */
 export async function encryptString(data: string): Promise<string> {
-  if (!encryptionKey) {
+  if (!cryptoKey) {
     throw new Error('Encryption not initialized');
   }
 
@@ -106,7 +119,7 @@ export async function encryptString(data: string): Promise<string> {
 
   const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv },
-    encryptionKey,
+    cryptoKey,
     messageBytes
   );
 
@@ -122,7 +135,7 @@ export async function encryptString(data: string): Promise<string> {
  * Decrypt a base64 string back to raw string (no JSON parsing)
  */
 export async function decryptString(encryptedBase64: string): Promise<string> {
-  if (!encryptionKey) {
+  if (!cryptoKey) {
     throw new Error('Encryption not initialized');
   }
 
@@ -134,7 +147,7 @@ export async function decryptString(encryptedBase64: string): Promise<string> {
 
   const decrypted = await crypto.subtle.decrypt(
     { name: 'AES-GCM', iv },
-    encryptionKey,
+    cryptoKey,
     encryptedData
   );
 

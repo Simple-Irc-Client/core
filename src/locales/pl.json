@@ -62,6 +62,8 @@
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.inactivityTimeout": "Utracono połączenie - brak aktywności z serwera przez 3 minuty",
+    "kernel.inactivityTimeoutReconnecting": "Utracono połączenie - ponowne łączenie (próba {{attempt}}/{{max}})...",
+    "kernel.inactivityTimeoutMaxRetries": "Utracono połączenie - osiągnięto maksymalną liczbę prób",
     "kernel.nick": "{{from}} zmienił nick na {{to}}",
     "kernel.join": "{{nick}} dołączył do kanału",
     "kernel.part": "{{nick}} opuścił kanał{{reason}}",

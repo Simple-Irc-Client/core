@@ -2,10 +2,11 @@ import { localBackendHost, localBackendPort, localBackendPath, encryptionKey, ga
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
-import { setSaslCredentials, resetSaslState, clearSaslCredentials } from './sasl';
+import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCredentialsForReconnect, restoreSaslCredentials, clearSavedCredentials } from './sasl';
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { getServer, getCurrentNick, setIsConnected, setIsConnecting } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
@@ -27,20 +28,60 @@ const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 const INACTIVITY_TIMEOUT_MS = 180 * 1000;
 let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-const showDisconnectionMessage = (): void => {
-  setAddMessageToAllChannels({
-    id: uuidv4(),
-    message: i18next.t('kernel.inactivityTimeout'),
-    time: new Date().toISOString(),
-    category: MessageCategory.error,
-  });
+// Reconnection retry tracking
+const MAX_INACTIVITY_RECONNECT_RETRIES = 3;
+let inactivityReconnectRetries = 0;
+
+export const resetInactivityReconnectRetries = (): void => {
+  inactivityReconnectRetries = 0;
+};
+
+const handleInactivityTimeout = async (): Promise<void> => {
+  // Save credentials before disconnect (encrypted)
+  await saveSaslCredentialsForReconnect();
+
+  // Disconnect (but credentials are saved)
+  disconnectDirect();
+  setIsConnecting(false);
+  setIsConnected(false);
+
+  // Check if we can retry
+  if (inactivityReconnectRetries < MAX_INACTIVITY_RECONNECT_RETRIES) {
+    inactivityReconnectRetries++;
+
+    setAddMessageToAllChannels({
+      id: uuidv4(),
+      message: i18next.t('kernel.inactivityTimeoutReconnecting', {
+        attempt: inactivityReconnectRetries,
+        max: MAX_INACTIVITY_RECONNECT_RETRIES,
+      }),
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+    });
+
+    // Attempt reconnect after brief delay
+    setTimeout(() => {
+      void ircReconnect();
+    }, 2000);
+  } else {
+    // Max retries reached - clear saved credentials
+    clearSavedCredentials();
+    setAddMessageToAllChannels({
+      id: uuidv4(),
+      message: i18next.t('kernel.inactivityTimeoutMaxRetries'),
+      time: new Date().toISOString(),
+      category: MessageCategory.error,
+    });
+  }
 };
 
 const resetInactivityTimeout = (): void => {
   if (inactivityTimeoutId !== null) {
     clearTimeout(inactivityTimeoutId);
   }
-  inactivityTimeoutId = setTimeout(showDisconnectionMessage, INACTIVITY_TIMEOUT_MS);
+  inactivityTimeoutId = setTimeout(() => {
+    void handleInactivityTimeout();
+  }, INACTIVITY_TIMEOUT_MS);
 };
 
 const clearInactivityTimeout = (): void => {
@@ -221,15 +262,24 @@ export const ircSetSaslCredentials = (account: string, password: string): void =
 
 /**
  * Send password to authenticate with NickServ (fallback when SASL is not available).
+ * Also stores credentials for potential reconnection.
  */
 export const ircSendPassword = (password: string): void => {
+  // Store credentials for potential reconnect (use current nick as account)
+  const account = getCurrentNick();
+  if (account) {
+    setSaslCredentials(account, password);
+  }
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${password}`);
 };
 
 /**
  * Authenticate using either SASL (if available) or NickServ fallback.
+ * Also stores credentials for potential reconnection.
  */
 export const ircAuthenticate = (account: string, password: string): void => {
+  // Store credentials for potential reconnect
+  setSaslCredentials(account, password);
   if (isCapabilityEnabled('sasl')) {
     console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
     ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
@@ -351,5 +401,33 @@ export const ircSendRawMessage = (data: string): void => {
   sendDirectRaw(data);
 };
 
+/**
+ * Reconnect to IRC server preserving SASL credentials.
+ * Used for automatic reconnection after inactivity timeout.
+ */
+export const ircReconnect = async (): Promise<boolean> => {
+  const server = getServer();
+  const nick = getCurrentNick();
+
+  if (server === undefined || nick === '') {
+    return false;
+  }
+
+  // Reset state without clearing saved credentials
+  clearInactivityTimeout();
+  resetCapabilityState();
+  resetSaslState();
+  // Note: clearSaslCredentials() NOT called - credentials restored below
+  resetSTSSessionState();
+  disconnectDirect();
+
+  // Restore saved credentials for SASL re-authentication (decrypted)
+  await restoreSaslCredentials();
+
+  // Reconnect
+  ircConnect(server, nick);
+  return true;
+};
+
 // Re-export for backward compatibility with tests and other modules
-export { resetInactivityTimeout, clearInactivityTimeout };
+export { resetInactivityTimeout, clearInactivityTimeout, clearSavedCredentials };

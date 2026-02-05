@@ -4,6 +4,8 @@
  * https://ircv3.net/specs/extensions/sasl-3.2.html
  */
 
+import { encryptString, decryptString, isEncryptionAvailable, initSessionEncryption } from '@/network/encryption';
+
 export type SaslMechanism = 'PLAIN' | 'EXTERNAL';
 
 export type SaslState = 'none' | 'requested' | 'authenticating' | 'success' | 'failed';
@@ -13,6 +15,10 @@ let saslState: SaslState = 'none';
 let saslAccount: string | null = null;
 let saslPassword: string | null = null;
 let authenticatedAccount: string | null = null;
+
+// Stored encrypted credentials for reconnection
+let savedEncryptedAccount: string | null = null;
+let savedEncryptedPassword: string | null = null;
 
 /** Get current SASL state */
 export const getSaslState = (): SaslState => saslState;
@@ -136,4 +142,56 @@ export const isSaslInProgress = (): boolean => {
  */
 export const isSaslComplete = (): boolean => {
   return saslState === 'success' || saslState === 'failed';
+};
+
+/**
+ * Save credentials before disconnect (encrypted for reconnection)
+ */
+export const saveSaslCredentialsForReconnect = async (): Promise<void> => {
+  if (saslAccount && saslPassword) {
+    // Ensure session encryption is available
+    if (!isEncryptionAvailable()) {
+      await initSessionEncryption();
+    }
+    savedEncryptedAccount = await encryptString(saslAccount);
+    savedEncryptedPassword = await encryptString(saslPassword);
+  }
+};
+
+/**
+ * Restore saved credentials after reconnect (decrypted)
+ */
+export const restoreSaslCredentials = async (): Promise<boolean> => {
+  if (savedEncryptedAccount && savedEncryptedPassword && isEncryptionAvailable()) {
+    try {
+      saslAccount = await decryptString(savedEncryptedAccount);
+      saslPassword = await decryptString(savedEncryptedPassword);
+      return true;
+    } catch (err) {
+      console.error('Failed to restore credentials:', err);
+      return false;
+    }
+  }
+  return false;
+};
+
+/**
+ * Clear saved credentials (after successful reconnect or manual disconnect)
+ */
+export const clearSavedCredentials = (): void => {
+  savedEncryptedAccount = null;
+  savedEncryptedPassword = null;
+};
+
+/**
+ * Check if NickServ fallback authentication is needed.
+ * Returns credentials if they exist and SASL wasn't used successfully.
+ * Used after reconnection when SASL capability isn't available.
+ */
+export const getNickServFallbackCredentials = (): { account: string; password: string } | null => {
+  // Only provide fallback if SASL wasn't successful and we have credentials
+  if (saslState !== 'success' && saslAccount && saslPassword) {
+    return { account: saslAccount, password: saslPassword };
+  }
+  return null;
 };

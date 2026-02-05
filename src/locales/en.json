@@ -62,6 +62,8 @@
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.inactivityTimeout": "Connection lost - no activity from server for 3 minutes",
+    "kernel.inactivityTimeoutReconnecting": "Connection lost - reconnecting (attempt {{attempt}}/{{max}})...",
+    "kernel.inactivityTimeoutMaxRetries": "Connection lost - maximum reconnection attempts reached",
     "kernel.nick": "{{from}} has changed his nickname to {{to}}",
     "kernel.join": "{{nick}} has joined",
     "kernel.part": "{{nick}} has left{{reason}}",
