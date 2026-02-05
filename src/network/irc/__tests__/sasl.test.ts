@@ -14,6 +14,7 @@ import {
   resetSaslState,
   isSaslInProgress,
   isSaslComplete,
+  getNickServFallbackCredentials,
 } from '../sasl';
 
 describe('sasl', () => {
@@ -211,6 +212,51 @@ describe('sasl', () => {
 
       const response = handleSaslChallenge('some-challenge', 'PLAIN');
       expect(response).toBeNull();
+    });
+  });
+
+  describe('getNickServFallbackCredentials', () => {
+    it('should return credentials when SASL was not used', () => {
+      setSaslCredentials('testaccount', 'testpassword');
+      // SASL state is 'none' by default after reset
+
+      const result = getNickServFallbackCredentials();
+
+      expect(result).toEqual({ account: 'testaccount', password: 'testpassword' });
+    });
+
+    it('should return credentials when SASL failed', () => {
+      setSaslCredentials('testaccount', 'testpassword');
+      setSaslState('failed');
+
+      const result = getNickServFallbackCredentials();
+
+      expect(result).toEqual({ account: 'testaccount', password: 'testpassword' });
+    });
+
+    it('should return null when SASL succeeded', () => {
+      setSaslCredentials('testaccount', 'testpassword');
+      setSaslState('success');
+
+      const result = getNickServFallbackCredentials();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when no credentials are stored', () => {
+      // No credentials set
+
+      const result = getNickServFallbackCredentials();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when only account is set', () => {
+      setSaslCredentials('testaccount', '');
+
+      const result = getNickServFallbackCredentials();
+
+      expect(result).toBeNull();
     });
   });
 });

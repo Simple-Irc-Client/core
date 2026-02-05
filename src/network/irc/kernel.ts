@@ -49,7 +49,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -68,6 +68,7 @@ import {
   handleSaslChallenge,
   setAuthenticatedAccount,
   setSaslState,
+  getNickServFallbackCredentials,
 } from './sasl';
 import {
   parseSTSValue,
@@ -104,9 +105,6 @@ import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
   addToChannelSettingsInviteList,
-  setChannelSettingsBanList,
-  setChannelSettingsExceptionList,
-  setChannelSettingsInviteList,
   setChannelSettingsModes,
   setChannelSettingsIsLoading,
   setChannelSettingsIsBanListLoading,
@@ -430,9 +428,19 @@ export class Kernel {
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
 
+    // Reset reconnection state on successful connection
+    resetInactivityReconnectRetries();
+    clearSavedCredentials();
+
     // Clear any pending STS upgrade now that we're connected
     clearPendingSTSUpgrade();
     resetSTSRetries();
+
+    // Check if NickServ authentication is needed (SASL not used/failed but credentials available)
+    const nickServCredentials = getNickServFallbackCredentials();
+    if (nickServCredentials) {
+      ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
+    }
 
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -511,6 +519,7 @@ export class Kernel {
   };
 
   private readonly handleRaw = (event: string): void => {
+    resetInactivityTimeout();
     const { tags, sender, command, line } = parseIrcRawMessage(event);
     this.tags = tags;
     this.sender = sender;
