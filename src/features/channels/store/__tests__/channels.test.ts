@@ -374,8 +374,8 @@ describe('channels store', () => {
       expect(isPriv('&channel')).toBe(false);
     });
 
-    it('should throw for empty string', () => {
-      expect(() => isPriv('')).toThrow();
+    it('should return false for empty string', () => {
+      expect(isPriv('')).toBe(false);
     });
   });
 
@@ -389,8 +389,8 @@ describe('channels store', () => {
       expect(isChannel('username')).toBe(false);
     });
 
-    it('should throw for empty string', () => {
-      expect(() => isChannel('')).toThrow();
+    it('should return false for empty string', () => {
+      expect(isChannel('')).toBe(false);
     });
   });
 
