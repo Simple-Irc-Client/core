@@ -20,6 +20,7 @@ import {
   setDirectEventCallback,
   setDirectEncryption,
 } from './directWebSocket';
+import { clearAllBatches, clearPendingLabels } from './batch';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
@@ -282,10 +283,8 @@ export const ircAuthenticate = (account: string, password: string): void => {
   setSaslCredentials(account, password);
   if (isCapabilityEnabled('sasl')) {
     console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
-    ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
-  } else {
-    ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
   }
+  ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
 };
 
 export const ircSendList = (): void => {
@@ -419,6 +418,8 @@ export const ircReconnect = async (): Promise<boolean> => {
   resetSaslState();
   // Note: clearSaslCredentials() NOT called - credentials restored below
   resetSTSSessionState();
+  clearAllBatches();
+  clearPendingLabels();
   disconnectDirect();
 
   // Restore saved credentials for SASL re-authentication (decrypted)

@@ -204,7 +204,7 @@ export const useUsersStore = create<UsersStore>()(
 
 export const setAddUser = (newUser: User): void => {
   if (getHasUser(newUser.nick)) {
-    const channel = newUser.channels.shift();
+    const channel = newUser.channels[0];
     if (channel !== undefined) {
       setJoinUser(newUser.nick, channel.name);
     }
@@ -214,7 +214,7 @@ export const setAddUser = (newUser: User): void => {
 
   const currentChannelName = getCurrentChannelName();
 
-  if (newUser.channels.map((channel) => channel.name).includes(currentChannelName)) {
+  if (newUser.channels.some((channel) => channel.name === currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -246,7 +246,7 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
 
   useUsersStore.getState().setQuitUser(nick);
 
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -262,7 +262,7 @@ export const setRenameUser = (from: string, to: string): void => {
 
   const currentChannelName = getCurrentChannelName();
 
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -290,30 +290,23 @@ export const setJoinUser = (nick: string, channelName: string): void => {
 export const getUsersFromChannelSortedByMode = (channelName: string): User[] => {
   return useUsersStore
     .getState()
-    .users.filter((user: User) => user.channels.map((channel) => channel.name).includes(channelName))
+    .users.filter((user: User) => user.channels.some((channel) => channel.name === channelName))
     .sort((a: User, b: User) => {
-      if (a.channels.find((channel) => channel.name === channelName)?.maxPermission !== b.channels.find((channel) => channel.name === channelName)?.maxPermission) {
-        if ((a.channels.find((channel) => channel.name === channelName)?.maxPermission ?? -1) < (b.channels.find((channel) => channel.name === channelName)?.maxPermission ?? -1)) {
-          return 1;
-        } else {
-          return -1;
-        }
-      } else {
-        if (a.nick.toLowerCase() > b.nick.toLowerCase()) {
-          return 1;
-        }
-        if (a.nick.toLowerCase() < b.nick.toLowerCase()) {
-          return -1;
-        }
+      const aPermission = a.channels.find((c) => c.name === channelName)?.maxPermission ?? -1;
+      const bPermission = b.channels.find((c) => c.name === channelName)?.maxPermission ?? -1;
+
+      if (aPermission !== bPermission) {
+        return bPermission - aPermission;
       }
-      return 0;
+
+      return a.nick.toLowerCase().localeCompare(b.nick.toLowerCase());
     });
 };
 
 export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
   return useUsersStore
     .getState()
-    .users.filter((user: User) => user.channels.map((channel) => channel.name).includes(channelName))
+    .users.filter((user: User) => user.channels.some((channel) => channel.name === channelName))
     .sort((a: User, b: User) => {
       const A = a.nick.toLowerCase();
       const B = b.nick.toLowerCase();
@@ -321,26 +314,23 @@ export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
     });
 };
 
-export const setUserAvatar = (nick: string, avatar: string): void => {
-  useUsersStore.getState().setUserAvatar(nick, avatar);
-
+const syncCurrentChannelUsers = (nick: string): void => {
   const channels = getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
 
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
 
+export const setUserAvatar = (nick: string, avatar: string): void => {
+  useUsersStore.getState().setUserAvatar(nick, avatar);
+  syncCurrentChannelUsers(nick);
+};
+
 export const setUserColor = (nick: string, color: string): void => {
   useUsersStore.getState().setUserColor(nick, color);
-
-  const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(nick);
 };
 
 export const setUserAccount = (nick: string, account: string | null): void => {
@@ -349,24 +339,12 @@ export const setUserAccount = (nick: string, account: string | null): void => {
 
 export const setUserAway = (nick: string, away: boolean, reason?: string): void => {
   useUsersStore.getState().setUserAway(nick, away, reason);
-
-  const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(nick);
 };
 
 export const setUserHost = (nick: string, ident: string, hostname: string): void => {
   useUsersStore.getState().setUserHost(nick, ident, hostname);
-
-  const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(nick);
 };
 
 export const setUserRealname = (nick: string, realname: string): void => {
@@ -375,24 +353,12 @@ export const setUserRealname = (nick: string, realname: string): void => {
 
 export const setUserDisplayName = (nick: string, displayName: string): void => {
   useUsersStore.getState().setUserDisplayName(nick, displayName);
-
-  const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(nick);
 };
 
 export const setUserStatus = (nick: string, status: string | undefined): void => {
   useUsersStore.getState().setUserStatus(nick, status);
-
-  const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-
-  if (channels.map((channel) => channel.name).includes(currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(nick);
 };
 
 export const setUserHomepage = (nick: string, homepage: string | undefined): void => {

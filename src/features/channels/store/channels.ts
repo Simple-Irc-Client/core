@@ -5,6 +5,12 @@ import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
 import { getChannelTypes, getCurrentChannelName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
 
+const updateChannelInBothLists = <T extends { name: string }>(
+  list: T[],
+  channelName: string,
+  updater: (channel: T) => T,
+): T[] => list.map((channel) => (channel.name === channelName ? updater(channel) : channel));
+
 interface ChannelsStore {
   openChannels: ChannelExtended[];
   openChannelsShortList: Channel[];
@@ -117,74 +123,26 @@ export const useChannelsStore = create<ChannelsStore>()(
     },
     setClearUnreadMessages: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, unReadMessages: 0 };
-        }),
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, unReadMessages: 0 };
-        }),
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0 })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0 })),
       }));
     },
     setIncreaseUnreadMessages: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, unReadMessages: channel.unReadMessages + 1 };
-        }),
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, unReadMessages: channel.unReadMessages + 1 };
-        }),
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
       }));
     },
     setChannelAvatar: (channelName: string, avatar: string) => {
       set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, avatar };
-        }),
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, avatar };
-        }),
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, avatar })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, avatar })),
       }));
     },
     setChannelDisplayName: (channelName: string, displayName: string) => {
       set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.map((channel: Channel) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, displayName };
-        }),
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
-            return channel;
-          }
-
-          return { ...channel, displayName };
-        }),
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, displayName })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, displayName })),
       }));
     },
     setClearAll: () => {
@@ -277,11 +235,7 @@ export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>):
 };
 
 export const getMessages = (channelName: string): Message[] => {
-  return (
-    getChannel(channelName)?.messages?.map((message) => {
-      return message; // map is required because it's chaning object id
-    }) ?? []
-  );
+  return [...(getChannel(channelName)?.messages ?? [])];
 };
 
 export const getCategory = (channelName: string): ChannelCategory | undefined => {
@@ -331,7 +285,7 @@ export const setChannelDisplayName = (channelName: string, displayName: string):
 export const isPriv = (channelName: string): boolean => {
   const char = channelName?.[0];
   if (char === undefined) {
-    throw new Error(`Error - isPriv - cannot read first character of: ${channelName}`);
+    return false;
   }
   return !getChannelTypes().includes(char);
 };
@@ -339,7 +293,7 @@ export const isPriv = (channelName: string): boolean => {
 export const isChannel = (channelName: string): boolean => {
   const char = channelName?.[0];
   if (char === undefined) {
-    throw new Error(`Error - isChannel - cannot read first character of: ${channelName}`);
+    return false;
   }
   return getChannelTypes().includes(char);
 };

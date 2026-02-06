@@ -374,6 +374,21 @@ export class Kernel {
     this.eventLine = event?.line !== undefined ? event?.line.trim() : '';
   }
 
+  /** Strip leading ':' from an IRC trailing parameter, if present */
+  private stripColon(value: string): string {
+    return value.startsWith(':') ? value.substring(1) : value;
+  }
+
+  /** Join remaining line tokens into a trailing parameter, stripping the leading ':' */
+  private trailing(): string {
+    return this.stripColon(this.line.join(' '));
+  }
+
+  /** Join remaining line tokens into a trailing parameter, returning undefined if empty */
+  private trailingOptional(): string | undefined {
+    return this.line.length > 0 ? this.trailing() : undefined;
+  }
+
   // eslint-disable-next-line
   private logParseError = (func: Function, variable: string): void => {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
@@ -1115,7 +1130,7 @@ export class Kernel {
   // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
   private readonly onAway = (): void => {
     const { nick } = parseNick(this.sender, getUserModes());
-    const reason = this.line.length > 0 ? this.line.join(' ').replace(/^:/, '') : undefined;
+    const reason = this.trailingOptional();
 
     if (reason) {
       // User is away
@@ -1669,7 +1684,7 @@ export class Kernel {
   // ERROR :Closing Link: [1.1.1.1] (Registration Timeout)
   // ERROR :Closing Link: [unknown@185.251.84.36] (SSL_do_accept failed)
   private readonly onError = (): void => {
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     // Skip showing error during STS upgrade (server sends ERROR when we disconnect)
     if (getPendingSTSUpgrade()) {
@@ -1693,7 +1708,8 @@ export class Kernel {
   private readonly onInvite = (): void => {
     const invited = this.line.shift();
 
-    const channel = this.line.shift()?.substring(1);
+    const rawChannel = this.line.shift();
+    const channel = rawChannel !== undefined ? this.stripColon(rawChannel) : undefined;
 
     if (channel === undefined) {
       this.logParseError(this.onInvite, 'channel');
@@ -1764,7 +1780,7 @@ export class Kernel {
 
     const channel = this.line.shift();
     const kicked = this.line.shift();
-    const reason = this.line.join(' ').substring(1) ?? '';
+    const reason = this.trailing() ?? '';
 
     if (kicked === undefined) {
       this.logParseError(this.onKick, 'kicked');
@@ -1802,7 +1818,7 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, getUserModes());
 
-    const reason = this.line.join(' ').substring(1) ?? '';
+    const reason = this.trailing() ?? '';
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2080,12 +2096,14 @@ export class Kernel {
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
   private readonly onNick = (): void => {
     const currentChannelName = getCurrentChannelName();
-    const newNick = this.line.shift()?.substring(1);
+    const rawNick = this.line.shift();
 
-    if (newNick === undefined) {
+    if (rawNick === undefined) {
       this.logParseError(this.onNick, 'newNick');
       return;
     }
+
+    const newNick = this.stripColon(rawNick);
 
     const channels = getUserChannels(this.sender);
     setRenameUser(this.sender, newNick);
@@ -2124,7 +2142,7 @@ export class Kernel {
       return;
     }
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     const { nick } = parseNick(this.sender, getUserModes());
 
@@ -2162,7 +2180,7 @@ export class Kernel {
   // :mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat
   private readonly onPart = (): void => {
     let channel = this.line.shift();
-    const reason = this.line.join(' ').substring(1) ?? '';
+    const reason = this.trailing() ?? '';
 
     if (channel === undefined) {
       this.logParseError(this.onPart, 'channel');
@@ -2213,7 +2231,7 @@ export class Kernel {
     const myNick = getCurrentNick();
 
     const target = this.line.shift();
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
     const { nick } = parseNick(this.sender, serverUserModes);
 
     if (target === undefined) {
@@ -2400,7 +2418,7 @@ export class Kernel {
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
   private readonly onQuit = (): void => {
-    const reason = this.line.join(' ').substring(1) ?? '';
+    const reason = this.trailing() ?? '';
 
     const { nick } = parseNick(this.sender, getUserModes());
 
@@ -2419,7 +2437,7 @@ export class Kernel {
   // :nick!user@host SETNAME :New Real Name
   private readonly onSetname = (): void => {
     const { nick } = parseNick(this.sender, getUserModes());
-    const realname = this.line.join(' ').replace(/^:/, '');
+    const realname = this.trailing();
 
     if (realname) {
       setUserRealname(nick, realname);
@@ -2474,7 +2492,7 @@ export class Kernel {
   private readonly onTopic = (): void => {
     const channel = this.line.shift();
 
-    const topic = this.line.join(' ').substring(1);
+    const topic = this.trailing();
 
     if (channel === undefined) {
       this.logParseError(this.onTopic, 'channel');
@@ -2499,7 +2517,7 @@ export class Kernel {
   private readonly onRaw001 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2517,7 +2535,7 @@ export class Kernel {
   private readonly onRaw002 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2533,7 +2551,7 @@ export class Kernel {
   private readonly onRaw003 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2618,7 +2636,7 @@ export class Kernel {
   private readonly onRaw250 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2634,7 +2652,7 @@ export class Kernel {
   private readonly onRaw251 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2698,7 +2716,7 @@ export class Kernel {
   private readonly onRaw255 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2716,7 +2734,7 @@ export class Kernel {
     const local = this.line.shift();
     const max = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2734,7 +2752,7 @@ export class Kernel {
     const global = this.line.shift();
     const max = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2752,7 +2770,7 @@ export class Kernel {
 
     const myNick = this.line.shift();
     const user = this.line.shift();
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2788,7 +2806,7 @@ export class Kernel {
   // :insomnia.pirc.pl 305 mero-test-2354324234 :You are no longer marked as being away
   private readonly onRaw305 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'You are no longer marked as being away') {
       message = i18next.t('kernel.305.you-are-no-longer-marked-as-being-away');
@@ -2809,7 +2827,7 @@ export class Kernel {
   // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
   private readonly onRaw306 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'You have been marked as being away') {
       message = i18next.t('kernel.306.you-have-been-marked-as-being-away');
@@ -2833,7 +2851,7 @@ export class Kernel {
 
     const myNick = this.line.shift();
     const user = this.line.shift();
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'is identified for this nick') {
       message = i18next.t('kernel.307.is-identified-for-this-nick');
@@ -2898,7 +2916,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const user = this.line.shift();
 
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'is an IRC Operator') {
       message = i18next.t('kernel.313.is-an-irc-operator');
@@ -2929,9 +2947,7 @@ export class Kernel {
 
     const myNick = this.line.shift();
     const user = this.line.shift();
-    const channels = this.line
-      .join(' ')
-      .substring(1)
+    const channels = this.trailing()
       .split(' ')
       .map((channel) => parseChannel(channel, serverUserModes))
       .join(' ');
@@ -2953,7 +2969,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const user = this.line.shift();
 
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'a Network Administrator') {
       message = i18next.t('kernel.320.a-network-administrator');
@@ -2982,7 +2998,7 @@ export class Kernel {
 
     const name = this.line.shift() ?? '';
     const users = Number(this.line.shift() ?? '0');
-    const topic = this.line.join(' ')?.substring(1);
+    const topic = this.trailing();
 
     setAddChannelToList(name, users, topic);
   };
@@ -2997,7 +3013,7 @@ export class Kernel {
   private readonly onRaw332 = (): void => {
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    const topic = this.line.join(' ')?.substring(1);
+    const topic = this.trailing();
 
     if (channel === undefined) {
       this.logParseError(this.onRaw332, 'channel');
@@ -3093,7 +3109,7 @@ export class Kernel {
   private readonly onRaw372 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3109,7 +3125,7 @@ export class Kernel {
   private readonly onRaw375 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3125,7 +3141,7 @@ export class Kernel {
   private readonly onRaw376 = (): void => {
     const myNick = this.line.shift();
 
-    const message = this.line.join(' ').substring(1);
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3316,7 +3332,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const user = this.line.shift();
 
-    let message = this.line.join(' ').substring(1);
+    let message = this.trailing();
 
     if (message === 'is using a Secure Connection') {
       message = i18next.t('kernel.671.is-using-a-secure-connection');
@@ -3340,7 +3356,8 @@ export class Kernel {
     const nick = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
-    const value = this.line.shift()?.substring(1);
+    const rawValue = this.line.shift();
+    const value = rawValue !== undefined ? this.stripColon(rawValue) : undefined;
 
     if (nick === undefined) {
       this.logParseError(this.onRaw761, 'nick');
@@ -3374,7 +3391,7 @@ export class Kernel {
   // :jowisz.pirc.pl 770 Merovingian :bot
   private readonly onRaw770 = (): void => {
     this.line.shift(); // myNick
-    const metadataItem = this.line.join(' ').substring(1).toLowerCase();
+    const metadataItem = this.trailing().toLowerCase();
 
     if (metadataItem.length > 0) {
       setSupportedOption(`metadata-${metadataItem}`);
@@ -3511,7 +3528,7 @@ export class Kernel {
     const asterisk = this.line.shift();
     const hostname = this.line.shift();
     const port = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3526,7 +3543,7 @@ export class Kernel {
   // :server 020 * :Please wait while we process your connection.
   private readonly onRaw020 = (): void => {
     const asterisk = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3542,7 +3559,7 @@ export class Kernel {
   private readonly onRaw042 = (): void => {
     const myNick = this.line.shift();
     const uniqueId = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3573,7 +3590,7 @@ export class Kernel {
   private readonly onRaw219 = (): void => {
     const myNick = this.line.shift();
     const statsType = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3589,7 +3606,7 @@ export class Kernel {
   // :server 221 yournick +iwx
   private readonly onRaw221 = (): void => {
     const myNick = this.line.shift();
-    const modes = this.line.join(' ').replace(/^:/, '');
+    const modes = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3604,7 +3621,7 @@ export class Kernel {
   // :server 242 nick :Server Up 14 days, 2:34:56
   private readonly onRaw242 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3619,7 +3636,7 @@ export class Kernel {
   // :server 256 nick :Administrative info about server
   private readonly onRaw256 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3634,7 +3651,7 @@ export class Kernel {
   // :server 257 nick :Location line 1
   private readonly onRaw257 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3649,7 +3666,7 @@ export class Kernel {
   // :server 258 nick :Location line 2
   private readonly onRaw258 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3664,7 +3681,7 @@ export class Kernel {
   // :server 259 nick :Admin email
   private readonly onRaw259 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3734,7 +3751,7 @@ export class Kernel {
   private readonly onRaw328 = (): void => {
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    const url = this.line.join(' ').replace(/^:/, '');
+    const url = this.trailing();
 
     if (channel) {
       setAddMessage({
@@ -3773,7 +3790,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const user = this.line.shift();
     const account = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'is logged in as') {
       message = i18next.t('kernel.330.is-logged-in-as', { defaultValue: 'is logged in as' });
@@ -3830,7 +3847,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const user = this.line.shift();
     const country = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3847,7 +3864,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const version = this.line.shift();
     const server = this.line.shift();
-    const comments = this.line.join(' ').replace(/^:/, '');
+    const comments = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3870,7 +3887,7 @@ export class Kernel {
     const nick = this.line.shift();
     const flags = this.line.shift() ?? '';
     const hopcount = this.line.shift();
-    const realname = this.line.join(' ').replace(/^:/, '');
+    const realname = this.trailing();
 
     if (!nick || !channel) return;
 
@@ -3913,7 +3930,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const mask = this.line.shift();
     const server = this.line.shift();
-    const info = this.line.join(' ').replace(/^:/, '');
+    const info = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3929,7 +3946,7 @@ export class Kernel {
   private readonly onRaw365 = (): void => {
     const myNick = this.line.shift();
     const mask = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3946,7 +3963,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const nick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3961,7 +3978,7 @@ export class Kernel {
   // :server 371 mynick :info line
   private readonly onRaw371 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3976,7 +3993,7 @@ export class Kernel {
   // :server 374 mynick :End of INFO list
   private readonly onRaw374 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -3993,7 +4010,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const user = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4010,7 +4027,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const user = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4025,7 +4042,7 @@ export class Kernel {
   // :server 381 mynick :You are now an IRC operator
   private readonly onRaw381 = (): void => {
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'You are now an IRC operator') {
       message = i18next.t('kernel.381.you-are-now-an-irc-operator', { defaultValue: message });
@@ -4044,7 +4061,7 @@ export class Kernel {
   private readonly onRaw382 = (): void => {
     const myNick = this.line.shift();
     const configFile = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4060,7 +4077,7 @@ export class Kernel {
   private readonly onRaw391 = (): void => {
     const myNick = this.line.shift();
     const server = this.line.shift();
-    const timeString = this.line.join(' ').replace(/^:/, '');
+    const timeString = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4078,7 +4095,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const target = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'No such nick/channel') {
       message = i18next.t('kernel.401.no-such-nick-channel', { defaultValue: message });
@@ -4099,7 +4116,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const server = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4116,7 +4133,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'No such channel') {
       message = i18next.t('kernel.403.no-such-channel', { defaultValue: message });
@@ -4136,7 +4153,7 @@ export class Kernel {
   private readonly onRaw404 = (): void => {
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Cannot send to channel') {
       message = i18next.t('kernel.404.cannot-send-to-channel', { defaultValue: message });
@@ -4157,7 +4174,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'You have joined too many channels') {
       message = i18next.t('kernel.405.too-many-channels', { defaultValue: message });
@@ -4178,7 +4195,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const nick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4194,7 +4211,7 @@ export class Kernel {
   private readonly onRaw411 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4210,7 +4227,7 @@ export class Kernel {
   private readonly onRaw412 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'No text to send') {
       message = i18next.t('kernel.412.no-text-to-send', { defaultValue: message });
@@ -4230,7 +4247,7 @@ export class Kernel {
   private readonly onRaw417 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4247,7 +4264,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const command = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Unknown command') {
       message = i18next.t('kernel.421.unknown-command', { defaultValue: message });
@@ -4266,7 +4283,7 @@ export class Kernel {
   // :server 422 mynick :MOTD File is missing
   private readonly onRaw422 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4281,7 +4298,7 @@ export class Kernel {
   // :server 431 mynick :No nickname given
   private readonly onRaw431 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4301,7 +4318,7 @@ export class Kernel {
   private readonly onRaw433 = (): void => {
     const asterisk = this.line.shift();
     const nick = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Nickname is already in use') {
       message = i18next.t('kernel.433.nickname-in-use', { defaultValue: message });
@@ -4325,7 +4342,7 @@ export class Kernel {
   private readonly onRaw436 = (): void => {
     const myNick = this.line.shift();
     const nick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4342,7 +4359,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const nick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === "They aren't on that channel") {
       message = i18next.t('kernel.441.not-on-channel', { defaultValue: message });
@@ -4364,7 +4381,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const nick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'is already on channel') {
       message = i18next.t('kernel.443.already-on-channel', { defaultValue: message });
@@ -4384,7 +4401,7 @@ export class Kernel {
   private readonly onRaw447 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4401,7 +4418,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4416,7 +4433,7 @@ export class Kernel {
   // :server 451 * :You have not registered
   private readonly onRaw451 = (): void => {
     const asterisk = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4433,7 +4450,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const command = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Not enough parameters') {
       message = i18next.t('kernel.461.not-enough-parameters', { defaultValue: message });
@@ -4452,7 +4469,7 @@ export class Kernel {
   // :server 462 mynick :You may not reregister
   private readonly onRaw462 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4467,7 +4484,7 @@ export class Kernel {
   // :server 464 * :Password incorrect
   private readonly onRaw464 = (): void => {
     const asterisk = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Password incorrect') {
       message = i18next.t('kernel.464.password-incorrect', { defaultValue: message });
@@ -4490,7 +4507,7 @@ export class Kernel {
   // :server 465 mynick :You are banned from this server
   private readonly onRaw465 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessageToAllChannels({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4510,7 +4527,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Cannot join channel (+l)') {
       message = i18next.t('kernel.471.channel-full', { defaultValue: message });
@@ -4531,7 +4548,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const modeChar = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4548,7 +4565,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === 'Cannot join channel (+k)') {
       message = i18next.t('kernel.475.bad-channel-key', { defaultValue: message });
@@ -4569,7 +4586,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4587,7 +4604,7 @@ export class Kernel {
     const myNick = this.line.shift();
     const channel = this.line.shift();
     const mask = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4603,7 +4620,7 @@ export class Kernel {
   private readonly onRaw481 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4619,7 +4636,7 @@ export class Kernel {
   private readonly onRaw482 = (): void => {
     const myNick = this.line.shift();
     const channel = this.line.shift();
-    let message = this.line.join(' ').replace(/^:/, '');
+    let message = this.trailing();
 
     if (message === "You're not channel operator") {
       message = i18next.t('kernel.482.not-channel-operator', { defaultValue: message });
@@ -4639,7 +4656,7 @@ export class Kernel {
   private readonly onRaw501 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4655,7 +4672,7 @@ export class Kernel {
   private readonly onRaw502 = (): void => {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4672,7 +4689,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4792,7 +4809,7 @@ export class Kernel {
   // :server 603 yournick :You have X and are on Y WATCH entries
   private readonly onRaw603 = (): void => {
     const myNick = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
     // Watch statistics
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4843,7 +4860,7 @@ export class Kernel {
   // :server 606 yournick :nick1 nick2 nick3
   private readonly onRaw606 = (): void => {
     const myNick = this.line.shift();
-    const nicks = this.line.join(' ').replace(/^:/, '');
+    const nicks = this.trailing();
     // Watch list entries
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4895,7 +4912,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4912,7 +4929,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4929,7 +4946,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const myNick = this.line.shift();
     const topic = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -4982,7 +4999,7 @@ export class Kernel {
   private readonly onRaw908 = (): void => {
     const myNick = this.line.shift();
     const mechanisms = this.line.shift();
-    const message = this.line.join(' ').replace(/^:/, '');
+    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
