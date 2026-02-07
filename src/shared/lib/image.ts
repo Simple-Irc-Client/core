@@ -1,4 +1,4 @@
-const IMAGE_REGEX = /https?:\/\/[^\s]+\.(?:jpg|jpeg|gif|png)(?:\?[^\s]*)?/gi;
+const IMAGE_REGEX = /https:\/\/[^\s]+\.(?:jpg|jpeg|gif|png)(?:\?[^\s]*)?/gi;
 
 export const extractImageUrls = (text: string): string[] => {
   const urls: string[] = [];
