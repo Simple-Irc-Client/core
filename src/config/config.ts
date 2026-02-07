@@ -23,7 +23,7 @@ export const isGatewayMode = (): boolean => gatewayHost !== '';
 
 // AES-256-GCM encryption key (must match backend)
 // Encryption is disabled in gateway mode
-export const encryptionKey = 'K7gNU3sdo+OL0wNhqoVWhr3g6s1xYv72ol/pe/Unols=';
+export const encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
 
 export const defaultIRCPort = 6667;
 
