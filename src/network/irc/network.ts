@@ -205,7 +205,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   if (encryptionKey) {
     initEncryption(encryptionKey).then(() => {
       setDirectEncryption(true);
-      console.log('Encryption enabled for local backend');
+      if (import.meta.env.DEV) console.log('Encryption enabled for local backend');
       connectToLocalBackend();
     });
   } else {
@@ -282,7 +282,7 @@ export const ircAuthenticate = (account: string, password: string): void => {
   // Store credentials for potential reconnect
   setSaslCredentials(account, password);
   if (isCapabilityEnabled('sasl')) {
-    console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
+    if (import.meta.env.DEV) console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
   }
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
 };
