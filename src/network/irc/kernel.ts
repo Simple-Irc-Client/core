@@ -69,6 +69,8 @@ import {
   setAuthenticatedAccount,
   setSaslState,
   getNickServFallbackCredentials,
+  saveSaslCredentialsForReconnect,
+  restoreSaslCredentials,
 } from './sasl';
 import {
   parseSTSValue,
@@ -525,8 +527,9 @@ export class Kernel {
       if (server && nick) {
         // Keep connecting state visible during STS upgrade
         setIsConnecting(true);
-        // Brief delay before reconnect with TLS
-        setTimeout(() => {
+        // Brief delay before reconnect with TLS, restoring SASL credentials first
+        setTimeout(async () => {
+          await restoreSaslCredentials();
           ircConnectWithTLS(server, nick, stsUpgrade.port);
         }, 1000);
       }
@@ -1347,6 +1350,9 @@ export class Kernel {
               category: MessageCategory.info,
               color: MessageColor.info,
             });
+
+            // Save SASL credentials before disconnect so they survive the STS upgrade
+            void saveSaslCredentialsForReconnect();
 
             // Disconnect and reconnect with TLS
             // Reconnection will happen when we receive 'close' event
