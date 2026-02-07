@@ -72,12 +72,16 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
     wsUrl = `${protocol}//${parsedServer.host}:${port}`;
   }
 
-  console.log('Direct WebSocket: connecting to', wsUrl);
+  if (import.meta.env.DEV) {
+    console.log('Direct WebSocket: connecting to', wsUrl);
+  }
   directSocket = new WebSocket(wsUrl);
 
   directSocket.onopen = async () => {
     isDirectConnectingFlag = false;
-    console.log('Direct WebSocket connected');
+    if (import.meta.env.DEV) {
+      console.log('Direct WebSocket connected');
+    }
 
     // Send CAP LS to start capability negotiation
     await sendDirectRaw('CAP LS 302');
@@ -97,7 +101,9 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
       try {
         data = await decryptString(data);
       } catch (err) {
-        console.error('Failed to decrypt WebSocket message:', err);
+        if (import.meta.env.DEV) {
+          console.error('Failed to decrypt WebSocket message:', err);
+        }
         return;
       }
     }
@@ -114,13 +120,17 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
 
   directSocket.onerror = (error) => {
     isDirectConnectingFlag = false;
-    console.error('Direct WebSocket error:', error);
+    if (import.meta.env.DEV) {
+      console.error('Direct WebSocket error:', error);
+    }
     triggerDirectEvent('error', error);
   };
 
   directSocket.onclose = () => {
     isDirectConnectingFlag = false;
-    console.log('Direct WebSocket disconnected');
+    if (import.meta.env.DEV) {
+      console.log('Direct WebSocket disconnected');
+    }
     triggerDirectEvent('sic-irc-event', { type: 'close' });
     directSocket = null;
   };
@@ -177,7 +187,9 @@ const handleIrcMessage = (line: string): void => {
  */
 export const sendDirectRaw = async (data: string): Promise<void> => {
   if (!directSocket || directSocket.readyState !== WebSocket.OPEN) {
-    console.warn('Direct WebSocket not connected. Message not sent:', data);
+    if (import.meta.env.DEV) {
+      console.warn('Direct WebSocket not connected. Message not sent:', data);
+    }
     return;
   }
 

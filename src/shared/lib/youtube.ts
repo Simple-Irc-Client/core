@@ -16,6 +16,9 @@ export const extractYouTubeVideoId = (text: string): string | null => {
   return ids[0] ?? null;
 };
 
-export const getYouTubeThumbnailUrl = (videoId: string): string => {
+const YOUTUBE_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
+
+export const getYouTubeThumbnailUrl = (videoId: string): string | null => {
+  if (!YOUTUBE_ID_REGEX.test(videoId)) return null;
   return `https://img.youtube.com/vi/${videoId}/default.jpg`;
 };

@@ -13,20 +13,24 @@ const YouTubeThumbnail = ({ text }: YouTubeThumbnailProps) => {
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {videoIds.map((videoId) => (
-        <a
-          key={videoId}
-          href={`https://www.youtube.com/watch?v=${videoId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img
-            src={getYouTubeThumbnailUrl(videoId)}
-            alt="YouTube video thumbnail"
-            className="rounded max-w-30 hover:opacity-80 transition-opacity"
-          />
-        </a>
-      ))}
+      {videoIds.map((videoId) => {
+        const thumbnailUrl = getYouTubeThumbnailUrl(videoId);
+        if (!thumbnailUrl) return null;
+        return (
+          <a
+            key={videoId}
+            href={`https://www.youtube.com/watch?v=${videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src={thumbnailUrl}
+              alt="YouTube video thumbnail"
+              className="rounded max-w-30 hover:opacity-80 transition-opacity"
+            />
+          </a>
+        );
+      })}
     </div>
   );
 };
