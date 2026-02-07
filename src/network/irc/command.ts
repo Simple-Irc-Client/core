@@ -15,7 +15,11 @@ export const channelCommands = [
   '/op', '/deop', '/voice', '/devoice', '/halfop', '/dehalfop'
 ];
 
+const stripCRLF = (input: string): string => input.replace(/[\r\n]/g, '');
+
 export const parseMessageToCommand = (channel: string, message: string): string => {
+  message = stripCRLF(message);
+
   if (message?.startsWith('/')) {
     message = message.substring(1);
   }
