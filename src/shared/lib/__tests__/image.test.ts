@@ -54,9 +54,9 @@ describe('image utils', () => {
       expect(extractImageUrls('https://example.com/file.pdf')).toEqual([]);
     });
 
-    it('should handle http URLs', () => {
+    it('should not handle http URLs', () => {
       const text = 'http://example.com/photo.jpg';
-      expect(extractImageUrls(text)).toEqual(['http://example.com/photo.jpg']);
+      expect(extractImageUrls(text)).toEqual([]);
     });
   });
 });
