@@ -69,6 +69,7 @@ import {
   setAuthenticatedAccount,
   setSaslState,
   getNickServFallbackCredentials,
+  clearSaslCredentials,
   saveSaslCredentialsForReconnect,
   restoreSaslCredentials,
 } from './sasl';
@@ -457,6 +458,8 @@ export class Kernel {
     const nickServCredentials = getNickServFallbackCredentials();
     if (nickServCredentials) {
       ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
+      // Clear plaintext credentials from memory now that they've been sent
+      clearSaslCredentials();
     }
 
     setAddMessageToAllChannels({
@@ -1546,6 +1549,8 @@ export class Kernel {
 
   // :server 903 <nick> :SASL authentication successful
   private readonly onRaw903 = (): void => {
+    // Save encrypted credentials for reconnection before setSaslState clears plaintext
+    void saveSaslCredentialsForReconnect();
     setSaslState('success');
 
     setAddMessage({

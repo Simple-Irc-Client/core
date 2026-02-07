@@ -23,9 +23,16 @@ let savedEncryptedPassword: string | null = null;
 /** Get current SASL state */
 export const getSaslState = (): SaslState => saslState;
 
-/** Set SASL state */
+/** Set SASL state — clears plaintext credentials when authentication completes */
 export const setSaslState = (state: SaslState): void => {
   saslState = state;
+
+  // Clear plaintext credentials from memory once SASL is complete.
+  // Encrypted copies are preserved for reconnection via saveSaslCredentialsForReconnect().
+  if (state === 'success' || state === 'failed') {
+    saslAccount = null;
+    saslPassword = null;
+  }
 };
 
 /** Get authenticated account name (after successful SASL) */

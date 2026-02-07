@@ -100,6 +100,22 @@ describe('sasl', () => {
       expect(getSaslAccount()).toBeNull();
       expect(getSaslPassword()).toBeNull();
     });
+
+    it('should clear plaintext credentials when SASL succeeds', () => {
+      setSaslCredentials('account', 'password');
+      setSaslState('success');
+
+      expect(getSaslAccount()).toBeNull();
+      expect(getSaslPassword()).toBeNull();
+    });
+
+    it('should clear plaintext credentials when SASL fails', () => {
+      setSaslCredentials('account', 'password');
+      setSaslState('failed');
+
+      expect(getSaslAccount()).toBeNull();
+      expect(getSaslPassword()).toBeNull();
+    });
   });
 
   describe('SASL state management', () => {
@@ -225,13 +241,14 @@ describe('sasl', () => {
       expect(result).toEqual({ account: 'testaccount', password: 'testpassword' });
     });
 
-    it('should return credentials when SASL failed', () => {
+    it('should return null when SASL failed (credentials cleared from memory)', () => {
       setSaslCredentials('testaccount', 'testpassword');
       setSaslState('failed');
 
       const result = getNickServFallbackCredentials();
 
-      expect(result).toEqual({ account: 'testaccount', password: 'testpassword' });
+      // Plaintext credentials are cleared when SASL completes (success or failed)
+      expect(result).toBeNull();
     });
 
     it('should return null when SASL succeeded', () => {
