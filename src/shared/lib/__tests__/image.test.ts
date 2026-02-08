@@ -58,5 +58,25 @@ describe('image utils', () => {
       const text = 'http://example.com/photo.jpg';
       expect(extractImageUrls(text)).toEqual([]);
     });
+
+    it('should not match extension in query string', () => {
+      const text = 'https://evil.com/track?redirect=.jpg';
+      expect(extractImageUrls(text)).toEqual([]);
+    });
+
+    it('should not match extension mid-path', () => {
+      const text = 'https://evil.com/fake.jpg.php';
+      expect(extractImageUrls(text)).toEqual([]);
+    });
+
+    it('should not match extension in fragment', () => {
+      const text = 'https://evil.com/page#section.png';
+      expect(extractImageUrls(text)).toEqual([]);
+    });
+
+    it('should match URL followed by query string', () => {
+      const text = 'https://example.com/photo.jpg?token=abc123';
+      expect(extractImageUrls(text)).toEqual(['https://example.com/photo.jpg?token=abc123']);
+    });
   });
 });
