@@ -5,6 +5,7 @@
     "wizard.init.loading": "Starting application...",
     "wizard.nick.title": "Hello",
     "wizard.nick.nick": "Enter your nickname",
+    "wizard.nick.customServerWarning": "You will connect to a custom server:",
     "wizard.nick.button.next": "Next",
     "wizard.server.title": "Hello",
     "wizard.server.subtitle": "Choose your server",

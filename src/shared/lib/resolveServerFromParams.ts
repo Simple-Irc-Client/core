@@ -50,6 +50,18 @@ const parseServerParam = (serverParam: string): ParsedServer => {
   return { host, port: undefined, tls, connectionType };
 };
 
+/**
+ * Check if the server URL param matches a known IRC network
+ */
+export const isKnownServerParam = (): boolean => {
+  const serverParam = getServerParam();
+  if (!serverParam) {
+    return true;
+  }
+  const { host } = parseServerParam(serverParam);
+  return servers.some((s) => s.network.toLowerCase() === host.toLowerCase());
+};
+
 export const resolveServerFromParams = (): Server | undefined => {
   const serverParam = getServerParam();
   if (!serverParam) {

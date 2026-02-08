@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { resolveServerFromParams } from '../resolveServerFromParams';
+import { resolveServerFromParams, isKnownServerParam } from '../resolveServerFromParams';
 import * as queryParams from '../queryParams';
 
 vi.mock('../queryParams', () => ({
@@ -196,6 +196,33 @@ describe('resolveServerFromParams', () => {
         network: 'irc.custom.net:99999',
         servers: ['irc.custom.net:99999'],
       }));
+    });
+  });
+
+  describe('isKnownServerParam', () => {
+    it('should return true when no server param', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue(undefined);
+      expect(isKnownServerParam()).toBe(true);
+    });
+
+    it('should return true for known network', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('Libera.Chat');
+      expect(isKnownServerParam()).toBe(true);
+    });
+
+    it('should return true for known network case-insensitively', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('libera.chat');
+      expect(isKnownServerParam()).toBe(true);
+    });
+
+    it('should return false for unknown hostname', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('irc.custom.net');
+      expect(isKnownServerParam()).toBe(false);
+    });
+
+    it('should return false for unknown hostname with protocol', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('ircs://irc.custom.net:6697');
+      expect(isKnownServerParam()).toBe(false);
     });
   });
 

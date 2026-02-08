@@ -5,12 +5,15 @@ import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { setWizardStep, setNick, setServer, setIsConnecting } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
-import { resolveServerFromParams } from '@shared/lib/resolveServerFromParams';
+import { resolveServerFromParams, isKnownServerParam } from '@shared/lib/resolveServerFromParams';
+import { getServerParam } from '@shared/lib/queryParams';
 
 const WizardNick = () => {
   const { t } = useTranslation();
 
   const [formNick, setFormNick] = useState('');
+  const serverParam = getServerParam();
+  const isCustomServer = serverParam && !isKnownServerParam();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -36,6 +39,12 @@ const WizardNick = () => {
   return (
     <>
       <h1 className="text-2xl font-semibold text-center">{t('wizard.nick.title')}</h1>
+      {isCustomServer && (
+        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+          <p className="font-medium">{t('wizard.nick.customServerWarning')}</p>
+          <p className="mt-1 font-mono text-xs">{serverParam}</p>
+        </div>
+      )}
       <form className="mt-8" onSubmit={handleSubmit}>
         <div className="space-y-2">
           <Label htmlFor="nick">{t('wizard.nick.nick')}</Label>
