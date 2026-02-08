@@ -326,4 +326,58 @@ describe('resolveServerFromParams', () => {
       }));
     });
   });
+
+  describe('SSRF protection for custom servers', () => {
+    it('should block localhost', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('localhost');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block 127.0.0.1', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('127.0.0.1');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block 10.x.x.x private range', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('10.0.0.1:6667');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block 192.168.x.x private range', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('192.168.1.1');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block 172.16.x.x private range', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('172.16.0.1');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block ::1 IPv6 loopback', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('[::1]');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block 0.0.0.0', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('0.0.0.0');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should allow public server addresses', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('irc.custom-server.org');
+      const result = resolveServerFromParams();
+      expect(result).toBeDefined();
+      expect(result?.network).toBe('irc.custom-server.org');
+    });
+
+    it('should block private host with protocol prefix', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('ircs://127.0.0.1:6697');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+
+    it('should block private host via websocket prefix', () => {
+      vi.mocked(queryParams.getServerParam).mockReturnValue('wss://192.168.1.1:8080');
+      expect(resolveServerFromParams()).toBeUndefined();
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import { servers, type Server, type ConnectionType } from '@/network/irc/servers';
 import { getServerParam, getPortParam, getTlsParam } from './queryParams';
+import { isPrivateHost } from './utils';
 
 interface ParsedServer {
   host: string;
@@ -37,13 +38,24 @@ const parseServerParam = (serverParam: string): ParsedServer => {
     host = host.slice(0, -1);
   }
 
-  // Check for server:port format
-  const lastColonIndex = host.lastIndexOf(':');
-  if (lastColonIndex > 0) {
-    const possiblePort = host.slice(lastColonIndex + 1);
+  // Check for server:port format (skip for bracketed IPv6 without port, e.g. [::1])
+  const hasBracketedIpv6 = host.startsWith('[');
+  if (hasBracketedIpv6 && host.includes(']:')) {
+    // [::1]:6667 format
+    const bracketEnd = host.indexOf(']:');
+    const possiblePort = host.slice(bracketEnd + 2);
     const port = parseInt(possiblePort, 10);
     if (!isNaN(port) && port > 0 && port <= 65535) {
-      return { host: host.slice(0, lastColonIndex), port, tls, connectionType };
+      return { host: host.slice(0, bracketEnd + 1), port, tls, connectionType };
+    }
+  } else if (!hasBracketedIpv6) {
+    const lastColonIndex = host.lastIndexOf(':');
+    if (lastColonIndex > 0) {
+      const possiblePort = host.slice(lastColonIndex + 1);
+      const port = parseInt(possiblePort, 10);
+      if (!isNaN(port) && port > 0 && port <= 65535) {
+        return { host: host.slice(0, lastColonIndex), port, tls, connectionType };
+      }
     }
   }
 
@@ -80,7 +92,11 @@ export const resolveServerFromParams = (): Server | undefined => {
     return tlsParam !== undefined ? { ...matched, tls: tlsParam } : matched;
   }
 
-  // Custom server
+  // Custom server — block private/internal addresses to prevent SSRF via gateway
+  if (isPrivateHost(host)) {
+    return undefined;
+  }
+
   const serverAddress = portParam ? `${host}:${portParam}` : host;
 
   if (connectionType === 'websocket') {
