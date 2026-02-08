@@ -171,6 +171,31 @@ describe('helper tests', () => {
     });
   });
 
+  it('parseNick strips control characters', () => {
+    expect(parseNick('ni\x00ck\x01!\x02ident@hostname', [])).toStrictEqual({
+      flags: [],
+      nick: 'nick',
+      ident: '\x02ident',
+      hostname: 'hostname',
+    });
+  });
+
+  it('parseNick strips all control chars leaving fallback', () => {
+    expect(parseNick('\x01\x02\x03!ident@hostname', [])).toStrictEqual({
+      flags: [],
+      nick: '*',
+      ident: 'ident',
+      hostname: 'hostname',
+    });
+  });
+
+  it('parseNick truncates long nicks to 100 chars', () => {
+    const longNick = 'a'.repeat(200) + '!ident@hostname';
+    const result = parseNick(longNick, []);
+    expect(result.nick.length).toBe(100);
+    expect(result.nick).toBe('a'.repeat(100));
+  });
+
   it('should test calculateMaxPermission', () => {
     const serverModes: UserMode[] = [
       { symbol: '~', flag: 'q' },

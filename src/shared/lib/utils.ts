@@ -28,6 +28,14 @@ export function isSafeCssColor(value: string): boolean {
   return SAFE_CSS_COLOR_RE.test(value);
 }
 
+// IRC nick validation: RFC 2812 allows letters, digits, and special chars - [ ] \ ` ^ { } |
+const VALID_NICK_RE = /^[a-zA-Z\d\-_\[\]\\`^{}|]+$/;
+const DEFAULT_MAX_NICK_LENGTH = 50;
+
+export function isValidNick(nick: string, maxLength: number = DEFAULT_MAX_NICK_LENGTH): boolean {
+  return nick.length > 0 && nick.length <= maxLength && VALID_NICK_RE.test(nick);
+}
+
 export function isPrivateHost(host: string): boolean {
   const lower = host.toLowerCase();
 

@@ -79,6 +79,10 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   return { tags, sender, command, line };
 };
 
+// Control characters (0x00-0x1F, 0x7F) that should never appear in nicks
+const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/g;
+const MAX_NICK_PARSE_LENGTH = 100;
+
 /**
  * Parse nick and return ident, hostname and user modes
  * @param fullNick
@@ -94,6 +98,12 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
       flags.push(userMode.flag);
       nick = nick.substring(1);
     }
+  }
+
+  // Sanitize: strip control characters and truncate
+  nick = nick.replace(CONTROL_CHAR_RE, '').slice(0, MAX_NICK_PARSE_LENGTH);
+  if (nick.length === 0) {
+    nick = '*';
   }
 
   let ident = '';

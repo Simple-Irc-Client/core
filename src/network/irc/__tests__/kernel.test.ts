@@ -1190,6 +1190,46 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
+  it('test raw NICK rejects nick exceeding max length', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
+
+    const longNick = 'A'.repeat(51);
+    const line = `:Merovingian NICK :${longNick}`;
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetRenameUser).not.toHaveBeenCalled();
+  });
+
+  it('test raw NICK rejects nick with invalid characters', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
+
+    const line = ':Merovingian NICK :evil<script>nick';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetRenameUser).not.toHaveBeenCalled();
+  });
+
+  it('test raw NICK accepts valid nick with special chars', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
+
+    const line = ':Merovingian NICK :New_Nick[test]';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetRenameUser).toHaveBeenCalledWith('Merovingian', 'New_Nick[test]');
+  });
+
   it('test raw NOTICE #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
@@ -1779,6 +1819,7 @@ describe('kernel tests', () => {
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockSetChannelModes = vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
+    const mockSetNickLenLimit = vi.spyOn(settingsFile, 'setNickLenLimit').mockImplementation(() => {});
 
     const line =
       ':netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server';
@@ -1796,6 +1837,7 @@ describe('kernel tests', () => {
     expect(mockSetChannelModes).toHaveBeenCalledTimes(0);
     expect(mockSetSupportedOption).toHaveBeenCalledWith('NAMESX');
     expect(mockIrcSendNamesXProto).toHaveBeenCalledTimes(1);
+    expect(mockSetNickLenLimit).toHaveBeenCalledWith(30);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(
       2,
@@ -1805,6 +1847,23 @@ describe('kernel tests', () => {
           'MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server',
       }),
     );
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw 005 without NICKLEN defaults to 50', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
+    const mockSetNickLenLimit = vi.spyOn(settingsFile, 'setNickLenLimit').mockImplementation(() => {});
+
+    const line =
+      ':server.example.com 005 SIC-test NETWORK=example SAFELIST :are supported by this server';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetNickLenLimit).not.toHaveBeenCalled();
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 

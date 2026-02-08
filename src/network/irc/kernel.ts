@@ -41,6 +41,8 @@ import {
   setMonitorLimit,
   setNick,
   setSilenceLimit,
+  setNickLenLimit,
+  getNickLenLimit,
   setSupportedOption,
   setUserModes,
   setWatchLimit,
@@ -116,7 +118,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
-import { isSafeUrl, isSafeCssColor } from '@shared/lib/utils';
+import { isSafeUrl, isSafeCssColor, isValidNick } from '@shared/lib/utils';
 
 export interface IrcEvent {
   type: string;
@@ -2125,6 +2127,10 @@ export class Kernel {
 
     const newNick = this.stripColon(rawNick);
 
+    if (!isValidNick(newNick, getNickLenLimit())) {
+      return;
+    }
+
     const channels = getUserChannels(this.sender);
     setRenameUser(this.sender, newNick);
 
@@ -2640,6 +2646,9 @@ export class Kernel {
               break;
             case 'SILENCE':
               setSilenceLimit(value !== undefined ? parseInt(value, 10) : 0);
+              break;
+            case 'NICKLEN':
+              setNickLenLimit(value !== undefined ? parseInt(value, 10) : 50);
               break;
           }
         }

@@ -48,6 +48,7 @@ export interface SettingsStore {
   watchLimit: number; // WATCH limit from 005, 0 if not supported
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
+  nickLenLimit: number; // NICKLEN from 005, default 50
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
   currentUserStatus: string | undefined; // Current user's status text from metadata
@@ -79,6 +80,7 @@ export interface SettingsStore {
   setWatchLimit: (limit: number) => void;
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
+  setNickLenLimit: (limit: number) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
   setCurrentUserStatus: (status: string | undefined) => void;
@@ -116,6 +118,7 @@ export const useSettingsStore = create<SettingsStore>()(
     watchLimit: 0,
     monitorLimit: 0,
     silenceLimit: 0,
+    nickLenLimit: 50,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
     currentUserStatus: undefined,
@@ -198,6 +201,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setSilenceLimit: (limit: number): void => {
       set(() => ({ silenceLimit: limit }));
     },
+    setNickLenLimit: (limit: number): void => {
+      set(() => ({ nickLenLimit: limit }));
+    },
     setCurrentUserAvatar: (avatar: string | undefined): void => {
       set(() => ({ currentUserAvatar: avatar }));
     },
@@ -253,6 +259,7 @@ export const useSettingsStore = create<SettingsStore>()(
         watchLimit: 0,
         monitorLimit: 0,
         silenceLimit: 0,
+        nickLenLimit: 50,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
         currentUserStatus: undefined,
@@ -416,6 +423,14 @@ export const setSilenceLimit = (limit: number): void => {
 
 export const getSilenceLimit = (): number => {
   return useSettingsStore.getState().silenceLimit;
+};
+
+export const setNickLenLimit = (limit: number): void => {
+  useSettingsStore.getState().setNickLenLimit(limit);
+};
+
+export const getNickLenLimit = (): number => {
+  return useSettingsStore.getState().nickLenLimit;
 };
 
 export const setCurrentUserAvatar = (avatar: string | undefined): void => {
