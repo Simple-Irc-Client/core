@@ -16,6 +16,7 @@ import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
 import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
+import { isSafeUrl } from '@shared/lib/utils';
 
 // Helper to determine what mode hierarchy level a flag represents
 const getModeLevel = (flag: string): number => {
@@ -150,7 +151,7 @@ export const ContextMenu = () => {
 
     const handleVisitHomepage = (): void => {
       const user = getUser(contextMenuItem);
-      if (user?.homepage) {
+      if (user?.homepage && isSafeUrl(user.homepage)) {
         window.open(user.homepage, '_blank', 'noopener,noreferrer');
       }
       handleContextMenuClose();

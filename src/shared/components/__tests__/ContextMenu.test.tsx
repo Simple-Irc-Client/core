@@ -360,6 +360,96 @@ describe('ContextMenu', () => {
       expect(document.body.textContent).toContain('contextmenu.user.homepage');
     });
 
+    it('should open window when homepage is a safe URL', () => {
+      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'otherUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [],
+        homepage: 'https://example.com',
+      });
+
+      render(<ContextMenu />);
+      const homepageButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.homepage'));
+      expect(homepageButton).toBeDefined();
+      if (homepageButton) fireEvent.click(homepageButton);
+
+      expect(mockWindowOpen).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer');
+    });
+
+    it('should not open window when homepage is a javascript: URL', () => {
+      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'otherUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [],
+        homepage: 'javascript:alert(1)',
+      });
+
+      render(<ContextMenu />);
+      const homepageButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.homepage'));
+      expect(homepageButton).toBeDefined();
+      if (homepageButton) fireEvent.click(homepageButton);
+
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
+    it('should not open window when homepage is a data: URL', () => {
+      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'otherUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [],
+        homepage: 'data:text/html,<script>alert(1)</script>',
+      });
+
+      render(<ContextMenu />);
+      const homepageButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.homepage'));
+      expect(homepageButton).toBeDefined();
+      if (homepageButton) fireEvent.click(homepageButton);
+
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+    });
+
     it('should not show Visit Homepage when user has no homepage', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
