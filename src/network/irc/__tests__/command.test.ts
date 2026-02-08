@@ -27,11 +27,22 @@ describe('command tests', () => {
   });
 
   it('test quote command', () => {
+    useChannelsStore.setState({
+      openChannels: [
+        { name: '#channel', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
+      ],
+      openChannelsShortList: [],
+    });
+
     expect(parseMessageToCommand('#channel', '/raw test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', '/quote test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', '/msg test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', '/MSG test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', 'test message')).toStrictEqual('test message');
+
+    // /raw, /quote, /msg, /MSG should each add an info message showing what was sent
+    const messages = useChannelsStore.getState().openChannels[0]?.messages;
+    expect(messages?.filter((m) => m.message.includes('test message')).length).toBe(4);
   });
 
   it('test whereis command', () => {

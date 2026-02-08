@@ -43,8 +43,9 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return quitCommand(line);
     case 'raw':
     case 'quote':
+      return quoteCommand(channel, line);
     case 'msg':
-      return quoteCommand(line);
+      return quoteCommand(channel, line);
     case 'whereis':
       return whoisCommand(line);
     case 'who':
@@ -127,8 +128,19 @@ const quitCommand = (line: string[]): string => {
   return `QUIT ${line.length !== 0 ? line.join(' ') : defaultQuitMessage}`;
 };
 
-const quoteCommand = (line: string[]): string => {
-  return line.join(' ');
+const quoteCommand = (channel: string, line: string[]): string => {
+  const raw = line.join(' ');
+  if (raw.length > 0) {
+    setAddMessage({
+      id: uuidv4(),
+      message: i18next.t('command.raw.sent', { command: raw }),
+      target: channel,
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  }
+  return raw;
 };
 
 const whoisCommand = (line: string[]): string => {
