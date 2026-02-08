@@ -179,6 +179,7 @@
     "help.cmd.part": "Opuść bieżący kanał",
     "help.cmd.quit": "Rozłącz z serwerem",
     "help.cmd.raw": "Wyślij surowe polecenie IRC",
+    "command.raw.sent": "Wysyłanie polecenia: {{command}}",
     "help.cmd.topic": "Ustaw temat kanału",
     "help.cmd.voice": "Nadaj status głosu",
     "help.cmd.watch": "Zarządzaj listą znajomych (powiadomienia online)",

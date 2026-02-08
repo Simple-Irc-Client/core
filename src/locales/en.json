@@ -179,6 +179,7 @@
     "help.cmd.part": "Leave the current channel",
     "help.cmd.quit": "Disconnect from the server",
     "help.cmd.raw": "Send raw IRC command",
+    "command.raw.sent": "Sending custom command: {{command}}",
     "help.cmd.topic": "Set the channel topic",
     "help.cmd.voice": "Give voice status",
     "help.cmd.watch": "Manage friend list (online notifications)",
