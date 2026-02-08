@@ -80,6 +80,7 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
 };
 
 // Control characters (0x00-0x1F, 0x7F) that should never appear in nicks
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/g;
 const MAX_NICK_PARSE_LENGTH = 100;
 

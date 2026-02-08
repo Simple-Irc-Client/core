@@ -400,7 +400,7 @@ describe('network', () => {
       network.ircSendRawMessage(longMessage);
 
       expect(mockSendDirectRaw).toHaveBeenCalledTimes(1);
-      const sentMessage = mockSendDirectRaw.mock.calls[0][0] as string;
+      const sentMessage = mockSendDirectRaw.mock.calls[0]?.[0] as string;
       expect(sentMessage.length).toBe(510);
       expect(sentMessage).toBe(longMessage.slice(0, 510));
     });

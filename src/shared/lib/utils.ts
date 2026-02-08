@@ -29,7 +29,7 @@ export function isSafeCssColor(value: string): boolean {
 }
 
 // IRC nick validation: RFC 2812 allows letters, digits, and special chars - [ ] \ ` ^ { } |
-const VALID_NICK_RE = /^[a-zA-Z\d\-_\[\]\\`^{}|]+$/;
+const VALID_NICK_RE = /^[a-zA-Z\d\-_[\]\\`^{}|]+$/;
 const DEFAULT_MAX_NICK_LENGTH = 50;
 
 export function isValidNick(nick: string, maxLength: number = DEFAULT_MAX_NICK_LENGTH): boolean {
@@ -50,7 +50,7 @@ export function isPrivateHost(host: string): boolean {
   // IPv4 private ranges
   const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (ipv4Match) {
-    const [, a, b] = ipv4Match.map(Number);
+    const [, a = 0, b = 0] = ipv4Match.map(Number);
     if (a === 10) return true;                          // 10.0.0.0/8
     if (a === 172 && b >= 16 && b <= 31) return true;   // 172.16.0.0/12
     if (a === 192 && b === 168) return true;             // 192.168.0.0/16
