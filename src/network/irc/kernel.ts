@@ -2152,8 +2152,8 @@ export class Kernel {
   private readonly onNotice = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony|This nickname is registered. Please choose a different nickname, or identify via \/msg NickServ IDENTIFY).*/;
-    const list = /.*(You have to be connected for at least (?<secs1>\d+) seconds before being able to \/LIST|You cannot list within the first (?<secs2>\d+) seconds of connecting|This server requires that you wait (?<secs3>\d+)s after connecting before you can use \/LIST).*/;
+    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony|This nickname is registered. Please choose a different nickname, or identify via \/msg NickServ IDENTIFY)/;
+    const list = /You have to be connected for at least (?<secs1>\d+) seconds before being able to \/LIST|You cannot list within the first (?<secs2>\d+) seconds of connecting|This server requires that you wait (?<secs3>\d+)s after connecting before you can use \/LIST/;
 
     const target = this.line.shift();
 
