@@ -393,11 +393,14 @@ export const ircMonitorStatus = (): void => {
   ircSendRawMessage('MONITOR S');
 };
 
+// IRC protocol max message length: 512 bytes including \r\n
+const MAX_IRC_MESSAGE_LENGTH = 510;
+
 export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {
     return;
   }
-  sendDirectRaw(data);
+  sendDirectRaw(data.length > MAX_IRC_MESSAGE_LENGTH ? data.slice(0, MAX_IRC_MESSAGE_LENGTH) : data);
 };
 
 /**

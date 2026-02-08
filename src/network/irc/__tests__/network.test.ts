@@ -394,6 +394,30 @@ describe('network', () => {
 
       expect(mockSendDirectRaw).not.toHaveBeenCalled();
     });
+
+    it('should truncate messages exceeding 510 bytes', () => {
+      const longMessage = 'PRIVMSG #test :' + 'A'.repeat(600);
+      network.ircSendRawMessage(longMessage);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledTimes(1);
+      const sentMessage = mockSendDirectRaw.mock.calls[0][0] as string;
+      expect(sentMessage.length).toBe(510);
+      expect(sentMessage).toBe(longMessage.slice(0, 510));
+    });
+
+    it('should not truncate messages at exactly 510 bytes', () => {
+      const exactMessage = 'A'.repeat(510);
+      network.ircSendRawMessage(exactMessage);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(exactMessage);
+    });
+
+    it('should not truncate messages under 510 bytes', () => {
+      const shortMessage = 'PRIVMSG #test :Hello';
+      network.ircSendRawMessage(shortMessage);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(shortMessage);
+    });
   });
 
   describe('inactivity timeout', () => {
