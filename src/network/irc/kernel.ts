@@ -116,6 +116,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
+import { isSafeUrl } from '@shared/lib/utils';
 
 export interface IrcEvent {
   type: string;
@@ -1865,7 +1866,9 @@ export class Kernel {
       // Handle channel metadata
       if (item === 'avatar' && value !== undefined) {
         const avatarUrl = value.replace('{size}', '64');
-        setChannelAvatar(nickOrChannel, avatarUrl);
+        if (isSafeUrl(avatarUrl)) {
+          setChannelAvatar(nickOrChannel, avatarUrl);
+        }
       }
       if (item === 'display-name' && value !== undefined) {
         setChannelDisplayName(nickOrChannel, value);
@@ -1874,10 +1877,12 @@ export class Kernel {
       // Handle user metadata
       if (item === 'avatar' && value !== undefined) {
         const avatarUrl = value.replace('{size}', '64');
-        setUserAvatar(nickOrChannel, avatarUrl);
-        // Save avatar for current user to display in toolbar
-        if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserAvatar(avatarUrl);
+        if (isSafeUrl(avatarUrl)) {
+          setUserAvatar(nickOrChannel, avatarUrl);
+          // Save avatar for current user to display in toolbar
+          if (nickOrChannel === getCurrentNick()) {
+            setCurrentUserAvatar(avatarUrl);
+          }
         }
       }
       if (item === 'color') {
@@ -1908,10 +1913,12 @@ export class Kernel {
       }
       if (item === 'homepage') {
         const homepageValue = value === '' ? undefined : value;
-        setUserHomepage(nickOrChannel, homepageValue);
-        // Save homepage for current user to display in profile settings
-        if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserHomepage(homepageValue);
+        if (homepageValue === undefined || isSafeUrl(homepageValue)) {
+          setUserHomepage(nickOrChannel, homepageValue);
+          // Save homepage for current user to display in profile settings
+          if (nickOrChannel === getCurrentNick()) {
+            setCurrentUserHomepage(homepageValue);
+          }
         }
       }
     }
@@ -3377,9 +3384,11 @@ export class Kernel {
 
     if (item === 'avatar' && value !== undefined) {
       const avatarUrl = value.replace('{size}', '64');
-      setUserAvatar(nick, avatarUrl);
-      if (nick.toLowerCase() === getCurrentNick().toLowerCase()) {
-        setCurrentUserAvatar(avatarUrl);
+      if (isSafeUrl(avatarUrl)) {
+        setUserAvatar(nick, avatarUrl);
+        if (nick.toLowerCase() === getCurrentNick().toLowerCase()) {
+          setCurrentUserAvatar(avatarUrl);
+        }
       }
     }
     if (item === 'color' && value !== undefined) {

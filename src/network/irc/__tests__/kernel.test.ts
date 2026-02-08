@@ -644,6 +644,42 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA rejects avatar with javascript: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop avatar * :javascript:alert(1)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects avatar with data: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop avatar * :data:image/svg+xml;base64,PHN2Zz4=';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects channel avatar with javascript: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetChannelAvatar = vi.spyOn(channelsFile, 'setChannelAvatar').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+
+    const line = ':netsplit.pirc.pl METADATA #test avatar * :javascript:alert(1)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelAvatar).not.toHaveBeenCalled();
+  });
+
   it('test raw METADATA display-name for user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserDisplayName = vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
@@ -805,6 +841,30 @@ describe('kernel tests', () => {
     expect(mockSetCurrentUserHomepage).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA rejects homepage with javascript: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop homepage * :javascript:alert(document.cookie)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserHomepage).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects homepage with data: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop homepage * :data:text/html,<script>alert(1)</script>';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserHomepage).not.toHaveBeenCalled();
   });
 
   it('test raw METADATA color for user', () => {
@@ -2493,6 +2553,28 @@ describe('kernel tests', () => {
     expect(mockSetUserAvatar).toHaveBeenCalledWith('OtherUser', 'https://example.com/avatar.png');
     expect(mockSetCurrentUserAvatar).not.toHaveBeenCalled();
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+  });
+
+  it('test raw 761 rejects avatar with javascript: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Merovingian Avatar * :javascript:alert(1)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw 761 rejects avatar with data: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Merovingian Avatar * :data:image/svg+xml;base64,PHN2Zz4=';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
   });
 
   // ==================== New handler tests ====================
