@@ -22,6 +22,12 @@ export function isSafeUrl(url: string): boolean {
   }
 }
 
+const SAFE_CSS_COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{1,30}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*[\d.]+\s*\))$/i;
+
+export function isSafeCssColor(value: string): boolean {
+  return SAFE_CSS_COLOR_RE.test(value);
+}
+
 // Test cases for URL validation
 export function testUrlValidation() {
   // Should allow safe URLs

@@ -116,7 +116,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
-import { isSafeUrl } from '@shared/lib/utils';
+import { isSafeUrl, isSafeCssColor } from '@shared/lib/utils';
 
 export interface IrcEvent {
   type: string;
@@ -1887,12 +1887,14 @@ export class Kernel {
       }
       if (item === 'color') {
         const colorValue = value === '' ? undefined : value;
-        if (colorValue !== undefined) {
-          setUserColor(nickOrChannel, colorValue);
-        }
-        // Save color for current user to display in profile settings
-        if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserColor(colorValue);
+        if (colorValue === undefined || isSafeCssColor(colorValue)) {
+          if (colorValue !== undefined) {
+            setUserColor(nickOrChannel, colorValue);
+          }
+          // Save color for current user to display in profile settings
+          if (nickOrChannel === getCurrentNick()) {
+            setCurrentUserColor(colorValue);
+          }
         }
       }
       if (item === 'display-name' && value !== undefined) {
@@ -3391,7 +3393,7 @@ export class Kernel {
         }
       }
     }
-    if (item === 'color' && value !== undefined) {
+    if (item === 'color' && value !== undefined && isSafeCssColor(value)) {
       setUserColor(nick, value);
     }
   };

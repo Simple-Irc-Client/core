@@ -927,6 +927,78 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('test raw METADATA rejects color with CSS injection', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :red; background: url(evil.com)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects color with expression injection', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :expression(alert(1))';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects color with var() injection', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :var(--secret)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA accepts valid hex color', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :#aabbcc';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('Noop', '#aabbcc');
+  });
+
+  it('test raw METADATA accepts valid named color', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :tomato';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('Noop', 'tomato');
+  });
+
+  it('test raw METADATA accepts valid rgb color', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop color * :rgb(255, 128, 0)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('Noop', 'rgb(255, 128, 0)');
+  });
+
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
@@ -2575,6 +2647,39 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw 761 rejects color with CSS injection', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Merovingian color * :red; background: url(evil.com)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
+  });
+
+  it('test raw 761 accepts valid hex color', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Merovingian color * :#ff5500';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).toHaveBeenCalledWith('Merovingian', '#ff5500');
+  });
+
+  it('test raw 761 rejects color with url() injection', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test Merovingian color * :url(https://evil.com/track)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserColor).not.toHaveBeenCalled();
   });
 
   // ==================== New handler tests ====================
