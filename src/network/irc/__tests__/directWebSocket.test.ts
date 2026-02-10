@@ -4,6 +4,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import type { Server } from '../servers';
 
+// Mock encryption module
+const mockDecryptString = vi.fn<(str: string) => Promise<string>>();
+const mockIsEncryptionAvailable = vi.fn<() => boolean>();
+
+vi.mock('@/network/encryption', () => ({
+  encryptString: vi.fn().mockImplementation((str: string) => Promise.resolve(`encrypted:${str}`)),
+  decryptString: (...args: unknown[]) => mockDecryptString(...(args as [string])),
+  isEncryptionAvailable: () => mockIsEncryptionAvailable(),
+}));
+
 // Mock helpers module
 vi.mock('../helpers', () => ({
   parseServer: vi.fn((server: Server) => {
@@ -507,6 +517,178 @@ describe('directWebSocket', () => {
       lastCreatedSocket?.onerror?.(mockError);
 
       expect(eventCallback).toHaveBeenCalledWith('error', mockError);
+    });
+  });
+
+  describe('message queue - sequential processing', () => {
+    const connectAndGetSocket = async (): Promise<MockWebSocket> => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      await lastCreatedSocket?.onopen?.();
+      eventCallback.mockClear();
+
+      if (!lastCreatedSocket) {
+        throw new Error('Socket not created');
+      }
+      return lastCreatedSocket;
+    };
+
+    it('should process messages in order without encryption', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(false);
+      const socket = await connectAndGetSocket();
+
+      // Dispatch multiple messages rapidly
+      socket.onmessage?.({ data: ':server 322 nick #channel1 10 :Topic 1' });
+      socket.onmessage?.({ data: ':server 322 nick #channel2 20 :Topic 2' });
+      socket.onmessage?.({ data: ':server 322 nick #channel3 30 :Topic 3' });
+      socket.onmessage?.({ data: ':server 323 nick :End of /LIST' });
+
+      // Allow microtask queue to flush
+      await new Promise((r) => setTimeout(r, 0));
+
+      const rawLines = eventCallback.mock.calls
+        .filter((call) => call[0] === 'sic-irc-event' && call[1]?.type === 'raw')
+        .map((call) => call[1].line as string);
+      expect(rawLines).toHaveLength(4);
+      expect(rawLines).toEqual([
+        expect.stringContaining('#channel1'),
+        expect.stringContaining('#channel2'),
+        expect.stringContaining('#channel3'),
+        expect.stringContaining('323'),
+      ]);
+    });
+
+    it('should process encrypted messages sequentially in arrival order', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+
+      // Simulate async decryption with varying delays
+      const decryptionOrder: string[] = [];
+      mockDecryptString.mockImplementation(async (data: string) => {
+        // Simulate variable decryption time - later messages resolve faster
+        const delay = data.includes('msg1') ? 30 : data.includes('msg2') ? 20 : 10;
+        await new Promise((r) => setTimeout(r, delay));
+        decryptionOrder.push(data);
+        return data.replace('enc:', '');
+      });
+
+      const socket = await connectAndGetSocket();
+      directWebSocket.setDirectEncryption(true);
+
+      socket.onmessage?.({ data: 'enc::server 322 nick #channel1 10 :msg1' });
+      socket.onmessage?.({ data: 'enc::server 322 nick #channel2 20 :msg2' });
+      socket.onmessage?.({ data: 'enc::server 323 nick :msg3' });
+
+      // Wait for all decryptions to complete
+      await new Promise((r) => setTimeout(r, 150));
+
+      // Messages should be decrypted sequentially (in arrival order)
+      expect(decryptionOrder[0]).toContain('msg1');
+      expect(decryptionOrder[1]).toContain('msg2');
+      expect(decryptionOrder[2]).toContain('msg3');
+
+      // Events should arrive in order
+      const rawLines = eventCallback.mock.calls
+        .filter((call) => call[0] === 'sic-irc-event' && call[1]?.type === 'raw')
+        .map((call) => call[1].line as string);
+      expect(rawLines).toHaveLength(3);
+      expect(rawLines).toEqual([
+        expect.stringContaining('#channel1'),
+        expect.stringContaining('#channel2'),
+        expect.stringContaining('323'),
+      ]);
+    });
+
+    it('should skip messages that fail decryption and continue processing', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+      mockDecryptString.mockImplementation(async (data: string) => {
+        if (data === 'bad-data') {
+          throw new Error('Decryption failed');
+        }
+        return data.replace('enc:', '');
+      });
+
+      const socket = await connectAndGetSocket();
+      directWebSocket.setDirectEncryption(true);
+
+      socket.onmessage?.({ data: 'enc::server NOTICE * :First' });
+      socket.onmessage?.({ data: 'bad-data' });
+      socket.onmessage?.({ data: 'enc::server NOTICE * :Third' });
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      const rawLines = eventCallback.mock.calls
+        .filter((call) => call[0] === 'sic-irc-event' && call[1]?.type === 'raw')
+        .map((call) => call[1].line as string);
+      expect(rawLines).toHaveLength(2);
+      expect(rawLines).toEqual([
+        expect.stringContaining('First'),
+        expect.stringContaining('Third'),
+      ]);
+    });
+
+    it('should clear the message queue on disconnect', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+
+      // Make decryption slow so messages stay in queue
+      mockDecryptString.mockImplementation(async (data: string) => {
+        await new Promise((r) => setTimeout(r, 100));
+        return data.replace('enc:', '');
+      });
+
+      const socket = await connectAndGetSocket();
+      directWebSocket.setDirectEncryption(true);
+
+      socket.onmessage?.({ data: 'enc::server 322 nick #channel1 10 :Topic' });
+      socket.onmessage?.({ data: 'enc::server 322 nick #channel2 20 :Topic' });
+      socket.onmessage?.({ data: 'enc::server 322 nick #channel3 30 :Topic' });
+
+      // Disconnect before processing completes
+      directWebSocket.disconnectDirect();
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      // At most the first message might have been processed (it was already decrypting)
+      const rawCalls = eventCallback.mock.calls.filter(
+        (call) => call[0] === 'sic-irc-event' && call[1]?.type === 'raw'
+      );
+      expect(rawCalls.length).toBeLessThanOrEqual(1);
+    });
+
+    it('should not use decryption when encryption is disabled', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+      mockDecryptString.mockClear();
+
+      const socket = await connectAndGetSocket();
+      // Encryption off by default (setDirectEncryption not called)
+
+      socket.onmessage?.({ data: ':server NOTICE * :Hello' });
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(mockDecryptString).not.toHaveBeenCalled();
+      expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
+        type: 'raw',
+        line: ':server NOTICE * :Hello',
+      });
+    });
+
+    it('should encrypt outgoing messages when encryption is enabled', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+
+      const socket = await connectAndGetSocket();
+      directWebSocket.setDirectEncryption(true);
+
+      await directWebSocket.sendDirectRaw('PRIVMSG #test :Hello');
+
+      expect(socket.send).toHaveBeenCalledWith('encrypted:PRIVMSG #test :Hello');
     });
   });
 });
