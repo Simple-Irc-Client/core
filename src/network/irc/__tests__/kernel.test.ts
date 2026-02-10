@@ -1438,6 +1438,134 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw NOTICE password required - pirc.pl full message with bot tags', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line1 = '@draft/bot;bot;msgid=TCbDwGyUnF2F7Qld1yjerB;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
+    const line2 = '@draft/bot;bot;msgid=T1hegrg6hUempamIIW9PSy;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian :wpisz /msg NickServ IDENTIFY hasło. W przeciwnym wypadku';
+    const line3 = '@draft/bot;bot;msgid=432tKFt5KgEFZrFfWQVg1J;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian :wybierz proszę inny nick.';
+    const line4 = '@draft/bot;bot;msgid=VHNhxCj6yAnC8AagfIapH6;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian :Jeśli go nie zmienisz w ciągu 20 sekund(y), zostanie zmieniony siłą.';
+
+    new Kernel({ type: 'raw', line: line1 }).handle();
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+
+    vi.clearAllMocks();
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetIsPasswordRequired2 = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep2 = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    new Kernel({ type: 'raw', line: line2 }).handle();
+    new Kernel({ type: 'raw', line: line3 }).handle();
+    new Kernel({ type: 'raw', line: line4 }).handle();
+
+    // Subsequent lines should NOT trigger password check again
+    expect(mockSetIsPasswordRequired2).not.toHaveBeenCalled();
+    expect(mockSetWizardStep2).not.toHaveBeenCalled();
+  });
+
+  it('test raw NOTICE password required - Libera.Chat full message', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    const line = '@time=2026-02-10T20:07:19.292Z :NickServ!NickServ@services.libera.chat NOTICE Merovingian :This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY dilfridge <password>';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      target: '#current-channel',
+      message: 'This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY dilfridge <password>',
+    }));
+  });
+
+  it('test raw NOTICE password required - Libera.Chat with IRC bold formatting codes', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    // NickServ message with \x02 (bold) formatting around the command
+    const line = '@time=2026-02-10T20:25:41.735Z :NickServ!NickServ@services.libera.chat NOTICE Merovingian :This nickname is registered. Please choose a different nickname, or identify via \x02/msg NickServ identify <password>\x02.';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+
+    expect(mockSetWizardStep).toHaveBeenCalledTimes(1);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+  });
+
+  it('test raw 001 should persist server-confirmed nick', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'RequestedNick');
+    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+
+    const line = ':netsplit.pirc.pl 001 RequestedNick_ :Welcome to the pirc.pl IRC Network RequestedNick_!~user@1.1.1.1';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // Server assigned a different nick (RequestedNick_ instead of RequestedNick)
+    expect(mockSetNick).toHaveBeenCalledTimes(1);
+    expect(mockSetNick).toHaveBeenCalledWith('RequestedNick_');
+  });
+
+  it('test raw 001 should not call setNick when nick matches', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+
+    const line = ':netsplit.pirc.pl 001 Merovingian :Welcome to the pirc.pl IRC Network Merovingian!~user@1.1.1.1';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetNick).not.toHaveBeenCalled();
+  });
+
+  it('test raw NOTICE password required after server nick change in 001', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+    const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
+
+    // Server assigned a different nick than requested
+    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian_');
+
+    // NickServ sends NOTICE to the server-assigned nick
+    const line = '@draft/bot;bot;msgid=TCbDwGyUnF2F7Qld1yjerB;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian_ :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPasswordRequired).toHaveBeenCalledWith(true);
+    expect(mockSetWizardStep).toHaveBeenCalledWith('password');
+  });
+
   it('test raw PART #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');

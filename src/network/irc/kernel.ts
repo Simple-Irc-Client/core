@@ -2158,7 +2158,7 @@ export class Kernel {
   private readonly onNotice = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const passwordRequired = /^(This nickname is registered and protected|Ten nick jest zarejestrowany i chroniony|This nickname is registered. Please choose a different nickname, or identify via \/msg NickServ IDENTIFY)/;
+    const passwordRequired = /^(This nickname is registered|Ten nick jest zarejestrowany i chroniony)/;
     const list = /You have to be connected for at least (?<secs1>\d+) seconds before being able to \/LIST|You cannot list within the first (?<secs2>\d+) seconds of connecting|This server requires that you wait (?<secs3>\d+)s after connecting before you can use \/LIST/;
 
     const target = this.line.shift();
@@ -2542,6 +2542,10 @@ export class Kernel {
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
   private readonly onRaw001 = (): void => {
     const myNick = this.line.shift();
+
+    if (myNick && myNick !== getCurrentNick()) {
+      setNick(myNick);
+    }
 
     const message = this.trailing();
 
