@@ -499,6 +499,38 @@ describe('WizardLoading', () => {
     });
   });
 
+  describe('Password required flow', () => {
+    it('should transition to password step when kernel sets isPasswordRequired during connection', () => {
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(undefined);
+
+      setupMocks({
+        isConnecting: true,
+      });
+
+      const { rerender } = render(<WizardLoading />);
+
+      expect(settingsStore.setWizardProgress).toHaveBeenCalledWith(1, 'wizard.loading.connecting');
+
+      // Transition to connected - kernel will receive NickServ NOTICE and call setIsPasswordRequired(true)
+      vi.mocked(settingsStore.getIsPasswordRequired).mockReturnValue(true);
+
+      setupMocks({
+        isConnected: true,
+      });
+      rerender(<WizardLoading />);
+
+      expect(settingsStore.setWizardProgress).toHaveBeenCalledWith(2, 'wizard.loading.connected');
+
+      // After 5 seconds, WizardLoading should NOT navigate to channels because password is required
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(settingsStore.setWizardStep).not.toHaveBeenCalledWith('channels');
+      expect(settingsStore.setWizardCompleted).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Connection timeout', () => {
     it('should show timeout message after 60 seconds of connecting', () => {
       setupMocks({

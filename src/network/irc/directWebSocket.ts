@@ -9,6 +9,10 @@ let isDirectConnectingFlag = false;
 // Encryption mode for local backend connections
 let useEncryption = false;
 
+// Sequential message processing queue (prevents out-of-order decryption)
+let messageQueue: string[] = [];
+let isProcessingQueue = false;
+
 // Event callback for IRC events (set by network.ts)
 let eventCallback: ((eventName: string, data: unknown) => void) | null = null;
 
@@ -35,6 +39,39 @@ const triggerDirectEvent = (eventName: string, data: unknown): void => {
   if (eventCallback) {
     eventCallback(eventName, data);
   }
+};
+
+/**
+ * Process queued WebSocket messages sequentially to preserve IRC message ordering.
+ * When encryption is enabled, decryption is async and concurrent onmessage handlers
+ * could complete out of order, causing protocol issues (e.g. END_OF_LIST before all
+ * LIST entries are processed).
+ */
+const processMessageQueue = async (): Promise<void> => {
+  if (isProcessingQueue) return;
+  isProcessingQueue = true;
+
+  while (messageQueue.length > 0) {
+    let data = messageQueue.shift() as string;
+
+    if (useEncryption && isEncryptionAvailable()) {
+      try {
+        data = await decryptString(data);
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('Failed to decrypt WebSocket message:', err);
+        }
+        continue;
+      }
+    }
+
+    const lines = data.split(/\r?\n/).filter((line) => line.length > 0);
+    for (const line of lines) {
+      handleIrcMessage(line);
+    }
+  }
+
+  isProcessingQueue = false;
 };
 
 /**
@@ -93,29 +130,9 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
     triggerDirectEvent('connect', {});
   };
 
-  directSocket.onmessage = async (event) => {
-    let data = event.data as string;
-
-    // Decrypt if encryption is enabled
-    if (useEncryption && isEncryptionAvailable()) {
-      try {
-        data = await decryptString(data);
-      } catch (err) {
-        if (import.meta.env.DEV) {
-          console.error('Failed to decrypt WebSocket message:', err);
-        }
-        return;
-      }
-    }
-
-    // IRC messages are separated by \r\n, but WebSocket messages come one at a time
-    // However, some servers might batch messages, so split just in case
-    const lines = data.split(/\r?\n/).filter((line) => line.length > 0);
-
-    for (const line of lines) {
-      // console.log('Direct WS <-', line);
-      handleIrcMessage(line);
-    }
+  directSocket.onmessage = (event) => {
+    messageQueue.push(event.data as string);
+    void processMessageQueue();
   };
 
   directSocket.onerror = (error) => {
@@ -228,4 +245,6 @@ export const disconnectDirect = (): void => {
   isDirectConnectingFlag = false;
   hasReceivedWelcome = false;
   useEncryption = false;
+  messageQueue = [];
+  isProcessingQueue = false;
 };
