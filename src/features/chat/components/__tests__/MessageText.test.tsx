@@ -325,5 +325,81 @@ describe('MessageText', () => {
 
       expect(container.textContent).toBe('Hello World');
     });
+
+    it('should apply italic to all words, not just the first', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.ITALIC}hello world${IRC_FORMAT.ITALIC}`} />
+      );
+
+      const italicSpans = container.querySelectorAll('span[style*="font-style"]');
+      expect(italicSpans.length).toBeGreaterThanOrEqual(1);
+
+      const allItalicText = Array.from(italicSpans).map((s) => s.textContent).join('');
+      expect(allItalicText).toContain('hello');
+      expect(allItalicText).toContain('world');
+    });
+
+    it('should apply underline to all words, not just the first', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.UNDERLINE}hello world${IRC_FORMAT.UNDERLINE}`} />
+      );
+
+      const underlineSpans = container.querySelectorAll('span[style*="text-decoration"]');
+      expect(underlineSpans.length).toBeGreaterThanOrEqual(1);
+
+      const allUnderlineText = Array.from(underlineSpans).map((s) => s.textContent).join('');
+      expect(allUnderlineText).toContain('hello');
+      expect(allUnderlineText).toContain('world');
+    });
+
+    it('should apply bold to all words, not just the first', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.BOLD}hello world${IRC_FORMAT.BOLD}`} />
+      );
+
+      const boldSpans = container.querySelectorAll('span[style*="font-weight"]');
+      expect(boldSpans.length).toBeGreaterThanOrEqual(1);
+
+      const allBoldText = Array.from(boldSpans).map((s) => s.textContent).join('');
+      expect(allBoldText).toContain('hello');
+      expect(allBoldText).toContain('world');
+    });
+
+    it('should apply formatting across many words', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.ITALIC}one two three four${IRC_FORMAT.ITALIC}`} />
+      );
+
+      const italicSpans = container.querySelectorAll('span[style*="font-style"]');
+      const allItalicText = Array.from(italicSpans).map((s) => s.textContent).join('');
+      expect(allItalicText).toContain('one');
+      expect(allItalicText).toContain('two');
+      expect(allItalicText).toContain('three');
+      expect(allItalicText).toContain('four');
+    });
+
+    it('should apply formatting only to wrapped portion in mixed text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`normal ${IRC_FORMAT.ITALIC}italic words${IRC_FORMAT.ITALIC} normal`} />
+      );
+
+      expect(container.textContent).toBe('normal italic words normal');
+
+      const italicSpans = container.querySelectorAll('span[style*="font-style"]');
+      const allItalicText = Array.from(italicSpans).map((s) => s.textContent).join('');
+      expect(allItalicText).toContain('italic');
+      expect(allItalicText).toContain('words');
+      expect(allItalicText).not.toContain('normal');
+    });
   });
 });

@@ -4,6 +4,7 @@ import { getChannelTypes } from '@features/settings/store/settings';
 import {
   parseIrcFormatting,
   hasIrcFormatting,
+  stripIrcFormatting,
 } from '@/shared/lib/ircFormatting';
 import type { FormattedSegment, FormatState } from '@/shared/lib/ircFormatting';
 
@@ -86,44 +87,41 @@ const MessageText = ({ text, color }: MessageTextProps) => {
 
   const parts = useMemo((): TextPart[] => {
     const channelTypes = getChannelTypes();
-    const result: TextPart[] = [];
 
     // Build regex pattern for channel names (e.g., #channel, &channel)
     // Channel names start with channel type prefix and continue until space or end
     const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('');
-    const channelPattern = channelTypesEscaped.length > 0 ? `[${channelTypesEscaped}][^\\s,]+` : null;
+    const channelPattern = channelTypesEscaped.length > 0 ? new RegExp(`^[${channelTypesEscaped}][^\\s,]+$`) : null;
 
-    // Split text by words to check for channels
-    const words = text.split(/(\s+)/);
+    // Parse IRC formatting on the full text first to preserve state across words
+    const segments = hasIrcFormatting(text) ? parseIrcFormatting(text) : null;
 
-    for (const word of words) {
-      // Check if it's whitespace
-      if (/^\s+$/.test(word)) {
-        result.push({ type: 'text', value: word });
-        continue;
-      }
-
-      // Check if it's a channel name
-      if (channelPattern) {
-        const channelRegex = new RegExp(`^(${channelPattern})$`);
-        if (channelRegex.test(word)) {
+    if (!segments) {
+      // No formatting — split by words for channel detection
+      const result: TextPart[] = [];
+      const words = text.split(/(\s+)/);
+      for (const word of words) {
+        if (channelPattern && !(/^\s+$/.test(word)) && channelPattern.test(word)) {
           result.push({ type: 'channel', value: word });
-          continue;
+        } else {
+          result.push({ type: 'text', value: word });
         }
       }
-
-      // Regular text - parse IRC formatting if present
-      if (hasIrcFormatting(word)) {
-        result.push({
-          type: 'text',
-          value: word,
-          segments: parseIrcFormatting(word),
-        });
-      } else {
-        result.push({ type: 'text', value: word });
-      }
+      return result;
     }
 
+    // With formatting — split each segment's text by words for channel detection
+    const result: TextPart[] = [];
+    for (const segment of segments) {
+      const words = segment.text.split(/(\s+)/);
+      for (const word of words) {
+        if (channelPattern && !(/^\s+$/.test(word)) && channelPattern.test(stripIrcFormatting(word))) {
+          result.push({ type: 'channel', value: word });
+        } else {
+          result.push({ type: 'text', value: word, segments: [{ text: word, style: segment.style }] });
+        }
+      }
+    }
     return result;
   }, [text]);
 
