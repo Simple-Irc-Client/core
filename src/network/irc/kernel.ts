@@ -118,7 +118,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
-import { isSafeUrl, isSafeCssColor, isValidNick } from '@shared/lib/utils';
+import { isSafeUrl, isSafeCssColor, isValidNick, redactSensitiveIrc } from '@shared/lib/utils';
 
 export interface IrcEvent {
   type: string;
@@ -553,7 +553,7 @@ export class Kernel {
     if (import.meta.env.DEV) {
       setAddMessage({
         id: uuidv4(),
-        message: `>> ${this.eventLine}`,
+        message: `>> ${redactSensitiveIrc(this.eventLine)}`,
         target: DEBUG_CHANNEL,
         time: new Date().toISOString(),
         category: MessageCategory.info,

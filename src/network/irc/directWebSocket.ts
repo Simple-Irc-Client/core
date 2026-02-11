@@ -205,7 +205,7 @@ const handleIrcMessage = (line: string): void => {
 export const sendDirectRaw = async (data: string): Promise<void> => {
   if (!directSocket || directSocket.readyState !== WebSocket.OPEN) {
     if (import.meta.env.DEV) {
-      console.warn('Direct WebSocket not connected. Message not sent:', data);
+      console.warn('Direct WebSocket not connected. Message not sent.');
     }
     return;
   }

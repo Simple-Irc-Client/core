@@ -1,5 +1,73 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl } from '../utils';
+import { isSafeUrl, redactSensitiveIrc } from '../utils';
+
+describe('redactSensitiveIrc', () => {
+  it('should redact AUTHENTICATE payloads', () => {
+    expect(redactSensitiveIrc('AUTHENTICATE dXNlcm5hbWUAcGFzc3dvcmQ=')).toBe('AUTHENTICATE ***');
+  });
+
+  it('should redact AUTHENTICATE + (server challenge)', () => {
+    expect(redactSensitiveIrc('AUTHENTICATE +')).toBe('AUTHENTICATE ***');
+  });
+
+  it('should be case-insensitive for AUTHENTICATE', () => {
+    expect(redactSensitiveIrc('authenticate payload123')).toBe('authenticate ***');
+    expect(redactSensitiveIrc('Authenticate payload123')).toBe('Authenticate ***');
+  });
+
+  it('should redact PASS commands', () => {
+    expect(redactSensitiveIrc('PASS mysecretpassword')).toBe('PASS ***');
+    expect(redactSensitiveIrc('PASS :server-password')).toBe('PASS ***');
+  });
+
+  it('should be case-insensitive for PASS', () => {
+    expect(redactSensitiveIrc('pass secret')).toBe('pass ***');
+  });
+
+  it('should redact NickServ IDENTIFY with password only', () => {
+    expect(redactSensitiveIrc(':user!u@host PRIVMSG NickServ :IDENTIFY mypassword')).toBe(
+      ':user!u@host PRIVMSG NickServ :IDENTIFY ***',
+    );
+  });
+
+  it('should redact NickServ IDENTIFY with account and password', () => {
+    expect(redactSensitiveIrc(':user!u@host PRIVMSG NickServ :IDENTIFY myaccount mypassword')).toBe(
+      ':user!u@host PRIVMSG NickServ :IDENTIFY ***',
+    );
+  });
+
+  it('should be case-insensitive for NickServ IDENTIFY', () => {
+    expect(redactSensitiveIrc(':u!u@h PRIVMSG nickserv :identify pass')).toBe(
+      ':u!u@h PRIVMSG nickserv :identify ***',
+    );
+  });
+
+  it('should not redact normal PRIVMSG', () => {
+    const line = ':user!u@host PRIVMSG #channel :hello world';
+    expect(redactSensitiveIrc(line)).toBe(line);
+  });
+
+  it('should not redact normal server messages', () => {
+    const line = ':server 001 nick :Welcome to the network';
+    expect(redactSensitiveIrc(line)).toBe(line);
+  });
+
+  it('should not redact NICK or USER commands', () => {
+    const nick = 'NICK mynick';
+    const user = 'USER myuser 0 * :realname';
+    expect(redactSensitiveIrc(nick)).toBe(nick);
+    expect(redactSensitiveIrc(user)).toBe(user);
+  });
+
+  it('should return empty string unchanged', () => {
+    expect(redactSensitiveIrc('')).toBe('');
+  });
+
+  it('should not redact PRIVMSG to channels mentioning NickServ in text', () => {
+    const line = ':user!u@host PRIVMSG #help :how do I use NickServ IDENTIFY?';
+    expect(redactSensitiveIrc(line)).toBe(line);
+  });
+});
 
 describe('URL Validation', () => {
   describe('isSafeUrl', () => {

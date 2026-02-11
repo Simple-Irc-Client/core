@@ -76,6 +76,21 @@ export function isPrivateHost(host: string): boolean {
   return false;
 }
 
+/** Redact sensitive IRC messages (credentials, passwords) for safe debug logging */
+const SENSITIVE_IRC_PATTERNS = /^(AUTHENTICATE |PASS |:.* PRIVMSG\s+NickServ\s+:IDENTIFY )/i;
+export function redactSensitiveIrc(line: string): string {
+  if (SENSITIVE_IRC_PATTERNS.test(line)) {
+    const spaceIdx = line.indexOf(' ');
+    if (spaceIdx === -1) return line;
+    // For ":sender PRIVMSG NickServ :IDENTIFY ...", keep up to "IDENTIFY"
+    const identifyMatch = line.match(/^(:.* PRIVMSG\s+NickServ\s+:IDENTIFY)\s/i);
+    if (identifyMatch) return `${identifyMatch[1]} ***`;
+    // For "AUTHENTICATE <payload>" or "PASS <password>"
+    return `${line.substring(0, spaceIdx)} ***`;
+  }
+  return line;
+}
+
 // Test cases for URL validation
 export function testUrlValidation() {
   // Should allow safe URLs
