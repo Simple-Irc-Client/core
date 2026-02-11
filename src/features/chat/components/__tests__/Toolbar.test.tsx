@@ -1535,6 +1535,21 @@ describe('Toolbar', () => {
     });
   });
 
+  describe('Context menu', () => {
+    it('should allow native context menu on input by stopping propagation', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      input.dispatchEvent(event);
+
+      expect(stopPropagationSpy).toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
   describe('Echo-message capability handling', () => {
     it('should add message locally when echo-message capability is NOT enabled', () => {
       vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
