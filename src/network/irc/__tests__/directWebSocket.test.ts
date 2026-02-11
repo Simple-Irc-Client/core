@@ -238,8 +238,7 @@ describe('directWebSocket', () => {
       directWebSocket.sendDirectRaw('TEST');
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Direct WebSocket not connected. Message not sent:',
-        'TEST'
+        'Direct WebSocket not connected. Message not sent.'
       );
       consoleSpy.mockRestore();
     });
