@@ -7,6 +7,7 @@ import {
   stripIrcFormatting,
 } from '@/shared/lib/ircFormatting';
 import type { FormattedSegment, FormatState } from '@/shared/lib/ircFormatting';
+import { isSafeCssColor } from '@shared/lib/utils';
 
 interface MessageTextProps {
   text: string;
@@ -50,13 +51,13 @@ function getStyleFromFormatState(state: FormatState, baseColor?: string): CSSPro
     [fg, bg] = [bg, fg];
   }
 
-  if (fg) {
+  if (fg && isSafeCssColor(fg)) {
     style.color = fg;
   } else if (baseColor) {
     style.color = baseColor;
   }
 
-  if (bg) {
+  if (bg && isSafeCssColor(bg)) {
     style.backgroundColor = bg;
   }
 

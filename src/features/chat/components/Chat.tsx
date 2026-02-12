@@ -21,6 +21,7 @@ import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
+import { isSafeCssColor } from '@shared/lib/utils';
 
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
@@ -104,7 +105,8 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   const displayNick = getDisplayNickFromMessage(message);
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
   const avatarLetter = getDisplayNickFromMessage(message).substring(0, 1);
-  const nickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
+  const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
+  const nickColor = rawNickColor && rawNickColor !== 'inherit' && isSafeCssColor(rawNickColor) ? rawNickColor : 'inherit';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {

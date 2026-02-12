@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isSafeUrl } from '@shared/lib/utils';
 
 interface AvatarProps {
   src?: string;
@@ -11,7 +12,8 @@ interface AvatarProps {
 const Avatar = ({ src, alt, fallbackLetter, className = '', onContextMenu }: AvatarProps) => {
   const [hasError, setHasError] = useState(false);
 
-  const showFallback = !src || hasError;
+  const safeSrc = src && isSafeUrl(src) ? src : undefined;
+  const showFallback = !safeSrc || hasError;
 
   return (
     <div className={`relative flex shrink-0 overflow-hidden rounded-full ${className}`} onContextMenu={onContextMenu}>
@@ -23,7 +25,7 @@ const Avatar = ({ src, alt, fallbackLetter, className = '', onContextMenu }: Ava
         <img
           className="aspect-square h-full w-full"
           alt={alt}
-          src={src}
+          src={safeSrc}
           onError={() => setHasError(true)}
         />
       )}

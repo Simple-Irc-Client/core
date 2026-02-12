@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
+import { isSafeCssColor } from '@shared/lib/utils';
 import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 
@@ -37,8 +38,8 @@ function getStyleFromFormatState(state: FormatState): CSSProperties {
   let fg = state.foreground;
   let bg = state.background;
   if (state.reverse) [fg, bg] = [bg, fg];
-  if (fg) style.color = fg;
-  if (bg) style.backgroundColor = bg;
+  if (fg && isSafeCssColor(fg)) style.color = fg;
+  if (bg && isSafeCssColor(bg)) style.backgroundColor = bg;
 
   return style;
 }
