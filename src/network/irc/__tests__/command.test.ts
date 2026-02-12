@@ -36,13 +36,17 @@ describe('command tests', () => {
 
     expect(parseMessageToCommand('#channel', '/raw test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', '/quote test message')).toStrictEqual('test message');
-    expect(parseMessageToCommand('#channel', '/msg test message')).toStrictEqual('test message');
-    expect(parseMessageToCommand('#channel', '/MSG test message')).toStrictEqual('test message');
     expect(parseMessageToCommand('#channel', 'test message')).toStrictEqual('test message');
 
-    // /raw, /quote, /msg, /MSG should each add an info message showing what was sent
+    // /raw, /quote should each add an info message showing what was sent
     const messages = useChannelsStore.getState().openChannels[0]?.messages;
-    expect(messages?.filter((m) => m.message.includes('test message')).length).toBe(4);
+    expect(messages?.filter((m) => m.message.includes('test message')).length).toBe(2);
+
+    // /msg sends PRIVMSG, not raw
+    expect(parseMessageToCommand('#channel', '/msg user1 hello world')).toStrictEqual('PRIVMSG user1 :hello world');
+    expect(parseMessageToCommand('#channel', '/MSG user1 hello world')).toStrictEqual('PRIVMSG user1 :hello world');
+    // /msg without message returns original line
+    expect(parseMessageToCommand('#channel', '/msg user1')).toStrictEqual('msg user1');
   });
 
   it('test whereis command', () => {

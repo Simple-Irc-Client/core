@@ -45,7 +45,7 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     case 'quote':
       return quoteCommand(channel, line);
     case 'msg':
-      return quoteCommand(channel, line);
+      return msgCommand(line) ?? originalLine;
     case 'whereis':
       return whoisCommand(line);
     case 'who':
@@ -141,6 +141,15 @@ const quoteCommand = (channel: string, line: string[]): string => {
     });
   }
   return raw;
+};
+
+const msgCommand = (line: string[]): string | undefined => {
+  const target = line.shift();
+  const message = line.join(' ');
+  if (!target || message.length === 0) {
+    return undefined;
+  }
+  return `PRIVMSG ${target} :${message}`;
 };
 
 const whoisCommand = (line: string[]): string => {
@@ -344,7 +353,8 @@ const helpCommands = [
   { cmd: '/knock <channel> [message]', key: 'help.cmd.knock' },
   { cmd: '/me <action>', key: 'help.cmd.me' },
   { cmd: '/mode <target> [modes]', key: 'help.cmd.mode' },
-  { cmd: '/msg, /raw, /quote <raw>', key: 'help.cmd.raw' },
+  { cmd: '/msg <target> <message>', key: 'help.cmd.msg' },
+  { cmd: '/raw, /quote <raw>', key: 'help.cmd.raw' },
   { cmd: '/ms <command>', key: 'help.cmd.ms' },
   { cmd: '/names [channel]', key: 'help.cmd.names' },
   { cmd: '/nick <newnick>', key: 'help.cmd.nick' },

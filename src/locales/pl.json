@@ -178,6 +178,7 @@
     "help.cmd.op": "Nadaj status operatora",
     "help.cmd.part": "Opuść bieżący kanał",
     "help.cmd.quit": "Rozłącz z serwerem",
+    "help.cmd.msg": "Wyślij prywatną wiadomość do użytkownika lub kanału",
     "help.cmd.raw": "Wyślij surowe polecenie IRC",
     "command.raw.sent": "Wysyłanie polecenia: {{command}}",
     "help.cmd.topic": "Ustaw temat kanału",
