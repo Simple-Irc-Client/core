@@ -1476,4 +1476,62 @@ describe('Chat tests', () => {
       expect(displayNames.length).toBe(1);
     });
   });
+
+  describe('Highlight styling', () => {
+    it('should apply highlight class to highlighted message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Hey you!', nick: 'SomeUser', highlight: true }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      expect(highlightedEl).toBeInTheDocument();
+    });
+
+    it('should not apply highlight class to non-highlighted message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Normal message', nick: 'SomeUser', highlight: false }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      expect(highlightedEl).not.toBeInTheDocument();
+    });
+
+    it('should apply highlight class to highlighted message in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [
+          createMessage({ id: '1', message: 'Hey you!', nick: 'SomeUser', highlight: true }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      expect(highlightedEl).toBeInTheDocument();
+    });
+
+    it('should not apply highlight class to non-highlighted message in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [
+          createMessage({ id: '1', message: 'Normal message', nick: 'SomeUser', highlight: false }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      expect(highlightedEl).not.toBeInTheDocument();
+    });
+  });
 });

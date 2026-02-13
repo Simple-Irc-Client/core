@@ -24,6 +24,7 @@ interface ChannelsStore {
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
+  setHasMention: (channelName: string) => void;
   /** IRCv3 METADATA */
   setChannelAvatar: (channelName: string, avatar: string) => void;
   /** IRCv3 METADATA */
@@ -123,14 +124,20 @@ export const useChannelsStore = create<ChannelsStore>()(
     },
     setClearUnreadMessages: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0 })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0 })),
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
       }));
     },
     setIncreaseUnreadMessages: (channelName: string) => {
       set((state) => ({
         openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
         openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+      }));
+    },
+    setHasMention: (channelName: string) => {
+      set((state) => ({
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, hasMention: true })),
+        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, hasMention: true })),
       }));
     },
     setChannelAvatar: (channelName: string, avatar: string) => {
@@ -272,6 +279,10 @@ export const setClearUnreadMessages = (channelName: string): void => {
 
 export const setIncreaseUnreadMessages = (channelName: string): void => {
   useChannelsStore.getState().setIncreaseUnreadMessages(channelName);
+};
+
+export const setHasMention = (channelName: string): void => {
+  useChannelsStore.getState().setHasMention(channelName);
 };
 
 export const setChannelAvatar = (channelName: string, avatar: string): void => {

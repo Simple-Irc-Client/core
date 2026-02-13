@@ -65,7 +65,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   };
 
   return (
-    <div className="py-1 px-4">
+    <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
       <div className={fontSizeClass}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         &nbsp;
@@ -120,14 +120,14 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   return (
     <>
       {!showAvatarLayout && (
-        <div className="py-1 px-4 pl-16" style={{ color: message.color ?? MessageColor.default }}>
+        <div className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`} style={{ color: message.color ?? MessageColor.default }}>
           <div className={fontSizeClass}>
             <MessageText text={message.message} />
           </div>
         </div>
       )}
       {showAvatarLayout && (
-        <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'}`}>
+        <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'} ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
           <div className="w-10 mr-3 flex-shrink-0">
             {lastNick !== nick && (
               <Avatar

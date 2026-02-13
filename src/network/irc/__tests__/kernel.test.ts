@@ -3602,6 +3602,225 @@ describe('kernel tests', () => {
     });
   });
 
+  describe('Nick mention highlighting', () => {
+    it('should set highlight on private message', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello there';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: 'OtherUser', highlight: true }));
+    });
+
+    it('should set highlight when message mentions nick in channel', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick check this out';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: true }));
+    });
+
+    it('should set highlight with case-insensitive nick match', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello mynick!';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: true }));
+    });
+
+    it('should not set highlight when message does not mention nick', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello everyone';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: false }));
+    });
+
+    it('should not set highlight on echo messages', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'echo-message');
+
+      // Echo message: sender is MyNick (our own message echoed back)
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :MyNick!~user@host PRIVMSG #channel :hello MyNick';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: false }));
+    });
+
+    it('should call setHasMention for mentioned nick in non-current channel', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick!';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetHasMention).toHaveBeenCalledWith('#channel');
+    });
+
+    it('should not call setHasMention when message is in current channel', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick!';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetHasMention).not.toHaveBeenCalled();
+    });
+
+    it('should not call setHasMention when no nick mention', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello everyone';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetHasMention).not.toHaveBeenCalled();
+    });
+
+    it('should set highlight on CTCP ACTION that mentions nick', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :\x01ACTION waves at MyNick\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: true }));
+    });
+
+    it('should set highlight on CTCP ACTION in private message', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :\x01ACTION waves\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: 'OtherUser', highlight: true }));
+    });
+
+    it('should not set highlight on CTCP ACTION without nick mention in channel', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :\x01ACTION dances\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: false }));
+    });
+
+    it('should call setHasMention for CTCP ACTION with nick mention in non-current channel', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
+
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :\x01ACTION pokes MyNick\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetHasMention).toHaveBeenCalledWith('#channel');
+    });
+  });
+
   describe('fuzzy tests', () => {
     // Helper functions for generating random data
     const randomString = (length: number): string => {

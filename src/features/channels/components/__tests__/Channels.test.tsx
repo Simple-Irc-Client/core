@@ -267,6 +267,29 @@ describe('Channels', () => {
 
       expect(screen.queryByText('10')).not.toBeInTheDocument();
     });
+
+    it('should use destructive badge variant when channel has mention', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', unReadMessages: 3, hasMention: true })],
+      });
+
+      render(<Channels />);
+
+      const badge = screen.getByText('3');
+      expect(badge).toHaveClass('bg-destructive');
+    });
+
+    it('should use default badge variant when channel has no mention', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', unReadMessages: 3 })],
+      });
+
+      render(<Channels />);
+
+      const badge = screen.getByText('3');
+      expect(badge).toHaveClass('bg-primary');
+      expect(badge).not.toHaveClass('bg-destructive');
+    });
   });
 
   describe('Remove channel', () => {

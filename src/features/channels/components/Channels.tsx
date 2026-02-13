@@ -169,7 +169,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                   {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
                     <>
                       {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
-                        <Badge className="h-5 min-w-5 flex items-center justify-center text-xs">{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+                        <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs">{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
                       )}
                       {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                         <Button

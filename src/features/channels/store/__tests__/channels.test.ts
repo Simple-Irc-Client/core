@@ -18,6 +18,7 @@ import {
   clearTyping,
   setClearUnreadMessages,
   setIncreaseUnreadMessages,
+  setHasMention,
   isPriv,
   isChannel,
 } from '@features/channels/store/channels';
@@ -461,6 +462,58 @@ describe('channels store', () => {
 
     it('should return undefined for non-existent channel', () => {
       expect(getCategory('#nonexistent')).toBeUndefined();
+    });
+  });
+
+  describe('mentions', () => {
+    it('should set hasMention on channel', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      setHasMention('#test');
+
+      const channel = getChannel('#test');
+      expect(channel?.hasMention).toBe(true);
+    });
+
+    it('should set hasMention in both lists', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      setHasMention('#test');
+
+      const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
+      expect(shortListChannel?.hasMention).toBe(true);
+    });
+
+    it('should not affect other channels when setting hasMention', () => {
+      setAddChannel('#test1', ChannelCategory.channel);
+      setAddChannel('#test2', ChannelCategory.channel);
+
+      setHasMention('#test1');
+
+      expect(getChannel('#test1')?.hasMention).toBe(true);
+      expect(getChannel('#test2')?.hasMention).toBeUndefined();
+    });
+
+    it('should clear hasMention when clearing unread messages', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      setHasMention('#test');
+      setIncreaseUnreadMessages('#test');
+      setClearUnreadMessages('#test');
+
+      const channel = getChannel('#test');
+      expect(channel?.hasMention).toBe(false);
+      expect(channel?.unReadMessages).toBe(0);
+    });
+
+    it('should clear hasMention in both lists when clearing unread messages', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      setHasMention('#test');
+      setClearUnreadMessages('#test');
+
+      const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
+      expect(shortListChannel?.hasMention).toBe(false);
     });
   });
 });

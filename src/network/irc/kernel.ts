@@ -7,6 +7,7 @@ import {
   setAddMessageToAllChannels,
   setChannelAvatar,
   setChannelDisplayName,
+  setHasMention,
   setIncreaseUnreadMessages,
   setRemoveChannel,
   setTopic,
@@ -2320,6 +2321,7 @@ export class Kernel {
 
     const messageId = this.tags?.msgid ?? uuidv4();
     const messageTime = this.tags?.time ?? new Date().toISOString();
+    const highlight = !isEchoMessage && (isPrivMessage || message.toLowerCase().includes(myNick.toLowerCase()));
 
     setAddMessage({
       id: messageId,
@@ -2330,7 +2332,12 @@ export class Kernel {
       category: MessageCategory.default,
       color: MessageColor.default,
       echoed: isEchoMessage,
+      highlight,
     });
+
+    if (highlight && messageTarget !== currentChannelName) {
+      setHasMention(messageTarget);
+    }
 
     // Check if user is away and message mentions their nick (not for echoed messages)
     if (!isEchoMessage) {
@@ -2431,6 +2438,8 @@ export class Kernel {
       setIncreaseUnreadMessages(messageTarget);
     }
 
+    const highlight = isPrivMessage || action.toLowerCase().includes(myNick.toLowerCase());
+
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: action,
@@ -2439,7 +2448,12 @@ export class Kernel {
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.me,
       color: MessageColor.me,
+      highlight,
     });
+
+    if (highlight && messageTarget !== currentChannelName) {
+      setHasMention(messageTarget);
+    }
   };
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving

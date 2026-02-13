@@ -47,6 +47,10 @@ export interface Message {
    * IRCv3 echo-message: true when this message was confirmed by the server
    */
   echoed?: boolean;
+  /**
+   * Whether this message mentions the current user's nick
+   */
+  highlight?: boolean;
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';
@@ -72,6 +76,10 @@ export interface Channel {
    * IRCv3 - Channel's display name from METADATA
    */
   displayName?: string;
+  /**
+   * Whether any unread message in the channel mentions the user's nick
+   */
+  hasMention?: boolean;
 }
 
 export interface ChannelExtended extends Channel {
