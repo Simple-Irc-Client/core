@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/p
 import { Input } from '@shared/components/ui/input';
 import { useTranslation } from 'react-i18next';
 import { type Server, type ConnectionType, servers, serverIcons } from '@/network/irc/servers';
-import { getCurrentNick, setWizardStep, setIsConnecting, setServer } from '@features/settings/store/settings';
+import { useSettingsStore, getCurrentNick, setWizardStep, setIsConnecting, setServer } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
@@ -23,12 +23,16 @@ const ServerIcon = ({ server }: { server: Server }) => {
 const WizardServer = () => {
   const { t } = useTranslation();
 
-  const [formServer, setFormServer] = useState<Server | undefined>(undefined);
+  const savedServer = useSettingsStore((s) => s.server);
+  const savedKnownServer = savedServer ? servers.find((s) => s.network === savedServer.network) : undefined;
+  const savedIsCustom = savedServer != null && savedKnownServer == null;
+
+  const [formServer, setFormServer] = useState<Server | undefined>(savedKnownServer);
   const [open, setOpen] = useState(false);
-  const [isCustom, setIsCustom] = useState(false);
-  const [customHost, setCustomHost] = useState('');
-  const [customPort, setCustomPort] = useState('6667');
-  const [connectionType, setConnectionType] = useState<ConnectionType>('backend');
+  const [isCustom, setIsCustom] = useState(savedIsCustom);
+  const [customHost, setCustomHost] = useState(savedIsCustom ? savedServer?.servers[0]?.replace(/:\d+$/, '') ?? '' : '');
+  const [customPort, setCustomPort] = useState(savedIsCustom ? savedServer?.servers[0]?.match(/:(\d+)$/)?.[1] ?? '6667' : '6667');
+  const [connectionType, setConnectionType] = useState<ConnectionType>(savedServer?.connectionType ?? 'backend');
 
   const popularServers = servers.filter((s) => POPULAR_NETWORKS.includes(s.network));
   const otherServers = servers.filter((s) => !POPULAR_NETWORKS.includes(s.network));

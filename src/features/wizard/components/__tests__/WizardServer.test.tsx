@@ -27,6 +27,7 @@ vi.mock('@/network/irc/network', () => ({
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
+  useSettingsStore: (selector: (s: Record<string, unknown>) => unknown) => selector({ nick: '', server: undefined }),
   getCurrentNick: vi.fn(),
   setWizardStep: vi.fn(),
   setIsConnecting: vi.fn(),

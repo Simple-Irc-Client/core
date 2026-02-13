@@ -12,6 +12,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
+  useSettingsStore: (selector: (s: Record<string, unknown>) => unknown) => selector({ nick: '', server: undefined }),
   setNick: vi.fn(),
   setWizardStep: vi.fn(),
   setServer: vi.fn(),

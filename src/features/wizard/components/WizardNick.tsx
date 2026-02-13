@@ -3,7 +3,7 @@ import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { setWizardStep, setNick, setServer, setIsConnecting } from '@features/settings/store/settings';
+import { useSettingsStore, setWizardStep, setNick, setServer, setIsConnecting } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
 import { resolveServerFromParams, isKnownServerParam } from '@shared/lib/resolveServerFromParams';
 import { getServerParam } from '@shared/lib/queryParams';
@@ -11,7 +11,8 @@ import { getServerParam } from '@shared/lib/queryParams';
 const WizardNick = () => {
   const { t } = useTranslation();
 
-  const [formNick, setFormNick] = useState('');
+  const savedNick = useSettingsStore((s) => s.nick);
+  const [formNick, setFormNick] = useState(savedNick);
   const serverParam = getServerParam();
   const isCustomServer = serverParam && !isKnownServerParam();
 
