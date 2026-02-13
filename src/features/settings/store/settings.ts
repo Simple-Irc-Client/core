@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { type Server } from '@/network/irc/servers';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '@shared/types';
 import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
 import { useCurrentStore, setCurrentClearAll } from '@features/chat/store/current';
@@ -97,7 +97,8 @@ export interface SettingsStore {
 }
 
 export const useSettingsStore = create<SettingsStore>()(
-  devtools((set) => ({
+  devtools(
+    persist((set) => ({
     isConnecting: false,
     isConnected: false,
     isWizardCompleted: false,
@@ -248,8 +249,6 @@ export const useSettingsStore = create<SettingsStore>()(
         isConnected: false,
         isWizardCompleted: false,
         wizardStep: 'nick',
-        nick: '',
-        server: undefined,
         isPasswordRequired: undefined,
         connectedTime: 0,
         currentChannelName: 'Status',
@@ -271,14 +270,24 @@ export const useSettingsStore = create<SettingsStore>()(
         currentUserStatus: undefined,
         currentUserHomepage: undefined,
         currentUserColor: undefined,
-        fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        isDarkMode: false,
-        hideAvatarsInUsersList: false,
-        hideTypingIndicator: false,
-        fontSize: 'medium',
       }));
     },
-  })),
+  }),
+  {
+    name: 'sic-settings',
+    version: 1,
+    partialize: (state) => ({
+      isDarkMode: state.isDarkMode,
+      theme: state.theme,
+      fontSize: state.fontSize,
+      hideAvatarsInUsersList: state.hideAvatarsInUsersList,
+      hideTypingIndicator: state.hideTypingIndicator,
+      fontFormatting: state.fontFormatting,
+      nick: state.nick,
+      server: state.server,
+    }),
+  }),
+  ),
 );
 
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {

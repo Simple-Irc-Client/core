@@ -6,6 +6,7 @@ import {
   setIsConnected,
   setConnectedTime,
   setNick,
+  setServer,
   setWizardStep,
   setIsPasswordRequired,
   setTheme,
@@ -15,6 +16,7 @@ import {
   setListRequestRemainingSeconds,
   setChannelTypes,
   getCurrentNick,
+  getServer,
   getCurrentChannelName,
   getCurrentChannelCategory,
   getChannelTypes,
@@ -41,6 +43,10 @@ import {
   getHideAvatarsInUsersList,
   setFontSize,
   getFontSize,
+  setFontFormatting,
+  getFontFormatting,
+  setHideTypingIndicator,
+  getHideTypingIndicator,
   setCurrentUserHomepage,
   getCurrentUserHomepage,
   setCurrentUserColor,
@@ -72,6 +78,7 @@ vi.mock('@features/users/store/users', () => ({
 
 describe('settings store', () => {
   beforeEach(() => {
+    localStorage.clear();
     useSettingsStore.setState({
       isConnecting: false,
       isConnected: false,
@@ -438,11 +445,11 @@ describe('settings store', () => {
       expect(getIsDarkMode()).toBe(false);
     });
 
-    it('should reset isDarkMode on resetWizardState', () => {
+    it('should preserve isDarkMode on resetWizardState', () => {
       setIsDarkMode(true);
       useSettingsStore.getState().resetWizardState();
 
-      expect(getIsDarkMode()).toBe(false);
+      expect(getIsDarkMode()).toBe(true);
     });
   });
 
@@ -462,11 +469,11 @@ describe('settings store', () => {
       expect(getHideAvatarsInUsersList()).toBe(false);
     });
 
-    it('should reset hideAvatarsInUsersList on resetWizardState', () => {
+    it('should preserve hideAvatarsInUsersList on resetWizardState', () => {
       setHideAvatarsInUsersList(true);
       useSettingsStore.getState().resetWizardState();
 
-      expect(getHideAvatarsInUsersList()).toBe(false);
+      expect(getHideAvatarsInUsersList()).toBe(true);
     });
   });
 
@@ -491,11 +498,11 @@ describe('settings store', () => {
       expect(getFontSize()).toBe('medium');
     });
 
-    it('should reset fontSize on resetWizardState', () => {
+    it('should preserve fontSize on resetWizardState', () => {
       setFontSize('large');
       useSettingsStore.getState().resetWizardState();
 
-      expect(getFontSize()).toBe('medium');
+      expect(getFontSize()).toBe('large');
     });
   });
 
@@ -544,6 +551,107 @@ describe('settings store', () => {
       useSettingsStore.getState().resetWizardState();
 
       expect(getCurrentUserColor()).toBeUndefined();
+    });
+  });
+
+  describe('persistence', () => {
+    it('should write preferences to localStorage', () => {
+      setIsDarkMode(true);
+      setTheme('classic');
+      setFontSize('large');
+      setHideAvatarsInUsersList(true);
+      setHideTypingIndicator(true);
+      setFontFormatting({ bold: true });
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.isDarkMode).toBe(true);
+      expect(stored.state.theme).toBe('classic');
+      expect(stored.state.fontSize).toBe('large');
+      expect(stored.state.hideAvatarsInUsersList).toBe(true);
+      expect(stored.state.hideTypingIndicator).toBe(true);
+      expect(stored.state.fontFormatting.bold).toBe(true);
+    });
+
+    it('should write nick and server to localStorage', () => {
+      setNick('PersistUser');
+      const server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.com:6667'],
+      };
+      setServer(server);
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.nick).toBe('PersistUser');
+      expect(stored.state.server).toEqual(server);
+    });
+
+    it('should NOT write connection state to localStorage', () => {
+      setIsConnecting(true);
+      setIsConnected(true);
+      setConnectedTime(123456);
+      setWizardCompleted(true);
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.isConnecting).toBeUndefined();
+      expect(stored.state.isConnected).toBeUndefined();
+      expect(stored.state.connectedTime).toBeUndefined();
+      expect(stored.state.isWizardCompleted).toBeUndefined();
+    });
+
+    it('should rehydrate preferences from localStorage', () => {
+      const persistedData = {
+        state: {
+          isDarkMode: true,
+          theme: 'classic',
+          fontSize: 'small',
+          hideAvatarsInUsersList: true,
+          hideTypingIndicator: true,
+          fontFormatting: { colorCode: 4, bold: true, italic: false, underline: false },
+          nick: 'SavedNick',
+          server: { default: 0, encoding: 'utf8', network: 'Net', servers: ['irc.net:6667'] },
+        },
+        version: 1,
+      };
+      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
+
+      // Trigger rehydration
+      useSettingsStore.persist.rehydrate();
+
+      expect(getIsDarkMode()).toBe(true);
+      expect(useSettingsStore.getState().theme).toBe('classic');
+      expect(getFontSize()).toBe('small');
+      expect(getHideAvatarsInUsersList()).toBe(true);
+      expect(getHideTypingIndicator()).toBe(true);
+      expect(getFontFormatting().bold).toBe(true);
+      expect(getCurrentNick()).toBe('SavedNick');
+      expect(getServer()).toEqual(persistedData.state.server);
+    });
+
+    it('should preserve nick and server on resetWizardState', () => {
+      setNick('MyNick');
+      const server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.com:6667'],
+      };
+      setServer(server);
+
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getCurrentNick()).toBe('MyNick');
+      expect(getServer()).toEqual(server);
+    });
+
+    it('should preserve fontFormatting on resetWizardState', () => {
+      setFontFormatting({ bold: true, italic: true });
+      useSettingsStore.getState().resetWizardState();
+
+      const formatting = getFontFormatting();
+      expect(formatting.bold).toBe(true);
+      expect(formatting.italic).toBe(true);
     });
   });
 });
