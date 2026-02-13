@@ -39,6 +39,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setTheme = useSettingsStore((state) => state.setTheme);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
+  const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
+  const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
@@ -305,6 +307,17 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           />
           <Label htmlFor="hide-avatars">
             {t('profileSettings.hideAvatars')}
+          </Label>
+        </div>
+        <div className="flex items-center gap-4">
+          <Switch
+            id="hide-typing"
+            checked={hideTypingIndicator}
+            onCheckedChange={setHideTypingIndicator}
+            data-testid="hide-typing-toggle"
+          />
+          <Label htmlFor="hide-typing">
+            {t('profileSettings.hideTyping')}
           </Label>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">

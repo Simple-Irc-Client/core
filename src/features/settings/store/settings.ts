@@ -57,6 +57,7 @@ export interface SettingsStore {
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
+  hideTypingIndicator: boolean; // Whether to hide the typing indicator
   fontSize: FontSize; // Font size for chat, users list, and channels list
 
   setWizardCompleted: (status: boolean) => void;
@@ -90,6 +91,7 @@ export interface SettingsStore {
   setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
+  setHideTypingIndicator: (hide: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   resetWizardState: () => void;
 }
@@ -127,6 +129,7 @@ export const useSettingsStore = create<SettingsStore>()(
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
     hideAvatarsInUsersList: false,
+    hideTypingIndicator: false,
     fontSize: 'medium',
 
     setWizardCompleted: (status: boolean): void => {
@@ -233,6 +236,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setHideAvatarsInUsersList: (hide: boolean): void => {
       set(() => ({ hideAvatarsInUsersList: hide }));
     },
+    setHideTypingIndicator: (hide: boolean): void => {
+      set(() => ({ hideTypingIndicator: hide }));
+    },
     setFontSize: (fontSize: FontSize): void => {
       set(() => ({ fontSize }));
     },
@@ -268,6 +274,7 @@ export const useSettingsStore = create<SettingsStore>()(
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         isDarkMode: false,
         hideAvatarsInUsersList: false,
+        hideTypingIndicator: false,
         fontSize: 'medium',
       }));
     },
@@ -499,6 +506,14 @@ export const setHideAvatarsInUsersList = (hide: boolean): void => {
 
 export const getHideAvatarsInUsersList = (): boolean => {
   return useSettingsStore.getState().hideAvatarsInUsersList;
+};
+
+export const setHideTypingIndicator = (hide: boolean): void => {
+  useSettingsStore.getState().setHideTypingIndicator(hide);
+};
+
+export const getHideTypingIndicator = (): boolean => {
+  return useSettingsStore.getState().hideTypingIndicator;
 };
 
 export const setFontSize = (fontSize: FontSize): void => {

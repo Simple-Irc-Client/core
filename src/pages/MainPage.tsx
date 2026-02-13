@@ -7,10 +7,12 @@ import Topic from '@features/chat/components/Topic';
 import Users from '@features/users/components/Users';
 import { ResizeHandle } from '@shared/components/ui/resize-handle';
 import { channelsWidth as defaultChannelsWidth, usersWidth as defaultUsersWidth } from '@/config/theme';
+import { useSettingsStore } from '@features/settings/store/settings';
 
 function MainPage() {
   const [channelsWidth, setChannelsWidth] = useState(defaultChannelsWidth);
   const [usersWidth, setUsersWidth] = useState(defaultUsersWidth);
+  const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
 
   const handleChannelsResize = useCallback((delta: number) => {
     setChannelsWidth((prev) => Math.max(defaultChannelsWidth, prev + delta));
@@ -30,7 +32,7 @@ function MainPage() {
           <div className="flex-1 overflow-hidden">
             <Chat />
           </div>
-          <Typing />
+          {!hideTypingIndicator && <Typing />}
           <Toolbar />
         </div>
       </div>

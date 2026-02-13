@@ -282,6 +282,7 @@
     "profileSettings.layoutClassic": "Klasyczny",
     "profileSettings.layoutModern": "Nowoczesny",
     "profileSettings.hideAvatars": "Ukryj awatary na liście użytkowników",
+    "profileSettings.hideTyping": "Ukryj wskaźnik pisania",
     "profileSettings.fontSize": "Rozmiar czcionki",
     "profileSettings.fontSizeSmall": "Mały",
     "profileSettings.fontSizeMedium": "Średni",

@@ -282,6 +282,7 @@
     "profileSettings.layoutClassic": "Classic",
     "profileSettings.layoutModern": "Modern",
     "profileSettings.hideAvatars": "Hide avatars in users list",
+    "profileSettings.hideTyping": "Hide typing indicator",
     "profileSettings.fontSize": "Font Size",
     "profileSettings.fontSizeSmall": "Small",
     "profileSettings.fontSizeMedium": "Medium",

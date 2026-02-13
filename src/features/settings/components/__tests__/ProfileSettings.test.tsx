@@ -450,6 +450,98 @@ describe('ProfileSettings', () => {
     });
   });
 
+  describe('Hide typing indicator toggle', () => {
+    it('should render hide typing toggle', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(screen.getByTestId('hide-typing-toggle')).toBeInTheDocument();
+    });
+
+    it('should display translated hide typing label', () => {
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      expect(document.body.textContent).toContain('profileSettings.hideTyping');
+    });
+
+    it('should show unchecked state when hideTypingIndicator is false', () => {
+      useSettingsStore.setState({ hideTypingIndicator: false });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-typing-toggle');
+      expect(toggle).toHaveAttribute('data-state', 'unchecked');
+    });
+
+    it('should show checked state when hideTypingIndicator is true', () => {
+      useSettingsStore.setState({ hideTypingIndicator: true });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-typing-toggle');
+      expect(toggle).toHaveAttribute('data-state', 'checked');
+    });
+
+    it('should toggle hideTypingIndicator when clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ hideTypingIndicator: false });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-typing-toggle');
+      await user.click(toggle);
+
+      expect(useSettingsStore.getState().hideTypingIndicator).toBe(true);
+    });
+
+    it('should toggle hideTypingIndicator from true to false when clicked', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ hideTypingIndicator: true });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      const toggle = screen.getByTestId('hide-typing-toggle');
+      await user.click(toggle);
+
+      expect(useSettingsStore.getState().hideTypingIndicator).toBe(false);
+    });
+  });
+
   describe('Font size picker', () => {
     it('should render font size buttons', () => {
       render(
