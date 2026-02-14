@@ -21,6 +21,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+  ircReconnect: vi.fn(),
 }));
 
 const mockResetAndGoToStart = vi.fn();
@@ -1240,7 +1241,7 @@ describe('Toolbar', () => {
     });
   });
 
-  describe('Disconnect button', () => {
+  describe('Connect/Disconnect button', () => {
     const getAvatarButton = () => {
       const buttons = screen.getAllByRole('button');
       return buttons.find((btn) => btn.getAttribute('aria-haspopup') === 'menu');
@@ -1250,7 +1251,7 @@ describe('Toolbar', () => {
       mockResetAndGoToStart.mockClear();
     });
 
-    it('should show Disconnect option in avatar dropdown menu', async () => {
+    it('should show Disconnect option when connected', async () => {
       const user = userEvent.setup();
       render(<Toolbar />);
 
@@ -1259,6 +1260,7 @@ describe('Toolbar', () => {
       await user.click(avatarButton as HTMLElement);
 
       expect(document.body.textContent).toContain('currentUser.disconnect');
+      expect(document.body.textContent).not.toContain('currentUser.connect');
     });
 
     it('should call resetAndGoToStart when clicking Disconnect', async () => {
@@ -1291,6 +1293,82 @@ describe('Toolbar', () => {
       // Check that a separator exists (Radix UI renders it with role="separator")
       const separator = document.querySelector('[role="separator"]');
       expect(separator).toBeInTheDocument();
+    });
+
+    it('should show Connect option when disconnected', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('currentUser.connect');
+      expect(document.body.textContent).not.toContain('currentUser.disconnect');
+    });
+
+    it('should call ircReconnect when clicking Connect', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const connectItem = screen.getByText('currentUser.connect');
+      await user.click(connectItem);
+
+      expect(network.ircReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not call resetAndGoToStart when clicking Connect', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const connectItem = screen.getByText('currentUser.connect');
+      await user.click(connectItem);
+
+      expect(mockResetAndGoToStart).not.toHaveBeenCalled();
     });
   });
 
