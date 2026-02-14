@@ -208,6 +208,8 @@
     "contextmenu.user.operator.kickban": "Kick & Ban",
     "contextmenu.user.invite": "Invite to Channel",
     "contextmenu.channel.join": "Join",
+    "contextmenu.text.copy": "Copy",
+    "contextmenu.chat.clear": "Clear Screen",
     "main.topic.setBy": "Set by {{nick}} on {{date}}",
     "main.toolbar.textColor": "Text Color",
     "main.toolbar.textColorAriaLabel": "text color",

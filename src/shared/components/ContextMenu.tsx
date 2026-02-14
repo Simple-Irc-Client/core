@@ -9,7 +9,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { setAddChannel, useChannelsStore } from '@features/channels/store/channels';
+import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
 import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
@@ -89,7 +89,7 @@ const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight = 200) =>
 
 export const ContextMenu = () => {
   const { t } = useTranslation();
-  const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem } = useContextMenu();
+  const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem, contextMenuPosition } = useContextMenu();
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
 
   if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {
@@ -325,5 +325,59 @@ export const ContextMenu = () => {
       </DropdownMenu>
     );
   }
+  if (contextMenuCategory === 'chat' && contextMenuItem !== undefined) {
+    const handleClearScreen = (): void => {
+      setClearMessages(contextMenuItem);
+      handleContextMenuClose();
+    };
+
+    return (
+      <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
+        <DropdownMenuContent
+          style={
+            contextMenuPosition
+              ? {
+                  position: 'fixed',
+                  left: `${contextMenuPosition.x}px`,
+                  top: `${contextMenuPosition.y}px`,
+                }
+              : undefined
+          }
+        >
+          <DropdownMenuItem onClick={handleClearScreen}>{t('contextmenu.chat.clear')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  if (contextMenuCategory === 'text' && contextMenuItem !== undefined) {
+    const handleCopy = (): void => {
+      navigator.clipboard.writeText(contextMenuItem);
+      handleContextMenuClose();
+    };
+
+    const truncated = contextMenuItem.length > 30 ? contextMenuItem.substring(0, 30) + '...' : contextMenuItem;
+
+    return (
+      <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
+        <DropdownMenuContent
+          style={
+            contextMenuPosition
+              ? {
+                  position: 'fixed',
+                  left: `${contextMenuPosition.x}px`,
+                  top: `${contextMenuPosition.y}px`,
+                }
+              : undefined
+          }
+        >
+          <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleCopy}>{t('contextmenu.text.copy')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return <></>;
 };

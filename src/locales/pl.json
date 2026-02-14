@@ -208,6 +208,8 @@
     "contextmenu.user.operator.kickban": "Wyrzuć i zbanuj",
     "contextmenu.user.invite": "Zaproś na kanał",
     "contextmenu.channel.join": "Dołącz",
+    "contextmenu.text.copy": "Kopiuj",
+    "contextmenu.chat.clear": "Wyczyść ekran",
     "main.topic.setBy": "Ustawiony przez {{nick}} dnia {{date}}",
     "main.toolbar.textColor": "Kolor tekstu",
     "main.toolbar.textColorAriaLabel": "kolor tekstu",

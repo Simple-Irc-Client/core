@@ -1,12 +1,13 @@
 import { createContext, useContext } from 'react';
 
-export type ContextMenuCategory = 'user' | 'channel' | 'url' | '';
+export type ContextMenuCategory = 'user' | 'channel' | 'url' | 'text' | 'chat' | '';
 
 export interface ContextMenuContextProps {
   contextMenuAnchorElement: HTMLElement | null;
   contextMenuOpen: boolean;
   contextMenuCategory: ContextMenuCategory | undefined;
   contextMenuItem: string | undefined;
+  contextMenuPosition: { x: number; y: number } | null;
   handleContextMenuUserClick: (event: React.MouseEvent<HTMLElement>, category: ContextMenuCategory, item: string) => void;
   handleContextMenuClose: () => void;
 }
@@ -16,6 +17,7 @@ export const ContextMenuContext = createContext<ContextMenuContextProps>({
   contextMenuOpen: false,
   contextMenuCategory: undefined,
   contextMenuItem: undefined,
+  contextMenuPosition: null,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   handleContextMenuUserClick: function (_event: React.MouseEvent<HTMLElement>, _category: ContextMenuCategory, _item: string): void {
     throw new Error('Function not implemented.');

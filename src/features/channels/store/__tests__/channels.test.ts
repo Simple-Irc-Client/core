@@ -11,6 +11,7 @@ import {
   getTopicSetBy,
   getTopicTime,
   getMessages,
+  setClearMessages,
   getCategory,
   setTyping,
   getTyping,
@@ -227,6 +228,39 @@ describe('channels store', () => {
 
       expect(getMessages('#test1').length).toBe(1);
       expect(getMessages('#test2').length).toBe(0);
+    });
+
+    it('should clear messages for a specific channel', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test'));
+      expect(getMessages('#test').length).toBe(2);
+
+      setClearMessages('#test');
+
+      expect(getMessages('#test').length).toBe(0);
+    });
+
+    it('should not affect other channels when clearing messages', () => {
+      setAddChannel('#test1', ChannelCategory.channel);
+      setAddChannel('#test2', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test1'));
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test2'));
+
+      setClearMessages('#test1');
+
+      expect(getMessages('#test1').length).toBe(0);
+      expect(getMessages('#test2').length).toBe(1);
+    });
+
+    it('should handle clearing messages on channel with no messages', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      setClearMessages('#test');
+
+      expect(getMessages('#test').length).toBe(0);
     });
   });
 

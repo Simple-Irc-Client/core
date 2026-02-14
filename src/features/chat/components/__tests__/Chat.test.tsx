@@ -56,6 +56,7 @@ describe('Chat tests', () => {
       contextMenuCategory: undefined,
       contextMenuItem: undefined,
       handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: null,
     });
 
     // Default channel types mock
@@ -1532,6 +1533,128 @@ describe('Chat tests', () => {
 
       const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
       expect(highlightedEl).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Chat context menu', () => {
+    it('should open text context menu when right-clicking with text selected', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      // Mock window.getSelection to return selected text
+      const mockGetSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+        toString: () => 'Hello',
+      } as Selection);
+
+      fireEvent.contextMenu(scrollContainer);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'text',
+        'Hello'
+      );
+
+      mockGetSelection.mockRestore();
+    });
+
+    it('should open chat context menu when right-clicking on empty space without selection', () => {
+      setupMocks({
+        currentChannelName: '#mychannel',
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      // Mock window.getSelection to return empty selection
+      const mockGetSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+        toString: () => '',
+      } as Selection);
+
+      fireEvent.contextMenu(scrollContainer);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'chat',
+        '#mychannel'
+      );
+
+      mockGetSelection.mockRestore();
+    });
+
+    it('should not open chat/text context menu when nick context menu already handled', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
+      });
+
+      render(<Main />);
+
+      // Right-click on nick triggers the nick handler which calls preventDefault
+      const nickElement = screen.getByText('TestUser');
+      fireEvent.contextMenu(nickElement);
+
+      // Should be called once (for user context menu from nick click)
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledTimes(1);
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'TestUser'
+      );
+    });
+
+    it('should preventDefault and stopPropagation when showing text context menu', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      const mockGetSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+        toString: () => 'selected',
+      } as Selection);
+
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      scrollContainer.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(stopPropagationSpy).toHaveBeenCalled();
+
+      mockGetSelection.mockRestore();
+    });
+
+    it('should preventDefault and stopPropagation when showing chat context menu', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      const mockGetSelection = vi.spyOn(window, 'getSelection').mockReturnValue({
+        toString: () => '',
+      } as Selection);
+
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+      const stopPropagationSpy = vi.spyOn(event, 'stopPropagation');
+
+      scrollContainer.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(stopPropagationSpy).toHaveBeenCalled();
+
+      mockGetSelection.mockRestore();
     });
   });
 });

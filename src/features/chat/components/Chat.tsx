@@ -180,6 +180,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
 };
 
 const Chat = () => {
+  const { handleContextMenuUserClick } = useContextMenu();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const fontSize = useSettingsStore((state) => state.fontSize);
@@ -232,7 +233,17 @@ const Chat = () => {
   }, []);
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
+    <div ref={containerRef} onScroll={handleScroll} onContextMenu={(e) => {
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const selection = window.getSelection()?.toString();
+      if (selection) {
+        handleContextMenuUserClick(e, 'text', selection);
+      } else {
+        handleContextMenuUserClick(e, 'chat', currentChannelName);
+      }
+    }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]) ?? '';

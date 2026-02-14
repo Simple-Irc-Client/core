@@ -29,6 +29,7 @@ interface ChannelsStore {
   setChannelAvatar: (channelName: string, avatar: string) => void;
   /** IRCv3 METADATA */
   setChannelDisplayName: (channelName: string, displayName: string) => void;
+  setClearMessages: (channelName: string) => void;
   setClearAll: () => void;
 }
 
@@ -152,6 +153,16 @@ export const useChannelsStore = create<ChannelsStore>()(
         openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, displayName })),
       }));
     },
+    setClearMessages: (channelName: string) => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel) => {
+          if (channel.name !== channelName) {
+            return channel;
+          }
+          return { ...channel, messages: [] };
+        }),
+      }));
+    },
     setClearAll: () => {
       set(() => ({
         openChannels: [],
@@ -243,6 +254,14 @@ export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>):
 
 export const getMessages = (channelName: string): Message[] => {
   return [...(getChannel(channelName)?.messages ?? [])];
+};
+
+export const setClearMessages = (channelName: string): void => {
+  useChannelsStore.getState().setClearMessages(channelName);
+  const currentChannelName = getCurrentChannelName();
+  if (currentChannelName === channelName) {
+    useCurrentStore.getState().setUpdateMessages([]);
+  }
 };
 
 export const getCategory = (channelName: string): ChannelCategory | undefined => {

@@ -6,12 +6,14 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
   const [contextMenuCategory, setContextMenuCategory] = useState<ContextMenuCategory | undefined>(undefined);
   const [contextMenuItem, setContextMenuItem] = useState<string | undefined>(undefined);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
   const handleContextMenuUserClick = useCallback((event: React.MouseEvent<HTMLElement>, category: ContextMenuCategory, item: string): void => {
     event.preventDefault();
     setContextMenuCategory(category);
     setContextMenuItem(item);
     setContextMenuAnchorElement(event.currentTarget);
+    setContextMenuPosition({ x: event.clientX, y: event.clientY });
     setContextMenuOpen(true);
   }, []);
 
@@ -19,6 +21,7 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
     setContextMenuCategory(undefined);
     setContextMenuItem(undefined);
     setContextMenuAnchorElement(null);
+    setContextMenuPosition(null);
     setContextMenuOpen(false);
   }, []);
 
@@ -28,10 +31,11 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
       contextMenuOpen,
       contextMenuCategory,
       contextMenuItem,
+      contextMenuPosition,
       handleContextMenuUserClick,
       handleContextMenuClose,
     }),
-    [contextMenuAnchorElement, contextMenuOpen, contextMenuCategory, contextMenuItem, handleContextMenuUserClick, handleContextMenuClose],
+    [contextMenuAnchorElement, contextMenuOpen, contextMenuCategory, contextMenuItem, contextMenuPosition, handleContextMenuUserClick, handleContextMenuClose],
   );
 
   return <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>;

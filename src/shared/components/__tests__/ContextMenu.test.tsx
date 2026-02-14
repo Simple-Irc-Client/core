@@ -31,6 +31,7 @@ describe('ContextMenu', () => {
     contextMenuCategory: 'user' as const,
     contextMenuItem: 'testUser',
     handleContextMenuUserClick: mockHandleContextMenuUserClick,
+    contextMenuPosition: null,
     ...overrides,
   });
 
@@ -567,6 +568,7 @@ describe('ContextMenu', () => {
       contextMenuCategory: 'channel' as const,
       contextMenuItem: '#testchannel',
       handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: null,
       ...overrides,
     });
 
@@ -742,6 +744,121 @@ describe('ContextMenu', () => {
           channels: [expect.objectContaining({ name: 'otherUser' })],
         })
       );
+    });
+  });
+
+  describe('Text context menu (Copy)', () => {
+    const createTextContextMenuMock = (overrides = {}) => ({
+      contextMenuOpen: true,
+      handleContextMenuClose: mockHandleContextMenuClose,
+      contextMenuAnchorElement: null,
+      contextMenuCategory: 'text' as const,
+      contextMenuItem: 'selected text content',
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: { x: 100, y: 200 },
+      ...overrides,
+    });
+
+    it('should render Copy option when category is text', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createTextContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.text.copy');
+    });
+
+    it('should not render text menu when contextMenuItem is undefined', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createTextContextMenuMock({ contextMenuItem: undefined })
+      );
+
+      const { container } = render(<ContextMenu />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('should copy text to clipboard when Copy is clicked', () => {
+      const mockWriteText = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
+
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createTextContextMenuMock({ contextMenuItem: 'hello world' })
+      );
+
+      render(<ContextMenu />);
+      const copyButton = document.body.querySelector('[role="menuitem"]');
+      expect(copyButton).not.toBeNull();
+      if (copyButton) fireEvent.click(copyButton);
+
+      expect(mockWriteText).toHaveBeenCalledWith('hello world');
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should position menu at contextMenuPosition coordinates', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createTextContextMenuMock({ contextMenuPosition: { x: 150, y: 300 } })
+      );
+
+      render(<ContextMenu />);
+      const menuContent = document.body.querySelector('[role="menu"]');
+      expect(menuContent).toHaveStyle({ position: 'fixed', left: '150px', top: '300px' });
+    });
+  });
+
+  describe('Chat context menu (Clear Screen)', () => {
+    const createChatContextMenuMock = (overrides = {}) => ({
+      contextMenuOpen: true,
+      handleContextMenuClose: mockHandleContextMenuClose,
+      contextMenuAnchorElement: null,
+      contextMenuCategory: 'chat' as const,
+      contextMenuItem: '#test',
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: { x: 100, y: 200 },
+      ...overrides,
+    });
+
+    it('should render Clear Screen option when category is chat', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChatContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.chat.clear');
+    });
+
+    it('should not render chat menu when contextMenuItem is undefined', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChatContextMenuMock({ contextMenuItem: undefined })
+      );
+
+      const { container } = render(<ContextMenu />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('should call setClearMessages when Clear Screen is clicked', () => {
+      const mockSetClearMessages = vi.spyOn(channels, 'setClearMessages').mockImplementation(() => {});
+
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChatContextMenuMock({ contextMenuItem: '#mychannel' })
+      );
+
+      render(<ContextMenu />);
+      const clearButton = document.body.querySelector('[role="menuitem"]');
+      expect(clearButton).not.toBeNull();
+      if (clearButton) fireEvent.click(clearButton);
+
+      expect(mockSetClearMessages).toHaveBeenCalledWith('#mychannel');
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should position menu at contextMenuPosition coordinates', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createChatContextMenuMock({ contextMenuPosition: { x: 250, y: 400 } })
+      );
+
+      render(<ContextMenu />);
+      const menuContent = document.body.querySelector('[role="menu"]');
+      expect(menuContent).toHaveStyle({ position: 'fixed', left: '250px', top: '400px' });
     });
   });
 });

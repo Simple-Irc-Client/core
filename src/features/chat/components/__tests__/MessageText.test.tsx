@@ -19,6 +19,7 @@ describe('MessageText', () => {
       contextMenuCategory: undefined,
       contextMenuItem: undefined,
       handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: null,
     });
   });
 
