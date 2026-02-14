@@ -25,6 +25,19 @@ describe('youtube utils', () => {
       expect(extractYouTubeVideoIds(text)).toEqual(['dQw4w9WgXcQ']);
     });
 
+    it('should extract video ID from youtube.com/shorts/ format', () => {
+      const text = 'https://youtube.com/shorts/dQw4w9WgXcQ';
+      expect(extractYouTubeVideoIds(text)).toEqual(['dQw4w9WgXcQ']);
+    });
+
+    it('should extract shorts and regular videos from same text', () => {
+      const text = 'https://youtube.com/shorts/aaaaaaaaaaa https://youtu.be/bbbbbbbbbbb';
+      const result = extractYouTubeVideoIds(text);
+      expect(result).toHaveLength(2);
+      expect(result).toContain('aaaaaaaaaaa');
+      expect(result).toContain('bbbbbbbbbbb');
+    });
+
     it('should return empty array for text without YouTube URLs', () => {
       expect(extractYouTubeVideoIds('Hello, world!')).toEqual([]);
       expect(extractYouTubeVideoIds('')).toEqual([]);
@@ -51,6 +64,11 @@ describe('youtube utils', () => {
     it('should extract video ID from youtu.be/ format', () => {
       expect(extractYouTubeVideoId('https://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
       expect(extractYouTubeVideoId('http://youtu.be/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+    });
+
+    it('should extract video ID from youtube.com/shorts/ format', () => {
+      expect(extractYouTubeVideoId('https://www.youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+      expect(extractYouTubeVideoId('https://youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
     });
 
     it('should extract video ID from text containing YouTube URL', () => {

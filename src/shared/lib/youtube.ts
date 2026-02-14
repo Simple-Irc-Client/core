@@ -1,5 +1,5 @@
 const YOUTUBE_REGEX =
-  /(?:youtube\.com\/watch\?[^\s]*v=|youtube\.com\/v\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+  /(?:youtube\.com\/watch\?[^\s]*v=|youtube\.com\/v\/|youtube\.com\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
 
 export const extractYouTubeVideoIds = (text: string): string[] => {
   const ids: string[] = [];
