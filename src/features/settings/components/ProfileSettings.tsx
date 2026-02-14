@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/app/i18n';
+import { languages } from '@/config/languages';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useSettingsStore } from '@features/settings/store/settings';
 import {
@@ -12,8 +14,11 @@ import {
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Switch } from '@shared/components/ui/switch';
 import { cn } from '@shared/lib/utils';
+
+type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
 interface ProfileSettingsProps {
   open: boolean;
@@ -43,6 +48,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
+  const language = useSettingsStore((state) => state.language);
+  const setLanguage = useSettingsStore((state) => state.setLanguage);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
   const [newDisplayName, setNewDisplayName] = useState(currentUserDisplayName ?? '');
   const [newStatus, setNewStatus] = useState(currentUserStatus ?? '');
@@ -338,6 +345,34 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             >
               {t('profileSettings.fontSizeLarge')}
             </Button>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label className="text-right">
+            {t('profileSettings.language')}
+          </Label>
+          <div className="col-span-3">
+            <Select
+              value={language}
+              onValueChange={(value: LanguageSetting) => {
+                setLanguage(value);
+                i18n.changeLanguage(value === 'auto' ? navigator.language : value);
+              }}
+            >
+              <SelectTrigger data-testid="language-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto" data-testid="language-auto">
+                  {t('profileSettings.languageAuto')}
+                </SelectItem>
+                {languages.map(({ code, label, flag }) => (
+                  <SelectItem key={code} value={code} data-testid={`language-${code}`}>
+                    {flag} {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>

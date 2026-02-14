@@ -11,6 +11,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.mock('@/app/i18n', () => ({
+  default: {
+    changeLanguage: vi.fn(),
+  },
+}));
+
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
   ircConnect: vi.fn(),

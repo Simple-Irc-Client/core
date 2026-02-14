@@ -6,6 +6,7 @@ import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsCl
 import { useCurrentStore, setCurrentClearAll } from '@features/chat/store/current';
 import { getUsersFromChannelSortedByMode, setUsersClearAll } from '@features/users/store/users';
 import { defaultChannelTypes } from '@/config/config';
+import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { ircDisconnect } from '@/network/irc/network';
 
@@ -59,6 +60,7 @@ export interface SettingsStore {
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
   fontSize: FontSize; // Font size for chat, users list, and channels list
+  language: LanguageSetting; // Language preference ('auto' = browser detection)
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -93,6 +95,7 @@ export interface SettingsStore {
   setHideAvatarsInUsersList: (hide: boolean) => void;
   setHideTypingIndicator: (hide: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
+  setLanguage: (language: LanguageSetting) => void;
   resetWizardState: () => void;
 }
 
@@ -132,6 +135,7 @@ export const useSettingsStore = create<SettingsStore>()(
     hideAvatarsInUsersList: false,
     hideTypingIndicator: false,
     fontSize: 'medium',
+    language: 'auto',
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -243,6 +247,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setFontSize: (fontSize: FontSize): void => {
       set(() => ({ fontSize }));
     },
+    setLanguage: (language: LanguageSetting): void => {
+      set(() => ({ language }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -285,6 +292,7 @@ export const useSettingsStore = create<SettingsStore>()(
       fontFormatting: state.fontFormatting,
       nick: state.nick,
       server: state.server,
+      language: state.language,
     }),
   }),
   ),
@@ -531,6 +539,14 @@ export const setFontSize = (fontSize: FontSize): void => {
 
 export const getFontSize = (): FontSize => {
   return useSettingsStore.getState().fontSize;
+};
+
+export const setLanguage = (language: LanguageSetting): void => {
+  useSettingsStore.getState().setLanguage(language);
+};
+
+export const getLanguage = (): LanguageSetting => {
+  return useSettingsStore.getState().language;
 };
 
 export const resetAndGoToStart = (): void => {

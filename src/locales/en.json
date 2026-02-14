@@ -289,6 +289,8 @@
     "profileSettings.fontSizeSmall": "Small",
     "profileSettings.fontSizeMedium": "Medium",
     "profileSettings.fontSizeLarge": "Large",
+    "profileSettings.language": "Language",
+    "profileSettings.languageAuto": "Auto",
     "currentUser.connect": "Connect",
     "currentUser.disconnect": "Disconnect",
     "currentUser.awayMessages": "Away Messages",
