@@ -1,10 +1,48 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, type CSSProperties } from 'react';
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@shared/components/ui/badge';
 import { Input } from '@shared/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/components/ui/table';
 import type { ChannelList } from '@shared/types';
+import { parseIrcFormatting, hasIrcFormatting, stripIrcFormatting, type FormattedSegment, type FormatState } from '@shared/lib/ircFormatting';
+import { isSafeCssColor } from '@shared/lib/utils';
+
+function getStyleFromFormatState(state: FormatState): CSSProperties {
+  const style: CSSProperties = {};
+  if (state.bold) style.fontWeight = 'bold';
+  if (state.italic) style.fontStyle = 'italic';
+  if (state.underline && state.strikethrough) {
+    style.textDecoration = 'underline line-through';
+  } else if (state.underline) {
+    style.textDecoration = 'underline';
+  } else if (state.strikethrough) {
+    style.textDecoration = 'line-through';
+  }
+  if (state.monospace) style.fontFamily = 'monospace';
+  let fg = state.foreground;
+  let bg = state.background;
+  if (state.reverse) [fg, bg] = [bg, fg];
+  if (fg && isSafeCssColor(fg)) style.color = fg;
+  if (bg && isSafeCssColor(bg)) style.backgroundColor = bg;
+  return style;
+}
+
+function renderFormattedSegments(segments: FormattedSegment[]): React.ReactNode[] {
+  return segments.map((segment, idx) => {
+    const style = getStyleFromFormatState(segment.style);
+    return (
+      <span key={idx} style={Object.keys(style).length > 0 ? style : undefined}>
+        {segment.text}
+      </span>
+    );
+  });
+}
+
+function renderTopic(topic: string): React.ReactNode {
+  if (!hasIrcFormatting(topic)) return topic;
+  return renderFormattedSegments(parseIrcFormatting(topic));
+}
 
 interface ChannelListTableProps {
   channelList: ChannelList[];
@@ -52,7 +90,7 @@ const ChannelListTable = ({
     if (!searchQuery) return availableChannelList;
     const query = searchQuery.toLowerCase();
     return availableChannelList.filter(
-      (channel) => channel.name.toLowerCase().includes(query) || channel.topic?.toLowerCase().includes(query)
+      (channel) => channel.name.toLowerCase().includes(query) || stripIrcFormatting(channel.topic ?? '').toLowerCase().includes(query)
     );
   }, [availableChannelList, searchQuery]);
 
@@ -111,7 +149,7 @@ const ChannelListTable = ({
                 >
                   <TableCell className="font-medium">{channel.name}</TableCell>
                   <TableCell>{channel.users}</TableCell>
-                  <TableCell className="truncate max-w-[300px]">{channel.topic}</TableCell>
+                  <TableCell className="truncate max-w-[300px]">{renderTopic(channel.topic)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

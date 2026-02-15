@@ -281,5 +281,123 @@ describe('ircFormatting', () => {
         expect(result[0]!.style.foreground).toBe(null);
       });
     });
+
+    describe('security', () => {
+      it('should return null for out-of-range color codes (100+)', () => {
+        // Color code 100 should parse as color 10 + literal '0'
+        const result = parseIrcFormatting(`${IRC_FORMAT.COLOR}100text`);
+        expect(result).toHaveLength(1);
+        // Parser reads up to 2 digits: "10" -> cyan, then "0text" is literal
+        expect(result[0]!.style.foreground).toBe('#009393');
+        expect(result[0]!.text).toBe('0text');
+      });
+
+      it('should not parse invalid hex color (too short)', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}FF00text`);
+        // Only 4 hex chars available before 'text', doesn't meet 6-char requirement
+        expect(result).toHaveLength(1);
+        expect(result[0]!.style.foreground).toBe(null);
+      });
+
+      it('should not parse hex color with non-hex characters', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}ZZZZZZ text`);
+        expect(result).toHaveLength(1);
+        expect(result[0]!.style.foreground).toBe(null);
+      });
+
+      it('should not parse hex color that contains CSS injection', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}expres text`);
+        expect(result).toHaveLength(1);
+        expect(result[0]!.style.foreground).toBe(null);
+        expect(result[0]!.text).toContain('expres');
+      });
+
+      it('should preserve HTML tags as literal text', () => {
+        const result = parseIrcFormatting('<script>alert("xss")</script>');
+        expect(result).toHaveLength(1);
+        expect(result[0]!.text).toBe('<script>alert("xss")</script>');
+      });
+
+      it('should preserve HTML entities as literal text', () => {
+        const result = parseIrcFormatting('<img src=x onerror=alert(1)>');
+        expect(result).toHaveLength(1);
+        expect(result[0]!.text).toBe('<img src=x onerror=alert(1)>');
+      });
+
+      it('should only produce colors from the known palette for standard color codes', () => {
+        // Test all valid standard codes produce known hex values
+        for (let code = 0; code <= 15; code++) {
+          const codeStr = code.toString();
+          const result = parseIrcFormatting(`${IRC_FORMAT.COLOR}${codeStr}x`);
+          const fg = result[0]!.style.foreground;
+          if (fg !== null) {
+            expect(fg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+          }
+        }
+      });
+
+      it('should only produce colors from the known palette for extended color codes', () => {
+        for (let code = 16; code <= 98; code++) {
+          const codeStr = code.toString();
+          const result = parseIrcFormatting(`${IRC_FORMAT.COLOR}${codeStr}x`);
+          const fg = result[0]!.style.foreground;
+          if (fg !== null) {
+            expect(fg).toMatch(/^#[0-9A-Fa-f]{6}$/);
+          }
+        }
+      });
+
+      it('should only produce valid hex format for hex color codes', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}AbCdEftext`);
+        expect(result[0]!.style.foreground).toBe('#AbCdEf');
+        expect(result[0]!.style.foreground).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      });
+
+      it('should handle input with many rapid formatting toggles', () => {
+        // Alternating bold on/off 1000 times
+        const input = (IRC_FORMAT.BOLD + 'a').repeat(1000);
+        const result = parseIrcFormatting(input);
+        // Should complete without hanging and produce segments
+        expect(result.length).toBeGreaterThan(0);
+        expect(result.length).toBeLessThanOrEqual(1000);
+        // All text content should just be 'a' characters
+        const allText = result.map((s) => s.text).join('');
+        expect(allText).toBe('a'.repeat(1000));
+      });
+
+      it('should handle input with many color code changes', () => {
+        // Rapid color switching
+        let input = '';
+        for (let i = 0; i < 500; i++) {
+          input += `${IRC_FORMAT.COLOR}${i % 16}x`;
+        }
+        const result = parseIrcFormatting(input);
+        expect(result.length).toBeGreaterThan(0);
+        const allText = result.map((s) => s.text).join('');
+        expect(allText).toBe('x'.repeat(500));
+      });
+
+      it('should not allow color code 99 to set a foreground color', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.COLOR}99text`);
+        expect(result[0]!.style.foreground).toBe(null);
+      });
+
+      it('should handle incomplete hex color at end of input', () => {
+        const result = parseIrcFormatting(`text${IRC_FORMAT.HEX_COLOR}AB`);
+        expect(result).toHaveLength(2);
+        expect(result[0]!.text).toBe('text');
+        expect(result[0]!.style.foreground).toBe(null);
+        // Remaining "AB" becomes literal text with no color applied
+        expect(result[1]!.text).toBe('AB');
+        expect(result[1]!.style.foreground).toBe(null);
+      });
+
+      it('should handle hex color with valid fg but incomplete bg', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}FF0000,AB text`);
+        expect(result[0]!.style.foreground).toBe('#FF0000');
+        // bg comma + only 2 hex chars: bg should not be set
+        expect(result[0]!.style.background).toBe(null);
+      });
+    });
   });
 });

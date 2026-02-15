@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, redactSensitiveIrc } from '../utils';
+import { isSafeUrl, isSafeCssColor, redactSensitiveIrc } from '../utils';
 
 describe('redactSensitiveIrc', () => {
   it('should redact AUTHENTICATE payloads', () => {
@@ -121,6 +121,91 @@ describe('URL Validation', () => {
       expect(isSafeUrl('https://example.com/path?query=value&other=test')).toBe(true);
       expect(isSafeUrl('http://example.com:8080/path#fragment')).toBe(true);
       expect(isSafeUrl('https://user:pass@example.com')).toBe(true);
+    });
+  });
+});
+
+describe('CSS Color Validation', () => {
+  describe('isSafeCssColor', () => {
+    it('should allow valid hex colors', () => {
+      expect(isSafeCssColor('#fff')).toBe(true);
+      expect(isSafeCssColor('#FFF')).toBe(true);
+      expect(isSafeCssColor('#FF0000')).toBe(true);
+      expect(isSafeCssColor('#ff0000')).toBe(true);
+      expect(isSafeCssColor('#ff000080')).toBe(true); // 8-digit hex (with alpha)
+    });
+
+    it('should allow valid named colors', () => {
+      expect(isSafeCssColor('red')).toBe(true);
+      expect(isSafeCssColor('blue')).toBe(true);
+      expect(isSafeCssColor('transparent')).toBe(true);
+    });
+
+    it('should allow valid rgb() colors', () => {
+      expect(isSafeCssColor('rgb(255, 0, 0)')).toBe(true);
+      expect(isSafeCssColor('rgb(0,0,0)')).toBe(true);
+    });
+
+    it('should allow valid rgba() colors', () => {
+      expect(isSafeCssColor('rgba(255, 0, 0, 0.5)')).toBe(true);
+      expect(isSafeCssColor('rgba(0,0,0,1)')).toBe(true);
+    });
+
+    it('should reject empty string', () => {
+      expect(isSafeCssColor('')).toBe(false);
+    });
+
+    it('should reject expression() CSS injection', () => {
+      expect(isSafeCssColor('expression(alert(1))')).toBe(false);
+    });
+
+    it('should reject url() CSS injection', () => {
+      expect(isSafeCssColor('url(https://evil.com/steal)')).toBe(false);
+      expect(isSafeCssColor('url(javascript:alert(1))')).toBe(false);
+    });
+
+    it('should reject var() CSS injection', () => {
+      expect(isSafeCssColor('var(--malicious)')).toBe(false);
+    });
+
+    it('should reject calc() CSS injection', () => {
+      expect(isSafeCssColor('calc(100px)')).toBe(false);
+    });
+
+    it('should reject values with semicolons (property injection)', () => {
+      expect(isSafeCssColor('red; background: url(evil)')).toBe(false);
+    });
+
+    it('should reject values with curly braces', () => {
+      expect(isSafeCssColor('red} .evil { background: url(x)')).toBe(false);
+    });
+
+    it('should reject strings exceeding named color max length', () => {
+      expect(isSafeCssColor('a'.repeat(31))).toBe(false);
+    });
+
+    it('should reject named colors with numbers', () => {
+      expect(isSafeCssColor('color123')).toBe(false);
+    });
+
+    it('should reject hex color without hash', () => {
+      expect(isSafeCssColor('FF0000')).toBe(false);
+    });
+
+    it('should reject hex color with too many digits', () => {
+      expect(isSafeCssColor('#FF0000FF00')).toBe(false); // 10 hex digits
+    });
+
+    it('should reject JavaScript protocol in color value', () => {
+      expect(isSafeCssColor('javascript:alert(1)')).toBe(false);
+    });
+
+    it('should reject data URI in color value', () => {
+      expect(isSafeCssColor('data:text/css,*{}')).toBe(false);
+    });
+
+    it('should reject -moz-binding CSS injection', () => {
+      expect(isSafeCssColor('-moz-binding:url(evil)')).toBe(false);
     });
   });
 });
