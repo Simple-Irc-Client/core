@@ -1252,7 +1252,6 @@ describe('kernel tests', () => {
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockGetConnectedTime = vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
     const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
@@ -1263,8 +1262,6 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-
-    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
 
@@ -1280,7 +1277,6 @@ describe('kernel tests', () => {
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockGetConnectedTime = vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
     const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
@@ -1291,8 +1287,6 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-
-    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
 
     expect(mockGetConnectedTime).toHaveBeenCalledTimes(1);
 

@@ -2178,7 +2178,7 @@ export class Kernel {
       setWizardStep('password');
     }
 
-    if (list.test(message) && target === getCurrentNick() && !getIsWizardCompleted()) {
+    if (list.test(message) && target === getCurrentNick()) {
       const regexpGroups = list.exec(message)?.groups;
       const seconds = regexpGroups?.secs1 ?? regexpGroups?.secs2 ?? regexpGroups?.secs3;
 

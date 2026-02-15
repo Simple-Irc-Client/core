@@ -22,6 +22,7 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
   setClear: (): void => {
     set(() => ({
       channels: [],
+      finished: false,
     }));
   },
   setFinished: (status: boolean): void => {
