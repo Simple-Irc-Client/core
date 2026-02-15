@@ -401,13 +401,13 @@ export class Kernel {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
     Sentry.captureException(error, {
       extra: {
-        eventLine: this.eventLine,
+        eventLine: redactSensitiveIrc(this.eventLine),
         command: this.command,
         sender: this.sender,
         tags: this.tags,
       },
     });
-    console.error(error.message, { line: this.eventLine });
+    console.error(error.message, { line: redactSensitiveIrc(this.eventLine) });
   };
 
   handle(): void {

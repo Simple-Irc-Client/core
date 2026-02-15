@@ -8,6 +8,7 @@ import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/react';
+import { redactSensitiveIrc } from '@shared/lib/utils';
 
 export const Network = () => {
   const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
@@ -35,7 +36,7 @@ export const Network = () => {
         Sentry.captureException(err, {
           extra: {
             eventType: data?.type,
-            eventLine: data?.line,
+            eventLine: data?.line ? redactSensitiveIrc(data.line) : undefined,
           },
         });
         console.warn(err);
