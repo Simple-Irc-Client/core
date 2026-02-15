@@ -213,6 +213,7 @@
     "contextmenu.input.cut": "Wytnij",
     "contextmenu.input.copy": "Kopiuj",
     "contextmenu.input.paste": "Wklej",
+    "contextmenu.input.pasteHint": "Użyj {{shortcut}} aby wkleić",
     "contextmenu.input.selectAll": "Zaznacz wszystko",
     "main.topic.setBy": "Ustawiony przez {{nick}} dnia {{date}}",
     "main.toolbar.textColor": "Kolor tekstu",

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 const MENU_HEIGHT = 160;
@@ -51,8 +52,8 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   const clamped = clampPosition(contextMenuPosition);
 
   const handle = (action: () => void) => () => {
+    flushSync(() => onClose());
     action();
-    onClose();
   };
 
   const itemClass = (disabled: boolean) =>

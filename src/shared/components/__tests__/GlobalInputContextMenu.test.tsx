@@ -141,30 +141,16 @@ describe('GlobalInputContextMenu', () => {
     });
 
     describe('paste (Ctrl/Meta+V)', () => {
-      it('should paste text and dispatch input event', async () => {
+      it('should not intercept paste on web (lets browser handle it natively)', () => {
         render(<GlobalInputContextMenu />);
         const input = createInput('hello world', 5, 5);
-        const inputSpy = vi.fn();
-        input.addEventListener('input', inputSpy);
+        const event = new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true, cancelable: true });
+        const preventSpy = vi.spyOn(event, 'preventDefault');
 
-        fireKeyDown('v', { ctrlKey: true });
+        document.dispatchEvent(event);
 
-        expect(mockReadText).toHaveBeenCalled();
-        await vi.waitFor(() => expect(inputSpy).toHaveBeenCalled());
-        input.remove();
-      });
-
-      it('should handle clipboard read failure gracefully', async () => {
-        mockReadText.mockRejectedValue(new Error('denied'));
-        render(<GlobalInputContextMenu />);
-        const input = createInput('hello');
-        const inputSpy = vi.fn();
-        input.addEventListener('input', inputSpy);
-
-        fireKeyDown('v', { ctrlKey: true });
-
-        await vi.waitFor(() => expect(mockReadText).toHaveBeenCalled());
-        expect(inputSpy).not.toHaveBeenCalled();
+        expect(mockReadText).not.toHaveBeenCalled();
+        expect(preventSpy).not.toHaveBeenCalled();
         input.remove();
       });
     });

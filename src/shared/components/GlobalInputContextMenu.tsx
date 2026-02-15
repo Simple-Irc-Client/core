@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { InputContextMenu } from '@features/chat/components/InputContextMenu';
 
 const sicDesktop = (window as unknown as Record<string, Record<string, unknown>>).sicDesktop;
@@ -25,8 +26,34 @@ export const handleNoContextMenu = (event: React.MouseEvent): void => {
   event.preventDefault();
 };
 
+const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
+const pasteShortcut = isMac ? '⌘V' : 'Ctrl+V';
+
+const PasteHint = ({ position, onClose }: { position: { x: number; y: number }; onClose: () => void }) => {
+  const { t } = useTranslation();
+  useEffect(() => {
+    const handleDismiss = () => onClose();
+    document.addEventListener('mousedown', handleDismiss);
+    document.addEventListener('keydown', handleDismiss);
+    return () => {
+      document.removeEventListener('mousedown', handleDismiss);
+      document.removeEventListener('keydown', handleDismiss);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed z-[100] rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md"
+      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+    >
+      {t('contextmenu.input.pasteHint', { shortcut: pasteShortcut })}
+    </div>
+  );
+};
+
 export const GlobalInputContextMenu = () => {
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [pasteHintPosition, setPasteHintPosition] = useState<{ x: number; y: number } | null>(null);
   const [hasSelection, setHasSelection] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
@@ -43,6 +70,9 @@ export const GlobalInputContextMenu = () => {
 
       switch (event.key) {
         case 'v': {
+          // Only intercept paste in Electron where we have direct clipboard access.
+          // In browsers, let native Ctrl+V handle paste.
+          if (!desktopClipboard) break;
           event.preventDefault();
           readClipboard().then(text => {
             const newValue = input.value.substring(0, start) + text + input.value.substring(end);
@@ -134,17 +164,46 @@ export const GlobalInputContextMenu = () => {
   const pasteFromClipboard = (): void => {
     const input = targetRef.current;
     if (!input) return;
-    const start = input.selectionStart ?? input.value.length;
-    const end = input.selectionEnd ?? input.value.length;
-    readClipboard().then(clipText => {
-      const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
-      setNativeValue(input, newValue);
-      const cursorPos = start + clipText.length;
-      requestAnimationFrame(() => {
-        input.focus();
-        input.setSelectionRange(cursorPos, cursorPos);
-      });
-    }).catch(() => { /* clipboard read not available */ });
+    if (desktopClipboard) {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      readClipboard().then(clipText => {
+        const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
+        setNativeValue(input, newValue);
+        const cursorPos = start + clipText.length;
+        requestAnimationFrame(() => {
+          input.focus();
+          input.setSelectionRange(cursorPos, cursorPos);
+        });
+      }).catch(() => { /* clipboard read not available */ });
+    } else {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      const pos = contextMenuPosition;
+      input.focus();
+      // Chrome supports clipboard-read permission query — readText() works with its popup.
+      // Firefox doesn't support the query (rejects) and its readText() shows an
+      // unavoidable paste confirmation prompt, so show a keyboard hint instead.
+      const showHint = () => {
+        if (pos) {
+          setPasteHintPosition(pos);
+          setTimeout(() => setPasteHintPosition(null), 2000);
+        }
+      };
+      navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
+        .then(perm => {
+          if (perm.state === 'denied') return showHint();
+          navigator.clipboard.readText()
+            .then(clipText => {
+              const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
+              setNativeValue(input, newValue);
+              const cursorPos = start + clipText.length;
+              input.setSelectionRange(cursorPos, cursorPos);
+            })
+            .catch(showHint);
+        })
+        .catch(showHint);
+    }
   };
 
   const selectAll = (): void => {
@@ -157,16 +216,21 @@ export const GlobalInputContextMenu = () => {
   };
 
   return (
-    <InputContextMenu
-      contextMenuPosition={contextMenuPosition}
-      hasSelection={hasSelection}
-      hasContent={hasContent}
-      allSelected={allSelected}
-      onClose={closeContextMenu}
-      onCut={cutSelection}
-      onCopy={copySelection}
-      onPaste={pasteFromClipboard}
-      onSelectAll={selectAll}
-    />
+    <>
+      <InputContextMenu
+        contextMenuPosition={contextMenuPosition}
+        hasSelection={hasSelection}
+        hasContent={hasContent}
+        allSelected={allSelected}
+        onClose={closeContextMenu}
+        onCut={cutSelection}
+        onCopy={copySelection}
+        onPaste={pasteFromClipboard}
+        onSelectAll={selectAll}
+      />
+      {pasteHintPosition && (
+        <PasteHint position={pasteHintPosition} onClose={() => setPasteHintPosition(null)} />
+      )}
+    </>
   );
 };

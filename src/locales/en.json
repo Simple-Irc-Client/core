@@ -213,6 +213,7 @@
     "contextmenu.input.cut": "Cut",
     "contextmenu.input.copy": "Copy",
     "contextmenu.input.paste": "Paste",
+    "contextmenu.input.pasteHint": "Use {{shortcut}} to paste",
     "contextmenu.input.selectAll": "Select All",
     "main.topic.setBy": "Set by {{nick}} on {{date}}",
     "main.toolbar.textColor": "Text Color",
