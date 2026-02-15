@@ -402,21 +402,21 @@ describe('WizardChannelList', () => {
       expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
     });
 
-    it('should not call ircJoinChannels when skip is clicked', () => {
+    it('should be hidden when channels are selected', () => {
       setupMocks({
         channelList: [createChannelList({ name: '#general' })],
       });
 
       render(<WizardChannelList />);
 
+      // Skip button visible when no channels selected
+      expect(screen.getByText('wizard.channels.button.skip')).toBeInTheDocument();
+
       // Select a channel
       fireEvent.click(getChannelRow('#general'));
 
-      // Click skip instead of join
-      const skipButton = screen.getByText('wizard.channels.button.skip');
-      fireEvent.click(skipButton);
-
-      expect(network.ircJoinChannels).not.toHaveBeenCalled();
+      // Skip button should be hidden
+      expect(screen.queryByText('wizard.channels.button.skip')).not.toBeInTheDocument();
     });
   });
 
