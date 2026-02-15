@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { InputContextMenu } from '@features/chat/components/InputContextMenu';
 
+const sicDesktop = (window as unknown as Record<string, Record<string, unknown>>).sicDesktop;
+const desktopClipboard = sicDesktop?.clipboard as { readText: () => string; writeText: (text: string) => void } | undefined ?? null;
+
+const readClipboard = (): Promise<string> =>
+  desktopClipboard ? Promise.resolve(desktopClipboard.readText()) : navigator.clipboard.readText();
+
+const writeClipboard = (text: string): Promise<void> =>
+  desktopClipboard ? (desktopClipboard.writeText(text), Promise.resolve()) : navigator.clipboard.writeText(text);
+
 const isEditableElement = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement => {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 };
@@ -35,7 +44,7 @@ export const GlobalInputContextMenu = () => {
       switch (event.key) {
         case 'v': {
           event.preventDefault();
-          navigator.clipboard.readText().then(text => {
+          readClipboard().then(text => {
             const newValue = input.value.substring(0, start) + text + input.value.substring(end);
             setNativeValue(input, newValue);
             const cursorPos = start + text.length;
@@ -46,14 +55,14 @@ export const GlobalInputContextMenu = () => {
         case 'c': {
           if (start !== end) {
             event.preventDefault();
-            navigator.clipboard.writeText(input.value.substring(start, end));
+            writeClipboard(input.value.substring(start, end));
           }
           break;
         }
         case 'x': {
           if (start !== end) {
             event.preventDefault();
-            navigator.clipboard.writeText(input.value.substring(start, end));
+            writeClipboard(input.value.substring(start, end));
             const newValue = input.value.substring(0, start) + input.value.substring(end);
             setNativeValue(input, newValue);
             requestAnimationFrame(() => input.setSelectionRange(start, start));
@@ -101,7 +110,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      navigator.clipboard.writeText(input.value.substring(start, end));
+      writeClipboard(input.value.substring(start, end));
       const newValue = input.value.substring(0, start) + input.value.substring(end);
       setNativeValue(input, newValue);
       requestAnimationFrame(() => {
@@ -117,7 +126,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      navigator.clipboard.writeText(input.value.substring(start, end));
+      writeClipboard(input.value.substring(start, end));
       requestAnimationFrame(() => input.focus());
     }
   };
@@ -127,7 +136,7 @@ export const GlobalInputContextMenu = () => {
     if (!input) return;
     const start = input.selectionStart ?? input.value.length;
     const end = input.selectionEnd ?? input.value.length;
-    navigator.clipboard.readText().then(clipText => {
+    readClipboard().then(clipText => {
       const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
       setNativeValue(input, newValue);
       const cursorPos = start + clipText.length;
