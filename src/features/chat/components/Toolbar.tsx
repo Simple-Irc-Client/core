@@ -485,7 +485,6 @@ const Toolbar = () => {
                 onChange={handleChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
-                onContextMenu={(e) => e.stopPropagation()}
                 autoComplete="off"
                 ref={autocompleteInput}
               />
@@ -523,6 +522,7 @@ const Toolbar = () => {
         open={awayDialogOpen}
         onOpenChange={setAwayDialogOpen}
       />
+
     </>
   );
 };
