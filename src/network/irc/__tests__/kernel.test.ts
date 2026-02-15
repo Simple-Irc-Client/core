@@ -4036,6 +4036,39 @@ describe('kernel tests', () => {
       });
     });
 
+    describe('CTCP PING sanitization', () => {
+      it('should reflect normal CTCP PING payload', () => {
+        setupMocks();
+        const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :user!~user@host PRIVMSG testuser :\x01PING 1234567890\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSend).toHaveBeenCalledWith('NOTICE user :\x01PING 1234567890\x01');
+      });
+
+      it('should strip control characters from CTCP PING payload', () => {
+        setupMocks();
+        const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :user!~user@host PRIVMSG testuser :\x01PING abc\r\ndef\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSend).toHaveBeenCalledWith('NOTICE user :\x01PING abcdef\x01');
+      });
+
+      it('should truncate long CTCP PING payload to 32 characters', () => {
+        setupMocks();
+        const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+        const longPayload = 'A'.repeat(100);
+        const line = `@msgid=test;time=2023-01-01T00:00:00.000Z :user!~user@host PRIVMSG testuser :\x01PING ${longPayload}\x01`;
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSend).toHaveBeenCalledWith(`NOTICE user :\x01PING ${'A'.repeat(32)}\x01`);
+      });
+    });
+
     describe('MODE fuzzing', () => {
       it('should not crash on fuzzed channel MODE messages', () => {
         setupMocks();

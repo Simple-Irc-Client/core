@@ -2380,9 +2380,12 @@ export class Kernel {
       case 'TIME':
         this.ctcpReply(nick, 'TIME', new Date().toString());
         break;
-      case 'PING':
-        this.ctcpReply(nick, 'PING', ctcpParams);
+      case 'PING': {
+        // Sanitize: strip control chars, cap length to prevent reflection abuse
+        const sanitizedPing = ctcpParams.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 32);
+        this.ctcpReply(nick, 'PING', sanitizedPing);
         break;
+      }
       case 'USERINFO':
         this.ctcpReply(nick, 'USERINFO', myNick);
         break;
