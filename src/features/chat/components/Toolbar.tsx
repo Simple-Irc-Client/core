@@ -186,7 +186,14 @@ const Toolbar = () => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
 
-    if (typingStatus.current !== 'active' && ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+    if ([STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+      return;
+    }
+
+    if (event.target.value.length === 0 && typingStatus.current === 'active') {
+      typingStatus.current = 'done';
+      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
+    } else if (typingStatus.current !== 'active') {
       typingStatus.current = 'active';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
