@@ -193,7 +193,7 @@ const Toolbar = () => {
     if (event.target.value.length === 0 && typingStatus.current === 'active') {
       typingStatus.current = 'done';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
-    } else if (typingStatus.current !== 'active') {
+    } else if (event.target.value.length > 0 && typingStatus.current !== 'active') {
       typingStatus.current = 'active';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
