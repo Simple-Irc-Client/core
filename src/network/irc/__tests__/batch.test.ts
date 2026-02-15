@@ -225,6 +225,51 @@ describe('batch', () => {
     });
   });
 
+  describe('limits', () => {
+    it('should cap messages per batch at 10000', () => {
+      startBatch('big', 'chathistory', []);
+
+      const message: ParsedIrcRawMessage = {
+        tags: {},
+        sender: ':nick!user@host',
+        command: 'PRIVMSG',
+        line: ['#test', ':msg'],
+      };
+
+      for (let i = 0; i < 10_050; i++) {
+        addToBatch('big', message);
+      }
+
+      expect(getBatch('big')?.messages.length).toBe(10_000);
+    });
+
+    it('should return false when batch message limit reached', () => {
+      startBatch('big', 'chathistory', []);
+
+      const message: ParsedIrcRawMessage = {
+        tags: {},
+        sender: ':nick!user@host',
+        command: 'PRIVMSG',
+        line: ['#test', ':msg'],
+      };
+
+      for (let i = 0; i < 10_000; i++) {
+        addToBatch('big', message);
+      }
+
+      const result = addToBatch('big', message);
+      expect(result).toBe(false);
+    });
+
+    it('should cap active batches at 100', () => {
+      for (let i = 0; i < 110; i++) {
+        startBatch(`batch${i}`, 'chathistory', []);
+      }
+
+      expect(getActiveBatchIds().length).toBe(100);
+    });
+  });
+
   describe('BATCH_TYPES', () => {
     it('should have correct batch type constants', () => {
       expect(BATCH_TYPES.CHATHISTORY).toBe('chathistory');

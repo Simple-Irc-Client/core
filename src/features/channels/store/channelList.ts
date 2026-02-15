@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { type ChannelList } from '@shared/types';
 
+const MAX_CHANNELS = 10_000;
+
 interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
@@ -37,7 +39,11 @@ export const setAddChannelToList = (name: string, users: number, topic: string):
     return; // ignore hidden channels
   }
 
-  const exist = useChannelListStore.getState().channels.find((channel) => channel.name === name) !== undefined;
+  const { channels } = useChannelListStore.getState();
+
+  if (channels.length >= MAX_CHANNELS) return;
+
+  const exist = channels.find((channel) => channel.name === name) !== undefined;
 
   if (!exist) {
     useChannelListStore.getState().setAddChannel(name, users, topic);

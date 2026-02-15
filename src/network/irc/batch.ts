@@ -30,6 +30,10 @@ export const BATCH_TYPES = {
   MULTILINE: 'draft/multiline',
 } as const;
 
+const MAX_BATCH_MESSAGES = 10_000;
+const MAX_ACTIVE_BATCHES = 100;
+const BATCH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 // Active batches being assembled
 const activeBatches = new Map<string, BatchState>();
 
@@ -45,12 +49,22 @@ const batchCallbacks = new Map<string, BatchCallback>();
  * @param referenceTag - Optional reference tag (for labeled-response)
  */
 export const startBatch = (id: string, type: string, params: string[], referenceTag?: string): void => {
+  // Evict stale batches
+  const now = Date.now();
+  for (const [batchId, batch] of activeBatches) {
+    if (now - batch.startTime > BATCH_TIMEOUT_MS) {
+      activeBatches.delete(batchId);
+    }
+  }
+
+  if (activeBatches.size >= MAX_ACTIVE_BATCHES) return;
+
   activeBatches.set(id, {
     id,
     type,
     params,
     messages: [],
-    startTime: Date.now(),
+    startTime: now,
     referenceTag,
   });
 };
@@ -84,6 +98,9 @@ export const endBatch = (id: string): BatchState | undefined => {
 export const addToBatch = (batchId: string, message: ParsedIrcRawMessage): boolean => {
   const batch = activeBatches.get(batchId);
   if (!batch) {
+    return false;
+  }
+  if (batch.messages.length >= MAX_BATCH_MESSAGES) {
     return false;
   }
   batch.messages.push(message);

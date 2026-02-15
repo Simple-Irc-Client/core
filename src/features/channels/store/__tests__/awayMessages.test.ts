@@ -176,6 +176,16 @@ describe('awayMessages store', () => {
     });
   });
 
+  describe('limits', () => {
+    it('should cap away messages at 1000', () => {
+      for (let i = 0; i < 1_050; i++) {
+        addAwayMessage(createAwayMessage({ id: `msg-${i}` }));
+      }
+
+      expect(useAwayMessagesStore.getState().messages.length).toBe(1_000);
+    });
+  });
+
   describe('useAwayMessagesStore direct access', () => {
     it('should allow direct state manipulation', () => {
       const message = createAwayMessage();

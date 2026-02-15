@@ -268,6 +268,14 @@ describe('channelList store', () => {
       const sortedByUsers = getChannelListSortedByUsers();
       expect(sortedByUsers.length).toBe(1000);
     });
+
+    it('should cap channels at 10000', () => {
+      for (let i = 0; i < 10_050; i++) {
+        setAddChannelToList(`#ch${i}`, i, `Topic ${i}`);
+      }
+
+      expect(useChannelListStore.getState().channels.length).toBe(10_000);
+    });
   });
 
   describe('finished state', () => {

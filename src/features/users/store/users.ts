@@ -6,6 +6,8 @@ import { useCurrentStore } from '@features/chat/store/current';
 import { clearTyping, setAddMessage } from '@features/channels/store/channels';
 import { calculateMaxPermission } from '@/network/irc/helpers';
 
+const MAX_USERS = 50_000;
+
 interface UsersStore {
   users: User[];
 
@@ -209,6 +211,7 @@ export const setAddUser = (newUser: User): void => {
       setJoinUser(newUser.nick, channel.name);
     }
   } else {
+    if (useUsersStore.getState().users.length >= MAX_USERS) return;
     useUsersStore.getState().setAddUser(newUser);
   }
 

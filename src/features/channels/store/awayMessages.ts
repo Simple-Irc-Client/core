@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { Message } from '@shared/types';
 
+const MAX_AWAY_MESSAGES = 1_000;
+
 export interface AwayMessage extends Message {
   channel: string;
 }
@@ -16,9 +18,10 @@ export const useAwayMessagesStore = create<AwayMessagesStore>()(
   devtools((set) => ({
     messages: [],
     addAwayMessage: (message: AwayMessage): void => {
-      set((state) => ({
-        messages: [...state.messages, message],
-      }));
+      set((state) => {
+        if (state.messages.length >= MAX_AWAY_MESSAGES) return state;
+        return { messages: [...state.messages, message] };
+      });
     },
     clearAwayMessages: (): void => {
       set(() => ({

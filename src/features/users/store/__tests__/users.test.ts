@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   useUsersStore,
+  setAddUser as setAddUserExport,
   getUserChannels,
   getUser,
   getHasUser,
@@ -726,6 +727,24 @@ describe('users store', () => {
       ]));
 
       expect(getUser('')).toBeDefined();
+    });
+  });
+
+  describe('limits', () => {
+    it('should cap users at 50000 via setAddUser export', () => {
+      // Pre-populate store directly to avoid overhead of 50k wrapper calls
+      const users = Array.from({ length: 50_000 }, (_, i) => createUser(`User${i}`, [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+      useUsersStore.setState({ users });
+
+      // The next user via the exported wrapper should be rejected
+      setAddUserExport(createUser('Overflow', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      expect(useUsersStore.getState().users.length).toBe(50_000);
+      expect(getHasUser('Overflow')).toBe(false);
     });
   });
 });
