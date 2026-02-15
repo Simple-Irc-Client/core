@@ -696,6 +696,98 @@ describe('ProfileSettings', () => {
     });
   });
 
+  describe('Avatar change functionality', () => {
+    it('should not send METADATA when avatar URL is unsafe (javascript:)', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const avatarInput = document.querySelector('#avatar') as HTMLInputElement;
+      await user.type(avatarInput, 'javascript:alert(1)');
+
+      const changeButton = screen.getByText('profileSettings.changeAvatar');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not send METADATA when avatar URL is unsafe (data:)', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const avatarInput = document.querySelector('#avatar') as HTMLInputElement;
+      await user.type(avatarInput, 'data:image/png;base64,abc');
+
+      const changeButton = screen.getByText('profileSettings.changeAvatar');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should send METADATA when avatar URL is safe (https)', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const avatarInput = document.querySelector('#avatar') as HTMLInputElement;
+      await user.type(avatarInput, 'https://example.com/avatar.png');
+
+      const changeButton = screen.getByText('profileSettings.changeAvatar');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+        'METADATA * SET avatar https://example.com/avatar.png',
+      );
+    });
+
+    it('should send METADATA to clear avatar when input is empty', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({
+        supportedOptions: ['metadata-avatar'],
+        currentUserAvatar: 'https://example.com/old.png',
+      });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const avatarInput = document.querySelector('#avatar') as HTMLInputElement;
+      await user.clear(avatarInput);
+
+      const changeButton = screen.getByText('profileSettings.changeAvatar');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET avatar');
+    });
+
+    it('should not close dialog when avatar URL is unsafe', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const avatarInput = document.querySelector('#avatar') as HTMLInputElement;
+      await user.type(avatarInput, 'javascript:alert(1)');
+
+      const changeButton = screen.getByText('profileSettings.changeAvatar');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Display name change functionality', () => {
     it('should not show display name field when metadata-display-name is not supported', () => {
       useSettingsStore.setState({ supportedOptions: [] });
@@ -1124,6 +1216,57 @@ describe('ProfileSettings', () => {
 
       expect(document.body.textContent).toContain('profileSettings.homepage');
       expect(document.body.textContent).toContain('profileSettings.changeHomepage');
+    });
+
+    it('should not send METADATA when homepage URL is unsafe (javascript:)', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'javascript:alert(1)');
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not send METADATA when homepage URL is unsafe (data:)', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'data:text/html,<h1>evil</h1>');
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not close dialog when homepage URL is unsafe', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+
+      render(
+        <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
+      );
+
+      const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
+      await user.type(homepageInput, 'javascript:alert(1)');
+
+      const changeButton = screen.getByText('profileSettings.changeHomepage');
+      await user.click(changeButton);
+
+      expect(mockOnOpenChange).not.toHaveBeenCalled();
     });
   });
 

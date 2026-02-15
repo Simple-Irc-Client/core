@@ -16,7 +16,7 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Switch } from '@shared/components/ui/switch';
-import { cn } from '@shared/lib/utils';
+import { cn, isSafeUrl } from '@shared/lib/utils';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -72,6 +72,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleAvatarChange = (): void => {
     const trimmedAvatar = newAvatar.trim();
     if (trimmedAvatar.length > 0) {
+      if (!isSafeUrl(trimmedAvatar)) return;
       ircSendRawMessage(`METADATA * SET avatar ${trimmedAvatar}`);
     } else {
       ircSendRawMessage('METADATA * SET avatar');
@@ -102,6 +103,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleHomepageChange = (): void => {
     const trimmedHomepage = newHomepage.trim();
     if (trimmedHomepage.length > 0) {
+      if (!isSafeUrl(trimmedHomepage)) return;
       ircSendRawMessage(`METADATA * SET homepage ${trimmedHomepage}`);
     } else {
       ircSendRawMessage('METADATA * SET homepage');
