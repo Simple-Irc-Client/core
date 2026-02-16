@@ -2382,6 +2382,7 @@ export class Kernel {
         break;
       case 'PING': {
         // Sanitize: strip control chars, cap length to prevent reflection abuse
+        // eslint-disable-next-line no-control-regex
         const sanitizedPing = ctcpParams.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 32);
         this.ctcpReply(nick, 'PING', sanitizedPing);
         break;
