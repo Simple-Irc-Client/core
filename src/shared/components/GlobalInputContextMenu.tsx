@@ -6,10 +6,14 @@ const sicDesktop = (window as unknown as Record<string, Record<string, unknown>>
 const desktopClipboard = sicDesktop?.clipboard as { readText: () => string; writeText: (text: string) => void } | undefined ?? null;
 
 const readClipboard = (): Promise<string> =>
-  desktopClipboard ? Promise.resolve(desktopClipboard.readText()) : navigator.clipboard.readText();
+  desktopClipboard
+    ? Promise.resolve().then(() => desktopClipboard.readText())
+    : Promise.resolve().then(() => navigator.clipboard.readText());
 
 const writeClipboard = (text: string): Promise<void> =>
-  desktopClipboard ? (desktopClipboard.writeText(text), Promise.resolve()) : navigator.clipboard.writeText(text);
+  desktopClipboard
+    ? Promise.resolve().then(() => { desktopClipboard.writeText(text); })
+    : Promise.resolve().then(() => navigator.clipboard.writeText(text));
 
 const isEditableElement = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement => {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
