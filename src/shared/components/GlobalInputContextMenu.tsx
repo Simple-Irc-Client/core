@@ -73,30 +73,17 @@ export const GlobalInputContextMenu = () => {
       const end = input.selectionEnd ?? 0;
 
       switch (event.key) {
-        case 'v': {
-          // Only intercept paste in Electron where we have direct clipboard access.
-          // In browsers, let native Ctrl+V handle paste.
-          if (!desktopClipboard) break;
-          event.preventDefault();
-          readClipboard().then(text => {
-            const newValue = input.value.substring(0, start) + text + input.value.substring(end);
-            setNativeValue(input, newValue);
-            const cursorPos = start + text.length;
-            requestAnimationFrame(() => input.setSelectionRange(cursorPos, cursorPos));
-          }).catch(() => { /* clipboard read not available */ });
-          break;
-        }
         case 'c': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end));
+            writeClipboard(input.value.substring(start, end)).catch(() => {});
           }
           break;
         }
         case 'x': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end));
+            writeClipboard(input.value.substring(start, end)).catch(() => {});
             const newValue = input.value.substring(0, start) + input.value.substring(end);
             setNativeValue(input, newValue);
             requestAnimationFrame(() => input.setSelectionRange(start, start));
@@ -144,7 +131,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end));
+      writeClipboard(input.value.substring(start, end)).catch(() => {});
       const newValue = input.value.substring(0, start) + input.value.substring(end);
       setNativeValue(input, newValue);
       requestAnimationFrame(() => {
@@ -160,7 +147,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end));
+      writeClipboard(input.value.substring(start, end)).catch(() => {});
       requestAnimationFrame(() => input.focus());
     }
   };
@@ -193,7 +180,7 @@ export const GlobalInputContextMenu = () => {
         // Show a keyboard shortcut hint like Firefox does.
         showHint();
       } else {
-        readClipboard().then(doPaste).catch(() => { /* clipboard read not available */ });
+        readClipboard().then(doPaste).catch(showHint);
       }
     } else {
       // Chrome supports clipboard-read permission query — readText() works with its popup.
