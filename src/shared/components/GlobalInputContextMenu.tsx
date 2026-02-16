@@ -164,43 +164,41 @@ export const GlobalInputContextMenu = () => {
   const pasteFromClipboard = (): void => {
     const input = targetRef.current;
     if (!input) return;
+    const pos = contextMenuPosition;
+    input.focus();
+    const showHint = () => {
+      if (pos) {
+        setPasteHintPosition(pos);
+        setTimeout(() => setPasteHintPosition(null), 2000);
+      }
+    };
+    const doPaste = (clipText: string) => {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
+      setNativeValue(input, newValue);
+      const cursorPos = start + clipText.length;
+      requestAnimationFrame(() => {
+        input.focus();
+        input.setSelectionRange(cursorPos, cursorPos);
+      });
+    };
     if (desktopClipboard) {
-      const start = input.selectionStart ?? input.value.length;
-      const end = input.selectionEnd ?? input.value.length;
-      readClipboard().then(clipText => {
-        const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
-        setNativeValue(input, newValue);
-        const cursorPos = start + clipText.length;
-        requestAnimationFrame(() => {
-          input.focus();
-          input.setSelectionRange(cursorPos, cursorPos);
-        });
-      }).catch(() => { /* clipboard read not available */ });
+      if (isMac) {
+        // On macOS Electron, the menu is hidden and paste role is unavailable.
+        // Show a keyboard shortcut hint like Firefox does.
+        showHint();
+      } else {
+        readClipboard().then(doPaste).catch(() => { /* clipboard read not available */ });
+      }
     } else {
-      const start = input.selectionStart ?? input.value.length;
-      const end = input.selectionEnd ?? input.value.length;
-      const pos = contextMenuPosition;
-      input.focus();
       // Chrome supports clipboard-read permission query — readText() works with its popup.
       // Firefox doesn't support the query (rejects) and its readText() shows an
       // unavoidable paste confirmation prompt, so show a keyboard hint instead.
-      const showHint = () => {
-        if (pos) {
-          setPasteHintPosition(pos);
-          setTimeout(() => setPasteHintPosition(null), 2000);
-        }
-      };
       navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
         .then(perm => {
           if (perm.state === 'denied') return showHint();
-          navigator.clipboard.readText()
-            .then(clipText => {
-              const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
-              setNativeValue(input, newValue);
-              const cursorPos = start + clipText.length;
-              input.setSelectionRange(cursorPos, cursorPos);
-            })
-            .catch(showHint);
+          navigator.clipboard.readText().then(doPaste).catch(showHint);
         })
         .catch(showHint);
     }
