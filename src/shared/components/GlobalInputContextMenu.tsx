@@ -8,12 +8,12 @@ const desktopClipboard = sicDesktop?.clipboard as { readText: () => string; writ
 const readClipboard = (): Promise<string> =>
   desktopClipboard
     ? Promise.resolve().then(() => desktopClipboard.readText())
-    : Promise.resolve().then(() => navigator.clipboard.readText());
+    : navigator.clipboard.readText();
 
 const writeClipboard = (text: string): Promise<void> =>
   desktopClipboard
     ? Promise.resolve().then(() => { desktopClipboard.writeText(text); })
-    : Promise.resolve().then(() => navigator.clipboard.writeText(text));
+    : navigator.clipboard.writeText(text);
 
 const isEditableElement = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement => {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
