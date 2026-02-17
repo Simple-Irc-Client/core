@@ -76,14 +76,14 @@ export const GlobalInputContextMenu = () => {
         case 'c': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end)).catch(() => {});
+            writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
           }
           break;
         }
         case 'x': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end)).catch(() => {});
+            writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
             const newValue = input.value.substring(0, start) + input.value.substring(end);
             setNativeValue(input, newValue);
             requestAnimationFrame(() => input.setSelectionRange(start, start));
@@ -131,7 +131,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end)).catch(() => {});
+      writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
       const newValue = input.value.substring(0, start) + input.value.substring(end);
       setNativeValue(input, newValue);
       requestAnimationFrame(() => {
@@ -147,7 +147,7 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end)).catch(() => {});
+      writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
       requestAnimationFrame(() => input.focus());
     }
   };
