@@ -418,9 +418,6 @@ export class Kernel {
       case 'connected':
         this.handleConnected();
         break;
-      case 'socket_connected':
-        // ignore for now
-        break;
       case 'close':
         this.handleDisconnected();
         break;
