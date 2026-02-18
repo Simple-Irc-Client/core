@@ -1,4 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock encryption module before importing sasl
+const mockIsEncryptionAvailable = vi.fn().mockReturnValue(true);
+const mockInitSessionEncryption = vi.fn().mockResolvedValue(undefined);
+const mockEncryptString = vi.fn().mockImplementation((str: string) => Promise.resolve(`encrypted:${str}`));
+const mockDecryptString = vi.fn().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
+
+vi.mock('@/network/encryption', () => ({
+  isEncryptionAvailable: () => mockIsEncryptionAvailable(),
+  initSessionEncryption: () => mockInitSessionEncryption(),
+  encryptString: (str: string) => mockEncryptString(str),
+  decryptString: (str: string) => mockDecryptString(str),
+}));
+
 import {
   encodeSaslPlain,
   chunkSaslPayload,
@@ -15,12 +29,20 @@ import {
   isSaslInProgress,
   isSaslComplete,
   getNickServFallbackCredentials,
+  saveSaslCredentialsForReconnect,
+  restoreSaslCredentials,
+  clearSavedCredentials,
 } from '../sasl';
 
 describe('sasl', () => {
   beforeEach(() => {
     resetSaslState();
     clearSaslCredentials();
+    clearSavedCredentials();
+    mockIsEncryptionAvailable.mockReturnValue(true);
+    mockInitSessionEncryption.mockClear();
+    mockEncryptString.mockClear().mockImplementation((str: string) => Promise.resolve(`encrypted:${str}`));
+    mockDecryptString.mockClear().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
   });
 
   describe('encodeSaslPlain', () => {
@@ -228,6 +250,188 @@ describe('sasl', () => {
 
       const response = handleSaslChallenge('some-challenge', 'PLAIN');
       expect(response).toBeNull();
+    });
+  });
+
+  describe('saveSaslCredentialsForReconnect', () => {
+    it('should encrypt and save credentials', async () => {
+      setSaslCredentials('myaccount', 'mypassword');
+
+      await saveSaslCredentialsForReconnect();
+
+      expect(mockEncryptString).toHaveBeenCalledWith('myaccount');
+      expect(mockEncryptString).toHaveBeenCalledWith('mypassword');
+    });
+
+    it('should not save when credentials are null', async () => {
+      await saveSaslCredentialsForReconnect();
+
+      expect(mockEncryptString).not.toHaveBeenCalled();
+    });
+
+    it('should initialize session encryption when not available', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(false);
+      setSaslCredentials('account', 'password');
+
+      await saveSaslCredentialsForReconnect();
+
+      expect(mockInitSessionEncryption).toHaveBeenCalled();
+    });
+
+    it('should not initialize session encryption when already available', async () => {
+      mockIsEncryptionAvailable.mockReturnValue(true);
+      setSaslCredentials('account', 'password');
+
+      await saveSaslCredentialsForReconnect();
+
+      expect(mockInitSessionEncryption).not.toHaveBeenCalled();
+    });
+
+    it('should capture credentials synchronously before awaiting encryption init', async () => {
+      // This tests the race condition fix: saveSaslCredentialsForReconnect captures
+      // values into local variables before any await, so even if setSaslState('success')
+      // clears the module-level variables during the await, the save still works.
+      mockIsEncryptionAvailable.mockReturnValue(false);
+      mockInitSessionEncryption.mockImplementation(async () => {
+        // Simulate async delay during which credentials get cleared
+        await Promise.resolve();
+      });
+
+      setSaslCredentials('testuser', 'testpass');
+
+      // Start save (fire-and-forget, like onRaw903 does)
+      const savePromise = saveSaslCredentialsForReconnect();
+
+      // Immediately clear credentials (simulates setSaslState('success') running
+      // synchronously after the fire-and-forget save call)
+      setSaslState('success');
+
+      // Verify credentials were cleared by setSaslState
+      expect(getSaslAccount()).toBeNull();
+      expect(getSaslPassword()).toBeNull();
+
+      // Wait for save to complete
+      await savePromise;
+
+      // Despite credentials being cleared, save should have captured values beforehand
+      expect(mockEncryptString).toHaveBeenCalledWith('testuser');
+      expect(mockEncryptString).toHaveBeenCalledWith('testpass');
+    });
+  });
+
+  describe('restoreSaslCredentials', () => {
+    it('should decrypt and restore saved credentials', async () => {
+      setSaslCredentials('account', 'password');
+      await saveSaslCredentialsForReconnect();
+
+      // Clear plaintext credentials (simulates what setSaslState('success') does)
+      clearSaslCredentials();
+      expect(getSaslAccount()).toBeNull();
+
+      const result = await restoreSaslCredentials();
+
+      expect(result).toBe(true);
+      expect(getSaslAccount()).toBe('account');
+      expect(getSaslPassword()).toBe('password');
+    });
+
+    it('should return false when no saved credentials exist', async () => {
+      const result = await restoreSaslCredentials();
+
+      expect(result).toBe(false);
+      expect(getSaslAccount()).toBeNull();
+    });
+
+    it('should return false when encryption is not available', async () => {
+      setSaslCredentials('account', 'password');
+      await saveSaslCredentialsForReconnect();
+      clearSaslCredentials();
+
+      mockIsEncryptionAvailable.mockReturnValue(false);
+
+      const result = await restoreSaslCredentials();
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when decryption fails', async () => {
+      setSaslCredentials('account', 'password');
+      await saveSaslCredentialsForReconnect();
+      clearSaslCredentials();
+
+      mockDecryptString.mockRejectedValue(new Error('Decryption failed'));
+
+      const result = await restoreSaslCredentials();
+
+      expect(result).toBe(false);
+      expect(getSaslAccount()).toBeNull();
+    });
+  });
+
+  describe('clearSavedCredentials', () => {
+    it('should prevent restore after clearing', async () => {
+      setSaslCredentials('account', 'password');
+      await saveSaslCredentialsForReconnect();
+      clearSaslCredentials();
+
+      clearSavedCredentials();
+
+      const result = await restoreSaslCredentials();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('full reconnection credential cycle', () => {
+    it('should save on SASL success, survive state reset, and restore on reconnect', async () => {
+      // 1. Initial SASL: set credentials and authenticate
+      setSaslCredentials('Merovingian', 'secret123');
+
+      // 2. SASL succeeds: save (fire-and-forget) then clear credentials
+      const savePromise = saveSaslCredentialsForReconnect();
+      setSaslState('success');
+      await savePromise;
+
+      // Plaintext credentials are gone
+      expect(getSaslAccount()).toBeNull();
+      expect(getSaslPassword()).toBeNull();
+
+      // 3. Disconnect: reset SASL state (like ircReconnect does)
+      resetSaslState();
+      expect(getSaslState()).toBe('none');
+
+      // 4. Reconnect: restore credentials
+      const restored = await restoreSaslCredentials();
+      expect(restored).toBe(true);
+      expect(getSaslAccount()).toBe('Merovingian');
+      expect(getSaslPassword()).toBe('secret123');
+
+      // 5. NickServ fallback should work with restored credentials
+      const fallback = getNickServFallbackCredentials();
+      expect(fallback).toEqual({ account: 'Merovingian', password: 'secret123' });
+    });
+
+    it('should support multiple reconnect cycles', async () => {
+      setSaslCredentials('user', 'pass');
+
+      // First save
+      await saveSaslCredentialsForReconnect();
+      setSaslState('success');
+
+      // First reconnect
+      resetSaslState();
+      const restored1 = await restoreSaslCredentials();
+      expect(restored1).toBe(true);
+
+      // Second SASL success with restored credentials
+      await saveSaslCredentialsForReconnect();
+      setSaslState('success');
+
+      // Second reconnect
+      resetSaslState();
+      const restored2 = await restoreSaslCredentials();
+      expect(restored2).toBe(true);
+      expect(getSaslAccount()).toBe('user');
+      expect(getSaslPassword()).toBe('pass');
     });
   });
 

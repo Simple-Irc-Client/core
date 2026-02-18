@@ -709,5 +709,62 @@ describe('network', () => {
       await flushPromises();
       expect(mockInitDirectWebSocket).toHaveBeenCalled();
     });
+
+    it('should reset SASL state without clearing credentials', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockResetSaslState).toHaveBeenCalled();
+      expect(mockClearSaslCredentials).not.toHaveBeenCalled();
+    });
+
+    it('should restore SASL credentials before connecting', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockRestoreSaslCredentials).toHaveBeenCalled();
+    });
+
+    it('should disconnect existing connection before reconnecting', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      // Disconnect should be called before initDirectWebSocket
+      const disconnectOrder = mockDisconnectDirect.mock.invocationCallOrder[0];
+      await flushPromises();
+      const connectOrder = mockInitDirectWebSocket.mock.invocationCallOrder[0];
+      expect(disconnectOrder).toBeLessThan(connectOrder as number);
+    });
+
+    it('should not restore credentials or connect when server is missing', async () => {
+      mockGetServer.mockReturnValue(undefined);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockRestoreSaslCredentials).not.toHaveBeenCalled();
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
   });
 });

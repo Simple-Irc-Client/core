@@ -155,13 +155,17 @@ export const isSaslComplete = (): boolean => {
  * Save credentials before disconnect (encrypted for reconnection)
  */
 export const saveSaslCredentialsForReconnect = async (): Promise<void> => {
-  if (saslAccount && saslPassword) {
+  // Capture values synchronously before any awaits, since setSaslState('success')
+  // may clear them while we're awaiting encryption initialization
+  const account = saslAccount;
+  const password = saslPassword;
+  if (account && password) {
     // Ensure session encryption is available
     if (!isEncryptionAvailable()) {
       await initSessionEncryption();
     }
-    savedEncryptedAccount = await encryptString(saslAccount);
-    savedEncryptedPassword = await encryptString(saslPassword);
+    savedEncryptedAccount = await encryptString(account);
+    savedEncryptedPassword = await encryptString(password);
   }
 };
 

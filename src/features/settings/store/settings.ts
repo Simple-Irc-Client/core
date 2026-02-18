@@ -152,7 +152,20 @@ export const useSettingsStore = create<SettingsStore>()(
       set(() => ({ connectedTime: time }));
     },
     setNick: (newNick: string): void => {
-      set(() => ({ nick: newNick }));
+      set((state) => ({
+        nick: newNick,
+        // Clear metadata from the previous nick — new metadata will arrive
+        // via METADATA messages for the new nick
+        ...(newNick !== state.nick
+          ? {
+              currentUserAvatar: undefined,
+              currentUserDisplayName: undefined,
+              currentUserStatus: undefined,
+              currentUserHomepage: undefined,
+              currentUserColor: undefined,
+            }
+          : {}),
+      }));
     },
     setServer: (newServer: Server): void => {
       set(() => ({ server: newServer }));

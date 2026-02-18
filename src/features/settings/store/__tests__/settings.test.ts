@@ -51,6 +51,9 @@ import {
   getCurrentUserHomepage,
   setCurrentUserColor,
   getCurrentUserColor,
+  setCurrentUserAvatar,
+  setCurrentUserDisplayName,
+  setCurrentUserStatus,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -191,6 +194,72 @@ describe('settings store', () => {
     it('should handle empty nick', () => {
       setNick('');
       expect(getCurrentNick()).toBe('');
+    });
+  });
+
+  describe('nick change clears user metadata', () => {
+    it('should clear all currentUser metadata when nick changes', () => {
+      setNick('OldNick');
+      setCurrentUserAvatar('https://example.com/avatar.png');
+      setCurrentUserDisplayName('Old Display Name');
+      setCurrentUserStatus('Away');
+      setCurrentUserHomepage('https://example.com');
+      setCurrentUserColor('#ff5500');
+
+      setNick('NewNick');
+
+      const state = useSettingsStore.getState();
+      expect(state.nick).toBe('NewNick');
+      expect(state.currentUserAvatar).toBeUndefined();
+      expect(state.currentUserDisplayName).toBeUndefined();
+      expect(state.currentUserStatus).toBeUndefined();
+      expect(state.currentUserHomepage).toBeUndefined();
+      expect(state.currentUserColor).toBeUndefined();
+    });
+
+    it('should NOT clear metadata when nick is set to the same value', () => {
+      setNick('SameNick');
+      setCurrentUserAvatar('https://example.com/avatar.png');
+      setCurrentUserDisplayName('My Name');
+      setCurrentUserStatus('Online');
+      setCurrentUserHomepage('https://example.com');
+      setCurrentUserColor('#00ff00');
+
+      setNick('SameNick');
+
+      const state = useSettingsStore.getState();
+      expect(state.currentUserAvatar).toBe('https://example.com/avatar.png');
+      expect(state.currentUserDisplayName).toBe('My Name');
+      expect(state.currentUserStatus).toBe('Online');
+      expect(state.currentUserHomepage).toBe('https://example.com');
+      expect(state.currentUserColor).toBe('#00ff00');
+    });
+
+    it('should clear metadata on reconnect with different nick (simulates failed SASL)', () => {
+      // Simulate initial connection with authenticated nick
+      setNick('Merovingian');
+      setCurrentUserAvatar('https://example.com/merovingian.png');
+      setCurrentUserDisplayName('The Merovingian');
+
+      // Simulate reconnect where SASL failed and server assigned a different nick
+      setNick('unknown59356');
+
+      const state = useSettingsStore.getState();
+      expect(state.nick).toBe('unknown59356');
+      expect(state.currentUserAvatar).toBeUndefined();
+      expect(state.currentUserDisplayName).toBeUndefined();
+    });
+
+    it('should allow setting new metadata after nick change', () => {
+      setNick('OldNick');
+      setCurrentUserAvatar('https://example.com/old.png');
+
+      setNick('NewNick');
+      expect(useSettingsStore.getState().currentUserAvatar).toBeUndefined();
+
+      // New metadata arrives for new nick
+      setCurrentUserAvatar('https://example.com/new.png');
+      expect(useSettingsStore.getState().currentUserAvatar).toBe('https://example.com/new.png');
     });
   });
 
