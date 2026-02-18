@@ -106,6 +106,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
                   onChange={(e) => setEditedTopic(e.target.value)}
                   onKeyDown={handleKeyDown}
                   className="min-h-12"
+                  aria-label={t('main.topic.topicInput')}
                 />
               ) : (
                 <div className="min-h-12 w-full flex items-center px-3 text-sm truncate rounded-md border border-input bg-transparent shadow-sm">
@@ -118,7 +119,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
         </Tooltip>
       </TooltipProvider>
       {canEditTopic && editedTopic !== topic && (
-        <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2">
+        <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2" aria-label={t('main.topic.saveTopic')}>
           <Save className="h-4 w-4" />
         </Button>
       )}
@@ -127,6 +128,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 };
 
 const Topic = () => {
+  const { t } = useTranslation();
   const topic: string = useCurrentStore((state) => state.topic);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
@@ -141,14 +143,14 @@ const Topic = () => {
   return (
     <div className="px-4 flex h-16 min-w-0 items-center">
       {!isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2">
+        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
         </Button>
       )}
       {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
       {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
       {showUsersToggle && !isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-12 lg:hidden shrink-0 ml-2">
+        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-12 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
           <Users className="h-4 w-4" />
         </Button>
       )}

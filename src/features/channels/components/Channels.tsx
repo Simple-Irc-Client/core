@@ -124,7 +124,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               </TooltipProvider>
             </div>
             {isChannelsDrawerOpen && (
-              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
+              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.channels.closeDrawer')}>
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -143,6 +143,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               >
                 <button
                   aria-label={channel.name}
+                  aria-current={currentChannelName === channel.name ? 'page' : undefined}
                   onClick={() => {
                     handleListItemClick(channel);
                   }}
@@ -175,7 +176,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label="close"
+                          aria-label={t('main.channels.leave', { channel: channel.name })}
                           className="h-8 w-8"
                           onClick={() => {
                             handleRemoveChannel(channel);

@@ -33,6 +33,7 @@ const ChannelSettingsButton = ({ channelName }: ChannelSettingsButtonProps) => {
               onClick={() => setDialogOpen(true)}
               className="h-12 ml-2"
               data-testid="channel-settings-button"
+              aria-label={t('channelSettings.button.tooltip')}
             >
               <Settings className="h-4 w-4" />
             </Button>

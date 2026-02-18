@@ -420,6 +420,7 @@ const Toolbar = () => {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
+                    aria-label={t('main.toolbar.userMenu')}
                     className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                   >
                     {currentUserAvatar ? (
@@ -472,12 +473,12 @@ const Toolbar = () => {
               </DropdownMenuContent>
               </DropdownMenu>
               {isAway && (
-                <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500">
+                <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500" aria-hidden="true">
                   <Moon className="h-2.5 w-2.5 text-white" />
                 </span>
               )}
               {awayMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium">
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium" aria-label={t('main.toolbar.awayMessageCount', { count: awayMessagesCount })}>
                   {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
                 </span>
               )}
@@ -489,6 +490,7 @@ const Toolbar = () => {
                 autoFocus
                 value={message}
                 placeholder={`${t('main.toolbar.write')} ${currentChannelName}`}
+                aria-label={`${t('main.toolbar.write')} ${currentChannelName}`}
                 onChange={handleChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}

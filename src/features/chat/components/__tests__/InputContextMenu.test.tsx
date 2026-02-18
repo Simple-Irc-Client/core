@@ -83,30 +83,30 @@ describe('InputContextMenu', () => {
     const copyItem = screen.getByText('contextmenu.input.copy');
     const pasteItem = screen.getByText('contextmenu.input.paste');
 
-    expect(cutItem).toHaveAttribute('data-disabled');
-    expect(copyItem).toHaveAttribute('data-disabled');
-    expect(pasteItem).not.toHaveAttribute('data-disabled');
+    expect(cutItem).toHaveAttribute('aria-disabled');
+    expect(copyItem).toHaveAttribute('aria-disabled');
+    expect(pasteItem).not.toHaveAttribute('aria-disabled');
   });
 
   it('should disable Select All when input is empty', () => {
     render(<InputContextMenu {...defaultProps} hasContent={false} hasSelection={false} />);
 
     const selectAllItem = screen.getByText('contextmenu.input.selectAll');
-    expect(selectAllItem).toHaveAttribute('data-disabled');
+    expect(selectAllItem).toHaveAttribute('aria-disabled');
   });
 
   it('should enable Select All when input has content and not all selected', () => {
     render(<InputContextMenu {...defaultProps} hasContent={true} hasSelection={false} allSelected={false} />);
 
     const selectAllItem = screen.getByText('contextmenu.input.selectAll');
-    expect(selectAllItem).not.toHaveAttribute('data-disabled');
+    expect(selectAllItem).not.toHaveAttribute('aria-disabled');
   });
 
   it('should disable Select All when all text is already selected', () => {
     render(<InputContextMenu {...defaultProps} hasContent={true} hasSelection={true} allSelected={true} />);
 
     const selectAllItem = screen.getByText('contextmenu.input.selectAll');
-    expect(selectAllItem).toHaveAttribute('data-disabled');
+    expect(selectAllItem).toHaveAttribute('aria-disabled');
   });
 
   it('should not render menu content when position is null', () => {

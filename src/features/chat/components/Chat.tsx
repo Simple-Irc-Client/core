@@ -233,7 +233,7 @@ const Chat = () => {
   }, []);
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} onContextMenu={(e) => {
+    <div ref={containerRef} role="log" onScroll={handleScroll} onContextMenu={(e) => {
       if (e.defaultPrevented) return;
       e.preventDefault();
       e.stopPropagation();

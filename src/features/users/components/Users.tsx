@@ -26,22 +26,22 @@ const getModeIcons = (flags: string[], userModes: UserMode[]) => {
     if (flags.includes(mode.flag)) {
       switch (mode.symbol) {
         case '~':
-          icons.push(<span key={mode.flag} title="Owner"><Crown className="h-4 w-4 text-yellow-500" /></span>);
+          icons.push(<span key={mode.flag} title="Owner" aria-label="Owner"><Crown className="h-4 w-4 text-yellow-500" /></span>);
           break;
         case '&':
-          icons.push(<span key={mode.flag} title="Admin"><ShieldCheck className="h-4 w-4 text-purple-500" /></span>);
+          icons.push(<span key={mode.flag} title="Admin" aria-label="Admin"><ShieldCheck className="h-4 w-4 text-purple-500" /></span>);
           break;
         case '@':
-          icons.push(<span key={mode.flag} title="Operator"><Shield className="h-4 w-4 text-green-500" /></span>);
+          icons.push(<span key={mode.flag} title="Operator" aria-label="Operator"><Shield className="h-4 w-4 text-green-500" /></span>);
           break;
         case '%':
-          icons.push(<span key={mode.flag} title="Half-Op"><ShieldHalf className="h-4 w-4 text-blue-500" /></span>);
+          icons.push(<span key={mode.flag} title="Half-Op" aria-label="Half-Op"><ShieldHalf className="h-4 w-4 text-blue-500" /></span>);
           break;
         case '+':
-          icons.push(<span key={mode.flag} title="Voice"><Mic className="h-4 w-4 text-gray-500" /></span>);
+          icons.push(<span key={mode.flag} title="Voice" aria-label="Voice"><Mic className="h-4 w-4 text-gray-500" /></span>);
           break;
         default:
-          icons.push(<span key={mode.flag} className="text-xs font-bold" title={mode.flag}>{mode.symbol}</span>);
+          icons.push(<span key={mode.flag} className="text-xs font-bold" title={mode.flag} aria-label={mode.flag}>{mode.symbol}</span>);
           break;
       }
     }
@@ -83,7 +83,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
             <div className="mb-4 flex items-center justify-between p-4">
               <h3 className={`${fontSizeClass} font-medium`}>{t('main.users.title')}</h3>
               {isUsersDrawerOpen && (
-                <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden">
+                <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
                   <X className="h-4 w-4" />
                 </Button>
               )}
@@ -118,7 +118,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                           <>
                             {getModeIcons(channelFlags, userModes)}
                             {isAway && (
-                              <span title={user.awayReason || 'Away'}>
+                              <span title={user.awayReason || 'Away'} aria-label={user.awayReason || 'Away'}>
                                 <Moon className="h-4 w-4 text-yellow-500" />
                               </span>
                             )}

@@ -275,6 +275,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               onClick={() => setTheme('classic')}
               className={cn('flex-1', theme === 'classic' && 'pointer-events-none')}
               data-testid="layout-classic"
+              aria-pressed={theme === 'classic'}
             >
               {t('profileSettings.layoutClassic')}
             </Button>
@@ -285,6 +286,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               onClick={() => setTheme('modern')}
               className={cn('flex-1', theme === 'modern' && 'pointer-events-none')}
               data-testid="layout-modern"
+              aria-pressed={theme === 'modern'}
             >
               {t('profileSettings.layoutModern')}
             </Button>
@@ -324,6 +326,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               onClick={() => setFontSize('small')}
               className={cn('flex-1', fontSize === 'small' && 'pointer-events-none')}
               data-testid="font-size-small"
+              aria-pressed={fontSize === 'small'}
             >
               {t('profileSettings.fontSizeSmall')}
             </Button>
@@ -334,6 +337,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               onClick={() => setFontSize('medium')}
               className={cn('flex-1', fontSize === 'medium' && 'pointer-events-none')}
               data-testid="font-size-medium"
+              aria-pressed={fontSize === 'medium'}
             >
               {t('profileSettings.fontSizeMedium')}
             </Button>
@@ -344,6 +348,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
               onClick={() => setFontSize('large')}
               className={cn('flex-1', fontSize === 'large' && 'pointer-events-none')}
               data-testid="font-size-large"
+              aria-pressed={fontSize === 'large'}
             >
               {t('profileSettings.fontSizeLarge')}
             </Button>

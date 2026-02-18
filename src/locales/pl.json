@@ -304,5 +304,15 @@
     "currentUser.markAsRead": "Oznacz jako przeczytane",
     "currentUser.autoAway": "Użytkownik jest nieaktywny od 15 minut",
     "currentUser.darkMode": "Tryb ciemny",
-    "currentUser.lightMode": "Tryb jasny"
+    "currentUser.lightMode": "Tryb jasny",
+    "main.toolbar.userMenu": "Menu użytkownika",
+    "main.toolbar.awayMessageCount": "{{count}} nieprzeczytanych wiadomości",
+    "main.channels.leave": "Opuść {{channel}}",
+    "main.channels.closeDrawer": "Zamknij kanały",
+    "main.users.closeDrawer": "Zamknij użytkowników",
+    "main.topic.toggleChannels": "Przełącz kanały",
+    "main.topic.toggleUsers": "Przełącz użytkowników",
+    "main.topic.topicInput": "Temat kanału",
+    "main.topic.saveTopic": "Zapisz temat",
+    "channelListDialog.search.ariaLabel": "Szukaj kanałów"
 }

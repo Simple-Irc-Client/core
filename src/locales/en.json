@@ -304,5 +304,15 @@
     "currentUser.markAsRead": "Mark as Read",
     "currentUser.autoAway": "Auto away - inactive for 15 minutes",
     "currentUser.darkMode": "Dark Mode",
-    "currentUser.lightMode": "Light Mode"
+    "currentUser.lightMode": "Light Mode",
+    "main.toolbar.userMenu": "User menu",
+    "main.toolbar.awayMessageCount": "{{count}} unread away messages",
+    "main.channels.leave": "Leave {{channel}}",
+    "main.channels.closeDrawer": "Close channels",
+    "main.users.closeDrawer": "Close users",
+    "main.topic.toggleChannels": "Toggle channels",
+    "main.topic.toggleUsers": "Toggle users",
+    "main.topic.topicInput": "Channel topic",
+    "main.topic.saveTopic": "Save topic",
+    "channelListDialog.search.ariaLabel": "Search channels"
 }

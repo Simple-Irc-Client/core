@@ -63,6 +63,8 @@ const ColorPicker = ({ open, onOpenChange }: ColorPickerProps) => {
                   style={{ backgroundColor: color }}
                   onClick={() => handleColorSelect(colorCode)}
                   title={t('main.toolbar.color', { code })}
+                  aria-label={t('main.toolbar.color', { code })}
+                  aria-selected={isSelected}
                 />
               );
             })}

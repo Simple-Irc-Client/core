@@ -152,6 +152,7 @@ const WizardServer = () => {
           <div className="flex gap-2">
             <Input
               placeholder={t('wizard.server.host') ?? 'irc.example.com'}
+              aria-label={t('wizard.server.host')}
               value={customHost}
               onChange={(e) => {
                 setCustomHost(e.target.value);
@@ -163,7 +164,7 @@ const WizardServer = () => {
               }}
               className="flex-1"
             />
-            <Input placeholder={t('wizard.server.port') ?? '6667'} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className="w-20" />
+            <Input placeholder={t('wizard.server.port') ?? '6667'} aria-label={t('wizard.server.port')} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className="w-20" />
           </div>
         </div>
 
@@ -171,10 +172,10 @@ const WizardServer = () => {
           <div className="w-[300px] mb-4">
             <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.connectionType')}</p>
             <div className="flex gap-2">
-              <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1">
+              <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1" aria-pressed={connectionType === 'backend'}>
                 {t('wizard.server.connectionType.backend')}
               </Button>
-              <Button type="button" variant={connectionType === 'websocket' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('websocket')} className="flex-1">
+              <Button type="button" variant={connectionType === 'websocket' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('websocket')} className="flex-1" aria-pressed={connectionType === 'websocket'}>
                 {t('wizard.server.connectionType.websocket')}
               </Button>
             </div>

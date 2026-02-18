@@ -71,11 +71,11 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
       className="fixed z-[100] min-w-[8rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
       style={{ left: `${clamped.x}px`, top: `${clamped.y}px` }}
     >
-      <div role="menuitem" data-disabled={!hasSelection || undefined} className={itemClass(!hasSelection)} onClick={handle(onCut)}>{t('contextmenu.input.cut')}</div>
-      <div role="menuitem" data-disabled={!hasSelection || undefined} className={itemClass(!hasSelection)} onClick={handle(onCopy)}>{t('contextmenu.input.copy')}</div>
+      <div role="menuitem" aria-disabled={!hasSelection || undefined} className={itemClass(!hasSelection)} onClick={handle(onCut)}>{t('contextmenu.input.cut')}</div>
+      <div role="menuitem" aria-disabled={!hasSelection || undefined} className={itemClass(!hasSelection)} onClick={handle(onCopy)}>{t('contextmenu.input.copy')}</div>
       <div role="menuitem" className={itemClass(false)} onClick={handle(onPaste)}>{t('contextmenu.input.paste')}</div>
       <div className="-mx-1 my-1 h-px bg-muted" />
-      <div role="menuitem" data-disabled={!hasContent || allSelected || undefined} className={itemClass(!hasContent || allSelected)} onClick={handle(onSelectAll)}>{t('contextmenu.input.selectAll')}</div>
+      <div role="menuitem" aria-disabled={!hasContent || allSelected || undefined} className={itemClass(!hasContent || allSelected)} onClick={handle(onSelectAll)}>{t('contextmenu.input.selectAll')}</div>
     </div>
   );
 };

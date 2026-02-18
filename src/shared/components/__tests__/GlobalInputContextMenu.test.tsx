@@ -255,7 +255,7 @@ describe('GlobalInputContextMenu', () => {
       fireContextMenu(input);
 
       const cutItem = document.body.querySelector('[role="menuitem"]');
-      expect(cutItem).not.toHaveAttribute('data-disabled');
+      expect(cutItem).not.toHaveAttribute('aria-disabled');
       input.remove();
     });
 
@@ -267,8 +267,8 @@ describe('GlobalInputContextMenu', () => {
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       // Cut and Copy should be disabled
-      expect(menuItems[0]).toHaveAttribute('data-disabled');
-      expect(menuItems[1]).toHaveAttribute('data-disabled');
+      expect(menuItems[0]).toHaveAttribute('aria-disabled');
+      expect(menuItems[1]).toHaveAttribute('aria-disabled');
       input.remove();
     });
 

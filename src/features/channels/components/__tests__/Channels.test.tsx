@@ -312,7 +312,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('#general');
       fireEvent.mouseEnter(channelContainer);
 
-      expect(screen.getByRole('button', { name: 'close' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
 
     it('should show close button on hover for priv category', () => {
@@ -325,7 +325,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('someUser');
       fireEvent.mouseEnter(channelContainer);
 
-      expect(screen.getByRole('button', { name: 'close' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
 
     it('should move close button when hovering different channels', () => {
@@ -343,11 +343,11 @@ describe('Channels', () => {
 
       // Hover over #general - close button should appear
       fireEvent.mouseEnter(generalContainer);
-      expect(screen.getByRole('button', { name: 'close' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
 
       // Move to #other channel - close button should still exist (for #other)
       fireEvent.mouseEnter(otherContainer);
-      expect(screen.getByRole('button', { name: 'close' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
 
     it('should not show close button for Debug channel', () => {
@@ -360,7 +360,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('Debug');
       fireEvent.mouseEnter(channelContainer);
 
-      expect(screen.queryByRole('button', { name: 'close' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
     });
 
     it('should not show close button for Status channel', () => {
@@ -373,7 +373,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('Status');
       fireEvent.mouseEnter(channelContainer);
 
-      expect(screen.queryByRole('button', { name: 'close' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
     });
 
     it('should call ircPartChannel when closing a channel', () => {
@@ -388,7 +388,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('#general');
       fireEvent.mouseEnter(channelContainer);
 
-      const closeButton = screen.getByRole('button', { name: 'close' });
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
       fireEvent.click(closeButton);
 
       expect(network.ircPartChannel).toHaveBeenCalledWith('#general');
@@ -408,7 +408,7 @@ describe('Channels', () => {
       const channelContainer = getChannelContainer('someUser');
       fireEvent.mouseEnter(channelContainer);
 
-      const closeButton = screen.getByRole('button', { name: 'close' });
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
       fireEvent.click(closeButton);
 
       expect(mockSetRemoveChannel).toHaveBeenCalledWith('someUser');
@@ -427,7 +427,7 @@ describe('Channels', () => {
       fireEvent.mouseEnter(channelContainer);
 
       expect(screen.queryByText('5')).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'close' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
   });
 

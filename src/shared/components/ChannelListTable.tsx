@@ -118,6 +118,7 @@ const ChannelListTable = ({
       </div>
       <Input
         placeholder={labels.searchPlaceholder}
+        aria-label={t('channelListDialog.search.ariaLabel')}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         className="max-w-sm"
@@ -144,8 +145,16 @@ const ChannelListTable = ({
               {filteredChannelList.map((channel) => (
                 <TableRow
                   key={channel.name}
+                  role="button"
+                  tabIndex={0}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleRowClick(channel.name)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleRowClick(channel.name);
+                    }
+                  }}
                 >
                   <TableCell className="font-medium">{channel.name}</TableCell>
                   <TableCell>{channel.users}</TableCell>
