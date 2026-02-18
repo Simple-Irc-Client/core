@@ -94,6 +94,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
           size="sm"
           onClick={() => handleListTypeChange('b')}
           data-testid="list-type-bans"
+          aria-pressed={activeListType === 'b'}
         >
           {t('channelSettings.lists.bans')} ({banList.length})
         </Button>
@@ -103,6 +104,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
           size="sm"
           onClick={() => handleListTypeChange('e')}
           data-testid="list-type-exceptions"
+          aria-pressed={activeListType === 'e'}
         >
           {t('channelSettings.lists.exceptions')} ({exceptionList.length})
         </Button>
@@ -112,6 +114,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
           size="sm"
           onClick={() => handleListTypeChange('I')}
           data-testid="list-type-invites"
+          aria-pressed={activeListType === 'I'}
         >
           {t('channelSettings.lists.invites')} ({inviteList.length})
         </Button>
@@ -119,8 +122,8 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
 
       {/* List Content */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin" />
+        <div className="flex items-center justify-center py-8" role="status">
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
           <span className="ml-2">{t('channelSettings.loading')}</span>
         </div>
       ) : (
@@ -160,6 +163,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
                       className="h-6 w-6"
                       onClick={() => handleRemoveEntry(entry.mask)}
                       data-testid={`remove-entry-${index}`}
+                      aria-label={t('channelSettings.lists.removeEntry', { mask: entry.mask })}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -179,6 +183,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
           onChange={(e) => setNewEntry(e.target.value)}
           className="flex-1"
           placeholder={t('channelSettings.lists.maskPlaceholder')}
+          aria-label={t('channelSettings.lists.newEntryLabel')}
           onKeyDown={(e) => e.key === 'Enter' && handleAddEntry()}
           data-testid="new-entry-input"
         />

@@ -59,10 +59,9 @@ const WizardNick = () => {
               setFormNick(event.target.value);
             }}
             value={formNick}
-            tabIndex={1}
           />
         </div>
-        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={formNick === ''} tabIndex={2}>
+        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={formNick === ''}>
           {t('wizard.nick.button.next')}
         </Button>
       </form>

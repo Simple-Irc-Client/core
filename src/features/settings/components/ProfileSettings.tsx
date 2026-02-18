@@ -264,10 +264,10 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label className="text-right">
+          <Label id="layout-label" className="text-right">
             {t('profileSettings.layout')}
           </Label>
-          <div className="col-span-3 flex gap-2">
+          <div className="col-span-3 flex gap-2" role="group" aria-labelledby="layout-label">
             <Button
               type="button"
               variant={theme === 'classic' ? 'default' : 'outline'}
@@ -315,10 +315,10 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </Label>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label className="text-right">
+          <Label id="font-size-label" className="text-right">
             {t('profileSettings.fontSize')}
           </Label>
-          <div className="col-span-3 flex gap-2">
+          <div className="col-span-3 flex gap-2" role="group" aria-labelledby="font-size-label">
             <Button
               type="button"
               variant={fontSize === 'small' ? 'default' : 'outline'}

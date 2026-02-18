@@ -117,8 +117,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="flex items-center justify-center py-8" role="status">
+        <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
         <span className="ml-2">{t('channelSettings.loading')}</span>
       </div>
     );
@@ -263,6 +263,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             onChange={(e) => setRawModes(e.target.value)}
             className="flex-1"
             placeholder="+ntis-mp"
+            aria-label={t('channelSettings.modes.rawModesLabel')}
             onKeyDown={(e) => e.key === 'Enter' && handleApplyRawModes()}
             data-testid="raw-modes-input"
           />

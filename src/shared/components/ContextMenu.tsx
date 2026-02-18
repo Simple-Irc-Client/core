@@ -379,5 +379,5 @@ export const ContextMenu = () => {
     );
   }
 
-  return <></>;
+  return null;
 };

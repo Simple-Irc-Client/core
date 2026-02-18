@@ -499,13 +499,13 @@ const Toolbar = () => {
               />
             </div>
             {message && (
-              <Button className="mt-1 mb-1" type="submit" aria-label="send" variant="ghost" size="icon">
+              <Button className="mt-1 mb-1" type="submit" aria-label={t('main.toolbar.send')} variant="ghost" size="icon">
                 <Send className="h-4 w-4" />
               </Button>
             )}
             <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
               <PopoverTrigger asChild>
-                <Button className="mt-1 mb-1" type="button" aria-label="emoticons" variant="ghost" size="icon">
+                <Button className="mt-1 mb-1" type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon">
                   <Smile className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>

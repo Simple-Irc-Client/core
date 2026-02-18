@@ -100,8 +100,10 @@ const WizardLoading = () => {
 
   return (
     <div className="w-full mt-8">
-      <Progress value={wizardProgress.value * 30} />
-      {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
+      <Progress value={wizardProgress.value * 30} aria-label={t('a11y.connectionProgress')} />
+      <div aria-live="polite">
+        {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
+      </div>
       {showTimeoutUI && (
         <p className="text-center mt-4 text-muted-foreground">{t('wizard.loading.timeout')}</p>
       )}

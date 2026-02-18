@@ -91,7 +91,8 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   return (
-    <div
+    <nav
+      aria-label={t('main.channels.title')}
       className={cn(
         'border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
         !isChannelsDrawerOpen && 'hidden lg:block',
@@ -170,7 +171,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                   {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
                     <>
                       {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
-                        <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs">{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+                        <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
                       )}
                       {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                         <Button
@@ -200,7 +201,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         onJoin={handleJoinChannels}
         excludeChannels={openChannelNames}
       />
-    </div>
+    </nav>
   );
 };
 

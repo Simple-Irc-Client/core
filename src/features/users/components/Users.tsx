@@ -71,7 +71,8 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   return (
     <>
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
-        <div
+        <aside
+          aria-label={t('main.users.title')}
           className={cn(
             'border-l border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
             !isUsersDrawerOpen && 'hidden lg:block',
@@ -139,7 +140,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
               ))}
             </div>
           </div>
-        </div>
+        </aside>
       )}
     </>
   );

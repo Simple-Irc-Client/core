@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Channels from '@features/channels/components/Channels';
 import Chat from '@features/chat/components/Chat';
 import Typing from '@features/chat/components/Typing';
@@ -10,6 +11,7 @@ import { channelsWidth as defaultChannelsWidth, usersWidth as defaultUsersWidth 
 import { useSettingsStore } from '@features/settings/store/settings';
 
 function MainPage() {
+  const { t } = useTranslation();
   const [channelsWidth, setChannelsWidth] = useState(defaultChannelsWidth);
   const [usersWidth, setUsersWidth] = useState(defaultUsersWidth);
   const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
@@ -24,9 +26,12 @@ function MainPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-background focus:text-foreground">
+        {t('a11y.skipToContent')}
+      </a>
       <Channels width={channelsWidth} />
-      <ResizeHandle onResize={handleChannelsResize} direction="right" className="hidden lg:block" />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <ResizeHandle onResize={handleChannelsResize} direction="right" className="hidden lg:block" aria-label={t('a11y.resizeChannels')} />
+      <main id="main-content" className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Topic />
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden">
@@ -35,8 +40,8 @@ function MainPage() {
           {!hideTypingIndicator && <Typing />}
           <Toolbar />
         </div>
-      </div>
-      <ResizeHandle onResize={handleUsersResize} direction="left" className="hidden lg:block" />
+      </main>
+      <ResizeHandle onResize={handleUsersResize} direction="left" className="hidden lg:block" aria-label={t('a11y.resizeUsers')} />
       <Users width={usersWidth} />
     </div>
   );

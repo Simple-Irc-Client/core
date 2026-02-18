@@ -32,7 +32,7 @@ const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
         >
           <Type className="h-4 w-4" />
           {hasActiveStyle && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" aria-hidden="true" />
           )}
         </Button>
       </PopoverTrigger>
@@ -46,6 +46,7 @@ const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
               size="sm"
               onClick={() => toggleStyle('bold')}
               className="flex-1"
+              aria-pressed={fontFormatting.bold}
             >
               <Bold className="h-4 w-4 mr-1" />
               {t('main.toolbar.bold')}
@@ -56,6 +57,7 @@ const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
               size="sm"
               onClick={() => toggleStyle('italic')}
               className="flex-1"
+              aria-pressed={fontFormatting.italic}
             >
               <Italic className="h-4 w-4 mr-1" />
               {t('main.toolbar.italic')}
@@ -66,6 +68,7 @@ const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
               size="sm"
               onClick={() => toggleStyle('underline')}
               className="flex-1"
+              aria-pressed={fontFormatting.underline}
             >
               <Underline className="h-4 w-4 mr-1" />
               {t('main.toolbar.underline')}

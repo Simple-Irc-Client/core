@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { extractYouTubeVideoIds, getYouTubeThumbnailUrl } from '@shared/lib/youtube';
 
 interface YouTubeThumbnailProps {
@@ -5,6 +6,7 @@ interface YouTubeThumbnailProps {
 }
 
 const YouTubeThumbnail = ({ text }: YouTubeThumbnailProps) => {
+  const { t } = useTranslation();
   const videoIds = extractYouTubeVideoIds(text);
 
   if (videoIds.length === 0) {
@@ -22,6 +24,7 @@ const YouTubeThumbnail = ({ text }: YouTubeThumbnailProps) => {
             href={`https://www.youtube.com/watch?v=${videoId}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={t('a11y.watchYouTube')}
           >
             <img
               src={thumbnailUrl}

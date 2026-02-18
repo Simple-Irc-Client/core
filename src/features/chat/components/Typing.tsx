@@ -7,7 +7,7 @@ const Typing = () => {
   const typing = useCurrentStore((state) => state.typing);
 
   return (
-    <div className="text-xs h-7 ml-16 px-2 truncate text-gray-500">
+    <div className="text-xs h-7 ml-16 px-2 truncate text-gray-500" role="status" aria-live="polite">
       {typing.length !== 0 && (
         <>
           {typing.join(', ')}

@@ -74,11 +74,11 @@ const WizardChannelList = () => {
       </div>
       <div className="flex justify-center gap-4 mt-4">
         {selectedChannels.length === 0 && (
-          <Button onClick={handleSkip} tabIndex={1} size="lg">
+          <Button onClick={handleSkip} size="lg">
             {t('wizard.channels.button.skip')}
           </Button>
         )}
-        <Button onClick={handleJoin} tabIndex={2} size="lg" disabled={selectedChannels.length === 0}>
+        <Button onClick={handleJoin} size="lg" disabled={selectedChannels.length === 0}>
           {t('wizard.channels.button.join')}
         </Button>
       </div>

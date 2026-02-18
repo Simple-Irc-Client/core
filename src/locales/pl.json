@@ -314,5 +314,18 @@
     "main.topic.toggleUsers": "Przełącz użytkowników",
     "main.topic.topicInput": "Temat kanału",
     "main.topic.saveTopic": "Zapisz temat",
-    "channelListDialog.search.ariaLabel": "Szukaj kanałów"
+    "channelListDialog.search.ariaLabel": "Szukaj kanałów",
+    "main.toolbar.send": "Wyślij wiadomość",
+    "main.toolbar.emoticons": "Emotikony",
+    "a11y.resizeChannels": "Zmień rozmiar panelu kanałów",
+    "a11y.resizeUsers": "Zmień rozmiar panelu użytkowników",
+    "a11y.skipToContent": "Przejdź do treści",
+    "a11y.openImage": "Otwórz obraz (nowa karta)",
+    "a11y.watchYouTube": "Obejrzyj film YouTube (nowa karta)",
+    "a11y.connectionProgress": "Postęp połączenia",
+    "channelSettings.lists.removeEntry": "Usuń {{mask}}",
+    "channelSettings.lists.newEntryLabel": "Nowy wpis maski",
+    "channelSettings.modes.rawModesLabel": "Tryby surowe",
+    "main.channels.unreadMentions": "{{count}} wzmianek",
+    "main.channels.unreadCount": "{{count}} nieprzeczytanych wiadomości"
 }

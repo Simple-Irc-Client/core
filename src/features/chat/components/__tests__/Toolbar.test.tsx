@@ -109,14 +109,14 @@ describe('Toolbar', () => {
       const input = screen.getByRole('textbox');
       fireEvent.change(input, { target: { value: 'Hello' } });
 
-      const sendButton = screen.getByRole('button', { name: 'send' });
+      const sendButton = screen.getByRole('button', { name: 'main.toolbar.send' });
       expect(sendButton).toBeInTheDocument();
     });
 
     it('should not show send button when message is empty', () => {
       render(<Toolbar />);
 
-      const sendButton = screen.queryByRole('button', { name: 'send' });
+      const sendButton = screen.queryByRole('button', { name: 'main.toolbar.send' });
       expect(sendButton).not.toBeInTheDocument();
     });
   });
@@ -347,14 +347,14 @@ describe('Toolbar', () => {
     it('should render the emoticons button', () => {
       render(<Toolbar />);
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       expect(emoticonButton).toBeInTheDocument();
     });
 
     it('should open emoji picker when clicking emoticons button', () => {
       render(<Toolbar />);
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
       const emojiPicker = screen.getByTestId('emoji-picker');
@@ -364,7 +364,7 @@ describe('Toolbar', () => {
     it('should insert emoji into message input when clicking an emoji', () => {
       render(<Toolbar />);
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
       const emojiButton = screen.getByTestId('emoji-grinning');
@@ -380,7 +380,7 @@ describe('Toolbar', () => {
       const input = screen.getByRole('textbox');
       fireEvent.change(input, { target: { value: 'Hello ' } });
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
       const emojiButton = screen.getByTestId('emoji-heart');
@@ -392,7 +392,7 @@ describe('Toolbar', () => {
     it('should close emoji picker after selecting an emoji', () => {
       render(<Toolbar />);
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
       const emojiButton = screen.getByTestId('emoji-grinning');
@@ -405,7 +405,7 @@ describe('Toolbar', () => {
     it('should allow sending message with emoji', () => {
       render(<Toolbar />);
 
-      const emoticonButton = screen.getByRole('button', { name: 'emoticons' });
+      const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
       const emojiButton = screen.getByTestId('emoji-grinning');
