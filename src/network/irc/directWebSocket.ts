@@ -239,6 +239,12 @@ export const isDirectConnecting = (): boolean => {
  */
 export const disconnectDirect = (): void => {
   if (directSocket) {
+    // Remove event handlers before closing to prevent stale close/error events
+    // from firing asynchronously (e.g., during reconnection cycles)
+    directSocket.onclose = null;
+    directSocket.onerror = null;
+    directSocket.onmessage = null;
+    directSocket.onopen = null;
     directSocket.close();
     directSocket = null;
   }

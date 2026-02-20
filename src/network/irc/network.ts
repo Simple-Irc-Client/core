@@ -32,40 +32,32 @@ let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
 // Reconnection retry tracking
 const MAX_INACTIVITY_RECONNECT_RETRIES = 3;
 let inactivityReconnectRetries = 0;
+let isReconnecting = false;
+let reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+export const getIsReconnecting = (): boolean => isReconnecting;
+
+const cancelReconnect = (): void => {
+  isReconnecting = false;
+  if (reconnectTimeoutId !== null) {
+    clearTimeout(reconnectTimeoutId);
+    reconnectTimeoutId = null;
+  }
+};
 
 export const resetInactivityReconnectRetries = (): void => {
   inactivityReconnectRetries = 0;
+  cancelReconnect();
 };
 
-const handleInactivityTimeout = async (): Promise<void> => {
-  // Save credentials before disconnect (encrypted)
-  await saveSaslCredentialsForReconnect();
-
-  // Disconnect (but credentials are saved)
-  disconnectDirect();
-  setIsConnecting(false);
-  setIsConnected(false);
-
-  // Check if we can retry
-  if (inactivityReconnectRetries < MAX_INACTIVITY_RECONNECT_RETRIES) {
-    inactivityReconnectRetries++;
-
-    setAddMessageToAllChannels({
-      id: uuidv4(),
-      message: i18next.t('kernel.inactivityTimeoutReconnecting', {
-        attempt: inactivityReconnectRetries,
-        max: MAX_INACTIVITY_RECONNECT_RETRIES,
-      }),
-      time: new Date().toISOString(),
-      category: MessageCategory.info,
-    });
-
-    // Attempt reconnect after brief delay
-    setTimeout(() => {
-      void ircReconnect();
-    }, 2000);
-  } else {
-    // Max retries reached - clear saved credentials
+/**
+ * Schedule a reconnection attempt. Posts a status message and queues ircReconnect
+ * after a brief delay. If max retries are exhausted, shows an error instead.
+ */
+const scheduleReconnectAttempt = (): void => {
+  if (inactivityReconnectRetries >= MAX_INACTIVITY_RECONNECT_RETRIES) {
+    // Max retries reached - clear saved credentials and stop
+    isReconnecting = false;
     clearSavedCredentials();
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -73,7 +65,59 @@ const handleInactivityTimeout = async (): Promise<void> => {
       time: new Date().toISOString(),
       category: MessageCategory.error,
     });
+    return;
   }
+
+  inactivityReconnectRetries++;
+
+  setAddMessageToAllChannels({
+    id: uuidv4(),
+    message: i18next.t('kernel.inactivityTimeoutReconnecting', {
+      attempt: inactivityReconnectRetries,
+      max: MAX_INACTIVITY_RECONNECT_RETRIES,
+    }),
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+  });
+
+  reconnectTimeoutId = setTimeout(() => {
+    reconnectTimeoutId = null;
+    void ircReconnect().then((success) => {
+      if (!success) {
+        // ircReconnect couldn't initiate (no server/nick) - retry or give up
+        scheduleReconnectAttempt();
+      }
+    });
+  }, 2000);
+};
+
+/**
+ * Called by the kernel when a WebSocket close event occurs during a reconnection cycle.
+ * This means the reconnection attempt's WebSocket failed to connect.
+ * Schedules another retry if retries remain.
+ */
+export const handleReconnectFailure = (): void => {
+  if (!isReconnecting) return;
+
+  // If a reconnect is already scheduled (timeout pending), don't double-schedule
+  if (reconnectTimeoutId !== null) return;
+
+  setIsConnecting(false);
+  scheduleReconnectAttempt();
+};
+
+const handleInactivityTimeout = async (): Promise<void> => {
+  // Save credentials before disconnect (encrypted)
+  await saveSaslCredentialsForReconnect();
+
+  // Disconnect silently (disconnectDirect removes event handlers so no
+  // stale 'close' event reaches the kernel during reconnection)
+  disconnectDirect();
+  setIsConnecting(false);
+  setIsConnected(false);
+
+  isReconnecting = true;
+  scheduleReconnectAttempt();
 };
 
 const resetInactivityTimeout = (): void => {
@@ -127,8 +171,9 @@ export const isWebSocketConnecting = (): boolean => {
 };
 
 export const ircDisconnect = (): void => {
-  // Clear inactivity timeout
+  // Clear inactivity timeout and cancel any pending reconnection
   clearInactivityTimeout();
+  cancelReconnect();
 
   // Reset IRCv3 state
   resetCapabilityState();
@@ -434,4 +479,4 @@ export const ircReconnect = async (): Promise<boolean> => {
 };
 
 // Re-export for backward compatibility with tests and other modules
-export { resetInactivityTimeout, clearInactivityTimeout, clearSavedCredentials };
+export { resetInactivityTimeout, clearInactivityTimeout, clearSavedCredentials, cancelReconnect };

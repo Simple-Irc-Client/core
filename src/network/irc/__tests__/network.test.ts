@@ -669,6 +669,155 @@ describe('network', () => {
     });
   });
 
+  describe('reconnection state tracking', () => {
+    const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+    const testServer = {
+      default: 0,
+      encoding: 'utf8',
+      network: 'TestNet',
+      servers: ['irc.test.net:6667'],
+    };
+
+    it('should set isReconnecting to true during reconnection cycle', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      expect(network.getIsReconnecting()).toBe(false);
+
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(network.getIsReconnecting()).toBe(true);
+    });
+
+    it('should reset isReconnecting when resetInactivityReconnectRetries is called', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(network.getIsReconnecting()).toBe(true);
+
+      network.resetInactivityReconnectRetries();
+
+      expect(network.getIsReconnecting()).toBe(false);
+    });
+
+    it('should cancel pending reconnect when ircDisconnect is called', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(network.getIsReconnecting()).toBe(true);
+
+      // Disconnect before the 2s reconnect fires
+      network.ircDisconnect();
+
+      expect(network.getIsReconnecting()).toBe(false);
+
+      // Advance past the 2s reconnect delay - should NOT trigger reconnect
+      mockInitDirectWebSocket.mockClear();
+      await vi.advanceTimersByTimeAsync(2000);
+
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleReconnectFailure', () => {
+    const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+    const testServer = {
+      default: 0,
+      encoding: 'utf8',
+      network: 'TestNet',
+      servers: ['irc.test.net:6667'],
+    };
+
+    it('should schedule another attempt when retries remain', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      // Trigger first reconnection cycle
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      // Wait for reconnect to start
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Simulate reconnect WebSocket failure
+      mockSetAddMessageToAllChannels.mockClear();
+      mockInitDirectWebSocket.mockClear();
+      network.handleReconnectFailure();
+
+      // Should post another reconnecting message (attempt 2)
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'kernel.inactivityTimeoutReconnecting',
+        }),
+      );
+
+      // Wait for retry delay
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Should attempt to reconnect again
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
+    it('should show max retries message when all attempts exhausted', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      // Trigger first reconnection cycle (attempt 1)
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Simulate failures for remaining attempts
+      network.handleReconnectFailure(); // schedules attempt 2
+      await vi.advanceTimersByTimeAsync(2000);
+
+      network.handleReconnectFailure(); // schedules attempt 3
+      await vi.advanceTimersByTimeAsync(2000);
+
+      // Next failure should show max retries message
+      mockSetAddMessageToAllChannels.mockClear();
+      network.handleReconnectFailure();
+
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'kernel.inactivityTimeoutMaxRetries',
+          category: 'error',
+        }),
+      );
+      expect(network.getIsReconnecting()).toBe(false);
+    });
+
+    it('should be no-op when not reconnecting', () => {
+      mockSetAddMessageToAllChannels.mockClear();
+
+      network.handleReconnectFailure();
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    });
+
+    it('should not double-schedule when reconnect timeout is already pending', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      // Trigger reconnection cycle - timeout is pending (2s)
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      // handleReconnectFailure while timeout is still pending should be no-op
+      mockSetAddMessageToAllChannels.mockClear();
+      network.handleReconnectFailure();
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    });
+  });
+
   describe('ircReconnect', () => {
     it('should return false when server is undefined', async () => {
       mockGetServer.mockReturnValue(undefined);

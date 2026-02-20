@@ -58,6 +58,22 @@ describe('kernel tests', () => {
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
+  it('test close during reconnection should call handleReconnectFailure instead of showing disconnected', () => {
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'getIsReconnecting').mockImplementation(() => true);
+    const mockHandleReconnectFailure = vi.spyOn(networkFile, 'handleReconnectFailure').mockImplementation(() => {});
+
+    new Kernel({ type: 'close' }).handle();
+
+    // Should NOT show disconnected message or update connection state
+    expect(mockSetIsConnecting).not.toHaveBeenCalled();
+    expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    // Should delegate to handleReconnectFailure
+    expect(mockHandleReconnectFailure).toHaveBeenCalledTimes(1);
+  });
+
   it('test close during STS upgrade should trigger STS reconnection', () => {
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});

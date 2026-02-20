@@ -52,7 +52,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -481,6 +481,14 @@ export class Kernel {
     if (stsUpgrade) {
       // Delegate to handleSocketClose which handles STS reconnection
       this.handleSocketClose();
+      return;
+    }
+
+    // If a reconnection cycle is in progress, this close event means the
+    // reconnect WebSocket failed to connect. Delegate to network.ts to
+    // schedule another retry instead of showing "Disconnected".
+    if (getIsReconnecting()) {
+      handleReconnectFailure();
       return;
     }
 
