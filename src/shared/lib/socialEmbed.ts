@@ -1,7 +1,7 @@
 import { isSafeUrl } from './utils';
 
 export interface SocialEmbedInfo {
-  platform: 'x' | 'facebook';
+  platform: 'x' | 'facebook' | 'bluesky';
   embedUrl: string;
   originalUrl: string;
 }
@@ -78,6 +78,39 @@ function extractFacebookEmbeds(text: string): SocialEmbedInfo[] {
   return results;
 }
 
+// Match https://bsky.app/profile/HANDLE/post/RKEY
+// Handle can be a domain (user.bsky.social) or a DID (did:plc:xxx)
+// RKEY is an alphanumeric record key
+const BLUESKY_REGEX =
+  /https:\/\/bsky\.app\/profile\/([a-zA-Z0-9._:%-]+)\/post\/([a-zA-Z0-9_-]+)/g;
+
+const BLUESKY_HANDLE_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._:%-]*$/;
+const BLUESKY_RKEY_REGEX = /^[a-zA-Z0-9_-]+$/;
+
+function extractBlueskyEmbeds(text: string): SocialEmbedInfo[] {
+  const results: SocialEmbedInfo[] = [];
+
+  for (const match of text.matchAll(BLUESKY_REGEX)) {
+    const handle = match[1];
+    const rkey = match[2];
+    const originalUrl = match[0];
+
+    if (!handle || !rkey) continue;
+    if (!BLUESKY_HANDLE_REGEX.test(handle)) continue;
+    if (!BLUESKY_RKEY_REGEX.test(rkey)) continue;
+    if (!isSafeUrl(originalUrl)) continue;
+    if (results.some((r) => r.originalUrl === originalUrl)) continue;
+
+    results.push({
+      platform: 'bluesky',
+      embedUrl: `https://embed.bsky.app/embed/${handle}/app.bsky.feed.post/${rkey}`,
+      originalUrl,
+    });
+  }
+
+  return results;
+}
+
 export function extractSocialEmbeds(text: string, isDarkMode: boolean): SocialEmbedInfo[] {
-  return [...extractTwitterEmbeds(text, isDarkMode), ...extractFacebookEmbeds(text)];
+  return [...extractTwitterEmbeds(text, isDarkMode), ...extractFacebookEmbeds(text), ...extractBlueskyEmbeds(text)];
 }

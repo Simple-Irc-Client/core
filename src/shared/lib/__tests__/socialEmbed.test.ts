@@ -166,13 +166,77 @@ describe('socialEmbed', () => {
     });
   });
 
-  describe('mixed content', () => {
-    it('should extract both X and Facebook URLs from the same text', () => {
-      const text = 'Check https://x.com/user/status/111 and https://www.facebook.com/user/posts/222';
+  describe('Bluesky extraction — valid URLs', () => {
+    it('should extract post from bsky.app URL with domain handle', () => {
+      const result = extractSocialEmbeds('https://bsky.app/profile/user.bsky.social/post/3abc123def', false);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        platform: 'bluesky',
+        embedUrl: 'https://embed.bsky.app/embed/user.bsky.social/app.bsky.feed.post/3abc123def',
+        originalUrl: 'https://bsky.app/profile/user.bsky.social/post/3abc123def',
+      });
+    });
+
+    it('should extract post from bsky.app URL with custom domain handle', () => {
+      const result = extractSocialEmbeds('https://bsky.app/profile/jay.bsky.team/post/abc123', false);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ platform: 'bluesky' });
+      expect(result[0]).toHaveProperty('embedUrl', expect.stringContaining('jay.bsky.team'));
+    });
+
+    it('should extract post from bsky.app URL with DID handle', () => {
+      const result = extractSocialEmbeds('https://bsky.app/profile/did:plc:abc123/post/xyz789', false);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toHaveProperty('embedUrl', 'https://embed.bsky.app/embed/did:plc:abc123/app.bsky.feed.post/xyz789');
+    });
+
+    it('should extract multiple Bluesky posts and deduplicate', () => {
+      const text = 'https://bsky.app/profile/a.bsky.social/post/111 and https://bsky.app/profile/b.bsky.social/post/222 and https://bsky.app/profile/a.bsky.social/post/111';
       const result = extractSocialEmbeds(text, false);
-      expect(result).toHaveLength(2);
+      const bskyResults = result.filter((r) => r.platform === 'bluesky');
+      expect(bskyResults).toHaveLength(2);
+    });
+
+    it('should extract Bluesky post from text with surrounding content', () => {
+      const result = extractSocialEmbeds('Check this out: https://bsky.app/profile/user.bsky.social/post/abc123 pretty cool', false);
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ platform: 'bluesky' });
+    });
+  });
+
+  describe('Bluesky extraction — security rejections', () => {
+    it('should reject HTTP Bluesky URLs', () => {
+      const result = extractSocialEmbeds('http://bsky.app/profile/user.bsky.social/post/abc123', false);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should reject non-bsky.app domain', () => {
+      const result = extractSocialEmbeds('https://evil-bsky.app/profile/user.bsky.social/post/abc123', false);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should reject bsky.app URLs without post path', () => {
+      expect(extractSocialEmbeds('https://bsky.app/profile/user.bsky.social', false)).toEqual([]);
+      expect(extractSocialEmbeds('https://bsky.app/profile/user.bsky.social/likes', false)).toEqual([]);
+    });
+
+    it('should return empty array for empty string', () => {
+      expect(extractSocialEmbeds('', false)).toEqual([]);
+    });
+
+    it('should return empty array for plain text', () => {
+      expect(extractSocialEmbeds('Talking about bluesky today', false)).toEqual([]);
+    });
+  });
+
+  describe('mixed content', () => {
+    it('should extract X, Facebook, and Bluesky URLs from the same text', () => {
+      const text = 'Check https://x.com/user/status/111 and https://www.facebook.com/user/posts/222 and https://bsky.app/profile/user.bsky.social/post/333';
+      const result = extractSocialEmbeds(text, false);
+      expect(result).toHaveLength(3);
       expect(result[0]).toMatchObject({ platform: 'x' });
       expect(result[1]).toMatchObject({ platform: 'facebook' });
+      expect(result[2]).toMatchObject({ platform: 'bluesky' });
     });
 
     it('should not extract non-social URLs', () => {
