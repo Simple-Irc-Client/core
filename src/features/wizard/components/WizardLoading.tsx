@@ -3,9 +3,11 @@ import { Progress } from '@shared/components/ui/progress';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart } from '@features/settings/store/settings';
-import { ircConnect, ircDisconnect, ircJoinChannels } from '@/network/irc/network';
+import { ircConnect, ircDisconnect, ircJoinChannels, on, off } from '@/network/irc/network';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
+import { type IrcEvent } from '@/network/irc/kernel';
+import { redactSensitiveIrc } from '@shared/lib/utils';
 
 const CONNECTION_TIMEOUT_MS = 60_000;
 
@@ -19,6 +21,25 @@ const WizardLoading = () => {
   const nick = useSettingsStore((state) => state.nick);
 
   const [isTimedOut, setIsTimedOut] = useState(false);
+  const [lastServerMessage, setLastServerMessage] = useState('');
+
+  // Track latest raw IRC message from the server for debugging
+  useEffect(() => {
+    const handleIrcEvent = (data: IrcEvent): void => {
+      if (data?.type === 'raw' && data.line) {
+        // Redact sensitive info (passwords, SASL tokens) then extract trailing text
+        const safe = redactSensitiveIrc(data.line);
+        const colonIndex = safe.indexOf(' :');
+        const display = colonIndex !== -1 ? safe.substring(colonIndex + 2) : safe;
+        setLastServerMessage(display.length > 120 ? display.substring(0, 120) + '...' : display);
+      }
+    };
+
+    on('sic-irc-event', handleIrcEvent);
+    return () => {
+      off('sic-irc-event', handleIrcEvent);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isConnecting) {
@@ -103,6 +124,9 @@ const WizardLoading = () => {
       <Progress value={wizardProgress.value * 30} aria-label={t('a11y.connectionProgress')} />
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
+        {lastServerMessage !== '' && (
+          <p className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto">{lastServerMessage}</p>
+        )}
       </div>
       {showTimeoutUI && (
         <p className="text-center mt-4 text-muted-foreground">{t('wizard.loading.timeout')}</p>
