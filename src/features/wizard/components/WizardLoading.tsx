@@ -125,7 +125,7 @@ const WizardLoading = () => {
       <Progress value={wizardProgress.value * 30} aria-label={t('a11y.connectionProgress')} />
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
-        {lastServerMessage !== '' && (
+        {!import.meta.env.DEV && lastServerMessage !== '' && (
           <p key={messageKey} className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto animate-in fade-in duration-300">{lastServerMessage}</p>
         )}
       </div>
