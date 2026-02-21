@@ -1370,8 +1370,10 @@ export class Kernel {
             void saveSaslCredentialsForReconnect();
 
             // Disconnect and reconnect with TLS
-            // Reconnection will happen when we receive 'close' event
+            // disconnectDirect removes event handlers so onclose won't fire;
+            // trigger the STS reconnection directly.
             ircDisconnect();
+            this.handleSocketClose();
             return;
           }
         } else if (caps['sts'] && isCurrentConnectionSecure()) {

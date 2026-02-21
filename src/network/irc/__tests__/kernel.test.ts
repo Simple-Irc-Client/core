@@ -185,6 +185,75 @@ describe('kernel tests', () => {
     expect(mockIrcDisconnect).toHaveBeenCalledTimes(1);
   });
 
+  it('test CAP LS with STS triggers handleSocketClose directly after ircDisconnect', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+    vi.spyOn(capabilitiesFile, 'parseCapabilityList').mockImplementation(() => ({
+      sts: 'port=6697,duration=300',
+    }));
+    vi.spyOn(capabilitiesFile, 'addAvailableCapabilities').mockImplementation(() => {});
+    vi.spyOn(stsFile, 'isCurrentConnectionSecure').mockImplementation(() => false);
+    vi.spyOn(stsFile, 'getCurrentConnectionHost').mockImplementation(() => 'irc.test.com');
+    vi.spyOn(stsFile, 'parseSTSValue').mockImplementation(() => ({
+      port: 6697,
+      duration: 300,
+      preload: false,
+    }));
+    vi.spyOn(stsFile, 'createSTSPolicy').mockImplementation(() => ({
+      host: 'irc.test.com',
+      port: 6697,
+      duration: 300,
+      expiresAt: Date.now() + 300000,
+    }));
+    vi.spyOn(stsStoreFile, 'setSTSPolicy').mockImplementation(() => {});
+    vi.spyOn(stsFile, 'setPendingSTSUpgrade').mockImplementation(() => {});
+    vi.spyOn(saslFile, 'saveSaslCredentialsForReconnect').mockImplementation(async () => {});
+    vi.spyOn(networkFile, 'ircDisconnect').mockImplementation(() => {});
+
+    // After ircDisconnect, handleSocketClose should run, which needs these:
+    vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
+      host: 'irc.test.com',
+      port: 6697,
+      reason: 'sts_upgrade',
+    }));
+    vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
+    const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+      default: 0,
+      encoding: 'utf8',
+      network: 'test',
+      servers: ['irc.test.com'],
+    }));
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
+    const mockRestoreSaslCredentials = vi.spyOn(saslFile, 'restoreSaslCredentials').mockImplementation(async () => true);
+    const mockIrcConnectWithTLS = vi.spyOn(networkFile, 'ircConnectWithTLS').mockImplementation(() => {});
+
+    const line = ':irc.test.com CAP * LS :sts=port=6697,duration=300';
+    new Kernel({ type: 'raw', line }).handle();
+
+    // handleSocketClose should have been called directly (not via onclose event)
+    expect(mockIncrementSTSRetries).toHaveBeenCalledTimes(1);
+    expect(mockSetIsConnecting).toHaveBeenCalledWith(true);
+
+    // Advance past the setTimeout delay to trigger TLS reconnection
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(mockRestoreSaslCredentials).toHaveBeenCalledTimes(1);
+    expect(mockIrcConnectWithTLS).toHaveBeenCalledTimes(1);
+    expect(mockIrcConnectWithTLS).toHaveBeenCalledWith(
+      expect.objectContaining({ servers: ['irc.test.com'] }),
+      'testNick',
+      6697,
+    );
+
+    vi.useRealTimers();
+  });
+
   it('test socket close during STS upgrade restores SASL credentials before reconnect', async () => {
     vi.useFakeTimers();
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
