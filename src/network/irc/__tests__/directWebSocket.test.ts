@@ -210,6 +210,37 @@ describe('directWebSocket', () => {
 
       expect(firstSocket?.close).toHaveBeenCalled();
     });
+
+    it('should remove event handlers from old socket when creating new one', async () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+
+      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      const firstSocket = lastCreatedSocket!;
+
+      // Simulate connection established to clear isDirectConnectingFlag
+      await firstSocket.onopen?.();
+
+      // The first socket should have handlers
+      expect(firstSocket.onclose).not.toBeNull();
+      expect(firstSocket.onmessage).not.toBeNull();
+
+      // Create a second connection (replacing the first)
+      directWebSocket.initDirectWebSocket(server, 'TestNick2');
+
+      // Handlers on the old socket should have been removed to prevent
+      // stale onclose from nulling out the new socket reference
+      expect(firstSocket.onclose).toBeNull();
+      expect(firstSocket.onerror).toBeNull();
+      expect(firstSocket.onmessage).toBeNull();
+      expect(firstSocket.onopen).toBeNull();
+    });
   });
 
   describe('sendDirectRaw', () => {

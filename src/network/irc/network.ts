@@ -87,6 +87,9 @@ const scheduleReconnectAttempt = (): void => {
         // ircReconnect couldn't initiate (no server/nick) - retry or give up
         scheduleReconnectAttempt();
       }
+    }).catch(() => {
+      // ircReconnect threw (e.g., invalid server config) - retry or give up
+      scheduleReconnectAttempt();
     });
   }, 2000);
 };

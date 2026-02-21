@@ -724,6 +724,36 @@ describe('network', () => {
 
       expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
     });
+
+    it('should recover from ircReconnect rejecting due to credential restore failure', async () => {
+      mockGetServer.mockReturnValue(testServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      // Trigger inactivity reconnection cycle
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(network.getIsReconnecting()).toBe(true);
+
+      // Make restoreSaslCredentials reject — this causes ircReconnect to throw
+      mockRestoreSaslCredentials.mockRejectedValueOnce(new Error('decrypt failed'));
+
+      mockSetAddMessageToAllChannels.mockClear();
+
+      // Wait for the first reconnect delay (2s) — ircReconnect will reject
+      await vi.advanceTimersByTimeAsync(2000);
+      await flushPromises();
+
+      // Should still be reconnecting — the .catch() should schedule another attempt
+      expect(network.getIsReconnecting()).toBe(true);
+
+      // The catch handler should have called scheduleReconnectAttempt which posts a message
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'kernel.inactivityTimeoutReconnecting',
+        }),
+      );
+    });
   });
 
   describe('handleReconnectFailure', () => {

@@ -79,8 +79,13 @@ const processMessageQueue = async (): Promise<void> => {
  * This bypasses the backend and connects directly from the browser.
  */
 export const initDirectWebSocket = (server: Server, nick: string): void => {
-  // Close existing connection if any
+  // Close existing connection if any (remove handlers to prevent stale
+  // onclose from nulling the new socket reference)
   if (directSocket) {
+    directSocket.onclose = null;
+    directSocket.onerror = null;
+    directSocket.onmessage = null;
+    directSocket.onopen = null;
     directSocket.close();
     directSocket = null;
   }
