@@ -16,6 +16,7 @@ import { useCurrentStore } from '@features/chat/store/current';
 import Avatar from '@shared/components/Avatar';
 import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
+import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck } from 'lucide-react';
@@ -81,6 +82,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
       </div>
       <YouTubeThumbnail text={message.message} />
       <ImagesPreview text={message.message} />
+      <SocialEmbed text={message.message} />
     </div>
   );
 };
@@ -172,6 +174,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
             </div>
             <YouTubeThumbnail text={message.message} />
             <ImagesPreview text={message.message} />
+            <SocialEmbed text={message.message} />
           </div>
         </div>
       )}

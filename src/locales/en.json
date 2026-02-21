@@ -322,6 +322,7 @@
     "a11y.skipToContent": "Skip to content",
     "a11y.openImage": "Open image (new tab)",
     "a11y.watchYouTube": "Watch YouTube video (new tab)",
+    "a11y.viewSocialPost": "View social media post",
     "a11y.connectionProgress": "Connection progress",
     "channelSettings.lists.removeEntry": "Remove {{mask}}",
     "channelSettings.lists.newEntryLabel": "New mask entry",
