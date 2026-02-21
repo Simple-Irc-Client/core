@@ -21,6 +21,7 @@ const WizardLoading = () => {
 
   const [isTimedOut, setIsTimedOut] = useState(false);
   const [lastServerMessage, setLastServerMessage] = useState('');
+  const [messageKey, setMessageKey] = useState(0);
 
   // Track latest raw IRC message from the server for debugging
   useEffect(() => {
@@ -31,6 +32,7 @@ const WizardLoading = () => {
         const colonIndex = safe.indexOf(' :');
         const display = colonIndex !== -1 ? safe.substring(colonIndex + 2) : safe;
         setLastServerMessage(display.length > 120 ? display.substring(0, 120) + '...' : display);
+        setMessageKey((k) => k + 1);
       }
     };
 
@@ -124,7 +126,7 @@ const WizardLoading = () => {
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
         {lastServerMessage !== '' && (
-          <p className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto">{lastServerMessage}</p>
+          <p key={messageKey} className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto animate-in fade-in duration-300">{lastServerMessage}</p>
         )}
       </div>
       {showTimeoutUI && (
