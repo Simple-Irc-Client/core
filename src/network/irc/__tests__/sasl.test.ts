@@ -354,6 +354,47 @@ describe('sasl', () => {
       expect(result).toBe(false);
     });
 
+    it('should await in-flight save before restoring (fire-and-forget STS race)', async () => {
+      // Simulate slow encryption to widen the race window
+      let resolveEncrypt!: (value: string) => void;
+      mockEncryptString
+        .mockImplementationOnce(() => new Promise<string>((r) => { resolveEncrypt = r; }))
+        .mockImplementationOnce((str: string) => Promise.resolve(`encrypted:${str}`));
+
+      setSaslCredentials('stsUser', 'stsPass');
+
+      // Fire-and-forget save (like the STS upgrade path in kernel.ts)
+      void saveSaslCredentialsForReconnect();
+
+      // Immediately clear credentials (ircDisconnect → clearSaslCredentials)
+      clearSaslCredentials();
+
+      // Call restore while the save is still in progress
+      const restorePromise = restoreSaslCredentials();
+
+      // Now let the first encrypt resolve — this unblocks the save
+      resolveEncrypt('encrypted:stsUser');
+
+      const result = await restorePromise;
+
+      expect(result).toBe(true);
+      expect(getSaslAccount()).toBe('stsUser');
+      expect(getSaslPassword()).toBe('stsPass');
+    });
+
+    it('should handle restore when no save is in flight', async () => {
+      // Complete save fully first
+      setSaslCredentials('account', 'password');
+      await saveSaslCredentialsForReconnect();
+      clearSaslCredentials();
+
+      // Restore with no pending save — should still work
+      const result = await restoreSaslCredentials();
+
+      expect(result).toBe(true);
+      expect(getSaslAccount()).toBe('account');
+    });
+
     it('should return false when decryption fails', async () => {
       setSaslCredentials('account', 'password');
       await saveSaslCredentialsForReconnect();

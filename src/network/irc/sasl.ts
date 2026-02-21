@@ -20,6 +20,9 @@ let authenticatedAccount: string | null = null;
 let savedEncryptedAccount: string | null = null;
 let savedEncryptedPassword: string | null = null;
 
+// Tracks an in-flight save so restoreSaslCredentials can await it
+let pendingSave: Promise<void> | null = null;
+
 /** Get current SASL state */
 export const getSaslState = (): SaslState => saslState;
 
@@ -152,7 +155,9 @@ export const isSaslComplete = (): boolean => {
 };
 
 /**
- * Save credentials before disconnect (encrypted for reconnection)
+ * Save credentials before disconnect (encrypted for reconnection).
+ * Tracks the in-flight promise so restoreSaslCredentials can await it
+ * even when the caller fires-and-forgets (e.g. the STS upgrade path).
  */
 export const saveSaslCredentialsForReconnect = async (): Promise<void> => {
   // Capture values synchronously before any awaits, since setSaslState('success')
@@ -160,19 +165,29 @@ export const saveSaslCredentialsForReconnect = async (): Promise<void> => {
   const account = saslAccount;
   const password = saslPassword;
   if (account && password) {
-    // Ensure session encryption is available
-    if (!isEncryptionAvailable()) {
-      await initSessionEncryption();
-    }
-    savedEncryptedAccount = await encryptString(account);
-    savedEncryptedPassword = await encryptString(password);
+    const save = (async () => {
+      // Ensure session encryption is available
+      if (!isEncryptionAvailable()) {
+        await initSessionEncryption();
+      }
+      savedEncryptedAccount = await encryptString(account);
+      savedEncryptedPassword = await encryptString(password);
+    })();
+    pendingSave = save;
+    await save;
+    pendingSave = null;
   }
 };
 
 /**
- * Restore saved credentials after reconnect (decrypted)
+ * Restore saved credentials after reconnect (decrypted).
+ * Awaits any in-flight save first to avoid reading stale values.
  */
 export const restoreSaslCredentials = async (): Promise<boolean> => {
+  // Wait for any in-flight save to finish (e.g. fire-and-forget STS path)
+  if (pendingSave) {
+    await pendingSave;
+  }
   if (savedEncryptedAccount && savedEncryptedPassword && isEncryptionAvailable()) {
     try {
       saslAccount = await decryptString(savedEncryptedAccount);
