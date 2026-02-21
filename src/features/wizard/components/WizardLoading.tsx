@@ -6,7 +6,6 @@ import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsSt
 import { ircConnect, ircDisconnect, ircJoinChannels, on, off } from '@/network/irc/network';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
-import { type IrcEvent } from '@/network/irc/kernel';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 
 const CONNECTION_TIMEOUT_MS = 60_000;
@@ -25,7 +24,7 @@ const WizardLoading = () => {
 
   // Track latest raw IRC message from the server for debugging
   useEffect(() => {
-    const handleIrcEvent = (data: IrcEvent): void => {
+    const handleIrcEvent = (data: { type: string; line?: string }): void => {
       if (data?.type === 'raw' && data.line) {
         // Redact sensitive info (passwords, SASL tokens) then extract trailing text
         const safe = redactSensitiveIrc(data.line);

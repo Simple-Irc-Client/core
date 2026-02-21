@@ -26,6 +26,8 @@ vi.mock('@/network/irc/network', () => ({
   ircConnect: vi.fn(),
   ircDisconnect: vi.fn(),
   ircJoinChannels: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
 }));
 
 vi.mock('@shared/lib/queryParams', () => ({
@@ -35,6 +37,14 @@ vi.mock('@shared/lib/queryParams', () => ({
 vi.mock('@/network/irc/sts', () => ({
   getPendingSTSUpgrade: vi.fn(),
 }));
+
+vi.mock('@shared/lib/utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/lib/utils')>();
+  return {
+    ...actual,
+    redactSensitiveIrc: (line: string) => line,
+  };
+});
 
 describe('WizardLoading', () => {
   beforeEach(() => {
