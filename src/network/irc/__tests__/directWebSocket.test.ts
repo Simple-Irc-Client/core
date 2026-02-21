@@ -222,7 +222,7 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server, 'TestNick');
-      const firstSocket = lastCreatedSocket!;
+      const firstSocket = lastCreatedSocket as MockWebSocket;
 
       // Simulate connection established to clear isDirectConnectingFlag
       await firstSocket.onopen?.();
