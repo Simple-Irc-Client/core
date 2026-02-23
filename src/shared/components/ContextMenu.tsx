@@ -325,6 +325,46 @@ export const ContextMenu = () => {
       </DropdownMenu>
     );
   }
+  if (contextMenuCategory === 'url' && contextMenuItem !== undefined) {
+    const handleOpenUrl = (): void => {
+      if (isSafeUrl(contextMenuItem)) {
+        window.open(contextMenuItem, '_blank', 'noopener,noreferrer');
+      }
+      handleContextMenuClose();
+    };
+
+    const handleCopyUrl = (): void => {
+      navigator.clipboard.writeText(contextMenuItem);
+      handleContextMenuClose();
+    };
+
+    const truncated = contextMenuItem.length > 50 ? contextMenuItem.substring(0, 50) + '...' : contextMenuItem;
+
+    return (
+      <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
+        <DropdownMenuContent
+          style={
+            contextMenuPosition
+              ? {
+                  position: 'fixed',
+                  left: `${contextMenuPosition.x}px`,
+                  top: `${contextMenuPosition.y}px`,
+                }
+              : undefined
+          }
+        >
+          <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleOpenUrl}>
+            <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.url.open')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCopyUrl}>{t('contextmenu.url.copy')}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   if (contextMenuCategory === 'chat' && contextMenuItem !== undefined) {
     const handleClearScreen = (): void => {
       setClearMessages(contextMenuItem);

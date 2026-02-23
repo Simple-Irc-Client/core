@@ -7,7 +7,7 @@ import {
   stripIrcFormatting,
 } from '@/shared/lib/ircFormatting';
 import type { FormattedSegment, FormatState } from '@/shared/lib/ircFormatting';
-import { isSafeCssColor } from '@shared/lib/utils';
+import { isSafeCssColor, isSafeUrl } from '@shared/lib/utils';
 
 interface MessageTextProps {
   text: string;
@@ -15,7 +15,7 @@ interface MessageTextProps {
 }
 
 interface TextPart {
-  type: 'text' | 'channel';
+  type: 'text' | 'channel' | 'url';
   value: string;
   segments?: FormattedSegment[];
 }
@@ -97,13 +97,17 @@ const MessageText = ({ text, color }: MessageTextProps) => {
     // Parse IRC formatting on the full text first to preserve state across words
     const segments = hasIrcFormatting(text) ? parseIrcFormatting(text) : null;
 
+    const isUrl = (word: string): boolean => /^https?:\/\/\S+/.test(word) && isSafeUrl(word);
+
     if (!segments) {
-      // No formatting — split by words for channel detection
+      // No formatting — split by words for channel/URL detection
       const result: TextPart[] = [];
       const words = text.split(/(\s+)/);
       for (const word of words) {
         if (channelPattern && !(/^\s+$/.test(word)) && channelPattern.test(word)) {
           result.push({ type: 'channel', value: word });
+        } else if (!(/^\s+$/.test(word)) && isUrl(word)) {
+          result.push({ type: 'url', value: word });
         } else {
           result.push({ type: 'text', value: word });
         }
@@ -111,13 +115,16 @@ const MessageText = ({ text, color }: MessageTextProps) => {
       return result;
     }
 
-    // With formatting — split each segment's text by words for channel detection
+    // With formatting — split each segment's text by words for channel/URL detection
     const result: TextPart[] = [];
     for (const segment of segments) {
       const words = segment.text.split(/(\s+)/);
       for (const word of words) {
-        if (channelPattern && !(/^\s+$/.test(word)) && channelPattern.test(stripIrcFormatting(word))) {
+        const stripped = stripIrcFormatting(word);
+        if (channelPattern && !(/^\s+$/.test(word)) && channelPattern.test(stripped)) {
           result.push({ type: 'channel', value: word });
+        } else if (!(/^\s+$/.test(word)) && isUrl(stripped)) {
+          result.push({ type: 'url', value: word, segments: [{ text: word, style: segment.style }] });
         } else {
           result.push({ type: 'text', value: word, segments: [{ text: word, style: segment.style }] });
         }
@@ -131,6 +138,11 @@ const MessageText = ({ text, color }: MessageTextProps) => {
     handleContextMenuUserClick(event, 'channel', channel);
   };
 
+  const handleUrlClick = (event: React.MouseEvent<HTMLElement>, url: string) => {
+    event.preventDefault();
+    handleContextMenuUserClick(event, 'url', url);
+  };
+
   return (
     <span style={{ color }}>
       {parts.map((part, index) => {
@@ -142,6 +154,20 @@ const MessageText = ({ text, color }: MessageTextProps) => {
               onContextMenu={(e) => handleChannelClick(e, part.value)}
             >
               {part.value}
+            </span>
+          );
+        }
+
+        if (part.type === 'url') {
+          const content = part.segments ? renderFormattedSegments(part.segments, color) : part.value;
+          return (
+            <span
+              key={index}
+              className="cursor-pointer hover:underline"
+              onClick={(e) => handleUrlClick(e, part.value)}
+              onContextMenu={(e) => handleUrlClick(e, part.value)}
+            >
+              {content}
             </span>
           );
         }

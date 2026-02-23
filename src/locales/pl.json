@@ -207,6 +207,8 @@
     "contextmenu.user.operator.ban": "Zbanuj",
     "contextmenu.user.operator.kickban": "Wyrzuć i zbanuj",
     "contextmenu.user.invite": "Zaproś na kanał",
+    "contextmenu.url.open": "Otwórz",
+    "contextmenu.url.copy": "Kopiuj URL",
     "contextmenu.channel.join": "Dołącz",
     "contextmenu.text.copy": "Kopiuj",
     "contextmenu.chat.clear": "Wyczyść ekran",

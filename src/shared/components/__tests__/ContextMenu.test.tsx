@@ -805,6 +805,116 @@ describe('ContextMenu', () => {
     });
   });
 
+  describe('URL context menu', () => {
+    const createUrlContextMenuMock = (overrides = {}) => ({
+      contextMenuOpen: true,
+      handleContextMenuClose: mockHandleContextMenuClose,
+      contextMenuAnchorElement: null,
+      contextMenuCategory: 'url' as const,
+      contextMenuItem: 'https://example.com',
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      contextMenuPosition: { x: 100, y: 200 },
+      ...overrides,
+    });
+
+    it('should render Open and Copy URL options when category is url', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.url.open');
+      expect(document.body.textContent).toContain('contextmenu.url.copy');
+    });
+
+    it('should show truncated URL as label', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock()
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('https://example.com');
+    });
+
+    it('should truncate long URLs in the label', () => {
+      const longUrl = 'https://example.com/very/long/path/that/exceeds/fifty/characters/in/total';
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuItem: longUrl })
+      );
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain(longUrl.substring(0, 50) + '...');
+    });
+
+    it('should not render url menu when contextMenuItem is undefined', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuItem: undefined })
+      );
+
+      const { container } = render(<ContextMenu />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('should open URL in new tab when Open is clicked', () => {
+      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuItem: 'https://example.com' })
+      );
+
+      render(<ContextMenu />);
+      const openButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.url.open'));
+      expect(openButton).toBeDefined();
+      if (openButton) fireEvent.click(openButton);
+
+      expect(mockWindowOpen).toHaveBeenCalledWith('https://example.com', '_blank', 'noopener,noreferrer');
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should not open unsafe URLs', () => {
+      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuItem: 'javascript:alert(1)' })
+      );
+
+      render(<ContextMenu />);
+      const openButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.url.open'));
+      if (openButton) fireEvent.click(openButton);
+
+      expect(mockWindowOpen).not.toHaveBeenCalled();
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should copy URL to clipboard when Copy URL is clicked', () => {
+      const mockWriteText = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText: mockWriteText } });
+
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuItem: 'https://example.com/path' })
+      );
+
+      render(<ContextMenu />);
+      const copyButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.url.copy'));
+      expect(copyButton).toBeDefined();
+      if (copyButton) fireEvent.click(copyButton);
+
+      expect(mockWriteText).toHaveBeenCalledWith('https://example.com/path');
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should position menu at contextMenuPosition coordinates', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createUrlContextMenuMock({ contextMenuPosition: { x: 300, y: 450 } })
+      );
+
+      render(<ContextMenu />);
+      const menuContent = document.body.querySelector('[role="menu"]');
+      expect(menuContent).toHaveStyle({ position: 'fixed', left: '300px', top: '450px' });
+    });
+  });
+
   describe('Chat context menu (Clear Screen)', () => {
     const createChatContextMenuMock = (overrides = {}) => ({
       contextMenuOpen: true,

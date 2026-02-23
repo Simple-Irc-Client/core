@@ -199,6 +199,102 @@ describe('MessageText', () => {
     });
   });
 
+  describe('URL detection', () => {
+    it('should detect https URLs as clickable', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="Check https://example.com for info" />);
+
+      const urlSpan = getByText('https://example.com');
+      expect(urlSpan).toHaveClass('cursor-pointer');
+      expect(urlSpan).toHaveClass('hover:underline');
+    });
+
+    it('should detect http URLs as clickable', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="Visit http://example.com now" />);
+
+      const urlSpan = getByText('http://example.com');
+      expect(urlSpan).toHaveClass('cursor-pointer');
+    });
+
+    it('should detect URLs with paths and query strings', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="See https://example.com/path?q=1" />);
+
+      const urlSpan = getByText('https://example.com/path?q=1');
+      expect(urlSpan).toHaveClass('cursor-pointer');
+    });
+
+    it('should detect multiple URLs in one message', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="https://one.com and https://two.com" />);
+
+      expect(getByText('https://one.com')).toHaveClass('cursor-pointer');
+      expect(getByText('https://two.com')).toHaveClass('cursor-pointer');
+    });
+
+    it('should not detect non-URL text as clickable URL', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="not a url here" />);
+
+      const clickableSpans = container.querySelectorAll('.cursor-pointer');
+      expect(clickableSpans.length).toBe(0);
+    });
+
+    it('should not detect unsafe URLs (javascript:)', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="javascript:alert(1)" />);
+
+      const clickableSpans = container.querySelectorAll('.cursor-pointer');
+      expect(clickableSpans.length).toBe(0);
+    });
+
+    it('should call handleContextMenuUserClick with url category on click', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="Visit https://example.com please" />);
+
+      const urlSpan = getByText('https://example.com');
+      fireEvent.click(urlSpan);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'url',
+        'https://example.com'
+      );
+    });
+
+    it('should call handleContextMenuUserClick with url category on right-click', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="Visit https://example.com please" />);
+
+      const urlSpan = getByText('https://example.com');
+      fireEvent.contextMenu(urlSpan);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'url',
+        'https://example.com'
+      );
+    });
+
+    it('should handle message with both URL and channel', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getByText } = render(<MessageText text="Join #channel or visit https://example.com" />);
+
+      expect(getByText('#channel')).toHaveClass('cursor-pointer');
+      expect(getByText('https://example.com')).toHaveClass('cursor-pointer');
+    });
+  });
+
   describe('IRC formatting', () => {
     it('should render bold text with font-weight bold', () => {
       vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
