@@ -65,26 +65,60 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
   };
 };
 
-// Helper to calculate optimal context menu position
-const getContextMenuPosition = (anchorElement: HTMLElement, menuHeight = 200) => {
-  const rect = anchorElement.getBoundingClientRect();
+// Helper to calculate context menu position clamped within viewport bounds
+const getMenuPosition = (
+  source: HTMLElement | { x: number; y: number },
+  menuWidth = 200,
+  menuHeight = 200,
+): { left: number; top: number } => {
+  const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
-  const spaceBelow = viewportHeight - rect.bottom;
-  const spaceAbove = rect.top;
 
-  // If there's not enough space below but more space above, position above
-  if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-    return {
-      left: rect.left,
-      top: Math.max(0, rect.top - menuHeight),
-    };
+  let left: number;
+  let top: number;
+
+  if (source instanceof HTMLElement) {
+    const rect = source.getBoundingClientRect();
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    left = rect.left;
+    top = spaceBelow < menuHeight && spaceAbove > spaceBelow ? rect.top - menuHeight : rect.bottom;
+  } else {
+    left = source.x;
+    top = source.y;
   }
 
-  // Default: position below
   return {
-    left: rect.left,
-    top: rect.bottom,
+    left: Math.max(0, Math.min(left, viewportWidth - menuWidth)),
+    top: Math.max(0, Math.min(top, viewportHeight - menuHeight)),
   };
+};
+
+const PositionedMenuContent = ({
+  source,
+  menuHeight,
+  children,
+}: {
+  source: HTMLElement | { x: number; y: number } | null;
+  menuHeight?: number;
+  children: React.ReactNode;
+}) => {
+  const position = source ? getMenuPosition(source, undefined, menuHeight) : null;
+  return (
+    <DropdownMenuContent
+      style={
+        position
+          ? {
+              position: 'fixed',
+              left: `${position.left}px`,
+              top: `${position.top}px`,
+            }
+          : undefined
+      }
+    >
+      {children}
+    </DropdownMenuContent>
+  );
 };
 
 export const ContextMenu = () => {
@@ -98,28 +132,16 @@ export const ContextMenu = () => {
       handleContextMenuClose();
     };
 
-    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 80) : null;
-
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <DropdownMenuContent
-          style={
-            position
-              ? {
-                  position: 'fixed',
-                  left: `${position.left}px`,
-                  top: `${position.top}px`,
-                }
-              : undefined
-          }
-        >
+        <PositionedMenuContent source={contextMenuAnchorElement} menuHeight={80}>
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleJoin}>
             <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.channel.join')}
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </PositionedMenuContent>
       </DropdownMenu>
     );
   }
@@ -246,21 +268,9 @@ export const ContextMenu = () => {
     const permissions = getOperatorPermissions(currentUserChannelModes, targetUserChannelModes);
     const hasOperatorActions = isInChannel && (permissions.currentLevel >= 2); // At least half-op
 
-    const position = contextMenuAnchorElement ? getContextMenuPosition(contextMenuAnchorElement as HTMLElement, 300) : null;
-
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <DropdownMenuContent
-          style={
-            position
-              ? {
-                  position: 'fixed',
-                  left: `${position.left}px`,
-                  top: `${position.top}px`,
-                }
-              : undefined
-          }
-        >
+        <PositionedMenuContent source={contextMenuAnchorElement} menuHeight={300}>
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {userHomepage && (
@@ -413,7 +423,7 @@ export const ContextMenu = () => {
               </DropdownMenuSub>
             </>
           )}
-        </DropdownMenuContent>
+        </PositionedMenuContent>
       </DropdownMenu>
     );
   }
@@ -434,17 +444,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <DropdownMenuContent
-          style={
-            contextMenuPosition
-              ? {
-                  position: 'fixed',
-                  left: `${contextMenuPosition.x}px`,
-                  top: `${contextMenuPosition.y}px`,
-                }
-              : undefined
-          }
-        >
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleOpenUrl}>
@@ -455,7 +455,7 @@ export const ContextMenu = () => {
             <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.url.copy')}
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </PositionedMenuContent>
       </DropdownMenu>
     );
   }
@@ -468,22 +468,12 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <DropdownMenuContent
-          style={
-            contextMenuPosition
-              ? {
-                  position: 'fixed',
-                  left: `${contextMenuPosition.x}px`,
-                  top: `${contextMenuPosition.y}px`,
-                }
-              : undefined
-          }
-        >
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuItem onClick={handleClearScreen}>
             <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.chat.clear')}
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </PositionedMenuContent>
       </DropdownMenu>
     );
   }
@@ -498,24 +488,14 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <DropdownMenuContent
-          style={
-            contextMenuPosition
-              ? {
-                  position: 'fixed',
-                  left: `${contextMenuPosition.x}px`,
-                  top: `${contextMenuPosition.y}px`,
-                }
-              : undefined
-          }
-        >
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCopy}>
             <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.text.copy')}
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </PositionedMenuContent>
       </DropdownMenu>
     );
   }
