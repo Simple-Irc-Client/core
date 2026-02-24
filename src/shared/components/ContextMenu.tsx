@@ -66,7 +66,7 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
 };
 
 // Helper to calculate context menu position clamped within viewport bounds
-const getMenuPosition = (
+export const getMenuPosition = (
   source: HTMLElement | { x: number; y: number },
   menuWidth = 200,
   menuHeight = 200,

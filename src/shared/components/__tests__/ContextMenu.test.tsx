@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
-import { ContextMenu } from '../ContextMenu';
+import { ContextMenu, getMenuPosition } from '../ContextMenu';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as settings from '@features/settings/store/settings';
 import * as users from '@features/users/store/users';
@@ -912,6 +912,87 @@ describe('ContextMenu', () => {
       render(<ContextMenu />);
       const menuContent = document.body.querySelector('[role="menu"]');
       expect(menuContent).toHaveStyle({ position: 'fixed', left: '300px', top: '450px' });
+    });
+  });
+
+  describe('getMenuPosition', () => {
+    beforeEach(() => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+    });
+
+    describe('with coordinate source', () => {
+      it('should return coordinates directly when within bounds', () => {
+        const result = getMenuPosition({ x: 100, y: 200 }, 200, 200);
+        expect(result).toEqual({ left: 100, top: 200 });
+      });
+
+      it('should clamp left when menu would overflow right edge', () => {
+        const result = getMenuPosition({ x: 900, y: 200 }, 200, 200);
+        expect(result).toEqual({ left: 824, top: 200 });
+      });
+
+      it('should clamp top when menu would overflow bottom edge', () => {
+        const result = getMenuPosition({ x: 100, y: 700 }, 200, 200);
+        expect(result).toEqual({ left: 100, top: 568 });
+      });
+
+      it('should clamp both axes when near bottom-right corner', () => {
+        const result = getMenuPosition({ x: 950, y: 700 }, 200, 200);
+        expect(result).toEqual({ left: 824, top: 568 });
+      });
+
+      it('should clamp negative coordinates to zero', () => {
+        const result = getMenuPosition({ x: -50, y: -30 }, 200, 200);
+        expect(result).toEqual({ left: 0, top: 0 });
+      });
+    });
+
+    describe('with HTMLElement source', () => {
+      const createElement = (rect: Partial<DOMRect>) => {
+        const el = document.createElement('div');
+        el.getBoundingClientRect = () => ({
+          top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 0,
+          toJSON: () => {},
+          ...rect,
+        });
+        return el;
+      };
+
+      it('should position below element when enough space', () => {
+        const el = createElement({ left: 100, top: 200, bottom: 230 });
+        const result = getMenuPosition(el, 200, 200);
+        expect(result).toEqual({ left: 100, top: 230 });
+      });
+
+      it('should position above element when not enough space below', () => {
+        const el = createElement({ left: 100, top: 600, bottom: 630 });
+        const result = getMenuPosition(el, 200, 200);
+        expect(result).toEqual({ left: 100, top: 400 });
+      });
+
+      it('should clamp left when element is near right edge', () => {
+        const el = createElement({ left: 900, top: 100, bottom: 130 });
+        const result = getMenuPosition(el, 200, 200);
+        expect(result).toEqual({ left: 824, top: 130 });
+      });
+
+      it('should clamp top to zero when positioned above but near top of viewport', () => {
+        const el = createElement({ left: 100, top: 50, bottom: 80 });
+        // spaceBelow = 768 - 80 = 688 (enough), so positions below
+        const result = getMenuPosition(el, 200, 200);
+        expect(result).toEqual({ left: 100, top: 80 });
+      });
+
+      it('should prefer below when space below equals space above', () => {
+        // top: 384, bottom: 384 → spaceBelow = 384, spaceAbove = 384
+        // spaceBelow < menuHeight (384 < 400) AND spaceAbove > spaceBelow is false (equal)
+        // → positions below
+        const el = createElement({ left: 100, top: 384, bottom: 384 });
+        const result = getMenuPosition(el, 200, 400);
+        // top=384 gets clamped to 768-400=368
+        expect(result).toEqual({ left: 100, top: 368 });
+      });
     });
   });
 
