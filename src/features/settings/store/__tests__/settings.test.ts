@@ -656,17 +656,69 @@ describe('settings store', () => {
       expect(stored.state.server).toEqual(server);
     });
 
-    it('should NOT write connection state to localStorage', () => {
+    it('should NOT write transient connection state to localStorage', () => {
       setIsConnecting(true);
       setIsConnected(true);
       setConnectedTime(123456);
-      setWizardCompleted(true);
 
       const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
       expect(stored.state.isConnecting).toBeUndefined();
       expect(stored.state.isConnected).toBeUndefined();
       expect(stored.state.connectedTime).toBeUndefined();
-      expect(stored.state.isWizardCompleted).toBeUndefined();
+    });
+
+    it('should write isWizardCompleted to localStorage', () => {
+      setWizardCompleted(true);
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.isWizardCompleted).toBe(true);
+    });
+
+    it('should update isWizardCompleted in localStorage when reset', () => {
+      setWizardCompleted(true);
+      setWizardCompleted(false);
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.isWizardCompleted).toBe(false);
+    });
+
+    it('should rehydrate isWizardCompleted after page reload', () => {
+      const persistedData = {
+        state: {
+          isWizardCompleted: true,
+          nick: 'SavedNick',
+          server: { default: 0, encoding: 'utf8', network: 'Net', servers: ['irc.net:6667'] },
+        },
+        version: 1,
+      };
+      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
+
+      useSettingsStore.persist.rehydrate();
+
+      expect(getIsWizardCompleted()).toBe(true);
+    });
+
+    it('should stay in main view after page reload when wizard was completed', () => {
+      // Simulate localStorage as saved from a previous session where wizard was completed
+      localStorage.setItem('sic-settings', JSON.stringify({ state: { isWizardCompleted: true }, version: 1 }));
+
+      // beforeEach already reset in-memory state to false — confirm fresh-page defaults
+      expect(getIsWizardCompleted()).toBe(false);
+
+      // Rehydrate simulates the store reading localStorage on page load
+      useSettingsStore.persist.rehydrate();
+
+      // Should restore completed state — no wizard shown
+      expect(getIsWizardCompleted()).toBe(true);
+    });
+
+    it('should return to wizard after page reload when wizard was never completed', () => {
+      // isWizardCompleted defaults to false and is never set true
+      // so localStorage either has false or the key is missing
+
+      useSettingsStore.persist.rehydrate();
+
+      expect(getIsWizardCompleted()).toBe(false);
     });
 
     it('should rehydrate preferences from localStorage', () => {
@@ -680,6 +732,7 @@ describe('settings store', () => {
           fontFormatting: { colorCode: 4, bold: true, italic: false, underline: false },
           nick: 'SavedNick',
           server: { default: 0, encoding: 'utf8', network: 'Net', servers: ['irc.net:6667'] },
+          isWizardCompleted: true,
         },
         version: 1,
       };
@@ -696,6 +749,7 @@ describe('settings store', () => {
       expect(getFontFormatting().bold).toBe(true);
       expect(getCurrentNick()).toBe('SavedNick');
       expect(getServer()).toEqual(persistedData.state.server);
+      expect(getIsWizardCompleted()).toBe(true);
     });
 
     it('should preserve nick and server on resetWizardState', () => {

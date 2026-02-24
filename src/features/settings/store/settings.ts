@@ -306,6 +306,7 @@ export const useSettingsStore = create<SettingsStore>()(
       nick: state.nick,
       server: state.server,
       language: state.language,
+      isWizardCompleted: state.isWizardCompleted,
     }),
   }),
   ),
@@ -560,6 +561,15 @@ export const setLanguage = (language: LanguageSetting): void => {
 
 export const getLanguage = (): LanguageSetting => {
   return useSettingsStore.getState().language;
+};
+
+export const disconnectOnly = (): void => {
+  // Disconnect from the network and clear all stores, but stay in the main view
+  ircDisconnect();
+  setChannelsClearAll();
+  setUsersClearAll();
+  setCurrentClearAll();
+  setChannelListClear();
 };
 
 export const resetAndGoToStart = (): void => {
