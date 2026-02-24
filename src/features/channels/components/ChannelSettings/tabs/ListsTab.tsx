@@ -129,10 +129,10 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
       ) : (
         <div className="border rounded-md">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_100px_100px_40px] gap-2 p-2 border-b bg-muted text-sm font-medium">
+          <div className="grid grid-cols-[1fr_40px] sm:grid-cols-[1fr_100px_100px_40px] gap-2 p-2 border-b bg-muted text-sm font-medium">
             <div>{t('channelSettings.lists.mask')}</div>
-            <div>{t('channelSettings.lists.setBy')}</div>
-            <div>{t('channelSettings.lists.date')}</div>
+            <div className="hidden sm:block">{t('channelSettings.lists.setBy')}</div>
+            <div className="hidden sm:block">{t('channelSettings.lists.date')}</div>
             <div></div>
           </div>
 
@@ -146,15 +146,18 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
               activeList.map((entry, index) => (
                 <div
                   key={`${entry.mask}-${index}`}
-                  className="grid grid-cols-[1fr_100px_100px_40px] gap-2 p-2 border-b last:border-b-0 items-center text-sm"
+                  className="grid grid-cols-[1fr_40px] sm:grid-cols-[1fr_100px_100px_40px] gap-2 p-2 border-b last:border-b-0 items-center text-sm"
                 >
-                  <div className="truncate font-mono text-xs" title={entry.mask}>
+                  <div
+                    className="truncate font-mono text-xs"
+                    title={[entry.mask, entry.setBy && `${t('channelSettings.lists.setBy')}: ${entry.setBy}`, entry.setTime && formatDate(entry.setTime)].filter(Boolean).join(' · ')}
+                  >
                     {entry.mask}
                   </div>
-                  <div className="truncate" title={entry.setBy}>
+                  <div className="hidden sm:block truncate" title={entry.setBy}>
                     {entry.setBy || '-'}
                   </div>
-                  <div>{formatDate(entry.setTime)}</div>
+                  <div className="hidden sm:block">{formatDate(entry.setTime)}</div>
                   <div>
                     <Button
                       type="button"
