@@ -35,6 +35,7 @@
     "wizard.loading.button.reconnect": "Reconnect",
     "wizard.password.title": "The selected nickname is password protected",
     "wizard.password.password": "Password",
+    "wizard.password.rememberPassword": "Remember password",
     "wizard.password.button.next": "Next",
     "wizard.password.message.timeout1": "Unfortunately, the required time to enter the password has expired",
     "wizard.password.message.timeout2": "To change your nickname - in the main program window, type the commands:",

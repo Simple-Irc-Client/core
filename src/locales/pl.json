@@ -35,6 +35,7 @@
     "wizard.loading.button.reconnect": "Połącz ponownie",
     "wizard.password.title": "Wybrany pseudonim jest chroniony hasłem",
     "wizard.password.password": "Hasło",
+    "wizard.password.rememberPassword": "Zapamiętaj hasło",
     "wizard.password.button.next": "Dalej",
     "wizard.password.message.timeout1": "Niestety, upłynał wymagany czas na wpisanie hasła",
     "wizard.password.message.timeout2": "Aby zmienić login - w głównym oknie programu wpisz polecenia:",

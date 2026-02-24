@@ -1,10 +1,18 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardPassword from '../WizardPassword';
 import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
 import * as queryParams from '@shared/lib/queryParams';
 import * as encryption from '@/network/encryption';
+
+beforeAll(() => {
+  global.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -424,13 +432,17 @@ describe('WizardPassword', () => {
   });
 
   describe('Encrypted password persistence', () => {
-    it('should encrypt and save password on submit', async () => {
+    it('should encrypt and save password on submit when remember switch is on', async () => {
       setupMocks();
 
       render(<WizardPassword />);
 
       const input = screen.getByLabelText('wizard.password.password');
       fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      // Switch defaults to off when no saved password, turn it on
+      const rememberSwitch = screen.getByRole('switch');
+      fireEvent.click(rememberSwitch);
 
       const button = screen.getByText('wizard.password.button.next');
       fireEvent.click(button);
@@ -514,6 +526,80 @@ describe('WizardPassword', () => {
         const button = screen.getByText('wizard.password.button.next');
         expect(button).not.toBeDisabled();
       });
+    });
+  });
+
+  describe('Remember password switch', () => {
+    it('should show remember switch when nick matches', () => {
+      setupMocks('TestNick');
+
+      render(<WizardPassword />);
+
+      expect(screen.getByRole('switch')).toBeInTheDocument();
+      expect(screen.getByText('wizard.password.rememberPassword')).toBeInTheDocument();
+    });
+
+    it('should hide remember switch in timeout state', () => {
+      setupMocks('InitialNick');
+      const { rerender } = render(<WizardPassword />);
+
+      setupMocks('NewNick');
+      rerender(<WizardPassword />);
+
+      expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    });
+
+    it('should default switch to on when saved password exists', () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:savedpassword', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      const rememberSwitch = screen.getByRole('switch');
+      expect(rememberSwitch).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('should default switch to off when no saved password', () => {
+      setupMocks('TestNick');
+
+      render(<WizardPassword />);
+
+      const rememberSwitch = screen.getByRole('switch');
+      expect(rememberSwitch).toHaveAttribute('aria-checked', 'false');
+    });
+
+    it('should not save password when switch is off', () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      // Switch defaults to off, just submit
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(encryption.encryptPersistent).not.toHaveBeenCalled();
+      expect(settingsStore.setEncryptedPassword).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it('should clear saved password when switch is off and password was previously saved', () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:savedpassword', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      // Switch defaults to on because saved password exists, turn it off
+      const rememberSwitch = screen.getByRole('switch');
+      fireEvent.click(rememberSwitch);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'savedpassword' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(encryption.encryptPersistent).not.toHaveBeenCalled();
+      expect(settingsStore.setEncryptedPassword).toHaveBeenCalledWith(undefined, undefined);
     });
   });
 });

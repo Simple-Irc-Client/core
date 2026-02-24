@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
+import { Switch } from '@shared/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword, ircJoinChannels } from '@/network/irc/network';
 import { getCurrentNick, setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
@@ -17,6 +18,9 @@ const WizardPassword = () => {
   const nick = useSettingsStore((state) => state.nick);
   const encryptedPassword = useSettingsStore((state) => state.encryptedPassword);
   const passwordNick = useSettingsStore((state) => state.passwordNick);
+
+  const hasSavedPassword = !!(encryptedPassword && passwordNick === initialNick);
+  const [rememberPassword, setRememberPassword] = useState(hasSavedPassword);
 
   // Pre-fill from saved encrypted password
   useEffect(() => {
@@ -41,12 +45,17 @@ const WizardPassword = () => {
   const handleClick = (): void => {
     if (initialNick === nick) {
       ircSendPassword(password);
-      // Save encrypted password for future sessions
-      encryptPersistent(password).then((encrypted) => {
-        setEncryptedPassword(encrypted, nick);
-      }).catch(() => {
-        // Encryption failed - password won't be saved, but that's ok
-      });
+      if (rememberPassword) {
+        // Save encrypted password for future sessions
+        encryptPersistent(password).then((encrypted) => {
+          setEncryptedPassword(encrypted, nick);
+        }).catch(() => {
+          // Encryption failed - password won't be saved, but that's ok
+        });
+      } else {
+        // Clear any previously saved password
+        setEncryptedPassword(undefined, undefined);
+      }
     }
     const channels = getChannelParam();
     if (channels) {
@@ -73,6 +82,17 @@ const WizardPassword = () => {
           <div className="space-y-2">
             <Label htmlFor="password">{t('wizard.password.password')}</Label>
             <Input id="password" type="password" required autoComplete="password" autoFocus value={password} onChange={handleChange} />
+            <div className="flex items-center gap-4">
+              <Switch
+                id="remember-password"
+                checked={rememberPassword}
+                onCheckedChange={setRememberPassword}
+                aria-label={t('wizard.password.rememberPassword')}
+              />
+              <Label htmlFor="remember-password">
+                {t('wizard.password.rememberPassword')}
+              </Label>
+            </div>
           </div>
         )}
         <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={initialNick === nick && password === ''}>
