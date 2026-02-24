@@ -67,6 +67,7 @@ describe('Chat tests', () => {
     currentChannelName?: string;
     theme?: string;
     messages?: Message[];
+    isConnected?: boolean;
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -78,6 +79,7 @@ describe('Chat tests', () => {
       selector({
         currentChannelName,
         theme,
+        isConnected: overrides.isConnected ?? true,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -1533,6 +1535,37 @@ describe('Chat tests', () => {
 
       const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
       expect(highlightedEl).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Not connected empty state', () => {
+    it('should show NotConnected component when disconnected and no messages', () => {
+      setupMocks({ isConnected: false, messages: [] });
+
+      const { container } = render(<Main />);
+
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(container.querySelector('svg.lucide-wifi-off')).toBeInTheDocument();
+    });
+
+    it('should not show NotConnected when connected', () => {
+      setupMocks({ isConnected: true, messages: [] });
+
+      render(<Main />);
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('should not show NotConnected when disconnected but has messages', () => {
+      setupMocks({
+        isConnected: false,
+        messages: [createMessage({ id: '1', message: 'Old message' })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(container.textContent).toContain('Old message');
     });
   });
 

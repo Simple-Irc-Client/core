@@ -43,6 +43,7 @@ const Toolbar = () => {
   const isAway = currentUserFlags.includes('away');
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
+  const isConnecting: boolean = useSettingsStore((state) => state.isConnecting);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
 
@@ -465,9 +466,9 @@ const Toolbar = () => {
                     {t('currentUser.disconnect')}
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={() => ircReconnect()}>
+                  <DropdownMenuItem onClick={() => ircReconnect()} disabled={isConnecting}>
                     <LogIn className="mr-2 h-4 w-4" />
-                    {t('currentUser.connect')}
+                    {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>

@@ -1360,6 +1360,56 @@ describe('Toolbar', () => {
       expect(network.ircReconnect).toHaveBeenCalledTimes(1);
     });
 
+    it('should show Connecting text and disable Connect when isConnecting is true', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isConnecting: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('currentUser.connecting');
+      expect(document.body.textContent).not.toContain('currentUser.disconnect');
+    });
+
+    it('should mark Connect menu item as disabled when connecting', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isConnecting: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const connectingItem = screen.getByText('currentUser.connecting');
+      expect(connectingItem.closest('[data-disabled]')).toBeInTheDocument();
+    });
+
     it('should not call resetAndGoToStart when clicking Connect', async () => {
       vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
         selector({

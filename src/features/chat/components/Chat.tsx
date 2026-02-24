@@ -20,6 +20,7 @@ import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck } from 'lucide-react';
+import NotConnected from './NotConnected';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor } from '@shared/lib/utils';
@@ -187,6 +188,7 @@ const Chat = () => {
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const theme: string = useSettingsStore((state) => state.theme);
   const fontSize = useSettingsStore((state) => state.fontSize);
+  const isConnected = useSettingsStore((state) => state.isConnected);
   const messages = useCurrentStore((state) => state.messages);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -247,6 +249,7 @@ const Chat = () => {
         handleContextMenuUserClick(e, 'chat', currentChannelName);
       }
     }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
+      {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]) ?? '';
