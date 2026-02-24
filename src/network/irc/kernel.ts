@@ -2202,6 +2202,29 @@ export class Kernel {
       return;
     }
 
+    // Handle CTCP replies (NOTICE with \x01 delimiters)
+    if (message.startsWith('\x01')) {
+      // Only show CTCP replies addressed to us
+      if (target !== getCurrentNick()) {
+        return;
+      }
+
+      const ctcpContent = message.split('\x01').join('');
+      const spaceIndex = ctcpContent.indexOf(' ');
+      const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
+      const ctcpResponse = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
+
+      setAddMessage({
+        id: this.tags?.msgid ?? uuidv4(),
+        message: i18next.t('kernel.ctcpReply', { nick, command: ctcpCommand.toUpperCase(), response: ctcpResponse }),
+        target: currentChannelName,
+        time: this.tags?.time ?? new Date().toISOString(),
+        category: MessageCategory.notice,
+        color: MessageColor.notice,
+      });
+      return;
+    }
+
     const newMessage = {
       message,
       nick: nick.length !== 0 ? nick : undefined,
@@ -2380,36 +2403,61 @@ export class Kernel {
     const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
     const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
 
+    let ctcpResponse: string;
+
     switch (ctcpCommand.toUpperCase()) {
       case 'ACTION':
         this.handleCtcpAction(nick, target, ctcpParams, myNick, currentChannelName);
-        break;
+        return;
       case 'VERSION':
-        this.ctcpReply(nick, 'VERSION', clientVersion);
+        ctcpResponse = clientVersion;
         break;
       case 'TIME':
-        this.ctcpReply(nick, 'TIME', new Date().toString());
+        ctcpResponse = new Date().toString();
         break;
       case 'PING': {
         // Sanitize: strip control chars, cap length to prevent reflection abuse
         // eslint-disable-next-line no-control-regex
-        const sanitizedPing = ctcpParams.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 32);
-        this.ctcpReply(nick, 'PING', sanitizedPing);
+        ctcpResponse = ctcpParams.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 32);
         break;
       }
       case 'USERINFO':
-        this.ctcpReply(nick, 'USERINFO', myNick);
+        ctcpResponse = myNick;
         break;
       case 'SOURCE':
-        this.ctcpReply(nick, 'SOURCE', clientSourceUrl);
+        ctcpResponse = clientSourceUrl;
         break;
       case 'CLIENTINFO':
-        this.ctcpReply(nick, 'CLIENTINFO', 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO');
+        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO';
         break;
       default:
         // Unknown CTCP, ignore silently
-        break;
+        return;
     }
+
+    this.ctcpReply(nick, ctcpCommand.toUpperCase(), ctcpResponse);
+
+    const command = ctcpCommand.toUpperCase();
+
+    // Show CTCP request received notification
+    setAddMessage({
+      id: uuidv4(),
+      message: i18next.t('kernel.ctcpRequest', { nick, command }),
+      target: currentChannelName,
+      time: new Date().toISOString(),
+      category: MessageCategory.notice,
+      color: MessageColor.notice,
+    });
+
+    // Show CTCP response sent notification
+    setAddMessage({
+      id: uuidv4(),
+      message: i18next.t('kernel.ctcpResponse', { nick, command, response: ctcpResponse }),
+      target: currentChannelName,
+      time: new Date().toISOString(),
+      category: MessageCategory.notice,
+      color: MessageColor.notice,
+    });
   };
 
   // Send CTCP reply via NOTICE

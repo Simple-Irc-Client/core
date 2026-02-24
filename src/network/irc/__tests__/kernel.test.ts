@@ -13,7 +13,7 @@ import * as stsFile from '../sts';
 import * as saslFile from '../sasl';
 import * as stsStoreFile from '../store/stsStore';
 import i18next from '@/app/i18n';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '../../../config/config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL, clientVersion } from '../../../config/config';
 import { ChannelCategory } from '@shared/types';
 
 describe('kernel tests', () => {
@@ -4151,6 +4151,195 @@ describe('kernel tests', () => {
         new Kernel({ type: 'raw', line }).handle();
 
         expect(mockSend).toHaveBeenCalledWith(`NOTICE user :\x01PING ${'A'.repeat(32)}\x01`);
+      });
+    });
+
+    describe('CTCP request notifications', () => {
+      it('should show request and response notifications for CTCP VERSION', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01VERSION\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'VERSION' }),
+          target: '#test',
+          category: 'notice',
+        }));
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'VERSION', response: clientVersion }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should show request and response notifications for CTCP TIME', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01TIME\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'TIME' }),
+          target: '#test',
+          category: 'notice',
+        }));
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: expect.stringContaining('CTCP TIME'),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should show request and response notifications for CTCP PING', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01PING 12345\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'PING' }),
+          target: '#test',
+          category: 'notice',
+        }));
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'PING', response: '12345' }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should show request and response notifications for CTCP CLIENTINFO', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01CLIENTINFO\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'CLIENTINFO' }),
+          target: '#test',
+          category: 'notice',
+        }));
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'CLIENTINFO', response: 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO' }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should not show notification for CTCP ACTION', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG #test :\x01ACTION waves\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        const ctcpNotificationCalls = mockSetAddMessage.mock.calls.filter(
+          ([arg]) => arg.message?.includes?.('CTCP')
+        );
+        expect(ctcpNotificationCalls).toHaveLength(0);
+      });
+
+      it('should not show notification for unknown CTCP commands', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01UNKNOWNCMD\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        const ctcpNotificationCalls = mockSetAddMessage.mock.calls.filter(
+          ([arg]) => arg.category === 'notice'
+        );
+        expect(ctcpNotificationCalls).toHaveLength(0);
+      });
+    });
+
+    describe('CTCP reply in NOTICE', () => {
+      it('should show formatted CTCP VERSION reply', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE testuser :\x01VERSION Simple IRC Client\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'VERSION', response: 'Simple IRC Client' }),
+          target: '#test',
+          category: 'notice',
+          color: 'var(--msg-notice)',
+        }));
+      });
+
+      it('should show formatted CTCP PING reply', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE testuser :\x01PING 1234567890\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'PING', response: '1234567890' }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should show formatted CTCP TIME reply', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE testuser :\x01TIME Mon Jan 01 2023\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'TIME', response: 'Mon Jan 01 2023' }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should handle CTCP reply with no response parameter', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE testuser :\x01VERSION\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+          message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'VERSION', response: '' }),
+          target: '#test',
+          category: 'notice',
+        }));
+      });
+
+      it('should ignore CTCP reply not addressed to us', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE Global :\x01VERSION Simple IRC Client\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        const ctcpCalls = mockSetAddMessage.mock.calls.filter(
+          ([arg]) => arg.message?.includes?.('CTCP')
+        );
+        expect(ctcpCalls).toHaveLength(0);
+      });
+
+      it('should not treat regular NOTICE as CTCP reply', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host NOTICE testuser :This is a regular notice';
+        new Kernel({ type: 'raw', line }).handle();
+
+        const calls = mockSetAddMessage.mock.calls.filter(
+          ([arg]) => arg.message?.includes?.('CTCP')
+        );
+        expect(calls).toHaveLength(0);
       });
     });
 
