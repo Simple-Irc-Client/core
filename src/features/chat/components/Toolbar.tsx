@@ -510,7 +510,7 @@ const Toolbar = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
-                <EmojiPicker onEmojiClick={handleEmojiClick} />
+                <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
               </PopoverContent>
             </Popover>
             <ColorPicker open={colorPickerOpen} onOpenChange={setColorPickerOpen} />
