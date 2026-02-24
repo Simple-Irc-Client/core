@@ -14,7 +14,7 @@ import { ChannelCategory } from '@shared/types';
 import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
 import { isSafeUrl } from '@shared/lib/utils';
 
@@ -115,7 +115,10 @@ export const ContextMenu = () => {
         >
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleJoin}>{t('contextmenu.channel.join')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleJoin}>
+            <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.channel.join')}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -262,17 +265,38 @@ export const ContextMenu = () => {
           <DropdownMenuSeparator />
           {userHomepage && (
             <DropdownMenuItem onClick={handleVisitHomepage} title={userHomepage}>
-              <ExternalLink className="mr-2 h-4 w-4" />
+              <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('contextmenu.user.homepage')}
             </DropdownMenuItem>
           )}
-          {!isCurrentUser && <DropdownMenuItem onClick={handlePriv}>{t('contextmenu.user.priv')}</DropdownMenuItem>}
-          <DropdownMenuItem onClick={handleWhois}>{t('contextmenu.user.whois')}</DropdownMenuItem>
-          {canAddFriend && <DropdownMenuItem onClick={handleAddFriend}>{t('contextmenu.user.addfriend')}</DropdownMenuItem>}
-          {canIgnore && <DropdownMenuItem onClick={handleIgnore}>{t('contextmenu.user.ignore')}</DropdownMenuItem>}
+          {!isCurrentUser && (
+            <DropdownMenuItem onClick={handlePriv}>
+              <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('contextmenu.user.priv')}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={handleWhois}>
+            <Search className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.user.whois')}
+          </DropdownMenuItem>
+          {canAddFriend && (
+            <DropdownMenuItem onClick={handleAddFriend}>
+              <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('contextmenu.user.addfriend')}
+            </DropdownMenuItem>
+          )}
+          {canIgnore && (
+            <DropdownMenuItem onClick={handleIgnore}>
+              <EyeOff className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('contextmenu.user.ignore')}
+            </DropdownMenuItem>
+          )}
           {!isCurrentUser && userChannels.length > 0 && (
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger>{t('contextmenu.user.invite')}</DropdownMenuSubTrigger>
+              <DropdownMenuSubTrigger>
+                <Send className="mr-2 h-4 w-4" aria-hidden="true" />
+                {t('contextmenu.user.invite')}
+              </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 {userChannels.map((channel) => (
                   <DropdownMenuItem key={channel.name} onClick={() => handleInvite(channel.name)}>
@@ -287,16 +311,44 @@ export const ContextMenu = () => {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>{t('contextmenu.user.operator.title')}</DropdownMenuSubTrigger>
+                <DropdownMenuSubTrigger>
+                  <Shield className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {t('contextmenu.user.operator.title')}
+                </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   {/* Promotion options */}
                   {(permissions.canPromoteToVoice || permissions.canPromoteToHalfOp || permissions.canPromoteToOp || permissions.canPromoteToAdmin || permissions.canPromoteToOwner) && (
                     <>
-                      {permissions.canPromoteToVoice && <DropdownMenuItem onClick={() => handleModeChange('v', true)}>{t('contextmenu.user.operator.give.voice')}</DropdownMenuItem>}
-                      {permissions.canPromoteToHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', true)}>{t('contextmenu.user.operator.give.halfop')}</DropdownMenuItem>}
-                      {permissions.canPromoteToOp && <DropdownMenuItem onClick={() => handleModeChange('o', true)}>{t('contextmenu.user.operator.give.op')}</DropdownMenuItem>}
-                      {permissions.canPromoteToAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', true)}>{t('contextmenu.user.operator.give.admin')}</DropdownMenuItem>}
-                      {permissions.canPromoteToOwner && <DropdownMenuItem onClick={() => handleModeChange('q', true)}>{t('contextmenu.user.operator.give.owner')}</DropdownMenuItem>}
+                      {permissions.canPromoteToVoice && (
+                        <DropdownMenuItem onClick={() => handleModeChange('v', true)}>
+                          <ArrowUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.give.voice')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canPromoteToHalfOp && (
+                        <DropdownMenuItem onClick={() => handleModeChange('h', true)}>
+                          <ArrowUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.give.halfop')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canPromoteToOp && (
+                        <DropdownMenuItem onClick={() => handleModeChange('o', true)}>
+                          <ArrowUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.give.op')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canPromoteToAdmin && (
+                        <DropdownMenuItem onClick={() => handleModeChange('a', true)}>
+                          <ArrowUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.give.admin')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canPromoteToOwner && (
+                        <DropdownMenuItem onClick={() => handleModeChange('q', true)}>
+                          <ArrowUp className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.give.owner')}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                     </>
                   )}
@@ -304,19 +356,59 @@ export const ContextMenu = () => {
                   {/* Demotion options */}
                   {(permissions.canDemoteFromVoice || permissions.canDemoteFromHalfOp || permissions.canDemoteFromOp || permissions.canDemoteFromAdmin || permissions.canDemoteFromOwner) && (
                     <>
-                      {permissions.canDemoteFromOwner && <DropdownMenuItem onClick={() => handleModeChange('q', false)}>{t('contextmenu.user.operator.remove.owner')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromAdmin && <DropdownMenuItem onClick={() => handleModeChange('a', false)}>{t('contextmenu.user.operator.remove.admin')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromOp && <DropdownMenuItem onClick={() => handleModeChange('o', false)}>{t('contextmenu.user.operator.remove.op')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromHalfOp && <DropdownMenuItem onClick={() => handleModeChange('h', false)}>{t('contextmenu.user.operator.remove.halfop')}</DropdownMenuItem>}
-                      {permissions.canDemoteFromVoice && <DropdownMenuItem onClick={() => handleModeChange('v', false)}>{t('contextmenu.user.operator.remove.voice')}</DropdownMenuItem>}
+                      {permissions.canDemoteFromOwner && (
+                        <DropdownMenuItem onClick={() => handleModeChange('q', false)}>
+                          <ArrowDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.remove.owner')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canDemoteFromAdmin && (
+                        <DropdownMenuItem onClick={() => handleModeChange('a', false)}>
+                          <ArrowDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.remove.admin')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canDemoteFromOp && (
+                        <DropdownMenuItem onClick={() => handleModeChange('o', false)}>
+                          <ArrowDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.remove.op')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canDemoteFromHalfOp && (
+                        <DropdownMenuItem onClick={() => handleModeChange('h', false)}>
+                          <ArrowDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.remove.halfop')}
+                        </DropdownMenuItem>
+                      )}
+                      {permissions.canDemoteFromVoice && (
+                        <DropdownMenuItem onClick={() => handleModeChange('v', false)}>
+                          <ArrowDown className="mr-2 h-4 w-4" aria-hidden="true" />
+                          {t('contextmenu.user.operator.remove.voice')}
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                     </>
                   )}
 
                   {/* Kick/Ban options */}
-                  {permissions.canKick && !isCurrentUser && <DropdownMenuItem onClick={handleKick}>{t('contextmenu.user.operator.kick')}</DropdownMenuItem>}
-                  {permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleBan}>{t('contextmenu.user.operator.ban')}</DropdownMenuItem>}
-                  {permissions.canKick && permissions.canBan && !isCurrentUser && <DropdownMenuItem onClick={handleKickBan}>{t('contextmenu.user.operator.kickban')}</DropdownMenuItem>}
+                  {permissions.canKick && !isCurrentUser && (
+                    <DropdownMenuItem onClick={handleKick}>
+                      <UserMinus className="mr-2 h-4 w-4" aria-hidden="true" />
+                      {t('contextmenu.user.operator.kick')}
+                    </DropdownMenuItem>
+                  )}
+                  {permissions.canBan && !isCurrentUser && (
+                    <DropdownMenuItem onClick={handleBan}>
+                      <Ban className="mr-2 h-4 w-4" aria-hidden="true" />
+                      {t('contextmenu.user.operator.ban')}
+                    </DropdownMenuItem>
+                  )}
+                  {permissions.canKick && permissions.canBan && !isCurrentUser && (
+                    <DropdownMenuItem onClick={handleKickBan}>
+                      <UserX className="mr-2 h-4 w-4" aria-hidden="true" />
+                      {t('contextmenu.user.operator.kickban')}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </>
@@ -359,7 +451,10 @@ export const ContextMenu = () => {
             <ExternalLink className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.url.open')}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleCopyUrl}>{t('contextmenu.url.copy')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCopyUrl}>
+            <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.url.copy')}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -384,7 +479,10 @@ export const ContextMenu = () => {
               : undefined
           }
         >
-          <DropdownMenuItem onClick={handleClearScreen}>{t('contextmenu.chat.clear')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleClearScreen}>
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.chat.clear')}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -413,7 +511,10 @@ export const ContextMenu = () => {
         >
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleCopy}>{t('contextmenu.text.copy')}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleCopy}>
+            <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
+            {t('contextmenu.text.copy')}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
