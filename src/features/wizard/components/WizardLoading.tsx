@@ -33,6 +33,13 @@ const WizardLoading = () => {
         const display = colonIndex !== -1 ? safe.substring(colonIndex + 2) : safe;
         setLastServerMessage(display.length > 120 ? display.substring(0, 120) + '...' : display);
         setMessageKey((k) => k + 1);
+
+        // Gradually increase progress while connecting (value 1→2 range)
+        const current = getWizardProgress();
+        if (current.value >= 1 && current.value < 2) {
+          const remaining = 2 - current.value;
+          setWizardProgress(current.value + remaining * 0.1, current.label ?? '');
+        }
       }
     };
 
@@ -122,7 +129,7 @@ const WizardLoading = () => {
 
   return (
     <div className="w-full mt-8">
-      <Progress value={wizardProgress.value * 30} aria-label={t('a11y.connectionProgress')} />
+      <Progress value={Math.min(wizardProgress.value * 30, 100)} aria-label={t('a11y.connectionProgress')} />
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
         {import.meta.env.DEV && lastServerMessage !== '' && (
