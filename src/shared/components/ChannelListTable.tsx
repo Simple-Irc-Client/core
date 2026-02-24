@@ -138,7 +138,7 @@ const ChannelListTable = ({
               <TableRow>
                 <TableHead className="w-[150px]">{labels.columnName}</TableHead>
                 <TableHead className="w-[100px]">{labels.columnUsers}</TableHead>
-                <TableHead>{labels.columnTopic}</TableHead>
+                <TableHead className="hidden sm:table-cell">{labels.columnTopic}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -158,7 +158,7 @@ const ChannelListTable = ({
                 >
                   <TableCell className="font-medium">{channel.name}</TableCell>
                   <TableCell>{channel.users}</TableCell>
-                  <TableCell className="truncate max-w-[300px]">{renderTopic(channel.topic)}</TableCell>
+                  <TableCell className="hidden sm:table-cell truncate max-w-[300px]">{renderTopic(channel.topic)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
