@@ -154,3 +154,88 @@ export async function decryptString(encryptedBase64: string): Promise<string> {
   return new TextDecoder().decode(decrypted);
 }
 
+// --- Persistent encryption (key stored in localStorage) ---
+
+const PERSISTENT_KEY_STORAGE = 'sic-ek';
+let persistentKey: CryptoKey | null = null;
+
+/**
+ * Load or generate a persistent encryption key from localStorage.
+ * The key is stored as a base64 string in localStorage['sic-ek'].
+ */
+export async function initPersistentEncryption(): Promise<void> {
+  if (persistentKey !== null) return;
+
+  let base64Key = localStorage.getItem(PERSISTENT_KEY_STORAGE);
+  if (!base64Key) {
+    const rawKey = crypto.getRandomValues(new Uint8Array(32));
+    base64Key = bytesToBase64(rawKey);
+    localStorage.setItem(PERSISTENT_KEY_STORAGE, base64Key);
+  }
+
+  const keyData = base64ToBytes(base64Key);
+  persistentKey = await crypto.subtle.importKey(
+    'raw',
+    keyData.buffer as ArrayBuffer,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Encrypt a string using the persistent key
+ */
+export async function encryptPersistent(data: string): Promise<string> {
+  if (!persistentKey) {
+    await initPersistentEncryption();
+  }
+
+  const key = persistentKey;
+  if (!key) {
+    throw new Error('Persistent encryption not initialized');
+  }
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const messageBytes = new TextEncoder().encode(data);
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    messageBytes
+  );
+
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  return bytesToBase64(combined);
+}
+
+/**
+ * Decrypt a string using the persistent key
+ */
+export async function decryptPersistent(encryptedBase64: string): Promise<string> {
+  if (!persistentKey) {
+    await initPersistentEncryption();
+  }
+
+  const key = persistentKey;
+  if (!key) {
+    throw new Error('Persistent encryption not initialized');
+  }
+
+  const combined = base64ToBytes(encryptedBase64);
+
+  const iv = combined.slice(0, 12);
+  const encryptedData = combined.slice(12);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    encryptedData
+  );
+
+  return new TextDecoder().decode(decrypted);
+}
+

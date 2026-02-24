@@ -54,6 +54,9 @@ import {
   setCurrentUserAvatar,
   setCurrentUserDisplayName,
   setCurrentUserStatus,
+  setEncryptedPassword,
+  getEncryptedPassword,
+  getPasswordNick,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -775,6 +778,81 @@ describe('settings store', () => {
       const formatting = getFontFormatting();
       expect(formatting.bold).toBe(true);
       expect(formatting.italic).toBe(true);
+    });
+
+    it('should write encryptedPassword and passwordNick to localStorage', () => {
+      setEncryptedPassword('encrypted-data', 'TestNick');
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.encryptedPassword).toBe('encrypted-data');
+      expect(stored.state.passwordNick).toBe('TestNick');
+    });
+
+    it('should rehydrate encryptedPassword from localStorage', () => {
+      const persistedData = {
+        state: {
+          encryptedPassword: 'saved-encrypted',
+          passwordNick: 'SavedNick',
+          nick: 'SavedNick',
+        },
+        version: 1,
+      };
+      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
+
+      useSettingsStore.persist.rehydrate();
+
+      expect(getEncryptedPassword()).toBe('saved-encrypted');
+      expect(getPasswordNick()).toBe('SavedNick');
+    });
+  });
+
+  describe('encrypted password', () => {
+    it('should set encrypted password and nick', () => {
+      setEncryptedPassword('encrypted-data', 'TestNick');
+
+      expect(getEncryptedPassword()).toBe('encrypted-data');
+      expect(getPasswordNick()).toBe('TestNick');
+    });
+
+    it('should clear encrypted password with undefined', () => {
+      setEncryptedPassword('encrypted-data', 'TestNick');
+      setEncryptedPassword(undefined, undefined);
+
+      expect(getEncryptedPassword()).toBeUndefined();
+      expect(getPasswordNick()).toBeUndefined();
+    });
+
+    it('should default encrypted password to undefined', () => {
+      expect(getEncryptedPassword()).toBeUndefined();
+      expect(getPasswordNick()).toBeUndefined();
+    });
+
+    it('should preserve encrypted password on resetWizardState', () => {
+      setEncryptedPassword('encrypted-data', 'TestNick');
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getEncryptedPassword()).toBe('encrypted-data');
+      expect(getPasswordNick()).toBe('TestNick');
+    });
+
+    it('should clear encrypted password when nick changes', () => {
+      setNick('OldNick');
+      setEncryptedPassword('encrypted-data', 'OldNick');
+
+      setNick('NewNick');
+
+      expect(getEncryptedPassword()).toBeUndefined();
+      expect(getPasswordNick()).toBeUndefined();
+    });
+
+    it('should NOT clear encrypted password when nick is set to the same value', () => {
+      setNick('SameNick');
+      setEncryptedPassword('encrypted-data', 'SameNick');
+
+      setNick('SameNick');
+
+      expect(getEncryptedPassword()).toBe('encrypted-data');
+      expect(getPasswordNick()).toBe('SameNick');
     });
   });
 });

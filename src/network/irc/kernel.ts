@@ -47,12 +47,14 @@ import {
   setSupportedOption,
   setUserModes,
   setWatchLimit,
+  getEncryptedPassword,
+  getPasswordNick,
 } from '@features/settings/store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -2185,7 +2187,12 @@ export class Kernel {
 
     if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
       setIsPasswordRequired(true);
-      setWizardStep('password');
+      // If wizard is already completed and we have a saved password for this nick, auto-authenticate
+      if (getIsWizardCompleted() && getEncryptedPassword() && getPasswordNick() === getCurrentNick()) {
+        void ircAutoAuthenticate();
+      } else {
+        setWizardStep('password');
+      }
     }
 
     if (list.test(message) && target === getCurrentNick()) {

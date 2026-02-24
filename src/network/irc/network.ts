@@ -6,11 +6,11 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getServer, getCurrentNick, setIsConnected, setIsConnecting } from '@features/settings/store/settings';
+import { getServer, getCurrentNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
-import { initEncryption } from '@/network/encryption';
+import { initEncryption, decryptPersistent } from '@/network/encryption';
 import {
   initDirectWebSocket,
   sendDirectRaw,
@@ -474,11 +474,47 @@ export const ircReconnect = async (): Promise<boolean> => {
   disconnectDirect();
 
   // Restore saved credentials for SASL re-authentication (decrypted)
-  await restoreSaslCredentials();
+  const restored = await restoreSaslCredentials();
+
+  // If no in-memory credentials were restored, try loading from persistent storage
+  if (!restored) {
+    const encryptedPassword = getEncryptedPassword();
+    const passwordNick = getPasswordNick();
+    if (encryptedPassword && passwordNick === nick) {
+      try {
+        const password = await decryptPersistent(encryptedPassword);
+        setSaslCredentials(nick, password);
+      } catch {
+        // Decryption failed - continue without credentials
+      }
+    }
+  }
 
   // Reconnect
   ircConnect(server, nick);
   return true;
+};
+
+/**
+ * Auto-authenticate using saved persistent password.
+ * Used when the wizard is already completed and NickServ requests a password.
+ */
+export const ircAutoAuthenticate = async (): Promise<boolean> => {
+  const nick = getCurrentNick();
+  const encryptedPassword = getEncryptedPassword();
+  const passwordNick = getPasswordNick();
+
+  if (!encryptedPassword || passwordNick !== nick) {
+    return false;
+  }
+
+  try {
+    const password = await decryptPersistent(encryptedPassword);
+    ircSendPassword(password);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 // Re-export for backward compatibility with tests and other modules

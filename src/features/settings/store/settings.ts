@@ -61,6 +61,8 @@ export interface SettingsStore {
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
+  encryptedPassword: string | undefined; // AES-GCM encrypted password (persistent)
+  passwordNick: string | undefined; // Nick the saved password belongs to
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -96,6 +98,7 @@ export interface SettingsStore {
   setHideTypingIndicator: (hide: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
+  setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
   resetWizardState: () => void;
 }
 
@@ -136,6 +139,8 @@ export const useSettingsStore = create<SettingsStore>()(
     hideTypingIndicator: false,
     fontSize: 'medium',
     language: 'auto',
+    encryptedPassword: undefined,
+    passwordNick: undefined,
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -154,7 +159,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setNick: (newNick: string): void => {
       set((state) => ({
         nick: newNick,
-        // Clear metadata from the previous nick — new metadata will arrive
+        // Clear metadata and saved password from the previous nick — new metadata will arrive
         // via METADATA messages for the new nick
         ...(newNick !== state.nick
           ? {
@@ -163,6 +168,8 @@ export const useSettingsStore = create<SettingsStore>()(
               currentUserStatus: undefined,
               currentUserHomepage: undefined,
               currentUserColor: undefined,
+              encryptedPassword: undefined,
+              passwordNick: undefined,
             }
           : {}),
       }));
@@ -263,6 +270,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setLanguage: (language: LanguageSetting): void => {
       set(() => ({ language }));
     },
+    setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined): void => {
+      set(() => ({ encryptedPassword: encrypted, passwordNick: nick }));
+    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -307,6 +317,8 @@ export const useSettingsStore = create<SettingsStore>()(
       server: state.server,
       language: state.language,
       isWizardCompleted: state.isWizardCompleted,
+      encryptedPassword: state.encryptedPassword,
+      passwordNick: state.passwordNick,
     }),
   }),
   ),
@@ -517,6 +529,18 @@ export const getFontFormatting = (): FontFormatting => {
 
 export const resetWizardState = (): void => {
   useSettingsStore.getState().resetWizardState();
+};
+
+export const setEncryptedPassword = (encrypted: string | undefined, nick: string | undefined): void => {
+  useSettingsStore.getState().setEncryptedPassword(encrypted, nick);
+};
+
+export const getEncryptedPassword = (): string | undefined => {
+  return useSettingsStore.getState().encryptedPassword;
+};
+
+export const getPasswordNick = (): string | undefined => {
+  return useSettingsStore.getState().passwordNick;
 };
 
 export const setIsDarkMode = (isDarkMode: boolean): void => {

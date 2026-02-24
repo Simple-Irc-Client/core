@@ -4,6 +4,7 @@ import WizardPassword from '../WizardPassword';
 import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
 import * as queryParams from '@shared/lib/queryParams';
+import * as encryption from '@/network/encryption';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -24,8 +25,14 @@ vi.mock('@/network/irc/network', () => ({
 vi.mock('@features/settings/store/settings', () => ({
   setWizardStep: vi.fn(),
   setWizardCompleted: vi.fn(),
+  setEncryptedPassword: vi.fn(),
   useSettingsStore: vi.fn(),
   getCurrentNick: vi.fn(),
+}));
+
+vi.mock('@/network/encryption', () => ({
+  encryptPersistent: vi.fn().mockImplementation((str: string) => Promise.resolve(`encrypted:${str}`)),
+  decryptPersistent: vi.fn().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', ''))),
 }));
 
 vi.mock('@shared/lib/queryParams', () => ({
@@ -37,10 +44,14 @@ describe('WizardPassword', () => {
     vi.clearAllMocks();
   });
 
-  const setupMocks = (nick = 'TestNick') => {
+  const setupMocks = (nick = 'TestNick', opts?: { encryptedPassword?: string; passwordNick?: string }) => {
     vi.mocked(settingsStore.useSettingsStore).mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ nick })
+      (selector: any) => selector({
+        nick,
+        encryptedPassword: opts?.encryptedPassword,
+        passwordNick: opts?.passwordNick,
+      })
     );
     vi.mocked(settingsStore.getCurrentNick).mockReturnValue(nick);
   };
@@ -409,6 +420,100 @@ describe('WizardPassword', () => {
       fireEvent.click(button);
 
       expect(network.ircSendPassword).toHaveBeenCalledWith(longPassword);
+    });
+  });
+
+  describe('Encrypted password persistence', () => {
+    it('should encrypt and save password on submit', async () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      // Wait for the async encryptPersistent to resolve
+      await vi.waitFor(() => {
+        expect(encryption.encryptPersistent).toHaveBeenCalledWith('secretpassword');
+        expect(settingsStore.setEncryptedPassword).toHaveBeenCalledWith('encrypted:secretpassword', 'TestNick');
+      });
+    });
+
+    it('should not encrypt password when nick has changed (timeout state)', async () => {
+      setupMocks('InitialNick');
+      const { rerender } = render(<WizardPassword />);
+
+      setupMocks('NewNick');
+      rerender(<WizardPassword />);
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      expect(encryption.encryptPersistent).not.toHaveBeenCalled();
+      expect(settingsStore.setEncryptedPassword).not.toHaveBeenCalled();
+    });
+
+    it('should pre-fill password from saved encrypted password on mount', async () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:savedpassword', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      await vi.waitFor(() => {
+        const input = screen.getByLabelText('wizard.password.password') as HTMLInputElement;
+        expect(input.value).toBe('savedpassword');
+      });
+    });
+
+    it('should not pre-fill password when passwordNick does not match current nick', async () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:savedpassword', passwordNick: 'DifferentNick' });
+
+      render(<WizardPassword />);
+
+      // Give async decryptPersistent a chance to run (it shouldn't)
+      await vi.waitFor(() => {
+        expect(encryption.decryptPersistent).not.toHaveBeenCalled();
+      });
+
+      const input = screen.getByLabelText('wizard.password.password') as HTMLInputElement;
+      expect(input.value).toBe('');
+    });
+
+    it('should not pre-fill password when no encrypted password exists', () => {
+      setupMocks('TestNick', { encryptedPassword: undefined, passwordNick: undefined });
+
+      render(<WizardPassword />);
+
+      expect(encryption.decryptPersistent).not.toHaveBeenCalled();
+      const input = screen.getByLabelText('wizard.password.password') as HTMLInputElement;
+      expect(input.value).toBe('');
+    });
+
+    it('should handle decryption failure gracefully', async () => {
+      vi.mocked(encryption.decryptPersistent).mockRejectedValueOnce(new Error('decrypt failed'));
+      setupMocks('TestNick', { encryptedPassword: 'bad-data', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      // Should not crash, password should remain empty
+      await vi.waitFor(() => {
+        expect(encryption.decryptPersistent).toHaveBeenCalled();
+      });
+      const input = screen.getByLabelText('wizard.password.password') as HTMLInputElement;
+      expect(input.value).toBe('');
+    });
+
+    it('should enable submit button when password is pre-filled', async () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:savedpassword', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      await vi.waitFor(() => {
+        const button = screen.getByText('wizard.password.button.next');
+        expect(button).not.toBeDisabled();
+      });
     });
   });
 });

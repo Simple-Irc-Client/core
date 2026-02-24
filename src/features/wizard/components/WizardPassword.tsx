@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword, ircJoinChannels } from '@/network/irc/network';
-import { getCurrentNick, setWizardStep, setWizardCompleted, useSettingsStore } from '@features/settings/store/settings';
+import { getCurrentNick, setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
 import { getChannelParam } from '@shared/lib/queryParams';
+import { encryptPersistent, decryptPersistent } from '@/network/encryption';
 
 const WizardPassword = () => {
   const { t } = useTranslation();
@@ -14,6 +15,19 @@ const WizardPassword = () => {
   const [password, setPassword] = useState('');
 
   const nick = useSettingsStore((state) => state.nick);
+  const encryptedPassword = useSettingsStore((state) => state.encryptedPassword);
+  const passwordNick = useSettingsStore((state) => state.passwordNick);
+
+  // Pre-fill from saved encrypted password
+  useEffect(() => {
+    if (encryptedPassword && passwordNick === initialNick) {
+      decryptPersistent(encryptedPassword).then((decrypted) => {
+        setPassword(decrypted);
+      }).catch(() => {
+        // Decryption failed (e.g. key changed) - ignore
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -27,6 +41,12 @@ const WizardPassword = () => {
   const handleClick = (): void => {
     if (initialNick === nick) {
       ircSendPassword(password);
+      // Save encrypted password for future sessions
+      encryptPersistent(password).then((encrypted) => {
+        setEncryptedPassword(encrypted, nick);
+      }).catch(() => {
+        // Encryption failed - password won't be saved, but that's ok
+      });
     }
     const channels = getChannelParam();
     if (channels) {
@@ -52,7 +72,7 @@ const WizardPassword = () => {
         {initialNick === nick && (
           <div className="space-y-2">
             <Label htmlFor="password">{t('wizard.password.password')}</Label>
-            <Input id="password" type="password" required autoComplete="password" autoFocus onChange={handleChange} />
+            <Input id="password" type="password" required autoComplete="password" autoFocus value={password} onChange={handleChange} />
           </div>
         )}
         <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={initialNick === nick && password === ''}>

@@ -61,12 +61,14 @@ vi.mock('../directWebSocket', () => ({
 }));
 
 // Mock encryption module
+const mockDecryptPersistent = vi.fn().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
 vi.mock('@/network/encryption', () => ({
   initEncryption: vi.fn().mockResolvedValue(undefined),
   isEncryptionAvailable: vi.fn().mockReturnValue(true),
   initSessionEncryption: vi.fn().mockResolvedValue(undefined),
   encryptString: vi.fn().mockImplementation((str: string) => Promise.resolve(`encrypted:${str}`)),
   decryptString: vi.fn().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', ''))),
+  decryptPersistent: (...args: unknown[]) => mockDecryptPersistent(...args),
 }));
 
 // Mock settings store
@@ -74,11 +76,15 @@ const mockGetServer = vi.fn();
 const mockGetCurrentNick = vi.fn();
 const mockSetIsConnected = vi.fn();
 const mockSetIsConnecting = vi.fn();
+const mockGetEncryptedPassword = vi.fn();
+const mockGetPasswordNick = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
   setIsConnected: (val: boolean) => mockSetIsConnecting(val),
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
+  getEncryptedPassword: () => mockGetEncryptedPassword(),
+  getPasswordNick: () => mockGetPasswordNick(),
 }));
 
 // Mock channels store
@@ -129,8 +135,12 @@ describe('network', () => {
     mockResetSaslState.mockClear();
     mockClearSaslCredentials.mockClear();
     mockSaveSaslCredentialsForReconnect.mockClear();
-    mockRestoreSaslCredentials.mockClear();
+    mockRestoreSaslCredentials.mockClear().mockResolvedValue(true);
     mockClearSavedCredentials.mockClear();
+    // Persistent password mocks
+    mockGetEncryptedPassword.mockClear().mockReturnValue(undefined);
+    mockGetPasswordNick.mockClear().mockReturnValue(undefined);
+    mockDecryptPersistent.mockClear().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
     network = await import('../network');
   });
 
@@ -944,6 +954,140 @@ describe('network', () => {
 
       expect(mockRestoreSaslCredentials).not.toHaveBeenCalled();
       expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to persistent encrypted password when SASL restore returns false', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(false);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockDecryptPersistent).toHaveBeenCalledWith('encrypted:myPassword');
+      expect(mockSetSaslCredentials).toHaveBeenCalledWith('testNick', 'myPassword');
+    });
+
+    it('should not use persistent password when SASL restore succeeds', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(true);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockDecryptPersistent).not.toHaveBeenCalled();
+    });
+
+    it('should not use persistent password when nick does not match', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(false);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('differentNick');
+
+      await network.ircReconnect();
+
+      expect(mockDecryptPersistent).not.toHaveBeenCalled();
+      expect(mockSetSaslCredentials).not.toHaveBeenCalled();
+    });
+
+    it('should handle persistent password decryption failure gracefully', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(false);
+      mockGetEncryptedPassword.mockReturnValue('bad-data');
+      mockGetPasswordNick.mockReturnValue('testNick');
+      mockDecryptPersistent.mockRejectedValueOnce(new Error('decrypt failed'));
+
+      const result = await network.ircReconnect();
+
+      expect(result).toBe(true);
+      expect(mockSetSaslCredentials).not.toHaveBeenCalled();
+      // Should still connect despite decryption failure
+      await flushPromises();
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+  });
+
+  describe('ircAutoAuthenticate', () => {
+    it('should decrypt and send persistent password', async () => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(true);
+      expect(mockDecryptPersistent).toHaveBeenCalledWith('encrypted:myPassword');
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY myPassword');
+    });
+
+    it('should return false when no encrypted password exists', async () => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue(undefined);
+      mockGetPasswordNick.mockReturnValue(undefined);
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(false);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
+    it('should return false when passwordNick does not match current nick', async () => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('differentNick');
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(false);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
+    it('should return false on decryption failure', async () => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue('bad-data');
+      mockGetPasswordNick.mockReturnValue('testNick');
+      mockDecryptPersistent.mockRejectedValueOnce(new Error('decrypt failed'));
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(false);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
+    it('should store SASL credentials when auto-authenticating', async () => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+
+      await network.ircAutoAuthenticate();
+
+      // ircSendPassword internally calls setSaslCredentials
+      expect(mockSetSaslCredentials).toHaveBeenCalledWith('testNick', 'myPassword');
     });
   });
 });
