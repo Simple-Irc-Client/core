@@ -87,7 +87,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
   return (
     <div className="space-y-4 py-4">
       {/* List Type Tabs */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant={activeListType === 'b' ? 'default' : 'outline'}

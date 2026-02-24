@@ -7,7 +7,7 @@ import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Switch } from '@shared/components/ui/switch';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, X } from 'lucide-react';
 
 interface ModesTabProps {
   channelName: string;
@@ -129,7 +129,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
       {/* Channel Flags Section */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium">{t('channelSettings.modes.flags')}</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {COMMON_FLAGS.filter((mode) => availableFlags.includes(mode.flag)).map((mode) => (
             <div key={mode.flag} className="flex items-center space-x-2">
               <Switch
@@ -161,16 +161,16 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               type="number"
               value={displayLimit}
               onChange={(e) => setLimit(e.target.value)}
-              className="w-24"
+              className="flex-1"
               placeholder="0"
               onKeyDown={(e) => e.key === 'Enter' && handleSetLimit()}
               data-testid="limit-input"
             />
-            <Button type="button" size="sm" onClick={handleSetLimit} data-testid="limit-set">
-              {t('channelSettings.actions.set')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" onClick={handleSetLimit} data-testid="limit-set" aria-label={t('channelSettings.actions.set')}>
+              <Check className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={handleClearLimit} data-testid="limit-clear">
-              {t('channelSettings.actions.clear')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" variant="outline" onClick={handleClearLimit} data-testid="limit-clear" aria-label={t('channelSettings.actions.clear')}>
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
@@ -191,11 +191,11 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               onKeyDown={(e) => e.key === 'Enter' && handleSetKey()}
               data-testid="key-input"
             />
-            <Button type="button" size="sm" onClick={handleSetKey} data-testid="key-set">
-              {t('channelSettings.actions.set')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" onClick={handleSetKey} data-testid="key-set" aria-label={t('channelSettings.actions.set')}>
+              <Check className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={handleClearKey} data-testid="key-clear">
-              {t('channelSettings.actions.clear')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" variant="outline" onClick={handleClearKey} data-testid="key-clear" aria-label={t('channelSettings.actions.clear')}>
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
@@ -216,11 +216,11 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               onKeyDown={(e) => e.key === 'Enter' && handleSetAvatar()}
               data-testid="avatar-input"
             />
-            <Button type="button" size="sm" onClick={handleSetAvatar} data-testid="avatar-set">
-              {t('channelSettings.actions.set')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" onClick={handleSetAvatar} data-testid="avatar-set" aria-label={t('channelSettings.actions.set')}>
+              <Check className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={handleClearAvatar} data-testid="avatar-clear">
-              {t('channelSettings.actions.clear')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" variant="outline" onClick={handleClearAvatar} data-testid="avatar-clear" aria-label={t('channelSettings.actions.clear')}>
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
@@ -241,11 +241,11 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
               onKeyDown={(e) => e.key === 'Enter' && handleSetDisplayName()}
               data-testid="displayName-input"
             />
-            <Button type="button" size="sm" onClick={handleSetDisplayName} data-testid="displayName-set">
-              {t('channelSettings.actions.set')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" onClick={handleSetDisplayName} data-testid="displayName-set" aria-label={t('channelSettings.actions.set')}>
+              <Check className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={handleClearDisplayName} data-testid="displayName-clear">
-              {t('channelSettings.actions.clear')}
+            <Button type="button" size="icon" className="h-8 w-8 shrink-0" variant="outline" onClick={handleClearDisplayName} data-testid="displayName-clear" aria-label={t('channelSettings.actions.clear')}>
+              <X className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
         ) : null}
