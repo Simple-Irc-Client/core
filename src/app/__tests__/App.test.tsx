@@ -76,6 +76,20 @@ describe('App', () => {
     expect(mockSetWizardCompleted).toHaveBeenCalledWith(false);
   });
 
+  it('should persist isWizardCompleted=false to localStorage on beforeunload', () => {
+    mockIsGatewayMode = true;
+    localStorage.setItem(
+      'sic-settings',
+      JSON.stringify({ state: { isWizardCompleted: true }, version: 1 }),
+    );
+
+    render(<App />);
+    window.dispatchEvent(new Event('beforeunload'));
+
+    const stored = JSON.parse(localStorage.getItem('sic-settings')!);
+    expect(stored.state.isWizardCompleted).toBe(false);
+  });
+
   it('should remove beforeunload handler on unmount', () => {
     mockIsGatewayMode = true;
     const removeSpy = vi.spyOn(window, 'removeEventListener');

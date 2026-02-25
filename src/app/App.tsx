@@ -29,6 +29,20 @@ function App() {
     const handleBeforeUnload = (): void => {
       disconnectOnly();
       setWizardCompleted(false);
+
+      // Zustand persist middleware flushes to localStorage asynchronously via subscribe,
+      // which may not complete before the page unloads. Write directly to ensure the
+      // wizard reset is persisted.
+      try {
+        const raw = localStorage.getItem('sic-settings');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          parsed.state.isWizardCompleted = false;
+          localStorage.setItem('sic-settings', JSON.stringify(parsed));
+        }
+      } catch {
+        // localStorage unavailable or corrupted — ignore
+      }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
