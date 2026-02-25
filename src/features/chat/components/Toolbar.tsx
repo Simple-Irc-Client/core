@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore, resetAndGoToStart, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
@@ -16,7 +16,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
-import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
+
+const EmojiPicker = lazy(() => import('emoji-picker-react'));
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -522,7 +524,9 @@ const Toolbar = () => {
                     e.preventDefault();
                   }
                 }}>
-                <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
+                <Suspense>
+                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
+                </Suspense>
               </PopoverContent>
             </Popover>
             <ColorPicker open={colorPickerOpen} onOpenChange={setColorPickerOpen} disabled={!isConnected} />
