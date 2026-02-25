@@ -80,6 +80,7 @@ describe('Topic', () => {
       selector({
         currentChannelName,
         currentChannelCategory,
+        isConnected: true,
       } as unknown as settingsStore.SettingsStore)
     );
 
