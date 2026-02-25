@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Toolbar from '../Toolbar';
 import * as settingsStore from '@features/settings/store/settings';
@@ -366,30 +366,30 @@ describe('Toolbar', () => {
       expect(emoticonButton).toBeInTheDocument();
     });
 
-    it('should open emoji picker when clicking emoticons button', () => {
+    it('should open emoji picker when clicking emoticons button', async () => {
       render(<Toolbar />);
 
       const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
-      const emojiPicker = screen.getByTestId('emoji-picker');
+      const emojiPicker = await screen.findByTestId('emoji-picker');
       expect(emojiPicker).toBeInTheDocument();
     });
 
-    it('should insert emoji into message input when clicking an emoji', () => {
+    it('should insert emoji into message input when clicking an emoji', async () => {
       render(<Toolbar />);
 
       const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
-      const emojiButton = screen.getByTestId('emoji-grinning');
+      const emojiButton = await screen.findByTestId('emoji-grinning');
       fireEvent.click(emojiButton);
 
       const input = screen.getByRole('textbox');
       expect(input).toHaveValue('😀');
     });
 
-    it('should append emoji to existing message', () => {
+    it('should append emoji to existing message', async () => {
       render(<Toolbar />);
 
       const input = screen.getByRole('textbox');
@@ -398,32 +398,33 @@ describe('Toolbar', () => {
       const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
-      const emojiButton = screen.getByTestId('emoji-heart');
+      const emojiButton = await screen.findByTestId('emoji-heart');
       fireEvent.click(emojiButton);
 
       expect(input).toHaveValue('Hello ❤️');
     });
 
-    it('should close emoji picker after selecting an emoji', () => {
+    it('should close emoji picker after selecting an emoji', async () => {
       render(<Toolbar />);
 
       const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
-      const emojiButton = screen.getByTestId('emoji-grinning');
+      const emojiButton = await screen.findByTestId('emoji-grinning');
       fireEvent.click(emojiButton);
 
-      const emojiPicker = screen.queryByTestId('emoji-picker');
-      expect(emojiPicker).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByTestId('emoji-picker')).not.toBeInTheDocument();
+      });
     });
 
-    it('should allow sending message with emoji', () => {
+    it('should allow sending message with emoji', async () => {
       render(<Toolbar />);
 
       const emoticonButton = screen.getByRole('button', { name: 'main.toolbar.emoticons' });
       fireEvent.click(emoticonButton);
 
-      const emojiButton = screen.getByTestId('emoji-grinning');
+      const emojiButton = await screen.findByTestId('emoji-grinning');
       fireEvent.click(emojiButton);
 
       const input = screen.getByRole('textbox');

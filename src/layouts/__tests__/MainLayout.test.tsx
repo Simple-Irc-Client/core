@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import MainLayout from '../MainLayout';
 
 vi.mock('react-i18next', () => ({
@@ -27,19 +27,23 @@ vi.mock('@features/settings/store/settings', () => ({
 }));
 
 describe('MainLayout', () => {
-  it('should render MainPage when wizard is completed', () => {
+  it('should render MainPage when wizard is completed', async () => {
     mockIsWizardCompleted = true;
     render(<MainLayout />);
 
-    expect(document.querySelector('[data-testid="main-page"]')).not.toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="main-page"]')).not.toBeNull();
+    });
     expect(document.querySelector('[data-testid="wizard-page"]')).toBeNull();
   });
 
-  it('should render WizardPage when wizard is not completed', () => {
+  it('should render WizardPage when wizard is not completed', async () => {
     mockIsWizardCompleted = false;
     render(<MainLayout />);
 
-    expect(document.querySelector('[data-testid="wizard-page"]')).not.toBeNull();
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="wizard-page"]')).not.toBeNull();
+    });
     expect(document.querySelector('[data-testid="main-page"]')).toBeNull();
   });
 });
