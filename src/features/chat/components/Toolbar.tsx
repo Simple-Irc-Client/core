@@ -506,13 +506,22 @@ const Toolbar = () => {
                 <Send className="h-4 w-4" />
               </Button>
             )}
-            <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+            <Popover open={emojiPickerOpen} onOpenChange={(open) => {
+                if (open && window.matchMedia('(pointer: coarse)').matches) {
+                  autocompleteInput.current?.blur();
+                }
+                setEmojiPickerOpen(open);
+              }}>
               <PopoverTrigger asChild>
                 <Button className="mt-1 mb-1" type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon" disabled={!isConnected}>
                   <Smile className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
+              <PopoverContent className="w-auto p-0" align="end" onOpenAutoFocus={(e) => {
+                  if (window.matchMedia('(pointer: coarse)').matches) {
+                    e.preventDefault();
+                  }
+                }}>
                 <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
               </PopoverContent>
             </Popover>
