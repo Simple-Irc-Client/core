@@ -22,6 +22,7 @@ interface ChannelsStore {
   setAddMessage: (newMessage: Message) => void;
   /** IRCv3 message-tags (typing) */
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
+  setClearAllTyping: () => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
   setHasMention: (channelName: string) => void;
@@ -121,6 +122,13 @@ export const useChannelsStore = create<ChannelsStore>()(
 
           return { ...channel, typing };
         }),
+      }));
+    },
+    setClearAllTyping: () => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel) =>
+          channel.typing.length > 0 ? { ...channel, typing: [] } : channel,
+        ),
       }));
     },
     setClearUnreadMessages: (channelName: string) => {
@@ -290,6 +298,11 @@ export const clearTyping = (channelName: string, nick: string): void => {
   if (existTyping(channelName, nick)) {
     setTyping(channelName, nick, 'done');
   }
+};
+
+export const clearAllTyping = (): void => {
+  useChannelsStore.getState().setClearAllTyping();
+  useCurrentStore.getState().setUpdateTyping([]);
 };
 
 export const setClearUnreadMessages = (channelName: string): void => {

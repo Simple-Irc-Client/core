@@ -13,6 +13,7 @@ import {
   setTopic,
   setTopicSetBy,
   setTyping,
+  clearAllTyping,
 } from '@features/channels/store/channels';
 import {
   getChannelModes,
@@ -496,6 +497,7 @@ export class Kernel {
 
     setIsConnecting(false);
     setIsConnected(false);
+    clearAllTyping();
 
     // Reset STS retries on WebSocket disconnect
     resetSTSRetries();

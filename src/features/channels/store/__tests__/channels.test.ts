@@ -17,6 +17,7 @@ import {
   getTyping,
   existTyping,
   clearTyping,
+  clearAllTyping,
   setClearUnreadMessages,
   setIncreaseUnreadMessages,
   setHasMention,
@@ -31,12 +32,14 @@ vi.mock('@features/settings/store/settings', () => ({
   getChannelTypes: vi.fn(() => ['#', '&']),
 }));
 
+const mockSetUpdateTyping = vi.fn();
+
 vi.mock('@features/chat/store/current', () => ({
   useCurrentStore: {
     getState: () => ({
       setUpdateTopic: vi.fn(),
       setUpdateMessages: vi.fn(),
-      setUpdateTyping: vi.fn(),
+      setUpdateTyping: mockSetUpdateTyping,
     }),
   },
 }));
@@ -353,6 +356,47 @@ describe('channels store', () => {
       clearTyping('#test', 'nonexistent');
 
       expect(existTyping('#test', 'nonexistent')).toBe(false);
+    });
+  });
+
+  describe('clearAllTyping', () => {
+    it('should clear typing in all channels', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+      setAddChannel('#other', ChannelCategory.channel);
+      setTyping('#test', 'alice', 'active');
+      setTyping('#other', 'bob', 'active');
+
+      clearAllTyping();
+
+      expect(getTyping('#test')).toEqual([]);
+      expect(getTyping('#other')).toEqual([]);
+    });
+
+    it('should clear typing in current store', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+      setTyping('#test', 'alice', 'active');
+      mockSetUpdateTyping.mockClear();
+
+      clearAllTyping();
+
+      expect(mockSetUpdateTyping).toHaveBeenCalledWith([]);
+    });
+
+    it('should handle no channels gracefully', () => {
+      clearAllTyping();
+
+      expect(useChannelsStore.getState().openChannels).toEqual([]);
+    });
+
+    it('should not affect channels with no typing', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+      setAddChannel('#quiet', ChannelCategory.channel);
+      setTyping('#test', 'alice', 'active');
+
+      clearAllTyping();
+
+      expect(getTyping('#test')).toEqual([]);
+      expect(getTyping('#quiet')).toEqual([]);
     });
   });
 
