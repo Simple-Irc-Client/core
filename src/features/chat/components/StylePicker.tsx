@@ -47,33 +47,33 @@ const StylePicker = ({ open, onOpenChange, disabled }: StylePickerProps) => {
               variant={fontFormatting.bold ? 'default' : 'outline'}
               size="sm"
               onClick={() => toggleStyle('bold')}
-              className="flex-1"
+              aria-label={t('main.toolbar.bold')}
               aria-pressed={fontFormatting.bold}
             >
-              <Bold className="h-4 w-4 mr-1" />
-              {t('main.toolbar.bold')}
+              <Bold className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t('main.toolbar.bold')}</span>
             </Button>
             <Button
               type="button"
               variant={fontFormatting.italic ? 'default' : 'outline'}
               size="sm"
               onClick={() => toggleStyle('italic')}
-              className="flex-1"
+              aria-label={t('main.toolbar.italic')}
               aria-pressed={fontFormatting.italic}
             >
-              <Italic className="h-4 w-4 mr-1" />
-              {t('main.toolbar.italic')}
+              <Italic className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t('main.toolbar.italic')}</span>
             </Button>
             <Button
               type="button"
               variant={fontFormatting.underline ? 'default' : 'outline'}
               size="sm"
               onClick={() => toggleStyle('underline')}
-              className="flex-1"
+              aria-label={t('main.toolbar.underline')}
               aria-pressed={fontFormatting.underline}
             >
-              <Underline className="h-4 w-4 mr-1" />
-              {t('main.toolbar.underline')}
+              <Underline className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">{t('main.toolbar.underline')}</span>
             </Button>
           </div>
         </div>
