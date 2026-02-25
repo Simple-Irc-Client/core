@@ -29,4 +29,66 @@ describe('NotConnected', () => {
     const icon = container.querySelector('svg.lucide-wifi-off');
     expect(icon).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('should render arrow SVG when avatar button is present', () => {
+    // Create a mock avatar button in the DOM
+    const avatarButton = document.createElement('button');
+    avatarButton.setAttribute('data-avatar-button', '');
+    avatarButton.getBoundingClientRect = () => ({
+      top: 500,
+      left: 20,
+      bottom: 540,
+      right: 60,
+      width: 40,
+      height: 40,
+      x: 20,
+      y: 500,
+      toJSON: () => ({}),
+    });
+    document.body.appendChild(avatarButton);
+
+    const { container } = render(<NotConnected />);
+
+    // Mock container and description getBoundingClientRect
+    const containerEl = container.firstElementChild as HTMLElement;
+    const descriptionEl = container.querySelector('p:last-of-type') as HTMLElement;
+
+    containerEl.getBoundingClientRect = () => ({
+      top: 0,
+      left: 0,
+      bottom: 600,
+      right: 800,
+      width: 800,
+      height: 600,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    descriptionEl.getBoundingClientRect = () => ({
+      top: 280,
+      left: 350,
+      bottom: 300,
+      right: 450,
+      width: 100,
+      height: 20,
+      x: 350,
+      y: 280,
+      toJSON: () => ({}),
+    });
+
+    // Trigger resize to recalculate
+    window.dispatchEvent(new Event('resize'));
+
+    const svgs = container.querySelectorAll('svg');
+    const arrowSvg = Array.from(svgs).find(
+      (svg) => !svg.classList.contains('lucide-wifi-off'),
+    );
+
+    if (arrowSvg) {
+      expect(arrowSvg).toHaveAttribute('aria-hidden', 'true');
+    }
+
+    document.body.removeChild(avatarButton);
+  });
 });

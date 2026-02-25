@@ -8,9 +8,10 @@ import { useTranslation } from 'react-i18next';
 interface ColorPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  disabled?: boolean;
 }
 
-const ColorPicker = ({ open, onOpenChange }: ColorPickerProps) => {
+const ColorPicker = ({ open, onOpenChange, disabled }: ColorPickerProps) => {
   const { t } = useTranslation();
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
   const setFontFormatting = useSettingsStore((state) => state.setFontFormatting);
@@ -36,6 +37,7 @@ const ColorPicker = ({ open, onOpenChange }: ColorPickerProps) => {
           aria-label={t('main.toolbar.textColorAriaLabel')}
           variant="ghost"
           size="icon"
+          disabled={disabled}
         >
           <Palette className="h-4 w-4" />
           {selectedColor !== null && (

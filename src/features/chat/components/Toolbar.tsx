@@ -421,6 +421,7 @@ const Toolbar = () => {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
+                    data-avatar-button
                     aria-label={t('main.toolbar.userMenu')}
                     className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                   >
@@ -497,6 +498,7 @@ const Toolbar = () => {
                 onKeyDown={handleKeyDown}
                 autoComplete="off"
                 ref={autocompleteInput}
+                disabled={!isConnected}
               />
             </div>
             {message && (
@@ -506,7 +508,7 @@ const Toolbar = () => {
             )}
             <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
               <PopoverTrigger asChild>
-                <Button className="mt-1 mb-1" type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon">
+                <Button className="mt-1 mb-1" type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon" disabled={!isConnected}>
                   <Smile className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
@@ -514,8 +516,8 @@ const Toolbar = () => {
                 <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
               </PopoverContent>
             </Popover>
-            <ColorPicker open={colorPickerOpen} onOpenChange={setColorPickerOpen} />
-            <StylePicker open={stylePickerOpen} onOpenChange={setStylePickerOpen} />
+            <ColorPicker open={colorPickerOpen} onOpenChange={setColorPickerOpen} disabled={!isConnected} />
+            <StylePicker open={stylePickerOpen} onOpenChange={setStylePickerOpen} disabled={!isConnected} />
           </>
         )}
       </form>

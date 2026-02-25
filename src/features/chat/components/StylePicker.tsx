@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 interface StylePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  disabled?: boolean;
 }
 
-const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
+const StylePicker = ({ open, onOpenChange, disabled }: StylePickerProps) => {
   const { t } = useTranslation();
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
   const setFontFormatting = useSettingsStore((state) => state.setFontFormatting);
@@ -29,6 +30,7 @@ const StylePicker = ({ open, onOpenChange }: StylePickerProps) => {
           aria-label={t('main.toolbar.textStyleAriaLabel')}
           variant="ghost"
           size="icon"
+          disabled={disabled}
         >
           <Type className="h-4 w-4" />
           {hasActiveStyle && (
