@@ -93,7 +93,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAvatar: (nick: string, avatar: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.avatar === avatar) {
             return user;
           }
           return { ...user, avatar };
@@ -103,7 +103,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserColor: (nick: string, color: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.color === color) {
             return user;
           }
           return { ...user, color };
@@ -113,7 +113,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAccount: (nick: string, account: string | null): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.account === (account ?? undefined)) {
             return user;
           }
           return { ...user, account: account ?? undefined };
@@ -123,7 +123,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAway: (nick: string, away: boolean, reason?: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || (user.away === away && user.awayReason === reason)) {
             return user;
           }
           return { ...user, away, awayReason: reason };
@@ -133,7 +133,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserHost: (nick: string, ident: string, hostname: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || (user.ident === ident && user.hostname === hostname)) {
             return user;
           }
           return { ...user, ident, hostname };
@@ -143,7 +143,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserRealname: (nick: string, realname: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.realname === realname) {
             return user;
           }
           return { ...user, realname };
@@ -153,7 +153,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserDisplayName: (nick: string, displayName: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.displayName === displayName) {
             return user;
           }
           return { ...user, displayName };
@@ -163,7 +163,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserStatus: (nick: string, status: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.status === status) {
             return user;
           }
           return { ...user, status };
@@ -173,7 +173,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserHomepage: (nick: string, homepage: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (user.nick !== nick || user.homepage === homepage) {
             return user;
           }
           return { ...user, homepage };
@@ -378,12 +378,20 @@ export const setUserAway = (nick: string, away: boolean, reason?: string): void 
 };
 
 export const setUserHost = (nick: string, ident: string, hostname: string): void => {
-  useUsersStore.getState().setUserHost(nick, ident, hostname);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserHost(nick, ident, hostname);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { ident, hostname });
+  }
 };
 
 export const setUserRealname = (nick: string, realname: string): void => {
-  useUsersStore.getState().setUserRealname(nick, realname);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserRealname(nick, realname);
+  } else {
+    bufferMetadata(nick, { realname });
+  }
 };
 
 export const setUserDisplayName = (nick: string, displayName: string): void => {

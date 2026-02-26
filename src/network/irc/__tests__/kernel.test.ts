@@ -1275,6 +1275,40 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
+  it('test raw NICK with full nick!ident@host sender parses nick correctly', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+
+    const line = '@msgid=abc123;time=2023-02-12T14:20:53.072Z :OldNick!~user@some.host.com NICK :NewNick';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockGetUserChannels).toHaveBeenCalledWith('OldNick');
+    expect(mockSetRenameUser).toHaveBeenCalledWith('OldNick', 'NewNick');
+    // Channel message should use parsed nick, not full sender prefix
+    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel1', message: expect.stringContaining('OldNick') }));
+    expect(mockSetAddMessage).not.toHaveBeenCalledWith(expect.objectContaining({ target: '#channel1', message: expect.stringContaining('~user@') }));
+  });
+
+  it('test raw NICK with full sender detects own nick change', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#test');
+    vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#test']);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+
+    const line = ':MyNick!~user@my.host NICK :MyNewNick';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetNick).toHaveBeenCalledWith('MyNewNick');
+  });
+
   it('test raw NICK rejects nick exceeding max length', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');

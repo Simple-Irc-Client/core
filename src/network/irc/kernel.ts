@@ -1256,31 +1256,52 @@ export class Kernel {
     this.command = message.command;
     this.line = [...message.line];
 
-    // Process based on command (simplified - just handle main ones)
+    // Process based on command
     switch (message.command) {
-      case 'PRIVMSG':
-        this.onPrivMsg();
+      case 'ACCOUNT':
+        this.onAccount();
         break;
-      case 'NOTICE':
-        this.onNotice();
+      case 'AWAY':
+        this.onAway();
+        break;
+      case 'CHGHOST':
+        this.onChghost();
         break;
       case 'JOIN':
         this.onJoin();
         break;
-      case 'PART':
-        this.onPart();
+      case 'KICK':
+        this.onKick();
         break;
-      case 'QUIT':
-        this.onQuit();
+      case 'METADATA':
+        this.onMetadata();
+        break;
+      case 'MODE':
+        this.onMode();
         break;
       case 'NICK':
         this.onNick();
         break;
+      case 'NOTICE':
+        this.onNotice();
+        break;
+      case 'PART':
+        this.onPart();
+        break;
+      case 'PRIVMSG':
+        this.onPrivMsg();
+        break;
+      case 'QUIT':
+        this.onQuit();
+        break;
+      case 'SETNAME':
+        this.onSetname();
+        break;
+      case 'TAGMSG':
+        this.onTagMsg();
+        break;
       case 'TOPIC':
         this.onTopic();
-        break;
-      case 'MODE':
-        this.onMode();
         break;
     }
 
@@ -2133,6 +2154,7 @@ export class Kernel {
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
   private readonly onNick = (): void => {
     const currentChannelName = getCurrentChannelName();
+    const { nick: oldNick } = parseNick(this.sender, getUserModes());
     const rawNick = this.line.shift();
 
     if (rawNick === undefined) {
@@ -2146,13 +2168,13 @@ export class Kernel {
       return;
     }
 
-    const channels = getUserChannels(this.sender);
-    setRenameUser(this.sender, newNick);
+    const channels = getUserChannels(oldNick);
+    setRenameUser(oldNick, newNick);
 
     for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
-        message: i18next.t('kernel.nick', { from: this.sender, to: newNick }),
+        message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
         target: channel,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.info,
@@ -2160,7 +2182,7 @@ export class Kernel {
       });
     }
 
-    if (this.sender === getCurrentNick()) {
+    if (oldNick === getCurrentNick()) {
       setNick(newNick);
     }
   };

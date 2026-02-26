@@ -9,6 +9,8 @@ import {
   setUserStatus as setUserStatusExport,
   setUserHomepage as setUserHomepageExport,
   setUserAccount as setUserAccountExport,
+  setUserHost as setUserHostExport,
+  setUserRealname as setUserRealnameExport,
   getUserChannels,
   getUser,
   getHasUser,
@@ -833,6 +835,124 @@ describe('users store', () => {
 
       expect(getUser('NewUser')).toBeUndefined();
       expect(pendingMetadata.get('NewUser')).toEqual({ away: true, awayReason: 'gone' });
+    });
+
+    it('should buffer host when user does not exist (CHGHOST before JOIN)', () => {
+      setUserHostExport('NewUser', '~newident', 'new.host.com');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ ident: '~newident', hostname: 'new.host.com' });
+    });
+
+    it('should apply buffered host when user JOINs', () => {
+      setUserHostExport('NewUser', '~updated', 'updated.host');
+
+      setAddUserExport({
+        nick: 'NewUser',
+        ident: '~original',
+        hostname: 'original.host',
+        flags: [],
+        channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+      });
+
+      const user = getUser('NewUser');
+      expect(user?.ident).toBe('~updated');
+      expect(user?.hostname).toBe('updated.host');
+      expect(pendingMetadata.has('NewUser')).toBe(false);
+    });
+
+    it('should buffer realname when user does not exist', () => {
+      setUserRealnameExport('NewUser', 'Real Name');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ realname: 'Real Name' });
+    });
+  });
+
+  describe('deduplication of metadata updates', () => {
+    it('should not create new user reference when avatar is unchanged', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserAvatar('TestUser', 'http://avatar.png');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserAvatar('TestUser', 'http://avatar.png');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).toBe(userAfterSecond);
+    });
+
+    it('should not create new user reference when color is unchanged', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserColor('TestUser', '#ff0000');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserColor('TestUser', '#ff0000');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).toBe(userAfterSecond);
+    });
+
+    it('should not create new user reference when displayName is unchanged', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserDisplayName('TestUser', 'Display');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserDisplayName('TestUser', 'Display');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).toBe(userAfterSecond);
+    });
+
+    it('should not create new user reference when status is unchanged', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserStatus('TestUser', 'Away');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserStatus('TestUser', 'Away');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).toBe(userAfterSecond);
+    });
+
+    it('should not create new user reference when host is unchanged', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserHost('TestUser', 'ident', 'hostname');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserHost('TestUser', 'ident', 'hostname');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).toBe(userAfterSecond);
+    });
+
+    it('should create new user reference when value actually changes', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserAvatar('TestUser', 'http://old.png');
+      const userAfterFirst = getUser('TestUser');
+
+      useUsersStore.getState().setUserAvatar('TestUser', 'http://new.png');
+      const userAfterSecond = getUser('TestUser');
+
+      expect(userAfterFirst).not.toBe(userAfterSecond);
+      expect(userAfterSecond?.avatar).toBe('http://new.png');
     });
   });
 
