@@ -2,12 +2,20 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   useUsersStore,
   setAddUser as setAddUserExport,
+  setUserAvatar as setUserAvatarExport,
+  setUserColor as setUserColorExport,
+  setUserAway as setUserAwayExport,
+  setUserDisplayName as setUserDisplayNameExport,
+  setUserStatus as setUserStatusExport,
+  setUserHomepage as setUserHomepageExport,
+  setUserAccount as setUserAccountExport,
   getUserChannels,
   getUser,
   getHasUser,
   getUsersFromChannelSortedByMode,
   getUsersFromChannelSortedByAZ,
   getCurrentUserChannelModes,
+  pendingMetadata,
 } from '../users';
 import type { User, UserChannel } from '@shared/types';
 
@@ -40,6 +48,7 @@ vi.mock('@features/channels/store/channels', () => ({
 describe('users store', () => {
   beforeEach(() => {
     useUsersStore.setState({ users: [] });
+    pendingMetadata.clear();
     vi.clearAllMocks();
   });
 
@@ -298,6 +307,13 @@ describe('users store', () => {
       expect(getUser('User1')?.avatar).toBe('http://avatar.png');
       expect(getUser('User2')?.avatar).toBeUndefined();
     });
+
+    it('should buffer avatar when user does not exist', () => {
+      setUserAvatarExport('NewUser', 'http://avatar.png');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ avatar: 'http://avatar.png' });
+    });
   });
 
   describe('setUserColor', () => {
@@ -321,6 +337,13 @@ describe('users store', () => {
       useUsersStore.getState().setUserColor('TestUser', '#ffffff');
 
       expect(getUser('TestUser')?.color).toBe('#ffffff');
+    });
+
+    it('should buffer color when user does not exist', () => {
+      setUserColorExport('NewUser', '#ff0000');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ color: '#ff0000' });
     });
   });
 
@@ -358,6 +381,13 @@ describe('users store', () => {
 
       expect(getUser('TestUser')?.status).toBeUndefined();
     });
+
+    it('should buffer status when user does not exist', () => {
+      setUserStatusExport('NewUser', 'Away');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ status: 'Away' });
+    });
   });
 
   describe('setUserHomepage', () => {
@@ -381,6 +411,13 @@ describe('users store', () => {
       useUsersStore.getState().setUserHomepage('TestUser', undefined);
 
       expect(getUser('TestUser')?.homepage).toBeUndefined();
+    });
+
+    it('should buffer homepage when user does not exist', () => {
+      setUserHomepageExport('NewUser', 'https://example.com');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ homepage: 'https://example.com' });
     });
   });
 
@@ -689,6 +726,113 @@ describe('users store', () => {
       expect(channelsBefore?.length).toBe(2);
       expect(channelsAfter?.length).toBe(1);
       expect(channelsAfter?.[0]?.name).toBe('#channel2');
+    });
+  });
+
+  describe('metadata before JOIN (QUIT + METADATA + JOIN race)', () => {
+    it('should preserve avatar when METADATA arrives before JOIN after QUIT', () => {
+      // User is in a channel
+      useUsersStore.getState().setAddUser(createUser('ProrokCodzienny', [
+        { name: '#Religie', flags: [], maxPermission: -1 },
+      ]));
+
+      // User QUITs - removed from store
+      useUsersStore.getState().setQuitUser('ProrokCodzienny');
+      expect(getUser('ProrokCodzienny')).toBeUndefined();
+
+      // METADATA avatar arrives before JOIN - buffered, not in store
+      setUserAvatarExport('ProrokCodzienny', 'https://gravatar.com/avatar/abc.jpg');
+      expect(getUser('ProrokCodzienny')).toBeUndefined();
+      expect(pendingMetadata.has('ProrokCodzienny')).toBe(true);
+
+      // JOIN arrives - exported setAddUser applies buffered metadata
+      setAddUserExport({
+        nick: 'ProrokCodzienny',
+        ident: '~ProrokCod',
+        hostname: '2BD8A2CC.22667CD.897C74C8.IP',
+        flags: [],
+        channels: [{ name: '#Religie', flags: [], maxPermission: -1 }],
+      });
+
+      const user = getUser('ProrokCodzienny');
+      expect(user?.avatar).toBe('https://gravatar.com/avatar/abc.jpg');
+      expect(user?.ident).toBe('~ProrokCod');
+      expect(user?.hostname).toBe('2BD8A2CC.22667CD.897C74C8.IP');
+      expect(user?.channels).toEqual([{ name: '#Religie', flags: [], maxPermission: -1 }]);
+      expect(pendingMetadata.has('ProrokCodzienny')).toBe(false);
+    });
+
+    it('should preserve color when METADATA arrives before JOIN after QUIT', () => {
+      useUsersStore.getState().setAddUser(createUser('User1', [
+        { name: '#test', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setQuitUser('User1');
+      setUserColorExport('User1', '#ff5500');
+
+      setAddUserExport({
+        nick: 'User1',
+        ident: 'ident',
+        hostname: 'host',
+        flags: [],
+        channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+      });
+
+      const user = getUser('User1');
+      expect(user?.color).toBe('#ff5500');
+      expect(user?.channels.length).toBe(1);
+    });
+
+    it('should preserve multiple metadata fields when they arrive before JOIN', () => {
+      // METADATA avatar and away arrive before JOIN (no user in store)
+      setUserAvatarExport('NewUser', 'https://example.com/avatar.png');
+      setUserAwayExport('NewUser', true, 'gone');
+      setUserDisplayNameExport('NewUser', 'Display Name');
+
+      // User should NOT be in the store yet
+      expect(getUser('NewUser')).toBeUndefined();
+
+      setAddUserExport({
+        nick: 'NewUser',
+        ident: 'user',
+        hostname: 'host.example.com',
+        flags: [],
+        channels: [{ name: '#channel', flags: [], maxPermission: -1 }],
+      });
+
+      const user = getUser('NewUser');
+      expect(user?.avatar).toBe('https://example.com/avatar.png');
+      expect(user?.away).toBe(true);
+      expect(user?.awayReason).toBe('gone');
+      expect(user?.displayName).toBe('Display Name');
+      expect(user?.ident).toBe('user');
+      expect(user?.hostname).toBe('host.example.com');
+      expect(user?.channels.length).toBe(1);
+      expect(pendingMetadata.has('NewUser')).toBe(false);
+    });
+
+    it('should not leave buffered metadata if JOIN never comes', () => {
+      setUserAvatarExport('GhostUser', 'https://example.com/ghost.png');
+
+      // User never joins - should not be in the store
+      expect(getUser('GhostUser')).toBeUndefined();
+      expect(useUsersStore.getState().users.length).toBe(0);
+      // Buffer exists but user is not visible in any channel list
+      expect(getUsersFromChannelSortedByMode('#test').length).toBe(0);
+    });
+
+    it('should buffer account when user does not exist', () => {
+      setUserAccountExport('NewUser', 'account-name');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ account: 'account-name' });
+    });
+
+    it('should buffer away when user does not exist', () => {
+      setUserAwayExport('NewUser', true, 'gone');
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ away: true, awayReason: 'gone' });
     });
   });
 

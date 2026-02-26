@@ -8,6 +8,9 @@ import { calculateMaxPermission } from '@/network/irc/helpers';
 
 const MAX_USERS = 50_000;
 
+/** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect) */
+export const pendingMetadata = new Map<string, Partial<User>>();
+
 interface UsersStore {
   users: User[];
 
@@ -212,7 +215,14 @@ export const setAddUser = (newUser: User): void => {
     }
   } else {
     if (useUsersStore.getState().users.length >= MAX_USERS) return;
-    useUsersStore.getState().setAddUser(newUser);
+    // Apply any buffered metadata that arrived before JOIN
+    const buffered = pendingMetadata.get(newUser.nick);
+    if (buffered) {
+      useUsersStore.getState().setAddUser({ ...newUser, ...buffered });
+      pendingMetadata.delete(newUser.nick);
+    } else {
+      useUsersStore.getState().setAddUser(newUser);
+    }
   }
 
   const currentChannelName = getCurrentChannelName();
@@ -326,23 +336,45 @@ const syncCurrentChannelUsers = (nick: string): void => {
   }
 };
 
+/** Buffer metadata for a user not yet in the store (arrives before JOIN) */
+const bufferMetadata = (nick: string, data: Partial<User>): void => {
+  const existing = pendingMetadata.get(nick) ?? {};
+  pendingMetadata.set(nick, { ...existing, ...data });
+};
+
 export const setUserAvatar = (nick: string, avatar: string): void => {
-  useUsersStore.getState().setUserAvatar(nick, avatar);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserAvatar(nick, avatar);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { avatar });
+  }
 };
 
 export const setUserColor = (nick: string, color: string): void => {
-  useUsersStore.getState().setUserColor(nick, color);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserColor(nick, color);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { color });
+  }
 };
 
 export const setUserAccount = (nick: string, account: string | null): void => {
-  useUsersStore.getState().setUserAccount(nick, account);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserAccount(nick, account);
+  } else {
+    bufferMetadata(nick, { account: account ?? undefined });
+  }
 };
 
 export const setUserAway = (nick: string, away: boolean, reason?: string): void => {
-  useUsersStore.getState().setUserAway(nick, away, reason);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserAway(nick, away, reason);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { away, awayReason: reason });
+  }
 };
 
 export const setUserHost = (nick: string, ident: string, hostname: string): void => {
@@ -355,17 +387,29 @@ export const setUserRealname = (nick: string, realname: string): void => {
 };
 
 export const setUserDisplayName = (nick: string, displayName: string): void => {
-  useUsersStore.getState().setUserDisplayName(nick, displayName);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserDisplayName(nick, displayName);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { displayName });
+  }
 };
 
 export const setUserStatus = (nick: string, status: string | undefined): void => {
-  useUsersStore.getState().setUserStatus(nick, status);
-  syncCurrentChannelUsers(nick);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserStatus(nick, status);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { status });
+  }
 };
 
 export const setUserHomepage = (nick: string, homepage: string | undefined): void => {
-  useUsersStore.getState().setUserHomepage(nick, homepage);
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserHomepage(nick, homepage);
+  } else {
+    bufferMetadata(nick, { homepage });
+  }
 };
 
 export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
