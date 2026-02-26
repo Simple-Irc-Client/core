@@ -77,4 +77,23 @@ describe('Typing', () => {
       expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
     });
   });
+
+  describe('Empty nick filtering', () => {
+    it('should not render typing indicator when array contains only empty strings', () => {
+      setupMocks(['']);
+
+      const { container } = render(<Typing />);
+
+      expect(container.textContent).toBe('');
+    });
+
+    it('should filter out empty strings and render valid nicks', () => {
+      setupMocks(['', 'Alice', '']);
+
+      render(<Typing />);
+
+      expect(screen.getByText(/Alice/)).toBeInTheDocument();
+      expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
+    });
+  });
 });

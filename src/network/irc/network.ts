@@ -5,7 +5,7 @@ import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
 import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCredentialsForReconnect, restoreSaslCredentials, clearSavedCredentials } from './sasl';
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
-import { setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
 import { getServer, getCurrentNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
@@ -118,6 +118,7 @@ const handleInactivityTimeout = async (): Promise<void> => {
   disconnectDirect();
   setIsConnecting(false);
   setIsConnected(false);
+  clearAllTyping();
 
   isReconnecting = true;
   scheduleReconnectAttempt();

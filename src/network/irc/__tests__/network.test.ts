@@ -89,8 +89,10 @@ vi.mock('@features/settings/store/settings', () => ({
 
 // Mock channels store
 const mockSetAddMessageToAllChannels = vi.fn();
+const mockClearAllTyping = vi.fn();
 vi.mock('@features/channels/store/channels', () => ({
   setAddMessageToAllChannels: (msg: unknown) => mockSetAddMessageToAllChannels(msg),
+  clearAllTyping: () => mockClearAllTyping(),
 }));
 
 // Mock i18next
@@ -456,6 +458,22 @@ describe('network', () => {
         time: expect.any(String),
         category: 'info',
       });
+    });
+
+    it('should clear all typing indicators on inactivity timeout', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      network.resetInactivityTimeout();
+
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(mockClearAllTyping).toHaveBeenCalled();
     });
 
     it('should attempt reconnect after inactivity timeout', async () => {
