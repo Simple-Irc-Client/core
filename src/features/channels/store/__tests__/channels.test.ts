@@ -233,6 +233,46 @@ describe('channels store', () => {
       expect(getMessages('#test2').length).toBe(0);
     });
 
+    it('should not add duplicate message with same id', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
+
+      expect(getMessages('#test').length).toBe(1);
+    });
+
+    it('should not add duplicate even with different message text', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Different text', '#test'));
+
+      const messages = getMessages('#test');
+      expect(messages.length).toBe(1);
+      expect(messages[0]?.message).toBe('Hello');
+    });
+
+    it('should add messages with different ids', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-2', 'World', '#test'));
+
+      expect(getMessages('#test').length).toBe(2);
+    });
+
+    it('should not deduplicate across different channels', () => {
+      setAddChannel('#test1', ChannelCategory.channel);
+      setAddChannel('#test2', ChannelCategory.channel);
+
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test1'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test2'));
+
+      expect(getMessages('#test1').length).toBe(1);
+      expect(getMessages('#test2').length).toBe(1);
+    });
+
     it('should clear messages for a specific channel', () => {
       setAddChannel('#test', ChannelCategory.channel);
 

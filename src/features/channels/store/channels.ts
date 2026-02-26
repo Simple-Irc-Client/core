@@ -92,6 +92,11 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
+          // Dedup: skip if message with same id already exists (e.g. chathistory overlapping with real-time)
+          if (channel.messages.some((m) => m.id === newMessage.id)) {
+            return channel;
+          }
+
           const messages = [...channel.messages, newMessage];
           if (messages.length > maxMessages) {
             messages.shift();
