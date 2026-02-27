@@ -63,6 +63,7 @@
     "main.chat.messageReceived": "Message received by server",
     "main.chat.notConnected": "Not connected to server",
     "main.chat.notConnectedDescription": "Open your profile menu and tap Connect to get started.",
+    "main.chat.dateChanged": "{{date}}",
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.inactivityTimeout": "Connection lost - no activity from server for 3 minutes",

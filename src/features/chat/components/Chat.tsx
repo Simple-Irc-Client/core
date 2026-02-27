@@ -8,7 +8,7 @@ const fontSizeClasses: Record<FontSize, string> = {
   medium: 'text-sm',
   large: 'text-base',
 };
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
@@ -18,6 +18,7 @@ import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
 import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
+import DateSeparator from './DateSeparator';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck } from 'lucide-react';
 import NotConnected from './NotConnected';
@@ -253,8 +254,13 @@ const Chat = () => {
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const lastNick = getNickFromMessage(messages[index - 1]) ?? '';
+          const currentDate = startOfDay(new Date(message.time));
+          const prevMessage = messages[index - 1];
+          const prevDate = prevMessage ? startOfDay(new Date(prevMessage.time)) : null;
+          const showDateSeparator = prevDate !== null && currentDate.getTime() !== prevDate.getTime();
           return (
             <div key={`message-${message.id}`}>
+              {showDateSeparator && <DateSeparator date={currentDate} />}
               {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <ChatViewDebug message={message} fontSizeClass={fontSizeClass} />}
               {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
                 <>
