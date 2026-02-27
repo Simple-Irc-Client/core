@@ -26,6 +26,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor } from '@shared/lib/utils';
 
+const italicCategories: MessageCategory[] = [MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick];
+
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = getNickFromMessage(message);
@@ -40,7 +42,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
 
   return (
     <div className="py-1 px-4 overflow-hidden">
-      <code className={`${fontSizeClass} break-all`}>
+      <code className={`${fontSizeClass} break-all ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined && (
@@ -59,6 +61,8 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = getNickFromMessage(message);
   const displayNick = getDisplayNickFromMessage(message);
+  const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.color) : undefined;
+  const nickColor = rawNickColor && isSafeCssColor(rawNickColor) ? rawNickColor : undefined;
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -69,17 +73,17 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
 
   return (
     <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-      <div className={fontSizeClass}>
+      <div className={`${fontSizeClass} ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
-        &nbsp;
+        <span className="inline-block w-3" />
         {nick !== undefined ? (
-          <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
+          <span className="cursor-pointer hover:underline" style={nickColor ? { color: nickColor } : undefined} onContextMenu={handleNickContextMenu}>
             &lt;{displayNick}&gt;
           </span>
         ) : (
           ''
         )}
-        &nbsp;
+        <span className="inline-block w-2" />
         <MessageText text={message.message} color={message.color ?? MessageColor.default} />
       </div>
       <YouTubeThumbnail text={message.message} />
@@ -125,7 +129,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     <>
       {!showAvatarLayout && (
         <div className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`} style={{ color: message.color ?? MessageColor.default }}>
-          <div className={fontSizeClass}>
+          <div className={`${fontSizeClass} ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
             <MessageText text={message.message} />
           </div>
         </div>
