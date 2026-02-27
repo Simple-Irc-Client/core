@@ -1895,6 +1895,9 @@ export class Kernel {
       this.line = [];
     }
 
+    // Normalize: undefined and empty string both mean "cleared"
+    const normalizedValue = (value === undefined || value === '') ? undefined : value;
+
     if (nickOrChannel === undefined) {
       this.logParseError(this.onMetadata, 'nickOrChannel');
       return;
@@ -1902,62 +1905,61 @@ export class Kernel {
 
     if (isChannel(nickOrChannel)) {
       // Handle channel metadata
-      if (item === 'avatar' && value !== undefined) {
-        const avatarUrl = value.replace('{size}', '64');
-        if (isSafeUrl(avatarUrl)) {
-          setChannelAvatar(nickOrChannel, avatarUrl);
+      if (item === 'avatar') {
+        if (normalizedValue !== undefined) {
+          const avatarUrl = normalizedValue.replace('{size}', '64');
+          if (isSafeUrl(avatarUrl)) {
+            setChannelAvatar(nickOrChannel, avatarUrl);
+          }
         }
       }
-      if (item === 'display-name' && value !== undefined) {
-        setChannelDisplayName(nickOrChannel, value);
+      if (item === 'display-name') {
+        setChannelDisplayName(nickOrChannel, normalizedValue ?? '');
       }
     } else {
       // Handle user metadata
-      if (item === 'avatar' && value !== undefined) {
-        const avatarUrl = value.replace('{size}', '64');
-        if (isSafeUrl(avatarUrl)) {
-          setUserAvatar(nickOrChannel, avatarUrl);
-          // Save avatar for current user to display in toolbar
+      if (item === 'avatar') {
+        if (normalizedValue !== undefined) {
+          const avatarUrl = normalizedValue.replace('{size}', '64');
+          if (isSafeUrl(avatarUrl)) {
+            setUserAvatar(nickOrChannel, avatarUrl);
+            if (nickOrChannel === getCurrentNick()) {
+              setCurrentUserAvatar(avatarUrl);
+            }
+          }
+        } else {
+          // Clear avatar
+          setUserAvatar(nickOrChannel, undefined);
           if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserAvatar(avatarUrl);
+            setCurrentUserAvatar(undefined);
           }
         }
       }
       if (item === 'color') {
-        const colorValue = value === '' ? undefined : value;
-        if (colorValue === undefined || isSafeCssColor(colorValue)) {
-          if (colorValue !== undefined) {
-            setUserColor(nickOrChannel, colorValue);
-          }
-          // Save color for current user to display in profile settings
+        if (normalizedValue === undefined || isSafeCssColor(normalizedValue)) {
+          setUserColor(nickOrChannel, normalizedValue);
           if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserColor(colorValue);
+            setCurrentUserColor(normalizedValue);
           }
         }
       }
-      if (item === 'display-name' && value !== undefined) {
-        setUserDisplayName(nickOrChannel, value);
-        // Save display name for current user to display in toolbar
+      if (item === 'display-name') {
+        setUserDisplayName(nickOrChannel, normalizedValue);
         if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserDisplayName(value);
+          setCurrentUserDisplayName(normalizedValue);
         }
       }
       if (item === 'status') {
-        // Empty string means status is being cleared
-        const statusValue = value === '' ? undefined : value;
-        setUserStatus(nickOrChannel, statusValue);
-        // Save status for current user to display in toolbar
+        setUserStatus(nickOrChannel, normalizedValue);
         if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserStatus(statusValue);
+          setCurrentUserStatus(normalizedValue);
         }
       }
       if (item === 'homepage') {
-        const homepageValue = value === '' ? undefined : value;
-        if (homepageValue === undefined || isSafeUrl(homepageValue)) {
-          setUserHomepage(nickOrChannel, homepageValue);
-          // Save homepage for current user to display in profile settings
+        if (normalizedValue === undefined || isSafeUrl(normalizedValue)) {
+          setUserHomepage(nickOrChannel, normalizedValue);
           if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserHomepage(homepageValue);
+            setCurrentUserHomepage(normalizedValue);
           }
         }
       }

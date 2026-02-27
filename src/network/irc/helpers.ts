@@ -42,6 +42,33 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
 };
 
 /**
+ * Unescape an IRCv3 tag value per the message-tags spec.
+ * https://ircv3.net/specs/extensions/message-tags.html
+ *
+ * Escape sequences: \: → ; | \s → space | \\ → \ | \r → CR | \n → LF
+ */
+export const unescapeTagValue = (value: string): string => {
+  let result = '';
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '\\' && i + 1 < value.length) {
+      const next = value[i + 1];
+      switch (next) {
+        case ':': result += ';'; break;
+        case 's': result += ' '; break;
+        case '\\': result += '\\'; break;
+        case 'r': result += '\r'; break;
+        case 'n': result += '\n'; break;
+        default: result += next; break;
+      }
+      i++;
+    } else {
+      result += value[i];
+    }
+  }
+  return result;
+};
+
+/**
  *
  * @param message
  * @returns
@@ -59,8 +86,8 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
         tags[tag] = '';
       } else {
         const key = tag.substring(0, tag.indexOf('='));
-        const value = tag.substring(tag.indexOf('=') + 1);
-        tags[key] = value;
+        const rawValue = tag.substring(tag.indexOf('=') + 1);
+        tags[key] = unescapeTagValue(rawValue);
       }
     }
   }

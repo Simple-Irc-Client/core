@@ -20,9 +20,9 @@ interface UsersStore {
   setRenameUser: (from: string, to: string) => void;
   setJoinUser: (nick: string, channelName: string) => void;
   /** IRCv3 METADATA */
-  setUserAvatar: (nick: string, avatar: string) => void;
+  setUserAvatar: (nick: string, avatar: string | undefined) => void;
   /** IRCv3 METADATA */
-  setUserColor: (nick: string, color: string) => void;
+  setUserColor: (nick: string, color: string | undefined) => void;
   /** IRCv3 account-notify / account-tag */
   setUserAccount: (nick: string, account: string | null) => void;
   /** IRCv3 away-notify */
@@ -31,7 +31,7 @@ interface UsersStore {
   /** IRCv3 extended-join / SETNAME */
   setUserRealname: (nick: string, realname: string) => void;
   /** IRCv3 METADATA */
-  setUserDisplayName: (nick: string, displayName: string) => void;
+  setUserDisplayName: (nick: string, displayName: string | undefined) => void;
   /** IRCv3 METADATA */
   setUserStatus: (nick: string, status: string | undefined) => void;
   /** IRCv3 METADATA */
@@ -90,7 +90,7 @@ export const useUsersStore = create<UsersStore>()(
         }),
       }));
     },
-    setUserAvatar: (nick: string, avatar: string): void => {
+    setUserAvatar: (nick: string, avatar: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
           if (user.nick !== nick || user.avatar === avatar) {
@@ -100,7 +100,7 @@ export const useUsersStore = create<UsersStore>()(
         }),
       }));
     },
-    setUserColor: (nick: string, color: string): void => {
+    setUserColor: (nick: string, color: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
           if (user.nick !== nick || user.color === color) {
@@ -150,7 +150,7 @@ export const useUsersStore = create<UsersStore>()(
         }),
       }));
     },
-    setUserDisplayName: (nick: string, displayName: string): void => {
+    setUserDisplayName: (nick: string, displayName: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
           if (user.nick !== nick || user.displayName === displayName) {
@@ -342,7 +342,7 @@ const bufferMetadata = (nick: string, data: Partial<User>): void => {
   pendingMetadata.set(nick, { ...existing, ...data });
 };
 
-export const setUserAvatar = (nick: string, avatar: string): void => {
+export const setUserAvatar = (nick: string, avatar: string | undefined): void => {
   if (getHasUser(nick)) {
     useUsersStore.getState().setUserAvatar(nick, avatar);
     syncCurrentChannelUsers(nick);
@@ -351,7 +351,7 @@ export const setUserAvatar = (nick: string, avatar: string): void => {
   }
 };
 
-export const setUserColor = (nick: string, color: string): void => {
+export const setUserColor = (nick: string, color: string | undefined): void => {
   if (getHasUser(nick)) {
     useUsersStore.getState().setUserColor(nick, color);
     syncCurrentChannelUsers(nick);
@@ -394,7 +394,7 @@ export const setUserRealname = (nick: string, realname: string): void => {
   }
 };
 
-export const setUserDisplayName = (nick: string, displayName: string): void => {
+export const setUserDisplayName = (nick: string, displayName: string | undefined): void => {
   if (getHasUser(nick)) {
     useUsersStore.getState().setUserDisplayName(nick, displayName);
     syncCurrentChannelUsers(nick);

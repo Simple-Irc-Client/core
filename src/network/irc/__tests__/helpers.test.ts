@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../servers';
 import { type UserMode } from '@shared/types';
-import { calculateMaxPermission, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes } from '../helpers';
+import { calculateMaxPermission, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes, unescapeTagValue } from '../helpers';
 
 describe('helper tests', () => {
   const defaultUserModes = [
@@ -212,6 +212,40 @@ describe('helper tests', () => {
     expect(calculateMaxPermission(['v'], serverModes)).toEqual(252);
     expect(calculateMaxPermission(['xyz'], serverModes)).toEqual(-1);
     expect(calculateMaxPermission([], serverModes)).toEqual(-1);
+  });
+
+  describe('unescapeTagValue', () => {
+    it('should unescape IRCv3 tag value escape sequences', () => {
+      expect(unescapeTagValue('hello\\sworld')).toBe('hello world');
+      expect(unescapeTagValue('semi\\:colon')).toBe('semi;colon');
+      expect(unescapeTagValue('back\\\\slash')).toBe('back\\slash');
+      expect(unescapeTagValue('cr\\rreturn')).toBe('cr\rreturn');
+      expect(unescapeTagValue('new\\nline')).toBe('new\nline');
+    });
+
+    it('should handle multiple escape sequences', () => {
+      expect(unescapeTagValue('a\\sb\\:c\\\\d')).toBe('a b;c\\d');
+    });
+
+    it('should pass through strings without escapes', () => {
+      expect(unescapeTagValue('hello')).toBe('hello');
+      expect(unescapeTagValue('')).toBe('');
+      expect(unescapeTagValue('2023-02-01T23:08:26.026Z')).toBe('2023-02-01T23:08:26.026Z');
+    });
+
+    it('should handle unknown escape sequences by dropping backslash', () => {
+      expect(unescapeTagValue('\\x')).toBe('x');
+    });
+
+    it('should handle trailing backslash', () => {
+      // A lone trailing backslash is kept as-is (no character to escape)
+      expect(unescapeTagValue('trail\\')).toBe('trail\\');
+    });
+  });
+
+  it('parseIrcRawMessage should unescape tag values', () => {
+    const result = parseIrcRawMessage('@key=hello\\sworld :server COMMAND param');
+    expect(result.tags['key']).toBe('hello world');
   });
 
   it('should test parseUserModes', () => {
