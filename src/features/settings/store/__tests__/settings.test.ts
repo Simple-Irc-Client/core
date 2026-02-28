@@ -57,6 +57,9 @@ import {
   setEncryptedPassword,
   getEncryptedPassword,
   getPasswordNick,
+  addSavedChannel,
+  removeSavedChannel,
+  getSavedChannels,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -111,6 +114,7 @@ describe('settings store', () => {
       fontSize: 'medium',
       currentUserHomepage: undefined,
       currentUserColor: undefined,
+      savedChannels: [],
     });
     vi.clearAllMocks();
   });
@@ -853,6 +857,51 @@ describe('settings store', () => {
 
       expect(getEncryptedPassword()).toBe('encrypted-data');
       expect(getPasswordNick()).toBe('SameNick');
+    });
+  });
+
+  describe('saved channels', () => {
+    it('should start with empty saved channels', () => {
+      expect(getSavedChannels()).toEqual([]);
+    });
+
+    it('should add a channel', () => {
+      addSavedChannel('#test');
+      expect(getSavedChannels()).toEqual(['#test']);
+    });
+
+    it('should add multiple channels', () => {
+      addSavedChannel('#test');
+      addSavedChannel('#general');
+      addSavedChannel('#help');
+      expect(getSavedChannels()).toEqual(['#test', '#general', '#help']);
+    });
+
+    it('should not add duplicate channels', () => {
+      addSavedChannel('#test');
+      addSavedChannel('#test');
+      expect(getSavedChannels()).toEqual(['#test']);
+    });
+
+    it('should remove a channel', () => {
+      addSavedChannel('#test');
+      addSavedChannel('#general');
+      removeSavedChannel('#test');
+      expect(getSavedChannels()).toEqual(['#general']);
+    });
+
+    it('should handle removing a channel that does not exist', () => {
+      addSavedChannel('#test');
+      removeSavedChannel('#nonexistent');
+      expect(getSavedChannels()).toEqual(['#test']);
+    });
+
+    it('should remove all channels individually', () => {
+      addSavedChannel('#test');
+      addSavedChannel('#general');
+      removeSavedChannel('#test');
+      removeSavedChannel('#general');
+      expect(getSavedChannels()).toEqual([]);
     });
   });
 });

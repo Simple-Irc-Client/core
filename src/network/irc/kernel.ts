@@ -50,12 +50,15 @@ import {
   setWatchLimit,
   getEncryptedPassword,
   getPasswordNick,
+  addSavedChannel,
+  removeSavedChannel,
+  getSavedChannels,
 } from '@features/settings/store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircJoinChannels, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -476,6 +479,12 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    // Auto-rejoin saved channels on reconnect or returning to a completed wizard
+    const savedChannels = getSavedChannels();
+    if (savedChannels.length > 0) {
+      ircJoinChannels(savedChannels);
+    }
   };
 
   private readonly handleDisconnected = (): void => {
@@ -1813,6 +1822,7 @@ export class Kernel {
 
     if (nick === getCurrentNick()) {
       setCurrentChannelName(channel, ChannelCategory.channel);
+      addSavedChannel(channel);
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
@@ -1857,6 +1867,7 @@ export class Kernel {
 
     if (kicked === currentNick) {
       setRemoveChannel(channel);
+      removeSavedChannel(channel);
 
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
@@ -2299,6 +2310,7 @@ export class Kernel {
 
     if (nick === getCurrentNick()) {
       setRemoveChannel(channel);
+      removeSavedChannel(channel);
 
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }

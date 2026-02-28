@@ -524,7 +524,7 @@ describe('kernel tests', () => {
     expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(2);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: '→ SIC-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -555,7 +555,7 @@ describe('kernel tests', () => {
     expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(2);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: 'mero-test dołączył do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: '→ mero-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -577,7 +577,7 @@ describe('kernel tests', () => {
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: '→ SIC-test dołączył do kanału' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -648,7 +648,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveUser).toHaveBeenCalledWith('sic-test', '#Religie');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#Religie', message: 'sic-test został wyrzucony przez ratler__ (ratler__)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#Religie', message: '← sic-test został wyrzucony przez ratler__ (ratler__)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1835,7 +1835,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveUser).toHaveBeenCalledWith('Merovingian', '#sic');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: '← Merovingian opuścił kanał (Opuścił kanał)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1860,7 +1860,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveChannel).toHaveBeenCalledWith('#sic');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: 'Merovingian opuścił kanał (Opuścił kanał)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: '← Merovingian opuścił kanał (Opuścił kanał)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1885,7 +1885,7 @@ describe('kernel tests', () => {
     expect(mockSetRemoveChannel).toHaveBeenCalledWith('#chat');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: 'mero-test opuścił kanał' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: '← mero-test opuścił kanał' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1987,7 +1987,7 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetQuitUser).toHaveBeenCalledTimes(1);
-    expect(mockSetQuitUser).toHaveBeenCalledWith('mero', expect.objectContaining({ message: 'mero opuścił serwer (Quit: Leaving)' }));
+    expect(mockSetQuitUser).toHaveBeenCalledWith('mero', expect.objectContaining({ message: '← mero opuścił serwer (Quit: Leaving)' }));
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
@@ -5136,6 +5136,123 @@ describe('kernel tests', () => {
         1,
         expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }),
       );
+    });
+  });
+
+  describe('saved channels (auto-rejoin)', () => {
+    it('should save channel when current user joins', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => false);
+      const mockAddSavedChannel = vi.spyOn(settingsFile, 'addSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@host JOIN #mychannel * :realname';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockAddSavedChannel).toHaveBeenCalledTimes(1);
+      expect(mockAddSavedChannel).toHaveBeenCalledWith('#mychannel');
+    });
+
+    it('should not save channel when other user joins', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      const mockAddSavedChannel = vi.spyOn(settingsFile, 'addSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :OtherUser!~other@host JOIN #mychannel * :realname';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockAddSavedChannel).not.toHaveBeenCalled();
+    });
+
+    it('should remove saved channel when current user parts', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-02-12T22:44:07.583Z :SIC-test!~SIC-test@host PART #mychannel :leaving';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockRemoveSavedChannel).toHaveBeenCalledTimes(1);
+      expect(mockRemoveSavedChannel).toHaveBeenCalledWith('#mychannel');
+    });
+
+    it('should not remove saved channel when other user parts', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-02-12T22:44:07.583Z :OtherUser!~other@host PART #mychannel :leaving';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockRemoveSavedChannel).not.toHaveBeenCalled();
+    });
+
+    it('should remove saved channel when current user is kicked', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-03-20T21:23:29.512Z :admin!~admin@host KICK #mychannel SIC-test :bye';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockRemoveSavedChannel).toHaveBeenCalledTimes(1);
+      expect(mockRemoveSavedChannel).toHaveBeenCalledWith('#mychannel');
+    });
+
+    it('should not remove saved channel when other user is kicked', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
+
+      const line = '@msgid=abc;time=2023-03-20T21:23:29.512Z :admin!~admin@host KICK #mychannel OtherUser :bye';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockRemoveSavedChannel).not.toHaveBeenCalled();
+    });
+
+    it('should auto-rejoin saved channels on connected', () => {
+      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getSavedChannels').mockImplementation(() => ['#test', '#general']);
+      const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
+
+      new Kernel({ type: 'connected' }).handle();
+
+      expect(mockIrcJoinChannels).toHaveBeenCalledTimes(1);
+      expect(mockIrcJoinChannels).toHaveBeenCalledWith(['#test', '#general']);
+    });
+
+    it('should not call ircJoinChannels when no saved channels', () => {
+      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getSavedChannels').mockImplementation(() => []);
+      const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
+
+      new Kernel({ type: 'connected' }).handle();
+
+      expect(mockIrcJoinChannels).not.toHaveBeenCalled();
     });
   });
 });
