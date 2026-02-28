@@ -35,6 +35,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const [rawModes, setRawModes] = useState('');
   const [avatar, setAvatar] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [paramEdits, setParamEdits] = useState<Record<string, string>>({});
 
   const isAvatarSupported = supportedOptions?.includes('metadata-avatar') ?? false;
   const isDisplayNameSupported = supportedOptions?.includes('metadata-display-name') ?? false;
@@ -43,10 +44,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
   const initialKey = useMemo(() => (channelModes.k !== undefined ? String(channelModes.k) : ''), [channelModes.k]);
   const initialRawModes = useMemo(() => {
-    const flags = Object.entries(channelModes)
-      .filter(([, value]) => value === true)
-      .map(([k]) => k)
-      .join('');
+    const flags = Object.keys(channelModes).join('');
     return flags ? `+${flags}` : '';
   }, [channelModes]);
 
@@ -107,9 +105,56 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   };
 
   const handleApplyRawModes = () => {
-    if (rawModes.trim()) {
-      ircSendRawMessage(`MODE ${channelName} ${rawModes.trim()}`);
+    const trimmed = rawModes.trim();
+    if (!trimmed) return;
+
+    // Parse the desired flags from the input (e.g. "+nrtBCN" -> Set{n,r,t,B,C,N})
+    const desiredFlags = new Set<string>();
+    let adding = true;
+    for (const ch of trimmed) {
+      if (ch === '+') { adding = true; continue; }
+      if (ch === '-') { adding = false; continue; }
+      if (adding) desiredFlags.add(ch);
     }
+
+    // Get all current flags from channel modes
+    const currentFlags = new Set(Object.keys(channelModes));
+
+    // Compute flags to add and remove
+    const toAdd = [...desiredFlags].filter((f) => !currentFlags.has(f)).join('');
+    const toRemove = [...currentFlags].filter((f) => !desiredFlags.has(f)).join('');
+
+    const modeString = `${toAdd ? `+${toAdd}` : ''}${toRemove ? `-${toRemove}` : ''}`;
+    if (modeString) {
+      ircSendRawMessage(`MODE ${channelName} ${modeString}`);
+    }
+  };
+
+  // Flags that have dedicated UI controls
+  const DEDICATED_FLAGS = new Set(['l', 'k']);
+
+  // Parameterized modes currently set on the channel (excluding dedicated ones)
+  const parameterizedModes = useMemo(() =>
+    Object.entries(channelModes)
+      .filter(([flag, value]) => typeof value === 'string' && !DEDICATED_FLAGS.has(flag))
+      .map(([flag, value]) => ({ flag, value: value as string })),
+    [channelModes],
+  );
+
+  const handleSetParamMode = (flag: string) => {
+    const value = paramEdits[flag]?.trim();
+    if (value) {
+      ircSendRawMessage(`MODE ${channelName} +${flag} ${value}`);
+    }
+  };
+
+  const handleClearParamMode = (flag: string) => {
+    ircSendRawMessage(`MODE ${channelName} -${flag}`);
+    setParamEdits((prev) => {
+      const next = { ...prev };
+      delete next[flag];
+      return next;
+    });
   };
 
   // Get available Type D flags from server config
@@ -203,6 +248,32 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             </Button>
           </div>
         ) : null}
+
+        {/* Parameterized Modes */}
+        {parameterizedModes.map(({ flag, value }) => (
+          <div key={flag} className="flex items-center gap-2">
+            <Label htmlFor={`param-mode-${flag}`} className="w-24 shrink-0">
+              +{flag}
+            </Label>
+            <Input
+              id={`param-mode-${flag}`}
+              type="text"
+              value={paramEdits[flag] ?? value}
+              onChange={(e) => setParamEdits((prev) => ({ ...prev, [flag]: e.target.value }))}
+              className="flex-1"
+              onKeyDown={(e) => e.key === 'Enter' && handleSetParamMode(flag)}
+              data-testid={`param-mode-${flag}-input`}
+            />
+            <Button type="button" size="sm" className="shrink-0" onClick={() => handleSetParamMode(flag)} data-testid={`param-mode-${flag}-set`} aria-label={t('channelSettings.actions.set')}>
+              <Check className="h-4 w-4 sm:hidden" aria-hidden="true" />
+              <span className="hidden sm:inline">{t('channelSettings.actions.set')}</span>
+            </Button>
+            <Button type="button" size="sm" className="shrink-0" variant="outline" onClick={() => handleClearParamMode(flag)} data-testid={`param-mode-${flag}-clear`} aria-label={t('channelSettings.actions.clear')}>
+              <X className="h-4 w-4 sm:hidden" aria-hidden="true" />
+              <span className="hidden sm:inline">{t('channelSettings.actions.clear')}</span>
+            </Button>
+          </div>
+        ))}
 
         {/* Channel Avatar (IRCv3 metadata) */}
         {isAvatarSupported ? (

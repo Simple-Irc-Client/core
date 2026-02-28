@@ -13,13 +13,13 @@ vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
 }));
 
-const mockChannelModes = { n: true, t: true };
+let mockChannelModes: Record<string, string | boolean> = { n: true, t: true };
 
 vi.mock('@features/channels/store/channelSettings', () => ({
   useChannelSettingsStore: vi.fn((selector) =>
     selector({
       isLoading: false,
-      channelModes: mockChannelModes,
+      get channelModes() { return mockChannelModes; },
     })
   ),
 }));
@@ -38,6 +38,7 @@ vi.mock('@features/settings/store/settings', () => ({
 describe('ModesTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockChannelModes = { n: true, t: true };
   });
 
   describe('rendering', () => {
@@ -177,24 +178,167 @@ describe('ModesTab', () => {
   });
 
   describe('raw modes', () => {
-    it('should send raw MODE command when applying', () => {
+    it('should display all current flags including parameterized ones', () => {
+      mockChannelModes = { n: true, t: true, f: '[4j#R3]:6', H: '15:1d' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input') as HTMLInputElement;
+      expect(input.value).toBe('+ntfH');
+    });
+
+    it('should send only removed flags when a flag is removed', () => {
+      mockChannelModes = { n: true, r: true, t: true, B: true, C: true, N: true, R: true };
       render(<ModesTab channelName="#test" />);
 
       const input = screen.getByTestId('raw-modes-input');
-      fireEvent.change(input, { target: { value: '+im-nt' } });
+      fireEvent.change(input, { target: { value: '+nrtBCN' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +im-nt');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -R');
+    });
+
+    it('should send only added flags when a flag is added', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '+nts' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s');
+    });
+
+    it('should send both added and removed flags in one command', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '+nim' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +im-t');
+    });
+
+    it('should not send anything when flags are unchanged', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '+nt' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle removing parameterized flags', () => {
+      mockChannelModes = { n: true, t: true, f: '[4j#R3]:6', H: '15:1d' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '+ntf' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -H');
     });
 
     it('should apply raw modes when pressing Enter', () => {
       render(<ModesTab channelName="#test" />);
 
       const input = screen.getByTestId('raw-modes-input');
-      fireEvent.change(input, { target: { value: '+s-p' } });
+      fireEvent.change(input, { target: { value: '+nts' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s-p');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s');
+    });
+
+    it('should not send anything when input is empty', () => {
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '   ' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should handle removing multiple flags at once', () => {
+      mockChannelModes = { n: true, r: true, t: true, B: true, C: true, N: true, R: true };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('raw-modes-input');
+      fireEvent.change(input, { target: { value: '+nrt' } });
+      fireEvent.click(screen.getByTestId('raw-modes-apply'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -BCNR');
+    });
+  });
+
+  describe('parameterized modes', () => {
+    it('should render inputs for parameterized modes', () => {
+      mockChannelModes = { n: true, t: true, f: '[4j#R3]:6', H: '15:1d' };
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.getByTestId('param-mode-f-input')).toBeInTheDocument();
+      expect(screen.getByTestId('param-mode-H-input')).toBeInTheDocument();
+    });
+
+    it('should display current parameter value', () => {
+      mockChannelModes = { n: true, f: '[4j#R3]:6' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('param-mode-f-input') as HTMLInputElement;
+      expect(input.value).toBe('[4j#R3]:6');
+    });
+
+    it('should not render inputs for dedicated flags l and k', () => {
+      mockChannelModes = { n: true, l: '50', k: 'secret' };
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.queryByTestId('param-mode-l-input')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('param-mode-k-input')).not.toBeInTheDocument();
+    });
+
+    it('should not render inputs for boolean flags', () => {
+      mockChannelModes = { n: true, t: true };
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.queryByTestId('param-mode-n-input')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('param-mode-t-input')).not.toBeInTheDocument();
+    });
+
+    it('should send MODE +flag with value when setting', () => {
+      mockChannelModes = { n: true, f: '[4j#R3]:6' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('param-mode-f-input');
+      fireEvent.change(input, { target: { value: '[5j#R3]:8' } });
+      fireEvent.click(screen.getByTestId('param-mode-f-set'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +f [5j#R3]:8');
+    });
+
+    it('should send MODE -flag when clearing', () => {
+      mockChannelModes = { n: true, H: '15:1d' };
+      render(<ModesTab channelName="#test" />);
+
+      fireEvent.click(screen.getByTestId('param-mode-H-clear'));
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -H');
+    });
+
+    it('should set parameterized mode when pressing Enter', () => {
+      mockChannelModes = { n: true, f: '[4j#R3]:6' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('param-mode-f-input');
+      fireEvent.change(input, { target: { value: '[5j]:3' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +f [5j]:3');
+    });
+
+    it('should show +flag as label', () => {
+      mockChannelModes = { n: true, f: '[4j#R3]:6' };
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.getByText('+f')).toBeInTheDocument();
     });
   });
 
