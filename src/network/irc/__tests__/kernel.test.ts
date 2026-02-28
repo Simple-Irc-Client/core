@@ -631,6 +631,65 @@ describe('kernel tests', () => {
     expect(mockIrcRequestChatHistory).not.toHaveBeenCalled();
   });
 
+  it('test raw JOIN self with draft/metadata enabled requests metadata list', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+    const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/metadata');
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIrcRequestMetadataList).toHaveBeenCalledWith('#mychannel');
+    expect(mockIrcRequestMetadataList).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw JOIN self with draft/metadata-notify-2 enabled requests metadata list', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+    const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/metadata-notify-2');
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIrcRequestMetadataList).toHaveBeenCalledWith('#mychannel');
+    expect(mockIrcRequestMetadataList).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw JOIN self without metadata capability does not request metadata', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+    const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockIrcRequestMetadataList).not.toHaveBeenCalled();
+  });
+
   it('test raw KICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'test-user');

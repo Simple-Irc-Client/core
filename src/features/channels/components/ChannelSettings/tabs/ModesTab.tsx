@@ -131,14 +131,14 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   };
 
   // Flags that have dedicated UI controls
-  const DEDICATED_FLAGS = new Set(['l', 'k']);
+  const DEDICATED_FLAGS = useMemo(() => new Set(['l', 'k']), []);
 
   // Parameterized modes currently set on the channel (excluding dedicated ones)
   const parameterizedModes = useMemo(() =>
     Object.entries(channelModes)
       .filter(([flag, value]) => typeof value === 'string' && !DEDICATED_FLAGS.has(flag))
       .map(([flag, value]) => ({ flag, value: value as string })),
-    [channelModes],
+    [channelModes, DEDICATED_FLAGS],
   );
 
   const handleSetParamMode = (flag: string) => {
@@ -150,11 +150,9 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
 
   const handleClearParamMode = (flag: string) => {
     ircSendRawMessage(`MODE ${channelName} -${flag}`);
-    setParamEdits((prev) => {
-      const next = { ...prev };
-      delete next[flag];
-      return next;
-    });
+    setParamEdits((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([key]) => key !== flag)),
+    );
   };
 
   // Get available Type D flags from server config
