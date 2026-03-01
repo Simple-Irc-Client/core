@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ChannelSettings from '../ChannelSettings';
 import * as network from '@/network/irc/network';
 import * as channelSettingsStore from '@features/channels/store/channelSettings';
-import * as settingsStore from '@features/settings/store/settings';
+// settings store is mocked below via vi.mock
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -89,7 +89,7 @@ vi.mock('@features/channels/store/channelSettings', () => ({
   clearChannelSettingsStore: vi.fn(),
 }));
 
-let mockIsSupportedOption = vi.fn(() => false);
+let mockIsSupportedOption: ReturnType<typeof vi.fn<(option: string) => boolean>> = vi.fn(() => false);
 
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: vi.fn((selector) =>
@@ -99,7 +99,7 @@ vi.mock('@features/settings/store/settings', () => ({
       nick: 'testuser',
     })
   ),
-  isSupportedOption: (...args: unknown[]) => mockIsSupportedOption(...args),
+  isSupportedOption: (option: string) => mockIsSupportedOption(option),
 }));
 
 vi.mock('@features/users/store/users', () => ({
