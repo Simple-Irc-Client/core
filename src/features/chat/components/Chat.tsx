@@ -24,7 +24,7 @@ import { CheckCheck } from 'lucide-react';
 import NotConnected from './NotConnected';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
-import { isSafeCssColor } from '@shared/lib/utils';
+import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 
 const italicCategories: MessageCategory[] = [MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick];
 
@@ -61,8 +61,9 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   const { handleContextMenuUserClick } = useContextMenu();
   const nick = getNickFromMessage(message);
   const displayNick = getDisplayNickFromMessage(message);
+  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
   const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.color) : undefined;
-  const nickColor = rawNickColor && isSafeCssColor(rawNickColor) ? rawNickColor : undefined;
+  const nickColor = rawNickColor && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : undefined;
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -113,8 +114,9 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   const displayNick = getDisplayNickFromMessage(message);
   const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
   const avatarLetter = getDisplayNickFromMessage(message).substring(0, 1);
+  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
   const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
-  const nickColor = rawNickColor && rawNickColor !== 'inherit' && isSafeCssColor(rawNickColor) ? rawNickColor : 'inherit';
+  const nickColor = rawNickColor && rawNickColor !== 'inherit' && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : 'inherit';
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {

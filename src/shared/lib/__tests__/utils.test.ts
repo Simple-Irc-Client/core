@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, isSafeCssColor, redactSensitiveIrc } from '../utils';
+import { isSafeUrl, isSafeCssColor, redactSensitiveIrc, ensureNickContrast } from '../utils';
 
 describe('redactSensitiveIrc', () => {
   it('should redact AUTHENTICATE payloads', () => {
@@ -206,6 +206,121 @@ describe('CSS Color Validation', () => {
 
     it('should reject -moz-binding CSS injection', () => {
       expect(isSafeCssColor('-moz-binding:url(evil)')).toBe(false);
+    });
+  });
+});
+
+describe('ensureNickContrast', () => {
+  describe('dark mode - lightens dark colors', () => {
+    it('should lighten black on dark background', () => {
+      const result = ensureNickContrast('#000000', true);
+      expect(result).not.toBe('#000000');
+      // Result should be a lighter color (higher hex values)
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should lighten very dark colors', () => {
+      const result = ensureNickContrast('#1a1a1a', true);
+      expect(result).not.toBe('#1a1a1a');
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should lighten dark blue', () => {
+      const result = ensureNickContrast('#000080', true);
+      expect(result).not.toBe('#000080');
+    });
+
+    it('should lighten dark red', () => {
+      const result = ensureNickContrast('#330000', true);
+      expect(result).not.toBe('#330000');
+    });
+
+    it('should not change already bright colors on dark background', () => {
+      expect(ensureNickContrast('#ffffff', true)).toBe('#ffffff');
+      expect(ensureNickContrast('#00ff00', true)).toBe('#00ff00');
+      expect(ensureNickContrast('#ffff00', true)).toBe('#ffff00');
+    });
+  });
+
+  describe('light mode - darkens light colors', () => {
+    it('should darken white on light background', () => {
+      const result = ensureNickContrast('#ffffff', false);
+      expect(result).not.toBe('#ffffff');
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should darken very light colors', () => {
+      const result = ensureNickContrast('#e0e0e0', false);
+      expect(result).not.toBe('#e0e0e0');
+    });
+
+    it('should darken light yellow', () => {
+      const result = ensureNickContrast('#ffff99', false);
+      expect(result).not.toBe('#ffff99');
+    });
+
+    it('should not change already dark colors on light background', () => {
+      expect(ensureNickContrast('#000000', false)).toBe('#000000');
+      expect(ensureNickContrast('#333333', false)).toBe('#333333');
+    });
+  });
+
+  describe('preserves hue', () => {
+    it('should keep red hue when lightening', () => {
+      const result = ensureNickContrast('#330000', true);
+      // Parse result to verify red channel dominates
+      const r = parseInt(result.slice(1, 3), 16);
+      const g = parseInt(result.slice(3, 5), 16);
+      const b = parseInt(result.slice(5, 7), 16);
+      expect(r).toBeGreaterThan(g);
+      expect(r).toBeGreaterThan(b);
+    });
+
+    it('should keep blue hue when lightening', () => {
+      const result = ensureNickContrast('#000033', true);
+      const r = parseInt(result.slice(1, 3), 16);
+      const g = parseInt(result.slice(3, 5), 16);
+      const b = parseInt(result.slice(5, 7), 16);
+      expect(b).toBeGreaterThan(r);
+      expect(b).toBeGreaterThan(g);
+    });
+  });
+
+  describe('handles different color formats', () => {
+    it('should handle 3-digit hex', () => {
+      const result = ensureNickContrast('#000', true);
+      expect(result).not.toBe('#000');
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should handle rgb() format', () => {
+      const result = ensureNickContrast('rgb(0, 0, 0)', true);
+      expect(result).not.toBe('rgb(0, 0, 0)');
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should handle rgba() format', () => {
+      const result = ensureNickContrast('rgba(0, 0, 0, 1)', true);
+      expect(result).not.toBe('rgba(0, 0, 0, 1)');
+      expect(result).toMatch(/^#[0-9a-f]{6}$/);
+    });
+
+    it('should handle named CSS colors', () => {
+      // Named colors get resolved via DOM, so they should be processed
+      const result = ensureNickContrast('red', false);
+      // Red should have enough contrast on light background
+      expect(result).toBe('red');
+    });
+  });
+
+  describe('mid-range colors pass through', () => {
+    it('should not adjust medium-brightness colors on dark background', () => {
+      // Medium bright colors should have enough contrast on dark bg
+      expect(ensureNickContrast('#6e9ecf', true)).toBe('#6e9ecf');
+    });
+
+    it('should not adjust medium colors on light background', () => {
+      expect(ensureNickContrast('#555555', false)).toBe('#555555');
     });
   });
 });

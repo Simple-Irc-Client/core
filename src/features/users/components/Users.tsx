@@ -12,7 +12,7 @@ import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X } from 'lucide-react';
-import { cn, isSafeCssColor } from '@shared/lib/utils';
+import { cn, isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
 
@@ -65,6 +65,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const userModes = useSettingsStore((state) => state.userModes);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const fontSize = useSettingsStore((state) => state.fontSize);
+  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
   const users = useCurrentStore((state) => state.users);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -126,7 +127,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                           </>
                         );
                       })()}
-                      <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? user.color : 'inherit' }}>
+                      <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? ensureNickContrast(user.color, isDarkMode) : 'inherit' }}>
                         {user.displayName || user.nick}
                       </span>
                     </div>
