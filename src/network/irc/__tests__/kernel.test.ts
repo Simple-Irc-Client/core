@@ -3180,6 +3180,54 @@ describe('kernel tests', () => {
     expect(mockSetUserColor).not.toHaveBeenCalled();
   });
 
+  it('test raw 761 sets channel display-name', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation((name) => name?.startsWith('#'));
+    const mockSetChannelDisplayName = vi.spyOn(channelsFile, 'setChannelDisplayName').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test #quizowagra display-name * :QuizowaGra';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelDisplayName).toHaveBeenCalledWith('#quizowagra', 'QuizowaGra');
+  });
+
+  it('test raw 761 sets channel avatar', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation((name) => name?.startsWith('#'));
+    const mockSetChannelAvatar = vi.spyOn(channelsFile, 'setChannelAvatar').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test #test avatar * :https://example.com/channel-avatar.png';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelAvatar).toHaveBeenCalledWith('#test', 'https://example.com/channel-avatar.png');
+  });
+
+  it('test raw 761 rejects channel avatar with javascript: URL', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation((name) => name?.startsWith('#'));
+    const mockSetChannelAvatar = vi.spyOn(channelsFile, 'setChannelAvatar').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test #test avatar * :javascript:alert(1)';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw 761 clears channel display-name when value is empty', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation((name) => name?.startsWith('#'));
+    const mockSetChannelDisplayName = vi.spyOn(channelsFile, 'setChannelDisplayName').mockImplementation(() => {});
+
+    const line = ':insomnia.pirc.pl 761 SIC-test #test display-name *';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelDisplayName).toHaveBeenCalledWith('#test', '');
+  });
+
   // ==================== New handler tests ====================
 
   it('test raw 010 - server redirect', () => {

@@ -3511,28 +3511,39 @@ export class Kernel {
   // :chmurka.pirc.pl 761 sic-test aqq color * :#0000ff
   private readonly onRaw761 = (): void => {
     const myNick = this.line.shift();
-    const nick = this.line.shift();
+    const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
     const flags = this.line.shift();
-    const rawValue = this.line.shift();
-    const value = rawValue !== undefined ? this.stripColon(rawValue) : undefined;
+    const value = this.trailingOptional();
 
-    if (nick === undefined) {
-      this.logParseError(this.onRaw761, 'nick');
+    if (nickOrChannel === undefined) {
+      this.logParseError(this.onRaw761, 'nickOrChannel');
       return;
     }
 
-    if (item === 'avatar' && value !== undefined) {
-      const avatarUrl = value.replace('{size}', '64');
-      if (isSafeUrl(avatarUrl)) {
-        setUserAvatar(nick, avatarUrl);
-        if (nick.toLowerCase() === getCurrentNick().toLowerCase()) {
-          setCurrentUserAvatar(avatarUrl);
+    if (isChannel(nickOrChannel)) {
+      if (item === 'avatar' && value !== undefined) {
+        const avatarUrl = value.replace('{size}', '64');
+        if (isSafeUrl(avatarUrl)) {
+          setChannelAvatar(nickOrChannel, avatarUrl);
         }
       }
-    }
-    if (item === 'color' && value !== undefined && isSafeCssColor(value)) {
-      setUserColor(nick, value);
+      if (item === 'display-name') {
+        setChannelDisplayName(nickOrChannel, value ?? '');
+      }
+    } else {
+      if (item === 'avatar' && value !== undefined) {
+        const avatarUrl = value.replace('{size}', '64');
+        if (isSafeUrl(avatarUrl)) {
+          setUserAvatar(nickOrChannel, avatarUrl);
+          if (nickOrChannel.toLowerCase() === getCurrentNick().toLowerCase()) {
+            setCurrentUserAvatar(avatarUrl);
+          }
+        }
+      }
+      if (item === 'color' && value !== undefined && isSafeCssColor(value)) {
+        setUserColor(nickOrChannel, value);
+      }
     }
   };
 
