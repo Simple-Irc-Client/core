@@ -14,12 +14,21 @@ vi.mock('@/network/irc/network', () => ({
 }));
 
 let mockChannelModes: Record<string, string | boolean> = { n: true, t: true };
+let mockChannelData: { avatar?: string; displayName?: string } = {};
 
 vi.mock('@features/channels/store/channelSettings', () => ({
   useChannelSettingsStore: vi.fn((selector) =>
     selector({
       isLoading: false,
       get channelModes() { return mockChannelModes; },
+    })
+  ),
+}));
+
+vi.mock('@features/channels/store/channels', () => ({
+  useChannelsStore: vi.fn((selector) =>
+    selector({
+      openChannels: [{ name: '#test', ...mockChannelData }],
     })
   ),
 }));
@@ -39,6 +48,7 @@ describe('ModesTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockChannelModes = { n: true, t: true };
+    mockChannelData = {};
   });
 
   describe('rendering', () => {
@@ -399,6 +409,78 @@ describe('ModesTab', () => {
       render(<ModesTab channelName="#test" />);
 
       expect(screen.getByText('channelSettings.modes.displayName')).toBeInTheDocument();
+    });
+  });
+
+  describe('display name populated from channel store', () => {
+    beforeEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: ['metadata-display-name'],
+        } as never)
+      );
+    });
+
+    afterEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+    });
+
+    it('should show display name from channel store', () => {
+      mockChannelData = { displayName: 'My Cool Channel' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('displayName-input') as HTMLInputElement;
+      expect(input.value).toBe('My Cool Channel');
+    });
+
+    it('should show empty input when channel has no display name', () => {
+      mockChannelData = {};
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('displayName-input') as HTMLInputElement;
+      expect(input.value).toBe('');
+    });
+  });
+
+  describe('avatar populated from channel store', () => {
+    beforeEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: ['metadata-avatar'],
+        } as never)
+      );
+    });
+
+    afterEach(() => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+    });
+
+    it('should show avatar from channel store', () => {
+      mockChannelData = { avatar: 'https://example.com/avatar.png' };
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('avatar-input') as HTMLInputElement;
+      expect(input.value).toBe('https://example.com/avatar.png');
+    });
+
+    it('should show empty input when channel has no avatar', () => {
+      mockChannelData = {};
+      render(<ModesTab channelName="#test" />);
+
+      const input = screen.getByTestId('avatar-input') as HTMLInputElement;
+      expect(input.value).toBe('');
     });
   });
 

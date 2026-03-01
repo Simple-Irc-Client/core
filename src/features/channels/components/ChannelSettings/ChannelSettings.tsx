@@ -9,7 +9,8 @@ import {
 } from '@shared/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
 import { useChannelSettingsStore, clearChannelSettingsStore, type ActiveTab } from '@features/channels/store/channelSettings';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendRawMessage, ircRequestMetadataList } from '@/network/irc/network';
+import { isSupportedOption } from '@features/settings/store/settings';
 import ModesTab from './tabs/ModesTab';
 import ListsTab from './tabs/ListsTab';
 
@@ -55,6 +56,11 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
     ircSendRawMessage(`MODE ${channelName} b`);
     ircSendRawMessage(`MODE ${channelName} e`);
     ircSendRawMessage(`MODE ${channelName} I`);
+
+    // Fetch channel metadata (display-name, avatar, etc.)
+    if (isSupportedOption('metadata-display-name') || isSupportedOption('metadata-avatar')) {
+      ircRequestMetadataList(channelName);
+    }
   }, [channelName, setChannelName, setIsLoading, setBanList, setExceptionList, setInviteList, setIsBanListLoading, setIsExceptionListLoading, setIsInviteListLoading]);
 
   const handleTabChange = (value: string) => {

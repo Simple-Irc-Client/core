@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
+import { useChannelsStore } from '@features/channels/store/channels';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { Button } from '@shared/components/ui/button';
@@ -33,6 +34,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const [limit, setLimit] = useState('');
   const [key, setKey] = useState('');
   const [rawModes, setRawModes] = useState('');
+  const channelAvatar = useChannelsStore((state) => state.openChannels.find((ch) => ch.name === channelName)?.avatar ?? '');
+  const channelDisplayName = useChannelsStore((state) => state.openChannels.find((ch) => ch.name === channelName)?.displayName ?? '');
   const [avatar, setAvatar] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [paramEdits, setParamEdits] = useState<Record<string, string>>({});
@@ -52,6 +55,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const displayLimit = limit || initialLimit;
   const displayKey = key || initialKey;
   const displayRawModes = rawModes || initialRawModes;
+  const displayAvatar = avatar || channelAvatar;
+  const displayDisplayName = displayName || channelDisplayName;
 
   const handleFlagToggle = (flag: string, enabled: boolean) => {
     const mode = enabled ? `+${flag}` : `-${flag}`;
@@ -282,7 +287,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             <Input
               id="avatar"
               type="text"
-              value={avatar}
+              value={displayAvatar}
               onChange={(e) => setAvatar(e.target.value)}
               className="flex-1"
               placeholder="https://example.com/avatar.png"
@@ -309,7 +314,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
             <Input
               id="displayName"
               type="text"
-              value={displayName}
+              value={displayDisplayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="flex-1"
               placeholder={t('channelSettings.modes.displayNamePlaceholder')}

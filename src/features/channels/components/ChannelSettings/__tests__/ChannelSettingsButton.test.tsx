@@ -34,6 +34,15 @@ vi.mock('@shared/components/ui/tabs', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+  ircRequestMetadataList: vi.fn(),
+}));
+
+vi.mock('@features/channels/store/channels', () => ({
+  useChannelsStore: vi.fn((selector) =>
+    selector({
+      openChannels: [{ name: '#test' }],
+    })
+  ),
 }));
 
 vi.mock('@features/channels/store/channelSettings', () => ({
@@ -79,6 +88,7 @@ vi.mock('@features/settings/store/settings', () => ({
       nick: 'testuser',
     })
   ),
+  isSupportedOption: vi.fn(() => false),
 }));
 
 describe('ChannelSettingsButton', () => {

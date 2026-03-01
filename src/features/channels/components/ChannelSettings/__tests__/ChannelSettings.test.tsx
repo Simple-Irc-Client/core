@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ChannelSettings from '../ChannelSettings';
 import * as network from '@/network/irc/network';
 import * as channelSettingsStore from '@features/channels/store/channelSettings';
+import * as settingsStore from '@features/settings/store/settings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -46,6 +47,7 @@ vi.mock('@shared/components/ui/tabs', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+  ircRequestMetadataList: vi.fn(),
 }));
 
 const mockSetChannelName = vi.fn();
@@ -87,6 +89,8 @@ vi.mock('@features/channels/store/channelSettings', () => ({
   clearChannelSettingsStore: vi.fn(),
 }));
 
+let mockIsSupportedOption = vi.fn(() => false);
+
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: vi.fn((selector) =>
     selector({
@@ -95,6 +99,7 @@ vi.mock('@features/settings/store/settings', () => ({
       nick: 'testuser',
     })
   ),
+  isSupportedOption: (...args: unknown[]) => mockIsSupportedOption(...args),
 }));
 
 vi.mock('@features/users/store/users', () => ({
@@ -191,6 +196,32 @@ describe('ChannelSettings', () => {
       expect(mockSetIsBanListLoading).toHaveBeenCalledWith(true);
       expect(mockSetIsExceptionListLoading).toHaveBeenCalledWith(true);
       expect(mockSetIsInviteListLoading).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('metadata fetching on open', () => {
+    it('should request metadata list when display-name is supported', () => {
+      mockIsSupportedOption = vi.fn((option: string) => option === 'metadata-display-name');
+
+      render(<ChannelSettings {...defaultProps} />);
+
+      expect(network.ircRequestMetadataList).toHaveBeenCalledWith('#test');
+    });
+
+    it('should request metadata list when avatar is supported', () => {
+      mockIsSupportedOption = vi.fn((option: string) => option === 'metadata-avatar');
+
+      render(<ChannelSettings {...defaultProps} />);
+
+      expect(network.ircRequestMetadataList).toHaveBeenCalledWith('#test');
+    });
+
+    it('should not request metadata list when neither display-name nor avatar is supported', () => {
+      mockIsSupportedOption = vi.fn(() => false);
+
+      render(<ChannelSettings {...defaultProps} />);
+
+      expect(network.ircRequestMetadataList).not.toHaveBeenCalled();
     });
   });
 
