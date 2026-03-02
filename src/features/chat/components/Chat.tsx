@@ -259,11 +259,11 @@ const Chat = () => {
       {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
-          const lastNick = getNickFromMessage(messages[index - 1]) ?? '';
           const currentDate = startOfDay(new Date(message.time));
           const prevMessage = messages[index - 1];
           const prevDate = prevMessage ? startOfDay(new Date(prevMessage.time)) : null;
           const showDateSeparator = prevDate !== null && currentDate.getTime() !== prevDate.getTime();
+          const lastNick = showDateSeparator ? '' : (getNickFromMessage(messages[index - 1]) ?? '');
           return (
             <div key={`message-${message.id}`}>
               {showDateSeparator && <DateSeparator date={currentDate} />}

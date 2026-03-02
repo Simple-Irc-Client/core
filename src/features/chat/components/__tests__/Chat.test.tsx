@@ -1690,4 +1690,94 @@ describe('Chat tests', () => {
       mockGetSelection.mockRestore();
     });
   });
+
+  describe('Date separator', () => {
+    const getDateSeparators = (container: HTMLElement) =>
+      container.querySelectorAll('[role="separator"]');
+
+    it('should show date separator between messages on different days', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Yesterday msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'Today msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-02T12:00:00Z' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getDateSeparators(container).length).toBe(1);
+    });
+
+    it('should not show date separator between messages on the same day', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Morning msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T08:00:00Z' }),
+          createMessage({ id: '2', message: 'Afternoon msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T14:00:00Z' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getDateSeparators(container).length).toBe(0);
+    });
+
+    it('should reset nick grouping after date separator so avatar and nick are shown', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Before midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
+        ],
+      });
+
+      render(<Main />);
+
+      // Both messages should show avatar since date separator resets grouping
+      const avatars = screen.getAllByRole('img');
+      expect(avatars.length).toBe(2);
+
+      // Both messages should show the nick
+      const nicks = screen.getAllByText('User1');
+      expect(nicks.length).toBe(2);
+    });
+
+    it('should still group consecutive messages from same user without date change', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:01:00Z' }),
+          createMessage({ id: '3', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
+          createMessage({ id: '4', message: 'After midnight 2', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:01:00Z' }),
+        ],
+      });
+
+      render(<Main />);
+
+      // 2 avatars: one for the first group, one after date separator
+      const avatars = screen.getAllByRole('img');
+      expect(avatars.length).toBe(2);
+    });
+
+    it('should reset nick grouping after date separator with different users', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'User1 day1', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'User2 day2', nick: createUserNick({ nick: 'User2', avatar: 'http://example.com/b.png' }), time: '2024-01-02T12:00:00Z' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      // Both users should have avatars
+      const avatars = screen.getAllByRole('img');
+      expect(avatars.length).toBe(2);
+
+      // Date separator should be present
+      expect(getDateSeparators(container).length).toBe(1);
+    });
+  });
 });
