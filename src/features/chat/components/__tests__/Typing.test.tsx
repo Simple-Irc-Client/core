@@ -95,5 +95,22 @@ describe('Typing', () => {
       expect(screen.getByText(/Alice/)).toBeInTheDocument();
       expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
     });
+
+    it('should not render typing indicator when array contains only whitespace strings', () => {
+      setupMocks([' ', '  ']);
+
+      const { container } = render(<Typing />);
+
+      expect(container.textContent).toBe('');
+    });
+
+    it('should filter out whitespace-only strings and render valid nicks', () => {
+      setupMocks([' ', 'Alice', '  ']);
+
+      render(<Typing />);
+
+      expect(screen.getByText(/Alice/)).toBeInTheDocument();
+      expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
+    });
   });
 });

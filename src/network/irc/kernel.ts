@@ -1233,7 +1233,9 @@ export class Kernel {
 
     // Process each message in the batch
     // Messages in chathistory are in chronological order (oldest first)
+    // Skip TAGMSG — typing indicators from history are stale
     for (const message of batch.messages) {
+      if (message.command === 'TAGMSG') continue;
       this.processBufferedMessage(message);
     }
   };
