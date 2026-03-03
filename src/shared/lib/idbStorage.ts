@@ -1,10 +1,11 @@
 import { get, set, del } from 'idb-keyval';
 import type { StateStorage } from 'zustand/middleware';
-import { useSettingsStore } from '@features/settings/store/settings';
 
 const WRITE_DEBOUNCE_MS = 2000;
 
-const getServerStorageKey = (baseName: string): string => {
+const getServerStorageKey = async (baseName: string): Promise<string> => {
+  // Lazy import to avoid circular dependency: channels → idbStorage → settings → channels
+  const { useSettingsStore } = await import('@features/settings/store/settings');
   const server = useSettingsStore.getState().server;
   if (server) {
     return `${baseName}:${server.network}:${server.servers[server.default]}`;
@@ -43,11 +44,11 @@ export const createServerScopedStorage = (): StateStorage => {
 
   return {
     getItem: async (name: string): Promise<string | null> => {
-      const key = getServerStorageKey(name);
+      const key = await getServerStorageKey(name);
       return idbStorage.getItem(key);
     },
     setItem: async (name: string, value: string): Promise<void> => {
-      pendingKey = getServerStorageKey(name);
+      pendingKey = await getServerStorageKey(name);
       pendingValue = value;
 
       if (pendingWrite !== null) {
@@ -61,7 +62,7 @@ export const createServerScopedStorage = (): StateStorage => {
       }, WRITE_DEBOUNCE_MS);
     },
     removeItem: async (name: string): Promise<void> => {
-      const key = getServerStorageKey(name);
+      const key = await getServerStorageKey(name);
       if (pendingWrite !== null) {
         clearTimeout(pendingWrite);
         pendingWrite = null;
