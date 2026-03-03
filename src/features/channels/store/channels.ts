@@ -200,7 +200,7 @@ export const useChannelsStore = create<ChannelsStore>()(
       {
         name: 'sic-channels',
         version: 1,
-        storage: createJSONStorage(() => createServerScopedStorage('sic-channels')),
+        storage: createJSONStorage(() => createServerScopedStorage()),
         partialize: (state) => ({
           openChannels: state.openChannels.map((ch) => ({ ...ch, typing: [] as string[] })),
           openChannelsShortList: state.openChannelsShortList,

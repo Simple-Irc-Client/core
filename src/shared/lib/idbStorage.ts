@@ -36,7 +36,7 @@ const idbStorage: StateStorage = {
   },
 };
 
-export const createServerScopedStorage = (baseName: string): StateStorage => {
+export const createServerScopedStorage = (): StateStorage => {
   let pendingWrite: ReturnType<typeof setTimeout> | null = null;
   let pendingValue: string | null = null;
   let pendingKey: string | null = null;
