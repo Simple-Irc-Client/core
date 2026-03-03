@@ -755,6 +755,105 @@ describe('Users', () => {
     });
   });
 
+  describe('Bot indicator icon', () => {
+    it('should display bot icon when user is a bot', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'BotUser',
+            bot: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('main.users.bot')).toBeInTheDocument();
+    });
+
+    it('should not display bot icon when user is not a bot', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'RegularUser',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.queryByTitle('main.users.bot')).not.toBeInTheDocument();
+    });
+
+    it('should display bot icon alongside permission icons', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'BotOp',
+            bot: true,
+            channels: [{ name: '#test', flags: ['o'], maxPermission: 254 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('Operator')).toBeInTheDocument();
+      expect(screen.getByTitle('main.users.bot')).toBeInTheDocument();
+    });
+
+    it('should display bot icon alongside away icon', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'AwayBot',
+            bot: true,
+            away: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      expect(screen.getByTitle('main.users.bot')).toBeInTheDocument();
+      expect(screen.getByTitle('Away')).toBeInTheDocument();
+    });
+
+    it('should display bot icons for multiple bot users', () => {
+      setupMocks({
+        currentChannelName: '#test',
+        users: [
+          createUser({
+            nick: 'Bot1',
+            bot: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+          createUser({
+            nick: 'Human',
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+          createUser({
+            nick: 'Bot2',
+            bot: true,
+            channels: [{ name: '#test', flags: [], maxPermission: -1 }],
+          }),
+        ],
+      });
+
+      render(<Users />);
+
+      const botIcons = screen.getAllByTitle('main.users.bot');
+      expect(botIcons).toHaveLength(2);
+    });
+  });
+
   describe('Close button', () => {
     it('should show close button when drawer is open', () => {
       setupMocks({

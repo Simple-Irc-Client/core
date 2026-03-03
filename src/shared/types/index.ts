@@ -131,6 +131,10 @@ export interface User {
    */
   homepage?: string;
   /**
+   * IRCv3 - Whether the user is a bot (from METADATA, draft/bot tag, WHOIS 335, or user mode +B)
+   */
+  bot?: boolean;
+  /**
    * Global flags - like Away
    */
   flags: string[];

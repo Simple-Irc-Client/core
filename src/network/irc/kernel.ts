@@ -54,7 +54,7 @@ import {
   removeSavedChannel,
   getSavedChannels,
 } from '@features/settings/store/settings';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
@@ -1980,6 +1980,9 @@ export class Kernel {
           }
         }
       }
+      if (item === 'bot') {
+        setUserBot(nickOrChannel, normalizedValue !== undefined);
+      }
     }
   };
 
@@ -2107,11 +2110,14 @@ export class Kernel {
 
         // https://docs.inspircd.org/4/user-modes/
         switch (flag) {
+          case 'B': // Marks the user as a bot.
+            setUserBot(user, plusMinus === '+');
+            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
+            break;
           case 'i': // RFC 1459: Invisible - hides user from /who and /whois by non-opers.
           case 'w': // RFC 1459: Wallops - receives wallops messages.
           case 'o': // RFC 1459: Operator - marks the user as an IRC operator.
           case 's': // RFC 1459: Server notices - receives server notices.
-          case 'B': // Marks the user as a bot.
           case 'c': // Requires other users to have a common channel before they can message this user.
           case 'd': // Prevents the user from receiving channel messages.
           case 'D': // Prevents the user from receiving private messages.
@@ -2133,7 +2139,6 @@ export class Kernel {
           case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
             // TODO case yqaohv
             message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
-            // TODO add flag to user?
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
@@ -2227,6 +2232,11 @@ export class Kernel {
     const message = this.trailing();
 
     const { nick } = parseNick(this.sender, getUserModes());
+
+    // Mark user as bot if draft/bot or bot tag is present
+    if ('draft/bot' in this.tags || 'bot' in this.tags) {
+      setUserBot(nick, true);
+    }
 
     if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
       setIsPasswordRequired(true);
@@ -2348,6 +2358,11 @@ export class Kernel {
     if (target === undefined) {
       this.logParseError(this.onPrivMsg, 'target');
       return;
+    }
+
+    // Mark user as bot if draft/bot or bot tag is present
+    if ('draft/bot' in this.tags || 'bot' in this.tags) {
+      setUserBot(nick, true);
     }
 
     if (message.startsWith('\x01')) {
@@ -3208,6 +3223,10 @@ export class Kernel {
 
     const myNick = this.line.shift();
     const user = this.line.shift();
+
+    if (user !== undefined) {
+      setUserBot(user, true);
+    }
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),

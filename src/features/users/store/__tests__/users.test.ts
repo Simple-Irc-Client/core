@@ -8,6 +8,7 @@ import {
   setUserDisplayName as setUserDisplayNameExport,
   setUserStatus as setUserStatusExport,
   setUserHomepage as setUserHomepageExport,
+  setUserBot as setUserBotExport,
   setUserAccount as setUserAccountExport,
   setUserHost as setUserHostExport,
   setUserRealname as setUserRealnameExport,
@@ -420,6 +421,51 @@ describe('users store', () => {
 
       expect(getUser('NewUser')).toBeUndefined();
       expect(pendingMetadata.get('NewUser')).toEqual({ homepage: 'https://example.com' });
+    });
+  });
+
+  describe('setUserBot', () => {
+    it('should set user as bot', () => {
+      useUsersStore.getState().setAddUser(createUser('BotUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setUserBot('BotUser', true);
+
+      expect(getUser('BotUser')?.bot).toBe(true);
+    });
+
+    it('should clear bot flag with false', () => {
+      const user = createUser('BotUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]);
+      user.bot = true;
+      useUsersStore.getState().setAddUser(user);
+
+      useUsersStore.getState().setUserBot('BotUser', false);
+
+      expect(getUser('BotUser')?.bot).toBe(false);
+    });
+
+    it('should not update user when bot value is unchanged', () => {
+      const user = createUser('BotUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]);
+      user.bot = true;
+      useUsersStore.getState().setAddUser(user);
+
+      const userBefore = getUser('BotUser');
+      useUsersStore.getState().setUserBot('BotUser', true);
+      const userAfter = getUser('BotUser');
+
+      expect(userBefore).toBe(userAfter);
+    });
+
+    it('should buffer bot when user does not exist', () => {
+      setUserBotExport('NewUser', true);
+
+      expect(getUser('NewUser')).toBeUndefined();
+      expect(pendingMetadata.get('NewUser')).toEqual({ bot: true });
     });
   });
 

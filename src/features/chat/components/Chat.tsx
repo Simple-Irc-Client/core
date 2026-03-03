@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { MessageCategory, type Message } from '@shared/types';
 
@@ -20,14 +19,17 @@ import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
 import DateSeparator from './DateSeparator';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { CheckCheck } from 'lucide-react';
 import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
+import BotIndicator from './BotIndicator';
+import EchoedIndicator from './EchoedIndicator';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 
 const italicCategories: MessageCategory[] = [MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick];
+
+const isBotMessage = (message: Message): boolean =>
+  message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;
 
 const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
@@ -79,9 +81,12 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         <span className="inline-block w-3" />
         {nick !== undefined ? (
-          <span className="cursor-pointer hover:underline" style={nickColor ? { color: nickColor } : undefined} onContextMenu={handleNickContextMenu}>
-            &lt;{displayNick}&gt;
-          </span>
+          <>
+            <span className="cursor-pointer hover:underline" style={nickColor ? { color: nickColor } : undefined} onContextMenu={handleNickContextMenu}>
+              &lt;{displayNick}&gt;
+            </span>
+            {isBotMessage(message) && <BotIndicator />}
+          </>
         ) : (
           ''
         )}
@@ -95,19 +100,6 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
   );
 };
 
-const EchoedIndicator = () => {
-  const { t } = useTranslation();
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <CheckCheck className="h-3 w-3 inline-block ml-1" style={{ color: MessageColor.time }} />
-        </TooltipTrigger>
-        <TooltipContent>{t('main.chat.messageReceived')}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-};
 
 const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message; lastNick: string; fontSizeClass: string }) => {
   const { handleContextMenuUserClick } = useContextMenu();
@@ -156,6 +148,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                 <span className={`font-medium ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
                   {displayNick}
                 </span>
+                {isBotMessage(message) && <BotIndicator />}
                 <div className="flex-1" />
                 <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
                   {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}

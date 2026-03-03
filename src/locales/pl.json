@@ -320,6 +320,7 @@
     "main.channels.leave": "Opuść {{channel}}",
     "main.channels.closeDrawer": "Zamknij kanały",
     "main.users.closeDrawer": "Zamknij użytkowników",
+    "main.users.bot": "Bot",
     "main.topic.toggleChannels": "Przełącz kanały",
     "main.topic.toggleUsers": "Przełącz użytkowników",
     "main.topic.topicInput": "Temat kanału",

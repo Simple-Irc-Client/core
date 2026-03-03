@@ -1236,6 +1236,108 @@ describe('Chat tests', () => {
     });
   });
 
+  describe('Bot indicator', () => {
+    it('should display bot indicator in modern view when nick is a bot user', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).toBeInTheDocument();
+    });
+
+    it('should display bot indicator in classic view when nick is a bot user', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).toBeInTheDocument();
+    });
+
+    it('should not display bot indicator when nick is not a bot', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'RegularUser' }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).not.toBeInTheDocument();
+    });
+
+    it('should not display bot indicator when nick is a string', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: 'StringNick' })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).not.toBeInTheDocument();
+    });
+
+    it('should not display bot indicator when bot is false', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'NotBot', bot: false }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).not.toBeInTheDocument();
+    });
+
+    it('should not display bot indicator in debug view', () => {
+      setupMocks({
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).not.toBeInTheDocument();
+    });
+
+    it('should display bot indicator with correct styling', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcon = container.querySelector('svg.lucide-bot');
+      expect(botIcon).toHaveClass('h-4', 'w-4', 'inline-block', 'ml-1', 'text-orange-400');
+    });
+
+    it('should display bot indicator only for bot messages in mixed list', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'Bot msg', nick: createUserNick({ nick: 'Bot1', bot: true }) }),
+          createMessage({ id: '2', message: 'Human msg', nick: createUserNick({ nick: 'Human' }) }),
+          createMessage({ id: '3', message: 'Bot msg 2', nick: createUserNick({ nick: 'Bot2', bot: true }) }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const botIcons = container.querySelectorAll('svg.lucide-bot');
+      expect(botIcons).toHaveLength(2);
+    });
+  });
+
   describe('Scroll behavior with content resize', () => {
     it('should set up ResizeObserver on mount', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });

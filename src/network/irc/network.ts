@@ -357,7 +357,7 @@ export const ircRequestMetadataItem = (nick: string, item: string): void => {
 };
 
 export const ircRequestMetadata = (): void => {
-  ircSendRawMessage('METADATA * SUB avatar status bot homepage display-name bot-url color');
+  ircSendRawMessage('METADATA * SUB avatar status bot homepage display-name color');
 };
 
 export const ircRequestMetadataList = (nick: string): void => {

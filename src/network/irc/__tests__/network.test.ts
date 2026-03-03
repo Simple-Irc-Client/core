@@ -381,7 +381,7 @@ describe('network', () => {
       network.ircRequestMetadata();
 
       expect(mockSendDirectRaw).toHaveBeenCalledWith(
-        'METADATA * SUB avatar status bot homepage display-name bot-url color'
+        'METADATA * SUB avatar status bot homepage display-name color'
       );
     });
   });

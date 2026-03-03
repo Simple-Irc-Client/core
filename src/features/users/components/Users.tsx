@@ -11,7 +11,7 @@ import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
-import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X, WifiOff } from 'lucide-react';
+import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X, WifiOff, Bot } from 'lucide-react';
 import { cn, isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
@@ -126,6 +126,11 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                         return (
                           <>
                             {getModeIcons(channelFlags, userModes)}
+                            {user.bot && (
+                              <span title={t('main.users.bot')} aria-label={t('main.users.bot')}>
+                                <Bot className="h-4 w-4 text-orange-400" />
+                              </span>
+                            )}
                             {isAway && (
                               <span title={user.awayReason || 'Away'} aria-label={user.awayReason || 'Away'}>
                                 <Moon className="h-4 w-4 text-yellow-500" />

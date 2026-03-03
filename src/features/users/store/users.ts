@@ -36,6 +36,8 @@ interface UsersStore {
   setUserStatus: (nick: string, status: string | undefined) => void;
   /** IRCv3 METADATA */
   setUserHomepage: (nick: string, homepage: string | undefined) => void;
+  /** IRCv3 METADATA / draft/bot tag / WHOIS 335 / user mode +B */
+  setUserBot: (nick: string, bot: boolean) => void;
   setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]) => void;
   setClearAll: () => void;
 }
@@ -177,6 +179,16 @@ export const useUsersStore = create<UsersStore>()(
             return user;
           }
           return { ...user, homepage };
+        }),
+      }));
+    },
+    setUserBot: (nick: string, bot: boolean): void => {
+      set((state) => ({
+        users: state.users.map((user: User) => {
+          if (user.nick !== nick || user.bot === bot) {
+            return user;
+          }
+          return { ...user, bot };
         }),
       }));
     },
@@ -417,6 +429,15 @@ export const setUserHomepage = (nick: string, homepage: string | undefined): voi
     useUsersStore.getState().setUserHomepage(nick, homepage);
   } else {
     bufferMetadata(nick, { homepage });
+  }
+};
+
+export const setUserBot = (nick: string, bot: boolean): void => {
+  if (getHasUser(nick)) {
+    useUsersStore.getState().setUserBot(nick, bot);
+    syncCurrentChannelUsers(nick);
+  } else {
+    bufferMetadata(nick, { bot });
   }
 };
 
