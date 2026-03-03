@@ -3,12 +3,18 @@ import type { StateStorage } from 'zustand/middleware';
 
 const WRITE_DEBOUNCE_MS = 2000;
 
-const getServerStorageKey = async (baseName: string): Promise<string> => {
-  // Lazy import to avoid circular dependency: channels → idbStorage → settings → channels
-  const { useSettingsStore } = await import('@features/settings/store/settings');
-  const server = useSettingsStore.getState().server;
-  if (server) {
-    return `${baseName}:${server.network}:${server.servers[server.default]}`;
+const getServerStorageKey = (baseName: string): string => {
+  try {
+    const settingsJson = localStorage.getItem('sic-settings');
+    if (settingsJson) {
+      const settings = JSON.parse(settingsJson) as { state?: { server?: { network: string; servers: string[]; default: number } } };
+      const server = settings?.state?.server;
+      if (server) {
+        return `${baseName}:${server.network}:${server.servers[server.default]}`;
+      }
+    }
+  } catch {
+    // Fall back to base name
   }
   return baseName;
 };
@@ -44,11 +50,11 @@ export const createServerScopedStorage = (): StateStorage => {
 
   return {
     getItem: async (name: string): Promise<string | null> => {
-      const key = await getServerStorageKey(name);
+      const key = getServerStorageKey(name);
       return idbStorage.getItem(key);
     },
-    setItem: async (name: string, value: string): Promise<void> => {
-      pendingKey = await getServerStorageKey(name);
+    setItem: (name: string, value: string): void => {
+      pendingKey = getServerStorageKey(name);
       pendingValue = value;
 
       if (pendingWrite !== null) {
@@ -62,7 +68,7 @@ export const createServerScopedStorage = (): StateStorage => {
       }, WRITE_DEBOUNCE_MS);
     },
     removeItem: async (name: string): Promise<void> => {
-      const key = await getServerStorageKey(name);
+      const key = getServerStorageKey(name);
       if (pendingWrite !== null) {
         clearTimeout(pendingWrite);
         pendingWrite = null;

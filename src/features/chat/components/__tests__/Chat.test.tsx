@@ -1556,7 +1556,7 @@ describe('Chat tests', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
-    it('should not show NotConnected when disconnected but has messages', () => {
+    it('should show disconnected banner instead of NotConnected when disconnected but has messages', () => {
       setupMocks({
         isConnected: false,
         messages: [createMessage({ id: '1', message: 'Old message' })],
@@ -1564,7 +1564,10 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      // Full NotConnected view should not show
+      expect(screen.queryByText('notConnectedDescription')).not.toBeInTheDocument();
+      // Disconnected banner should show
+      expect(screen.getByRole('status')).toBeInTheDocument();
       expect(container.textContent).toContain('Old message');
     });
   });

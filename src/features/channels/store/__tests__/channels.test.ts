@@ -36,7 +36,6 @@ vi.mock('idb-keyval', () => ({
 vi.mock('@features/settings/store/settings', () => ({
   getCurrentChannelName: vi.fn(() => '#test'),
   getChannelTypes: vi.fn(() => ['#', '&']),
-  useSettingsStore: { getState: () => ({ server: undefined }) },
 }));
 
 const mockSetUpdateTyping = vi.fn();

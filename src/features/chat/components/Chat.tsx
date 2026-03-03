@@ -20,7 +20,7 @@ import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
 import DateSeparator from './DateSeparator';
 import { useContextMenu } from '@/providers/ContextMenuContext';
-import { CheckCheck } from 'lucide-react';
+import { CheckCheck, WifiOff } from 'lucide-react';
 import NotConnected from './NotConnected';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
@@ -190,6 +190,16 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   );
 };
 
+const DisconnectedBanner = () => {
+  const { t } = useTranslation();
+  return (
+    <div role="status" aria-live="polite" className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 text-sm border-b border-yellow-500/20">
+      <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+      <span>{t('main.chat.notConnected')}</span>
+    </div>
+  );
+};
+
 const Chat = () => {
   const { handleContextMenuUserClick } = useContextMenu();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
@@ -257,6 +267,7 @@ const Chat = () => {
       }
     }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
       {!isConnected && messages.length === 0 && <NotConnected />}
+      {!isConnected && messages.length > 0 && <DisconnectedBanner />}
       <div className="pt-0 pb-0">
         {messages.map((message, index) => {
           const currentDate = startOfDay(new Date(message.time));
