@@ -242,4 +242,36 @@ describe('ChannelSettings', () => {
       expect(defaultProps.onOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should re-fetch modes and clear lists when dialog re-opens', () => {
+      const { rerender } = render(<ChannelSettings {...defaultProps} open={false} />);
+
+      vi.clearAllMocks();
+
+      rerender(<ChannelSettings {...defaultProps} open={true} />);
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test');
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test b');
+      expect(mockSetBanList).toHaveBeenCalledWith([]);
+      expect(mockSetExceptionList).toHaveBeenCalledWith([]);
+      expect(mockSetInviteList).toHaveBeenCalledWith([]);
+    });
+
+    it('should not request metadata list when neither option is supported', () => {
+      mockIsSupportedOption = vi.fn(() => false);
+
+      render(<ChannelSettings {...defaultProps} />);
+
+      expect(network.ircRequestMetadataList).not.toHaveBeenCalled();
+    });
+
+    it('should call clearChannelSettingsStore on close', () => {
+      render(<ChannelSettings {...defaultProps} />);
+
+      fireEvent.click(screen.getByTestId('close-button'));
+
+      expect(channelSettingsStore.clearChannelSettingsStore).toHaveBeenCalled();
+    });
+  });
 });

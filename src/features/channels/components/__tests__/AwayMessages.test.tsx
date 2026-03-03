@@ -219,4 +219,85 @@ describe('AwayMessages', () => {
       expect(mockOnOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render without crash when nick is null', () => {
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Test message',
+          nick: null,
+          target: '#test',
+          time: '2024-01-01T12:00:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
+
+      expect(document.body.textContent).toContain('Test message');
+    });
+
+    it('should format time as HH:mm for today messages', () => {
+      const now = new Date();
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Recent message',
+          nick: 'sender',
+          target: '#test',
+          time: now.toISOString(),
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
+
+      // Today's message should show just time (HH:mm), not a full date
+      const expectedTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      expect(document.body.textContent).toContain(expectedTime);
+    });
+
+    it('should format time with date for non-today messages', () => {
+      mockAwayMessages = [
+        {
+          id: 'msg-1',
+          message: 'Old message',
+          nick: 'sender',
+          target: '#test',
+          time: '2023-06-15T14:30:00.000Z',
+          category: 'default',
+          color: '#000',
+          channel: '#test',
+        },
+      ];
+
+      render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
+
+      // Non-today message should include date portion (e.g. "15 Jun 2023")
+      expect(document.body.textContent).toContain('2023');
+    });
+
+    it('should render without crash when there are many messages', () => {
+      mockAwayMessages = Array.from({ length: 50 }, (_, i) => ({
+        id: `msg-${i}`,
+        message: `Message ${i}`,
+        nick: `user${i}`,
+        target: '#test',
+        time: '2024-01-01T12:00:00.000Z',
+        category: 'default',
+        color: '#000',
+        channel: '#test',
+      }));
+
+      render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
+
+      expect(document.body.textContent).toContain('Message 0');
+      expect(document.body.textContent).toContain('Message 49');
+    });
+  });
 });

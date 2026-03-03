@@ -576,4 +576,54 @@ describe('WizardServer', () => {
       expect(screen.queryByText('wizard.server.connectionType')).not.toBeInTheDocument();
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should keep button disabled when custom host is empty string', () => {
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: '' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      expect(button).toBeDisabled();
+    });
+
+    it('should handle empty port field by using host without port suffix', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: 'custom.irc.net' } });
+
+      const portInput = screen.getByPlaceholderText('wizard.server.port');
+      fireEvent.change(portInput, { target: { value: '' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          servers: ['custom.irc.net'],
+        })
+      );
+    });
+
+    it('should handle IP address as custom host', () => {
+      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      render(<WizardServer />);
+
+      const hostInput = screen.getByPlaceholderText('wizard.server.host');
+      fireEvent.change(hostInput, { target: { value: '192.168.1.100' } });
+
+      const button = screen.getByText('wizard.server.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          network: '192.168.1.100',
+          servers: ['192.168.1.100'],
+        })
+      );
+    });
+  });
 });

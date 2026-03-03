@@ -171,4 +171,40 @@ describe('ColorPicker', () => {
       });
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should treat colorCode 0 (white, falsy) as a valid selected color', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          fontFormatting: { colorCode: 0, bold: false, italic: false, underline: false },
+          setFontFormatting: mockSetFontFormatting,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<ColorPicker open={false} onOpenChange={mockOnOpenChange} />);
+
+      // Color indicator bar should be shown for colorCode: 0
+      const button = screen.getByRole('button', { name: 'main.toolbar.textColorAriaLabel' });
+      const indicator = button.querySelector('span');
+      expect(indicator).toBeInTheDocument();
+    });
+
+    it('should handle clicking already-selected color', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          fontFormatting: { colorCode: 4, bold: false, italic: false, underline: false },
+          setFontFormatting: mockSetFontFormatting,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
+
+      // Click the already-selected color (index 4)
+      const colorButtons = screen.getAllByRole('button').filter((btn) => btn.hasAttribute('title'));
+      fireEvent.click(colorButtons[4] as HTMLElement);
+
+      // Should still call setFontFormatting with the same color code
+      expect(mockSetFontFormatting).toHaveBeenCalledWith({ colorCode: 4 });
+    });
+  });
 });

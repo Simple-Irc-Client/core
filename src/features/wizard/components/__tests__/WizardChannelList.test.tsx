@@ -468,4 +468,60 @@ describe('WizardChannelList', () => {
       expect(screen.queryAllByText('Debug').length).toBe(0);
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should show Skip button and disabled Join button when no channels are selected', () => {
+      setupMocks({
+        channelList: [createChannelList({ name: '#general' })],
+      });
+
+      render(<WizardChannelList />);
+
+      expect(screen.getByText('wizard.channels.button.skip')).toBeInTheDocument();
+      expect(screen.getByText('wizard.channels.button.join')).toBeDisabled();
+    });
+
+    it('should keep auto-selected channel even after badge delete attempt because it is derived from openChannels', () => {
+      setupMocks({
+        channelList: [
+          createChannelList({ name: '#general' }),
+          createChannelList({ name: '#random' }),
+        ],
+        openChannels: [
+          createChannel({ name: '#general' }),
+        ],
+      });
+
+      render(<WizardChannelList />);
+
+      // #general should be auto-selected (appears as badge + table)
+      expect(screen.getAllByText('#general').length).toBe(2);
+
+      // Find and click the delete button on the badge
+      const deleteButtons = screen.getAllByRole('button').filter((btn) =>
+        btn.querySelector('svg.lucide-x')
+      );
+      const deleteButton = deleteButtons[0];
+      if (!deleteButton) {
+        throw new Error('Delete button not found');
+      }
+      fireEvent.click(deleteButton);
+
+      // #general remains selected because it's derived from openChannels, not manual selection
+      expect(screen.getAllByText('#general').length).toBe(2);
+    });
+
+    it('should not call ircJoinChannels when no channels are selected and join is disabled', () => {
+      setupMocks({
+        channelList: [createChannelList({ name: '#general' })],
+      });
+
+      render(<WizardChannelList />);
+
+      const joinButton = screen.getByText('wizard.channels.button.join');
+      fireEvent.click(joinButton);
+
+      expect(network.ircJoinChannels).not.toHaveBeenCalled();
+    });
+  });
 });

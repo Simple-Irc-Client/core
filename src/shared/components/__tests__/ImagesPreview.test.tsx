@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import ImagesPreview from '../ImagesPreview';
 import * as image from '@shared/lib/image';
 
@@ -91,6 +91,34 @@ describe('ImagesPreview', () => {
         'href',
         'https://example.com/image.png?size=large&quality=high'
       );
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    it('should not crash when image fires onError', () => {
+      vi.spyOn(image, 'extractImageUrls').mockReturnValue([
+        'https://example.com/broken.png',
+      ]);
+
+      render(<ImagesPreview text="broken image" />);
+
+      const img = screen.getByRole('img');
+      fireEvent.error(img);
+
+      // Image element should still be in the DOM (no error handler removes it)
+      expect(img).toBeInTheDocument();
+    });
+
+    it('should render wrapper div with flex layout for single image', () => {
+      vi.spyOn(image, 'extractImageUrls').mockReturnValue([
+        'https://example.com/single.png',
+      ]);
+
+      const { container } = render(<ImagesPreview text="single" />);
+
+      const wrapper = container.firstChild as HTMLElement;
+      expect(wrapper).toHaveClass('mt-2', 'flex', 'flex-wrap', 'gap-2');
+      expect(screen.getAllByRole('img')).toHaveLength(1);
     });
   });
 });

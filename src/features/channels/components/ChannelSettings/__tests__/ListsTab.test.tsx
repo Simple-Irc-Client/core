@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ListsTab from '../tabs/ListsTab';
 import * as network from '@/network/irc/network';
+import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -191,6 +192,78 @@ describe('ListsTab', () => {
 
       expect(screen.getByTestId('remove-entry-0')).toBeInTheDocument();
       expect(screen.getByTestId('remove-entry-1')).toBeInTheDocument();
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    it('should show loading spinner when isBanListLoading is true', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          activeListType: 'b',
+          banList: mockBanList,
+          exceptionList: mockExceptionList,
+          inviteList: mockInviteList,
+          isBanListLoading: true,
+          isExceptionListLoading: false,
+          isInviteListLoading: false,
+          setActiveListType: mockSetActiveListType,
+        } as never)
+      );
+
+      render(<ListsTab channelName="#test" />);
+
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText('channelSettings.loading')).toBeInTheDocument();
+    });
+
+    it('should show empty text when active list has no entries', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          activeListType: 'b',
+          banList: [],
+          exceptionList: [],
+          inviteList: [],
+          isBanListLoading: false,
+          isExceptionListLoading: false,
+          isInviteListLoading: false,
+          setActiveListType: mockSetActiveListType,
+        } as never)
+      );
+
+      render(<ListsTab channelName="#test" />);
+
+      expect(screen.getByText('channelSettings.lists.empty')).toBeInTheDocument();
+    });
+
+    it('should not send command when adding whitespace-only entry', () => {
+      render(<ListsTab channelName="#test" />);
+
+      const input = screen.getByTestId('new-entry-input');
+      fireEvent.change(input, { target: { value: '   ' } });
+      fireEvent.click(screen.getByTestId('add-entry'));
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should format setTime 0 as dash', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          activeListType: 'b',
+          banList: [{ mask: '*!*@zero.host', setBy: 'admin', setTime: 0 }],
+          exceptionList: [],
+          inviteList: [],
+          isBanListLoading: false,
+          isExceptionListLoading: false,
+          isInviteListLoading: false,
+          setActiveListType: mockSetActiveListType,
+        } as never)
+      );
+
+      render(<ListsTab channelName="#test" />);
+
+      // setTime: 0 should render as '-'
+      const cells = screen.getAllByText('-');
+      expect(cells.length).toBeGreaterThanOrEqual(1);
     });
   });
 

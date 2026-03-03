@@ -115,4 +115,112 @@ describe('InputContextMenu', () => {
     const menuContent = container.querySelector('[role="menu"]');
     expect(menuContent).toBeNull();
   });
+
+  describe('Unhappy paths', () => {
+    it('should render but not allow action when all items are disabled', () => {
+      const onCut = vi.fn();
+      const onCopy = vi.fn();
+      const onSelectAll = vi.fn();
+
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={false}
+          allSelected={false}
+          onCut={onCut}
+          onCopy={onCopy}
+          onSelectAll={onSelectAll}
+        />
+      );
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      // Cut, Copy, and Select All should be disabled
+      expect(menuItems[0]).toHaveAttribute('aria-disabled');
+      expect(menuItems[1]).toHaveAttribute('aria-disabled');
+      // Paste is always enabled
+      expect(menuItems[2]).not.toHaveAttribute('aria-disabled');
+      expect(menuItems[3]).toHaveAttribute('aria-disabled');
+    });
+
+    it('should not invoke callback when clicking aria-disabled item', () => {
+      const onCut = vi.fn();
+
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          onCut={onCut}
+        />
+      );
+
+      const cutItem = screen.getByText('contextmenu.input.cut');
+      fireEvent.click(cutItem);
+
+      // Disabled items have pointer-events-none and no onClick handler
+      expect(onCut).not.toHaveBeenCalled();
+    });
+
+    it('should wrap ArrowDown from last enabled item to first enabled item', () => {
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={true}
+          allSelected={false}
+        />
+      );
+
+      // Paste and Select All are the only enabled items
+      const pasteItem = screen.getByText('contextmenu.input.paste');
+      const selectAllItem = screen.getByText('contextmenu.input.selectAll');
+
+      pasteItem.focus();
+      fireEvent.keyDown(pasteItem, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(selectAllItem);
+
+      // Wrap around
+      fireEvent.keyDown(selectAllItem, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(pasteItem);
+    });
+
+    it('should navigate to first enabled item on Home key', () => {
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={true}
+          allSelected={false}
+        />
+      );
+
+      const selectAllItem = screen.getByText('contextmenu.input.selectAll');
+      const pasteItem = screen.getByText('contextmenu.input.paste');
+
+      selectAllItem.focus();
+      fireEvent.keyDown(selectAllItem, { key: 'Home' });
+
+      // First enabled is Paste (Cut and Copy are disabled)
+      expect(document.activeElement).toBe(pasteItem);
+    });
+
+    it('should navigate to last enabled item on End key', () => {
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={true}
+          allSelected={false}
+        />
+      );
+
+      const pasteItem = screen.getByText('contextmenu.input.paste');
+      const selectAllItem = screen.getByText('contextmenu.input.selectAll');
+
+      pasteItem.focus();
+      fireEvent.keyDown(pasteItem, { key: 'End' });
+
+      expect(document.activeElement).toBe(selectAllItem);
+    });
+  });
 });

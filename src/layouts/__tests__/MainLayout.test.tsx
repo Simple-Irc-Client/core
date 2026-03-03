@@ -46,4 +46,22 @@ describe('MainLayout', () => {
     });
     expect(document.querySelector('[data-testid="main-page"]')).toBeNull();
   });
+
+  describe('Unhappy paths', () => {
+    it('should switch to MainPage when isWizardCompleted transitions from false to true', async () => {
+      mockIsWizardCompleted = false;
+      const { rerender } = render(<MainLayout />);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="wizard-page"]')).not.toBeNull();
+      });
+
+      mockIsWizardCompleted = true;
+      rerender(<MainLayout />);
+
+      await waitFor(() => {
+        expect(document.querySelector('[data-testid="main-page"]')).not.toBeNull();
+      });
+    });
+  });
 });

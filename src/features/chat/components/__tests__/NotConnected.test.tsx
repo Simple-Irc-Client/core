@@ -91,4 +91,37 @@ describe('NotConnected', () => {
 
     document.body.removeChild(avatarButton);
   });
+
+  describe('Unhappy paths', () => {
+    it('should not render arrow SVG when no avatar button is in DOM', () => {
+      const { container } = render(<NotConnected />);
+
+      // No data-avatar-button in the DOM — arrow should not render
+      const svgs = container.querySelectorAll('svg');
+      const arrowSvg = Array.from(svgs).find(
+        (svg) => !svg.classList.contains('lucide-wifi-off'),
+      );
+      expect(arrowSvg).toBeUndefined();
+    });
+
+    it('should render without crashing when getBoundingClientRect returns zeros', () => {
+      // Create a mock avatar button with zero dimensions
+      const avatarButton = document.createElement('button');
+      avatarButton.setAttribute('data-avatar-button', '');
+      avatarButton.getBoundingClientRect = () => ({
+        top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0, x: 0, y: 0,
+        toJSON: () => ({}),
+      });
+      document.body.appendChild(avatarButton);
+
+      // Should not crash
+      const { container } = render(<NotConnected />);
+      expect(screen.getByText('main.chat.notConnected')).toBeInTheDocument();
+
+      // Messages should still be rendered
+      expect(container.querySelector('.text-muted-foreground')).not.toBeNull();
+
+      document.body.removeChild(avatarButton);
+    });
+  });
 });

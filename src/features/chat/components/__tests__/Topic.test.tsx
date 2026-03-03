@@ -592,4 +592,47 @@ describe('Topic', () => {
       expect(buttons).toHaveLength(3); // Menu + Settings + Users
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should send TOPIC command with empty content when clearing topic', () => {
+      setupMocks({ topic: 'Original Topic', currentChannelName: '#mychannel', userFlags: ['o'] });
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :');
+    });
+
+    it('should hide save button when topic is edited back to original', () => {
+      setupMocks({ topic: 'Original Topic', userFlags: ['o'] });
+
+      render(<Topic />);
+
+      const input = screen.getByRole('textbox');
+
+      // Edit topic
+      fireEvent.change(input, { target: { value: 'Changed' } });
+      let buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(4); // Menu + Save + Settings + Users
+
+      // Restore to original
+      fireEvent.change(input, { target: { value: 'Original Topic' } });
+      buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(3); // Menu + Settings + Users (no save)
+    });
+
+    it('should not render topic input for priv channel category', () => {
+      setupMocks({ currentChannelCategory: 'priv', currentChannelName: 'someUser', topic: '' });
+
+      render(<Topic />);
+
+      // Topic input still renders for priv (it shows the formatted topic display)
+      // The component renders TopicInput for all non-debug channels
+      // Verify it doesn't crash
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+  });
 });

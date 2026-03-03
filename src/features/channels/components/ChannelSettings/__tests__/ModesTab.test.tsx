@@ -16,6 +16,8 @@ vi.mock('@/network/irc/network', () => ({
 let mockChannelModes: Record<string, string | boolean> = { n: true, t: true };
 let mockChannelData: { avatar?: string; displayName?: string } = {};
 
+import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
+
 vi.mock('@features/channels/store/channelSettings', () => ({
   useChannelSettingsStore: vi.fn((selector) =>
     selector({
@@ -496,6 +498,94 @@ describe('ModesTab', () => {
       render(<ModesTab channelName="#test" />);
 
       expect(screen.queryByTestId('displayName-input')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    it('should show loading spinner when isLoading is true', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          isLoading: true,
+          channelModes: {},
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.getByText('channelSettings.loading')).toBeInTheDocument();
+      expect(screen.queryByText('channelSettings.modes.flags')).not.toBeInTheDocument();
+    });
+
+    it('should render no mode switches when channelModes D is empty', () => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: [], B: [], C: [], D: [] },
+          supportedOptions: [],
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.queryByTestId('mode-switch-n')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('mode-switch-t')).not.toBeInTheDocument();
+    });
+
+    it('should not send command when setting limit with empty value', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          isLoading: false,
+          channelModes: mockChannelModes,
+        } as never)
+      );
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      // Click set without entering a value — limit is empty string
+      fireEvent.click(screen.getByTestId('limit-set'));
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not send command when setting key with empty value', () => {
+      vi.mocked(useChannelSettingsStore).mockImplementation((selector) =>
+        selector({
+          isLoading: false,
+          channelModes: mockChannelModes,
+        } as never)
+      );
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      // Click set without entering a value — key is empty string
+      fireEvent.click(screen.getByTestId('key-set'));
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not render avatar input when metadata-avatar is not supported', () => {
+      vi.mocked(useSettingsStore).mockImplementation((selector) =>
+        selector({
+          channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+          supportedOptions: [],
+        } as never)
+      );
+
+      render(<ModesTab channelName="#test" />);
+
+      expect(screen.queryByTestId('avatar-input')).not.toBeInTheDocument();
     });
   });
 

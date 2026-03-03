@@ -592,4 +592,70 @@ describe('Channels', () => {
       }
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render only join button when openChannelsShortList is empty', () => {
+      setupMocks({ openChannelsShort: [] });
+
+      render(<Channels />);
+
+      expect(screen.getByRole('button', { name: 'main.channels.join' })).toBeInTheDocument();
+      // No channel buttons should exist
+      const buttons = screen.getAllByRole('button');
+      const channelButtons = buttons.filter((btn) => btn.getAttribute('aria-label')?.startsWith('#'));
+      expect(channelButtons).toHaveLength(0);
+    });
+
+    it('should show displayName instead of name when displayName is set', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', displayName: 'General Chat' })],
+      });
+
+      render(<Channels />);
+
+      expect(screen.getByText('General Chat')).toBeInTheDocument();
+    });
+
+    it('should fall back to name when displayName is empty string', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', displayName: '' })],
+      });
+
+      render(<Channels />);
+
+      // displayName || name — empty string is falsy, so name is shown
+      expect(screen.getByText('#general')).toBeInTheDocument();
+    });
+
+    it('should not call ircJoinChannels when joining with empty selection', () => {
+      setupMocks({
+        isChannelListLoadingFinished: true,
+        channelsList: [],
+      });
+
+      render(<Channels />);
+
+      const addButton = screen.getByRole('button', { name: 'main.channels.join' });
+      fireEvent.click(addButton);
+
+      // No channels to select — ircJoinChannels should not have been called
+      expect(network.ircJoinChannels).not.toHaveBeenCalled();
+    });
+
+    it('should show destructive badge on multiple channels with hasMention', () => {
+      setupMocks({
+        openChannelsShort: [
+          createChannel({ name: '#channel1', unReadMessages: 2, hasMention: true }),
+          createChannel({ name: '#channel2', unReadMessages: 5, hasMention: true }),
+        ],
+      });
+
+      render(<Channels />);
+
+      const badge1 = screen.getByText('2');
+      const badge2 = screen.getByText('5');
+      expect(badge1).toHaveClass('bg-destructive');
+      expect(badge2).toHaveClass('bg-destructive');
+    });
+  });
 });

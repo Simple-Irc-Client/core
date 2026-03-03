@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import WizardNick from '../WizardNick';
 import * as settingsStore from '@features/settings/store/settings';
 import * as resolveServerModule from '@shared/lib/resolveServerFromParams';
+import * as queryParams from '@shared/lib/queryParams';
 import * as network from '@/network/irc/network';
 
 vi.mock('react-i18next', () => ({
@@ -25,6 +26,11 @@ vi.mock('@/network/irc/network', () => ({
 
 vi.mock('@shared/lib/resolveServerFromParams', () => ({
   resolveServerFromParams: vi.fn(() => undefined),
+  isKnownServerParam: vi.fn(() => true),
+}));
+
+vi.mock('@shared/lib/queryParams', () => ({
+  getServerParam: vi.fn(() => undefined),
 }));
 
 describe('WizardNick', () => {
@@ -283,6 +289,32 @@ describe('WizardNick', () => {
       fireEvent.click(button);
 
       expect(settingsStore.setNick).toHaveBeenCalledWith(longNick);
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    it('should handle nick with IRC special characters', () => {
+      render(<WizardNick />);
+
+      const input = screen.getByLabelText('wizard.nick.nick');
+      fireEvent.change(input, { target: { value: '[nick]|away' } });
+
+      const button = screen.getByText('wizard.nick.button.next');
+      fireEvent.click(button);
+
+      expect(settingsStore.setNick).toHaveBeenCalledWith('[nick]|away');
+    });
+
+    it('should show custom server warning when server param is unknown', () => {
+      // When getServerParam returns a value but isKnownServerParam returns false
+      vi.mocked(queryParams.getServerParam).mockReturnValue('unknown.irc.net');
+      vi.mocked(resolveServerModule.isKnownServerParam).mockReturnValue(false);
+      vi.mocked(resolveServerModule.resolveServerFromParams).mockReturnValue(undefined);
+
+      render(<WizardNick />);
+
+      // Custom server warning should be shown
+      expect(screen.getByText('wizard.nick.customServerWarning')).toBeInTheDocument();
     });
   });
 });

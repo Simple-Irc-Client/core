@@ -1744,4 +1744,92 @@ describe('Toolbar', () => {
       expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('echo-message');
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should send whitespace-only message as PRIVMSG (not blocked)', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '   ' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Whitespace-only messages are not blocked — only truly empty strings are
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :   ');
+    });
+
+    it('should route messages starting with / as commands, not PRIVMSG', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/join #newchannel' } });
+
+      const form = input.closest('form');
+      fireEvent.submit(form as HTMLFormElement);
+
+      // Should send raw command (lowercase, as typed), not PRIVMSG
+      expect(network.ircSendRawMessage).toHaveBeenCalledWith('join #newchannel');
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(
+        expect.stringContaining('PRIVMSG')
+      );
+    });
+
+    it('should save draft on channel switch and restore on return', () => {
+      const { rerender } = render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'draft message' } });
+
+      // Switch to a different channel
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#other',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+          setFontFormatting: vi.fn(),
+        } as unknown as settingsStore.SettingsStore)
+      );
+      vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testUser');
+
+      rerender(<Toolbar />);
+
+      // Input should be empty for the new channel
+      expect(screen.getByRole('textbox')).toHaveValue('');
+
+      // Switch back to original channel
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+          setFontFormatting: vi.fn(),
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      rerender(<Toolbar />);
+
+      // Draft should be restored
+      expect(screen.getByRole('textbox')).toHaveValue('draft message');
+    });
+
+    it('should show away messages badge when count > 0', () => {
+      mockAwayMessages = [{ nick: 'User1', message: 'hello', time: Date.now() }];
+
+      render(<Toolbar />);
+
+      // The badge should be present
+      const badge = document.querySelector('[aria-label*="main.toolbar.awayMessageCount"]');
+      expect(badge).toBeInTheDocument();
+      expect(badge?.textContent).toBe('1');
+    });
+  });
 });

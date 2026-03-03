@@ -623,4 +623,105 @@ describe('ChannelListTable', () => {
       expect(screen.getByText('#test')).toBeInTheDocument();
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render without crash when channel has empty string topic', () => {
+      render(
+        <ChannelListTable
+          channelList={[createChannelList({ name: '#test', topic: '' })]}
+          isLoading={false}
+          selectedChannels={[]}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      expect(screen.getByText('#test')).toBeInTheDocument();
+    });
+
+    it('should select channel on Enter key press', () => {
+      render(
+        <ChannelListTable
+          channelList={[createChannelList({ name: '#channel1' })]}
+          isLoading={false}
+          selectedChannels={[]}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      const row = getChannelRow('#channel1');
+      fireEvent.keyDown(row, { key: 'Enter' });
+
+      expect(mockOnSelectionChange).toHaveBeenCalledWith(['#channel1']);
+    });
+
+    it('should select channel on Space key press', () => {
+      render(
+        <ChannelListTable
+          channelList={[createChannelList({ name: '#channel1' })]}
+          isLoading={false}
+          selectedChannels={[]}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      const row = getChannelRow('#channel1');
+      fireEvent.keyDown(row, { key: ' ' });
+
+      expect(mockOnSelectionChange).toHaveBeenCalledWith(['#channel1']);
+    });
+
+    it('should not call onSelectionChange when clicking already-selected row', () => {
+      render(
+        <ChannelListTable
+          channelList={[createChannelList({ name: '#channel1' })]}
+          isLoading={false}
+          selectedChannels={['#channel1']}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      // Channel appears in both badge and table, use getAllByText to find the table cell
+      const cells = screen.getAllByText('#channel1');
+      const tableCell = cells.find((el) => el.closest('td'));
+      expect(tableCell).toBeDefined();
+      const row = tableCell?.closest('tr');
+      expect(row).toBeDefined();
+      if (row) fireEvent.click(row);
+
+      expect(mockOnSelectionChange).not.toHaveBeenCalled();
+    });
+
+    it('should handle excludeChannels containing channels not in the list', () => {
+      render(
+        <ChannelListTable
+          channelList={[createChannelList({ name: '#existing' })]}
+          isLoading={false}
+          selectedChannels={[]}
+          onSelectionChange={mockOnSelectionChange}
+          excludeChannels={['#nonexistent', '#also-missing']}
+        />
+      );
+
+      expect(screen.getByText('#existing')).toBeInTheDocument();
+    });
+
+    it('should deselect channel when badge remove button is clicked', () => {
+      render(
+        <ChannelListTable
+          channelList={[
+            createChannelList({ name: '#chan1' }),
+            createChannelList({ name: '#chan2' }),
+          ]}
+          isLoading={false}
+          selectedChannels={['#chan1', '#chan2']}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      const removeButton = screen.getByRole('button', { name: 'Remove #chan1' });
+      fireEvent.click(removeButton);
+
+      expect(mockOnSelectionChange).toHaveBeenCalledWith(['#chan2']);
+    });
+  });
 });

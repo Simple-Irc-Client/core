@@ -177,4 +177,22 @@ describe('ChannelSettingsButton', () => {
       expect(screen.getByTestId('tooltip-content')).toHaveTextContent('channelSettings.button.tooltip');
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should not render button for voice-only user without higher flags', () => {
+      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['v']);
+
+      render(<ChannelSettingsButton channelName="#test" />);
+
+      expect(screen.queryByTestId('channel-settings-button')).not.toBeInTheDocument();
+    });
+
+    it('should not render button for user with no flags at all', () => {
+      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue([]);
+
+      render(<ChannelSettingsButton channelName="#test" />);
+
+      expect(screen.queryByTestId('channel-settings-button')).not.toBeInTheDocument();
+    });
+  });
 });

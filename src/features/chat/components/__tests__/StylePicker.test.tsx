@@ -230,4 +230,57 @@ describe('StylePicker', () => {
       expect(mockSetFontFormatting).toHaveBeenCalledWith({ italic: true });
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should show indicator when all three styles are active simultaneously', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
+          setFontFormatting: mockSetFontFormatting,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
+
+      const button = screen.getByRole('button', { name: 'main.toolbar.textStyleAriaLabel' });
+      const indicator = button.querySelector('span.absolute');
+      expect(indicator).toBeInTheDocument();
+    });
+
+    it('should have all three style buttons pressed when all styles active', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
+          setFontFormatting: mockSetFontFormatting,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
+
+      const boldButton = screen.getByText('main.toolbar.bold').closest('button');
+      const italicButton = screen.getByText('main.toolbar.italic').closest('button');
+      const underlineButton = screen.getByText('main.toolbar.underline').closest('button');
+
+      expect(boldButton).toHaveAttribute('aria-pressed', 'true');
+      expect(italicButton).toHaveAttribute('aria-pressed', 'true');
+      expect(underlineButton).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('should toggle one style off without affecting others', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
+          setFontFormatting: mockSetFontFormatting,
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
+
+      const boldButton = screen.getByText('main.toolbar.bold').closest('button') as HTMLButtonElement;
+      fireEvent.click(boldButton);
+
+      // Should only toggle bold to false
+      expect(mockSetFontFormatting).toHaveBeenCalledWith({ bold: false });
+    });
+  });
 });

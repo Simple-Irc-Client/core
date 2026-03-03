@@ -499,4 +499,50 @@ describe('MessageText', () => {
       expect(allItalicText).not.toContain('normal');
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should not detect channels when channelTypes is empty', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue([]);
+
+      const { container } = render(<MessageText text="#channel should be plain text" />);
+
+      // No channel link should be created — all rendered as plain text
+      const clickableSpan = container.querySelector('span.cursor-pointer');
+      expect(clickableSpan).toBeNull();
+      expect(container.textContent).toBe('#channel should be plain text');
+    });
+
+    it('should not render data: scheme as clickable link', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="data:text/html,<h1>xss</h1>" />);
+
+      const clickableSpan = container.querySelector('span.cursor-pointer');
+      expect(clickableSpan).toBeNull();
+      expect(container.textContent).toContain('data:text/html');
+    });
+
+    it('should render plain text without IRC parsing (fast path)', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="just plain text with no formatting" />);
+
+      // No styled spans should be rendered
+      const styledSpans = container.querySelectorAll('span[style]');
+      expect(styledSpans).toHaveLength(0);
+      expect(container.textContent).toBe('just plain text with no formatting');
+    });
+
+    it('should handle IRC formatting code at end of text without closing', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text={`Hello ${IRC_FORMAT.BOLD}bold text`} />);
+
+      // Text should still be rendered, with formatting applied to the rest
+      expect(container.textContent).toBe('Hello bold text');
+      const boldSpan = container.querySelector('span[style*="font-weight"]');
+      expect(boldSpan).not.toBeNull();
+      expect(boldSpan?.textContent).toContain('bold');
+    });
+  });
 });

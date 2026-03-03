@@ -602,4 +602,46 @@ describe('WizardPassword', () => {
       expect(settingsStore.setEncryptedPassword).toHaveBeenCalledWith(undefined, undefined);
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should handle password containing special IRC characters', () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'p@ss:w0rd!#$%' } });
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      // Password is submitted as-is (no sanitization)
+      expect(network.ircSendPassword).toHaveBeenCalledWith('p@ss:w0rd!#$%');
+    });
+
+    it('should handle encryptPersistent rejection gracefully', async () => {
+      vi.mocked(encryption.encryptPersistent).mockRejectedValueOnce(new Error('encrypt failed'));
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'secretpassword' } });
+
+      // Turn on remember switch
+      const rememberSwitch = screen.getByRole('switch');
+      fireEvent.click(rememberSwitch);
+
+      const button = screen.getByText('wizard.password.button.next');
+      fireEvent.click(button);
+
+      // Password should still be submitted even if encryption fails
+      expect(network.ircSendPassword).toHaveBeenCalledWith('secretpassword');
+
+      // Wait for async rejection to be handled
+      await vi.waitFor(() => {
+        expect(encryption.encryptPersistent).toHaveBeenCalled();
+      });
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import YouTubeThumbnail from '../YouTubeThumbnail';
 import * as youtube from '@shared/lib/youtube';
 
@@ -78,6 +78,50 @@ describe('YouTubeThumbnail', () => {
       // Component should render without key warnings
       const wrapper = container.firstChild;
       expect(wrapper).toHaveClass('mt-2', 'flex', 'flex-wrap', 'gap-2');
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    it('should skip video when getYouTubeThumbnailUrl returns null', () => {
+      vi.spyOn(youtube, 'extractYouTubeVideoIds').mockReturnValue(['validId', 'brokenId']);
+      vi.spyOn(youtube, 'getYouTubeThumbnailUrl').mockImplementation((id) =>
+        id === 'brokenId' ? null : `https://img.youtube.com/vi/${id}/default.jpg`
+      );
+
+      render(<YouTubeThumbnail text="two videos" />);
+
+      const thumbnails = screen.getAllByRole('img');
+      expect(thumbnails).toHaveLength(1);
+      expect(thumbnails[0]).toHaveAttribute(
+        'src',
+        'https://img.youtube.com/vi/validId/default.jpg'
+      );
+    });
+
+    it('should render nothing when all thumbnails return null', () => {
+      vi.spyOn(youtube, 'extractYouTubeVideoIds').mockReturnValue(['id1', 'id2']);
+      vi.spyOn(youtube, 'getYouTubeThumbnailUrl').mockReturnValue(null);
+
+      render(<YouTubeThumbnail text="no thumbnails" />);
+
+      // Wrapper div is still rendered, but no links/images inside
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('should not crash when thumbnail image fires onError', () => {
+      vi.spyOn(youtube, 'extractYouTubeVideoIds').mockReturnValue(['videoId']);
+      vi.spyOn(youtube, 'getYouTubeThumbnailUrl').mockReturnValue(
+        'https://img.youtube.com/vi/videoId/default.jpg'
+      );
+
+      render(<YouTubeThumbnail text="video" />);
+
+      const img = screen.getByRole('img');
+      fireEvent.error(img);
+
+      // Image should still be in the DOM (no error handler removes it)
+      expect(img).toBeInTheDocument();
     });
   });
 });

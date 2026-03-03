@@ -1052,4 +1052,133 @@ describe('ContextMenu', () => {
       expect(menuContent).toHaveStyle({ position: 'fixed', left: '250px', top: '400px' });
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render nothing when contextMenuCategory is an unknown value', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuCategory: 'unknown_type' })
+      );
+
+      const { container } = render(<ContextMenu />);
+      expect(container.innerHTML).toBe('');
+    });
+
+    it('should not crash when getUser returns undefined for departed user during ban', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'departedUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
+      vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      // User has departed - getUser returns undefined
+      vi.spyOn(users, 'getUser').mockReturnValue(undefined);
+
+      render(<ContextMenu />);
+      // Operator menu should still render (hasOperatorActions depends on currentLevel)
+      expect(document.body.textContent).toContain('contextmenu.user.operator.title');
+    });
+
+    it('should send KICK command with correct channel and nick', () => {
+      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'targetUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'targetUser',
+        ident: 'user',
+        hostname: 'example.com',
+        flags: [],
+        channels: [{ name: '#ops', flags: [], maxPermission: 0 }],
+      });
+
+      render(<ContextMenu />);
+
+      // Open operator submenu and click Kick
+      const operatorTrigger = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.title'));
+      if (operatorTrigger) fireEvent.click(operatorTrigger);
+
+      const kickButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.kick'));
+      if (kickButton) fireEvent.click(kickButton);
+
+      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('KICK #ops targetUser');
+    });
+
+    it('should send BAN command with host-based mask', () => {
+      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'targetUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      vi.spyOn(users, 'getUser').mockReturnValue({
+        nick: 'targetUser',
+        ident: 'user',
+        hostname: 'bad.host.com',
+        flags: [],
+        channels: [{ name: '#ops', flags: [], maxPermission: 0 }],
+      });
+
+      render(<ContextMenu />);
+
+      const operatorTrigger = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.title'));
+      if (operatorTrigger) fireEvent.click(operatorTrigger);
+
+      const banButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.ban'));
+      if (banButton) fireEvent.click(banButton);
+
+      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #ops +b *!*@bad.host.com');
+    });
+
+    it('should not send BAN command when getUser returns undefined', () => {
+      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'departedUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      vi.spyOn(users, 'getUser').mockReturnValue(undefined);
+
+      render(<ContextMenu />);
+
+      const operatorTrigger = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.title'));
+      if (operatorTrigger) fireEvent.click(operatorTrigger);
+
+      const banButton = Array.from(document.body.querySelectorAll('[role="menuitem"]'))
+        .find(el => el.textContent?.includes('contextmenu.user.operator.ban'));
+      if (banButton) fireEvent.click(banButton);
+
+      // Ban should NOT send MODE since user is undefined (no hostname to create mask)
+      expect(mockIrcSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('MODE'));
+    });
+  });
 });

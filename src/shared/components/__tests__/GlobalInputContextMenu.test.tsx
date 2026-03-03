@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render, act, fireEvent } from '@testing-library/react';
 import { GlobalInputContextMenu, handleNoContextMenu } from '../GlobalInputContextMenu';
 
 vi.mock('react-i18next', () => ({
@@ -292,6 +292,62 @@ describe('GlobalInputContextMenu', () => {
       fireContextMenu(input);
 
       expect(document.body.textContent).not.toContain('contextmenu.input.cut');
+      input.remove();
+    });
+  });
+
+  describe('Unhappy paths', () => {
+    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      });
+      act(() => { target.dispatchEvent(event); });
+    };
+
+    it('should not show context menu for contentEditable div', () => {
+      render(<GlobalInputContextMenu />);
+      const div = document.createElement('div');
+      div.contentEditable = 'true';
+      document.body.appendChild(div);
+      div.focus();
+
+      fireContextMenu(div);
+
+      expect(document.body.textContent).not.toContain('contextmenu.input.cut');
+      div.remove();
+    });
+
+    it('should show only one menu on multiple rapid right-clicks', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 0, 5);
+
+      fireContextMenu(input, 100, 200);
+      fireContextMenu(input, 150, 250);
+
+      const menus = document.body.querySelectorAll('[role="menu"]');
+      expect(menus).toHaveLength(1);
+      input.remove();
+    });
+
+    it('should not invoke callback when clicking aria-disabled menu item', () => {
+      render(<GlobalInputContextMenu />);
+      // Create input with no selection so Cut/Copy are disabled
+      const input = createInput('hello', 3, 3);
+
+      fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      // Cut should be disabled
+      expect(menuItems[0]).toHaveAttribute('aria-disabled');
+      const cutItem = menuItems[0];
+      expect(cutItem).toBeDefined();
+      if (cutItem) fireEvent.click(cutItem);
+
+      // Clipboard write should not be called for disabled cut
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
       input.remove();
     });
   });

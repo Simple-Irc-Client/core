@@ -113,4 +113,27 @@ describe('Typing', () => {
       expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render all nicks without crash when many users are typing', () => {
+      const manyNicks = Array.from({ length: 25 }, (_, i) => `User${i}`);
+      setupMocks(manyNicks);
+
+      render(<Typing />);
+
+      expect(screen.getByText(/User0/)).toBeInTheDocument();
+      expect(screen.getByText(/User24/)).toBeInTheDocument();
+      expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
+    });
+
+    it('should render nicks with IRC special characters safely', () => {
+      setupMocks(['[nick]', 'nick|away', 'nick{test}', 'nick\\backslash']);
+
+      render(<Typing />);
+
+      expect(screen.getByText(/\[nick\]/)).toBeInTheDocument();
+      expect(screen.getByText(/nick\|away/)).toBeInTheDocument();
+      expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
+    });
+  });
 });

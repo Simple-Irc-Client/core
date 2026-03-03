@@ -195,4 +195,18 @@ describe('WizardPage', () => {
       expect(outerDiv).toHaveClass('max-w-screen-md');
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render nothing when wizardStep is empty string', () => {
+      setupMocks('');
+
+      render(<WizardPage />);
+
+      expect(screen.queryByTestId('wizard-nick')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('wizard-server')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('wizard-password')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('wizard-loading')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('wizard-channel-list')).not.toBeInTheDocument();
+    });
+  });
 });

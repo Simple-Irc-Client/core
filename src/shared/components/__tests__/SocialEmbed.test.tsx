@@ -103,4 +103,40 @@ describe('SocialEmbed', () => {
       expect(title).not.toBe('');
     });
   });
+
+  describe('Unhappy paths', () => {
+    it('should render without crash when duplicate originalUrl entries exist', () => {
+      const duplicateEmbed: SocialEmbedInfo = {
+        platform: 'x',
+        embedUrl: 'https://platform.twitter.com/embed/Tweet.html?id=123',
+        originalUrl: 'https://x.com/user/status/123',
+      };
+
+      vi.spyOn(socialEmbed, 'extractSocialEmbeds').mockReturnValue([
+        duplicateEmbed,
+        duplicateEmbed,
+      ]);
+
+      // React will warn about duplicate keys but should not crash
+      render(<SocialEmbed text="same tweet twice" />);
+
+      const iframes = document.querySelectorAll('iframe');
+      expect(iframes).toHaveLength(2);
+    });
+
+    it('should not include allow-forms in sandbox attribute', () => {
+      const embed: SocialEmbedInfo = {
+        platform: 'x',
+        embedUrl: 'https://platform.twitter.com/embed/Tweet.html?id=1',
+        originalUrl: 'https://x.com/user/status/1',
+      };
+      vi.spyOn(socialEmbed, 'extractSocialEmbeds').mockReturnValue([embed]);
+
+      render(<SocialEmbed text="tweet" />);
+
+      const iframe = document.querySelector('iframe');
+      const sandbox = iframe?.getAttribute('sandbox') ?? '';
+      expect(sandbox).not.toContain('allow-forms');
+    });
+  });
 });
