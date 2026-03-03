@@ -1,13 +1,46 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+
+const pwa = VitePWA({
+  registerType: "autoUpdate",
+  injectRegister: "script-defer",
+  workbox: {
+    globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
+    globIgnores: ["**/*.map"],
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "images",
+          expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
+        },
+      },
+    ],
+  },
+  manifest: {
+    name: "Simple IRC Client",
+    short_name: "IRC",
+    description: "A modern IRC client for the web",
+    theme_color: "#000000",
+    background_color: "#ffffff",
+    display: "standalone",
+    icons: [
+      { src: "logo.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+      { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+});
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   if (command === "serve") {
     return {
-      plugins: [react(), tailwindcss()],
+      plugins: [react(), tailwindcss(), pwa],
       resolve: {
         alias: {
           "@": path.resolve(__dirname, "./src"),
@@ -22,7 +55,7 @@ export default defineConfig(({ command }) => {
     }
   } else {
     return {
-      plugins: [react(), tailwindcss()],
+      plugins: [react(), tailwindcss(), pwa],
       resolve: {
         alias: {
           "@": path.resolve(__dirname, "./src"),
