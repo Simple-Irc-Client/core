@@ -72,7 +72,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
 
   return (
     <>
-      {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv) && (
+      {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv || !isConnected) && (
         <aside
           aria-label={t('main.users.title')}
           className={cn(

@@ -136,16 +136,13 @@ const Topic = () => {
   const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
   const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
-  const isConnected = useSettingsStore((state) => state.isConnected);
-  const messages = useCurrentStore((state) => state.messages);
-  const showChannels = isConnected || messages.length > 0;
   const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
   const showUsersToggle = currentChannelCategory === 'channel' || currentChannelCategory === 'priv';
   const isAnyDrawerOpen = isChannelsDrawerOpen || isUsersDrawerOpen;
 
   return (
     <div className="px-4 flex h-16 min-w-0 items-center">
-      {!isAnyDrawerOpen && showChannels && (
+      {!isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
         </Button>

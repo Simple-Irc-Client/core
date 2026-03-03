@@ -1539,16 +1539,18 @@ describe('Chat tests', () => {
   });
 
   describe('Not connected empty state', () => {
-    it('should show NotConnected component when disconnected and no messages', () => {
+    it('should show NotConnected component and DisconnectedBanner when disconnected and no messages', () => {
       setupMocks({ isConnected: false, messages: [] });
 
       const { container } = render(<Main />);
 
-      expect(screen.getByRole('status')).toBeInTheDocument();
-      expect(container.querySelector('svg.lucide-wifi-off')).toBeInTheDocument();
+      // Both NotConnected and DisconnectedBanner render
+      const statusElements = screen.getAllByRole('status');
+      expect(statusElements).toHaveLength(2);
+      expect(container.querySelectorAll('svg.lucide-wifi-off')).toHaveLength(2);
     });
 
-    it('should not show NotConnected when connected', () => {
+    it('should not show NotConnected or DisconnectedBanner when connected', () => {
       setupMocks({ isConnected: true, messages: [] });
 
       render(<Main />);
@@ -1556,7 +1558,7 @@ describe('Chat tests', () => {
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
     });
 
-    it('should show disconnected banner instead of NotConnected when disconnected but has messages', () => {
+    it('should show DisconnectedBanner without NotConnected when disconnected but has messages', () => {
       setupMocks({
         isConnected: false,
         messages: [createMessage({ id: '1', message: 'Old message' })],
@@ -1564,10 +1566,9 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      // Full NotConnected view should not show
-      expect(screen.queryByText('notConnectedDescription')).not.toBeInTheDocument();
-      // Disconnected banner should show
+      // Only DisconnectedBanner should show (single status element)
       expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(container.querySelectorAll('svg.lucide-wifi-off')).toHaveLength(1);
       expect(container.textContent).toContain('Old message');
     });
   });

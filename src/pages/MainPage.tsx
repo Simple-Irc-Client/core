@@ -9,16 +9,12 @@ import Users from '@features/users/components/Users';
 import { ResizeHandle } from '@shared/components/ui/resize-handle';
 import { channelsWidth as defaultChannelsWidth, usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { useCurrentStore } from '@features/chat/store/current';
 
 function MainPage() {
   const { t } = useTranslation();
   const [channelsWidth, setChannelsWidth] = useState(defaultChannelsWidth);
   const [usersWidth, setUsersWidth] = useState(defaultUsersWidth);
   const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
-  const isConnected = useSettingsStore((state) => state.isConnected);
-  const messages = useCurrentStore((state) => state.messages);
-  const showChannels = isConnected || messages.length > 0;
 
   const handleChannelsResize = useCallback((delta: number) => {
     setChannelsWidth((prev) => Math.max(defaultChannelsWidth, prev + delta));
@@ -33,8 +29,8 @@ function MainPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-background focus:text-foreground">
         {t('a11y.skipToContent')}
       </a>
-      {showChannels && <Channels width={channelsWidth} />}
-      {showChannels && <ResizeHandle onResize={handleChannelsResize} direction="right" className="hidden lg:block" aria-label={t('a11y.resizeChannels')} />}
+      <Channels width={channelsWidth} />
+      <ResizeHandle onResize={handleChannelsResize} direction="right" className="hidden lg:block" aria-label={t('a11y.resizeChannels')} />
       <main id="main-content" className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <Topic />
         <div className="flex-1 flex flex-col overflow-hidden">
