@@ -480,10 +480,12 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // Auto-rejoin saved channels on reconnect or returning to a completed wizard
-    const savedChannels = getSavedChannels();
-    if (savedChannels.length > 0) {
-      ircJoinChannels(savedChannels);
+    // Auto-rejoin saved channels on reconnect (skip when wizard is open - wizard handles channel selection)
+    if (getIsWizardCompleted()) {
+      const savedChannels = getSavedChannels();
+      if (savedChannels.length > 0) {
+        ircJoinChannels(savedChannels);
+      }
     }
   };
 

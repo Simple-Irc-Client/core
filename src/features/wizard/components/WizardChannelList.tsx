@@ -2,9 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '@/network/irc/network';
-import { useChannelsStore } from '@features/channels/store/channels';
-import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
-import { setWizardCompleted } from '@features/settings/store/settings';
+import { getSavedChannels, setSavedChannels, setWizardCompleted } from '@features/settings/store/settings';
 import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
 import ChannelListTable from '@shared/components/ChannelListTable';
 
@@ -13,39 +11,23 @@ const WizardChannelList = () => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const openChannels = useChannelsStore((state) => state.openChannelsShortList);
-
-  // Channels that user manually added (via clicking rows)
-  const [manuallySelectedChannels, setManuallySelectedChannels] = useState<string[]>([]);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getSavedChannels());
 
   const channelList = useMemo(
     () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
     [isChannelListLoadingFinished]
   );
 
-  // Derive selectedChannels from openChannels + manuallySelectedChannels
-  const selectedChannels = useMemo(() => {
-    const fromOpen = openChannels
-      .filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))
-      .map((channel) => channel.name);
-    const combined = new Set([...fromOpen, ...manuallySelectedChannels]);
-    return Array.from(combined);
-  }, [openChannels, manuallySelectedChannels]);
-
   const handleSelectionChange = useCallback((channels: string[]) => {
-    // Only update manually selected channels (exclude auto-selected from open channels)
-    const fromOpen = openChannels
-      .filter((channel) => ![STATUS_CHANNEL, DEBUG_CHANNEL].includes(channel.name))
-      .map((channel) => channel.name);
-    const manualOnly = channels.filter((ch) => !fromOpen.includes(ch));
-    setManuallySelectedChannels(manualOnly);
-  }, [openChannels]);
+    setSelectedChannels(channels);
+  }, []);
 
   const handleSkip = (): void => {
     setWizardCompleted(true);
   };
 
   const handleJoin = (): void => {
+    setSavedChannels(selectedChannels);
     ircJoinChannels(selectedChannels);
     setWizardCompleted(true);
   };

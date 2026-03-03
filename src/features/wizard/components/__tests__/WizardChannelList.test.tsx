@@ -1,12 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardChannelList from '../WizardChannelList';
-import * as channelsStore from '@features/channels/store/channels';
 import * as channelListStore from '@features/channels/store/channelList';
 import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
-import { ChannelCategory } from '@shared/types';
-import type { Channel, ChannelList } from '@shared/types';
+import type { ChannelList } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,6 +18,8 @@ vi.mock('@/network/irc/network', () => ({
 
 vi.mock('@features/settings/store/settings', () => ({
   setWizardCompleted: vi.fn(),
+  getSavedChannels: vi.fn(() => []),
+  setSavedChannels: vi.fn(),
 }));
 
 const createChannelList = (overrides: Partial<ChannelList> & { name: string }): ChannelList => ({
@@ -28,15 +28,10 @@ const createChannelList = (overrides: Partial<ChannelList> & { name: string }): 
   ...overrides,
 });
 
-const createChannel = (overrides: Partial<Channel> & { name: string }): Channel => ({
-  category: ChannelCategory.channel,
-  unReadMessages: 0,
-  ...overrides,
-});
-
 describe('WizardChannelList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(settingsStore.getSavedChannels).mockReturnValue([]);
   });
 
   const getChannelRow = (name: string): HTMLElement => {
@@ -51,13 +46,15 @@ describe('WizardChannelList', () => {
   const setupMocks = (overrides: {
     isChannelListLoadingFinished?: boolean;
     channelList?: ChannelList[];
-    openChannels?: Channel[];
+    savedChannels?: string[];
   } = {}) => {
     const {
       isChannelListLoadingFinished = true,
       channelList = [],
-      openChannels = [],
+      savedChannels = [],
     } = overrides;
+
+    vi.mocked(settingsStore.getSavedChannels).mockReturnValue(savedChannels);
 
     vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
       selector({
@@ -70,11 +67,6 @@ describe('WizardChannelList', () => {
     );
 
     vi.spyOn(channelListStore, 'getChannelListSortedByUsers').mockReturnValue(channelList);
-
-    vi.spyOn(channelsStore, 'useChannelsStore').mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ openChannelsShortList: openChannels })
-    );
   };
 
   describe('Basic rendering', () => {
@@ -372,7 +364,7 @@ describe('WizardChannelList', () => {
       expect(network.ircJoinChannels).toHaveBeenCalledWith(['#channel1', '#channel2']);
     });
 
-    it('should call setWizardCompleted when join is clicked', () => {
+    it('should save selected channels and call setWizardCompleted when join is clicked', () => {
       setupMocks({
         channelList: [createChannelList({ name: '#general' })],
       });
@@ -386,6 +378,7 @@ describe('WizardChannelList', () => {
       const joinButton = screen.getByText('wizard.channels.button.join');
       fireEvent.click(joinButton);
 
+      expect(settingsStore.setSavedChannels).toHaveBeenCalledWith(['#general']);
       expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
     });
   });
@@ -420,52 +413,87 @@ describe('WizardChannelList', () => {
     });
   });
 
-  describe('Auto-select open channels', () => {
-    it('should auto-select channels that are already open', () => {
+  describe('Pre-select saved channels', () => {
+    it('should pre-select channels from savedChannels', () => {
       setupMocks({
         channelList: [
           createChannelList({ name: '#general' }),
           createChannelList({ name: '#random' }),
         ],
-        openChannels: [
-          createChannel({ name: '#general' }),
-        ],
+        savedChannels: ['#general'],
       });
 
       render(<WizardChannelList />);
 
-      // #general should appear as a badge (auto-selected) + in table
+      // #general should appear as a badge (pre-selected) + in table
       expect(screen.getAllByText('#general').length).toBe(2);
       // #random should only appear in table
       expect(screen.getAllByText('#random').length).toBe(1);
     });
 
-    it('should not auto-select Status channel', () => {
+    it('should allow removing a pre-selected saved channel', () => {
       setupMocks({
-        channelList: [createChannelList({ name: '#general' })],
-        openChannels: [
-          createChannel({ name: 'Status', category: ChannelCategory.status }),
+        channelList: [
+          createChannelList({ name: '#general' }),
+          createChannelList({ name: '#random' }),
         ],
+        savedChannels: ['#general'],
       });
 
       render(<WizardChannelList />);
 
-      // Status should not appear in badges
-      expect(screen.queryAllByText('Status').length).toBe(0);
+      // #general should be pre-selected (appears as badge + table)
+      expect(screen.getAllByText('#general').length).toBe(2);
+
+      // Find and click the delete button on the badge
+      const deleteButtons = screen.getAllByRole('button').filter((btn) =>
+        btn.querySelector('svg.lucide-x')
+      );
+      const deleteButton = deleteButtons[0];
+      if (!deleteButton) {
+        throw new Error('Delete button not found');
+      }
+      fireEvent.click(deleteButton);
+
+      // #general should now only appear in the table (badge removed)
+      expect(screen.getAllByText('#general').length).toBe(1);
     });
 
-    it('should not auto-select Debug channel', () => {
+    it('should only join newly selected channel when cached channel is removed and a different one is chosen', () => {
       setupMocks({
-        channelList: [createChannelList({ name: '#general' })],
-        openChannels: [
-          createChannel({ name: 'Debug', category: ChannelCategory.debug }),
+        channelList: [
+          createChannelList({ name: '#channel1' }),
+          createChannelList({ name: '#channel2' }),
         ],
+        savedChannels: ['#channel1'],
       });
 
       render(<WizardChannelList />);
 
-      // Debug should not appear in badges
-      expect(screen.queryAllByText('Debug').length).toBe(0);
+      // #channel1 should be pre-selected from cache
+      expect(screen.getAllByText('#channel1').length).toBe(2);
+
+      // Remove cached #channel1
+      const deleteButtons = screen.getAllByRole('button').filter((btn) =>
+        btn.querySelector('svg.lucide-x')
+      );
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      fireEvent.click(deleteButtons[0]!);
+
+      // #channel1 badge should be removed
+      expect(screen.getAllByText('#channel1').length).toBe(1);
+
+      // Select #channel2 instead
+      fireEvent.click(getChannelRow('#channel2'));
+
+      // Click join
+      const joinButton = screen.getByText('wizard.channels.button.join');
+      fireEvent.click(joinButton);
+
+      // Should only join #channel2, not #channel1
+      expect(network.ircJoinChannels).toHaveBeenCalledTimes(1);
+      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#channel2']);
+      expect(settingsStore.setSavedChannels).toHaveBeenCalledWith(['#channel2']);
     });
   });
 
@@ -479,36 +507,6 @@ describe('WizardChannelList', () => {
 
       expect(screen.getByText('wizard.channels.button.skip')).toBeInTheDocument();
       expect(screen.getByText('wizard.channels.button.join')).toBeDisabled();
-    });
-
-    it('should keep auto-selected channel even after badge delete attempt because it is derived from openChannels', () => {
-      setupMocks({
-        channelList: [
-          createChannelList({ name: '#general' }),
-          createChannelList({ name: '#random' }),
-        ],
-        openChannels: [
-          createChannel({ name: '#general' }),
-        ],
-      });
-
-      render(<WizardChannelList />);
-
-      // #general should be auto-selected (appears as badge + table)
-      expect(screen.getAllByText('#general').length).toBe(2);
-
-      // Find and click the delete button on the badge
-      const deleteButtons = screen.getAllByRole('button').filter((btn) =>
-        btn.querySelector('svg.lucide-x')
-      );
-      const deleteButton = deleteButtons[0];
-      if (!deleteButton) {
-        throw new Error('Delete button not found');
-      }
-      fireEvent.click(deleteButton);
-
-      // #general remains selected because it's derived from openChannels, not manual selection
-      expect(screen.getAllByText('#general').length).toBe(2);
     });
 
     it('should not call ircJoinChannels when no channels are selected and join is disabled', () => {

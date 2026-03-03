@@ -614,6 +614,10 @@ export const removeSavedChannel = (channel: string): void => {
   useSettingsStore.getState().removeSavedChannel(channel);
 };
 
+export const setSavedChannels = (channels: string[]): void => {
+  useSettingsStore.setState({ savedChannels: channels });
+};
+
 export const getSavedChannels = (): string[] => {
   return useSettingsStore.getState().savedChannels;
 };
