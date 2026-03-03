@@ -336,6 +336,8 @@ export const useSettingsStore = create<SettingsStore>()(
       encryptedPassword: state.encryptedPassword,
       passwordNick: state.passwordNick,
       savedChannels: state.savedChannels,
+      currentChannelName: state.currentChannelName,
+      currentChannelCategory: state.currentChannelCategory,
     }),
   }),
   ),

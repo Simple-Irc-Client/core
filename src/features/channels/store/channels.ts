@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
 import { getChannelTypes, getCurrentChannelName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
+import { createServerScopedStorage } from '@shared/lib/idbStorage';
 
 const updateChannelInBothLists = <T extends { name: string }>(
   list: T[],
@@ -34,8 +35,21 @@ interface ChannelsStore {
   setClearAll: () => void;
 }
 
+const syncCurrentAfterHydration = (): void => {
+  const currentChannelName = getCurrentChannelName();
+  const state = useChannelsStore.getState();
+  const channel = state.openChannels.find((ch) => ch.name === currentChannelName);
+  if (channel) {
+    useCurrentStore.getState().setUpdateMessages([...channel.messages]);
+    useCurrentStore.getState().setUpdateTopic(channel.topic);
+    useCurrentStore.getState().setUpdateTyping([]);
+  }
+};
+
 export const useChannelsStore = create<ChannelsStore>()(
-  devtools((set) => ({
+  devtools(
+    persist(
+      (set) => ({
     openChannels: [],
     openChannelsShortList: [],
 
@@ -182,7 +196,29 @@ export const useChannelsStore = create<ChannelsStore>()(
         openChannelsShortList: [],
       }));
     },
-  })),
+  }),
+      {
+        name: 'sic-channels',
+        version: 1,
+        storage: createJSONStorage(() => createServerScopedStorage('sic-channels')),
+        partialize: (state) => ({
+          openChannels: state.openChannels.map((ch) => ({ ...ch, typing: [] as string[] })),
+          openChannelsShortList: state.openChannelsShortList,
+        }) as unknown as ChannelsStore,
+        onRehydrateStorage: () => {
+          return (state, error) => {
+            if (error) {
+              console.warn('Channels store rehydration failed:', error);
+              return;
+            }
+            if (state) {
+              syncCurrentAfterHydration();
+            }
+          };
+        },
+      },
+    ),
+  ),
 );
 
 export const setAddChannel = (channelName: string, category: ChannelCategory): void => {

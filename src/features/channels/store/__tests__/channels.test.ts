@@ -27,9 +27,16 @@ import {
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import type { Message } from '@shared/types';
 
+vi.mock('idb-keyval', () => ({
+  get: vi.fn(() => Promise.resolve(null)),
+  set: vi.fn(() => Promise.resolve()),
+  del: vi.fn(() => Promise.resolve()),
+}));
+
 vi.mock('@features/settings/store/settings', () => ({
   getCurrentChannelName: vi.fn(() => '#test'),
   getChannelTypes: vi.fn(() => ['#', '&']),
+  useSettingsStore: { getState: () => ({ server: undefined }) },
 }));
 
 const mockSetUpdateTyping = vi.fn();
