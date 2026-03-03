@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Hash, Home, Wrench, User, X, Plus } from 'lucide-react';
+import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
@@ -30,6 +30,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { t } = useTranslation();
 
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const isConnected = useSettingsStore((state) => state.isConnected);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
@@ -104,7 +105,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       }}
     >
       <div>
-          <div className="mb-4 flex items-center justify-between p-4">
+          <div className="flex items-center justify-between px-4 h-16">
             <div className="flex items-center gap-2">
               <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
               <TooltipProvider>
@@ -115,6 +116,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                       size="icon"
                       className="h-6 w-6"
                       onClick={() => setDialogOpen(true)}
+                      disabled={!isConnected}
                       aria-label={t('main.channels.join')}
                     >
                       <Plus className="h-4 w-4" />
@@ -130,6 +132,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               </Button>
             )}
           </div>
+          {!isConnected && openChannelsShort.length > 0 && (
+            <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs">
+              <WifiOff className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+              <span>{t('main.chat.notConnected')}</span>
+            </div>
+          )}
           <div>
             {openChannelsShort.map((channel) => (
               <div
@@ -173,7 +181,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                       {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
                         <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
                       )}
-                      {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
+                      {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && isConnected && (
                         <Button
                           variant="ghost"
                           size="icon"

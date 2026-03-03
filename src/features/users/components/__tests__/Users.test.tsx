@@ -62,6 +62,8 @@ describe('Users', () => {
         currentChannelName,
         userModes,
         hideAvatarsInUsersList,
+        isConnected: true,
+        isConnecting: false,
       } as unknown as settingsStore.SettingsStore)
     );
 

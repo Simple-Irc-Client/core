@@ -22,6 +22,7 @@ import DateSeparator from './DateSeparator';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { CheckCheck, WifiOff } from 'lucide-react';
 import NotConnected from './NotConnected';
+import { ircReconnect } from '@/network/irc/network';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
@@ -192,10 +193,20 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
 
 const DisconnectedBanner = () => {
   const { t } = useTranslation();
+  const isConnecting = useSettingsStore((state) => state.isConnecting);
   return (
-    <div role="status" aria-live="polite" className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 text-sm border-b border-yellow-500/20">
-      <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+    <div role="status" aria-live="polite" className="sticky top-0 z-10 flex items-center justify-center gap-1.5 px-4 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs">
+      <WifiOff className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
       <span>{t('main.chat.notConnected')}</span>
+      <button
+        type="button"
+        onClick={() => ircReconnect()}
+        disabled={isConnecting}
+        className="ml-1 underline hover:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label={t('currentUser.connect')}
+      >
+        {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
+      </button>
     </div>
   );
 };

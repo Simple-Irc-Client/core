@@ -11,7 +11,7 @@ import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
-import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X } from 'lucide-react';
+import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X, WifiOff } from 'lucide-react';
 import { cn, isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
@@ -66,6 +66,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const isDarkMode = useSettingsStore((s) => s.isDarkMode);
+  const isConnected = useSettingsStore((state) => state.isConnected);
   const users = useCurrentStore((state) => state.users);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -82,7 +83,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
           style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
         >
           <div>
-            <div className="mb-4 flex items-center justify-between p-4">
+            <div className="flex items-center justify-between px-4 h-16">
               <h3 className={`${fontSizeClass} font-medium`}>{t('main.users.title')}</h3>
               {isUsersDrawerOpen && (
                 <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
@@ -90,6 +91,12 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                 </Button>
               )}
             </div>
+            {!isConnected && (
+              <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs">
+                <WifiOff className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+                <span>{t('main.chat.notConnected')}</span>
+              </div>
+            )}
             <div className="space-y-1">
               {users.map((user) => (
                 <button

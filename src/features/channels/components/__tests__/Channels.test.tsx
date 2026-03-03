@@ -63,6 +63,7 @@ describe('Channels', () => {
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelName,
+        isConnected: true,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -555,6 +556,7 @@ describe('Channels', () => {
       vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
         selector({
           currentChannelName: '#test',
+          isConnected: true,
         } as unknown as settingsStore.SettingsStore)
       );
 
