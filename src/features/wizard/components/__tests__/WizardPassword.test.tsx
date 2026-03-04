@@ -603,6 +603,99 @@ describe('WizardPassword', () => {
     });
   });
 
+  describe('Skip button', () => {
+    it('should render skip button when nick matches', () => {
+      setupMocks('TestNick');
+
+      render(<WizardPassword />);
+
+      expect(screen.getByText('wizard.password.button.skip')).toBeInTheDocument();
+    });
+
+    it('should not render skip button in timeout state', () => {
+      setupMocks('InitialNick');
+      const { rerender } = render(<WizardPassword />);
+
+      setupMocks('NewNick');
+      rerender(<WizardPassword />);
+
+      expect(screen.queryByText('wizard.password.button.skip')).not.toBeInTheDocument();
+    });
+
+    it('should hide skip button when password is entered', () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      expect(screen.getByText('wizard.password.button.skip')).toBeInTheDocument();
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'mypassword' } });
+
+      expect(screen.queryByText('wizard.password.button.skip')).not.toBeInTheDocument();
+    });
+
+    it('should show skip button again when password is cleared', () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const input = screen.getByLabelText('wizard.password.password');
+      fireEvent.change(input, { target: { value: 'mypassword' } });
+      expect(screen.queryByText('wizard.password.button.skip')).not.toBeInTheDocument();
+
+      fireEvent.change(input, { target: { value: '' } });
+      expect(screen.getByText('wizard.password.button.skip')).toBeInTheDocument();
+    });
+
+    it('should not send password when skip is clicked', () => {
+      setupMocks();
+
+      render(<WizardPassword />);
+
+      const skipButton = screen.getByText('wizard.password.button.skip');
+      fireEvent.click(skipButton);
+
+      expect(network.ircSendPassword).not.toHaveBeenCalled();
+    });
+
+    it('should clear saved password when skip is clicked', () => {
+      setupMocks('TestNick', { encryptedPassword: 'encrypted:saved', passwordNick: 'TestNick' });
+
+      render(<WizardPassword />);
+
+      const skipButton = screen.getByText('wizard.password.button.skip');
+      fireEvent.click(skipButton);
+
+      expect(settingsStore.setEncryptedPassword).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it('should navigate to channels step when skip is clicked', () => {
+      setupMocks();
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(undefined);
+
+      render(<WizardPassword />);
+
+      const skipButton = screen.getByText('wizard.password.button.skip');
+      fireEvent.click(skipButton);
+
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('channels');
+    });
+
+    it('should join channels and complete wizard when skip is clicked with channel param', () => {
+      setupMocks();
+      vi.mocked(queryParams.getChannelParam).mockReturnValue(['#general']);
+
+      render(<WizardPassword />);
+
+      const skipButton = screen.getByText('wizard.password.button.skip');
+      fireEvent.click(skipButton);
+
+      expect(network.ircJoinChannels).toHaveBeenCalledWith(['#general']);
+      expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
+    });
+  });
+
   describe('Unhappy paths', () => {
     it('should handle password containing special IRC characters', () => {
       setupMocks();

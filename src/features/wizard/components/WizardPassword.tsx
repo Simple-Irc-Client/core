@@ -42,6 +42,16 @@ const WizardPassword = () => {
     setPassword(event.target.value);
   };
 
+  const proceedToNextStep = (): void => {
+    const channels = getChannelParam();
+    if (channels) {
+      ircJoinChannels(channels);
+      setWizardCompleted(true);
+    } else {
+      setWizardStep('channels');
+    }
+  };
+
   const handleClick = (): void => {
     if (initialNick === nick) {
       ircSendPassword(password);
@@ -57,13 +67,12 @@ const WizardPassword = () => {
         setEncryptedPassword(undefined, undefined);
       }
     }
-    const channels = getChannelParam();
-    if (channels) {
-      ircJoinChannels(channels);
-      setWizardCompleted(true);
-    } else {
-      setWizardStep('channels');
-    }
+    proceedToNextStep();
+  };
+
+  const handleSkip = (): void => {
+    setEncryptedPassword(undefined, undefined);
+    proceedToNextStep();
   };
 
   return (
@@ -98,6 +107,11 @@ const WizardPassword = () => {
         <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={initialNick === nick && password === ''}>
           {t('wizard.password.button.next')}
         </Button>
+        {initialNick === nick && password === '' && (
+          <Button onClick={handleSkip} type="button" variant="ghost" className="w-full">
+            {t('wizard.password.button.skip')}
+          </Button>
+        )}
       </form>
     </>
   );

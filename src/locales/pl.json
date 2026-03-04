@@ -37,6 +37,7 @@
     "wizard.password.password": "Hasło",
     "wizard.password.rememberPassword": "Zapamiętaj hasło",
     "wizard.password.button.next": "Dalej",
+    "wizard.password.button.skip": "Pomiń",
     "wizard.password.message.timeout1": "Niestety, upłynał wymagany czas na wpisanie hasła",
     "wizard.password.message.timeout2": "Aby zmienić login - w głównym oknie programu wpisz polecenia:",
     "wizard.password.message.timeout3": "/msg nick {{nick}}",

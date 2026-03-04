@@ -37,6 +37,7 @@
     "wizard.password.password": "Password",
     "wizard.password.rememberPassword": "Remember password",
     "wizard.password.button.next": "Next",
+    "wizard.password.button.skip": "Skip",
     "wizard.password.message.timeout1": "Unfortunately, the required time to enter the password has expired",
     "wizard.password.message.timeout2": "To change your nickname - in the main program window, type the commands:",
     "wizard.password.message.timeout3": "/msg nick {{nick}}",
