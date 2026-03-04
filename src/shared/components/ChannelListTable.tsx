@@ -133,11 +133,11 @@ const ChannelListTable = ({
             <p>{labels.noResults}</p>
           </div>
         ) : (
-          <Table>
+          <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[150px]">{labels.columnName}</TableHead>
-                <TableHead className="w-[100px]">{labels.columnUsers}</TableHead>
+                <TableHead className="w-[80px]">{labels.columnUsers}</TableHead>
                 <TableHead className="hidden sm:table-cell">{labels.columnTopic}</TableHead>
               </TableRow>
             </TableHeader>
@@ -156,9 +156,9 @@ const ChannelListTable = ({
                     }
                   }}
                 >
-                  <TableCell className="font-medium">{channel.name}</TableCell>
+                  <TableCell className="font-medium truncate">{channel.name}</TableCell>
                   <TableCell>{channel.users}</TableCell>
-                  <TableCell className="hidden sm:table-cell truncate max-w-[300px]">{renderTopic(channel.topic)}</TableCell>
+                  <TableCell className="hidden sm:table-cell truncate">{renderTopic(channel.topic)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
