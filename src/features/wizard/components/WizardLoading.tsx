@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Progress } from '@shared/components/ui/progress';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart } from '@features/settings/store/settings';
+import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart, setIsConnecting } from '@features/settings/store/settings';
 import { ircConnect, ircDisconnect, ircJoinChannels, on, off } from '@/network/irc/network';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
@@ -26,6 +26,10 @@ const WizardLoading = () => {
   // Track latest raw IRC message from the server for debugging
   useEffect(() => {
     const handleIrcEvent = (data: { type: string; line?: string }): void => {
+      if (data?.type === 'close') {
+        setIsConnecting(false);
+        return;
+      }
       if (data?.type === 'raw' && data.line) {
         // Redact sensitive info (passwords, SASL tokens) then extract trailing text
         const safe = redactSensitiveIrc(data.line);
@@ -132,7 +136,7 @@ const WizardLoading = () => {
       <Progress value={Math.min(wizardProgress.value * 30, 100)} aria-label={t('a11y.connectionProgress')} />
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
-        {import.meta.env.DEV && lastServerMessage !== '' && (
+        {lastServerMessage !== '' && (
           <p key={messageKey} className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto animate-in fade-in duration-300">{lastServerMessage}</p>
         )}
       </div>
