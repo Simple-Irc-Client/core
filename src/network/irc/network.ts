@@ -492,6 +492,7 @@ export const ircReconnect = async (): Promise<boolean> => {
   }
 
   // Reconnect
+  setIsConnecting(true);
   ircConnect(server, nick);
   return true;
 };

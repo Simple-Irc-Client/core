@@ -133,7 +133,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
             )}
           </div>
           {!isConnected && (
-            <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs">
+            <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
               <WifiOff className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
               <span>{t('main.chat.notConnected')}</span>
             </div>
