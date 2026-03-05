@@ -644,3 +644,24 @@ export const resetAndGoToStart = (): void => {
   // Reset settings store to initial state (this also sets wizardStep to 'nick')
   resetWizardState();
 };
+
+export const changeServer = (): void => {
+  // Disconnect from the network
+  ircDisconnect();
+
+  // Clear all stores
+  setChannelsClearAll();
+  setUsersClearAll();
+  setCurrentClearAll();
+  setChannelListClear();
+
+  // Reset wizard state and clear all connection-specific persisted data
+  resetWizardState();
+  useSettingsStore.setState({
+    nick: '',
+    server: undefined,
+    encryptedPassword: undefined,
+    passwordNick: undefined,
+    savedChannels: [],
+  });
+};

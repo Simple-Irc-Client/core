@@ -60,6 +60,7 @@ import {
   addSavedChannel,
   removeSavedChannel,
   getSavedChannels,
+  changeServer,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -68,6 +69,7 @@ vi.mock('@features/channels/store/channels', () => ({
   getTopic: vi.fn(() => ''),
   getTyping: vi.fn(() => []),
   setClearUnreadMessages: vi.fn(),
+  setChannelsClearAll: vi.fn(),
 }));
 
 vi.mock('@features/chat/store/current', () => ({
@@ -79,10 +81,20 @@ vi.mock('@features/chat/store/current', () => ({
       setUpdateTyping: vi.fn(),
     }),
   },
+  setCurrentClearAll: vi.fn(),
 }));
 
 vi.mock('@features/users/store/users', () => ({
   getUsersFromChannelSortedByMode: vi.fn(() => []),
+  setUsersClearAll: vi.fn(),
+}));
+
+vi.mock('@features/channels/store/channelList', () => ({
+  setChannelListClear: vi.fn(),
+}));
+
+vi.mock('@/network/irc/network', () => ({
+  ircDisconnect: vi.fn(),
 }));
 
 describe('settings store', () => {
@@ -902,6 +914,60 @@ describe('settings store', () => {
       removeSavedChannel('#test');
       removeSavedChannel('#general');
       expect(getSavedChannels()).toEqual([]);
+    });
+  });
+
+  describe('changeServer', () => {
+    it('should reset wizard state', () => {
+      setWizardCompleted(true);
+      setIsConnected(true);
+      setNick('TestNick');
+
+      changeServer();
+
+      expect(getIsWizardCompleted()).toBe(false);
+      expect(useSettingsStore.getState().isConnected).toBe(false);
+      expect(useSettingsStore.getState().wizardStep).toBe('nick');
+    });
+
+    it('should clear nick and server', () => {
+      setNick('TestNick');
+      setServer({ default: 0, network: 'test', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
+
+      changeServer();
+
+      expect(getCurrentNick()).toBe('');
+      expect(getServer()).toBeUndefined();
+    });
+
+    it('should clear encrypted password', () => {
+      setEncryptedPassword('encrypted-data', 'TestNick');
+
+      changeServer();
+
+      expect(getEncryptedPassword()).toBeUndefined();
+      expect(getPasswordNick()).toBeUndefined();
+    });
+
+    it('should clear saved channels', () => {
+      addSavedChannel('#test');
+      addSavedChannel('#general');
+
+      changeServer();
+
+      expect(getSavedChannels()).toEqual([]);
+    });
+
+    it('should preserve user preferences', () => {
+      setIsDarkMode(true);
+      setFontSize('large');
+      setHideAvatarsInUsersList(true);
+
+      changeServer();
+
+      expect(getIsDarkMode()).toBe(true);
+      expect(getFontSize()).toBe('large');
+      expect(getHideAvatarsInUsersList()).toBe(true);
     });
   });
 });

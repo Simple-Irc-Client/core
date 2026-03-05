@@ -25,11 +25,13 @@ vi.mock('@/network/irc/network', () => ({
 }));
 
 const mockResetAndGoToStart = vi.fn();
+const mockChangeServer = vi.fn();
 vi.mock('@features/settings/store/settings', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@features/settings/store/settings')>();
   return {
     ...actual,
     resetAndGoToStart: () => mockResetAndGoToStart(),
+    changeServer: () => mockChangeServer(),
   };
 });
 
@@ -1265,6 +1267,7 @@ describe('Toolbar', () => {
 
     beforeEach(() => {
       mockResetAndGoToStart.mockClear();
+      mockChangeServer.mockClear();
     });
 
     it('should show Disconnect option when connected', async () => {
@@ -1435,6 +1438,91 @@ describe('Toolbar', () => {
       await user.click(connectItem);
 
       expect(mockResetAndGoToStart).not.toHaveBeenCalled();
+    });
+
+    it('should show Change Server option when disconnected', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).toContain('currentUser.changeServer');
+    });
+
+    it('should not show Change Server option when connected', async () => {
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      expect(document.body.textContent).not.toContain('currentUser.changeServer');
+    });
+
+    it('should call changeServer when clicking Change Server', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const changeServerItem = screen.getByText('currentUser.changeServer');
+      await user.click(changeServerItem);
+
+      expect(mockChangeServer).toHaveBeenCalledTimes(1);
+    });
+
+    it('should disable Change Server when connecting', async () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: false,
+          isConnecting: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      const avatarButton = getAvatarButton();
+      expect(avatarButton).toBeDefined();
+      await user.click(avatarButton as HTMLElement);
+
+      const changeServerItem = screen.getByText('currentUser.changeServer');
+      expect(changeServerItem.closest('[data-disabled]')).toBeInTheDocument();
     });
   });
 

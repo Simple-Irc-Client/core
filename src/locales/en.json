@@ -309,6 +309,7 @@
     "currentUser.connect": "Connect",
     "currentUser.connecting": "Connecting...",
     "currentUser.disconnect": "Disconnect",
+    "currentUser.changeServer": "Change Server",
     "currentUser.awayMessages": "Away Messages",
     "currentUser.awayMessagesDescription": "Messages that mentioned you while you were away",
     "currentUser.noAwayMessages": "No away messages",

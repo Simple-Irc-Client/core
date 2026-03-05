@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore, resetAndGoToStart, toggleDarkMode } from '@features/settings/store/settings';
+import { getCurrentNick, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage, ircReconnect } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
-import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut } from 'lucide-react';
+import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -469,10 +469,16 @@ const Toolbar = () => {
                     {t('currentUser.disconnect')}
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem onClick={() => ircReconnect()} disabled={isConnecting}>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={() => ircReconnect()} disabled={isConnecting}>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={changeServer} disabled={isConnecting}>
+                      <ArrowLeftRight className="mr-2 h-4 w-4" />
+                      {t('currentUser.changeServer')}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
               </DropdownMenu>

@@ -309,6 +309,7 @@
     "currentUser.connect": "Połącz",
     "currentUser.connecting": "Łączenie...",
     "currentUser.disconnect": "Rozłącz",
+    "currentUser.changeServer": "Zmień serwer",
     "currentUser.awayMessages": "Powiadomienia",
     "currentUser.awayMessagesDescription": "Wiadomości podczas twojej nieobecności",
     "currentUser.noAwayMessages": "Brak wiadomości",

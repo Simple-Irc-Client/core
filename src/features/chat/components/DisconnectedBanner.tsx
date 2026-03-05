@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { WifiOff } from 'lucide-react';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useSettingsStore, changeServer } from '@features/settings/store/settings';
 import { ircReconnect } from '@/network/irc/network';
 
 const DisconnectedBanner = () => {
@@ -18,6 +18,16 @@ const DisconnectedBanner = () => {
         aria-label={t('currentUser.connect')}
       >
         {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
+      </button>
+      <span aria-hidden="true">|</span>
+      <button
+        type="button"
+        onClick={changeServer}
+        disabled={isConnecting}
+        className="underline hover:no-underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label={t('currentUser.changeServer')}
+      >
+        {t('currentUser.changeServer')}
       </button>
     </div>
   );
