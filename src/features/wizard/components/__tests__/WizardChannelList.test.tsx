@@ -60,9 +60,11 @@ describe('WizardChannelList', () => {
       selector({
         finished: isChannelListLoadingFinished,
         channels: channelList,
+        alisMode: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
+        setAlisMode: vi.fn(),
       })
     );
 

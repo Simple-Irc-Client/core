@@ -6,15 +6,18 @@ const MAX_CHANNELS = 10_000;
 interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
+  alisMode: boolean;
 
   setAddChannel: (name: string, users: number, topic: string) => void;
   setClear: () => void;
   setFinished: (status: boolean) => void;
+  setAlisMode: (mode: boolean) => void;
 }
 
 export const useChannelListStore = create<ChannelListStore>()((set) => ({
   channels: [],
   finished: false,
+  alisMode: false,
 
   setAddChannel: (name: string, users: number, topic: string): void => {
     set((state) => ({
@@ -25,11 +28,17 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
     set(() => ({
       channels: [],
       finished: false,
+      alisMode: false,
     }));
   },
   setFinished: (status: boolean): void => {
     set(() => ({
       finished: status,
+    }));
+  },
+  setAlisMode: (mode: boolean): void => {
+    set(() => ({
+      alisMode: mode,
     }));
   },
 }));
@@ -61,6 +70,14 @@ export const setChannelListFinished = (status: boolean): void => {
   }
 
   useChannelListStore.getState().setFinished(status);
+};
+
+export const setAlisMode = (mode: boolean): void => {
+  useChannelListStore.getState().setAlisMode(mode);
+};
+
+export const getAlisMode = (): boolean => {
+  return useChannelListStore.getState().alisMode;
 };
 
 export const getChannelListSortedByAZ = (): ChannelList[] => {

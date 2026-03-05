@@ -81,9 +81,11 @@ describe('Channels', () => {
       selector({
         finished: isChannelListLoadingFinished,
         channels: channelsList,
+        alisMode: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
+        setAlisMode: vi.fn(),
       })
     );
 
@@ -574,9 +576,11 @@ describe('Channels', () => {
         selector({
           finished: false,
           channels: [],
+          alisMode: false,
           setAddChannel: vi.fn(),
           setClear: vi.fn(),
           setFinished: vi.fn(),
+          setAlisMode: vi.fn(),
         })
       );
 

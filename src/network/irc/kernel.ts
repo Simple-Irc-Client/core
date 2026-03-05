@@ -58,7 +58,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -110,7 +110,7 @@ import { defaultChannelTypes, defaultMaxPermission, clientVersion, clientSourceU
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
-import { setAddChannelToList, setChannelListClear, setChannelListFinished } from '@features/channels/store/channelList';
+import { setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getCurrentUserFlags } from '@features/settings/store/settings';
 import {
@@ -2261,6 +2261,37 @@ export class Kernel {
         const remaining = loggedTime > Number(seconds) ? 0 : Number(seconds) - loggedTime;
         setListRequestRemainingSeconds(remaining);
       }
+      return;
+    }
+
+    // IRCnet LIST deprecation — fall back to Alis service
+    if (/Usage of \/list for listing all channels is deprecated/i.test(message)) {
+      setChannelListClear();
+      setAlisMode(true);
+      ircSendAlisListRequest();
+      return;
+    }
+
+    // Parse Alis NOTICE responses when in alisMode
+    // Alis sender format is "Alis@hub.uk" (no !user part), so parseNick returns "Alis@hub.uk"
+    if (/^alis[@!]/i.test(nick) && getAlisMode()) {
+      // eslint-disable-next-line no-control-regex
+      const channelLine = /^(#\S+)\s+\x02\s*(\d+)\x02:\s?(.*)/;
+      const footer = /^found \d+ visible channels/i;
+
+      const channelMatch = channelLine.exec(message);
+      if (channelMatch && channelMatch[1]) {
+        setAddChannelToList(channelMatch[1], Number(channelMatch[2]), channelMatch[3] ?? '');
+        return;
+      }
+
+      if (footer.test(message)) {
+        setChannelListFinished(true);
+        setAlisMode(false);
+        return;
+      }
+
+      // Header or other Alis lines — skip silently
       return;
     }
 

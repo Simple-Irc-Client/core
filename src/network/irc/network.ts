@@ -340,6 +340,10 @@ export const ircSendList = (): void => {
   ircSendRawMessage('LIST');
 };
 
+export const ircSendAlisListRequest = (): void => {
+  ircSendRawMessage('SQUERY Alis :LIST #* -min 2');
+};
+
 export const ircSendNamesXProto = (): void => {
   ircSendRawMessage('PROTOCTL NAMESX');
 };
