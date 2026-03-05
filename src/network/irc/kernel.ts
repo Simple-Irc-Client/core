@@ -1806,6 +1806,10 @@ export class Kernel {
       channel = channel.substring(1);
     }
 
+    // Check before setAddMessage (which auto-creates the channel) so we can
+    // distinguish a fresh join from a rejoin during reconnect.
+    const channelExisted = existChannel(channel);
+
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.join', { nick }),
@@ -1825,7 +1829,10 @@ export class Kernel {
     });
 
     if (nick === getCurrentNick()) {
-      setCurrentChannelName(channel, ChannelCategory.channel);
+      // Only switch to the channel if it's a new join (not a rejoin during reconnect)
+      if (!channelExisted) {
+        setCurrentChannelName(channel, ChannelCategory.channel);
+      }
       addSavedChannel(channel);
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {

@@ -690,6 +690,45 @@ describe('kernel tests', () => {
     expect(mockIrcRequestMetadataList).not.toHaveBeenCalled();
   });
 
+  it('test raw JOIN self does not switch current channel when channel already exists (rejoin on reconnect)', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
+    // Channel already exists (e.g. reconnect scenario)
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #existing-channel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
+  });
+
+  it('test raw JOIN self switches current channel when channel is new', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
+    // Channel does not exist yet (fresh join)
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+
+    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #new-channel * :Real Name';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
+    expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#new-channel', ChannelCategory.channel);
+  });
+
   it('test raw KICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'test-user');
