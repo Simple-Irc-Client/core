@@ -2,11 +2,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Typing from '../Typing';
 import * as currentStore from '@features/chat/store/current';
+import * as settingsStore from '@features/settings/store/settings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  initReactI18next: {
+    type: '3rdParty',
+    init: vi.fn(),
+  },
 }));
 
 describe('Typing', () => {
@@ -14,7 +19,12 @@ describe('Typing', () => {
     vi.clearAllMocks();
   });
 
-  const setupMocks = (typing: string[] = []) => {
+  const setupMocks = (typing: string[] = [], isConnected = true) => {
+    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+      selector({
+        isConnected,
+      } as ReturnType<typeof settingsStore.useSettingsStore.getState>)
+    );
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
       selector({
         topic: '',
@@ -111,6 +121,24 @@ describe('Typing', () => {
 
       expect(screen.getByText(/Alice/)).toBeInTheDocument();
       expect(screen.getByText(/main.user-typing/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Disconnected state', () => {
+    it('should not render typing indicator when disconnected even if typing array has entries', () => {
+      setupMocks(['Alice', 'Bob'], false);
+
+      const { container } = render(<Typing />);
+
+      expect(container.textContent).toBe('');
+    });
+
+    it('should not render typing indicator when disconnected with single user', () => {
+      setupMocks(['Alice'], false);
+
+      const { container } = render(<Typing />);
+
+      expect(container.textContent).toBe('');
     });
   });
 
