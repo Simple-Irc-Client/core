@@ -1500,7 +1500,7 @@ describe('Toolbar', () => {
       expect(mockChangeServer).toHaveBeenCalledTimes(1);
     });
 
-    it('should disable Change Server when connecting', async () => {
+    it('should hide Change Server when connecting', async () => {
       vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
         selector({
           currentChannelName: '#test',
@@ -1521,8 +1521,7 @@ describe('Toolbar', () => {
       expect(avatarButton).toBeDefined();
       await user.click(avatarButton as HTMLElement);
 
-      const changeServerItem = screen.getByText('currentUser.changeServer');
-      expect(changeServerItem.closest('[data-disabled]')).toBeInTheDocument();
+      expect(screen.queryByText('currentUser.changeServer')).not.toBeInTheDocument();
     });
   });
 

@@ -474,10 +474,12 @@ const Toolbar = () => {
                       <LogIn className="mr-2 h-4 w-4" />
                       {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={changeServer} disabled={isConnecting}>
-                      <ArrowLeftRight className="mr-2 h-4 w-4" />
-                      {t('currentUser.changeServer')}
-                    </DropdownMenuItem>
+                    {!isConnecting && (
+                      <DropdownMenuItem onClick={changeServer}>
+                        <ArrowLeftRight className="mr-2 h-4 w-4" />
+                        {t('currentUser.changeServer')}
+                      </DropdownMenuItem>
+                    )}
                   </>
                 )}
               </DropdownMenuContent>

@@ -19,16 +19,19 @@ const DisconnectedBanner = () => {
       >
         {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
       </button>
-      <span aria-hidden="true">|</span>
-      <button
-        type="button"
-        onClick={changeServer}
-        disabled={isConnecting}
-        className="underline hover:no-underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label={t('currentUser.changeServer')}
-      >
-        {t('currentUser.changeServer')}
-      </button>
+      {!isConnecting && (
+        <>
+          <span aria-hidden="true">|</span>
+          <button
+            type="button"
+            onClick={changeServer}
+            className="underline hover:no-underline cursor-pointer"
+            aria-label={t('currentUser.changeServer')}
+          >
+            {t('currentUser.changeServer')}
+          </button>
+        </>
+      )}
     </div>
   );
 };
