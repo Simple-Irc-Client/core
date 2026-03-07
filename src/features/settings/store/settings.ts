@@ -270,13 +270,11 @@ export const useSettingsStore = create<SettingsStore>()(
       set((state) => {
         const network = state.server?.network;
         if (!network) return state;
-        const { ...passwords } = state.serverPasswords;
         if (encrypted && nick) {
-          passwords[network] = { encrypted, nick };
-        } else {
-          delete passwords[network];
+          return { serverPasswords: { ...state.serverPasswords, [network]: { encrypted, nick } } };
         }
-        return { serverPasswords: passwords };
+        const { [network]: _, ...rest } = state.serverPasswords;
+        return { serverPasswords: rest };
       });
     },
     resetWizardState: (): void => {
