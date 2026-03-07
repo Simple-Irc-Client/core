@@ -7,6 +7,7 @@ import {
   setAddMessageToAllChannels,
   setChannelAvatar,
   setChannelDisplayName,
+  getChannelsToAutoJoin,
   setHasMention,
   setIncreaseUnreadMessages,
   setRemoveChannel,
@@ -50,9 +51,6 @@ import {
   setWatchLimit,
   getEncryptedPassword,
   getPasswordNick,
-  addSavedChannel,
-  removeSavedChannel,
-  getSavedChannels,
 } from '@features/settings/store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
@@ -480,11 +478,11 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // Auto-rejoin saved channels on reconnect (skip when wizard is open - wizard handles channel selection)
+    // Auto-rejoin channels on reconnect (skip when wizard is open - wizard handles channel selection)
     if (getIsWizardCompleted()) {
-      const savedChannels = getSavedChannels();
-      if (savedChannels.length > 0) {
-        ircJoinChannels(savedChannels);
+      const channels = getChannelsToAutoJoin();
+      if (channels.length > 0) {
+        ircJoinChannels(channels);
       }
     }
   };
@@ -1833,7 +1831,6 @@ export class Kernel {
       if (!channelExisted) {
         setCurrentChannelName(channel, ChannelCategory.channel);
       }
-      addSavedChannel(channel);
       ircSendRawMessage(`MODE ${channel}`);
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
@@ -1882,7 +1879,6 @@ export class Kernel {
 
     if (kicked === currentNick) {
       setRemoveChannel(channel);
-      removeSavedChannel(channel);
 
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
@@ -2366,7 +2362,6 @@ export class Kernel {
 
     if (nick === getCurrentNick()) {
       setRemoveChannel(channel);
-      removeSavedChannel(channel);
 
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }

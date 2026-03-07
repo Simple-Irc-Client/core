@@ -2,8 +2,9 @@ import { useMemo, useState, useCallback } from 'react';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '@/network/irc/network';
-import { getSavedChannels, setSavedChannels, setWizardCompleted } from '@features/settings/store/settings';
+import { setWizardCompleted } from '@features/settings/store/settings';
 import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
+import { getChannelsToAutoJoin } from '@features/channels/store/channels';
 import ChannelListTable from '@shared/components/ChannelListTable';
 
 const WizardChannelList = () => {
@@ -11,7 +12,7 @@ const WizardChannelList = () => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getSavedChannels());
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getChannelsToAutoJoin());
 
   const channelList = useMemo(
     () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
@@ -27,7 +28,6 @@ const WizardChannelList = () => {
   };
 
   const handleJoin = (): void => {
-    setSavedChannels(selectedChannels);
     ircJoinChannels(selectedChannels);
     setWizardCompleted(true);
   };

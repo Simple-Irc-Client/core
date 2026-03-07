@@ -239,6 +239,13 @@ export const existChannel = (channelName: string): boolean => {
   return useChannelsStore.getState().openChannels.find((channel: ChannelExtended) => channel.name === channelName) !== undefined;
 };
 
+export const getChannelsToAutoJoin = (): string[] => {
+  const channels = useChannelsStore.getState().openChannelsShortList
+    .filter((ch) => ch.category === ChannelCategory.channel)
+    .map((ch) => ch.name);
+  return channels.length > 0 ? channels : lastChannelsToAutoJoin;
+};
+
 export const setTopic = (channelName: string, newTopic: string): void => {
   useChannelsStore.getState().setTopic(channelName, newTopic);
 
@@ -382,6 +389,10 @@ export const isChannel = (channelName: string): boolean => {
   return getChannelTypes().includes(char);
 };
 
+let lastChannelsToAutoJoin: string[] = [];
+
 export const setChannelsClearAll = (): void => {
+  lastChannelsToAutoJoin = getChannelsToAutoJoin();
   useChannelsStore.getState().setClearAll();
 };
+

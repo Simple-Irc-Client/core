@@ -63,7 +63,6 @@ export interface SettingsStore {
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   encryptedPassword: string | undefined; // AES-GCM encrypted password (persistent)
   passwordNick: string | undefined; // Nick the saved password belongs to
-  savedChannels: string[]; // Channels to auto-rejoin on reconnect (persistent)
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -100,8 +99,6 @@ export interface SettingsStore {
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
-  addSavedChannel: (channel: string) => void;
-  removeSavedChannel: (channel: string) => void;
   resetWizardState: () => void;
 }
 
@@ -144,7 +141,6 @@ export const useSettingsStore = create<SettingsStore>()(
     language: 'auto',
     encryptedPassword: undefined,
     passwordNick: undefined,
-    savedChannels: [],
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -277,18 +273,6 @@ export const useSettingsStore = create<SettingsStore>()(
     setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined): void => {
       set(() => ({ encryptedPassword: encrypted, passwordNick: nick }));
     },
-    addSavedChannel: (channel: string): void => {
-      set((state) => ({
-        savedChannels: state.savedChannels.includes(channel)
-          ? state.savedChannels
-          : [...state.savedChannels, channel],
-      }));
-    },
-    removeSavedChannel: (channel: string): void => {
-      set((state) => ({
-        savedChannels: state.savedChannels.filter((ch) => ch !== channel),
-      }));
-    },
     resetWizardState: (): void => {
       set(() => ({
         isConnecting: false,
@@ -321,7 +305,14 @@ export const useSettingsStore = create<SettingsStore>()(
   }),
   {
     name: 'sic-settings',
-    version: 1,
+    version: 2,
+    migrate: (persisted, version) => {
+      if (version === 1) {
+        const state = persisted as Record<string, unknown>;
+        delete state.savedChannels;
+      }
+      return persisted as SettingsStore;
+    },
     partialize: (state) => ({
       isDarkMode: state.isDarkMode,
       theme: state.theme,
@@ -335,7 +326,6 @@ export const useSettingsStore = create<SettingsStore>()(
       isWizardCompleted: state.isWizardCompleted,
       encryptedPassword: state.encryptedPassword,
       passwordNick: state.passwordNick,
-      savedChannels: state.savedChannels,
       currentChannelName: state.currentChannelName,
       currentChannelCategory: state.currentChannelCategory,
     }),
@@ -606,22 +596,6 @@ export const getLanguage = (): LanguageSetting => {
   return useSettingsStore.getState().language;
 };
 
-export const addSavedChannel = (channel: string): void => {
-  useSettingsStore.getState().addSavedChannel(channel);
-};
-
-export const removeSavedChannel = (channel: string): void => {
-  useSettingsStore.getState().removeSavedChannel(channel);
-};
-
-export const setSavedChannels = (channels: string[]): void => {
-  useSettingsStore.setState({ savedChannels: channels });
-};
-
-export const getSavedChannels = (): string[] => {
-  return useSettingsStore.getState().savedChannels;
-};
-
 export const disconnectOnly = (): void => {
   // Disconnect from the network and clear all stores, but stay in the main view
   ircDisconnect();
@@ -662,6 +636,5 @@ export const changeServer = (): void => {
     server: undefined,
     encryptedPassword: undefined,
     passwordNick: undefined,
-    savedChannels: [],
   });
 };

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardChannelList from '../WizardChannelList';
 import * as channelListStore from '@features/channels/store/channelList';
+import * as channelsStore from '@features/channels/store/channels';
 import * as settingsStore from '@features/settings/store/settings';
 import * as network from '@/network/irc/network';
 import type { ChannelList } from '@shared/types';
@@ -18,8 +19,10 @@ vi.mock('@/network/irc/network', () => ({
 
 vi.mock('@features/settings/store/settings', () => ({
   setWizardCompleted: vi.fn(),
-  getSavedChannels: vi.fn(() => []),
-  setSavedChannels: vi.fn(),
+}));
+
+vi.mock('@features/channels/store/channels', () => ({
+  getChannelsToAutoJoin: vi.fn(() => []),
 }));
 
 const createChannelList = (overrides: Partial<ChannelList> & { name: string }): ChannelList => ({
@@ -31,7 +34,7 @@ const createChannelList = (overrides: Partial<ChannelList> & { name: string }): 
 describe('WizardChannelList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(settingsStore.getSavedChannels).mockReturnValue([]);
+    vi.mocked(channelsStore.getChannelsToAutoJoin).mockReturnValue([]);
   });
 
   const getChannelRow = (name: string): HTMLElement => {
@@ -46,15 +49,15 @@ describe('WizardChannelList', () => {
   const setupMocks = (overrides: {
     isChannelListLoadingFinished?: boolean;
     channelList?: ChannelList[];
-    savedChannels?: string[];
+    previousChannels?: string[];
   } = {}) => {
     const {
       isChannelListLoadingFinished = true,
       channelList = [],
-      savedChannels = [],
+      previousChannels = [],
     } = overrides;
 
-    vi.mocked(settingsStore.getSavedChannels).mockReturnValue(savedChannels);
+    vi.mocked(channelsStore.getChannelsToAutoJoin).mockReturnValue(previousChannels);
 
     vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
       selector({
@@ -380,7 +383,6 @@ describe('WizardChannelList', () => {
       const joinButton = screen.getByText('wizard.channels.button.join');
       fireEvent.click(joinButton);
 
-      expect(settingsStore.setSavedChannels).toHaveBeenCalledWith(['#general']);
       expect(settingsStore.setWizardCompleted).toHaveBeenCalledWith(true);
     });
   });
@@ -416,13 +418,13 @@ describe('WizardChannelList', () => {
   });
 
   describe('Pre-select saved channels', () => {
-    it('should pre-select channels from savedChannels', () => {
+    it('should pre-select channels from previous session', () => {
       setupMocks({
         channelList: [
           createChannelList({ name: '#general' }),
           createChannelList({ name: '#random' }),
         ],
-        savedChannels: ['#general'],
+        previousChannels: ['#general'],
       });
 
       render(<WizardChannelList />);
@@ -439,7 +441,7 @@ describe('WizardChannelList', () => {
           createChannelList({ name: '#general' }),
           createChannelList({ name: '#random' }),
         ],
-        savedChannels: ['#general'],
+        previousChannels: ['#general'],
       });
 
       render(<WizardChannelList />);
@@ -467,7 +469,7 @@ describe('WizardChannelList', () => {
           createChannelList({ name: '#channel1' }),
           createChannelList({ name: '#channel2' }),
         ],
-        savedChannels: ['#channel1'],
+        previousChannels: ['#channel1'],
       });
 
       render(<WizardChannelList />);
@@ -495,7 +497,6 @@ describe('WizardChannelList', () => {
       // Should only join #channel2, not #channel1
       expect(network.ircJoinChannels).toHaveBeenCalledTimes(1);
       expect(network.ircJoinChannels).toHaveBeenCalledWith(['#channel2']);
-      expect(settingsStore.setSavedChannels).toHaveBeenCalledWith(['#channel2']);
     });
   });
 

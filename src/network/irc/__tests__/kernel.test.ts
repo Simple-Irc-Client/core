@@ -5285,101 +5285,13 @@ describe('kernel tests', () => {
     });
   });
 
-  describe('saved channels (auto-rejoin)', () => {
-    it('should save channel when current user joins', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
-      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => false);
-      const mockAddSavedChannel = vi.spyOn(settingsFile, 'addSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@host JOIN #mychannel * :realname';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockAddSavedChannel).toHaveBeenCalledTimes(1);
-      expect(mockAddSavedChannel).toHaveBeenCalledWith('#mychannel');
-    });
-
-    it('should not save channel when other user joins', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-      const mockAddSavedChannel = vi.spyOn(settingsFile, 'addSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :OtherUser!~other@host JOIN #mychannel * :realname';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockAddSavedChannel).not.toHaveBeenCalled();
-    });
-
-    it('should remove saved channel when current user parts', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
-      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-      vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
-      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-02-12T22:44:07.583Z :SIC-test!~SIC-test@host PART #mychannel :leaving';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockRemoveSavedChannel).toHaveBeenCalledTimes(1);
-      expect(mockRemoveSavedChannel).toHaveBeenCalledWith('#mychannel');
-    });
-
-    it('should not remove saved channel when other user parts', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-02-12T22:44:07.583Z :OtherUser!~other@host PART #mychannel :leaving';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockRemoveSavedChannel).not.toHaveBeenCalled();
-    });
-
-    it('should remove saved channel when current user is kicked', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
-      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-      vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
-      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-03-20T21:23:29.512Z :admin!~admin@host KICK #mychannel SIC-test :bye';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockRemoveSavedChannel).toHaveBeenCalledTimes(1);
-      expect(mockRemoveSavedChannel).toHaveBeenCalledWith('#mychannel');
-    });
-
-    it('should not remove saved channel when other user is kicked', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-      const mockRemoveSavedChannel = vi.spyOn(settingsFile, 'removeSavedChannel').mockImplementation(() => {});
-
-      const line = '@msgid=abc;time=2023-03-20T21:23:29.512Z :admin!~admin@host KICK #mychannel OtherUser :bye';
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockRemoveSavedChannel).not.toHaveBeenCalled();
-    });
-
-    it('should auto-rejoin saved channels on connected when wizard is completed', () => {
+  describe('auto-rejoin channels on reconnect', () => {
+    it('should auto-rejoin channels on connected when wizard is completed', () => {
       vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getSavedChannels').mockImplementation(() => ['#test', '#general']);
+      vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => ['#test', '#general']);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
@@ -5389,12 +5301,12 @@ describe('kernel tests', () => {
       expect(mockIrcJoinChannels).toHaveBeenCalledWith(['#test', '#general']);
     });
 
-    it('should not auto-rejoin saved channels when wizard is not completed', () => {
+    it('should not auto-rejoin channels when wizard is not completed', () => {
       vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getSavedChannels').mockImplementation(() => ['#test', '#general']);
+      vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => ['#test', '#general']);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
@@ -5403,12 +5315,12 @@ describe('kernel tests', () => {
       expect(mockIrcJoinChannels).not.toHaveBeenCalled();
     });
 
-    it('should not call ircJoinChannels when no saved channels', () => {
+    it('should not call ircJoinChannels when no channels to auto-join', () => {
       vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getSavedChannels').mockImplementation(() => []);
+      vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => []);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
