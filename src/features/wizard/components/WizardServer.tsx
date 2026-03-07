@@ -90,7 +90,7 @@ const WizardServer = () => {
       <h1 className="text-2xl font-semibold text-center">{t('wizard.server.title')}</h1>
       <p className="text-muted-foreground text-center mt-2">{t('wizard.server.subtitle')}</p>
       <form className="mt-8 flex flex-col items-center" onSubmit={handleSubmit}>
-        <div className="w-[300px] mb-4">
+        <div className="w-75 mb-4">
           <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.popular')}</p>
           <div className="flex flex-wrap gap-2">
             {popularServers.map((server) => (
@@ -109,7 +109,7 @@ const WizardServer = () => {
           </div>
         </div>
 
-        <div className="w-[300px] mb-4">
+        <div className="w-75 mb-4">
           <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.all')}</p>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -118,7 +118,7 @@ const WizardServer = () => {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
+            <PopoverContent className="w-75 p-0">
               <Command>
                 <CommandInput placeholder={t('wizard.server.server') ?? ''} />
                 <CommandList>
@@ -147,7 +147,7 @@ const WizardServer = () => {
           </Popover>
         </div>
 
-        <div className="w-[300px] mb-4">
+        <div className="w-75 mb-4">
           <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.custom')}</p>
           <div className="flex gap-2">
             <Input
@@ -169,7 +169,7 @@ const WizardServer = () => {
         </div>
 
         {isCustom && (
-          <div className="w-[300px] mb-4">
+          <div className="w-75 mb-4">
             <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.connectionType')}</p>
             <div className="flex gap-2">
               <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1" aria-pressed={connectionType === 'backend'}>
@@ -182,7 +182,7 @@ const WizardServer = () => {
           </div>
         )}
 
-        <Button type="submit" className="w-[300px] mt-4 mb-4" disabled={!isValid}>
+        <Button type="submit" className="w-75 mt-4 mb-4" disabled={!isValid}>
           {t('wizard.server.button.next')}
         </Button>
       </form>

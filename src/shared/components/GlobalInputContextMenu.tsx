@@ -48,7 +48,7 @@ const PasteHint = ({ position, onClose }: { position: { x: number; y: number }; 
   return (
     <div
       role="alert"
-      className="fixed z-[100] rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md"
+      className="fixed z-100 rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
     >
       {t('contextmenu.input.pasteHint', { shortcut: pasteShortcut })}

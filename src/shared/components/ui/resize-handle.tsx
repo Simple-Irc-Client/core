@@ -63,7 +63,7 @@ const ResizeHandle = ({ onResize, direction = 'right', className, 'aria-label': 
       aria-label={ariaLabel}
       tabIndex={0}
       className={cn(
-        'w-1 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500/70 transition-colors flex-shrink-0 focus:outline-none focus:bg-blue-500/50',
+        'w-1 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500/70 transition-colors shrink-0 focus:outline-none focus:bg-blue-500/50',
         isDragging && 'bg-blue-500/70',
         className,
       )}

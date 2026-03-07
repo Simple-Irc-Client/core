@@ -106,7 +106,7 @@ const ChannelListTable = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 min-h-[32px]">
+      <div className="flex flex-wrap gap-2 min-h-8">
         {selectedChannels.map((channel) => (
           <Badge key={channel} variant="outline" className="px-3 py-1">
             {channel}
@@ -136,8 +136,8 @@ const ChannelListTable = ({
           <Table className="table-fixed w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[150px]">{labels.columnName}</TableHead>
-                <TableHead className="w-[80px]">{labels.columnUsers}</TableHead>
+                <TableHead className="w-37.5">{labels.columnName}</TableHead>
+                <TableHead className="w-20">{labels.columnUsers}</TableHead>
                 <TableHead className="hidden sm:table-cell">{labels.columnTopic}</TableHead>
               </TableRow>
             </TableHeader>

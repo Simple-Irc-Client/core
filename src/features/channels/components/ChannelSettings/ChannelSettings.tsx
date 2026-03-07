@@ -82,7 +82,7 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
             {t('channelSettings.tabs.lists')}
           </TabsTrigger>
         </TabsList>
-        <div className="min-h-[540px]">
+        <div className="min-h-135">
           <TabsContent value="modes">
             <ModesTab channelName={channelName} />
           </TabsContent>

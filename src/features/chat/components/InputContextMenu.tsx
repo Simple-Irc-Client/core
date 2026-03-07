@@ -131,7 +131,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
       ref={menuRef}
       role="menu"
       onMouseDown={(e) => e.preventDefault()}
-      className="fixed z-[100] min-w-[8rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+      className="fixed z-100 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
       style={{ left: `${clamped.x}px`, top: `${clamped.y}px` }}
     >
       {items.map((item, index) => (

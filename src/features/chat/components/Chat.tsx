@@ -131,7 +131,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
       )}
       {showAvatarLayout && (
         <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'} ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-          <div className="w-10 mr-3 flex-shrink-0">
+          <div className="w-10 mr-3 shrink-0">
             {lastNick !== nick && (
               <Avatar
                 src={avatar}

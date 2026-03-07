@@ -8,7 +8,7 @@ const BotIndicator = () => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Bot className="h-4 w-4 inline-block ml-1 relative top-[3px] text-orange-400" aria-label={t('main.users.bot')} />
+          <Bot className="h-4 w-4 inline-block ml-1 relative top-0.75 text-orange-400" aria-label={t('main.users.bot')} />
         </TooltipTrigger>
         <TooltipContent>{t('main.users.bot')}</TooltipContent>
       </Tooltip>

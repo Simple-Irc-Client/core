@@ -134,7 +134,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
           </div>
           {!isConnected && (
             <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
-              <WifiOff className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+              <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span>{t('main.chat.notConnected')}</span>
             </div>
           )}
@@ -161,7 +161,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
                   )}
                 >
-                  <span className="min-w-[30px] flex items-center justify-center">
+                  <span className="min-w-7.5 flex items-center justify-center">
                     {channel.avatar ? (
                       <Avatar
                         src={channel.avatar}
