@@ -52,13 +52,19 @@ describe('WizardPassword', () => {
     vi.clearAllMocks();
   });
 
+  const testServer = { default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false };
+
   const setupMocks = (nick = 'TestNick', opts?: { encryptedPassword?: string; passwordNick?: string }) => {
+    const serverPasswords: Record<string, { encrypted: string; nick: string }> = {};
+    if (opts?.encryptedPassword && opts?.passwordNick) {
+      serverPasswords['TestNet'] = { encrypted: opts.encryptedPassword, nick: opts.passwordNick };
+    }
     vi.mocked(settingsStore.useSettingsStore).mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (selector: any) => selector({
         nick,
-        encryptedPassword: opts?.encryptedPassword,
-        passwordNick: opts?.passwordNick,
+        server: testServer,
+        serverPasswords,
       })
     );
     vi.mocked(settingsStore.getCurrentNick).mockReturnValue(nick);

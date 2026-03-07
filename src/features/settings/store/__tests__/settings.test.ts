@@ -792,22 +792,22 @@ describe('settings store', () => {
       expect(formatting.italic).toBe(true);
     });
 
-    it('should write encryptedPassword and passwordNick to localStorage', () => {
+    it('should write serverPasswords to localStorage', () => {
+      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
       setEncryptedPassword('encrypted-data', 'TestNick');
 
       const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.encryptedPassword).toBe('encrypted-data');
-      expect(stored.state.passwordNick).toBe('TestNick');
+      expect(stored.state.serverPasswords).toEqual({ TestNet: { encrypted: 'encrypted-data', nick: 'TestNick' } });
     });
 
-    it('should rehydrate encryptedPassword from localStorage', () => {
+    it('should rehydrate serverPasswords from localStorage', () => {
       const persistedData = {
         state: {
-          encryptedPassword: 'saved-encrypted',
-          passwordNick: 'SavedNick',
+          serverPasswords: { TestNet: { encrypted: 'saved-encrypted', nick: 'SavedNick' } },
+          server: { default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false },
           nick: 'SavedNick',
         },
-        version: 1,
+        version: 3,
       };
       localStorage.setItem('sic-settings', JSON.stringify(persistedData));
 
@@ -819,6 +819,12 @@ describe('settings store', () => {
   });
 
   describe('encrypted password', () => {
+    const testServer = { default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false };
+
+    beforeEach(() => {
+      setServer(testServer);
+    });
+
     it('should set encrypted password and nick', () => {
       setEncryptedPassword('encrypted-data', 'TestNick');
 
@@ -843,18 +849,21 @@ describe('settings store', () => {
       setEncryptedPassword('encrypted-data', 'TestNick');
       useSettingsStore.getState().resetWizardState();
 
+      // Server is cleared by resetWizardState, so re-set it to read the password
+      setServer(testServer);
       expect(getEncryptedPassword()).toBe('encrypted-data');
       expect(getPasswordNick()).toBe('TestNick');
     });
 
-    it('should clear encrypted password when nick changes', () => {
+    it('should preserve encrypted password when nick changes', () => {
       setNick('OldNick');
       setEncryptedPassword('encrypted-data', 'OldNick');
 
       setNick('NewNick');
 
-      expect(getEncryptedPassword()).toBeUndefined();
-      expect(getPasswordNick()).toBeUndefined();
+      // Password is preserved per server, passwordNick still reflects who saved it
+      expect(getEncryptedPassword()).toBe('encrypted-data');
+      expect(getPasswordNick()).toBe('OldNick');
     });
 
     it('should NOT clear encrypted password when nick is set to the same value', () => {
@@ -865,6 +874,27 @@ describe('settings store', () => {
 
       expect(getEncryptedPassword()).toBe('encrypted-data');
       expect(getPasswordNick()).toBe('SameNick');
+    });
+
+    it('should store passwords per server', () => {
+      setEncryptedPassword('pass1', 'Nick1');
+
+      const otherServer = { default: 0, network: 'OtherNet', servers: ['irc.other.com:6667'], encoding: 'utf-8', tls: false };
+      setServer(otherServer);
+      setEncryptedPassword('pass2', 'Nick2');
+
+      expect(getEncryptedPassword()).toBe('pass2');
+      expect(getPasswordNick()).toBe('Nick2');
+
+      setServer(testServer);
+      expect(getEncryptedPassword()).toBe('pass1');
+      expect(getPasswordNick()).toBe('Nick1');
+    });
+
+    it('should return undefined when no server is set', () => {
+      useSettingsStore.setState({ server: undefined });
+      expect(getEncryptedPassword()).toBeUndefined();
+      expect(getPasswordNick()).toBeUndefined();
     });
   });
 
@@ -891,13 +921,19 @@ describe('settings store', () => {
       expect(getServer()).toBeUndefined();
     });
 
-    it('should clear encrypted password', () => {
+    it('should preserve encrypted password per server after changing server', () => {
+      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
       setEncryptedPassword('encrypted-data', 'TestNick');
 
       changeServer();
 
+      // No server set, so getters return undefined
       expect(getEncryptedPassword()).toBeUndefined();
-      expect(getPasswordNick()).toBeUndefined();
+
+      // But password is still stored for TestNet
+      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
+      expect(getEncryptedPassword()).toBe('encrypted-data');
+      expect(getPasswordNick()).toBe('TestNick');
     });
 
     it('should preserve user preferences', () => {

@@ -61,8 +61,7 @@ export interface SettingsStore {
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
-  encryptedPassword: string | undefined; // AES-GCM encrypted password (persistent)
-  passwordNick: string | undefined; // Nick the saved password belongs to
+  serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -139,8 +138,7 @@ export const useSettingsStore = create<SettingsStore>()(
     hideTypingIndicator: false,
     fontSize: 'medium',
     language: 'auto',
-    encryptedPassword: undefined,
-    passwordNick: undefined,
+    serverPasswords: {},
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -159,7 +157,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setNick: (newNick: string): void => {
       set((state) => ({
         nick: newNick,
-        // Clear metadata and saved password from the previous nick — new metadata will arrive
+        // Clear metadata from the previous nick — new metadata will arrive
         // via METADATA messages for the new nick
         ...(newNick !== state.nick
           ? {
@@ -168,8 +166,6 @@ export const useSettingsStore = create<SettingsStore>()(
               currentUserStatus: undefined,
               currentUserHomepage: undefined,
               currentUserColor: undefined,
-              encryptedPassword: undefined,
-              passwordNick: undefined,
             }
           : {}),
       }));
@@ -271,7 +267,17 @@ export const useSettingsStore = create<SettingsStore>()(
       set(() => ({ language }));
     },
     setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined): void => {
-      set(() => ({ encryptedPassword: encrypted, passwordNick: nick }));
+      set((state) => {
+        const network = state.server?.network;
+        if (!network) return state;
+        const { ...passwords } = state.serverPasswords;
+        if (encrypted && nick) {
+          passwords[network] = { encrypted, nick };
+        } else {
+          delete passwords[network];
+        }
+        return { serverPasswords: passwords };
+      });
     },
     resetWizardState: (): void => {
       set(() => ({
@@ -305,11 +311,24 @@ export const useSettingsStore = create<SettingsStore>()(
   }),
   {
     name: 'sic-settings',
-    version: 2,
+    version: 3,
     migrate: (persisted, version) => {
-      if (version === 1) {
-        const state = persisted as Record<string, unknown>;
+      const state = persisted as Record<string, unknown>;
+      if (version < 2) {
         delete state.savedChannels;
+      }
+      if (version < 3) {
+        // Migrate flat encryptedPassword/passwordNick to per-server serverPasswords
+        const encrypted = state.encryptedPassword as string | undefined;
+        const nick = state.passwordNick as string | undefined;
+        const network = (state.server as { network?: string } | undefined)?.network;
+        if (encrypted && nick && network) {
+          state.serverPasswords = { [network]: { encrypted, nick } };
+        } else {
+          state.serverPasswords = {};
+        }
+        delete state.encryptedPassword;
+        delete state.passwordNick;
       }
       return persisted as SettingsStore;
     },
@@ -324,8 +343,7 @@ export const useSettingsStore = create<SettingsStore>()(
       server: state.server,
       language: state.language,
       isWizardCompleted: state.isWizardCompleted,
-      encryptedPassword: state.encryptedPassword,
-      passwordNick: state.passwordNick,
+      serverPasswords: state.serverPasswords,
       currentChannelName: state.currentChannelName,
       currentChannelCategory: state.currentChannelCategory,
     }),
@@ -545,11 +563,17 @@ export const setEncryptedPassword = (encrypted: string | undefined, nick: string
 };
 
 export const getEncryptedPassword = (): string | undefined => {
-  return useSettingsStore.getState().encryptedPassword;
+  const state = useSettingsStore.getState();
+  const network = state.server?.network;
+  if (!network) return undefined;
+  return state.serverPasswords[network]?.encrypted;
 };
 
 export const getPasswordNick = (): string | undefined => {
-  return useSettingsStore.getState().passwordNick;
+  const state = useSettingsStore.getState();
+  const network = state.server?.network;
+  if (!network) return undefined;
+  return state.serverPasswords[network]?.nick;
 };
 
 export const setIsDarkMode = (isDarkMode: boolean): void => {
@@ -629,12 +653,10 @@ export const changeServer = (): void => {
   setCurrentClearAll();
   setChannelListClear();
 
-  // Reset wizard state and clear all connection-specific persisted data
+  // Reset wizard state and clear connection-specific data (passwords preserved per server)
   resetWizardState();
   useSettingsStore.setState({
     nick: '',
     server: undefined,
-    encryptedPassword: undefined,
-    passwordNick: undefined,
   });
 };

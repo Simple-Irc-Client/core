@@ -16,8 +16,12 @@ const WizardPassword = () => {
   const [password, setPassword] = useState('');
 
   const nick = useSettingsStore((state) => state.nick);
-  const encryptedPassword = useSettingsStore((state) => state.encryptedPassword);
-  const passwordNick = useSettingsStore((state) => state.passwordNick);
+  const serverPassword = useSettingsStore((state) => {
+    const network = state.server?.network;
+    return network ? state.serverPasswords[network] : undefined;
+  });
+  const encryptedPassword = serverPassword?.encrypted;
+  const passwordNick = serverPassword?.nick;
 
   const hasSavedPassword = !!(encryptedPassword && passwordNick === initialNick);
   const [rememberPassword, setRememberPassword] = useState(hasSavedPassword);
