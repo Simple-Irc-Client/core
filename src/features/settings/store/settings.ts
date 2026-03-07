@@ -273,8 +273,7 @@ export const useSettingsStore = create<SettingsStore>()(
         if (encrypted && nick) {
           return { serverPasswords: { ...state.serverPasswords, [network]: { encrypted, nick } } };
         }
-        const { [network]: _, ...rest } = state.serverPasswords;
-        return { serverPasswords: rest };
+        return { serverPasswords: Object.fromEntries(Object.entries(state.serverPasswords).filter(([key]) => key !== network)) };
       });
     },
     resetWizardState: (): void => {
