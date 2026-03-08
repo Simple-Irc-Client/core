@@ -7,17 +7,20 @@ interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
   alisMode: boolean;
+  listDeprecated: boolean;
 
   setAddChannel: (name: string, users: number, topic: string) => void;
   setClear: () => void;
   setFinished: (status: boolean) => void;
   setAlisMode: (mode: boolean) => void;
+  setListDeprecated: (deprecated: boolean) => void;
 }
 
 export const useChannelListStore = create<ChannelListStore>()((set) => ({
   channels: [],
   finished: false,
   alisMode: false,
+  listDeprecated: false,
 
   setAddChannel: (name: string, users: number, topic: string): void => {
     set((state) => ({
@@ -29,6 +32,7 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
       channels: [],
       finished: false,
       alisMode: false,
+      listDeprecated: false,
     }));
   },
   setFinished: (status: boolean): void => {
@@ -39,6 +43,11 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
   setAlisMode: (mode: boolean): void => {
     set(() => ({
       alisMode: mode,
+    }));
+  },
+  setListDeprecated: (deprecated: boolean): void => {
+    set(() => ({
+      listDeprecated: deprecated,
     }));
   },
 }));
@@ -78,6 +87,14 @@ export const setAlisMode = (mode: boolean): void => {
 
 export const getAlisMode = (): boolean => {
   return useChannelListStore.getState().alisMode;
+};
+
+export const setListDeprecated = (deprecated: boolean): void => {
+  useChannelListStore.getState().setListDeprecated(deprecated);
+};
+
+export const getListDeprecated = (): boolean => {
+  return useChannelListStore.getState().listDeprecated;
 };
 
 export const getChannelListSortedByAZ = (): ChannelList[] => {

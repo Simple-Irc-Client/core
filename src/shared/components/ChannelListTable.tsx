@@ -87,11 +87,19 @@ const ChannelListTable = ({
   }, [channelList, excludeChannels]);
 
   const filteredChannelList = useMemo(() => {
-    if (!searchQuery) return availableChannelList;
-    const query = searchQuery.toLowerCase();
-    return availableChannelList.filter(
-      (channel) => channel.name.toLowerCase().includes(query) || stripIrcFormatting(channel.topic ?? '').toLowerCase().includes(query)
-    );
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return availableChannelList.filter(
+        (channel) => channel.name.toLowerCase().includes(query) || stripIrcFormatting(channel.topic ?? '').toLowerCase().includes(query)
+      );
+    }
+
+    // Hide single-user channels when the list is large
+    if (availableChannelList.length > 500) {
+      return availableChannelList.filter((channel) => (channel.users ?? 0) >= 2);
+    }
+
+    return availableChannelList;
   }, [availableChannelList, searchQuery]);
 
   const handleRowClick = useCallback((channelName: string): void => {

@@ -108,7 +108,7 @@ import { defaultChannelTypes, defaultMaxPermission, clientVersion, clientSourceU
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
-import { setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode } from '@features/channels/store/channelList';
+import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getCurrentUserFlags } from '@features/settings/store/settings';
 import {
@@ -2267,14 +2267,9 @@ export class Kernel {
       return;
     }
 
-    // IRCnet LIST deprecation — fall back to Alis service
-    // Server may send this NOTICE multiple times; only trigger once.
+    // IRCnet LIST deprecation — mark for potential Alis fallback at end of LIST
     if (/Usage of \/list for listing all channels is deprecated/i.test(message)) {
-      if (!getAlisMode()) {
-        setChannelListClear();
-        setAlisMode(true);
-        ircSendAlisListRequest();
-      }
+      setListDeprecated(true);
       return;
     }
 
@@ -3208,7 +3203,6 @@ export class Kernel {
   // :netsplit.pirc.pl 322 sic-test * 1 :
   // :netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]
   private readonly onRaw322 = (): void => {
-    // In alisMode, ignore stale 322 entries from the deprecated LIST command
     if (getAlisMode()) return;
 
     const myNick = this.line.shift();
@@ -3222,9 +3216,16 @@ export class Kernel {
 
   // :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
   private readonly onRaw323 = (): void => {
-    // When in alisMode, the 323 belongs to the deprecated LIST command,
-    // not to the Alis SQUERY response — ignore it so alisMode isn't reset.
     if (getAlisMode()) return;
+
+    // LIST was deprecated but still returned enough channels — use them
+    // If too few results, fall back to Alis
+    if (getListDeprecated() && useChannelListStore.getState().channels.length < 10) {
+      setChannelListClear();
+      setAlisMode(true);
+      ircSendAlisListRequest();
+      return;
+    }
 
     setChannelListFinished(true);
   };

@@ -5331,75 +5331,57 @@ describe('kernel tests', () => {
   });
 
   describe('Alis fallback for LIST on IRCnet', () => {
-    it('should trigger Alis fallback when LIST deprecation notice is received', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    it('should set listDeprecated when deprecation notice is received', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
-      const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
+      const mockSetListDeprecated = vi.spyOn(channelListFile, 'setListDeprecated').mockImplementation(() => {});
       const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
       const line = ':irc.ircnet.example NOTICE TestUser :Usage of /list for listing all channels is deprecated';
 
       new Kernel({ type: 'raw', line }).handle();
 
-      expect(mockSetChannelListClear).toHaveBeenCalledTimes(1);
-      expect(mockSetAlisMode).toHaveBeenCalledWith(true);
-      expect(mockIrcSendAlisListRequest).toHaveBeenCalledTimes(1);
-      // Should not display the deprecation message to the user
-      expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
-      expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL }));
+      expect(mockSetListDeprecated).toHaveBeenCalledWith(true);
+      // Should NOT immediately send Alis request — wait for 323
+      expect(mockIrcSendAlisListRequest).not.toHaveBeenCalled();
     });
 
-    it('should parse Alis channel NOTICE correctly', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
-      const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
-
-      const line = ':Alis@hub.uk NOTICE TestUser :#programming                    \x02  42\x02: Programming discussion channel';
-
-      new Kernel({ type: 'raw', line }).handle();
-
-      expect(mockSetAddChannelToList).toHaveBeenCalledWith('#programming', 42, 'Programming discussion channel');
-      // Should not display as a regular notice
-      expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
-      expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL }));
-    });
-
-    it('should handle Alis footer and reset alisMode', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
+    it('should use LIST results when deprecated but LIST returned enough channels', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => false);
+      vi.spyOn(channelListFile, 'getListDeprecated').mockImplementation(() => true);
+      // Populate store with enough channels
+      const channels = Array.from({ length: 500 }, (_, i) => ({ name: `#ch${i}`, users: i, topic: '' }));
+      channelListFile.useChannelListStore.setState({ channels });
       const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
-      const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
+      const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
-      const line = ':Alis@hub.uk NOTICE TestUser :found 789 visible channels.';
+      const line = ':tngnet.ircnet.io 323 mero3 :End of LIST';
 
       new Kernel({ type: 'raw', line }).handle();
 
       expect(mockSetChannelListFinished).toHaveBeenCalledWith(true);
-      expect(mockSetAlisMode).toHaveBeenCalledWith(false);
-      // Should not display as a regular notice
-      expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
+      expect(mockIrcSendAlisListRequest).not.toHaveBeenCalled();
     });
 
-    it('should skip Alis header line silently', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
-      const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+    it('should fall back to Alis when deprecated LIST returned too few channels', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => false);
+      vi.spyOn(channelListFile, 'getListDeprecated').mockImplementation(() => true);
+      // Populate store with too few channels
+      channelListFile.useChannelListStore.setState({ channels: [{ name: '#a', users: 1, topic: '' }] });
+      const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
+      const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
+      const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
-      const line = ':Alis@hub.uk NOTICE TestUser :Returning a maximum of 60 channel names.';
+      const line = ':tngnet.ircnet.io 323 mero3 :End of LIST';
 
       new Kernel({ type: 'raw', line }).handle();
 
-      expect(mockSetAddChannelToList).not.toHaveBeenCalled();
-      // Should not display as a regular notice
-      expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
+      expect(mockSetChannelListClear).toHaveBeenCalledTimes(1);
+      expect(mockSetAlisMode).toHaveBeenCalledWith(true);
+      expect(mockIrcSendAlisListRequest).toHaveBeenCalledTimes(1);
     });
 
     it('should ignore 323 End of LIST when in alisMode', () => {
@@ -5414,22 +5396,49 @@ describe('kernel tests', () => {
       expect(mockSetChannelListFinished).not.toHaveBeenCalled();
     });
 
-    it('should not re-trigger SQUERY when deprecation notice is received while already in alisMode', () => {
+    it('should parse Alis channel NOTICE correctly', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
+      const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+
+      const line = ':Alis@hub.uk NOTICE TestUser :#programming                    \x02  42\x02: Programming discussion channel';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddChannelToList).toHaveBeenCalledWith('#programming', 42, 'Programming discussion channel');
+      expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
+    });
+
+    it('should handle Alis footer and reset alisMode', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
-      const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
+      const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
       const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
-      const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
-      const line = ':irc.ircnet.example NOTICE TestUser :Usage of /list for listing all channels is deprecated';
+      const line = ':Alis@hub.uk NOTICE TestUser :found 789 visible channels.';
 
       new Kernel({ type: 'raw', line }).handle();
 
-      expect(mockSetChannelListClear).not.toHaveBeenCalled();
-      expect(mockSetAlisMode).not.toHaveBeenCalled();
-      expect(mockIrcSendAlisListRequest).not.toHaveBeenCalled();
+      expect(mockSetChannelListFinished).toHaveBeenCalledWith(true);
+      expect(mockSetAlisMode).toHaveBeenCalledWith(false);
+    });
+
+    it('should skip Alis header line silently', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
+      const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
+
+      const line = ':Alis@hub.uk NOTICE TestUser :Returning a maximum of 60 channel names.';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddChannelToList).not.toHaveBeenCalled();
     });
 
     it('should not parse Alis NOTICE when alisMode is false', () => {
@@ -5444,7 +5453,6 @@ describe('kernel tests', () => {
       new Kernel({ type: 'raw', line }).handle();
 
       expect(mockSetAddChannelToList).not.toHaveBeenCalled();
-      // Should display as a regular notice
       expect(mockSetAddMessage).toHaveBeenCalledTimes(2); // debug + regular notice
     });
   });

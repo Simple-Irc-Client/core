@@ -82,10 +82,12 @@ describe('Channels', () => {
         finished: isChannelListLoadingFinished,
         channels: channelsList,
         alisMode: false,
+        listDeprecated: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
         setAlisMode: vi.fn(),
+        setListDeprecated: vi.fn(),
       })
     );
 
@@ -577,10 +579,12 @@ describe('Channels', () => {
           finished: false,
           channels: [],
           alisMode: false,
+          listDeprecated: false,
           setAddChannel: vi.fn(),
           setClear: vi.fn(),
           setFinished: vi.fn(),
           setAlisMode: vi.fn(),
+          setListDeprecated: vi.fn(),
         })
       );
 

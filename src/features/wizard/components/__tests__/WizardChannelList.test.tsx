@@ -64,10 +64,12 @@ describe('WizardChannelList', () => {
         finished: isChannelListLoadingFinished,
         channels: channelList,
         alisMode: false,
+        listDeprecated: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
         setAlisMode: vi.fn(),
+        setListDeprecated: vi.fn(),
       })
     );
 
