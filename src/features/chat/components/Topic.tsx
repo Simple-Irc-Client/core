@@ -105,11 +105,11 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
                   value={editedTopic}
                   onChange={(e) => setEditedTopic(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="min-h-12"
+                  className="min-h-8 h-8"
                   aria-label={t('main.topic.topicInput')}
                 />
               ) : (
-                <div className="min-h-12 w-full flex items-center px-3 text-sm truncate rounded-md border border-input bg-transparent shadow-sm">
+                <div className="min-h-8 w-full flex items-center px-3 text-sm truncate">
                   {renderFormattedSegments(formattedSegments)}
                 </div>
               )}
@@ -119,7 +119,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
         </Tooltip>
       </TooltipProvider>
       {canEditTopic && editedTopic !== topic && (
-        <Button variant="ghost" onClick={handleSaveTopic} className="h-12 ml-2" aria-label={t('main.topic.saveTopic')}>
+        <Button variant="ghost" onClick={handleSaveTopic} className="h-8 ml-2" aria-label={t('main.topic.saveTopic')}>
           <Save className="h-4 w-4" />
         </Button>
       )}
@@ -141,16 +141,22 @@ const Topic = () => {
   const isAnyDrawerOpen = isChannelsDrawerOpen || isUsersDrawerOpen;
 
   return (
-    <div className="px-4 flex h-16 min-w-0 items-center">
+    <div className="px-4 flex h-12 min-w-0 items-center border-b border-gray-200 dark:border-gray-700">
       {!isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-12 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
+        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-10 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
         </Button>
       )}
-      {!isDebugChannel && <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />}
+      <span className="font-semibold text-sm shrink-0">{currentChannelName}</span>
+      {!isDebugChannel && (
+        <>
+          <span className="mx-2 text-gray-300 dark:text-gray-600 shrink-0" aria-hidden="true">|</span>
+          <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />
+        </>
+      )}
       {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
       {showUsersToggle && !isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-12 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
+        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-10 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
           <Users className="h-4 w-4" />
         </Button>
       )}

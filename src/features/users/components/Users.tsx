@@ -83,7 +83,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
           style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
         >
           <div>
-            <div className="flex items-center justify-between px-4 h-16">
+            <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 dark:border-gray-700">
               <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
               {isUsersDrawerOpen && (
                 <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
