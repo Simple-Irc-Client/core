@@ -5402,6 +5402,36 @@ describe('kernel tests', () => {
       expect(mockSetAddMessage).toHaveBeenCalledTimes(1); // only debug channel
     });
 
+    it('should ignore 323 End of LIST when in alisMode', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
+      const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
+
+      const line = ':tngnet.ircnet.io 323 mero3 :End of LIST';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetChannelListFinished).not.toHaveBeenCalled();
+    });
+
+    it('should not re-trigger SQUERY when deprecation notice is received while already in alisMode', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
+      const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
+      const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
+      const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
+
+      const line = ':irc.ircnet.example NOTICE TestUser :Usage of /list for listing all channels is deprecated';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetChannelListClear).not.toHaveBeenCalled();
+      expect(mockSetAlisMode).not.toHaveBeenCalled();
+      expect(mockIrcSendAlisListRequest).not.toHaveBeenCalled();
+    });
+
     it('should not parse Alis NOTICE when alisMode is false', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');

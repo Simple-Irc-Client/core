@@ -2268,10 +2268,13 @@ export class Kernel {
     }
 
     // IRCnet LIST deprecation — fall back to Alis service
+    // Server may send this NOTICE multiple times; only trigger once.
     if (/Usage of \/list for listing all channels is deprecated/i.test(message)) {
-      setChannelListClear();
-      setAlisMode(true);
-      ircSendAlisListRequest();
+      if (!getAlisMode()) {
+        setChannelListClear();
+        setAlisMode(true);
+        ircSendAlisListRequest();
+      }
       return;
     }
 
@@ -3215,6 +3218,10 @@ export class Kernel {
 
   // :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
   private readonly onRaw323 = (): void => {
+    // When in alisMode, the 323 belongs to the deprecated LIST command,
+    // not to the Alis SQUERY response — ignore it so alisMode isn't reset.
+    if (getAlisMode()) return;
+
     setChannelListFinished(true);
   };
 
