@@ -39,7 +39,7 @@ describe('Chat tests', () => {
     vi.clearAllMocks();
 
     // Mock ResizeObserver
-    global.ResizeObserver = class MockResizeObserver {
+    globalThis.ResizeObserver = class MockResizeObserver {
       constructor(callback: ResizeObserverCallback) {
         resizeObserverCallback = callback;
       }
@@ -982,15 +982,15 @@ describe('Chat tests', () => {
     };
 
     beforeEach(() => {
-      originalRaf = global.requestAnimationFrame;
-      global.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      originalRaf = globalThis.requestAnimationFrame;
+      globalThis.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
         rafCallbacks.current = callback;
         return 1;
       });
     });
 
     afterEach(() => {
-      global.requestAnimationFrame = originalRaf;
+      globalThis.requestAnimationFrame = originalRaf;
       rafCallbacks.current = null;
     });
 
@@ -1001,14 +1001,14 @@ describe('Chat tests', () => {
 
       // Clear the initial raf call
       clearRafCallback();
-      vi.mocked(global.requestAnimationFrame).mockClear();
+      vi.mocked(globalThis.requestAnimationFrame).mockClear();
 
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
 
       // requestAnimationFrame should be called on channel change
-      expect(global.requestAnimationFrame).toHaveBeenCalled();
+      expect(globalThis.requestAnimationFrame).toHaveBeenCalled();
       expect(rafCallbacks.current).not.toBeNull();
     });
 
@@ -1028,7 +1028,7 @@ describe('Chat tests', () => {
 
       // Clear the raf callback and mock
       clearRafCallback();
-      vi.mocked(global.requestAnimationFrame).mockClear();
+      vi.mocked(globalThis.requestAnimationFrame).mockClear();
 
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });

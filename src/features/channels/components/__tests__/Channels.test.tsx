@@ -11,7 +11,7 @@ import type { Channel } from '@shared/types';
 
 // Mock browser APIs for Dialog components
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
+  globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}

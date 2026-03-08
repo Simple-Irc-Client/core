@@ -7,7 +7,7 @@ import * as serversModule from '@/network/irc/servers';
 
 // Mock browser APIs for Popover/Command components
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
+  globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}

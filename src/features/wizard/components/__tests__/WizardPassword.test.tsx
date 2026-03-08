@@ -7,7 +7,7 @@ import * as queryParams from '@shared/lib/queryParams';
 import * as encryption from '@/network/encryption';
 
 beforeAll(() => {
-  global.ResizeObserver = class ResizeObserver {
+  globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
     disconnect() {}
