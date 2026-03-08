@@ -46,6 +46,7 @@ import {
   setSilenceLimit,
   setNickLenLimit,
   getNickLenLimit,
+  setNetworkName,
   setSupportedOption,
   setUserModes,
   setWatchLimit,
@@ -2829,6 +2830,9 @@ export class Kernel {
               break;
             case 'NICKLEN':
               setNickLenLimit(value !== undefined ? parseInt(value, 10) : 50);
+              break;
+            case 'NETWORK':
+              if (value !== undefined) setNetworkName(value);
               break;
           }
         }

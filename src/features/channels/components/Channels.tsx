@@ -3,6 +3,7 @@ import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
 import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
+import { serverIcons } from '@/network/irc/servers';
 
 const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
@@ -32,6 +33,8 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const fontSize = useSettingsStore((state) => state.fontSize);
+  const server = useSettingsStore((state) => state.server);
+  const networkName = useSettingsStore((state) => state.networkName);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -105,9 +108,21 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       }}
     >
       <div>
-          <div className="flex items-center justify-between px-4 h-16">
-            <div className="flex items-center gap-2">
-              <h3 className={`${fontSizeClass} font-medium`}>{t('main.channels.title')}</h3>
+          <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+              {(() => {
+                const iconKey = networkName ?? server?.network;
+                return iconKey && iconKey in serverIcons ? (
+                  <span
+                    className="h-5 w-5 flex-shrink-0"
+                    aria-hidden="true"
+                    dangerouslySetInnerHTML={{ __html: serverIcons[iconKey] as string }}
+                  />
+                ) : null;
+              })()}
+              <h3 className={`${fontSizeClass} font-semibold truncate`}>{networkName ?? server?.network ?? t('main.channels.title')}</h3>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -125,12 +140,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                   <TooltipContent>{t('main.channels.join')}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              {isChannelsDrawerOpen && (
+                <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.channels.closeDrawer')}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            {isChannelsDrawerOpen && (
-              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.channels.closeDrawer')}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
           </div>
           {!isConnected && (
             <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">

@@ -50,6 +50,7 @@ export interface SettingsStore {
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   nickLenLimit: number; // NICKLEN from 005, default 50
+  networkName: string | undefined; // NETWORK from 005, overrides server.network for display
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
   currentUserStatus: string | undefined; // Current user's status text from metadata
@@ -85,6 +86,7 @@ export interface SettingsStore {
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
   setNickLenLimit: (limit: number) => void;
+  setNetworkName: (name: string | undefined) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
   setCurrentUserStatus: (status: string | undefined) => void;
@@ -127,6 +129,7 @@ export const useSettingsStore = create<SettingsStore>()(
     monitorLimit: 0,
     silenceLimit: 0,
     nickLenLimit: 50,
+    networkName: undefined,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
     currentUserStatus: undefined,
@@ -228,6 +231,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setNickLenLimit: (limit: number): void => {
       set(() => ({ nickLenLimit: limit }));
     },
+    setNetworkName: (name: string | undefined): void => {
+      set(() => ({ networkName: name }));
+    },
     setCurrentUserAvatar: (avatar: string | undefined): void => {
       set(() => ({ currentUserAvatar: avatar }));
     },
@@ -298,6 +304,7 @@ export const useSettingsStore = create<SettingsStore>()(
         monitorLimit: 0,
         silenceLimit: 0,
         nickLenLimit: 50,
+    networkName: undefined,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
         currentUserStatus: undefined,
@@ -501,6 +508,10 @@ export const getSilenceLimit = (): number => {
 
 export const setNickLenLimit = (limit: number): void => {
   useSettingsStore.getState().setNickLenLimit(limit);
+};
+
+export const setNetworkName = (name: string | undefined): void => {
+  useSettingsStore.getState().setNetworkName(name);
 };
 
 export const getNickLenLimit = (): number => {
