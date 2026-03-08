@@ -5358,7 +5358,7 @@ describe('kernel tests', () => {
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
       const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
 
-      const line = ':Alis@hub.uk NOTICE TestUser :#programming                                42: Programming discussion channel';
+      const line = ':Alis@hub.uk NOTICE TestUser :#programming                    \x02  42\x02: Programming discussion channel';
 
       new Kernel({ type: 'raw', line }).handle();
 
@@ -5439,7 +5439,7 @@ describe('kernel tests', () => {
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => false);
       const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
 
-      const line = ':Alis@hub.uk NOTICE TestUser :#programming                                42: Programming discussion channel';
+      const line = ':Alis@hub.uk NOTICE TestUser :#programming                    \x02  42\x02: Programming discussion channel';
 
       new Kernel({ type: 'raw', line }).handle();
 
