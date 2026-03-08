@@ -2281,8 +2281,8 @@ export class Kernel {
     // Parse Alis NOTICE responses when in alisMode
     // Alis sender format is "Alis@hub.uk" (no !user part), so parseNick returns "Alis@hub.uk"
     if (/^alis[@!]/i.test(nick) && getAlisMode()) {
-      // eslint-disable-next-line no-control-regex
-      const channelLine = /^(#\S+)\s+\x02\s*(\d+)\x02:\s?(.*)/;
+      // Format: "#channel                    42: topic"
+      const channelLine = /^(#\S*)\s+(\d+):\s?(.*)/;
       const footer = /^found \d+ visible channels/i;
 
       const channelMatch = channelLine.exec(message);
@@ -3207,6 +3207,9 @@ export class Kernel {
   // :netsplit.pirc.pl 322 sic-test * 1 :
   // :netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]
   private readonly onRaw322 = (): void => {
+    // In alisMode, ignore stale 322 entries from the deprecated LIST command
+    if (getAlisMode()) return;
+
     const myNick = this.line.shift();
 
     const name = this.line.shift() ?? '';
