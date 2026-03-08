@@ -136,9 +136,7 @@ const WizardLoading = () => {
       <Progress value={Math.min(wizardProgress.value * 30, 100)} aria-label={t('a11y.connectionProgress')} />
       <div aria-live="polite">
         {wizardProgress.label !== '' && <h2 className="text-center mt-4">{wizardProgress.label}</h2>}
-        {lastServerMessage !== '' && (
-          <p key={messageKey} className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto animate-in fade-in duration-300">{lastServerMessage}</p>
-        )}
+        <p key={messageKey} className="text-center mt-2 text-xs text-muted-foreground truncate max-w-md mx-auto animate-in fade-in duration-300">{lastServerMessage || '\u00A0'}</p>
       </div>
       {showTimeoutUI && (
         <p className="text-center mt-4 text-muted-foreground">{t('wizard.loading.timeout')}</p>
