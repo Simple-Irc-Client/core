@@ -42,6 +42,22 @@ const pwa = VitePWA({
       { src: "icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "icon-512.png", sizes: "512x512", type: "image/png" },
     ],
+    screenshots: [
+      {
+        src: "screenshot-wide.png",
+        sizes: "2559x1270",
+        type: "image/png",
+        form_factor: "wide",
+        label: "Simple IRC Client - Desktop",
+      },
+      {
+        src: "screenshot-narrow.png",
+        sizes: "377x812",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "Simple IRC Client - Mobile",
+      },
+    ],
   },
 });
 
