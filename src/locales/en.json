@@ -57,6 +57,8 @@
     "main.toolbar.write": "Message ",
     "main.channels.title": "Channels:",
     "main.channels.join": "Join channel",
+    "main.channels.categoryChannels": "Channels",
+    "main.channels.categoryDirectMessages": "Direct Messages",
     "main.channels.search": "Search channels",
     "main.channels.no-results": "No channels found",
     "main.users.title": "Users:",

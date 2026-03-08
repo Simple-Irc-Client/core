@@ -57,6 +57,8 @@
     "main.toolbar.write": "Napisz na ",
     "main.channels.title": "Kanały:",
     "main.channels.join": "Dołącz do kanału",
+    "main.channels.categoryChannels": "Kanały",
+    "main.channels.categoryDirectMessages": "Wiadomości prywatne",
     "main.channels.search": "Szukaj kanałów",
     "main.channels.no-results": "Nie znaleziono kanałów",
     "main.users.title": "Użytkownicy:",

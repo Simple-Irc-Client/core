@@ -49,6 +49,25 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const openChannelNames = useMemo(() => openChannelsShort.map((ch) => ch.name), [openChannelsShort]);
 
+  const groupedChannels = useMemo(() => {
+    const groups: { category: ChannelCategory; label: string; channels: Channel[] }[] = [];
+    const categoryOrder: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv];
+    const labelKeys: Record<ChannelCategory, string> = {
+      [ChannelCategory.status]: '',
+      [ChannelCategory.debug]: '',
+      [ChannelCategory.channel]: 'main.channels.categoryChannels',
+      [ChannelCategory.priv]: 'main.channels.categoryDirectMessages',
+    };
+
+    for (const cat of categoryOrder) {
+      const channels = openChannelsShort.filter((ch) => ch.category === cat);
+      if (channels.length > 0) {
+        groups.push({ category: cat, label: labelKeys[cat], channels });
+      }
+    }
+    return groups;
+  }, [openChannelsShort]);
+
   const handleHover = (channel: string, visible: boolean): void => {
     if (visible) {
       setShowRemoveChannelIcon(channel);
@@ -154,64 +173,71 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
             </div>
           )}
           <div>
-            {openChannelsShort.map((channel) => (
-              <div
-                key={channel.name}
-                onMouseEnter={() => {
-                  handleHover(channel.name, true);
-                }}
-                onMouseLeave={() => {
-                  handleHover(channel.name, false);
-                }}
-                className="relative"
-              >
-                <button
-                  aria-label={channel.name}
-                  aria-current={currentChannelName === channel.name ? 'page' : undefined}
-                  onClick={() => {
-                    handleListItemClick(channel);
-                  }}
-                  className={cn(
-                    `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-gray-100 dark:hover:bg-gray-800`,
-                    currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
-                  )}
-                >
-                  <span className="min-w-7.5 flex items-center justify-center">
-                    {channel.avatar ? (
-                      <Avatar
-                        src={channel.avatar}
-                        alt={channel.name}
-                        fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
-                        className="h-4 w-4"
-                      />
-                    ) : (
-                      getChannelIcon(channel.category)
-                    )}
-                  </span>
-                  <span className="flex-1">{channel.displayName || channel.name}</span>
-                </button>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
-                    <>
-                      {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
-                        <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+            {groupedChannels.map((group) => (
+              <div key={group.category}>
+                {group.label && (
+                  <div className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t(group.label)}</div>
+                )}
+                {group.channels.map((channel) => (
+                  <div
+                    key={channel.name}
+                    onMouseEnter={() => {
+                      handleHover(channel.name, true);
+                    }}
+                    onMouseLeave={() => {
+                      handleHover(channel.name, false);
+                    }}
+                    className="relative"
+                  >
+                    <button
+                      aria-label={channel.name}
+                      aria-current={currentChannelName === channel.name ? 'page' : undefined}
+                      onClick={() => {
+                        handleListItemClick(channel);
+                      }}
+                      className={cn(
+                        `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-gray-100 dark:hover:bg-gray-800`,
+                        currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
                       )}
-                      {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && isConnected && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t('main.channels.leave', { channel: channel.name })}
-                          className="h-8 w-8"
-                          onClick={() => {
-                            handleRemoveChannel(channel);
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                    >
+                      <span className="min-w-7.5 flex items-center justify-center">
+                        {channel.avatar ? (
+                          <Avatar
+                            src={channel.avatar}
+                            alt={channel.name}
+                            fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
+                            className="h-4 w-4"
+                          />
+                        ) : (
+                          getChannelIcon(channel.category)
+                        )}
+                      </span>
+                      <span className="flex-1">{channel.displayName || channel.name}</span>
+                    </button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                      {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
+                        <>
+                          {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
+                            <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+                          )}
+                          {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && isConnected && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t('main.channels.leave', { channel: channel.name })}
+                              className="h-8 w-8"
+                              onClick={() => {
+                                handleRemoveChannel(channel);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
