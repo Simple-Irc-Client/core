@@ -164,7 +164,7 @@ let persistentKey: CryptoKey | null = null;
  * The key is stored as a base64 string in localStorage['sic-ek'].
  */
 export async function initPersistentEncryption(): Promise<void> {
-  if (persistentKey !== null) return;
+  if (persistentKey !== null) { return; }
 
   let base64Key = localStorage.getItem(PERSISTENT_KEY_STORAGE);
   if (!base64Key) {

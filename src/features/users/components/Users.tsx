@@ -17,7 +17,7 @@ import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
-  if (flags.length === 0 || userModes.length === 0) return null;
+  if (flags.length === 0 || userModes.length === 0) { return null; }
 
   const icons: React.ReactNode[] = [];
 

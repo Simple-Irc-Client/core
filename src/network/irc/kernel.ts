@@ -438,7 +438,7 @@ export class Kernel {
         }
         break;
       default:
-        if (import.meta.env.DEV) console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`);
+        if (import.meta.env.DEV) { console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`); }
     }
   }
 
@@ -1137,7 +1137,7 @@ export class Kernel {
         break;
 
       default:
-        if (import.meta.env.DEV) console.log(`unknown irc event: ${JSON.stringify(event)}`);
+        if (import.meta.env.DEV) { console.log(`unknown irc event: ${JSON.stringify(event)}`); }
         break;
     }
   };
@@ -1180,7 +1180,7 @@ export class Kernel {
   private readonly onBatch = (): void => {
     const reference = this.line.shift();
 
-    if (!reference) return;
+    if (!reference) { return; }
 
     if (reference.startsWith('+')) {
       // Start batch
@@ -1230,13 +1230,13 @@ export class Kernel {
   /** Process chathistory batch - insert messages at beginning of channel */
   private readonly processChatHistoryBatch = (batch: BatchState): void => {
     const target = batch.params[0];
-    if (!target) return;
+    if (!target) { return; }
 
     // Process each message in the batch
     // Messages in chathistory are in chronological order (oldest first)
     // Skip TAGMSG — typing indicators from history are stale
     for (const message of batch.messages) {
-      if (message.command === 'TAGMSG') continue;
+      if (message.command === 'TAGMSG') { continue; }
       this.processBufferedMessage(message);
     }
   };
@@ -1359,7 +1359,7 @@ export class Kernel {
     const target = this.line.shift(); // '*' or nick
     const subcommand = this.line.shift()?.toUpperCase(); // LS, ACK, NAK, LIST, NEW, DEL
 
-    if (!subcommand) return;
+    if (!subcommand) { return; }
 
     switch (subcommand) {
       case 'LS':
@@ -1465,7 +1465,7 @@ export class Kernel {
         const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
         const nakCaps = cleanString.split(' ').filter((c) => c.length > 0);
 
-        if (import.meta.env.DEV) console.warn('CAP NAK - capabilities rejected:', nakCaps);
+        if (import.meta.env.DEV) { console.warn('CAP NAK - capabilities rejected:', nakCaps); }
 
         // End negotiation even if some caps were rejected
         this.endCapNegotiation();
@@ -1676,7 +1676,7 @@ export class Kernel {
   private readonly onRaw730 = (): void => {
     // RPL_MONONLINE - users are online
     const userList = this.line.slice(1).join(' ').replace(/^:/, '');
-    if (!userList) return;
+    if (!userList) { return; }
 
     const users = userList.split(',');
     const nicks: string[] = [];
@@ -1699,7 +1699,7 @@ export class Kernel {
   private readonly onRaw731 = (): void => {
     // RPL_MONOFFLINE - users are offline
     const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
-    if (!nickList) return;
+    if (!nickList) { return; }
 
     const nicks = nickList.split(',').filter((n) => n.length > 0);
 
@@ -1712,7 +1712,7 @@ export class Kernel {
   private readonly onRaw732 = (): void => {
     // RPL_MONLIST - list of monitored nicks
     const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
-    if (!nickList) return;
+    if (!nickList) { return; }
 
     const nicks = nickList.split(',').filter((n) => n.length > 0);
 
@@ -2077,7 +2077,7 @@ export class Kernel {
           }
           default:
             message = i18next.t('kernel.mode.channel.unknown', { channel, setBy: nick, mode });
-            if (import.meta.env.DEV) console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            if (import.meta.env.DEV) { console.log(`unknown mode: ${mode} / ${this.eventLine}`); }
             break;
         }
 
@@ -2148,7 +2148,7 @@ export class Kernel {
             break;
           default:
             message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
-            if (import.meta.env.DEV) console.log(`unknown mode: ${mode} / ${this.eventLine}`);
+            if (import.meta.env.DEV) { console.log(`unknown mode: ${mode} / ${this.eventLine}`); }
             break;
         }
 
@@ -2832,7 +2832,7 @@ export class Kernel {
               setNickLenLimit(value !== undefined ? parseInt(value, 10) : 50);
               break;
             case 'NETWORK':
-              if (value !== undefined) setNetworkName(value);
+              if (value !== undefined) { setNetworkName(value); }
               break;
           }
         }
@@ -3034,7 +3034,7 @@ export class Kernel {
     });
 
     setCurrentUserFlag("away", false)
-    if (myNick) setUserAway(myNick, false);
+    if (myNick) { setUserAway(myNick, false); }
   };
 
   // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
@@ -3055,7 +3055,7 @@ export class Kernel {
     });
 
     setCurrentUserFlag("away", true)
-    if (myNick) setUserAway(myNick, true);
+    if (myNick) { setUserAway(myNick, true); }
   };
 
   // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
@@ -3207,7 +3207,7 @@ export class Kernel {
   // :netsplit.pirc.pl 322 sic-test * 1 :
   // :netsplit.pirc.pl 322 sic-test #+Kosciol+ 1 :[+nt]
   private readonly onRaw322 = (): void => {
-    if (getAlisMode()) return;
+    if (getAlisMode()) { return; }
 
     const myNick = this.line.shift();
 
@@ -3220,7 +3220,7 @@ export class Kernel {
 
   // :insomnia.pirc.pl 323 dsfdsfdsfsdfdsfsdfaas :End of /LIST
   private readonly onRaw323 = (): void => {
-    if (getAlisMode()) return;
+    if (getAlisMode()) { return; }
 
     // LIST was deprecated but still returned enough channels — use them
     // If too few results, fall back to Alis
@@ -3982,10 +3982,10 @@ export class Kernel {
     const secs = seconds % 60;
 
     const parts: string[] = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+    if (days > 0) { parts.push(`${days}d`); }
+    if (hours > 0) { parts.push(`${hours}h`); }
+    if (minutes > 0) { parts.push(`${minutes}m`); }
+    if (secs > 0 || parts.length === 0) { parts.push(`${secs}s`); }
 
     return parts.join(' ');
   };
@@ -4132,7 +4132,7 @@ export class Kernel {
     const hopcount = this.line.shift();
     const realname = this.trailing();
 
-    if (!nick || !channel) return;
+    if (!nick || !channel) { return; }
 
     const serverPrefixes = getUserModes();
 
@@ -4151,8 +4151,8 @@ export class Kernel {
     // Update or add user
     if (getHasUser(nick)) {
       setUserHost(nick, ident ?? '', hostname ?? '');
-      if (realname) setUserRealname(nick, realname);
-      if (isAway) setUserAway(nick, true);
+      if (realname) { setUserRealname(nick, realname); }
+      if (isAway) { setUserAway(nick, true); }
     } else {
       setAddUser({
         nick,

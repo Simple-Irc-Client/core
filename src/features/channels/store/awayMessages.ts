@@ -19,7 +19,7 @@ export const useAwayMessagesStore = create<AwayMessagesStore>()(
     messages: [],
     addAwayMessage: (message: AwayMessage): void => {
       set((state) => {
-        if (state.messages.length >= MAX_AWAY_MESSAGES) return state;
+        if (state.messages.length >= MAX_AWAY_MESSAGES) { return state; }
         return { messages: [...state.messages, message] };
       });
     },

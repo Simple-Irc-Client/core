@@ -71,7 +71,7 @@ export const useSTSStore = create<STSStore>()(
 
       hasValidPolicy: (host: string) => {
         const policy = get().policies[host.toLowerCase()];
-        if (!policy) return false;
+        if (!policy) { return false; }
         // expiresAt=0 means indefinite (always valid)
         return policy.expiresAt === 0 || policy.expiresAt > Date.now();
       },

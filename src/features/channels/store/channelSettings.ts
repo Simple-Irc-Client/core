@@ -115,21 +115,21 @@ export const useChannelSettingsStore = create<ChannelSettingsStore>()(
 
     addToBanList: (entry: ListEntry): void => {
       set((state) => {
-        if (state.banList.some((e) => e.mask === entry.mask)) return state;
+        if (state.banList.some((e) => e.mask === entry.mask)) { return state; }
         return { banList: [...state.banList, entry] };
       });
     },
 
     addToExceptionList: (entry: ListEntry): void => {
       set((state) => {
-        if (state.exceptionList.some((e) => e.mask === entry.mask)) return state;
+        if (state.exceptionList.some((e) => e.mask === entry.mask)) { return state; }
         return { exceptionList: [...state.exceptionList, entry] };
       });
     },
 
     addToInviteList: (entry: ListEntry): void => {
       set((state) => {
-        if (state.inviteList.some((e) => e.mask === entry.mask)) return state;
+        if (state.inviteList.some((e) => e.mask === entry.mask)) { return state; }
         return { inviteList: [...state.inviteList, entry] };
       });
     },

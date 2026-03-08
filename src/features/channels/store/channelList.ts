@@ -59,7 +59,7 @@ export const setAddChannelToList = (name: string, users: number, topic: string):
 
   const { channels } = useChannelListStore.getState();
 
-  if (channels.length >= MAX_CHANNELS) return;
+  if (channels.length >= MAX_CHANNELS) { return; }
 
   const exist = channels.find((channel) => channel.name === name) !== undefined;
 

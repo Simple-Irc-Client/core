@@ -76,7 +76,7 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
   const isLoading = isActiveListLoading();
 
   const formatDate = (timestamp: number): string => {
-    if (timestamp === 0) return '-';
+    if (timestamp === 0) { return '-'; }
     try {
       return format(new Date(timestamp * 1000), 'd MMM yyyy', { locale: getDateFnsLocale() });
     } catch {

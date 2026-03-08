@@ -30,19 +30,19 @@ export function isSafeCssColor(value: string): boolean {
 
 function parseHexColor(hex: string): [number, number, number] | null {
   hex = hex.replace('#', '');
-  if (hex.length === 3) hex = (hex[0] ?? '') + (hex[0] ?? '') + (hex[1] ?? '') + (hex[1] ?? '') + (hex[2] ?? '') + (hex[2] ?? '');
-  if (hex.length < 6) return null;
+  if (hex.length === 3) { hex = (hex[0] ?? '') + (hex[0] ?? '') + (hex[1] ?? '') + (hex[1] ?? '') + (hex[2] ?? '') + (hex[2] ?? ''); }
+  if (hex.length < 6) { return null; }
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+  if (isNaN(r) || isNaN(g) || isNaN(b)) { return null; }
   return [r, g, b];
 }
 
 function parseCssColorToRgb(color: string): [number, number, number] | null {
   const rgbMatch = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/.exec(color);
-  if (rgbMatch) return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
-  if (color.startsWith('#')) return parseHexColor(color);
+  if (rgbMatch) { return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])]; }
+  if (color.startsWith('#')) { return parseHexColor(color); }
   // For named colors, use a temporary element
   if (typeof document !== 'undefined') {
     const el = document.createElement('span');
@@ -51,7 +51,7 @@ function parseCssColorToRgb(color: string): [number, number, number] | null {
     const computed = getComputedStyle(el).color;
     document.body.removeChild(el);
     const m = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/.exec(computed);
-    if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
+    if (m) { return [Number(m[1]), Number(m[2]), Number(m[3])]; }
   }
   return null;
 }
@@ -66,23 +66,24 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
   const l = (max + min) / 2;
-  if (max === min) return [0, 0, l];
+  if (max === min) { return [0, 0, l]; }
   const d = max - min;
   const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
   let h = 0;
-  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-  else if (max === g) h = ((b - r) / d + 2) / 6;
-  else h = ((r - g) / d + 4) / 6;
+  if (max === r) { h = ((g - b) / d + (g < b ? 6 : 0)) / 6; }
+  else if (max === g) { h = ((b - r) / d + 2) / 6; }
+  else { h = ((r - g) / d + 4) / 6; }
   return [h, s, l];
 }
 
 function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
   const hue2rgb = (p: number, q: number, t: number) => {
-    if (t < 0) t += 1; if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    if (t < 0) { t += 1; }
+    if (t > 1) { t -= 1; }
+    if (t < 1/6) { return p + (q - p) * 6 * t; }
+    if (t < 1/2) { return q; }
+    if (t < 2/3) { return p + (q - p) * (2/3 - t) * 6; }
     return p;
   };
   const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
@@ -102,7 +103,7 @@ const MIN_CONTRAST_RATIO = 3.0;
  */
 export function ensureNickContrast(color: string, isDark: boolean): string {
   const rgb = parseCssColorToRgb(color);
-  if (!rgb) return color;
+  if (!rgb) { return color; }
 
   const bgLuminance = isDark ? 0.05 : 0.95; // approximate dark/light background luminance
   const colorLuminance = relativeLuminance(...rgb);
@@ -111,7 +112,7 @@ export function ensureNickContrast(color: string, isDark: boolean): string {
   const darker = Math.min(bgLuminance, colorLuminance);
   const ratio = (lighter + 0.05) / (darker + 0.05);
 
-  if (ratio >= MIN_CONTRAST_RATIO) return color;
+  if (ratio >= MIN_CONTRAST_RATIO) { return color; }
 
   // Adjust lightness to meet contrast ratio
   const [h, s, l] = rgbToHsl(...rgb);
@@ -179,7 +180,7 @@ export function isPrivateHost(host: string): boolean {
   }
 
   // Teredo
-  if (ip.startsWith('2001:0') || ip.startsWith('2001::')) return true;
+  if (ip.startsWith('2001:0') || ip.startsWith('2001::')) { return true; }
 
   return false;
 }
@@ -189,10 +190,10 @@ const SENSITIVE_IRC_PATTERNS = /^(AUTHENTICATE |PASS |:.* PRIVMSG\s+NickServ\s+:
 export function redactSensitiveIrc(line: string): string {
   if (SENSITIVE_IRC_PATTERNS.test(line)) {
     const spaceIdx = line.indexOf(' ');
-    if (spaceIdx === -1) return line;
+    if (spaceIdx === -1) { return line; }
     // For ":sender PRIVMSG NickServ :IDENTIFY ...", keep up to "IDENTIFY"
     const identifyMatch = line.match(/^(:.* PRIVMSG\s+NickServ\s+:IDENTIFY)\s/i);
-    if (identifyMatch) return `${identifyMatch[1]} ***`;
+    if (identifyMatch) { return `${identifyMatch[1]} ***`; }
     // For "AUTHENTICATE <payload>" or "PASS <password>"
     return `${line.substring(0, spaceIdx)} ***`;
   }

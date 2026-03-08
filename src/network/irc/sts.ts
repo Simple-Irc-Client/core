@@ -44,7 +44,7 @@ export interface ParsedSTS {
  * @returns Parsed STS object or null if invalid
  */
 export const parseSTSValue = (value: string): ParsedSTS | null => {
-  if (!value) return null;
+  if (!value) { return null; }
 
   const params: Record<string, string> = {};
   for (const param of value.split(',')) {

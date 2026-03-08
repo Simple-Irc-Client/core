@@ -222,10 +222,10 @@ const Chat = () => {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) { return; }
 
     const content = container.firstElementChild;
-    if (!content) return;
+    if (!content) { return; }
 
     const resizeObserver = new ResizeObserver(() => {
       if (!isUserScrolledUp.current) {
@@ -240,7 +240,7 @@ const Chat = () => {
 
   return (
     <div ref={containerRef} role="log" onScroll={handleScroll} onContextMenu={(e) => {
-      if (e.defaultPrevented) return;
+      if (e.defaultPrevented) { return; }
       e.preventDefault();
       e.stopPropagation();
       const selection = window.getSelection()?.toString();

@@ -226,7 +226,7 @@ export const setAddUser = (newUser: User): void => {
       setJoinUser(newUser.nick, channel.name);
     }
   } else {
-    if (useUsersStore.getState().users.length >= MAX_USERS) return;
+    if (useUsersStore.getState().users.length >= MAX_USERS) { return; }
     // Apply any buffered metadata that arrived before JOIN
     const buffered = pendingMetadata.get(newUser.nick);
     if (buffered) {

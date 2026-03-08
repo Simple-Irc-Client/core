@@ -14,7 +14,7 @@ const POPULAR_NETWORKS = ['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'Qu
 
 const ServerIcon = ({ server }: { server: Server }) => {
   const svg = serverIcons[server.network];
-  if (!svg) return null;
+  if (!svg) { return null; }
 
   const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
   return <img src={dataUri} alt="" className="w-4 h-4" />;

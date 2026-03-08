@@ -10,8 +10,8 @@ import { isSafeCssColor } from '@shared/lib/utils';
 
 function getStyleFromFormatState(state: FormatState): CSSProperties {
   const style: CSSProperties = {};
-  if (state.bold) style.fontWeight = 'bold';
-  if (state.italic) style.fontStyle = 'italic';
+  if (state.bold) { style.fontWeight = 'bold'; }
+  if (state.italic) { style.fontStyle = 'italic'; }
   if (state.underline && state.strikethrough) {
     style.textDecoration = 'underline line-through';
   } else if (state.underline) {
@@ -19,12 +19,12 @@ function getStyleFromFormatState(state: FormatState): CSSProperties {
   } else if (state.strikethrough) {
     style.textDecoration = 'line-through';
   }
-  if (state.monospace) style.fontFamily = 'monospace';
+  if (state.monospace) { style.fontFamily = 'monospace'; }
   let fg = state.foreground;
   let bg = state.background;
-  if (state.reverse) [fg, bg] = [bg, fg];
-  if (fg && isSafeCssColor(fg)) style.color = fg;
-  if (bg && isSafeCssColor(bg)) style.backgroundColor = bg;
+  if (state.reverse) { [fg, bg] = [bg, fg]; }
+  if (fg && isSafeCssColor(fg)) { style.color = fg; }
+  if (bg && isSafeCssColor(bg)) { style.backgroundColor = bg; }
   return style;
 }
 
@@ -40,7 +40,7 @@ function renderFormattedSegments(segments: FormattedSegment[]): React.ReactNode[
 }
 
 function renderTopic(topic: string): React.ReactNode {
-  if (!hasIrcFormatting(topic)) return topic;
+  if (!hasIrcFormatting(topic)) { return topic; }
   return renderFormattedSegments(parseIrcFormatting(topic));
 }
 

@@ -57,7 +57,7 @@ export const startBatch = (id: string, type: string, params: string[], reference
     }
   }
 
-  if (activeBatches.size >= MAX_ACTIVE_BATCHES) return;
+  if (activeBatches.size >= MAX_ACTIVE_BATCHES) { return; }
 
   activeBatches.set(id, {
     id,

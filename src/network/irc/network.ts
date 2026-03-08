@@ -100,10 +100,10 @@ const scheduleReconnectAttempt = (): void => {
  * Schedules another retry if retries remain.
  */
 export const handleReconnectFailure = (): void => {
-  if (!isReconnecting) return;
+  if (!isReconnecting) { return; }
 
   // If a reconnect is already scheduled (timeout pending), don't double-schedule
-  if (reconnectTimeoutId !== null) return;
+  if (reconnectTimeoutId !== null) { return; }
 
   setIsConnecting(false);
   scheduleReconnectAttempt();
@@ -254,7 +254,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   if (encryptionKey) {
     initEncryption(encryptionKey).then(() => {
       setDirectEncryption(true);
-      if (import.meta.env.DEV) console.log('Encryption enabled for local backend');
+      if (import.meta.env.DEV) { console.log('Encryption enabled for local backend'); }
       connectToLocalBackend();
     });
   } else {
@@ -331,7 +331,7 @@ export const ircAuthenticate = (account: string, password: string): void => {
   // Store credentials for potential reconnect
   setSaslCredentials(account, password);
   if (isCapabilityEnabled('sasl')) {
-    if (import.meta.env.DEV) console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ');
+    if (import.meta.env.DEV) { console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ'); }
   }
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
 };
@@ -413,7 +413,7 @@ export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): vo
  * https://ircv3.net/specs/extensions/monitor.html
  */
 export const ircMonitorAdd = (nicks: string[]): void => {
-  if (nicks.length === 0) return;
+  if (nicks.length === 0) { return; }
   ircSendRawMessage(`MONITOR + ${nicks.join(',')}`);
 };
 
@@ -421,7 +421,7 @@ export const ircMonitorAdd = (nicks: string[]): void => {
  * Remove nicks from the MONITOR list
  */
 export const ircMonitorRemove = (nicks: string[]): void => {
-  if (nicks.length === 0) return;
+  if (nicks.length === 0) { return; }
   ircSendRawMessage(`MONITOR - ${nicks.join(',')}`);
 };
 

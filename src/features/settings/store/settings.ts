@@ -275,7 +275,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined): void => {
       set((state) => {
         const network = state.server?.network;
-        if (!network) return state;
+        if (!network) { return state; }
         if (encrypted && nick) {
           return { serverPasswords: { ...state.serverPasswords, [network]: { encrypted, nick } } };
         }
@@ -573,14 +573,14 @@ export const setEncryptedPassword = (encrypted: string | undefined, nick: string
 export const getEncryptedPassword = (): string | undefined => {
   const state = useSettingsStore.getState();
   const network = state.server?.network;
-  if (!network) return undefined;
+  if (!network) { return undefined; }
   return state.serverPasswords[network]?.encrypted;
 };
 
 export const getPasswordNick = (): string | undefined => {
   const state = useSettingsStore.getState();
   const network = state.server?.network;
-  if (!network) return undefined;
+  if (!network) { return undefined; }
   return state.serverPasswords[network]?.nick;
 };
 

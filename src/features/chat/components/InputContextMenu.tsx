@@ -42,7 +42,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   }, []);
 
   useEffect(() => {
-    if (contextMenuPosition === null) return;
+    if (contextMenuPosition === null) { return; }
 
     // Focus first non-disabled item on open
     const firstEnabled = items.findIndex((item) => !item.disabled);
@@ -56,7 +56,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
       }
     };
     const handleEscape = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
@@ -67,7 +67,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contextMenuPosition, onClose]);
 
-  if (contextMenuPosition === null) return null;
+  if (contextMenuPosition === null) { return null; }
 
   const clamped = clampPosition(contextMenuPosition);
 
@@ -78,10 +78,10 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
 
   const handleItemKeyDown = (e: React.KeyboardEvent, index: number) => {
     const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);
-    if (navigableIndices.length === 0) return;
+    if (navigableIndices.length === 0) { return; }
 
     const moveFocus = (targetIdx: number | undefined) => {
-      if (targetIdx !== undefined) focusItem(targetIdx);
+      if (targetIdx !== undefined) { focusItem(targetIdx); }
     };
 
     switch (e.key) {

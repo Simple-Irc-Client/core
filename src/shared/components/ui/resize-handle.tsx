@@ -35,7 +35,7 @@ const ResizeHandle = ({ onResize, direction = 'right', className, 'aria-label': 
   }, [onResize, direction]);
 
   useEffect(() => {
-    if (!isDragging) return;
+    if (!isDragging) { return; }
 
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - startXRef.current;

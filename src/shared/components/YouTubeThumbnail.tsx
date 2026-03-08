@@ -17,7 +17,7 @@ const YouTubeThumbnail = ({ text }: YouTubeThumbnailProps) => {
     <div className="mt-2 flex flex-wrap gap-2">
       {videoIds.map((videoId) => {
         const thumbnailUrl = getYouTubeThumbnailUrl(videoId);
-        if (!thumbnailUrl) return null;
+        if (!thumbnailUrl) { return null; }
         return (
           <a
             key={videoId}

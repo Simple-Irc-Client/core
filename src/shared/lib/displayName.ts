@@ -32,7 +32,7 @@ export const getChannelDisplayName = (channelName: string): string => {
  * Extract nick string from a Message
  */
 export const getNickFromMessage = (message: Message | undefined): string | undefined => {
-  if (!message?.nick) return undefined;
+  if (!message?.nick) { return undefined; }
   return typeof message.nick === 'string' ? message.nick : message.nick.nick;
 };
 
@@ -41,7 +41,7 @@ export const getNickFromMessage = (message: Message | undefined): string | undef
  * Uses embedded User object if available, falls back to live lookup for string nicks
  */
 export const getDisplayNickFromMessage = (message: Message | undefined): string => {
-  if (!message?.nick) return '';
+  if (!message?.nick) { return ''; }
 
   // String nick (system messages) - live lookup
   if (typeof message.nick === 'string') {

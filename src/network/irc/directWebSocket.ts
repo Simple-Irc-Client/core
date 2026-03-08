@@ -48,7 +48,7 @@ const triggerDirectEvent = (eventName: string, data: unknown): void => {
  * LIST entries are processed).
  */
 const processMessageQueue = async (): Promise<void> => {
-  if (isProcessingQueue) return;
+  if (isProcessingQueue) { return; }
   isProcessingQueue = true;
 
   while (messageQueue.length > 0) {

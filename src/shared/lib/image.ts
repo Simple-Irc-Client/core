@@ -13,7 +13,7 @@ export const extractImageUrls = (text: string): string[] => {
 };
 
 function isSafeImageUrl(url: string): boolean {
-  if (!isSafeUrl(url)) return false;
+  if (!isSafeUrl(url)) { return false; }
   try {
     const { hostname } = new URL(url);
     return !isPrivateHost(hostname);

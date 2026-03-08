@@ -27,9 +27,9 @@ function extractTwitterEmbeds(text: string, isDarkMode: boolean): SocialEmbedInf
     const tweetId = match[1];
     const originalUrl = match[0];
 
-    if (!tweetId || !NUMERIC_ID_REGEX.test(tweetId)) continue;
-    if (!isSafeUrl(originalUrl)) continue;
-    if (results.some((r) => r.originalUrl === originalUrl)) continue;
+    if (!tweetId || !NUMERIC_ID_REGEX.test(tweetId)) { continue; }
+    if (!isSafeUrl(originalUrl)) { continue; }
+    if (results.some((r) => r.originalUrl === originalUrl)) { continue; }
 
     const theme = isDarkMode ? '&theme=dark' : '';
     results.push({
@@ -47,14 +47,14 @@ function extractFacebookEmbeds(text: string): SocialEmbedInfo[] {
   const seen = new Set<string>();
 
   const addFacebookEmbed = (url: string) => {
-    if (seen.has(url)) return;
-    if (!isSafeUrl(url)) return;
+    if (seen.has(url)) { return; }
+    if (!isSafeUrl(url)) { return; }
 
     // Verify the hostname is actually facebook.com or fb.watch
     try {
       const parsed = new URL(url);
       const host = parsed.hostname.toLowerCase();
-      if (host !== 'www.facebook.com' && host !== 'facebook.com' && host !== 'fb.watch') return;
+      if (host !== 'www.facebook.com' && host !== 'facebook.com' && host !== 'fb.watch') { return; }
     } catch {
       return;
     }
@@ -95,11 +95,11 @@ function extractBlueskyEmbeds(text: string): SocialEmbedInfo[] {
     const rkey = match[2];
     const originalUrl = match[0];
 
-    if (!handle || !rkey) continue;
-    if (!BLUESKY_HANDLE_REGEX.test(handle)) continue;
-    if (!BLUESKY_RKEY_REGEX.test(rkey)) continue;
-    if (!isSafeUrl(originalUrl)) continue;
-    if (results.some((r) => r.originalUrl === originalUrl)) continue;
+    if (!handle || !rkey) { continue; }
+    if (!BLUESKY_HANDLE_REGEX.test(handle)) { continue; }
+    if (!BLUESKY_RKEY_REGEX.test(rkey)) { continue; }
+    if (!isSafeUrl(originalUrl)) { continue; }
+    if (results.some((r) => r.originalUrl === originalUrl)) { continue; }
 
     results.push({
       platform: 'bluesky',

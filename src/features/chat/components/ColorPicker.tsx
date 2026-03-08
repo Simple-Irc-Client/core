@@ -24,7 +24,7 @@ const ColorPicker = ({ open, onOpenChange, disabled }: ColorPickerProps) => {
   };
 
   const getSelectedColorHex = (): string | undefined => {
-    if (selectedColor === null) return undefined;
+    if (selectedColor === null) { return undefined; }
     return IRC_COLORS[selectedColor];
   };
 

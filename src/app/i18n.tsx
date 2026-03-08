@@ -18,10 +18,10 @@ const validCodes = new Set(languages.map(({ code }) => code));
 const getPersistedLanguage = (): string | undefined => {
   try {
     const raw = localStorage.getItem('sic-settings');
-    if (!raw) return undefined;
+    if (!raw) { return undefined; }
     const parsed = JSON.parse(raw);
     const language = parsed?.state?.language;
-    if (language && language !== 'auto' && validCodes.has(language)) return language;
+    if (language && language !== 'auto' && validCodes.has(language)) { return language; }
   } catch {
     // ignore parse errors
   }

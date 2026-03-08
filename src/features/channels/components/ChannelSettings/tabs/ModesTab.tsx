@@ -111,7 +111,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
 
   const handleApplyRawModes = () => {
     const trimmed = rawModes.trim();
-    if (!trimmed) return;
+    if (!trimmed) { return; }
 
     // Parse the desired flags from the input (e.g. "+nrtBCN" -> Set{n,r,t,B,C,N})
     const desiredFlags = new Set<string>();
@@ -119,7 +119,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     for (const ch of trimmed) {
       if (ch === '+') { adding = true; continue; }
       if (ch === '-') { adding = false; continue; }
-      if (adding) desiredFlags.add(ch);
+      if (adding) { desiredFlags.add(ch); }
     }
 
     // Get all current flags from channel modes

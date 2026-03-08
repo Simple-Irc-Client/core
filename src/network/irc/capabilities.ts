@@ -163,7 +163,7 @@ export const parseCapabilityList = (capString: string): Record<string, string> =
   const capList = cleanString.split(' ');
 
   for (const cap of capList) {
-    if (cap.length === 0) continue;
+    if (cap.length === 0) { continue; }
 
     if (!cap.includes('=')) {
       caps[cap] = '';

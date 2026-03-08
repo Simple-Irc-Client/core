@@ -72,7 +72,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleAvatarChange = (): void => {
     const trimmedAvatar = newAvatar.trim();
     if (trimmedAvatar.length > 0) {
-      if (!isSafeUrl(trimmedAvatar)) return;
+      if (!isSafeUrl(trimmedAvatar)) { return; }
       ircSendRawMessage(`METADATA * SET avatar ${trimmedAvatar}`);
     } else {
       ircSendRawMessage('METADATA * SET avatar');
@@ -103,7 +103,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleHomepageChange = (): void => {
     const trimmedHomepage = newHomepage.trim();
     if (trimmedHomepage.length > 0) {
-      if (!isSafeUrl(trimmedHomepage)) return;
+      if (!isSafeUrl(trimmedHomepage)) { return; }
       ircSendRawMessage(`METADATA * SET homepage ${trimmedHomepage}`);
     } else {
       ircSendRawMessage('METADATA * SET homepage');

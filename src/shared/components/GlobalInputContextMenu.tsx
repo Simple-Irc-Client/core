@@ -66,8 +66,8 @@ export const GlobalInputContextMenu = () => {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
-      if (!(event.metaKey || event.ctrlKey)) return;
-      if (!isEditableElement(document.activeElement)) return;
+      if (!(event.metaKey || event.ctrlKey)) { return; }
+      if (!isEditableElement(document.activeElement)) { return; }
 
       const input = document.activeElement;
       const start = input.selectionStart ?? 0;
@@ -101,7 +101,7 @@ export const GlobalInputContextMenu = () => {
 
     const handleContextMenu = (event: MouseEvent): void => {
       const target = event.target;
-      if (!isEditableElement(target)) return;
+      if (!isEditableElement(target)) { return; }
 
       event.preventDefault();
       targetRef.current = target;
@@ -128,7 +128,7 @@ export const GlobalInputContextMenu = () => {
 
   const cutSelection = (): void => {
     const input = targetRef.current;
-    if (!input) return;
+    if (!input) { return; }
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
@@ -144,7 +144,7 @@ export const GlobalInputContextMenu = () => {
 
   const copySelection = (): void => {
     const input = targetRef.current;
-    if (!input) return;
+    if (!input) { return; }
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
@@ -155,7 +155,7 @@ export const GlobalInputContextMenu = () => {
 
   const pasteFromClipboard = (): void => {
     const input = targetRef.current;
-    if (!input) return;
+    if (!input) { return; }
     const pos = contextMenuPosition;
     input.focus();
     const showHint = () => {
@@ -189,7 +189,7 @@ export const GlobalInputContextMenu = () => {
       // unavoidable paste confirmation prompt, so show a keyboard hint instead.
       navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
         .then(perm => {
-          if (perm.state === 'denied') return showHint();
+          if (perm.state === 'denied') { return showHint(); }
           navigator.clipboard.readText().then(doPaste).catch(showHint);
         })
         .catch(showHint);
@@ -198,7 +198,7 @@ export const GlobalInputContextMenu = () => {
 
   const selectAll = (): void => {
     const input = targetRef.current;
-    if (!input) return;
+    if (!input) { return; }
     requestAnimationFrame(() => {
       input.focus();
       input.setSelectionRange(0, input.value.length);
