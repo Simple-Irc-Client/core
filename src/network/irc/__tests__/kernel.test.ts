@@ -5415,7 +5415,7 @@ describe('kernel tests', () => {
     });
 
     it('should not re-trigger SQUERY when deprecation notice is received while already in alisMode', () => {
-      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
