@@ -10,6 +10,8 @@ Sentry.init({
   tracesSampleRate: 0.2,
 });
 
+console.log(`Simple IRC Client [${__GIT_REF__}]`);
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <App />

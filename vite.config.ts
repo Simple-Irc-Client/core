@@ -3,6 +3,15 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import { execSync } from "child_process";
+
+const gitRef = (() => {
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+})();
 
 const pwa = VitePWA({
   registerType: "autoUpdate",
@@ -40,6 +49,7 @@ const pwa = VitePWA({
 export default defineConfig(({ command }) => {
   if (command === "serve") {
     return {
+      define: { __GIT_REF__: JSON.stringify(gitRef) },
       plugins: [react(), tailwindcss(), pwa],
       resolve: {
         alias: {
@@ -55,6 +65,7 @@ export default defineConfig(({ command }) => {
     }
   } else {
     return {
+      define: { __GIT_REF__: JSON.stringify(gitRef) },
       plugins: [react(), tailwindcss(), pwa],
       resolve: {
         alias: {
