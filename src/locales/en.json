@@ -61,7 +61,7 @@
     "main.channels.categoryDirectMessages": "Direct Messages",
     "main.channels.search": "Search channels",
     "main.channels.no-results": "No channels found",
-    "main.users.title": "Users:",
+    "main.users.title": "Users",
     "main.user-typing": "is typing...",
     "main.chat.messageReceived": "Message received by server",
     "main.chat.notConnected": "Not connected to server",

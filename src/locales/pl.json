@@ -61,7 +61,7 @@
     "main.channels.categoryDirectMessages": "Wiadomości prywatne",
     "main.channels.search": "Szukaj kanałów",
     "main.channels.no-results": "Nie znaleziono kanałów",
-    "main.users.title": "Użytkownicy:",
+    "main.users.title": "Użytkownicy",
     "main.user-typing": "pisze...",
     "main.chat.messageReceived": "Wiadomość odebrana przez serwer",
     "main.chat.notConnected": "Brak połączenia z serwerem",

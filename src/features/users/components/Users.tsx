@@ -84,7 +84,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
         >
           <div>
             <div className="flex items-center justify-between px-4 h-16">
-              <h3 className={`${fontSizeClass} font-medium`}>{t('main.users.title')}</h3>
+              <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
               {isUsersDrawerOpen && (
                 <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
                   <X className="h-4 w-4" />
