@@ -65,6 +65,11 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         groups.push({ category: cat, label: labelKeys[cat], channels });
       }
     }
+    // Always include the "Channels" group so the join button is accessible
+    if (!groups.some((g) => g.category === ChannelCategory.channel)) {
+      const insertIdx = groups.findIndex((g) => g.category === ChannelCategory.priv);
+      groups.splice(insertIdx === -1 ? groups.length : insertIdx, 0, { category: ChannelCategory.channel, label: labelKeys[ChannelCategory.channel], channels: [] });
+    }
     return groups;
   }, [openChannelsShort]);
 
@@ -141,30 +146,11 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               })()}
               <h3 className={`${fontSizeClass} font-semibold truncate`}>{networkName ?? server?.network ?? t('main.channels.title')}</h3>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => setDialogOpen(true)}
-                      disabled={!isConnected}
-                      aria-label={t('main.channels.join')}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{t('main.channels.join')}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              {isChannelsDrawerOpen && (
-                <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.channels.closeDrawer')}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            {isChannelsDrawerOpen && (
+              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden flex-shrink-0" aria-label={t('main.channels.closeDrawer')}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
           {!isConnected && (
             <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
@@ -176,7 +162,28 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
             {groupedChannels.map((group) => (
               <div key={group.category}>
                 {group.label && (
-                  <div className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t(group.label)}</div>
+                  <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t(group.label)}</span>
+                    {group.category === ChannelCategory.channel && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => setDialogOpen(true)}
+                              disabled={!isConnected}
+                              aria-label={t('main.channels.join')}
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{t('main.channels.join')}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
                 )}
                 {group.channels.map((channel) => (
                   <div
