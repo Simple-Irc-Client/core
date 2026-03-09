@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { getServerParam, getPortParam, getTlsParam, getChannelParam } from '../queryParams';
+import { getServerParam, getPortParam, getTlsParam, getChannelParam, getBackgroundParam } from '../queryParams';
 
 describe('queryParams', () => {
   const originalLocation = window.location;
@@ -238,6 +238,26 @@ describe('queryParams', () => {
 
         expect(getChannelParam()).toEqual(['#main']);
       });
+    });
+  });
+
+  describe('getBackgroundParam', () => {
+    it('should return undefined when no background param exists', () => {
+      mockLocation('');
+
+      expect(getBackgroundParam()).toBeUndefined();
+    });
+
+    it('should return the background URL', () => {
+      mockLocation('?background=https://example.com/image.jpg');
+
+      expect(getBackgroundParam()).toBe('https://example.com/image.jpg');
+    });
+
+    it('should return background when multiple params exist', () => {
+      mockLocation('?server=Libera.Chat&background=https://example.com/bg.png');
+
+      expect(getBackgroundParam()).toBe('https://example.com/bg.png');
     });
   });
 });

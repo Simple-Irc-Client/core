@@ -6,6 +6,7 @@
     "wizard.nick.title": "Witaj",
     "wizard.nick.nick": "Podaj swój pseudonim",
     "wizard.nick.customServerWarning": "Połączysz się z niestandardowym serwerem:",
+    "wizard.nick.serverInfo": "Połączysz się z:",
     "wizard.nick.button.next": "Dalej",
     "wizard.server.title": "Witaj",
     "wizard.server.subtitle": "Wybierz swój serwer",

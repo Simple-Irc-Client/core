@@ -10,6 +10,7 @@ The IRC client supports URL query parameters to pre-configure the connection and
 | `port` | number | Port number (1-65535), overrides port in server param |
 | `tls` | boolean | Enable/disable TLS encryption (`true`, `false`, `1`, `0`) |
 | `channel` | string | Channel(s) to auto-join after connecting (comma-separated) |
+| `background` | string | URL of a background image for the wizard |
 
 ## Parameter Details
 

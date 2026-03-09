@@ -26,6 +26,10 @@ export const getTlsParam = (): boolean | undefined => {
   return undefined;
 };
 
+export const getBackgroundParam = (): string | undefined => {
+  return getParams().get('background') ?? undefined;
+};
+
 export const getChannelParam = (): string[] | undefined => {
   let channelParam = getParams().get('channel');
 
