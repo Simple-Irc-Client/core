@@ -171,7 +171,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-5 w-5"
+                              className="h-7 w-7"
                               onClick={() => setDialogOpen(true)}
                               disabled={!isConnected}
                               aria-label={t('main.channels.join')}
