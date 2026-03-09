@@ -7,7 +7,7 @@ const DisconnectedBanner = () => {
   const { t } = useTranslation();
   const isConnecting = useSettingsStore((state) => state.isConnecting);
   return (
-    <div role="status" aria-live="polite" className="sticky top-0 z-10 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
+    <div role="status" aria-live="polite" className="sticky top-0 z-10 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
       <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
       <span>{t('main.chat.notConnected')}</span>
       <button
