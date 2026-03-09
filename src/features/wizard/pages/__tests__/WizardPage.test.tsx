@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import WizardPage from '../WizardPage';
 import * as settingsStore from '@features/settings/store/settings';
 
@@ -31,15 +32,21 @@ vi.mock('../../components/WizardChannelList', () => ({
   default: () => <div data-testid="wizard-channel-list">WizardPageChannelList</div>,
 }));
 
+const getContentDiv = (container: HTMLElement): HTMLElement => {
+  // Root: div.relative.h-screen > [background div, content div]
+  const root = container.firstChild as HTMLElement;
+  return root.children[1] as HTMLElement;
+};
+
 describe('WizardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  const setupMocks = (wizardStep: string) => {
+  const setupMocks = (wizardStep: string, overrides: Record<string, unknown> = {}) => {
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ wizardStep })
+      (selector: any) => selector({ wizardStep, isWizardHintDismissed: true, ...overrides })
     );
   };
 
@@ -123,9 +130,9 @@ describe('WizardPage', () => {
 
       const { container } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-md');
-      expect(outerDiv).not.toHaveClass('max-w-screen-sm');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-md');
+      expect(contentDiv).not.toHaveClass('max-w-screen-sm');
     });
 
     it('should use max-w-screen-sm class when step is "nick"', () => {
@@ -133,9 +140,9 @@ describe('WizardPage', () => {
 
       const { container } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-sm');
-      expect(outerDiv).not.toHaveClass('max-w-screen-md');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-sm');
+      expect(contentDiv).not.toHaveClass('max-w-screen-md');
     });
 
     it('should use max-w-screen-sm class when step is "server"', () => {
@@ -143,8 +150,8 @@ describe('WizardPage', () => {
 
       const { container } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-sm');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-sm');
     });
 
     it('should use max-w-screen-sm class when step is "password"', () => {
@@ -152,8 +159,8 @@ describe('WizardPage', () => {
 
       const { container } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-sm');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-sm');
     });
 
     it('should use max-w-screen-sm class when step is "loading"', () => {
@@ -161,8 +168,8 @@ describe('WizardPage', () => {
 
       const { container } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-sm');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-sm');
     });
   });
 
@@ -185,14 +192,60 @@ describe('WizardPage', () => {
       setupMocks('nick');
       const { container, rerender } = render(<WizardPage />);
 
-      const outerDiv = container.firstChild as HTMLElement;
-      expect(outerDiv).toHaveClass('max-w-screen-sm');
+      const contentDiv = getContentDiv(container);
+      expect(contentDiv).toHaveClass('max-w-screen-sm');
 
       // Change step to channels
       setupMocks('channels');
       rerender(<WizardPage />);
 
-      expect(outerDiv).toHaveClass('max-w-screen-md');
+      expect(contentDiv).toHaveClass('max-w-screen-md');
+    });
+  });
+
+  describe('Wizard hint', () => {
+    it('should show hint on nick step when not dismissed', () => {
+      setupMocks('nick', { isWizardHintDismissed: false });
+
+      render(<WizardPage />);
+
+      expect(screen.getByText('wizard.hint.message')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'wizard.hint.dismiss' })).toBeInTheDocument();
+    });
+
+    it('should not show hint on nick step when dismissed', () => {
+      setupMocks('nick', { isWizardHintDismissed: true });
+
+      render(<WizardPage />);
+
+      expect(screen.queryByText('wizard.hint.message')).not.toBeInTheDocument();
+    });
+
+    it('should not show hint on non-nick steps', () => {
+      setupMocks('server', { isWizardHintDismissed: false });
+
+      render(<WizardPage />);
+
+      expect(screen.queryByText('wizard.hint.message')).not.toBeInTheDocument();
+    });
+
+    it('should call setWizardHintDismissed when dismiss button is clicked', async () => {
+      const setWizardHintDismissedSpy = vi.spyOn(settingsStore, 'setWizardHintDismissed').mockImplementation(() => {});
+      setupMocks('nick', { isWizardHintDismissed: false });
+
+      render(<WizardPage />);
+
+      await userEvent.click(screen.getByRole('button', { name: 'wizard.hint.dismiss' }));
+
+      expect(setWizardHintDismissedSpy).toHaveBeenCalledOnce();
+    });
+
+    it('should have accessible role="status" on hint container', () => {
+      setupMocks('nick', { isWizardHintDismissed: false });
+
+      render(<WizardPage />);
+
+      expect(screen.getByRole('status')).toBeInTheDocument();
     });
   });
 

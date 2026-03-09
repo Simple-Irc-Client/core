@@ -58,6 +58,7 @@ import {
   getEncryptedPassword,
   getPasswordNick,
   changeServer,
+  setWizardHintDismissed,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -190,6 +191,14 @@ describe('settings store', () => {
       const progress = getWizardProgress();
       expect(progress.value).toBe(75);
       expect(progress.label).toBe('Step 3');
+    });
+
+    it('should dismiss wizard hint permanently', () => {
+      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(false);
+
+      setWizardHintDismissed();
+
+      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(true);
     });
   });
 

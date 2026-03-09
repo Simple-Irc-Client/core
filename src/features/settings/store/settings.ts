@@ -63,6 +63,7 @@ export interface SettingsStore {
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
+  isWizardHintDismissed: boolean; // Whether the wizard intro hint has been permanently dismissed
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -100,6 +101,7 @@ export interface SettingsStore {
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
+  setWizardHintDismissed: () => void;
   resetWizardState: () => void;
 }
 
@@ -142,6 +144,7 @@ export const useSettingsStore = create<SettingsStore>()(
     fontSize: 'medium',
     language: 'auto',
     serverPasswords: {},
+    isWizardHintDismissed: false,
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -281,6 +284,9 @@ export const useSettingsStore = create<SettingsStore>()(
         }
         return { serverPasswords: Object.fromEntries(Object.entries(state.serverPasswords).filter(([key]) => key !== network)) };
       });
+    },
+    setWizardHintDismissed: (): void => {
+      set(() => ({ isWizardHintDismissed: true }));
     },
     resetWizardState: (): void => {
       set(() => ({
@@ -626,6 +632,10 @@ export const setLanguage = (language: LanguageSetting): void => {
 
 export const getLanguage = (): LanguageSetting => {
   return useSettingsStore.getState().language;
+};
+
+export const setWizardHintDismissed = (): void => {
+  useSettingsStore.getState().setWizardHintDismissed();
 };
 
 export const disconnectOnly = (): void => {

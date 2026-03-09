@@ -1,4 +1,6 @@
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
+import { useSettingsStore, setWizardHintDismissed } from '@features/settings/store/settings';
 import { getBackgroundParam } from '@shared/lib/queryParams';
 import WizardChannelList from '../components/WizardChannelList';
 import WizardNick from '../components/WizardNick';
@@ -43,11 +45,14 @@ const getTimeOfDayGradient = (isDarkMode: boolean): string => {
 };
 
 const Wizard = () => {
+  const { t } = useTranslation();
   const wizardStep = useSettingsStore((state) => state.wizardStep);
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
+  const isWizardHintDismissed = useSettingsStore((state) => state.isWizardHintDismissed);
   const backgroundUrl = getBackgroundParam();
   const cardClass = 'bg-background/90 backdrop-blur-md rounded-2xl p-8 shadow-lg';
   const isWideStep = wizardStep === 'channels';
+  const showHint = wizardStep === 'nick' && !isWizardHintDismissed;
 
   return (
     <div className="relative h-screen">
@@ -63,6 +68,20 @@ const Wizard = () => {
       </div>
       <div className={`relative mx-auto h-full ${isWideStep ? 'max-w-screen-md' : 'max-w-screen-sm'}`}>
         <div className="h-full flex flex-col items-center pb-[15%]">
+          {showHint && (
+            <div className="w-full mt-6" role="status">
+              <div className="flex items-start gap-3 rounded-xl bg-background/80 backdrop-blur-sm px-4 py-3 text-sm text-foreground/80 shadow-sm">
+                <p className="flex-1">{t('wizard.hint.message')}</p>
+                <button
+                  onClick={setWizardHintDismissed}
+                  className="shrink-0 rounded-md p-1 hover:bg-foreground/10 transition-colors"
+                  aria-label={t('wizard.hint.dismiss')}
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
           {wizardStep === 'nick' && (
             <div className={`my-auto w-full ${cardClass}`}>
               <WizardNick />

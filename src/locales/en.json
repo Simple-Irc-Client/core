@@ -8,6 +8,8 @@
     "wizard.nick.customServerWarning": "You will connect to a custom server:",
     "wizard.nick.serverInfo": "You will connect to:",
     "wizard.nick.button.next": "Next",
+    "wizard.hint.message": "Welcome! This is an IRC client — you'll connect to an IRC network where you can join channels and chat with others in real time.",
+    "wizard.hint.dismiss": "Dismiss",
     "wizard.server.title": "Hello",
     "wizard.server.subtitle": "Choose your server",
     "wizard.server.server": "Select a server from the list",

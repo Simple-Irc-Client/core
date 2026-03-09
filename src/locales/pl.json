@@ -8,6 +8,8 @@
     "wizard.nick.customServerWarning": "Połączysz się z niestandardowym serwerem:",
     "wizard.nick.serverInfo": "Połączysz się z:",
     "wizard.nick.button.next": "Dalej",
+    "wizard.hint.message": "Witaj! To jest klient IRC — połączysz się z siecią IRC, gdzie możesz dołączać do kanałów i rozmawiać z innymi w czasie rzeczywistym.",
+    "wizard.hint.dismiss": "Zamknij",
     "wizard.server.title": "Witaj",
     "wizard.server.subtitle": "Wybierz swój serwer",
     "wizard.server.server": "Wybierz serwer rozmów",
