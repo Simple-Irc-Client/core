@@ -96,14 +96,16 @@ export const getMenuPosition = (
 
 const PositionedMenuContent = ({
   source,
+  menuWidth,
   menuHeight,
   children,
 }: {
   source: HTMLElement | { x: number; y: number } | null;
+  menuWidth?: number;
   menuHeight?: number;
   children: React.ReactNode;
 }) => {
-  const position = source ? getMenuPosition(source, undefined, menuHeight) : null;
+  const position = source ? getMenuPosition(source, menuWidth, menuHeight) : null;
   return (
     <DropdownMenuContent
       style={
@@ -444,7 +446,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition}>
+        <PositionedMenuContent source={contextMenuPosition} menuWidth={340}>
           <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleOpenUrl}>
@@ -488,7 +490,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition}>
+        <PositionedMenuContent source={contextMenuPosition} menuWidth={280}>
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCopy}>
