@@ -10,7 +10,7 @@ import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 
-const POPULAR_NETWORKS = ['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet'];
+const POPULAR_NETWORKS = new Set(['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet']);
 
 const ServerIcon = ({ server }: { server: Server }) => {
   const svg = serverIcons[server.network];
@@ -34,8 +34,8 @@ const WizardServer = () => {
   const [customPort, setCustomPort] = useState(savedIsCustom ? savedServer?.servers[0]?.match(/:(\d+)$/)?.[1] ?? '6667' : '6667');
   const [connectionType, setConnectionType] = useState<ConnectionType>(savedServer?.connectionType ?? 'backend');
 
-  const popularServers = servers.filter((s) => POPULAR_NETWORKS.includes(s.network));
-  const otherServers = servers.filter((s) => !POPULAR_NETWORKS.includes(s.network));
+  const popularServers = servers.filter((s) => POPULAR_NETWORKS.has(s.network));
+  const otherServers = servers.filter((s) => !POPULAR_NETWORKS.has(s.network));
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();

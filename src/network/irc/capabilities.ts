@@ -200,6 +200,6 @@ export const shouldUseSasl = (): boolean => {
 export const getSupportedSaslMechanisms = (): string[] => {
   const serverMechanisms = parseSaslMechanisms(getCapabilityValue('sasl') ?? '');
   // We support PLAIN and EXTERNAL
-  const supportedByClient = ['PLAIN', 'EXTERNAL'];
-  return serverMechanisms.filter((m) => supportedByClient.includes(m));
+  const supportedByClient = new Set(['PLAIN', 'EXTERNAL']);
+  return serverMechanisms.filter((m) => supportedByClient.has(m));
 };

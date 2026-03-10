@@ -19,7 +19,7 @@ import { isSafeCssColor } from '@shared/lib/utils';
 import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 
-const TOPIC_EDIT_FLAGS = ['q', 'a', 'o'];
+const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
 function getStyleFromFormatState(state: FormatState): CSSProperties {
   const style: CSSProperties = {};
@@ -77,7 +77,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
   const [editedTopic, setEditedTopic] = useState(topic);
 
   const userFlags = getCurrentUserChannelModes(currentChannelName);
-  const canEditTopic = userFlags.some((flag) => TOPIC_EDIT_FLAGS.includes(flag));
+  const canEditTopic = userFlags.some((flag) => TOPIC_EDIT_FLAGS.has(flag));
 
   const handleSaveTopic = () => {
     if (editedTopic !== topic) {
