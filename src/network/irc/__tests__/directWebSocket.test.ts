@@ -25,7 +25,7 @@ vi.mock('../helpers', () => ({
     const [hostPart, portPart] = serverStr.split(':');
     return {
       host: hostPart,
-      port: portPart ? parseInt(portPart, 10) : 6667,
+      port: portPart ? Number.parseInt(portPart, 10) : 6667,
       tls: server.tls ?? false,
     };
   }),

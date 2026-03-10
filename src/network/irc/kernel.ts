@@ -2820,16 +2820,16 @@ export class Kernel {
               setChannelModes(parseChannelModes(value));
               break;
             case 'WATCH':
-              setWatchLimit(value !== undefined ? parseInt(value, 10) : 0);
+              setWatchLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'MONITOR':
-              setMonitorLimit(value !== undefined ? parseInt(value, 10) : 0);
+              setMonitorLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'SILENCE':
-              setSilenceLimit(value !== undefined ? parseInt(value, 10) : 0);
+              setSilenceLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'NICKLEN':
-              setNickLenLimit(value !== undefined ? parseInt(value, 10) : 50);
+              setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
               break;
             case 'NETWORK':
               if (value !== undefined) { setNetworkName(value); }

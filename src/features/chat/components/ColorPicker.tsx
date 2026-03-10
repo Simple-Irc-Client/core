@@ -53,7 +53,7 @@ const ColorPicker = ({ open, onOpenChange, disabled }: ColorPickerProps) => {
           <div className="text-sm font-medium text-muted-foreground mb-1">{t('main.toolbar.textColor')}</div>
           <div className="grid grid-cols-8 gap-1">
             {Object.entries(IRC_COLORS).map(([code, color]) => {
-              const colorCode = parseInt(code, 10);
+              const colorCode = Number.parseInt(code, 10);
               const isSelected = selectedColor === colorCode;
               return (
                 <button

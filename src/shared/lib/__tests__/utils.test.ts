@@ -269,18 +269,18 @@ describe('ensureNickContrast', () => {
     it('should keep red hue when lightening', () => {
       const result = ensureNickContrast('#330000', true);
       // Parse result to verify red channel dominates
-      const r = parseInt(result.slice(1, 3), 16);
-      const g = parseInt(result.slice(3, 5), 16);
-      const b = parseInt(result.slice(5, 7), 16);
+      const r = Number.parseInt(result.slice(1, 3), 16);
+      const g = Number.parseInt(result.slice(3, 5), 16);
+      const b = Number.parseInt(result.slice(5, 7), 16);
       expect(r).toBeGreaterThan(g);
       expect(r).toBeGreaterThan(b);
     });
 
     it('should keep blue hue when lightening', () => {
       const result = ensureNickContrast('#000033', true);
-      const r = parseInt(result.slice(1, 3), 16);
-      const g = parseInt(result.slice(3, 5), 16);
-      const b = parseInt(result.slice(5, 7), 16);
+      const r = Number.parseInt(result.slice(1, 3), 16);
+      const g = Number.parseInt(result.slice(3, 5), 16);
+      const b = Number.parseInt(result.slice(5, 7), 16);
       expect(b).toBeGreaterThan(r);
       expect(b).toBeGreaterThan(g);
     });

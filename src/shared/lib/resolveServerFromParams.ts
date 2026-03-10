@@ -44,7 +44,7 @@ const parseServerParam = (serverParam: string): ParsedServer => {
     // [::1]:6667 format
     const bracketEnd = host.indexOf(']:');
     const possiblePort = host.slice(bracketEnd + 2);
-    const port = parseInt(possiblePort, 10);
+    const port = Number.parseInt(possiblePort, 10);
     if (!isNaN(port) && port > 0 && port <= 65535) {
       return { host: host.slice(0, bracketEnd + 1), port, tls, connectionType };
     }
@@ -52,7 +52,7 @@ const parseServerParam = (serverParam: string): ParsedServer => {
     const lastColonIndex = host.lastIndexOf(':');
     if (lastColonIndex > 0) {
       const possiblePort = host.slice(lastColonIndex + 1);
-      const port = parseInt(possiblePort, 10);
+      const port = Number.parseInt(possiblePort, 10);
       if (!isNaN(port) && port > 0 && port <= 65535) {
         return { host: host.slice(0, lastColonIndex), port, tls, connectionType };
       }

@@ -174,7 +174,7 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
         }
 
         if (fgStr.length > 0) {
-          const fg = parseInt(fgStr, 10);
+          const fg = Number.parseInt(fgStr, 10);
           currentState.foreground = getColorFromCode(fg);
 
           // Check for background color
@@ -191,7 +191,7 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
               }
             }
             if (bgStr.length > 0) {
-              const bg = parseInt(bgStr, 10);
+              const bg = Number.parseInt(bgStr, 10);
               currentState.background = getColorFromCode(bg);
             }
           }

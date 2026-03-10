@@ -7,7 +7,7 @@ export const getServerParam = (): string | undefined => {
 export const getPortParam = (): number | undefined => {
   const port = getParams().get('port');
   if (port) {
-    const parsed = parseInt(port, 10);
+    const parsed = Number.parseInt(port, 10);
     if (!isNaN(parsed) && parsed > 0 && parsed <= 65535) {
       return parsed;
     }

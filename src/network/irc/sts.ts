@@ -66,8 +66,8 @@ export const parseSTSValue = (value: string): ParsedSTS | null => {
     return null;
   }
 
-  const port = parseInt(params.port, 10);
-  const duration = parseInt(params.duration, 10);
+  const port = Number.parseInt(params.port, 10);
+  const duration = Number.parseInt(params.duration, 10);
 
   if (isNaN(port) || isNaN(duration) || port <= 0 || duration < 0) {
     return null;
