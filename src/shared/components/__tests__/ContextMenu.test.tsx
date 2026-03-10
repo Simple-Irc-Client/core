@@ -362,7 +362,7 @@ describe('ContextMenu', () => {
     });
 
     it('should open window when homepage is a safe URL', () => {
-      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const mockWindowOpen = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
@@ -392,7 +392,7 @@ describe('ContextMenu', () => {
     });
 
     it('should not open window when homepage is a javascript: URL', () => {
-      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const mockWindowOpen = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
@@ -422,7 +422,7 @@ describe('ContextMenu', () => {
     });
 
     it('should not open window when homepage is a data: URL', () => {
-      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const mockWindowOpen = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
@@ -856,7 +856,7 @@ describe('ContextMenu', () => {
     });
 
     it('should open URL in new tab when Open is clicked', () => {
-      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const mockWindowOpen = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createUrlContextMenuMock({ contextMenuItem: 'https://example.com' })
       );
@@ -872,7 +872,7 @@ describe('ContextMenu', () => {
     });
 
     it('should not open unsafe URLs', () => {
-      const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const mockWindowOpen = vi.spyOn(globalThis, 'open').mockImplementation(() => null);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createUrlContextMenuMock({ contextMenuItem: 'javascript:alert(1)' })
       );
