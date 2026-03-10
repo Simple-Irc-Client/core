@@ -4685,7 +4685,7 @@ describe('kernel tests', () => {
           '+kb key *!*@host',
           '+l 100',
           '-l',
-          '+' + 'o'.repeat(20) + ' ' + Array(20).fill('nick').join(' '),
+          '+' + 'o'.repeat(20) + ' ' + new Array(20).fill('nick').join(' '),
           '-' + randomString(50),
           '+' + randomString(50) + ' ' + randomString(50),
         ];
@@ -4889,7 +4889,7 @@ describe('kernel tests', () => {
           randomString(20) + '=' + randomString(30),
         ];
         for (let i = 0; i < 20; i++) {
-          const tokens = Array(Math.floor(Math.random() * 10) + 1)
+          const tokens = new Array(Math.floor(Math.random() * 10) + 1)
             .fill(0)
             .map(() => isupportTokens[Math.floor(Math.random() * isupportTokens.length)]);
           const line = `:server 005 nick ${tokens.join(' ')} :are supported by this server`;
@@ -4901,7 +4901,7 @@ describe('kernel tests', () => {
         setupMocks();
 
         for (let i = 0; i < 20; i++) {
-          const nicks = Array(Math.floor(Math.random() * 50) + 1)
+          const nicks = new Array(Math.floor(Math.random() * 50) + 1)
             .fill(0)
             .map(() => randomNick());
           const line = `:server 353 mynick = ${randomChannel()} :${nicks.join(' ')}`;
@@ -4973,7 +4973,7 @@ describe('kernel tests', () => {
           { num: '313', format: (n: string) => `:server 313 me ${n} :is an IRC Operator` },
           { num: '317', format: (n: string) => `:server 317 me ${n} ${Math.floor(Math.random() * 100000)} ${Math.floor(Date.now() / 1000)} :seconds idle, signon time` },
           { num: '318', format: (n: string) => `:server 318 me ${n} :End of /WHOIS list` },
-          { num: '319', format: (n: string) => `:server 319 me ${n} :${Array(5).fill(0).map(() => randomChannel()).join(' ')}` },
+          { num: '319', format: (n: string) => `:server 319 me ${n} :${new Array(5).fill(0).map(() => randomChannel()).join(' ')}` },
           { num: '330', format: (n: string) => `:server 330 me ${n} ${randomString(15)} :is logged in as` },
           { num: '338', format: (n: string) => `:server 338 me ${n} ${randomString(15)} :actually using host` },
           { num: '378', format: (n: string) => `:server 378 me ${n} :is connecting from *@${randomString(30)}` },
@@ -4998,7 +4998,7 @@ describe('kernel tests', () => {
 
         for (let i = 0; i < 30; i++) {
           const subcommand = capSubcommands[Math.floor(Math.random() * capSubcommands.length)];
-          const caps = Array(Math.floor(Math.random() * 10) + 1)
+          const caps = new Array(Math.floor(Math.random() * 10) + 1)
             .fill(0)
             .map(() => capabilities[Math.floor(Math.random() * capabilities.length)]);
           const line = `:server CAP * ${subcommand} :${caps.join(' ')}`;
