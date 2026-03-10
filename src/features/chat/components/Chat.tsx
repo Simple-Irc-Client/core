@@ -26,7 +26,7 @@ import EchoedIndicator from './EchoedIndicator';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 
-const italicCategories: Set<MessageCategory> = new Set([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
+const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
 const isBotMessage = (message: Message): boolean =>
   message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;

@@ -93,8 +93,11 @@ export const useChannelSettingsStore = create<ChannelSettingsStore>()(
     updateChannelMode: (mode: string, value: string | boolean | null): void => {
       set((state) => {
         if (value === null || value === false) {
-          const { [mode]: _, ...rest } = state.channelModes;
-          return { channelModes: rest };
+          return {
+            channelModes: Object.fromEntries(
+              Object.entries(state.channelModes).filter(([key]) => key !== mode),
+            ),
+          };
         }
         return { channelModes: { ...state.channelModes, [mode]: value } };
       });
