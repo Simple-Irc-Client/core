@@ -35,7 +35,7 @@ function parseHexColor(hex: string): [number, number, number] | null {
   const r = Number.parseInt(hex.slice(0, 2), 16);
   const g = Number.parseInt(hex.slice(2, 4), 16);
   const b = Number.parseInt(hex.slice(4, 6), 16);
-  if (isNaN(r) || isNaN(g) || isNaN(b)) { return null; }
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) { return null; }
   return [r, g, b];
 }
 
