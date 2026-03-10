@@ -26,7 +26,7 @@ import EchoedIndicator from './EchoedIndicator';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
 
-const italicCategories: MessageCategory[] = [MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick];
+const italicCategories: Set<MessageCategory> = new Set([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
 const isBotMessage = (message: Message): boolean =>
   message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;
@@ -45,7 +45,7 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
 
   return (
     <div className="py-1 px-4 overflow-hidden">
-      <code className={`${fontSizeClass} break-all ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
+      <code className={`${fontSizeClass} break-all ${italicCategories.has(message.category) ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
         &nbsp;
         {nick !== undefined && (
@@ -77,7 +77,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
 
   return (
     <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-      <div className={`${fontSizeClass} ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
+      <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         <span className="inline-block w-3" />
         {nick !== undefined ? (
@@ -124,7 +124,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     <>
       {!showAvatarLayout && (
         <div className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`} style={{ color: message.color ?? MessageColor.default }}>
-          <div className={`${fontSizeClass} ${italicCategories.includes(message.category) ? 'italic' : ''}`}>
+          <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
             <MessageText text={message.message} />
           </div>
         </div>
