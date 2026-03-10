@@ -1,4 +1,4 @@
-const getParams = () => new URLSearchParams(window.location.search);
+const getParams = () => new URLSearchParams(globalThis.location.search);
 
 export const getServerParam = (): string | undefined => {
   return getParams().get('server') ?? undefined;
@@ -35,8 +35,8 @@ export const getChannelParam = (): string[] | undefined => {
 
   // Fallback: if URL has `channel=` followed by `#channel`, the browser treats `#channel` as fragment
   // e.g., `?channel=#general` → search="?channel=", hash="#general"
-  if (!channelParam && window.location.hash && window.location.search.includes('channel=')) {
-    channelParam = window.location.hash;
+  if (!channelParam && globalThis.location.hash && globalThis.location.search.includes('channel=')) {
+    channelParam = globalThis.location.hash;
   }
 
   if (!channelParam) {

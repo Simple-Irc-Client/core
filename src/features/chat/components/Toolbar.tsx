@@ -517,7 +517,7 @@ const Toolbar = () => {
               </Button>
             )}
             <Popover open={emojiPickerOpen} onOpenChange={(open) => {
-                if (open && window.matchMedia('(pointer: coarse)').matches) {
+                if (open && globalThis.matchMedia('(pointer: coarse)').matches) {
                   autocompleteInput.current?.blur();
                 }
                 setEmojiPickerOpen(open);
@@ -528,12 +528,12 @@ const Toolbar = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end" onOpenAutoFocus={(e) => {
-                  if (window.matchMedia('(pointer: coarse)').matches) {
+                  if (globalThis.matchMedia('(pointer: coarse)').matches) {
                     e.preventDefault();
                   }
                 }}>
                 <Suspense>
-                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!window.matchMedia('(pointer: coarse)').matches} />
+                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!globalThis.matchMedia('(pointer: coarse)').matches} />
                 </Suspense>
               </PopoverContent>
             </Popover>

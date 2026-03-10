@@ -6,8 +6,8 @@ const MENU_HEIGHT = 160;
 const MENU_WIDTH = 160;
 
 const clampPosition = (position: { x: number; y: number }): { x: number; y: number } => {
-  const x = Math.min(position.x, window.innerWidth - MENU_WIDTH);
-  const y = position.y > window.innerHeight - MENU_HEIGHT
+  const x = Math.min(position.x, globalThis.innerWidth - MENU_WIDTH);
+  const y = position.y > globalThis.innerHeight - MENU_HEIGHT
     ? position.y - MENU_HEIGHT
     : position.y;
   return { x: Math.max(0, x), y: Math.max(0, y) };

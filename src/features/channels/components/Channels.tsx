@@ -98,7 +98,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const handleListItemClick = (channel: Channel): void => {
     setCurrentChannelName(channel.name, channel.category);
     // Close drawer on mobile/tablet (below lg breakpoint)
-    if (window.matchMedia?.('(max-width: 1023px)').matches) {
+    if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
       setChannelsDrawerStatus();
     }
   };

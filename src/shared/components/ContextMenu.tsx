@@ -71,8 +71,8 @@ export const getMenuPosition = (
   menuWidth = 200,
   menuHeight = 200,
 ): { left: number; top: number } => {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+  const viewportWidth = globalThis.innerWidth;
+  const viewportHeight = globalThis.innerHeight;
 
   let left: number;
   let top: number;
@@ -177,7 +177,7 @@ export const ContextMenu = () => {
     const handleVisitHomepage = (): void => {
       const user = getUser(contextMenuItem);
       if (user?.homepage && isSafeUrl(user.homepage)) {
-        window.open(user.homepage, '_blank', 'noopener,noreferrer');
+        globalThis.open(user.homepage, '_blank', 'noopener,noreferrer');
       }
       handleContextMenuClose();
     };
@@ -430,7 +430,7 @@ export const ContextMenu = () => {
   if (contextMenuCategory === 'url' && contextMenuItem !== undefined) {
     const handleOpenUrl = (): void => {
       if (isSafeUrl(contextMenuItem)) {
-        window.open(contextMenuItem, '_blank', 'noopener,noreferrer');
+        globalThis.open(contextMenuItem, '_blank', 'noopener,noreferrer');
       }
       handleContextMenuClose();
     };

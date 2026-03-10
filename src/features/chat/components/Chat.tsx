@@ -243,7 +243,7 @@ const Chat = () => {
       if (e.defaultPrevented) { return; }
       e.preventDefault();
       e.stopPropagation();
-      const selection = window.getSelection()?.toString();
+      const selection = globalThis.getSelection()?.toString();
       if (selection) {
         handleContextMenuUserClick(e, 'text', selection);
       } else {

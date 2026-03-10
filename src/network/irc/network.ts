@@ -214,7 +214,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     setCurrentConnectionInfo(host, useTLS);
 
     // Construct gateway WebSocket URL with query parameters
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const params = new URLSearchParams({
       host: singleServer.host,
       port: String(singleServer.port),
