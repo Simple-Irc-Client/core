@@ -60,10 +60,10 @@ export const createServerScopedStorage = (): StateStorage => {
       if (pendingWrite !== null) {
         clearTimeout(pendingWrite);
       }
-      pendingWrite = setTimeout(() => {
+      pendingWrite = setTimeout(async () => {
         pendingWrite = null;
         if (pendingValue !== null && pendingKey !== null) {
-          void idbStorage.setItem(pendingKey, pendingValue);
+          await idbStorage.setItem(pendingKey, pendingValue);
         }
       }, WRITE_DEBOUNCE_MS);
     },
