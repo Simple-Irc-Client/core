@@ -6,7 +6,8 @@ import * as settingsStore from '@features/settings/store/settings';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: (key: string, opts?: Record<string, string>) =>
+      opts ? Object.values(opts).join(', ') + ' ' + key : key,
   }),
   initReactI18next: {
     type: '3rdParty',

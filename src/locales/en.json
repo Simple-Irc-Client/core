@@ -65,7 +65,7 @@
     "main.channels.search": "Search channels",
     "main.channels.no-results": "No channels found",
     "main.users.title": "Users",
-    "main.user-typing": "is typing...",
+    "main.user-typing": "{{nicks}} is typing...",
     "main.chat.messageReceived": "Message received by server",
     "main.chat.notConnected": "Not connected to server",
     "main.chat.notConnectedDescription": "Open your profile menu and tap Connect to get started.",

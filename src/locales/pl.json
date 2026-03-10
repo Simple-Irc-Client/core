@@ -65,7 +65,7 @@
     "main.channels.search": "Szukaj kanałów",
     "main.channels.no-results": "Nie znaleziono kanałów",
     "main.users.title": "Użytkownicy",
-    "main.user-typing": "pisze...",
+    "main.user-typing": "{{nicks}} pisze...",
     "main.chat.messageReceived": "Wiadomość odebrana przez serwer",
     "main.chat.notConnected": "Brak połączenia z serwerem",
     "main.chat.notConnectedDescription": "Otwórz menu profilu i kliknij Połącz, aby rozpocząć.",
