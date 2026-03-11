@@ -2152,27 +2152,16 @@ export class Kernel {
             break;
         }
 
-        if (flag === 'r' || flag === 'x') {
-          // Track current user's +r flag (registered status)
-          if (flag === 'r' && user === getCurrentNick()) {
-            setCurrentUserFlag('r', plusMinus === '+');
-          }
-
-          setAddMessage({
-            id: uuidv4(),
-            message,
-            target: STATUS_CHANNEL,
-            time: this.tags?.time ?? new Date().toISOString(),
-            category: MessageCategory.mode,
-            color: MessageColor.mode,
-          });
-          continue;
+        // Track current user's +r flag (registered status)
+        if (flag === 'r' && user === getCurrentNick()) {
+          setCurrentUserFlag('r', plusMinus === '+');
         }
 
+        // All user mode changes go to Status to avoid noise in active channels
         setAddMessage({
           id: uuidv4(),
           message,
-          target: currentChannelName,
+          target: STATUS_CHANNEL,
           time: this.tags?.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
@@ -2313,13 +2302,17 @@ export class Kernel {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.ctcpReply', { nick, command: ctcpCommand.toUpperCase(), response: ctcpResponse }),
-        target: currentChannelName,
+        target: STATUS_CHANNEL,
         time: this.tags?.time ?? new Date().toISOString(),
         category: MessageCategory.notice,
         color: MessageColor.notice,
       });
       return;
     }
+
+    // Server notices (sender has no '!' — it's a server hostname, not a user)
+    // route to Status to avoid flooding the current channel during connection/reconnection
+    const isServerNotice = !this.sender.includes('!');
 
     const newMessage = {
       message,
@@ -2329,7 +2322,7 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    setAddMessage({ ...newMessage, target: currentChannelName, id: this.tags?.msgid ?? uuidv4() });
+    setAddMessage({ ...newMessage, target: isServerNotice ? STATUS_CHANNEL : currentChannelName, id: this.tags?.msgid ?? uuidv4() });
   };
 
   // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
@@ -2540,11 +2533,11 @@ export class Kernel {
 
     const command = ctcpCommand.toUpperCase();
 
-    // Show CTCP request received notification
+    // Show CTCP request received notification (in Status to avoid noise in active channels)
     setAddMessage({
       id: uuidv4(),
       message: i18next.t('kernel.ctcpRequest', { nick, command }),
-      target: currentChannelName,
+      target: STATUS_CHANNEL,
       time: new Date().toISOString(),
       category: MessageCategory.notice,
       color: MessageColor.notice,
@@ -2554,7 +2547,7 @@ export class Kernel {
     setAddMessage({
       id: uuidv4(),
       message: i18next.t('kernel.ctcpResponse', { nick, command, response: ctcpResponse }),
-      target: currentChannelName,
+      target: STATUS_CHANNEL,
       time: new Date().toISOString(),
       category: MessageCategory.notice,
       color: MessageColor.notice,

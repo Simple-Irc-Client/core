@@ -1337,7 +1337,7 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'mero ma teraz flage +x' }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel1', message: 'mero ma teraz flage +z' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: STATUS_CHANNEL, message: 'mero ma teraz flage +z' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
@@ -1351,7 +1351,7 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +i' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Merovingian ma teraz flage +i' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1365,8 +1365,8 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +i' }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +w' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Merovingian ma teraz flage +i' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(3, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Merovingian ma teraz flage +w' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
   });
 
@@ -1380,7 +1380,7 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +o' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Merovingian ma teraz flage +o' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -1394,7 +1394,7 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'Merovingian ma teraz flage +s' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Merovingian ma teraz flage +s' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -4483,12 +4483,12 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'VERSION' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'VERSION', response: clientVersion }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4502,12 +4502,12 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'TIME' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: expect.stringContaining('CTCP TIME'),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4521,12 +4521,12 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'PING' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'PING', response: '12345' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4540,12 +4540,12 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'CLIENTINFO' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'CLIENTINFO', response: 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4587,7 +4587,7 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'VERSION', response: 'Simple IRC Client' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
           color: 'var(--msg-notice)',
         }));
@@ -4602,7 +4602,7 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'PING', response: '1234567890' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4616,7 +4616,7 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'TIME', response: 'Mon Jan 01 2023' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
@@ -4630,7 +4630,7 @@ describe('kernel tests', () => {
 
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
           message: i18next.t('kernel.ctcpReply', { nick: 'sender', command: 'VERSION', response: '' }),
-          target: '#test',
+          target: STATUS_CHANNEL,
           category: 'notice',
         }));
       });
