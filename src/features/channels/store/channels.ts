@@ -236,7 +236,7 @@ export const getChannel = (channelName: string): ChannelExtended | undefined => 
 };
 
 export const existChannel = (channelName: string): boolean => {
-  return useChannelsStore.getState().openChannels.find((channel: ChannelExtended) => channel.name === channelName) !== undefined;
+  return useChannelsStore.getState().openChannels.some((channel: ChannelExtended) => channel.name === channelName);
 };
 
 export const getChannelsToAutoJoin = (): string[] => {
