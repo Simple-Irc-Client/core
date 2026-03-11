@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 import { getCurrentUserChannelModes } from '@features/users/store/users';
 import ChannelSettings from './ChannelSettings';
 
-const SETTINGS_ACCESS_FLAGS = ['h', 'o', 'a', 'q'];
+const SETTINGS_ACCESS_FLAGS = new Set(['h', 'o', 'a', 'q']);
 
 interface ChannelSettingsButtonProps {
   channelName: string;
@@ -17,7 +17,7 @@ const ChannelSettingsButton = ({ channelName }: ChannelSettingsButtonProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const userFlags = getCurrentUserChannelModes(channelName);
-  const canAccessSettings = userFlags.some((flag) => SETTINGS_ACCESS_FLAGS.includes(flag));
+  const canAccessSettings = userFlags.some((flag) => SETTINGS_ACCESS_FLAGS.has(flag));
 
   if (!canAccessSettings) {
     return null;
