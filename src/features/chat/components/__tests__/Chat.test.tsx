@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
@@ -968,51 +968,7 @@ describe('Chat tests', () => {
   });
 
   describe('Scroll behavior on channel change', () => {
-    const rafCallbacks: { current: FrameRequestCallback | null } = { current: null };
-    let originalRaf: typeof requestAnimationFrame;
-
-    const executeRafCallback = () => {
-      if (rafCallbacks.current) {
-        rafCallbacks.current(performance.now());
-      }
-    };
-
-    const clearRafCallback = () => {
-      rafCallbacks.current = null;
-    };
-
-    beforeEach(() => {
-      originalRaf = globalThis.requestAnimationFrame;
-      globalThis.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-        rafCallbacks.current = callback;
-        return 1;
-      });
-    });
-
-    afterEach(() => {
-      globalThis.requestAnimationFrame = originalRaf;
-      rafCallbacks.current = null;
-    });
-
-    it('should use requestAnimationFrame to scroll to bottom on channel change', () => {
-      setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
-
-      const { rerender } = render(<Main />);
-
-      // Clear the initial raf call
-      clearRafCallback();
-      vi.mocked(globalThis.requestAnimationFrame).mockClear();
-
-      // Change channel
-      setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
-      rerender(<Main />);
-
-      // requestAnimationFrame should be called on channel change
-      expect(globalThis.requestAnimationFrame).toHaveBeenCalled();
-      expect(rafCallbacks.current).not.toBeNull();
-    });
-
-    it('should scroll to bottom when requestAnimationFrame callback executes after channel change', () => {
+    it('should scroll to bottom synchronously on channel change', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container, rerender } = render(<Main />);
@@ -1026,18 +982,11 @@ describe('Chat tests', () => {
       scrollContainer.scrollTop = 200;
       fireEvent.scroll(scrollContainer);
 
-      // Clear the raf callback and mock
-      clearRafCallback();
-      vi.mocked(globalThis.requestAnimationFrame).mockClear();
-
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
 
-      // Execute the raf callback (simulates browser executing after DOM update)
-      executeRafCallback();
-
-      // Should scroll to bottom
+      // Should scroll to bottom immediately (no RAF needed)
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
 
@@ -1055,15 +1004,9 @@ describe('Chat tests', () => {
       scrollContainer.scrollTop = 200; // distanceFromBottom = 1000 - 200 - 400 = 400 > 50
       fireEvent.scroll(scrollContainer);
 
-      // Clear raf
-      clearRafCallback();
-
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
-
-      // Execute raf callback
-      executeRafCallback();
 
       // Trigger ResizeObserver (simulating content update)
       resizeObserverCallback([], {} as ResizeObserver);
@@ -1082,17 +1025,11 @@ describe('Chat tests', () => {
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
       Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
 
-      clearRafCallback();
-
       // Change channel
       setupMocks({ currentChannelName: '#channel2', messages: [createMessage({ id: '2' })] });
       rerender(<Main />);
 
-      // Execute raf callback to trigger programmatic scroll
-      executeRafCallback();
-
       // Simulate scroll event that would normally be triggered by scrollTop assignment
-      // This tests that the scroll position is maintained after the raf executes
       scrollContainer.scrollTop = scrollContainer.scrollHeight;
 
       // ResizeObserver should still scroll to bottom
@@ -1101,16 +1038,15 @@ describe('Chat tests', () => {
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
 
-    it('should scroll to bottom on initial channel load', () => {
+    it('should scroll to bottom on initial channel load via ResizeObserver', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
       const scrollContainer = container.firstChild as HTMLDivElement;
 
+      // After initial render, content loads and ResizeObserver fires
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 500, configurable: true });
-
-      // Execute initial raf callback
-      executeRafCallback();
+      resizeObserverCallback([], {} as ResizeObserver);
 
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
@@ -1344,7 +1280,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
       const scrollContainer = container.firstChild as HTMLDivElement;
-      const content = scrollContainer.firstElementChild;
+      const content = scrollContainer.lastElementChild;
 
       // ResizeObserver should observe the content element
       expect(content).toBeTruthy();

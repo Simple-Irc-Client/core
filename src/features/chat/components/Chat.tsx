@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { MessageCategory, type Message } from '@shared/types';
 
@@ -204,17 +204,14 @@ const Chat = () => {
     }
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     isUserScrolledUp.current = false;
-    // Use requestAnimationFrame to ensure DOM has updated before scrolling
-    requestAnimationFrame(() => {
-      if (containerRef.current) {
-        containerRef.current.scrollTop = containerRef.current.scrollHeight;
-      }
-    });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [currentChannelName]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (containerRef.current && !isUserScrolledUp.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
@@ -224,7 +221,7 @@ const Chat = () => {
     const container = containerRef.current;
     if (!container) { return; }
 
-    const content = container.firstElementChild;
+    const content = container.lastElementChild;
     if (!content) { return; }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -236,7 +233,7 @@ const Chat = () => {
     resizeObserver.observe(content);
 
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [isConnected]);
 
   return (
     <div ref={containerRef} role="log" onScroll={handleScroll} onContextMenu={(e) => {
