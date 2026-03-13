@@ -305,17 +305,17 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      useUsersStore.getState().setUserAvatar('User1', 'http://avatar.png');
+      useUsersStore.getState().setUserAvatar('User1', 'https://avatar.png');
 
-      expect(getUser('User1')?.avatar).toBe('http://avatar.png');
+      expect(getUser('User1')?.avatar).toBe('https://avatar.png');
       expect(getUser('User2')?.avatar).toBeUndefined();
     });
 
     it('should buffer avatar when user does not exist', () => {
-      setUserAvatarExport('NewUser', 'http://avatar.png');
+      setUserAvatarExport('NewUser', 'https://avatar.png');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ avatar: 'http://avatar.png' });
+      expect(pendingMetadata.get('NewUser')).toEqual({ avatar: 'https://avatar.png' });
     });
   });
 
@@ -921,10 +921,10 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://avatar.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://avatar.png');
       const userAfterFirst = getUser('TestUser');
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://avatar.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://avatar.png');
       const userAfterSecond = getUser('TestUser');
 
       expect(userAfterFirst).toBe(userAfterSecond);
