@@ -8,6 +8,6 @@ const localeMap: Record<string, Locale> = {
 };
 
 export const getDateFnsLocale = (): Locale => {
-  const lang = i18n.language?.split('-')[0];
+  const lang = i18n.language?.split('-')[0] ?? 'en';
   return localeMap[lang] ?? enUS;
 };
