@@ -2142,8 +2142,11 @@ export class Kernel {
           case 'T': // Enables blocking private messages that contain CTCPs.
           case 'W': // Informs the user when someone does a /WHOIS query on their nick.
           case 'x': // Enables hiding of the user's hostname.
+          case 'y': // Marks the user as a WHOIS snooper.
+          case 'q': // Only U-lined servers can kick (services protection).
+          case 'a': // Services administrator.
+          case 'v': // Receives informed about bad DCC/CTCP requests.
           case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
-            // TODO case yqaohv
             message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
             break;
           default:
