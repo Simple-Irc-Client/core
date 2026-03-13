@@ -105,7 +105,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
         break;
       case 'End':
         e.preventDefault();
-        moveFocus(navigableIndices[navigableIndices.length - 1]);
+        moveFocus(navigableIndices.at(-1)!);
         break;
       case 'Enter':
       case ' ': {
