@@ -377,10 +377,17 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
-  it.skip('test raw CAP #2', () => {
+  it('test raw CAP #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
+    const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    vi.spyOn(capabilitiesFile, 'parseCapabilityList').mockReturnValue({});
+    vi.spyOn(capabilitiesFile, 'addAvailableCapabilities').mockImplementation(() => {});
+    vi.spyOn(capabilitiesFile, 'getCapabilitiesToRequest').mockReturnValue([]);
+    vi.spyOn(capabilitiesFile, 'markCapabilitiesRequested').mockImplementation(() => {});
+    vi.spyOn(capabilitiesFile, 'setAwaitingMoreCaps').mockImplementation(() => {});
+    const mockEndCapNegotiation = vi.spyOn(capabilitiesFile, 'endCapNegotiation').mockImplementation(() => {});
 
     const line = ':jowisz.pirc.pl CAP * LS :unrealircd.org/json-log';
 
@@ -391,6 +398,10 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+
+    // No capabilities to request, so CAP negotiation should end
+    expect(mockEndCapNegotiation).toHaveBeenCalledTimes(1);
+    expect(mockIrcSendRawMessage).toHaveBeenCalledWith('CAP END');
   });
 
   it('test raw CAP #3', () => {
