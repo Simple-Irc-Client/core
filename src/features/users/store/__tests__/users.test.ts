@@ -84,7 +84,7 @@ describe('users store', () => {
         ident: 'testident',
         hostname: 'test.host.com',
         flags: ['away'],
-        avatar: 'http://example.com/avatar.png',
+        avatar: 'https://example.com/avatar.png',
         color: '#ff0000',
         channels: [{ name: '#channel1', flags: ['o'], maxPermission: 3 }],
       };
@@ -96,7 +96,7 @@ describe('users store', () => {
       expect(storedUser?.ident).toBe('testident');
       expect(storedUser?.hostname).toBe('test.host.com');
       expect(storedUser?.flags).toEqual(['away']);
-      expect(storedUser?.avatar).toBe('http://example.com/avatar.png');
+      expect(storedUser?.avatar).toBe('https://example.com/avatar.png');
       expect(storedUser?.color).toBe('#ff0000');
     });
   });
@@ -280,21 +280,21 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://example.com/avatar.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://example.com/avatar.png');
 
-      expect(getUser('TestUser')?.avatar).toBe('http://example.com/avatar.png');
+      expect(getUser('TestUser')?.avatar).toBe('https://example.com/avatar.png');
     });
 
     it('should update existing avatar', () => {
       const user = createUser('TestUser', [
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]);
-      user.avatar = 'http://old-avatar.png';
+      user.avatar = 'https://old-avatar.png';
       useUsersStore.getState().setAddUser(user);
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://new-avatar.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://new-avatar.png');
 
-      expect(getUser('TestUser')?.avatar).toBe('http://new-avatar.png');
+      expect(getUser('TestUser')?.avatar).toBe('https://new-avatar.png');
     });
 
     it('should not affect other users', () => {
@@ -716,12 +716,12 @@ describe('users store', () => {
       ]));
 
       const userBefore = useUsersStore.getState().users[0];
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://example.com/avatar.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://example.com/avatar.png');
       const userAfter = useUsersStore.getState().users[0];
 
       expect(userBefore).not.toBe(userAfter);
       expect(userBefore?.avatar).toBeUndefined();
-      expect(userAfter?.avatar).toBe('http://example.com/avatar.png');
+      expect(userAfter?.avatar).toBe('https://example.com/avatar.png');
     });
 
     it('should not mutate original user object when updating color', () => {
@@ -991,14 +991,14 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://old.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://old.png');
       const userAfterFirst = getUser('TestUser');
 
-      useUsersStore.getState().setUserAvatar('TestUser', 'http://new.png');
+      useUsersStore.getState().setUserAvatar('TestUser', 'https://new.png');
       const userAfterSecond = getUser('TestUser');
 
       expect(userAfterFirst).not.toBe(userAfterSecond);
-      expect(userAfterSecond?.avatar).toBe('http://new.png');
+      expect(userAfterSecond?.avatar).toBe('https://new.png');
     });
   });
 

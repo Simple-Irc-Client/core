@@ -382,7 +382,7 @@ describe('Chat tests', () => {
           createMessage({
             id: '1',
             message: 'Test',
-            nick: createUserNick({ nick: 'ImageUser', avatar: 'http://example.com/avatar.png' }),
+            nick: createUserNick({ nick: 'ImageUser', avatar: 'https://example.com/avatar.png' }),
           }),
         ],
       });
@@ -390,7 +390,7 @@ describe('Chat tests', () => {
       render(<Main />);
 
       const img = screen.getByRole('img');
-      expect(img).toHaveAttribute('src', 'http://example.com/avatar.png');
+      expect(img).toHaveAttribute('src', 'https://example.com/avatar.png');
       expect(img).toHaveAttribute('alt', 'ImageUser');
     });
 
@@ -401,7 +401,7 @@ describe('Chat tests', () => {
           createMessage({
             id: '1',
             message: 'Test',
-            nick: createUserNick({ nick: 'BrokenAvatar', avatar: 'http://example.com/broken.png' }),
+            nick: createUserNick({ nick: 'BrokenAvatar', avatar: 'https://example.com/broken.png' }),
           }),
         ],
       });
@@ -527,7 +527,7 @@ describe('Chat tests', () => {
             createMessage({
               id: '1',
               message: 'waves hello',
-              nick: createUserNick({ nick: 'ActionUser', avatar: 'http://example.com/avatar.png' }),
+              nick: createUserNick({ nick: 'ActionUser', avatar: 'https://example.com/avatar.png' }),
               category: MessageCategory.me,
               color: MessageColor.me,
             }),
@@ -537,7 +537,7 @@ describe('Chat tests', () => {
         render(<Main />);
 
         const avatar = screen.getByRole('img');
-        expect(avatar).toHaveAttribute('src', 'http://example.com/avatar.png');
+        expect(avatar).toHaveAttribute('src', 'https://example.com/avatar.png');
         expect(avatar).toHaveAttribute('alt', 'ActionUser');
       });
 
@@ -714,7 +714,7 @@ describe('Chat tests', () => {
             createMessage({
               id: '1',
               message: 'waves hello',
-              nick: createUserNick({ nick: 'ActionUser', avatar: 'http://example.com/avatar.png' }),
+              nick: createUserNick({ nick: 'ActionUser', avatar: 'https://example.com/avatar.png' }),
               category: MessageCategory.me,
               color: MessageColor.me,
             }),
@@ -794,8 +794,8 @@ describe('Chat tests', () => {
       setupMocks({
         theme: 'modern',
         messages: [
-          createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }) }),
-          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }) }),
+          createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
+          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
         ],
       });
 
@@ -810,8 +810,8 @@ describe('Chat tests', () => {
       setupMocks({
         theme: 'modern',
         messages: [
-          createMessage({ id: '1', message: 'User1 msg', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }) }),
-          createMessage({ id: '2', message: 'User2 msg', nick: createUserNick({ nick: 'User2', avatar: 'http://example.com/b.png' }) }),
+          createMessage({ id: '1', message: 'User1 msg', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
+          createMessage({ id: '2', message: 'User2 msg', nick: createUserNick({ nick: 'User2', avatar: 'https://example.com/b.png' }) }),
         ],
       });
 
@@ -900,7 +900,7 @@ describe('Chat tests', () => {
           createMessage({
             id: '1',
             message: 'Hello',
-            nick: createUserNick({ nick: 'AvatarUser', avatar: 'http://example.com/avatar.png' }),
+            nick: createUserNick({ nick: 'AvatarUser', avatar: 'https://example.com/avatar.png' }),
           }),
         ],
       });
@@ -1833,8 +1833,8 @@ describe('Chat tests', () => {
       setupMocks({
         theme: 'modern',
         messages: [
-          createMessage({ id: '1', message: 'Before midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
-          createMessage({ id: '2', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
+          createMessage({ id: '1', message: 'Before midnight', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
         ],
       });
 
@@ -1853,10 +1853,10 @@ describe('Chat tests', () => {
       setupMocks({
         theme: 'modern',
         messages: [
-          createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
-          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:01:00Z' }),
-          createMessage({ id: '3', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
-          createMessage({ id: '4', message: 'After midnight 2', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-02T12:01:00Z' }),
+          createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:01:00Z' }),
+          createMessage({ id: '3', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
+          createMessage({ id: '4', message: 'After midnight 2', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-02T12:01:00Z' }),
         ],
       });
 
@@ -1871,8 +1871,8 @@ describe('Chat tests', () => {
       setupMocks({
         theme: 'modern',
         messages: [
-          createMessage({ id: '1', message: 'User1 day1', nick: createUserNick({ nick: 'User1', avatar: 'http://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
-          createMessage({ id: '2', message: 'User2 day2', nick: createUserNick({ nick: 'User2', avatar: 'http://example.com/b.png' }), time: '2024-01-02T12:00:00Z' }),
+          createMessage({ id: '1', message: 'User1 day1', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'User2 day2', nick: createUserNick({ nick: 'User2', avatar: 'https://example.com/b.png' }), time: '2024-01-02T12:00:00Z' }),
         ],
       });
 

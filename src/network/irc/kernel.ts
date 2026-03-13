@@ -3983,7 +3983,7 @@ export class Kernel {
     return parts.join(' ');
   };
 
-  // :server 328 mynick #channel :http://channel-url.com
+  // :server 328 mynick #channel :https://channel-url.com
   private readonly onRaw328 = (): void => {
     this.line.shift();
     const channel = this.line.shift();
