@@ -118,7 +118,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     }
   };
 
-  const showAvatarLayout = message.category === MessageCategory.default || message.category === MessageCategory.me;
+  const showAvatarLayout = message.category === MessageCategory.default || message.category === MessageCategory.me || message.category === MessageCategory.notice;
 
   return (
     <>

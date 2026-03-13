@@ -493,17 +493,144 @@ describe('Chat tests', () => {
       expect(coloredDiv).toHaveStyle({ color: MessageColor.quit });
     });
 
-    it('should render notice message with correct color', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Notice message', category: MessageCategory.notice, color: MessageColor.notice })],
+    describe('notice messages (MessageCategory.notice)', () => {
+      it('should render notice message with correct color', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [createMessage({ id: '1', message: 'Notice message', category: MessageCategory.notice, color: MessageColor.notice })],
+        });
+
+        const { container } = render(<Main />);
+
+        expect(container.textContent).toContain('Notice message');
+        const coloredDiv = container.querySelector(`div[style*="color"]`);
+        expect(coloredDiv).toHaveStyle({ color: MessageColor.notice });
       });
 
-      const { container } = render(<Main />);
+      it('should show nick for notice messages', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'You must be registered',
+              nick: createUserNick({ nick: 'NickServ' }),
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+          ],
+        });
 
-      expect(container.textContent).toContain('Notice message');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.notice });
+        render(<Main />);
+
+        expect(screen.getByText('NickServ')).toBeInTheDocument();
+      });
+
+      it('should show avatar for notice messages with avatar', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Channel notice',
+              nick: createUserNick({ nick: 'Pomocnik', avatar: 'https://example.com/bot.png' }),
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        const avatar = screen.getByRole('img');
+        expect(avatar).toHaveAttribute('src', 'https://example.com/bot.png');
+        expect(avatar).toHaveAttribute('alt', 'Pomocnik');
+      });
+
+      it('should show avatar fallback letter for notice messages without avatar', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Channel notice',
+              nick: 'Pomocnik',
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        expect(screen.getByText('P')).toBeInTheDocument();
+      });
+
+      it('should group consecutive notice messages from the same nick', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'First notice',
+              nick: createUserNick({ nick: 'NickServ' }),
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+            createMessage({
+              id: '2',
+              message: 'Second notice',
+              nick: createUserNick({ nick: 'NickServ' }),
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+              time: '2024-01-01T12:00:01Z',
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        const nickElements = screen.getAllByText('NickServ');
+        expect(nickElements).toHaveLength(1);
+      });
+
+      it('should show bot indicator for notice from bot', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Bot notice',
+              nick: createUserNick({ nick: 'Pomocnik', bot: true }),
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+          ],
+        });
+
+        render(<Main />);
+
+        expect(screen.getByText('Pomocnik')).toBeInTheDocument();
+        expect(screen.getByLabelText('Bot')).toBeInTheDocument();
+      });
+
+      it('should render notice without nick when nick is not set', () => {
+        setupMocks({
+          theme: 'modern',
+          messages: [
+            createMessage({
+              id: '1',
+              message: 'Server notice without nick',
+              category: MessageCategory.notice,
+              color: MessageColor.notice,
+            }),
+          ],
+        });
+
+        const { container } = render(<Main />);
+
+        expect(container.textContent).toContain('Server notice without nick');
+      });
     });
 
     it('should render error message with correct color', () => {
