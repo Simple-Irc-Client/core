@@ -52,6 +52,7 @@ import {
   setWatchLimit,
   getEncryptedPassword,
   getPasswordNick,
+  getCurrentUserFlags,
 } from '@features/settings/store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
@@ -111,7 +112,6 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
-import { getCurrentUserFlags } from '@features/settings/store/settings';
 import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
