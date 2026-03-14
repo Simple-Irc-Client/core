@@ -215,7 +215,6 @@ export const sendDirectRaw = async (data: string): Promise<void> => {
     return;
   }
 
-  // console.log('Direct WS ->', data);
   if (useEncryption && isEncryptionAvailable()) {
     const encrypted = await encryptString(data);
     directSocket.send(encrypted);

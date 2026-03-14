@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useDraftsStore, setDraft, getDraft, clearDraft, clearAllDrafts } from './drafts';
+import { useDraftsStore, setDraft, getDraft, clearDraft, clearAllDrafts } from '../drafts';
 
 describe('drafts store', () => {
   beforeEach(() => {
