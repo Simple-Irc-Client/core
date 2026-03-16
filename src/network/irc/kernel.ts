@@ -2938,9 +2938,9 @@ export class Kernel {
 
   // :saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62
   private readonly onRaw265 = (): void => {
-    this.line.shift();
-    const local = this.line.shift();
-    const max = this.line.shift();
+    this.line.shift(); // nick
+    this.line.shift(); // local
+    this.line.shift(); // max
 
     const message = this.trailing();
 
@@ -2956,9 +2956,9 @@ export class Kernel {
 
   // :saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721
   private readonly onRaw266 = (): void => {
-    this.line.shift();
-    const global = this.line.shift();
-    const max = this.line.shift();
+    this.line.shift(); // nick
+    this.line.shift(); // global
+    this.line.shift(); // max
 
     const message = this.trailing();
 
@@ -3399,7 +3399,7 @@ export class Kernel {
   private readonly onRaw432 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    const asterix = this.line.shift();
+    this.line.shift(); // asterisk
     const nick = this.line.shift();
 
     if (nick === undefined) {
@@ -3763,7 +3763,7 @@ export class Kernel {
 
   // :server 010 * <hostname> <port> :Server redirect
   private readonly onRaw010 = (): void => {
-    const asterisk = this.line.shift();
+    this.line.shift(); // asterisk
     const hostname = this.line.shift();
     const port = this.line.shift();
     const message = this.trailing();
@@ -3780,7 +3780,7 @@ export class Kernel {
 
   // :server 020 * :Please wait while we process your connection.
   private readonly onRaw020 = (): void => {
-    const asterisk = this.line.shift();
+    this.line.shift(); // asterisk
     const message = this.trailing();
 
     setAddMessage({
@@ -4554,7 +4554,7 @@ export class Kernel {
 
   // :server 433 * nick :Nickname is already in use
   private readonly onRaw433 = (): void => {
-    const asterisk = this.line.shift();
+    this.line.shift(); // asterisk
     const nick = this.line.shift();
     let message = this.trailing();
 
@@ -4670,7 +4670,7 @@ export class Kernel {
 
   // :server 451 * :You have not registered
   private readonly onRaw451 = (): void => {
-    const asterisk = this.line.shift();
+    this.line.shift(); // asterisk
     const message = this.trailing();
 
     setAddMessage({
@@ -4721,7 +4721,7 @@ export class Kernel {
 
   // :server 464 * :Password incorrect
   private readonly onRaw464 = (): void => {
-    const asterisk = this.line.shift();
+    this.line.shift(); // asterisk
     let message = this.trailing();
 
     if (message === 'Password incorrect') {
@@ -5227,9 +5227,9 @@ export class Kernel {
 
   // :server 729 mynick #channel q :End of Channel Quiet List
   private readonly onRaw729 = (): void => {
-    this.line.shift();
-    const channel = this.line.shift();
-    const mode = this.line.shift();
+    this.line.shift(); // nick
+    this.line.shift(); // channel
+    this.line.shift(); // mode
     // End of quiet list - nothing specific to do
   };
 
