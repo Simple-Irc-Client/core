@@ -63,7 +63,7 @@ describe('WizardLoading', () => {
     isConnecting?: boolean;
     isConnected?: boolean;
     wizardProgress?: { value: number; label: string };
-    server?: typeof mockServer | undefined;
+    server?: typeof mockServer;
     nick?: string;
   } = {}) => {
     const isConnecting = overrides.isConnecting ?? false;
