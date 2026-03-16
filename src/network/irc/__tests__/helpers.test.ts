@@ -216,15 +216,15 @@ describe('helper tests', () => {
 
   describe('unescapeTagValue', () => {
     it('should unescape IRCv3 tag value escape sequences', () => {
-      expect(unescapeTagValue('hello\\sworld')).toBe('hello world');
-      expect(unescapeTagValue('semi\\:colon')).toBe('semi;colon');
-      expect(unescapeTagValue('back\\\\slash')).toBe('back\\slash');
-      expect(unescapeTagValue('cr\\rreturn')).toBe('cr\rreturn');
-      expect(unescapeTagValue('new\\nline')).toBe('new\nline');
+      expect(unescapeTagValue(String.raw`hello\sworld`)).toBe('hello world');
+      expect(unescapeTagValue(String.raw`semi\:colon`)).toBe('semi;colon');
+      expect(unescapeTagValue(String.raw`back\\slash`)).toBe(String.raw`back\slash`);
+      expect(unescapeTagValue(String.raw`cr\rreturn`)).toBe('cr\rreturn');
+      expect(unescapeTagValue(String.raw`new\nline`)).toBe('new\nline');
     });
 
     it('should handle multiple escape sequences', () => {
-      expect(unescapeTagValue('a\\sb\\:c\\\\d')).toBe('a b;c\\d');
+      expect(unescapeTagValue(String.raw`a\sb\:c\\d`)).toBe(String.raw`a b;c\d`);
     });
 
     it('should pass through strings without escapes', () => {
@@ -234,7 +234,7 @@ describe('helper tests', () => {
     });
 
     it('should handle unknown escape sequences by dropping backslash', () => {
-      expect(unescapeTagValue('\\x')).toBe('x');
+      expect(unescapeTagValue(String.raw`\x`)).toBe('x');
     });
 
     it('should handle trailing backslash', () => {
@@ -244,7 +244,7 @@ describe('helper tests', () => {
   });
 
   it('parseIrcRawMessage should unescape tag values', () => {
-    const result = parseIrcRawMessage('@key=hello\\sworld :server COMMAND param');
+    const result = parseIrcRawMessage(String.raw`@key=hello\sworld :server COMMAND param`);
     expect(result.tags['key']).toBe('hello world');
   });
 

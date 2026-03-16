@@ -1656,7 +1656,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
       expect(highlightedEl).toBeInTheDocument();
     });
 
@@ -1670,7 +1670,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
       expect(highlightedEl).not.toBeInTheDocument();
     });
 
@@ -1684,7 +1684,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
       expect(highlightedEl).toBeInTheDocument();
     });
 
@@ -1698,7 +1698,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector('.border-primary.bg-primary\\/5');
+      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
       expect(highlightedEl).not.toBeInTheDocument();
     });
   });

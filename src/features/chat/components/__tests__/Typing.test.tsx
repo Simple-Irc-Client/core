@@ -156,7 +156,7 @@ describe('Typing', () => {
     });
 
     it('should render nicks with IRC special characters safely', () => {
-      setupMocks(['[nick]', 'nick|away', 'nick{test}', 'nick\\backslash']);
+      setupMocks(['[nick]', 'nick|away', 'nick{test}', String.raw`nick\backslash`]);
 
       render(<Typing />);
 
