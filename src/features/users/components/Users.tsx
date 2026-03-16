@@ -76,14 +76,14 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
         <aside
           aria-label={t('main.users.title')}
           className={cn(
-            'border-l border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
+            'border-l border-border overflow-y-auto bg-background',
             !isUsersDrawerOpen && 'hidden lg:block',
             isUsersDrawerOpen && 'absolute right-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
           )}
           style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
         >
           <div>
-            <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-4 h-12 border-b border-border">
               <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
               {isUsersDrawerOpen && (
                 <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
@@ -92,7 +92,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
               )}
             </div>
             {!isConnected && (
-              <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
+              <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
                 <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
                 <span>{t('main.chat.notConnected')}</span>
               </div>
@@ -108,7 +108,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                     event.preventDefault();
                     handleContextMenuUserClick(event, 'user', user.nick);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
+                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted text-left"
                 >
                   {!hideAvatarsInUsersList && (
                     <Avatar

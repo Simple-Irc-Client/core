@@ -425,7 +425,7 @@ const Toolbar = () => {
                     type="button"
                     data-avatar-button
                     aria-label={t('main.toolbar.userMenu')}
-                    className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-ring/50 focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     {currentUserAvatar ? (
                       <img
@@ -434,7 +434,7 @@ const Toolbar = () => {
                         className="h-full w-full object-cover rounded-full"
                       />
                     ) : (
-                      <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-muted">
                         {nick.substring(0, 1).toUpperCase()}
                       </span>
                     )}

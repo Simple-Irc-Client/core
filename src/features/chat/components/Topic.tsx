@@ -141,7 +141,7 @@ const Topic = () => {
   const isAnyDrawerOpen = isChannelsDrawerOpen || isUsersDrawerOpen;
 
   return (
-    <div className="px-4 flex h-12 min-w-0 items-center border-b border-gray-200 dark:border-gray-700">
+    <div className="px-4 flex h-12 min-w-0 items-center border-b border-border">
       {!isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-10 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
@@ -150,7 +150,7 @@ const Topic = () => {
       <span className="font-semibold text-sm shrink-0">{currentChannelName}</span>
       {!isDebugChannel && (
         <>
-          <span className="mx-2 text-gray-300 dark:text-gray-600 shrink-0" aria-hidden="true">|</span>
+          <span className="mx-2 text-border shrink-0" aria-hidden="true">|</span>
           <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />
         </>
       )}

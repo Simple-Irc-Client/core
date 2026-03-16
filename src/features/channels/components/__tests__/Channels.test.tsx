@@ -215,10 +215,10 @@ describe('Channels', () => {
       render(<Channels />);
 
       const currentChannelButton = screen.getByRole('button', { name: '#general' });
-      expect(currentChannelButton).toHaveClass('bg-gray-200');
+      expect(currentChannelButton).toHaveClass('bg-muted');
 
       const otherChannelButton = screen.getByRole('button', { name: '#random' });
-      expect(otherChannelButton).not.toHaveClass('bg-gray-200');
+      expect(otherChannelButton).not.toHaveClass('bg-muted');
     });
   });
 

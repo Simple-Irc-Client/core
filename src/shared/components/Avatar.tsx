@@ -18,7 +18,7 @@ const Avatar = ({ src, alt, fallbackLetter, className = '', onContextMenu }: Ava
   return (
     <div className={`relative flex shrink-0 overflow-hidden rounded-full ${className}`} onContextMenu={onContextMenu}>
       {showFallback ? (
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-muted">
           {fallbackLetter}
         </span>
       ) : (

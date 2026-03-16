@@ -122,7 +122,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     <nav
       aria-label={t('main.channels.title')}
       className={cn(
-        'border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-background',
+        'border-r border-border overflow-y-auto bg-background',
         !isChannelsDrawerOpen && 'hidden lg:block',
         isChannelsDrawerOpen && 'absolute left-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
       )}
@@ -132,7 +132,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       }}
     >
       <div>
-          <div className="flex items-center justify-between px-4 h-12 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 h-12 border-b border-border">
             <div className="flex items-center gap-2 min-w-0 overflow-hidden">
               {(() => {
                 const iconKey = networkName ?? server?.network;
@@ -153,7 +153,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
             )}
           </div>
           {!isConnected && (
-            <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 text-xs">
+            <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
               <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
               <span>{t('main.chat.notConnected')}</span>
             </div>
@@ -203,8 +203,8 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                         handleListItemClick(channel);
                       }}
                       className={cn(
-                        `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-gray-100 dark:hover:bg-gray-800`,
-                        currentChannelName === channel.name && 'bg-gray-200 dark:bg-gray-700',
+                        `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-muted`,
+                        currentChannelName === channel.name && 'bg-muted',
                       )}
                     >
                       <span className="min-w-7.5 flex items-center justify-center">
