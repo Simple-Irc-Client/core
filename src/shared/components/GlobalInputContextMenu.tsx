@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputContextMenu } from '@features/chat/components/InputContextMenu';
 
-const sicDesktop = (window as unknown as Record<string, Record<string, unknown>>).sicDesktop;
+const sicDesktop = (globalThis as unknown as Record<string, Record<string, unknown>>).sicDesktop;
 const desktopClipboard = sicDesktop?.clipboard as { readText: () => string; writeText: (text: string) => void } | undefined ?? null;
 
 const readClipboard = (): Promise<string> =>

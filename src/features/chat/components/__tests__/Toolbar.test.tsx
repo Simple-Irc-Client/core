@@ -74,8 +74,8 @@ describe('Toolbar', () => {
     mockSetAddMessage.mockClear();
     vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
 
-    // Mock window.matchMedia for EmojiPicker's autoFocusSearch prop
-    Object.defineProperty(window, 'matchMedia', {
+    // Mock globalThis.matchMedia for EmojiPicker's autoFocusSearch prop
+    Object.defineProperty(globalThis, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
         matches: false,

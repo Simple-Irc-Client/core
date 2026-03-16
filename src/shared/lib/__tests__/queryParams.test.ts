@@ -2,24 +2,24 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { getServerParam, getPortParam, getTlsParam, getChannelParam, getBackgroundParam } from '../queryParams';
 
 describe('queryParams', () => {
-  const originalLocation = window.location;
+  const originalLocation = globalThis.location;
 
   beforeEach(() => {
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(globalThis, 'location', {
       writable: true,
       value: { ...originalLocation },
     });
   });
 
   afterEach(() => {
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(globalThis, 'location', {
       writable: true,
       value: originalLocation,
     });
   });
 
   const mockLocation = (search: string, hash = '') => {
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(globalThis, 'location', {
       writable: true,
       value: { ...originalLocation, search, hash },
     });

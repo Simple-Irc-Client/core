@@ -917,8 +917,8 @@ describe('ContextMenu', () => {
 
   describe('getMenuPosition', () => {
     beforeEach(() => {
-      Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
-      Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
+      Object.defineProperty(globalThis, 'innerWidth', { value: 1024, writable: true });
+      Object.defineProperty(globalThis, 'innerHeight', { value: 768, writable: true });
     });
 
     describe('with coordinate source', () => {

@@ -38,8 +38,8 @@ describe('InputContextMenu', () => {
   });
 
   it('should clamp position when menu would overflow bottom', () => {
-    Object.defineProperty(window, 'innerHeight', { value: 600, writable: true });
-    Object.defineProperty(window, 'innerWidth', { value: 800, writable: true });
+    Object.defineProperty(globalThis, 'innerHeight', { value: 600, writable: true });
+    Object.defineProperty(globalThis, 'innerWidth', { value: 800, writable: true });
 
     render(<InputContextMenu {...defaultProps} contextMenuPosition={{ x: 100, y: 550 }} />);
 
@@ -48,8 +48,8 @@ describe('InputContextMenu', () => {
   });
 
   it('should clamp position when menu would overflow right', () => {
-    Object.defineProperty(window, 'innerHeight', { value: 600, writable: true });
-    Object.defineProperty(window, 'innerWidth', { value: 800, writable: true });
+    Object.defineProperty(globalThis, 'innerHeight', { value: 600, writable: true });
+    Object.defineProperty(globalThis, 'innerWidth', { value: 800, writable: true });
 
     render(<InputContextMenu {...defaultProps} contextMenuPosition={{ x: 750, y: 100 }} />);
 

@@ -1748,7 +1748,7 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
       const scrollContainer = container.firstChild as HTMLDivElement;
 
-      // Mock window.getSelection to return selected text
+      // Mock globalThis.getSelection to return selected text
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
         toString: () => 'Hello',
       } as Selection);
@@ -1774,7 +1774,7 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
       const scrollContainer = container.firstChild as HTMLDivElement;
 
-      // Mock window.getSelection to return empty selection
+      // Mock globalThis.getSelection to return empty selection
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
         toString: () => '',
       } as Selection);
