@@ -87,7 +87,7 @@ export interface ChannelExtended extends Channel {
   topic: string;
   topicSetBy: string;
   topicSetTime: number;
-  typing: string[]; // Record<string, UserTypingStatus>;
+  typing: string[];
 }
 
 export interface User {
