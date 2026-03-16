@@ -401,8 +401,7 @@ export class Kernel {
     return this.line.length > 0 ? this.trailing() : undefined;
   }
 
-  // eslint-disable-next-line
-  private logParseError = (func: Function, variable: string): void => {
+  private logParseError = (func: (...args: unknown[]) => unknown, variable: string): void => {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
     Sentry.captureException(error, {
       extra: {
