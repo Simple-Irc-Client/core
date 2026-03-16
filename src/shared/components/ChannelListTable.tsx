@@ -29,10 +29,13 @@ function getStyleFromFormatState(state: FormatState): CSSProperties {
 }
 
 function renderFormattedSegments(segments: FormattedSegment[]): React.ReactNode[] {
-  return segments.map((segment, idx) => {
+  let offset = 0;
+  return segments.map((segment) => {
+    const key = `${offset}-${segment.text.length}`;
+    offset += segment.text.length;
     const style = getStyleFromFormatState(segment.style);
     return (
-      <span key={idx} style={Object.keys(style).length > 0 ? style : undefined}>
+      <span key={key} style={Object.keys(style).length > 0 ? style : undefined}>
         {segment.text}
       </span>
     );

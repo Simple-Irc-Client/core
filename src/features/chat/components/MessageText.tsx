@@ -68,18 +68,21 @@ function renderFormattedSegments(
   segments: FormattedSegment[],
   baseColor?: string
 ): React.ReactNode[] {
-  return segments.map((segment, idx) => {
+  let offset = 0;
+  return segments.map((segment) => {
+    const key = `${offset}-${segment.text.length}`;
+    offset += segment.text.length;
     const style = getStyleFromFormatState(segment.style, baseColor);
     const hasStyle = Object.keys(style).length > 0;
 
     if (hasStyle) {
       return (
-        <span key={idx} style={style}>
+        <span key={key} style={style}>
           {segment.text}
         </span>
       );
     }
-    return <span key={idx}>{segment.text}</span>;
+    return <span key={key}>{segment.text}</span>;
   });
 }
 
@@ -145,40 +148,45 @@ const MessageText = ({ text, color }: MessageTextProps) => {
 
   return (
     <span style={{ color }}>
-      {parts.map((part, index) => {
-        if (part.type === 'channel') {
-          return (
-            <span
-              key={index}
-              className="cursor-pointer hover:underline"
-              onContextMenu={(e) => handleChannelClick(e, part.value)}
-            >
-              {part.value}
-            </span>
-          );
-        }
+      {(() => {
+        let offset = 0;
+        return parts.map((part) => {
+          const key = `${offset}-${part.value.length}`;
+          offset += part.value.length;
 
-        if (part.type === 'url') {
-          const content = part.segments ? renderFormattedSegments(part.segments, color) : part.value;
-          return (
-            <span
-              key={index}
-              className="cursor-pointer hover:underline"
-              onClick={(e) => handleUrlClick(e, part.value)}
-              onContextMenu={(e) => handleUrlClick(e, part.value)}
-            >
-              {content}
-            </span>
-          );
-        }
+          if (part.type === 'channel') {
+            return (
+              <span
+                key={key}
+                className="cursor-pointer hover:underline"
+                onContextMenu={(e) => handleChannelClick(e, part.value)}
+              >
+                {part.value}
+              </span>
+            );
+          }
 
-        // Render formatted text if segments exist
-        if (part.segments) {
-          return <span key={index}>{renderFormattedSegments(part.segments, color)}</span>;
-        }
+          if (part.type === 'url') {
+            const content = part.segments ? renderFormattedSegments(part.segments, color) : part.value;
+            return (
+              <span
+                key={key}
+                className="cursor-pointer hover:underline"
+                onClick={(e) => handleUrlClick(e, part.value)}
+                onContextMenu={(e) => handleUrlClick(e, part.value)}
+              >
+                {content}
+              </span>
+            );
+          }
 
-        return <span key={index}>{part.value}</span>;
-      })}
+          if (part.segments) {
+            return <span key={key}>{renderFormattedSegments(part.segments, color)}</span>;
+          }
+
+          return <span key={key}>{part.value}</span>;
+        });
+      })()}
     </span>
   );
 };
