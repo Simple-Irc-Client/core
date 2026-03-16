@@ -94,8 +94,8 @@ const MessageText = ({ text, color }: MessageTextProps) => {
 
     // Build regex pattern for channel names (e.g., #channel, &channel)
     // Channel names start with channel type prefix and continue until space or end
-    const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('');
-    const channelPattern = channelTypesEscaped.length > 0 ? new RegExp(`^[${channelTypesEscaped}][^\\s,]+$`) : null;
+    const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)).join('');
+    const channelPattern = channelTypesEscaped.length > 0 ? new RegExp(String.raw`^[${channelTypesEscaped}][^\s,]+$`) : null;
 
     // Parse IRC formatting on the full text first to preserve state across words
     const segments = hasIrcFormatting(text) ? parseIrcFormatting(text) : null;
