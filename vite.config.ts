@@ -2,8 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
-import path from "path";
-import { execSync } from "child_process";
+import path from "node:path";
+import { execSync } from "node:child_process";
 
 const gitRef = (() => {
   try {
