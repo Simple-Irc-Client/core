@@ -129,7 +129,9 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     const toAdd = [...desiredFlags].filter((f) => !currentFlags.has(f)).join('');
     const toRemove = [...currentFlags].filter((f) => !desiredFlags.has(f)).join('');
 
-    const modeString = `${toAdd ? `+${toAdd}` : ''}${toRemove ? `-${toRemove}` : ''}`;
+    const addPart = toAdd ? '+' + toAdd : '';
+    const removePart = toRemove ? '-' + toRemove : '';
+    const modeString = addPart + removePart;
     if (modeString) {
       ircSendRawMessage(`MODE ${channelName} ${modeString}`);
     }
