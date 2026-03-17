@@ -2005,8 +2005,6 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, serverUserModes);
 
-    const currentChannelName = getCurrentChannelName();
-
     const userOrChannel = this.line.shift();
 
     if (userOrChannel === undefined) {
@@ -2174,7 +2172,6 @@ export class Kernel {
 
   // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
   private readonly onNick = (): void => {
-    const currentChannelName = getCurrentChannelName();
     const { nick: oldNick } = parseNick(this.sender, getUserModes());
     const rawNick = this.line.shift();
 
@@ -5165,8 +5162,8 @@ export class Kernel {
   // :server 705 mynick topic :help text line
   private readonly onRaw705 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
-    const topic = this.line.shift();
+    this.line.shift(); // my nick
+    this.line.shift(); // topic
     const message = this.trailing();
 
     setAddMessage({
@@ -5200,10 +5197,9 @@ export class Kernel {
   private readonly onRaw728 = (): void => {
     this.line.shift();
     const channel = this.line.shift();
-    const mode = this.line.shift(); // usually 'q' for quiet
+    this.line.shift(); // mode - usually 'q' for quiet
     const mask = this.line.shift();
     const setBy = this.line.shift() ?? '';
-    const setTime = Number(this.line.shift() ?? '0');
 
     if (channel === undefined || mask === undefined) {
       return;
@@ -5237,7 +5233,6 @@ export class Kernel {
   private readonly onRaw908 = (): void => {
     this.line.shift();
     const mechanisms = this.line.shift();
-    const message = this.trailing();
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
