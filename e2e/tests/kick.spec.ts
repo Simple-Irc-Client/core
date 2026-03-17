@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createIrcClient, type IrcClient } from '../irc-client';
+import { createIrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 test.describe('Kick', () => {

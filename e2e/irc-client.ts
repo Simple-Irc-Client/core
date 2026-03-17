@@ -235,7 +235,7 @@ class RawIrcClient extends EventEmitter {
  * Async test helper wrapping RawIrcClient with promise-based connect/join/setTopic.
  */
 export class IrcClient {
-  private client: RawIrcClient;
+  private readonly client: RawIrcClient;
   readonly nick: string;
 
   constructor(nick: string) {
