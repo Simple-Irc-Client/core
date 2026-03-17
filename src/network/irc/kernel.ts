@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   existChannel,
   isChannel,
@@ -401,7 +400,7 @@ export class Kernel {
     return this.line.length > 0 ? this.trailing() : undefined;
   }
 
-  private logParseError = (func: (...args: unknown[]) => unknown, variable: string): void => {
+  private readonly logParseError = (func: (...args: unknown[]) => unknown, variable: string): void => {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${func.name}`);
     Sentry.captureException(error, {
       extra: {
@@ -1355,7 +1354,7 @@ export class Kernel {
   // :server CAP * NEW :new-cap
   // :server CAP * DEL :removed-cap
   private readonly onCap = (): void => {
-    const target = this.line.shift(); // '*' or nick
+    this.line.shift(); // '*' or nick
     const subcommand = this.line.shift()?.toUpperCase(); // LS, ACK, NAK, LIST, NEW, DEL
 
     if (!subcommand) { return; }
@@ -1767,7 +1766,7 @@ export class Kernel {
 
   // @msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic
   private readonly onInvite = (): void => {
-    const invited = this.line.shift();
+    this.line.shift(); // invited
 
     const rawChannel = this.line.shift();
     const channel = rawChannel !== undefined ? this.stripColon(rawChannel) : undefined;
@@ -1886,7 +1885,7 @@ export class Kernel {
 
   // :server KILL scc_test :Killed (Nickname collision)
   private readonly onKill = (): void => {
-    const me = this.line.shift();
+    this.line.shift(); // me
 
     const { nick } = parseNick(this.sender, getUserModes());
 
@@ -1908,7 +1907,7 @@ export class Kernel {
   private readonly onMetadata = (): void => {
     const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
-    const flags = this.line.shift();
+    this.line.shift(); // flags
 
     // Handle trailing parameter (value may contain spaces)
     let value = this.line.shift();
@@ -2732,7 +2731,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 002 SIC-test :Your host is netsplit.pirc.pl, running version UnrealIRCd-6.0.3
   private readonly onRaw002 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -2748,7 +2747,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 003 SIC-test :This server was created Sun May 8 2022 at 13:49:18 UTC
   private readonly onRaw003 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -2764,7 +2763,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 004 SIC-test netsplit.pirc.pl UnrealIRCd-6.0.3 diknopqrstwxzBDFGHINRSTWZ beIacdfhiklmnopqrstvzBCDGHKLMNOPQRSTVZ
   private readonly onRaw004 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2781,7 +2780,7 @@ export class Kernel {
   // :netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server
   // :netsplit.pirc.pl 005 SIC-test UHNAMES USERIP WALLCHOPS WATCH=128 WATCHOPTS=A WHOX :are supported by this server
   private readonly onRaw005 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2839,7 +2838,7 @@ export class Kernel {
 
   // :tantalum.libera.chat 250 Merovingian :Highest connection count: 2682 (2681 clients) (389463 connections received)
   private readonly onRaw250 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -2855,7 +2854,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 251 SIC-test :There are 158 users and 113 invisible on 10 servers
   private readonly onRaw251 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -2871,7 +2870,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 252 SIC-test 27 :operator(s) online
   private readonly onRaw252 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.line.join(' ');
 
@@ -2887,7 +2886,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 253 SIC-test -14 :unknown connection(s)
   private readonly onRaw253 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.line.join(' ');
 
@@ -2903,7 +2902,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 254 SIC-test 185 :channels formed
   private readonly onRaw254 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.line.join(' ');
 
@@ -2919,7 +2918,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 255 SIC-test :I have 42 clients and 0 servers
   private readonly onRaw255 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -2935,7 +2934,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 265 SIC-test 42 62 :Current local users 42, max 62
   private readonly onRaw265 = (): void => {
-    this.line.shift(); // nick
+    this.line.shift(); // my nick
     this.line.shift(); // local
     this.line.shift(); // max
 
@@ -2953,7 +2952,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 266 SIC-test 271 1721 :Current global users 271, max 1721
   private readonly onRaw266 = (): void => {
-    this.line.shift(); // nick
+    this.line.shift(); // my nick
     this.line.shift(); // global
     this.line.shift(); // max
 
@@ -2973,7 +2972,7 @@ export class Kernel {
   private readonly onRaw276 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const message = this.trailing();
 
@@ -2991,7 +2990,7 @@ export class Kernel {
   private readonly onRaw301 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     let reason = this.line.join(' ');
     if (reason.startsWith(':')) {
@@ -3054,7 +3053,7 @@ export class Kernel {
   private readonly onRaw307 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     let message = this.trailing();
 
@@ -3076,7 +3075,7 @@ export class Kernel {
   private readonly onRaw311 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const host = this.line.join(' ');
 
@@ -3094,7 +3093,7 @@ export class Kernel {
   private readonly onRaw312 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
 
     const server = this.line.shift();
@@ -3118,7 +3117,7 @@ export class Kernel {
   private readonly onRaw313 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
 
     let message = this.trailing();
@@ -3150,7 +3149,7 @@ export class Kernel {
     const currentChannelName = getCurrentChannelName();
     const serverUserModes = getUserModes();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const channels = this.trailing()
       .split(' ')
@@ -3171,7 +3170,7 @@ export class Kernel {
   private readonly onRaw320 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
 
     let message = this.trailing();
@@ -3201,7 +3200,7 @@ export class Kernel {
   private readonly onRaw322 = (): void => {
     if (getAlisMode()) { return; }
 
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const name = this.line.shift() ?? '';
     const users = Number(this.line.shift() ?? '0');
@@ -3229,7 +3228,7 @@ export class Kernel {
   // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
   // :irc01-black.librairc.net 332 mero-test #chat :\u00034Welcome to #chat chatroom at http://librairc.net ~ for rules check https://goo.gl/Ksv9gr ~ If you need help type /join #help
   private readonly onRaw332 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const topic = this.trailing();
 
@@ -3243,7 +3242,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl 333 SIC-test #sic Merovingian 1552692216
   private readonly onRaw333 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const setBy = this.line.shift();
     const setTime = Number(this.line.shift() ?? '0');
@@ -3264,7 +3263,7 @@ export class Kernel {
   private readonly onRaw335 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
 
     if (user !== undefined) {
@@ -3285,8 +3284,8 @@ export class Kernel {
   // :chmurka.pirc.pl 353 SIC-test = #sic :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP @Noop!~Noop@AB43659:6EA4AE53:B58B785A:IP
   // :chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik krejzus!krejzus@ukryty-13F27FB6.brb.dj Cienisty!Cienisty@cloak:Cienisty
   private readonly onRaw353 = (): void => {
-    this.line.shift();
-    const flags = this.line.shift();
+    this.line.shift(); // my nick
+    this.line.shift(); // flags
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -3329,7 +3328,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27
   private readonly onRaw372 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -3345,7 +3344,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 375 SIC-test :- saturn.pirc.pl Message of the Day -
   private readonly onRaw375 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -3361,7 +3360,7 @@ export class Kernel {
 
   // :saturn.pirc.pl 376 SIC-test :End of /MOTD command.
   private readonly onRaw376 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.trailing();
 
@@ -3377,7 +3376,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host
   private readonly onRaw396 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
 
     const message = this.line.join(' ');
 
@@ -3427,7 +3426,7 @@ export class Kernel {
   private readonly onRaw442 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -3458,7 +3457,7 @@ export class Kernel {
   private readonly onRaw473 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -3489,7 +3488,7 @@ export class Kernel {
   private readonly onRaw474 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -3520,7 +3519,7 @@ export class Kernel {
   private readonly onRaw477 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
 
     if (channel === undefined) {
@@ -3551,7 +3550,7 @@ export class Kernel {
   private readonly onRaw671 = (): void => {
     const currentChannelName = getCurrentChannelName();
 
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
 
     let message = this.trailing();
@@ -3574,10 +3573,10 @@ export class Kernel {
   // :chmurka.pirc.pl 761 sic-test kazuisticsimplicity ignore_list * :0
   // :chmurka.pirc.pl 761 sic-test aqq color * :#0000ff
   private readonly onRaw761 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nickOrChannel = this.line.shift();
     const item = this.line.shift()?.toLowerCase();
-    const flags = this.line.shift();
+    this.line.shift(); // flags
     const value = this.trailingOptional();
 
     if (nickOrChannel === undefined) {
@@ -3636,7 +3635,7 @@ export class Kernel {
   // :server 324 mynick #channel +tnl 50
   // :chmurka.pirc.pl 324 sic-test #sic +nt
   private readonly onRaw324 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let modesString = this.line.shift() ?? '';
 
@@ -3681,7 +3680,7 @@ export class Kernel {
 
   // :server 346 mynick #channel mask!*@* setter 1234567890
   private readonly onRaw346 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const mask = this.line.shift();
     const setBy = this.line.shift() ?? '';
@@ -3706,7 +3705,7 @@ export class Kernel {
 
   // :server 348 mynick #channel mask!*@* setter 1234567890
   private readonly onRaw348 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const mask = this.line.shift();
     const setBy = this.line.shift() ?? '';
@@ -3731,7 +3730,7 @@ export class Kernel {
 
   // :server 367 mynick #channel mask!*@* setter 1234567890
   private readonly onRaw367 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const mask = this.line.shift();
     const setBy = this.line.shift() ?? '';
@@ -3792,7 +3791,7 @@ export class Kernel {
 
   // :server 042 nick uniqueID :your unique ID
   private readonly onRaw042 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const uniqueId = this.line.shift();
     const message = this.trailing();
 
@@ -3808,7 +3807,7 @@ export class Kernel {
 
   // :server 212 nick COMMAND count bytes remote_count
   private readonly onRaw212 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.line.join(' ');
 
     setAddMessage({
@@ -3823,7 +3822,7 @@ export class Kernel {
 
   // :server 219 nick type :End of STATS report
   private readonly onRaw219 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const statsType = this.line.shift();
     const message = this.trailing();
 
@@ -3840,7 +3839,7 @@ export class Kernel {
   // RPL_UMODEIS (221) - User modes reply
   // :server 221 yournick +iwx
   private readonly onRaw221 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const modes = this.trailing();
 
     setAddMessage({
@@ -3855,7 +3854,7 @@ export class Kernel {
 
   // :server 242 nick :Server Up 14 days, 2:34:56
   private readonly onRaw242 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -3870,7 +3869,7 @@ export class Kernel {
 
   // :server 256 nick :Administrative info about server
   private readonly onRaw256 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -3885,7 +3884,7 @@ export class Kernel {
 
   // :server 257 nick :Location line 1
   private readonly onRaw257 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -3900,7 +3899,7 @@ export class Kernel {
 
   // :server 258 nick :Location line 2
   private readonly onRaw258 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -3915,7 +3914,7 @@ export class Kernel {
 
   // :server 259 nick :Admin email
   private readonly onRaw259 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -3931,7 +3930,7 @@ export class Kernel {
   // :server 314 nick user host * :realname (WHOWAS reply)
   private readonly onRaw314 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const host = this.line.join(' ');
 
@@ -3948,7 +3947,7 @@ export class Kernel {
   // :server 317 mynick user idle signon :seconds idle, signon time
   private readonly onRaw317 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const idleSeconds = Number(this.line.shift() ?? '0');
     const signonTime = Number(this.line.shift() ?? '0');
@@ -3984,7 +3983,7 @@ export class Kernel {
 
   // :server 328 mynick #channel :https://channel-url.com
   private readonly onRaw328 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const url = this.trailing();
 
@@ -4002,7 +4001,7 @@ export class Kernel {
 
   // :server 329 mynick #channel timestamp
   private readonly onRaw329 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const timestamp = Number(this.line.shift() ?? '0');
 
@@ -4022,7 +4021,7 @@ export class Kernel {
   // :server 330 mynick user account :is logged in as
   private readonly onRaw330 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const account = this.line.shift();
     let message = this.trailing();
@@ -4044,7 +4043,7 @@ export class Kernel {
   // :server 338 mynick user actualuser@actualhost actualIP :Actual user@host, Actual IP
   private readonly onRaw338 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const actualUserHost = this.line.shift();
     const actualIP = this.line.shift();
@@ -4062,7 +4061,7 @@ export class Kernel {
   // :server 341 mynick invitedUser #channel
   private readonly onRaw341 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const invitedUser = this.line.shift();
     const channel = this.line.shift();
 
@@ -4079,7 +4078,7 @@ export class Kernel {
   // :server 344 mynick user country :is connecting from Country
   private readonly onRaw344 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const country = this.line.shift();
     const message = this.trailing();
@@ -4096,7 +4095,7 @@ export class Kernel {
 
   // :server 351 mynick version.debuglevel server :comments
   private readonly onRaw351 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const version = this.line.shift();
     const server = this.line.shift();
     const comments = this.trailing();
@@ -4113,15 +4112,15 @@ export class Kernel {
 
   // :server 354 mynick querytype channel user host server nick flags hopcount :realname (WHOX reply)
   private readonly onRaw354 = (): void => {
-    this.line.shift();
-    const queryType = this.line.shift();
+    this.line.shift(); // my nick
+    this.line.shift(); // queryType
     const channel = this.line.shift();
     const ident = this.line.shift();
     const hostname = this.line.shift();
-    const server = this.line.shift();
+    this.line.shift(); // server
     const nick = this.line.shift();
     const flags = this.line.shift() ?? '';
-    const hopcount = this.line.shift();
+    this.line.shift(); // hopcount
     const realname = this.trailing();
 
     if (!nick || !channel) { return; }
@@ -4162,7 +4161,7 @@ export class Kernel {
 
   // :server 364 mynick mask server :hopcount info
   private readonly onRaw364 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const mask = this.line.shift();
     const server = this.line.shift();
     const info = this.trailing();
@@ -4179,7 +4178,7 @@ export class Kernel {
 
   // :server 365 mynick mask :End of /LINKS list
   private readonly onRaw365 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const mask = this.line.shift();
     const message = this.trailing();
 
@@ -4196,7 +4195,7 @@ export class Kernel {
   // :server 369 mynick nick :End of WHOWAS
   private readonly onRaw369 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     const message = this.trailing();
 
@@ -4212,7 +4211,7 @@ export class Kernel {
 
   // :server 371 mynick :info line
   private readonly onRaw371 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4227,7 +4226,7 @@ export class Kernel {
 
   // :server 374 mynick :End of INFO list
   private readonly onRaw374 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4243,7 +4242,7 @@ export class Kernel {
   // :server 378 mynick nick :is connecting from *@host IP
   private readonly onRaw378 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const message = this.trailing();
 
@@ -4260,7 +4259,7 @@ export class Kernel {
   // :server 379 mynick nick :is using modes +iwx
   private readonly onRaw379 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const user = this.line.shift();
     const message = this.trailing();
 
@@ -4276,7 +4275,7 @@ export class Kernel {
 
   // :server 381 mynick :You are now an IRC operator
   private readonly onRaw381 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     let message = this.trailing();
 
     if (message === 'You are now an IRC operator') {
@@ -4294,7 +4293,7 @@ export class Kernel {
 
   // :server 382 mynick config.conf :Rehashing
   private readonly onRaw382 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const configFile = this.line.shift();
     const message = this.trailing();
 
@@ -4310,7 +4309,7 @@ export class Kernel {
 
   // :server 391 mynick server :timestamp
   private readonly onRaw391 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const server = this.line.shift();
     const timeString = this.trailing();
 
@@ -4328,7 +4327,7 @@ export class Kernel {
   // :server 401 mynick target :No such nick/channel
   private readonly onRaw401 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const target = this.line.shift();
     let message = this.trailing();
 
@@ -4349,7 +4348,7 @@ export class Kernel {
   // :server 402 mynick server :No such server
   private readonly onRaw402 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const server = this.line.shift();
     const message = this.trailing();
 
@@ -4366,7 +4365,7 @@ export class Kernel {
   // :server 403 mynick #channel :No such channel
   private readonly onRaw403 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4386,7 +4385,7 @@ export class Kernel {
 
   // :server 404 mynick #channel :Cannot send to channel
   private readonly onRaw404 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4407,7 +4406,7 @@ export class Kernel {
   // :server 405 mynick #channel :You have joined too many channels
   private readonly onRaw405 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4428,7 +4427,7 @@ export class Kernel {
   // :server 406 mynick nick :There was no such nickname
   private readonly onRaw406 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     const message = this.trailing();
 
@@ -4445,7 +4444,7 @@ export class Kernel {
   // :server 411 mynick :No recipient given
   private readonly onRaw411 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4461,7 +4460,7 @@ export class Kernel {
   // :server 412 mynick :No text to send
   private readonly onRaw412 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     let message = this.trailing();
 
     if (message === 'No text to send') {
@@ -4481,7 +4480,7 @@ export class Kernel {
   // :server 417 mynick :Input line was too long
   private readonly onRaw417 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4497,7 +4496,7 @@ export class Kernel {
   // :server 421 mynick COMMAND :Unknown command
   private readonly onRaw421 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const command = this.line.shift();
     let message = this.trailing();
 
@@ -4517,7 +4516,7 @@ export class Kernel {
 
   // :server 422 mynick :MOTD File is missing
   private readonly onRaw422 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4532,7 +4531,7 @@ export class Kernel {
 
   // :server 431 mynick :No nickname given
   private readonly onRaw431 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4575,7 +4574,7 @@ export class Kernel {
 
   // :server 436 mynick nick :Nickname collision KILL
   private readonly onRaw436 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     const message = this.trailing();
 
@@ -4591,7 +4590,7 @@ export class Kernel {
   // :server 441 mynick nick #channel :They aren't on that channel
   private readonly onRaw441 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     const channel = this.line.shift();
     let message = this.trailing();
@@ -4613,7 +4612,7 @@ export class Kernel {
   // :server 443 mynick nick #channel :is already on channel
   private readonly onRaw443 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     const channel = this.line.shift();
     let message = this.trailing();
@@ -4635,7 +4634,7 @@ export class Kernel {
   // :server 447 mynick :Cannot change nickname while on #channel (+N)
   private readonly onRaw447 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4651,7 +4650,7 @@ export class Kernel {
   // :server 448 mynick channel :Cannot join channel: invalid name
   private readonly onRaw448 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const message = this.trailing();
 
@@ -4683,7 +4682,7 @@ export class Kernel {
   // :server 461 mynick COMMAND :Not enough parameters
   private readonly onRaw461 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const command = this.line.shift();
     let message = this.trailing();
 
@@ -4703,7 +4702,7 @@ export class Kernel {
 
   // :server 462 mynick :You may not reregister
   private readonly onRaw462 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4741,7 +4740,7 @@ export class Kernel {
 
   // :server 465 mynick :You are banned from this server
   private readonly onRaw465 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessageToAllChannels({
@@ -4760,7 +4759,7 @@ export class Kernel {
   // :server 471 mynick #channel :Cannot join channel (+l)
   private readonly onRaw471 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4781,7 +4780,7 @@ export class Kernel {
   // :server 472 mynick char :is unknown mode char to me
   private readonly onRaw472 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const modeChar = this.line.shift();
     const message = this.trailing();
 
@@ -4798,7 +4797,7 @@ export class Kernel {
   // :server 475 mynick #channel :Cannot join channel (+k)
   private readonly onRaw475 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4819,7 +4818,7 @@ export class Kernel {
   // :server 476 mynick #channel :Bad Channel Mask
   private readonly onRaw476 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const message = this.trailing();
 
@@ -4836,7 +4835,7 @@ export class Kernel {
   // :server 478 mynick #channel mask :Channel ban list is full
   private readonly onRaw478 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     const mask = this.line.shift();
     const message = this.trailing();
@@ -4854,7 +4853,7 @@ export class Kernel {
   // :server 481 mynick :Permission Denied- You're not an IRC operator
   private readonly onRaw481 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4869,7 +4868,7 @@ export class Kernel {
 
   // :server 482 mynick #channel :You're not channel operator
   private readonly onRaw482 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     let message = this.trailing();
 
@@ -4890,7 +4889,7 @@ export class Kernel {
   // :server 501 mynick :Unknown MODE flag
   private readonly onRaw501 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4906,7 +4905,7 @@ export class Kernel {
   // :server 502 mynick :Cannot change mode for other users
   private readonly onRaw502 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
 
     setAddMessage({
@@ -4922,7 +4921,7 @@ export class Kernel {
   // :server 524 mynick topic :Help not found
   private readonly onRaw524 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const topic = this.line.shift();
     const message = this.trailing();
 
@@ -4939,7 +4938,7 @@ export class Kernel {
   // WATCH responses (597-609) - Friend list notifications
   // :server 597 yournick nick ident host timestamp :is now away
   private readonly onRaw597 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User is now away again (after returning)
     if (nick) {
@@ -4956,7 +4955,7 @@ export class Kernel {
 
   // :server 598 yournick nick ident host timestamp :went away
   private readonly onRaw598 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User went away
     if (nick) {
@@ -4973,7 +4972,7 @@ export class Kernel {
 
   // :server 599 yournick nick ident host timestamp :is no longer away
   private readonly onRaw599 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User is back from away
     if (nick) {
@@ -4990,7 +4989,7 @@ export class Kernel {
 
   // :server 600 yournick nick ident host timestamp :logged on
   private readonly onRaw600 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User came online - use monitor store for consistency
     if (nick) {
@@ -5008,7 +5007,7 @@ export class Kernel {
 
   // :server 601 yournick nick ident host timestamp :logged off
   private readonly onRaw601 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User went offline
     if (nick) {
@@ -5026,7 +5025,7 @@ export class Kernel {
 
   // :server 602 yournick nick ident host timestamp :stopped watching
   private readonly onRaw602 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // Stopped watching nick
     if (nick) {
@@ -5043,7 +5042,7 @@ export class Kernel {
 
   // :server 603 yournick :You have X and are on Y WATCH entries
   private readonly onRaw603 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const message = this.trailing();
     // Watch statistics
     setAddMessage({
@@ -5058,7 +5057,7 @@ export class Kernel {
 
   // :server 604 yournick nick ident host timestamp :is online
   private readonly onRaw604 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User is currently online (when adding to watch list)
     if (nick) {
@@ -5076,7 +5075,7 @@ export class Kernel {
 
   // :server 605 yournick nick * * 0 :is offline
   private readonly onRaw605 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User is currently offline (when adding to watch list)
     if (nick) {
@@ -5094,7 +5093,7 @@ export class Kernel {
 
   // :server 606 yournick :nick1 nick2 nick3
   private readonly onRaw606 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nicks = this.trailing();
     // Watch list entries
     setAddMessage({
@@ -5114,7 +5113,7 @@ export class Kernel {
 
   // :server 608 yournick :Watch list cleared
   private readonly onRaw608 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.watchcleared', { defaultValue: 'Watch list cleared' }),
@@ -5127,7 +5126,7 @@ export class Kernel {
 
   // :server 609 yournick nick ident host timestamp :is away
   private readonly onRaw609 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const nick = this.line.shift();
     // User is currently away (when adding to watch list)
     if (nick) {
@@ -5145,7 +5144,7 @@ export class Kernel {
   // :server 704 mynick topic :help text start
   private readonly onRaw704 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const topic = this.line.shift();
     const message = this.trailing();
 
@@ -5179,7 +5178,7 @@ export class Kernel {
   // :server 706 mynick topic :End of /HELP
   private readonly onRaw706 = (): void => {
     const currentChannelName = getCurrentChannelName();
-    this.line.shift();
+    this.line.shift(); // my nick
     const topic = this.line.shift();
     const message = this.trailing();
 
@@ -5195,7 +5194,7 @@ export class Kernel {
 
   // :server 728 mynick #channel q mask setter timestamp
   private readonly onRaw728 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const channel = this.line.shift();
     this.line.shift(); // mode - usually 'q' for quiet
     const mask = this.line.shift();
@@ -5223,7 +5222,7 @@ export class Kernel {
 
   // :server 729 mynick #channel q :End of Channel Quiet List
   private readonly onRaw729 = (): void => {
-    this.line.shift(); // nick
+    this.line.shift(); // my nick
     this.line.shift(); // channel
     this.line.shift(); // mode
     // End of quiet list - nothing specific to do
@@ -5231,7 +5230,7 @@ export class Kernel {
 
   // :server 908 mynick PLAIN,EXTERNAL :are available SASL mechanisms
   private readonly onRaw908 = (): void => {
-    this.line.shift();
+    this.line.shift(); // my nick
     const mechanisms = this.line.shift();
 
     setAddMessage({

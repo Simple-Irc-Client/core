@@ -1334,7 +1334,6 @@ describe('kernel tests', () => {
 
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
 
@@ -1342,7 +1341,6 @@ describe('kernel tests', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(0);
 
@@ -1411,7 +1409,6 @@ describe('kernel tests', () => {
 
   it('test raw MODE channel user #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
@@ -1420,7 +1417,6 @@ describe('kernel tests', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(2);
@@ -1496,7 +1492,6 @@ describe('kernel tests', () => {
   it('test raw NICK #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
     const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1', '#channel2']);
@@ -1506,7 +1501,6 @@ describe('kernel tests', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockGetUserChannels).toHaveBeenCalledTimes(1);
     expect(mockGetUserChannels).toHaveBeenNthCalledWith(1, 'SIC-test');
