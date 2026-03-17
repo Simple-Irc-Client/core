@@ -75,7 +75,6 @@ export const setChannelListClear = (): void => {
 export const setChannelListFinished = (status: boolean): void => {
   if (status && useChannelListStore.getState().channels.length < 10) {
     setChannelListClear();
-    return;
   }
 
   useChannelListStore.getState().setFinished(status);
