@@ -11,26 +11,35 @@ test.beforeAll(async ({ browser }) => {
 
   sharedPage = await browser.newPage();
 
-  // Override Date so we can control message timestamps without affecting timers.
-  // Only `new Date()` (no-arg) and `Date.now()` are intercepted;
-  // `new Date(value)` passes through untouched.
+  // Override Date so we can shift message timestamps near midnight.
+  // - new Date() (no-arg) and Date.now() are shifted by __dateOffset.
+  // - new Date(string) is shifted too (needed because server-time tags
+  //   carry real timestamps — the offset makes them appear near midnight).
+  // - new Date(number) and multi-arg forms pass through unchanged so that
+  //   date-fns internal cloning (new Date(date.getTime())) doesn't double-shift.
   await sharedPage.addInitScript(`
     (function() {
       var OrigDate = Date;
       var origNow = Date.now.bind(Date);
       var offset = 0;
+
       Object.defineProperty(window, '__dateOffset', {
         get: function() { return offset; },
         set: function(v) { offset = v; }
       });
-      Date.now = function() { return origNow() + offset; };
+      Object.defineProperty(window, '__origNow', { value: origNow });
+      Object.defineProperty(window, '__OrigDate', { value: OrigDate });
+
       var NewDate = function Date() {
         if (arguments.length === 0) {
           return new OrigDate(origNow() + offset);
         }
+        if (arguments.length === 1 && typeof arguments[0] === 'string') {
+          return new OrigDate(OrigDate.parse(arguments[0]) + offset);
+        }
         return new (Function.prototype.bind.apply(OrigDate, [null].concat(Array.prototype.slice.call(arguments))))();
       };
-      NewDate.now = Date.now;
+      NewDate.now = function() { return origNow() + offset; };
       NewDate.parse = OrigDate.parse;
       NewDate.UTC = OrigDate.UTC;
       NewDate.prototype = OrigDate.prototype;
@@ -65,29 +74,37 @@ test.describe('Date separator', () => {
     await expect(chatLog.locator('[role="separator"]')).not.toBeVisible();
   });
 
-  // Skip: ergo sends server-time tags with real timestamps, so overriding
-  // browser Date has no effect on message timestamps. Would need a bot that
-  // sends raw IRC lines with fake @time= tags to test this properly.
-  test.skip('separator appears between messages from different days', async () => {
+  test('separator appears between messages from different days', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
-    // First message is already from "today" (previous test).
-    // Shift the browser clock forward by 1 day so the next message
-    // is timestamped as tomorrow.
+    // Shift the clock so that "now" is ~5 seconds before the next midnight.
+    // This also shifts parsed server-time timestamps, so the next message
+    // the bot sends will appear as just before midnight.
     await sharedPage.evaluate(() => {
-      (window as unknown as Record<string, number>).__dateOffset = 86_400_000;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = globalThis as any;
+      const now: number = w.__origNow();
+      const midnight = new w.__OrigDate(now);
+      midnight.setHours(24, 0, 0, 0);
+      w.__dateOffset = midnight.getTime() - 5000 - now;
     });
 
-    // Send a message — kernel will call `new Date()` which now returns tomorrow
-    bot.sendMessage('#date-sep', 'Next day message');
-    await expect(chatLog.getByText('Next day message')).toBeVisible({ timeout: 10_000 });
+    // Send a message — its server-time will be shifted to ~5s before midnight
+    bot.sendMessage('#date-sep', 'Before midnight message');
+    await expect(chatLog.getByText('Before midnight message')).toBeVisible({ timeout: 10_000 });
+
+    // Wait for the shifted clock to cross midnight
+    await sharedPage.waitForTimeout(7_000);
+
+    // Send another message — its server-time will be shifted to ~2s after midnight (next day)
+    bot.sendMessage('#date-sep', 'After midnight message');
+    await expect(chatLog.getByText('After midnight message')).toBeVisible({ timeout: 10_000 });
 
     // A date separator should now appear between the two days
     await expect(chatLog.locator('[role="separator"]')).toBeVisible({ timeout: 10_000 });
   });
 
-  // Skip: depends on previous test which is skipped (no separator exists to inspect)
-  test.skip('separator shows formatted date text', async () => {
+  test('separator shows formatted date text', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
     // The separator should contain a human-readable date
