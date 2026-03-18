@@ -1,11 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let metadataSupported = true;
+let sharedPage: Page;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
   bot = await createIrcClient('metabot');
   await bot.join('#metadata-test');
 
@@ -18,83 +19,77 @@ test.beforeAll(async () => {
   } catch {
     metadataSupported = false;
   }
+
+  sharedPage = await browser.newPage();
+  await sharedPage.goto('/');
+  await connectViaWizard(sharedPage, 'meta-tester', { channels: ['#metadata-test'] });
+  await sharedPage.getByRole('button', { name: '#metadata-test' }).click();
 });
 
-test.afterAll(() => {
+test.afterAll(async () => {
+  await sharedPage.close();
   bot.disconnect();
 });
 
 test.describe('Metadata', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('set avatar via profile settings', async ({ page }) => {
+  test('set avatar via profile settings', async () => {
     test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
-    await page.goto('/');
-    await connectViaWizard(page, 'avatar-setter', { channels: ['#metadata-test'] });
-    await page.getByRole('button', { name: '#metadata-test' }).click();
-
     // Open profile settings
-    await page.locator('[data-avatar-button]').click();
-    await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
     // Look for avatar URL input
-    const avatarInput = page.getByLabel(/avatar/i);
+    const avatarInput = sharedPage.getByLabel(/avatar/i);
     if (await avatarInput.isVisible()) {
       await avatarInput.fill('https://example.com/avatar.png');
 
       // Find and click the Set/Save button for avatar
-      const setButton = page.getByRole('button', { name: 'Set' });
+      const setButton = sharedPage.getByRole('button', { name: 'Set' });
       if (await setButton.first().isVisible()) {
         await setButton.first().click();
       }
 
       // Close dialog
-      await page.keyboard.press('Escape');
+      await sharedPage.keyboard.press('Escape');
 
       // Avatar should display in the users sidebar (as an img element)
-      const usersSidebar = page.getByRole('complementary', { name: 'Users' });
+      const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
       await expect(usersSidebar.locator('img[src="https://example.com/avatar.png"]')).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test('set nick color via profile settings', async ({ page }) => {
+  test('set nick color via profile settings', async () => {
     test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
-    await page.goto('/');
-    await connectViaWizard(page, 'color-setter', { channels: ['#metadata-test'] });
-    await page.getByRole('button', { name: '#metadata-test' }).click();
-
     // Open profile settings
-    await page.locator('[data-avatar-button]').click();
-    await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
     // Look for color input
-    const colorInput = page.getByLabel(/color/i).first();
+    const colorInput = sharedPage.getByLabel(/color/i).first();
     if (await colorInput.isVisible()) {
       await colorInput.fill('#ff0000');
 
-      const setButton = page.getByRole('button', { name: 'Set' });
+      const setButton = sharedPage.getByRole('button', { name: 'Set' });
       if (await setButton.first().isVisible()) {
         await setButton.first().click();
       }
 
-      await page.keyboard.press('Escape');
+      await sharedPage.keyboard.press('Escape');
 
       // Verify color is applied — nick in users sidebar should have the color style
-      const usersSidebar = page.getByRole('complementary', { name: 'Users' });
-      await expect(usersSidebar.getByText('color-setter')).toBeVisible({ timeout: 10_000 });
+      const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+      await expect(usersSidebar.getByText('meta-tester')).toBeVisible({ timeout: 10_000 });
     }
   });
 
-  test('bot metadata update is visible to browser user', async ({ page }) => {
+  test('bot metadata update is visible to browser user', async () => {
     test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
-    await page.goto('/');
-    await connectViaWizard(page, 'meta-watcher', { channels: ['#metadata-test'] });
-    await page.getByRole('button', { name: '#metadata-test' }).click();
-
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
     await expect(usersSidebar.getByText('metabot')).toBeVisible({ timeout: 10_000 });
 
     // Bot sets its avatar via raw METADATA command

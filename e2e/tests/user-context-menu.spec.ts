@@ -1,89 +1,78 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let alice: IrcClient;
+let sharedPage: Page;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
   alice = await createIrcClient('alice');
   await alice.join('#lobby');
   await alice.setTopic('#lobby', 'Context menu tests');
+
+  sharedPage = await browser.newPage();
+  await sharedPage.goto('/');
+  await connectViaWizard(sharedPage, 'ctx-tester', { channels: ['#lobby'] });
+  await sharedPage.getByRole('button', { name: '#lobby' }).click();
+
+  const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+  await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(() => {
+test.afterAll(async () => {
+  await sharedPage.close();
   alice.disconnect();
 });
 
 test.describe('User context menu', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('opens context menu on user click', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'ctx-tester', { channels: ['#lobby'] });
-
-    await page.getByRole('button', { name: '#lobby' }).click();
-
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
+  test('opens context menu on user click', async () => {
+    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
 
     // Click on alice to open context menu
     await usersSidebar.getByRole('button', { name: /alice/ }).click();
 
     // Context menu should appear with Whois and Priv options
-    await expect(page.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
+    await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
   });
 
-  test('whois shows user info', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'whois-tester', { channels: ['#lobby'] });
-
-    await page.getByRole('button', { name: '#lobby' }).click();
-
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
+  test('whois shows user info', async () => {
+    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
 
     // Open context menu and click Whois
     await usersSidebar.getByRole('button', { name: /alice/ }).click();
-    await page.getByRole('menuitem', { name: 'Whois' }).click();
+    await sharedPage.getByRole('menuitem', { name: 'Whois' }).click();
 
     // Whois response should appear in the chat log
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText(/alice/)).toBeVisible({ timeout: 10_000 });
   });
 
-  test('priv opens private message tab', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'priv-tester', { channels: ['#lobby'] });
-
-    await page.getByRole('button', { name: '#lobby' }).click();
-
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
+  test('priv opens private message tab', async () => {
+    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
 
     // Open context menu and click Priv
     await usersSidebar.getByRole('button', { name: /alice/ }).click();
-    await page.getByRole('menuitem', { name: 'Priv' }).click();
+    await sharedPage.getByRole('menuitem', { name: 'Priv' }).click();
 
     // A private message tab for alice should appear in the sidebar
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
     await expect(channelNav.getByRole('button', { name: 'alice' })).toBeVisible({ timeout: 5_000 });
   });
 
-  test('context menu opens on right click', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'rclick-tester', { channels: ['#lobby'] });
+  test('context menu opens on right click', async () => {
+    // Navigate back to #lobby (test 3 left us on the alice PM tab)
+    await sharedPage.getByRole('button', { name: '#lobby' }).click();
 
-    await page.getByRole('button', { name: '#lobby' }).click();
-
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
+    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
 
     // Right-click on alice
     await usersSidebar.getByRole('button', { name: /alice/ }).click({ button: 'right' });
 
     // Context menu should appear
-    await expect(page.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
+    await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
   });
 });

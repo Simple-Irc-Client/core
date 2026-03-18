@@ -1,31 +1,32 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
+let sharedPage: Page;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({ browser }) => {
   bot = await createIrcClient('previewbot');
   await bot.join('#previews');
+
+  sharedPage = await browser.newPage();
+  await sharedPage.goto('/');
+  await connectViaWizard(sharedPage, 'preview-tester', { channels: ['#previews'] });
+  await sharedPage.getByRole('button', { name: '#previews' }).click();
+  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(() => {
+test.afterAll(async () => {
+  await sharedPage.close();
   bot.disconnect();
 });
 
 test.describe('YouTube preview', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  test('YouTube link renders thumbnail preview', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'yt-tester', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('YouTube link renders thumbnail preview', async () => {
     // Bot sends a message with a YouTube link
     bot.sendMessage('#previews', 'Check this out https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Check this out')).toBeVisible({ timeout: 10_000 });
 
     // YouTube thumbnail should be rendered
@@ -38,30 +39,20 @@ test.describe('YouTube preview', () => {
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
-  test('youtu.be short link renders thumbnail preview', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'yt-short', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('youtu.be short link renders thumbnail preview', async () => {
     bot.sendMessage('#previews', 'Short link https://youtu.be/dQw4w9WgXcQ');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Short link')).toBeVisible({ timeout: 10_000 });
 
     // Thumbnail should appear for the short URL too
     await expect(chatLog.getByRole('img', { name: 'YouTube video thumbnail' })).toBeVisible({ timeout: 10_000 });
   });
 
-  test('message without YouTube link has no thumbnail', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'yt-none', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('message without YouTube link has no thumbnail', async () => {
     bot.sendMessage('#previews', 'Just a normal message, no links here');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Just a normal message')).toBeVisible({ timeout: 10_000 });
 
     // No thumbnail should exist
@@ -70,18 +61,11 @@ test.describe('YouTube preview', () => {
 });
 
 test.describe('Image preview', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  test('image link renders inline preview', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'img-tester', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('image link renders inline preview', async () => {
     // Bot sends a message with an HTTPS image link (must be non-private host)
     bot.sendMessage('#previews', 'Look at this https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Look at this')).toBeVisible({ timeout: 10_000 });
 
     // Image preview should be rendered
@@ -93,15 +77,10 @@ test.describe('Image preview', () => {
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
-  test('multiple image links render multiple previews', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'img-multi', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('multiple image links render multiple previews', async () => {
     bot.sendMessage('#previews', 'Two images https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Two images')).toBeVisible({ timeout: 10_000 });
 
     // Both image previews should be rendered
@@ -109,15 +88,10 @@ test.describe('Image preview', () => {
     await expect(previews).toHaveCount(2, { timeout: 10_000 });
   });
 
-  test('non-image link does not render image preview', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'img-none', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('non-image link does not render image preview', async () => {
     bot.sendMessage('#previews', 'Visit https://example.com/page.html');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Visit')).toBeVisible({ timeout: 10_000 });
 
     // No image preview should exist
@@ -126,17 +100,10 @@ test.describe('Image preview', () => {
 });
 
 test.describe('Social embed preview', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  test('Twitter/X link renders embed iframe', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'social-x', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('Twitter/X link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'Check this tweet https://x.com/user/status/1234567890123456789');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Check this tweet')).toBeVisible({ timeout: 10_000 });
 
     // Social embed iframe should be rendered
@@ -150,15 +117,10 @@ test.describe('Social embed preview', () => {
     await expect(iframe).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
   });
 
-  test('Bluesky link renders embed iframe', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'social-bsky', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('Bluesky link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'Bluesky post https://bsky.app/profile/user.bsky.social/post/3abc123def');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Bluesky post')).toBeVisible({ timeout: 10_000 });
 
     // Embed iframe should appear
@@ -169,15 +131,10 @@ test.describe('Social embed preview', () => {
     await expect(iframe).toHaveAttribute('src', /embed\.bsky\.app\/embed\/user\.bsky\.social\/app\.bsky\.feed\.post\/3abc123def/);
   });
 
-  test('Facebook link renders embed iframe', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'social-fb', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('Facebook link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'FB post https://www.facebook.com/user/posts/123456789');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('FB post')).toBeVisible({ timeout: 10_000 });
 
     // Embed iframe should appear
@@ -188,15 +145,10 @@ test.describe('Social embed preview', () => {
     await expect(iframe).toHaveAttribute('src', /facebook\.com\/plugins\/post\.php/);
   });
 
-  test('non-social link does not render embed', async ({ page }) => {
-    await page.goto('/');
-    await connectViaWizard(page, 'social-none', { channels: ['#previews'] });
-    await page.getByRole('button', { name: '#previews' }).click();
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-
+  test('non-social link does not render embed', async () => {
     bot.sendMessage('#previews', 'Regular link https://example.com/article');
 
-    const chatLog = page.getByRole('log');
+    const chatLog = sharedPage.getByRole('log');
     await expect(chatLog.getByText('Regular link')).toBeVisible({ timeout: 10_000 });
 
     // No embed iframe should exist
