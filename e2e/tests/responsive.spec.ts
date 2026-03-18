@@ -25,12 +25,12 @@ test.describe('Responsive layout — mobile viewport', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('channels sidebar is hidden by default on mobile', async () => {
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav).not.toBeVisible();
   });
 
   test('users sidebar is hidden by default on mobile', async () => {
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar).not.toBeVisible();
   });
 
@@ -42,16 +42,16 @@ test.describe('Responsive layout — mobile viewport', () => {
   test('opening channels drawer shows sidebar as overlay', async () => {
     await sharedPage.getByRole('button', { name: /toggle channels/i }).click();
 
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav).toBeVisible({ timeout: 5_000 });
 
     // #responsive should be in the channel list
-    await expect(channelNav.getByRole('button', { name: '#responsive' })).toBeVisible();
+    await expect(channelNav.getByRole('button', { name: '#responsive', exact: true })).toBeVisible();
   });
 
   test('clicking a channel closes the drawer', async () => {
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
-    await channelNav.getByRole('button', { name: '#responsive' }).click();
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    await channelNav.getByRole('button', { name: '#responsive', exact: true }).click();
 
     // Drawer should close automatically on mobile
     await expect(channelNav).not.toBeVisible({ timeout: 5_000 });
@@ -68,7 +68,7 @@ test.describe('Responsive layout — mobile viewport', () => {
   test('opening users drawer shows sidebar as overlay', async () => {
     await sharedPage.getByRole('button', { name: /toggle users/i }).click();
 
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar).toBeVisible({ timeout: 5_000 });
 
     // Bot should be visible in users list
@@ -80,7 +80,7 @@ test.describe('Responsive layout — mobile viewport', () => {
     await expect(closeButton).toBeVisible();
     await closeButton.click();
 
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar).not.toBeVisible({ timeout: 5_000 });
   });
 
@@ -91,25 +91,25 @@ test.describe('Responsive layout — mobile viewport', () => {
     await expect(closeButton).toBeVisible({ timeout: 5_000 });
     await closeButton.click();
 
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('opening one drawer closes the other', async () => {
     // Open channels drawer
     await sharedPage.getByRole('button', { name: /toggle channels/i }).click();
-    await expect(sharedPage.getByRole('navigation', { name: 'Channels' })).toBeVisible({ timeout: 5_000 });
+    await expect(sharedPage.getByTestId('channels-sidebar')).toBeVisible({ timeout: 5_000 });
 
     // Close it first since toggle buttons are hidden when a drawer is open
     await sharedPage.getByRole('button', { name: /close channels/i }).click();
-    await expect(sharedPage.getByRole('navigation', { name: 'Channels' })).not.toBeVisible({ timeout: 5_000 });
+    await expect(sharedPage.getByTestId('channels-sidebar')).not.toBeVisible({ timeout: 5_000 });
 
     // Open users drawer
     await sharedPage.getByRole('button', { name: /toggle users/i }).click();
-    await expect(sharedPage.getByRole('complementary', { name: 'Users' })).toBeVisible({ timeout: 5_000 });
+    await expect(sharedPage.getByTestId('users-sidebar')).toBeVisible({ timeout: 5_000 });
 
     // Channels sidebar should not be visible
-    await expect(sharedPage.getByRole('navigation', { name: 'Channels' })).not.toBeVisible();
+    await expect(sharedPage.getByTestId('channels-sidebar')).not.toBeVisible();
 
     // Clean up: close users drawer
     await sharedPage.getByRole('button', { name: /close users/i }).click();
@@ -118,14 +118,14 @@ test.describe('Responsive layout — mobile viewport', () => {
   test('chat messages are visible and scrollable on mobile', async () => {
     // Ensure we're on the channel
     await sharedPage.getByRole('button', { name: /toggle channels/i }).click();
-    await sharedPage.getByRole('button', { name: '#responsive' }).click();
+    await sharedPage.getByRole('button', { name: '#responsive', exact: true }).click();
     await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // Send messages and verify they're visible
     bot.sendMessage('#responsive', 'Mobile message 1');
     bot.sendMessage('#responsive', 'Mobile message 2');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Mobile message 2')).toBeVisible({ timeout: 10_000 });
 
     // Chat should be scrollable
@@ -138,7 +138,7 @@ test.describe('Responsive layout — mobile viewport', () => {
     await messageInput.fill('Hello from mobile!');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello from mobile!')).toBeVisible({ timeout: 10_000 });
   });
 });
@@ -151,7 +151,7 @@ test.describe('Responsive layout — tablet viewport', () => {
     await sharedPage.waitForTimeout(300);
 
     // Sidebars should still be hidden (768 < 1024 lg breakpoint)
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav).not.toBeVisible();
 
     // Toggle buttons should be visible
@@ -174,8 +174,8 @@ test.describe('Responsive layout — desktop viewport', () => {
     await sharedPage.waitForTimeout(300);
 
     // Both sidebars should be visible without toggling
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     await expect(channelNav).toBeVisible({ timeout: 5_000 });
     await expect(usersSidebar).toBeVisible({ timeout: 5_000 });

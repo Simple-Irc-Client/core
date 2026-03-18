@@ -16,16 +16,16 @@ test.describe('Kick', () => {
     // Browser user joins
     await page.goto('/');
     await connectViaWizard(page, 'kick-watcher', { channels: ['#kick-test'] });
-    await page.getByRole('button', { name: '#kick-test' }).click();
+    await page.getByRole('button', { name: '#kick-test', exact: true }).click();
 
-    const usersSidebar = page.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = page.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('kickvictim')).toBeVisible({ timeout: 10_000 });
 
     // Bot1 kicks bot2
     bot1.kick('#kick-test', 'kickvictim', 'misbehaving');
 
     // Kick message should appear in chat log
-    const chatLog = page.getByRole('log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(/kickop has kicked kickvictim/)).toBeVisible({ timeout: 10_000 });
 
     // Kicked user should be removed from sidebar
@@ -43,14 +43,14 @@ test.describe('Kick', () => {
     // Browser user joins
     await page.goto('/');
     await connectViaWizard(page, 'kickme-user', { channels: ['#kickme-chan'] });
-    await page.getByRole('button', { name: '#kickme-chan' }).click();
+    await page.getByRole('button', { name: '#kickme-chan', exact: true }).click();
     await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // Bot kicks the browser user
     bot.kick('#kickme-chan', 'kickme-user', 'you are kicked');
 
     // Kick notification should be shown
-    const chatLog = page.getByRole('log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(/kicked/i)).toBeVisible({ timeout: 10_000 });
 
     bot.disconnect();

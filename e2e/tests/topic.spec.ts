@@ -27,11 +27,11 @@ test.describe('Topic', () => {
     await messageInput.fill('/join #my-topic-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#my-topic-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#my-topic-chan' }).click();
+    await expect(page.getByRole('button', { name: '#my-topic-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#my-topic-chan', exact: true }).click();
 
     // As op, the topic input should be an editable input field
-    const topicInput = page.getByLabel('topic-input');
+    const topicInput = page.getByTestId('topic-input');
     await expect(topicInput).toBeVisible({ timeout: 5_000 });
 
     // Set a topic
@@ -39,7 +39,7 @@ test.describe('Topic', () => {
     await topicInput.press('Enter');
 
     // Topic change message should appear in chat log
-    const chatLog = page.getByRole('log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(/has changed the topic to/)).toBeVisible({ timeout: 10_000 });
 
     // Topic input should reflect the new value
@@ -51,12 +51,12 @@ test.describe('Topic', () => {
     // Join bot's channel where user won't have ops
     await connectViaWizard(page, 'topic-noops', { channels: ['#bot-topic-chan'] });
 
-    await page.getByRole('button', { name: '#bot-topic-chan' }).click();
+    await page.getByRole('button', { name: '#bot-topic-chan', exact: true }).click();
 
-    // The topic text should be visible
-    await expect(page.getByText('Bot-controlled topic')).toBeVisible({ timeout: 10_000 });
+    // The topic text should be visible in the read-only display
+    await expect(page.getByTestId('topic-display')).toHaveText('Bot-controlled topic', { timeout: 10_000 });
 
     // The topic input should NOT be present (non-ops see read-only div, not an input)
-    await expect(page.getByLabel('topic-input')).not.toBeVisible();
+    await expect(page.getByTestId('topic-input')).not.toBeVisible();
   });
 });

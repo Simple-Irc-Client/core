@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'lang-tester', { channels: ['#language'] });
-  await sharedPage.getByRole('button', { name: '#language' }).click();
+  await sharedPage.getByRole('button', { name: '#language', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 

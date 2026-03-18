@@ -84,7 +84,13 @@ describe('Topic', () => {
       } as unknown as settingsStore.SettingsStore)
     );
 
-    vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(userFlags);
+    vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testuser');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    vi.spyOn(usersStore, 'useUsersStore').mockImplementation((selector: any) =>
+      selector({
+        users: [{ nick: 'testuser', channels: [{ name: currentChannelName, flags: userFlags, maxPermission: -1 }] }],
+      })
+    );
   };
 
   describe('Basic rendering', () => {

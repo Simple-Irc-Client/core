@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'typing-watcher', { channels: ['#typing-test'] });
-  await sharedPage.getByRole('button', { name: '#typing-test' }).click();
+  await sharedPage.getByRole('button', { name: '#typing-test', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 

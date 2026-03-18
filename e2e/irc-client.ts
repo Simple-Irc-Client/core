@@ -1,6 +1,8 @@
 import { EventEmitter } from 'node:events';
+import { readFileSync } from 'node:fs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
+import { PASSWORD_FILE } from './global-setup';
 
 /**
  * Pattern to match RPL_WELCOME (001) from a server
@@ -51,6 +53,7 @@ interface RawIrcClientOptions {
   host: string;
   port: number;
   nick: string;
+  password?: string;
   username: string;
   gecos: string;
   encoding?: BufferEncoding;
@@ -107,6 +110,9 @@ class RawIrcClient extends EventEmitter {
     this.capEndSent = false;
     this.send('CAP LS 302');
     this.startCapResponseTimer();
+    if (options.password) {
+      this.send(`PASS ${stripCRLF(options.password)}`);
+    }
     this.send(`NICK ${stripCRLF(options.nick)}`);
     this.send(`USER ${stripCRLF(options.username)} 0 * :${stripCRLF(options.gecos)}`);
     this.startPingTimer();
@@ -237,9 +243,11 @@ class RawIrcClient extends EventEmitter {
 export class IrcClient {
   private readonly client: RawIrcClient;
   readonly nick: string;
+  private readonly password?: string;
 
-  constructor(nick: string) {
+  constructor(nick: string, password?: string) {
     this.nick = nick;
+    this.password = password;
     this.client = new RawIrcClient();
   }
 
@@ -247,7 +255,7 @@ export class IrcClient {
     return new Promise((resolve, reject) => {
       this.client.once('connected', resolve);
       this.client.once('error', reject);
-      this.client.connect({ host, port, nick: this.nick, username: this.nick, gecos: this.nick });
+      this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick });
     });
   }
 
@@ -337,7 +345,8 @@ export class IrcClient {
 }
 
 export const createIrcClient = async (nick: string, host = '127.0.0.1', port = 6667): Promise<IrcClient> => {
-  const client = new IrcClient(nick);
+  const password = readFileSync(PASSWORD_FILE, 'utf8');
+  const client = new IrcClient(nick, password);
   await client.connect(host, port);
   return client;
 };

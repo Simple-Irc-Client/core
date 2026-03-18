@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'preview-tester', { channels: ['#previews'] });
-  await sharedPage.getByRole('button', { name: '#previews' }).click();
+  await sharedPage.getByRole('button', { name: '#previews', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -26,7 +26,7 @@ test.describe('YouTube preview', () => {
     // Bot sends a message with a YouTube link
     bot.sendMessage('#previews', 'Check this out https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this out')).toBeVisible({ timeout: 10_000 });
 
     // YouTube thumbnail should be rendered
@@ -42,7 +42,7 @@ test.describe('YouTube preview', () => {
   test('youtu.be short link renders thumbnail preview', async () => {
     bot.sendMessage('#previews', 'Short link https://youtu.be/dQw4w9WgXcQ');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Short link')).toBeVisible({ timeout: 10_000 });
 
     // Thumbnail should appear for the short URL too
@@ -52,7 +52,7 @@ test.describe('YouTube preview', () => {
   test('message without YouTube link has no thumbnail', async () => {
     bot.sendMessage('#previews', 'Just a normal message, no links here');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Just a normal message')).toBeVisible({ timeout: 10_000 });
 
     // No thumbnail should exist
@@ -65,7 +65,7 @@ test.describe('Image preview', () => {
     // Bot sends a message with an HTTPS image link (must be non-private host)
     bot.sendMessage('#previews', 'Look at this https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Look at this')).toBeVisible({ timeout: 10_000 });
 
     // Image preview should be rendered
@@ -80,7 +80,7 @@ test.describe('Image preview', () => {
   test('multiple image links render multiple previews', async () => {
     bot.sendMessage('#previews', 'Two images https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Two images')).toBeVisible({ timeout: 10_000 });
 
     // Both image previews should be rendered
@@ -91,7 +91,7 @@ test.describe('Image preview', () => {
   test('non-image link does not render image preview', async () => {
     bot.sendMessage('#previews', 'Visit https://example.com/page.html');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Visit')).toBeVisible({ timeout: 10_000 });
 
     // No image preview should exist
@@ -103,7 +103,7 @@ test.describe('Social embed preview', () => {
   test('Twitter/X link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'Check this tweet https://x.com/user/status/1234567890123456789');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this tweet')).toBeVisible({ timeout: 10_000 });
 
     // Social embed iframe should be rendered
@@ -120,7 +120,7 @@ test.describe('Social embed preview', () => {
   test('Bluesky link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'Bluesky post https://bsky.app/profile/user.bsky.social/post/3abc123def');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Bluesky post')).toBeVisible({ timeout: 10_000 });
 
     // Embed iframe should appear
@@ -134,7 +134,7 @@ test.describe('Social embed preview', () => {
   test('Facebook link renders embed iframe', async () => {
     bot.sendMessage('#previews', 'FB post https://www.facebook.com/user/posts/123456789');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('FB post')).toBeVisible({ timeout: 10_000 });
 
     // Embed iframe should appear
@@ -148,7 +148,7 @@ test.describe('Social embed preview', () => {
   test('non-social link does not render embed', async () => {
     bot.sendMessage('#previews', 'Regular link https://example.com/article');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Regular link')).toBeVisible({ timeout: 10_000 });
 
     // No embed iframe should exist

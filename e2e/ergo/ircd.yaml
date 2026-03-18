@@ -44,7 +44,7 @@ accounts:
         enabled: false
     login-throttling:
         enabled: false
-    skip-server-password: true
+    skip-server-password: false
     login-via-pass-command: false
     require-sasl:
         enabled: false

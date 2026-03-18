@@ -30,8 +30,8 @@ test.describe('Channel settings', () => {
     await messageInput.press('Enter');
 
     // Wait for channel to appear in sidebar and switch to it
-    await expect(page.getByRole('button', { name: '#my-ops-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#my-ops-chan' }).click();
+    await expect(page.getByRole('button', { name: '#my-ops-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#my-ops-chan', exact: true }).click();
 
     // Channel settings button should be visible (user has ops as first joiner)
     await expect(page.getByTestId('channel-settings-button')).toBeVisible({ timeout: 5_000 });
@@ -45,8 +45,8 @@ test.describe('Channel settings', () => {
     await messageInput.fill('/join #settings-dialog-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#settings-dialog-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#settings-dialog-chan' }).click();
+    await expect(page.getByRole('button', { name: '#settings-dialog-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#settings-dialog-chan', exact: true }).click();
 
     // Click channel settings button
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
@@ -64,8 +64,8 @@ test.describe('Channel settings', () => {
     await messageInput.fill('/join #modes-test-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#modes-test-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#modes-test-chan' }).click();
+    await expect(page.getByRole('button', { name: '#modes-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#modes-test-chan', exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -86,8 +86,8 @@ test.describe('Channel settings', () => {
     await messageInput.fill('/join #toggle-mode-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#toggle-mode-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#toggle-mode-chan' }).click();
+    await expect(page.getByRole('button', { name: '#toggle-mode-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#toggle-mode-chan', exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -113,8 +113,8 @@ test.describe('Channel settings', () => {
     await messageInput.fill('/join #lists-test-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#lists-test-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#lists-test-chan' }).click();
+    await expect(page.getByRole('button', { name: '#lists-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#lists-test-chan', exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -138,8 +138,8 @@ test.describe('Channel settings', () => {
     await messageInput.fill('/join #ban-test-chan');
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#ban-test-chan' })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#ban-test-chan' }).click();
+    await expect(page.getByRole('button', { name: '#ban-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: '#ban-test-chan', exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -168,7 +168,7 @@ test.describe('Channel settings', () => {
     await connectViaWizard(page, 'noops-user', { channels: ['#chan-settings'] });
 
     // Switch to #chan-settings — the bot created this channel and has ops, not this user
-    await page.getByRole('button', { name: '#chan-settings' }).click();
+    await page.getByRole('button', { name: '#chan-settings', exact: true }).click();
 
     // Channel settings button should NOT be visible (no ops)
     await expect(page.getByTestId('channel-settings-button')).not.toBeVisible({ timeout: 3_000 });

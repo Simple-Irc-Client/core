@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'dm-tester', { channels: ['#dm-test'] });
-  await sharedPage.getByRole('button', { name: '#dm-test' }).click();
+  await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
 });
 
 test.afterAll(async () => {
@@ -24,7 +24,7 @@ test.describe('Private messages', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('receiving a DM creates a new tab in channel sidebar', async () => {
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Bot sends a private message to the test user
     bot.sendMessage('dm-tester', 'Hello from DM bot!');
@@ -36,15 +36,15 @@ test.describe('Private messages', () => {
     await channelNav.getByRole('button', { name: 'dmbot' }).click();
 
     // The message should be visible in the chat log
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello from DM bot!')).toBeVisible({ timeout: 5_000 });
   });
 
   test('can reply to a DM', async () => {
     // Navigate back to #dm-test (test 1 left us on the dmbot tab)
-    await sharedPage.getByRole('button', { name: '#dm-test' }).click();
+    await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
 
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Bot sends a DM
     bot.sendMessage('dm-tester', 'Can you reply?');
@@ -60,23 +60,23 @@ test.describe('Private messages', () => {
     await messageInput.press('Enter');
 
     // Reply should appear in chat log
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Yes, here is my reply!')).toBeVisible({ timeout: 10_000 });
   });
 
   test('DM messages do not appear in channel tabs', async () => {
     // Ensure we're on #dm-test
-    await sharedPage.getByRole('button', { name: '#dm-test' }).click();
+    await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
 
     // Bot sends a DM
     bot.sendMessage('dm-tester', 'This is a private message');
 
     // Wait for DM tab to appear
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
 
     // Stay on #dm-test — the DM message should NOT appear in the channel chat log
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('This is a private message')).not.toBeVisible();
   });
 });

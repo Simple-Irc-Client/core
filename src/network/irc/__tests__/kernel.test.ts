@@ -2802,7 +2802,7 @@ describe('kernel tests', () => {
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetHasUser).toHaveBeenCalledTimes(1);
     expect(mockSetAddUser).toHaveBeenCalledTimes(0);
-    expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie');
+    expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie', [], -1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });

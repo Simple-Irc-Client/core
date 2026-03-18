@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'echo-tester', { channels: ['#echo-test'] });
-  await sharedPage.getByRole('button', { name: '#echo-test' }).click();
+  await sharedPage.getByRole('button', { name: '#echo-test', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -29,7 +29,7 @@ test.describe('Echo indicator', () => {
     await messageInput.fill('Echo test message');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Echo test message')).toBeVisible({ timeout: 10_000 });
 
     // The echo indicator (double checkmark) should appear next to the sent message
@@ -40,7 +40,7 @@ test.describe('Echo indicator', () => {
     // Bot sends a message — it should NOT have the echo indicator for us
     bot.sendMessage('#echo-test', 'Message from bot');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Message from bot')).toBeVisible({ timeout: 10_000 });
 
     // Count echo indicators — only the one from previous test should exist
@@ -56,7 +56,7 @@ test.describe('Echo indicator', () => {
     await messageInput.fill('Second echo');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Second echo')).toBeVisible({ timeout: 10_000 });
 
     // Each sent message should have its own echo indicator

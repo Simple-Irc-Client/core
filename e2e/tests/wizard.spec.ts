@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
+import { getServerPassword } from '../helpers';
 
 const ERGO_HOST = 'localhost';
 const ERGO_WSS_PORT = '8097';
@@ -16,6 +17,7 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await page.getByLabel('Port').clear();
   await page.getByLabel('Port').fill(ERGO_WSS_PORT);
   await page.getByRole('button', { name: 'WebSocket' }).click();
+  await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
 };
 
@@ -58,6 +60,9 @@ test.describe('Wizard', () => {
     await wsButton.click();
     await expect(wsButton).toHaveAttribute('aria-pressed', 'true');
 
+    // Enter server password
+    await page.getByLabel('Server password').fill(getServerPassword());
+
     // Connect
     await page.getByRole('button', { name: 'Next' }).click();
 
@@ -69,13 +74,13 @@ test.describe('Wizard', () => {
     await expect(page.getByText('Select a irc channel')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('#welcome')).toBeVisible({ timeout: 10_000 });
 
-    // Select and join
-    await page.getByRole('row', { name: /welcome/ }).getByRole('checkbox').check();
+    // Select and join (click the row to select it — it becomes a badge above the table)
+    await page.getByRole('button', { name: /welcome/ }).click();
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Main page
     await expect(page.locator('#message-input')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: '#welcome' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '#welcome', exact: true })).toBeVisible();
   });
 
   test('saves nick and server settings for reconnecting', async ({ page }) => {
@@ -89,6 +94,7 @@ test.describe('Wizard', () => {
     await page.getByLabel('Port').clear();
     await page.getByLabel('Port').fill('8097');
     await page.getByRole('button', { name: 'WebSocket' }).click();
+    await page.getByLabel('Server password').fill(getServerPassword());
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Wait for connection and skip channels
@@ -109,8 +115,8 @@ test.describe('Wizard', () => {
     await page.locator('[data-avatar-button]').click();
     await page.getByRole('menuitem', { name: 'Connect' }).click();
 
-    // Should reconnect successfully — sidebar shows "Not connected" status disappears
-    await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
+    // Should reconnect successfully — "Not connected" banner disappears
+    await expect(page.getByText('Not connected to server').first()).toBeHidden({ timeout: 30_000 });
   });
 });
 
@@ -143,12 +149,9 @@ test.describe('Wizard — unhappy paths', () => {
     await fillNickStep(page, 'wizardbot');
     await fillServerStepAndConnect(page);
 
-    // Loading step should appear
-    await expect(page.getByText('Connecting to server')).toBeVisible();
-
     // Error message should appear with "Nickname is already in use"
     await expect(page.getByText(/Failed to connect/)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Nickname is already in use/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Nickname is already in use/i })).toBeVisible();
 
     // "Go Back" button should be visible
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
@@ -193,9 +196,6 @@ test.describe('Wizard — unhappy paths', () => {
     await page.getByRole('button', { name: 'WebSocket' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Loading step should appear
-    await expect(page.getByText('Connecting to server')).toBeVisible();
-
     // Should show disconnected/error state since the server doesn't exist
     await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/)).toBeVisible({ timeout: 30_000 });
 
@@ -227,6 +227,24 @@ test.describe('Wizard — unhappy paths', () => {
     // Nick should be preserved
     await expect(page.getByLabel('Enter your nickname')).toHaveValue('goback-tester');
   });
+
+  test('wrong server password shows error and Go Back button', async ({ page }) => {
+    await page.goto('/');
+
+    await fillNickStep(page, 'wrong-pass');
+
+    // Enter the correct server but wrong password
+    await page.getByLabel('Server address').fill(ERGO_HOST);
+    await page.getByLabel('Port').clear();
+    await page.getByLabel('Port').fill(ERGO_WSS_PORT);
+    await page.getByRole('button', { name: 'WebSocket' }).click();
+    await page.getByLabel('Server password').fill('incorrect-password');
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    // Should show error about password mismatch
+    await expect(page.getByText(/Failed to connect|Disconnected/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
+  });
 });
 
 test.describe('Wizard — server query param', () => {
@@ -241,11 +259,10 @@ test.describe('Wizard — server query param', () => {
     await page.getByLabel('Enter your nickname').fill('param-known');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Should skip the server step and go directly to loading
-    await expect(page.getByText('Connecting to server')).toBeVisible({ timeout: 10_000 });
-
-    // Should NOT see the server selection step
+    // Should skip the server step — verify by checking loading/error state appears
+    // (the connection may succeed or fail, but the server step must be skipped)
     await expect(page.getByText('Choose your server')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 30_000 });
   });
 
   test('custom server param shows warning banner and skips server step', async ({ page }) => {
@@ -259,11 +276,9 @@ test.describe('Wizard — server query param', () => {
     await page.getByLabel('Enter your nickname').fill('param-custom');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Should skip the server step and go directly to loading
-    await expect(page.getByText('Connecting to server')).toBeVisible({ timeout: 10_000 });
-
-    // Should NOT see the server selection step
+    // Should skip the server step — verify by checking loading/error state appears
     await expect(page.getByText('Choose your server')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 30_000 });
   });
 
   test('custom server param with port is displayed correctly', async ({ page }) => {

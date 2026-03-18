@@ -74,6 +74,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
     <>
       {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv || !isConnected) && (
         <aside
+          data-testid="users-sidebar"
           aria-label={t('main.users.title')}
           className={cn(
             'border-l border-border overflow-y-auto bg-background',

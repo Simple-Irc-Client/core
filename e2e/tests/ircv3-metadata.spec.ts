@@ -23,7 +23,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'meta-tester', { channels: ['#metadata-test'] });
-  await sharedPage.getByRole('button', { name: '#metadata-test' }).click();
+  await sharedPage.getByRole('button', { name: '#metadata-test', exact: true }).click();
 });
 
 test.afterAll(async () => {
@@ -56,7 +56,7 @@ test.describe('Metadata', () => {
       await sharedPage.keyboard.press('Escape');
 
       // Avatar should display in the users sidebar (as an img element)
-      const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+      const usersSidebar = sharedPage.getByTestId('users-sidebar');
       await expect(usersSidebar.locator('img[src="https://example.com/avatar.png"]')).toBeVisible({ timeout: 10_000 });
     }
   });
@@ -81,7 +81,7 @@ test.describe('Metadata', () => {
       await sharedPage.keyboard.press('Escape');
 
       // Verify color is applied — nick in users sidebar should have the color style
-      const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+      const usersSidebar = sharedPage.getByTestId('users-sidebar');
       await expect(usersSidebar.getByText('meta-tester')).toBeVisible({ timeout: 10_000 });
     }
   });
@@ -89,7 +89,7 @@ test.describe('Metadata', () => {
   test('bot metadata update is visible to browser user', async () => {
     test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('metabot')).toBeVisible({ timeout: 10_000 });
 
     // Bot sets its avatar via raw METADATA command

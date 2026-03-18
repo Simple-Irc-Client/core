@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'hist-tester', { channels: ['#history-test'] });
-  await sharedPage.getByRole('button', { name: '#history-test' }).click();
+  await sharedPage.getByRole('button', { name: '#history-test', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -31,7 +31,7 @@ test.describe('Input history', () => {
     await messageInput.fill('History message one');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('History message one')).toBeVisible({ timeout: 10_000 });
 
     // Press ArrowUp to recall it
@@ -52,7 +52,7 @@ test.describe('Input history', () => {
     await messageInput.fill('History message three');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('History message three')).toBeVisible({ timeout: 10_000 });
 
     // ArrowUp once → most recent (three)

@@ -22,7 +22,7 @@ test.describe('Join channel button', () => {
     await connectViaWizard(page, 'join-tester');
 
     // The join channel button should be visible in the sidebar
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = page.getByTestId('channels-sidebar');
     const joinButton = channelNav.getByRole('button', { name: /join channel/i });
     await expect(joinButton).toBeVisible({ timeout: 10_000 });
 
@@ -39,7 +39,7 @@ test.describe('Join channel button', () => {
     await page.goto('/');
     await connectViaWizard(page, 'list-tester');
 
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -52,17 +52,17 @@ test.describe('Join channel button', () => {
     await page.goto('/');
     await connectViaWizard(page, 'dialog-joiner');
 
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Wait for channels to load and select #joinable
     await expect(page.getByText('#joinable')).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('row', { name: /joinable/ }).getByRole('checkbox').check();
+    await page.getByRole('button', { name: /joinable/ }).click();
 
     // Join button should be enabled now
-    const dialogJoinButton = page.getByRole('dialog').getByRole('button', { name: 'Join' });
+    const dialogJoinButton = page.getByRole('dialog').getByRole('button', { name: 'Join', exact: true });
     await expect(dialogJoinButton).toBeEnabled();
     await dialogJoinButton.click();
 
@@ -70,18 +70,18 @@ test.describe('Join channel button', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5_000 });
 
     // Channel should appear in the sidebar
-    await expect(channelNav.getByRole('button', { name: '#joinable' })).toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: '#joinable', exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Click on it and verify topic
-    await channelNav.getByRole('button', { name: '#joinable' }).click();
-    await expect(page.getByText('Come join us')).toBeVisible({ timeout: 5_000 });
+    await channelNav.getByRole('button', { name: '#joinable', exact: true }).click();
+    await expect(page.getByTestId('topic-display')).toHaveText('Come join us', { timeout: 5_000 });
   });
 
   test('already-joined channels are excluded from dialog', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, 'exclude-tester', { channels: ['#joinable'] });
 
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = page.getByTestId('channels-sidebar');
 
     // Open channel list dialog
     await channelNav.getByRole('button', { name: /join channel/i }).click();
@@ -90,7 +90,7 @@ test.describe('Join channel button', () => {
     // #joinable should NOT appear since we already joined it
     // Wait for list to load first
     await new Promise((r) => setTimeout(r, 2000));
-    const rows = page.getByRole('dialog').getByRole('row', { name: /joinable/ });
+    const rows = page.getByRole('dialog').getByRole('button', { name: /joinable/ });
     await expect(rows).toHaveCount(0);
   });
 
@@ -98,7 +98,7 @@ test.describe('Join channel button', () => {
     await page.goto('/');
     await connectViaWizard(page, 'cancel-tester');
 
-    const channelNav = page.getByRole('navigation', { name: 'Channels' });
+    const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 

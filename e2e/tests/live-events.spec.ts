@@ -13,7 +13,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'live-tester', { channels: ['#live-events'] });
-  await sharedPage.getByRole('button', { name: '#live-events' }).click();
+  await sharedPage.getByRole('button', { name: '#live-events', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -26,8 +26,8 @@ test.describe('Live events', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('user join shows message and updates user list', async () => {
-    const chatLog = sharedPage.getByRole('log');
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const chatLog = sharedPage.getByTestId('chat-log');
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Create a new bot that joins the channel
     const joiner = await createIrcClient('joiner');
@@ -43,8 +43,8 @@ test.describe('Live events', () => {
   });
 
   test('user part shows message and removes from user list', async () => {
-    const chatLog = sharedPage.getByRole('log');
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const chatLog = sharedPage.getByTestId('chat-log');
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Create a bot, join, then part
     const parter = await createIrcClient('parter');
@@ -63,8 +63,8 @@ test.describe('Live events', () => {
   });
 
   test('user quit shows message in shared channels', async () => {
-    const chatLog = sharedPage.getByRole('log');
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const chatLog = sharedPage.getByTestId('chat-log');
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Create a bot, join, then quit
     const quitter = await createIrcClient('quitter');
@@ -81,8 +81,8 @@ test.describe('Live events', () => {
   });
 
   test('nick change shows message and updates user list', async () => {
-    const chatLog = sharedPage.getByRole('log');
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const chatLog = sharedPage.getByTestId('chat-log');
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Create a bot, join, then change nick
     const renamer = await createIrcClient('oldnick');
@@ -102,7 +102,7 @@ test.describe('Live events', () => {
   });
 
   test('topic change updates topic input and shows message', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Bot changes the topic
     await bot.setTopic('#live-events', 'New topic from bot');
@@ -110,15 +110,15 @@ test.describe('Live events', () => {
     // Topic change message should appear in chat
     await expect(chatLog.getByText(/has changed the topic to/)).toBeVisible({ timeout: 10_000 });
 
-    // Topic input should show new topic — rendered as read-only text or input
-    await expect(sharedPage.getByText('New topic from bot')).toBeVisible({ timeout: 5_000 });
+    // Topic display should show new topic
+    await expect(sharedPage.getByTestId('topic-display')).toHaveText('New topic from bot', { timeout: 5_000 });
 
     // Restore original topic
     await bot.setTopic('#live-events', 'Live events test channel');
   });
 
   test('ACTION (/me) message is displayed', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Bot sends a CTCP ACTION
     bot.sendAction('#live-events', 'waves hello');
@@ -128,7 +128,7 @@ test.describe('Live events', () => {
   });
 
   test('NOTICE message is displayed', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Bot sends a NOTICE to the channel
     bot.sendNotice('#live-events', 'Important notice from bot');

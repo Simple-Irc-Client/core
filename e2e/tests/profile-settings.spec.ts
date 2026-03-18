@@ -53,7 +53,7 @@ test.describe('Profile settings', () => {
     await sharedPage.keyboard.press('Escape');
 
     // The users sidebar should now show the new nick
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('new-nick')).toBeVisible({ timeout: 10_000 });
   });
 

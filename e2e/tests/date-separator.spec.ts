@@ -40,7 +40,7 @@ test.beforeAll(async ({ browser }) => {
 
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'date-tester', { channels: ['#date-sep'] });
-  await sharedPage.getByRole('button', { name: '#date-sep' }).click();
+  await sharedPage.getByRole('button', { name: '#date-sep', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -57,7 +57,7 @@ test.describe('Date separator', () => {
     bot.sendMessage('#date-sep', 'Same day message 1');
     bot.sendMessage('#date-sep', 'Same day message 2');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Same day message 1')).toBeVisible({ timeout: 10_000 });
     await expect(chatLog.getByText('Same day message 2')).toBeVisible({ timeout: 10_000 });
 
@@ -66,7 +66,7 @@ test.describe('Date separator', () => {
   });
 
   test('separator appears between messages from different days', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // First message is already from "today" (previous test).
     // Shift the browser clock forward by 1 day so the next message
@@ -84,7 +84,7 @@ test.describe('Date separator', () => {
   });
 
   test('separator shows formatted date text', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // The separator should contain a human-readable date
     const separator = chatLog.locator('[role="separator"]');

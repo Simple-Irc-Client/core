@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'fmt-tester', { channels: ['#formatting'] });
-  await sharedPage.getByRole('button', { name: '#formatting' }).click();
+  await sharedPage.getByRole('button', { name: '#formatting', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -121,7 +121,7 @@ test.describe('Formatting tools', () => {
     await messageInput.press('Enter');
 
     // The message should appear in chat log (with formatting applied by the renderer)
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Formatted message')).toBeVisible({ timeout: 10_000 });
   });
 });

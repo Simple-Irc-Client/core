@@ -88,8 +88,18 @@ vi.mock('@features/settings/store/settings', () => ({
       nick: 'testuser',
     })
   ),
+  getCurrentNick: vi.fn(() => 'testuser'),
   isSupportedOption: vi.fn(() => false),
 }));
+
+const mockUsersStoreWithFlags = (channelName: string, flags: string[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.spyOn(usersStore, 'useUsersStore').mockImplementation((selector: any) =>
+    selector({
+      users: [{ nick: 'testuser', channels: [{ name: channelName, flags, maxPermission: -1 }] }],
+    })
+  );
+};
 
 describe('ChannelSettingsButton', () => {
   beforeEach(() => {
@@ -98,7 +108,7 @@ describe('ChannelSettingsButton', () => {
 
   describe('visibility', () => {
     it('should render button for operators', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      mockUsersStoreWithFlags('#test',['o']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -106,7 +116,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should render button for half-ops', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['h']);
+      mockUsersStoreWithFlags('#test',['h']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -114,7 +124,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should render button for admins', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['a']);
+      mockUsersStoreWithFlags('#test',['a']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -122,7 +132,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should render button for owners', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['q']);
+      mockUsersStoreWithFlags('#test',['q']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -130,7 +140,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should not render button for voice-only users', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['v']);
+      mockUsersStoreWithFlags('#test',['v']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -138,7 +148,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should not render button for regular users', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue([]);
+      mockUsersStoreWithFlags('#test',[]);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -146,7 +156,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should render button for users with multiple flags including op', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['v', 'o']);
+      mockUsersStoreWithFlags('#test',['v', 'o']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -156,7 +166,7 @@ describe('ChannelSettingsButton', () => {
 
   describe('dialog interaction', () => {
     it('should open dialog when button is clicked', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      mockUsersStoreWithFlags('#test',['o']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -170,7 +180,7 @@ describe('ChannelSettingsButton', () => {
 
   describe('tooltip', () => {
     it('should show tooltip with correct translation key', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['o']);
+      mockUsersStoreWithFlags('#test',['o']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -180,7 +190,7 @@ describe('ChannelSettingsButton', () => {
 
   describe('Unhappy paths', () => {
     it('should not render button for voice-only user without higher flags', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue(['v']);
+      mockUsersStoreWithFlags('#test',['v']);
 
       render(<ChannelSettingsButton channelName="#test" />);
 
@@ -188,7 +198,7 @@ describe('ChannelSettingsButton', () => {
     });
 
     it('should not render button for user with no flags at all', () => {
-      vi.spyOn(usersStore, 'getCurrentUserChannelModes').mockReturnValue([]);
+      mockUsersStoreWithFlags('#test',[]);
 
       render(<ChannelSettingsButton channelName="#test" />);
 

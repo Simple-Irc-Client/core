@@ -236,7 +236,7 @@ const Chat = () => {
   }, [isConnected]);
 
   return (
-    <div ref={containerRef} role="log" onScroll={handleScroll} onContextMenu={(e) => {
+    <div ref={containerRef} data-testid="chat-log" role="log" onScroll={handleScroll} onContextMenu={(e) => {
       if (e.defaultPrevented) { return; }
       e.preventDefault();
       e.stopPropagation();

@@ -19,7 +19,7 @@ test.describe('Away messages', () => {
   test('away messages are collected and shown in dialog', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, 'away-tester', { channels: ['#away-test'] });
-    await page.getByRole('button', { name: '#away-test' }).click();
+    await page.getByRole('button', { name: '#away-test', exact: true }).click();
 
     const messageInput = page.locator('#message-input');
     await expect(messageInput).toBeEnabled({ timeout: 10_000 });
@@ -68,7 +68,7 @@ test.describe('Away messages', () => {
   test('mark as read clears away messages', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, 'away-clear', { channels: ['#away-test'] });
-    await page.getByRole('button', { name: '#away-test' }).click();
+    await page.getByRole('button', { name: '#away-test', exact: true }).click();
 
     const messageInput = page.locator('#message-input');
     await expect(messageInput).toBeEnabled({ timeout: 10_000 });
@@ -104,7 +104,7 @@ test.describe('Away messages', () => {
   test('no away messages collected when not away', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, 'not-away', { channels: ['#away-test'] });
-    await page.getByRole('button', { name: '#away-test' }).click();
+    await page.getByRole('button', { name: '#away-test', exact: true }).click();
 
     await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
@@ -126,7 +126,7 @@ test.describe('Away messages', () => {
   test('returning from away stops collecting messages', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, 'away-return', { channels: ['#away-test'] });
-    await page.getByRole('button', { name: '#away-test' }).click();
+    await page.getByRole('button', { name: '#away-test', exact: true }).click();
 
     const messageInput = page.locator('#message-input');
     await expect(messageInput).toBeEnabled({ timeout: 10_000 });

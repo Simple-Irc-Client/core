@@ -13,7 +13,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'scroll-tester', { channels: ['#scroll-test', '#scroll-other'] });
-  await sharedPage.getByRole('button', { name: '#scroll-test' }).click();
+  await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -26,7 +26,7 @@ test.describe('Scroll behavior', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('chat auto-scrolls to bottom on new messages', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Send enough messages to fill the viewport
     for (let i = 1; i <= 20; i++) {
@@ -44,7 +44,7 @@ test.describe('Scroll behavior', () => {
   });
 
   test('new messages do not auto-scroll when user scrolled up', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Scroll to the top
     await chatLog.evaluate((el) => { el.scrollTop = 0; });
@@ -63,7 +63,7 @@ test.describe('Scroll behavior', () => {
   });
 
   test('scrolling back to bottom resumes auto-scroll', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Scroll to bottom
     await chatLog.evaluate((el) => { el.scrollTop = el.scrollHeight; });
@@ -80,14 +80,14 @@ test.describe('Scroll behavior', () => {
   });
 
   test('switching channels resets scroll to bottom', async () => {
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
 
     // Scroll to the top on current channel
     await chatLog.evaluate((el) => { el.scrollTop = 0; });
     await sharedPage.waitForTimeout(200);
 
     // Switch to #scroll-other
-    await sharedPage.getByRole('button', { name: '#scroll-other' }).click();
+    await sharedPage.getByRole('button', { name: '#scroll-other', exact: true }).click();
     await sharedPage.waitForTimeout(500);
 
     // Should be at bottom on the new channel
@@ -97,6 +97,6 @@ test.describe('Scroll behavior', () => {
     expect(isAtBottom).toBe(true);
 
     // Switch back for next tests
-    await sharedPage.getByRole('button', { name: '#scroll-test' }).click();
+    await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();
   });
 });

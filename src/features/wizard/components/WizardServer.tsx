@@ -33,6 +33,7 @@ const WizardServer = () => {
   const [customHost, setCustomHost] = useState(savedIsCustom ? savedServer?.servers[0]?.replace(/:\d+$/, '') ?? '' : '');
   const [customPort, setCustomPort] = useState(savedIsCustom ? savedServer?.servers[0]?.match(/:(\d+)$/)?.[1] ?? '6667' : '6667');
   const [connectionType, setConnectionType] = useState<ConnectionType>(savedServer?.connectionType ?? 'backend');
+  const [serverPassword, setServerPassword] = useState(savedServer?.serverPassword ?? '');
 
   const popularServers = servers.filter((s) => POPULAR_NETWORKS.has(s.network));
   const otherServers = servers.filter((s) => !POPULAR_NETWORKS.has(s.network));
@@ -52,6 +53,7 @@ const WizardServer = () => {
         default: 0,
         encoding: 'utf8',
         network: customHost,
+        serverPassword: serverPassword || undefined,
         servers: [hostWithPort],
         tls: connectionType === 'websocket', // Default to TLS for WebSocket connections
         websocketUrl: connectionType === 'websocket' ? `wss://${customHost}${customPort && customPort !== '443' ? `:${customPort}` : ''}/` : undefined,
@@ -169,17 +171,30 @@ const WizardServer = () => {
         </div>
 
         {isCustom && (
-          <div className="w-75 mb-4">
-            <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.connectionType')}</p>
-            <div className="flex gap-2">
-              <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1" aria-pressed={connectionType === 'backend'}>
-                {t('wizard.server.connectionType.backend')}
-              </Button>
-              <Button type="button" variant={connectionType === 'websocket' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('websocket')} className="flex-1" aria-pressed={connectionType === 'websocket'}>
-                {t('wizard.server.connectionType.websocket')}
-              </Button>
+          <>
+            <div className="w-75 mb-4">
+              <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.connectionType')}</p>
+              <div className="flex gap-2">
+                <Button type="button" variant={connectionType === 'backend' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('backend')} className="flex-1" aria-pressed={connectionType === 'backend'}>
+                  {t('wizard.server.connectionType.backend')}
+                </Button>
+                <Button type="button" variant={connectionType === 'websocket' ? 'default' : 'outline'} size="sm" onClick={() => setConnectionType('websocket')} className="flex-1" aria-pressed={connectionType === 'websocket'}>
+                  {t('wizard.server.connectionType.websocket')}
+                </Button>
+              </div>
             </div>
-          </div>
+            <div className="w-75 mb-4">
+              <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.password')}</p>
+              <Input
+                type="password"
+                placeholder={t('wizard.server.password.placeholder') ?? ''}
+                aria-label={t('wizard.server.password')}
+                value={serverPassword}
+                onChange={(e) => setServerPassword(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </>
         )}
 
         <Button type="submit" className="w-75 mt-4 mb-4" disabled={!isValid}>

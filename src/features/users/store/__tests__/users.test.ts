@@ -272,6 +272,47 @@ describe('users store', () => {
       expect(newChannel?.flags).toEqual([]);
       expect(newChannel?.maxPermission).toBe(-1);
     });
+
+    it('should add channel with provided flags', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      useUsersStore.getState().setJoinUser('TestUser', '#channel2', ['o'], 3);
+
+      const user = getUser('TestUser');
+      const newChannel = user?.channels.find((c) => c.name === '#channel2');
+      expect(newChannel?.flags).toEqual(['o']);
+      expect(newChannel?.maxPermission).toBe(3);
+    });
+
+    it('should update flags on existing channel from NAMES response', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+
+      // Simulate NAMES response arriving after JOIN (with ops)
+      useUsersStore.getState().setJoinUser('TestUser', '#channel1', ['o'], 3);
+
+      const user = getUser('TestUser');
+      const channel = user?.channels.find((c) => c.name === '#channel1');
+      expect(channel?.flags).toEqual(['o']);
+      expect(channel?.maxPermission).toBe(3);
+    });
+
+    it('should not overwrite flags with empty flags on existing channel', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: ['o'], maxPermission: 3 },
+      ]));
+
+      // Join without flags should not clear existing flags
+      useUsersStore.getState().setJoinUser('TestUser', '#channel1');
+
+      const user = getUser('TestUser');
+      const channel = user?.channels.find((c) => c.name === '#channel1');
+      expect(channel?.flags).toEqual(['o']);
+      expect(channel?.maxPermission).toBe(3);
+    });
   });
 
   describe('setUserAvatar', () => {

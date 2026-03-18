@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'dn-viewer', { channels: ['#display-name'] });
-  await sharedPage.getByRole('button', { name: '#display-name' }).click();
+  await sharedPage.getByRole('button', { name: '#display-name', exact: true }).click();
 });
 
 test.afterAll(async () => {
@@ -24,7 +24,7 @@ test.describe('IRCv3 display name', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('display name is shown in users sidebar', async () => {
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Initially the bot shows its real nick
     await expect(usersSidebar.getByText('dnbot')).toBeVisible({ timeout: 10_000 });
@@ -43,20 +43,20 @@ test.describe('IRCv3 display name', () => {
     bot.send('METADATA * SET display-name :Chat Display Name');
 
     // Wait for metadata to be processed
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('Chat Display Name')).toBeVisible({ timeout: 10_000 });
 
     // Bot sends a message
     bot.sendMessage('#display-name', 'Hello with display name!');
 
     // The message should appear in chat with the display name shown
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello with display name!')).toBeVisible({ timeout: 10_000 });
     await expect(chatLog.getByText('Chat Display Name')).toBeVisible();
   });
 
   test('context menu uses real nick, not display name', async () => {
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Pretty Name');
@@ -74,16 +74,16 @@ test.describe('IRCv3 display name', () => {
     // Click Priv to open a DM tab — the tab should use the real nick, not the display name
     await sharedPage.getByRole('menuitem', { name: 'Priv' }).click();
 
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     // The DM tab should be named with the real nick "dnbot"
     await expect(channelNav.getByRole('button', { name: 'dnbot' })).toBeVisible({ timeout: 5_000 });
   });
 
   test('whois command uses real nick', async () => {
     // Navigate back to #display-name from DM tab
-    await sharedPage.getByRole('button', { name: '#display-name' }).click();
+    await sharedPage.getByRole('button', { name: '#display-name', exact: true }).click();
 
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Whois Display');
@@ -96,15 +96,15 @@ test.describe('IRCv3 display name', () => {
     await sharedPage.getByRole('menuitem', { name: 'Whois' }).click();
 
     // Whois response should contain the real nick "dnbot"
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText(/dnbot/)).toBeVisible({ timeout: 10_000 });
   });
 
   test('clearing display name reverts to real nick', async () => {
     // Ensure we're on #display-name channel
-    await sharedPage.getByRole('button', { name: '#display-name' }).click();
+    await sharedPage.getByRole('button', { name: '#display-name', exact: true }).click();
 
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Temporary Name');

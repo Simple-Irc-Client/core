@@ -3302,7 +3302,7 @@ export class Kernel {
       const { flags, nick, ident, hostname } = parseNick(user, serverPrefixes);
 
       if (getHasUser(nick)) {
-        setJoinUser(nick, channel);
+        setJoinUser(nick, channel, flags, calculateMaxPermission(flags, serverPrefixes));
       } else {
         setAddUser({
           nick,

@@ -12,7 +12,7 @@ test.beforeAll(async ({ browser }) => {
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'cmd-tester', { channels: ['#commands'] });
-  await sharedPage.getByRole('button', { name: '#commands' }).click();
+  await sharedPage.getByRole('button', { name: '#commands', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -29,7 +29,7 @@ test.describe('Slash commands', () => {
     await messageInput.fill('/me waves hello');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('waves hello')).toBeVisible({ timeout: 10_000 });
   });
 
@@ -39,7 +39,7 @@ test.describe('Slash commands', () => {
     await messageInput.press('Enter');
 
     // Nick should change in the users sidebar
-    const usersSidebar = sharedPage.getByRole('complementary', { name: 'Users' });
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('cmd-renamed')).toBeVisible({ timeout: 10_000 });
 
     // Change back for subsequent tests
@@ -55,7 +55,7 @@ test.describe('Slash commands', () => {
     await messageInput.press('Enter');
 
     // Switch to the new channel
-    await sharedPage.getByRole('button', { name: '#cmd-topic-test' }).click({ timeout: 10_000 });
+    await sharedPage.getByRole('button', { name: '#cmd-topic-test', exact: true }).click({ timeout: 10_000 });
     await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // Set topic via command (we're op since we created the channel)
@@ -66,7 +66,7 @@ test.describe('Slash commands', () => {
     await expect(sharedPage.getByText('New topic via command')).toBeVisible({ timeout: 10_000 });
 
     // Go back to #commands
-    await sharedPage.getByRole('button', { name: '#commands' }).click();
+    await sharedPage.getByRole('button', { name: '#commands', exact: true }).click();
   });
 
   test('/join adds channel to sidebar', async () => {
@@ -75,18 +75,18 @@ test.describe('Slash commands', () => {
     await messageInput.press('Enter');
 
     // Channel should appear in the sidebar
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
-    await expect(channelNav.getByRole('button', { name: '#cmd-join-test' })).toBeVisible({ timeout: 10_000 });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    await expect(channelNav.getByRole('button', { name: '#cmd-join-test', exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Go back to #commands
-    await sharedPage.getByRole('button', { name: '#commands' }).click();
+    await sharedPage.getByRole('button', { name: '#commands', exact: true }).click();
   });
 
   test('/part leaves channel', async () => {
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Verify the channel from previous test exists
-    await expect(channelNav.getByRole('button', { name: '#cmd-join-test' })).toBeVisible();
+    await expect(channelNav.getByRole('button', { name: '#cmd-join-test', exact: true })).toBeVisible();
 
     // Part the channel
     const messageInput = sharedPage.locator('#message-input');
@@ -94,7 +94,7 @@ test.describe('Slash commands', () => {
     await messageInput.press('Enter');
 
     // Channel should be removed from sidebar
-    await expect(channelNav.getByRole('button', { name: '#cmd-join-test' })).not.toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: '#cmd-join-test', exact: true })).not.toBeVisible({ timeout: 10_000 });
   });
 
   test('/msg sends private message', async () => {
@@ -103,15 +103,15 @@ test.describe('Slash commands', () => {
     await messageInput.press('Enter');
 
     // A DM tab should appear for cmdbot
-    const channelNav = sharedPage.getByRole('navigation', { name: 'Channels' });
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav.getByRole('button', { name: 'cmdbot' })).toBeVisible({ timeout: 10_000 });
 
     // Click on it to verify the message
     await channelNav.getByRole('button', { name: 'cmdbot' }).click();
-    const chatLog = sharedPage.getByRole('log');
+    const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello from command!')).toBeVisible({ timeout: 10_000 });
 
     // Go back to #commands
-    await sharedPage.getByRole('button', { name: '#commands' }).click();
+    await sharedPage.getByRole('button', { name: '#commands', exact: true }).click();
   });
 });
