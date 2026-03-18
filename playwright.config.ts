@@ -1,11 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const chromiumConfig = {
+  ...devices['Desktop Chrome'],
+  // Required to accept the self-signed cert used for ergo's WSS listener
+  launchOptions: {
+    args: ['--ignore-certificate-errors'],
+  },
+};
+
 export default defineConfig({
   testDir: './e2e/tests',
-  fullyParallel: false,
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  workers: process.env.CI ? 4 : 2,
   reporter: process.env.CI ? 'github' : 'html',
   timeout: 60_000,
 
@@ -15,21 +23,21 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
     locale: 'en-US',
-    // ignoreHTTPSErrors uses CDP and doesn't cover WSS; the launch arg below does
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
 
   projects: [
     {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        // Required to accept the self-signed cert used for ergo's WSS listener
-        launchOptions: {
-          args: ['--ignore-certificate-errors'],
-        },
-      },
+      name: 'parallel',
+      use: chromiumConfig,
+      testIgnore: /reconnect\.spec/,
+    },
+    {
+      name: 'reconnect',
+      use: chromiumConfig,
+      testMatch: /reconnect\.spec/,
+      dependencies: ['parallel'],
     },
   ],
 
