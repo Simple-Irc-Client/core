@@ -18,7 +18,7 @@ interface UsersStore {
   setRemoveUser: (nick: string, channelName: string) => void;
   setQuitUser: (nick: string) => void;
   setRenameUser: (from: string, to: string) => void;
-  setJoinUser: (nick: string, channelName: string) => void;
+  setJoinUser: (nick: string, channelName: string, flags?: string[], maxPermission?: number) => void;
   /** IRCv3 METADATA */
   setUserAvatar: (nick: string, avatar: string | undefined) => void;
   /** IRCv3 METADATA */
@@ -78,17 +78,26 @@ export const useUsersStore = create<UsersStore>()(
         }),
       }));
     },
-    setJoinUser: (nick: string, channel: string): void => {
+    setJoinUser: (nick: string, channel: string, flags?: string[], maxPermission?: number): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
           if (user.nick !== nick) {
             return user;
           }
-          // Prevent duplicate channel entries
-          if (user.channels.some((c) => c.name === channel)) {
+          const existingChannel = user.channels.find((c) => c.name === channel);
+          if (existingChannel) {
+            // Update flags if provided (e.g. from NAMES response after JOIN)
+            if (flags && flags.length > 0) {
+              return {
+                ...user,
+                channels: user.channels.map((c) =>
+                  c.name === channel ? { ...c, flags, maxPermission: maxPermission ?? c.maxPermission } : c,
+                ),
+              };
+            }
             return user;
           }
-          return { ...user, channels: [...user.channels, { name: channel, flags: [], maxPermission: -1 }] };
+          return { ...user, channels: [...user.channels, { name: channel, flags: flags ?? [], maxPermission: maxPermission ?? -1 }] };
         }),
       }));
     },
@@ -304,8 +313,8 @@ export const getHasUser = (nick: string): boolean => {
   return getUser(nick) !== undefined;
 };
 
-export const setJoinUser = (nick: string, channelName: string): void => {
-  useUsersStore.getState().setJoinUser(nick, channelName);
+export const setJoinUser = (nick: string, channelName: string, flags?: string[], maxPermission?: number): void => {
+  useUsersStore.getState().setJoinUser(nick, channelName, flags, maxPermission);
 
   if (getCurrentChannelName() === channelName) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));

@@ -115,11 +115,15 @@ import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
   addToChannelSettingsInviteList,
+  removeFromChannelSettingsBanList,
+  removeFromChannelSettingsExceptionList,
+  removeFromChannelSettingsInviteList,
   setChannelSettingsModes,
   setChannelSettingsIsLoading,
   setChannelSettingsIsBanListLoading,
   setChannelSettingsIsExceptionListLoading,
   setChannelSettingsIsInviteListLoading,
+  updateChannelSettingsMode,
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
@@ -2042,9 +2046,31 @@ export class Kernel {
         let message = '';
         const translate = `kernel.mode.channel.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
 
+        // Update channel settings store if this channel's settings dialog is open
+        const settingsChannel = useChannelSettingsStore.getState().channelName;
+        const isSettingsOpen = settingsChannel === channel;
+
         switch (`${plusMinus}${type ?? ''}`) {
           case '+A':
-          case '-A':
+          case '-A': {
+            // List modes (ban, exception, invite) - always have a param
+            const param = this.line?.[flagParameterIndex];
+            flagParameterIndex++;
+            message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
+            if (isSettingsOpen && param) {
+              if (plusMinus === '+') {
+                const entry = { mask: param, setBy: nick ?? '', setTime: Math.floor(Date.now() / 1000) };
+                if (flag === 'b') { addToChannelSettingsBanList(entry); }
+                else if (flag === 'e') { addToChannelSettingsExceptionList(entry); }
+                else if (flag === 'I') { addToChannelSettingsInviteList(entry); }
+              } else {
+                if (flag === 'b') { removeFromChannelSettingsBanList(param); }
+                else if (flag === 'e') { removeFromChannelSettingsExceptionList(param); }
+                else if (flag === 'I') { removeFromChannelSettingsInviteList(param); }
+              }
+            }
+            break;
+          }
           case '+B':
           case '-B':
           case '+C': {
@@ -2052,6 +2078,13 @@ export class Kernel {
             const param = this.line?.[flagParameterIndex];
             flagParameterIndex++;
             message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
+            if (isSettingsOpen) {
+              if (plusMinus === '+') {
+                updateChannelSettingsMode(flag, param ?? true);
+              } else {
+                updateChannelSettingsMode(flag, null);
+              }
+            }
             break;
           }
           case '-C':
@@ -2059,6 +2092,9 @@ export class Kernel {
           case '-D':
             // single
             message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown', { channel, setBy: nick, mode }) });
+            if (isSettingsOpen) {
+              updateChannelSettingsMode(flag, plusMinus === '+' ? true : null);
+            }
             break;
           case '+U':
           case '-U': {
@@ -3302,7 +3338,7 @@ export class Kernel {
       const { flags, nick, ident, hostname } = parseNick(user, serverPrefixes);
 
       if (getHasUser(nick)) {
-        setJoinUser(nick, channel);
+        setJoinUser(nick, channel, flags, calculateMaxPermission(flags, serverPrefixes));
       } else {
         setAddUser({
           nick,

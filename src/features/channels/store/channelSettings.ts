@@ -207,6 +207,18 @@ export const setChannelSettingsInviteList = (list: ListEntry[]): void => {
   useChannelSettingsStore.getState().setInviteList(list);
 };
 
+export const removeFromChannelSettingsBanList = (mask: string): void => {
+  useChannelSettingsStore.getState().removeFromBanList(mask);
+};
+
+export const removeFromChannelSettingsExceptionList = (mask: string): void => {
+  useChannelSettingsStore.getState().removeFromExceptionList(mask);
+};
+
+export const removeFromChannelSettingsInviteList = (mask: string): void => {
+  useChannelSettingsStore.getState().removeFromInviteList(mask);
+};
+
 export const setChannelSettingsIsLoading = (loading: boolean): void => {
   useChannelSettingsStore.getState().setIsLoading(loading);
 };

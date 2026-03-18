@@ -9,6 +9,7 @@ export interface Server {
   icon?: string;
   loginType?: number;
   network: string;
+  serverPassword?: string;
   servers: string[];
   tls?: boolean;
   websocketUrl?: string;

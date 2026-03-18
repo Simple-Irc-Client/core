@@ -4,7 +4,8 @@ import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
 import { Menu, Save, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { getCurrentUserChannelModes } from '@features/users/store/users';
+import { useUsersStore } from '@features/users/store/users';
+import { getCurrentNick } from '@features/settings/store/settings';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -79,8 +80,12 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
   const { t } = useTranslation();
   const [editedTopic, setEditedTopic] = useState(topic);
 
-  const userFlags = getCurrentUserChannelModes(currentChannelName);
-  const canEditTopic = userFlags.some((flag) => TOPIC_EDIT_FLAGS.has(flag));
+  const canEditTopic = useUsersStore((state) => {
+    const nick = getCurrentNick();
+    const user = state.users.find((u) => u.nick === nick);
+    const channel = user?.channels.find((ch) => ch.name === currentChannelName);
+    return channel?.flags.some((flag) => TOPIC_EDIT_FLAGS.has(flag)) ?? false;
+  });
 
   const handleSaveTopic = () => {
     if (editedTopic !== topic) {
@@ -105,6 +110,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
             <div className="flex-1 min-w-0">
               {canEditTopic ? (
                 <Input
+                  data-testid="topic-input"
                   value={editedTopic}
                   onChange={(e) => setEditedTopic(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -112,7 +118,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
                   aria-label={t('main.topic.topicInput')}
                 />
               ) : (
-                <div className="min-h-8 w-full flex items-center px-3 text-sm truncate">
+                <div data-testid="topic-display" className="min-h-8 w-full flex items-center px-3 text-sm truncate">
                   {renderFormattedSegments(formattedSegments)}
                 </div>
               )}

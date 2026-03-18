@@ -82,11 +82,6 @@ describe('channelList store', () => {
 
   describe('setChannelListFinished', () => {
     it('should set finished to true', () => {
-      // Add more than 10 channels to pass the threshold
-      for (let i = 0; i < 15; i++) {
-        setAddChannelToList(`#channel${i}`, i, `Topic ${i}`);
-      }
-
       setChannelListFinished(true);
 
       expect(useChannelListStore.getState().finished).toBe(true);
@@ -99,23 +94,24 @@ describe('channelList store', () => {
       expect(useChannelListStore.getState().finished).toBe(false);
     });
 
-    it('should clear list if less than 10 channels when finishing', () => {
+    it('should preserve channels when finishing with few channels', () => {
       setAddChannelToList('#test1', 10, 'Channel 1');
       setAddChannelToList('#test2', 20, 'Channel 2');
 
       setChannelListFinished(true);
 
-      expect(useChannelListStore.getState().channels.length).toBe(0);
+      expect(useChannelListStore.getState().channels.length).toBe(2);
+      expect(useChannelListStore.getState().finished).toBe(true);
     });
 
-    it('should not clear list if 10 or more channels when finishing', () => {
-      for (let i = 0; i < 10; i++) {
+    it('should preserve channels when finishing with many channels', () => {
+      for (let i = 0; i < 15; i++) {
         setAddChannelToList(`#channel${i}`, i, `Topic ${i}`);
       }
 
       setChannelListFinished(true);
 
-      expect(useChannelListStore.getState().channels.length).toBe(10);
+      expect(useChannelListStore.getState().channels.length).toBe(15);
       expect(useChannelListStore.getState().finished).toBe(true);
     });
   });

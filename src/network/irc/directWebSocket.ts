@@ -128,6 +128,11 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
     // Send CAP LS to start capability negotiation
     await sendDirectRaw('CAP LS 302');
 
+    // Send PASS before NICK/USER if server has a password
+    if (server.serverPassword) {
+      await sendDirectRaw(`PASS ${server.serverPassword}`);
+    }
+
     // Send NICK and USER
     await sendDirectRaw(`NICK ${nick}`);
     await sendDirectRaw(`USER ${nick} 0 * :${nick}`);

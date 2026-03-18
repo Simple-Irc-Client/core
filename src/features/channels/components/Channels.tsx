@@ -120,6 +120,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   return (
     <nav
+      data-testid="channels-sidebar"
       aria-label={t('main.channels.title')}
       className={cn(
         'border-r border-border overflow-y-auto bg-background',

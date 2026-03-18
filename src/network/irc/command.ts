@@ -191,6 +191,13 @@ const kickCommand = (channel: string, line: string[]): string | undefined => {
 };
 
 const partCommand = (channel: string, line: string[]): string => {
+  // If first arg is a channel name, part from that channel instead of the current one
+  const firstArg = line[0];
+  if (firstArg !== undefined && isChannel(firstArg)) {
+    line.shift();
+    channel = firstArg;
+  }
+
   let reason = line.join(' ');
   if (reason.length !== 0) {
     reason = ` :${reason}`;

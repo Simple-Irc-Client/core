@@ -22,6 +22,8 @@
     "wizard.server.connectionType": "Typ połączenia",
     "wizard.server.connectionType.backend": "Standardowy",
     "wizard.server.connectionType.websocket": "WebSocket",
+    "wizard.server.password": "Hasło serwera",
+    "wizard.server.password.placeholder": "Opcjonalne",
     "wizard.server.button.next": "Dalej",
     "wizard.server.message.no.options": "Brak wyników",
     "wizard.loading.connecting": "Łączenie z serwerem",

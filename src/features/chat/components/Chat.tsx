@@ -195,8 +195,24 @@ const Chat = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUp = useRef(false);
+  const isProgrammaticScroll = useRef(false);
+
+  const scrollToBottom = useCallback(() => {
+    if (containerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+      const newScrollTop = scrollHeight - clientHeight;
+      if (newScrollTop > 0 && Math.abs(scrollTop - newScrollTop) > 1) {
+        isProgrammaticScroll.current = true;
+      }
+      containerRef.current.scrollTop = scrollHeight;
+    }
+  }, []);
 
   const handleScroll = useCallback(() => {
+    if (isProgrammaticScroll.current) {
+      isProgrammaticScroll.current = false;
+      return;
+    }
     if (containerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
@@ -206,16 +222,14 @@ const Chat = () => {
 
   useLayoutEffect(() => {
     isUserScrolledUp.current = false;
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [currentChannelName]);
+    scrollToBottom();
+  }, [currentChannelName, scrollToBottom]);
 
   useLayoutEffect(() => {
-    if (containerRef.current && !isUserScrolledUp.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    if (!isUserScrolledUp.current) {
+      scrollToBottom();
     }
-  });
+  }, [messages, scrollToBottom]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -226,17 +240,17 @@ const Chat = () => {
 
     const resizeObserver = new ResizeObserver(() => {
       if (!isUserScrolledUp.current) {
-        container.scrollTop = container.scrollHeight;
+        scrollToBottom();
       }
     });
 
     resizeObserver.observe(content);
 
     return () => resizeObserver.disconnect();
-  }, [isConnected]);
+  }, [isConnected, scrollToBottom]);
 
   return (
-    <div ref={containerRef} role="log" onScroll={handleScroll} onContextMenu={(e) => {
+    <div ref={containerRef} data-testid="chat-log" role="log" onScroll={handleScroll} onContextMenu={(e) => {
       if (e.defaultPrevented) { return; }
       e.preventDefault();
       e.stopPropagation();
