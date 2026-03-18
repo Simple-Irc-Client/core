@@ -34,7 +34,7 @@ test.describe('Scroll behavior', () => {
     }
 
     // Last message should be visible (auto-scrolled)
-    await expect(chatLog.getByText('Autoscroll message 40')).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText('Autoscroll message 40', { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Verify we're at the bottom
     const isAtBottom = await chatLog.evaluate((el) => {
