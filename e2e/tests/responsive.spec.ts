@@ -2,27 +2,29 @@ import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
-let bot: IrcClient;
-let sharedPage: Page;
-
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('mobilebot');
-  await bot.join('#responsive');
-
-  sharedPage = await browser.newPage();
-  // Start at a small mobile viewport
-  await sharedPage.setViewportSize({ width: 375, height: 667 });
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'mobile-tester', { channels: ['#responsive'] });
-});
-
-test.afterAll(async () => {
-  await sharedPage.close();
-  bot.disconnect();
-});
-
-test.describe('Responsive layout — mobile viewport', () => {
+test.describe('Responsive layout', () => {
   test.describe.configure({ mode: 'serial' });
+
+  let bot: IrcClient;
+  let sharedPage: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    bot = await createIrcClient('mobilebot');
+    await bot.join('#responsive');
+
+    sharedPage = await browser.newPage();
+    // Start at a small mobile viewport
+    await sharedPage.setViewportSize({ width: 375, height: 667 });
+    await sharedPage.goto('/');
+    await connectViaWizard(sharedPage, 'mobile-tester', { channels: ['#responsive'] });
+  });
+
+  test.afterAll(async () => {
+    await sharedPage?.close();
+    bot?.disconnect();
+  });
+
+  // --- Mobile viewport ---
 
   test('channels sidebar is hidden by default on mobile', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
@@ -141,10 +143,8 @@ test.describe('Responsive layout — mobile viewport', () => {
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello from mobile!')).toBeVisible({ timeout: 10_000 });
   });
-});
 
-test.describe('Responsive layout — tablet viewport', () => {
-  test.describe.configure({ mode: 'serial' });
+  // --- Tablet viewport ---
 
   test('drawers still work at 768px width', async () => {
     await sharedPage.setViewportSize({ width: 768, height: 1024 });
@@ -164,10 +164,8 @@ test.describe('Responsive layout — tablet viewport', () => {
     // Close it
     await sharedPage.getByRole('button', { name: /close channels/i }).click();
   });
-});
 
-test.describe('Responsive layout — desktop viewport', () => {
-  test.describe.configure({ mode: 'serial' });
+  // --- Desktop viewport ---
 
   test('sidebars are always visible on desktop', async () => {
     await sharedPage.setViewportSize({ width: 1280, height: 800 });

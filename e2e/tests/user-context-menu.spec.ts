@@ -36,6 +36,10 @@ test.describe('User context menu', () => {
     // Context menu should appear with Whois and Priv options
     await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
     await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+
+    // Close the context menu so it doesn't interfere with subsequent tests
+    await sharedPage.keyboard.press('Escape');
+    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).not.toBeVisible({ timeout: 3_000 });
   });
 
   test('whois shows user info', async () => {
@@ -47,7 +51,7 @@ test.describe('User context menu', () => {
 
     // Whois response should appear in the chat log
     const chatLog = sharedPage.getByTestId('chat-log');
-    await expect(chatLog.getByText(/alice/)).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText(/alice/).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('priv opens private message tab', async () => {

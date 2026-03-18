@@ -17,8 +17,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  await sharedPage.close();
-  bot.disconnect();
+  await sharedPage?.close();
+  bot?.disconnect();
 });
 
 test.describe('Formatting tools', () => {
@@ -32,7 +32,7 @@ test.describe('Formatting tools', () => {
     await expect(sharedPage.locator('.epr-main')).toBeVisible({ timeout: 5_000 });
 
     // Click the first emoji in the picker
-    const firstEmoji = sharedPage.locator('.epr-body .epr-emoji-category-label + ul button').first();
+    const firstEmoji = sharedPage.locator('.epr-body button[data-unified]').first();
     await firstEmoji.click();
 
     // The message input should now contain the emoji
@@ -100,6 +100,9 @@ test.describe('Formatting tools', () => {
     // Toggle bold off
     await boldButton.click();
     await expect(boldButton).toHaveAttribute('aria-pressed', 'false');
+
+    // Close style picker by clicking the message input
+    await sharedPage.locator('#message-input').click();
   });
 
   test('send formatted message with bold and color', async () => {

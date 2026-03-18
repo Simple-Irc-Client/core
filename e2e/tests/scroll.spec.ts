@@ -28,13 +28,13 @@ test.describe('Scroll behavior', () => {
   test('chat auto-scrolls to bottom on new messages', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
-    // Send enough messages to fill the viewport
-    for (let i = 1; i <= 20; i++) {
+    // Send enough messages to fill the viewport and make content scrollable
+    for (let i = 1; i <= 40; i++) {
       bot.sendMessage('#scroll-test', `Autoscroll message ${i}`);
     }
 
     // Last message should be visible (auto-scrolled)
-    await expect(chatLog.getByText('Autoscroll message 20')).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText('Autoscroll message 40')).toBeVisible({ timeout: 10_000 });
 
     // Verify we're at the bottom
     const isAtBottom = await chatLog.evaluate((el) => {
@@ -46,14 +46,18 @@ test.describe('Scroll behavior', () => {
   test('new messages do not auto-scroll when user scrolled up', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
-    // Scroll to the top
-    await chatLog.evaluate((el) => { el.scrollTop = 0; });
-    // Wait for scroll event to register
-    await sharedPage.waitForTimeout(200);
+    // Scroll to top and wait for the browser's scroll event to fire,
+    // which React's onScroll handler picks up to mark user as scrolled up
+    await chatLog.evaluate((el) => new Promise<void>((resolve) => {
+      el.addEventListener('scroll', () => resolve(), { once: true });
+      el.scrollTop = 0;
+      // Fallback in case no scroll event fires (content not tall enough)
+      setTimeout(() => resolve(), 500);
+    }));
 
     // Send a new message while scrolled up
     bot.sendMessage('#scroll-test', 'Message while scrolled up');
-    await sharedPage.waitForTimeout(1000);
+    await sharedPage.waitForTimeout(2000);
 
     // We should NOT be at the bottom
     const isAtBottom = await chatLog.evaluate((el) => {

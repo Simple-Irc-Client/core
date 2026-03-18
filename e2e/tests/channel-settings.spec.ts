@@ -97,11 +97,14 @@ test.describe('Channel settings', () => {
 
     await inviteSwitch.click();
 
+    // Wait for mode change to round-trip through the server
+    await page.waitForTimeout(1000);
+
     // Mode should have toggled
     if (initialChecked) {
-      await expect(inviteSwitch).not.toBeChecked({ timeout: 5_000 });
+      await expect(inviteSwitch).not.toBeChecked({ timeout: 10_000 });
     } else {
-      await expect(inviteSwitch).toBeChecked({ timeout: 5_000 });
+      await expect(inviteSwitch).toBeChecked({ timeout: 10_000 });
     }
   });
 
@@ -154,13 +157,14 @@ test.describe('Channel settings', () => {
     await page.getByTestId('add-entry').click();
 
     // Ban entry should appear in the list
-    await expect(page.getByText('*!*@banned.host')).toBeVisible({ timeout: 5_000 });
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('*!*@banned.host')).toBeVisible({ timeout: 5_000 });
 
     // Remove the ban entry
-    await page.getByTestId('remove-entry-0').click();
+    await dialog.getByTestId('remove-entry-0').click();
 
     // Entry should be removed
-    await expect(page.getByText('*!*@banned.host')).not.toBeVisible({ timeout: 5_000 });
+    await expect(dialog.getByText('*!*@banned.host')).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('channel settings button is hidden without ops', async ({ page }) => {

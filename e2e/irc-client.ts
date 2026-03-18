@@ -14,6 +14,9 @@ import { PASSWORD_FILE } from './global-setup';
  */
 const RPL_WELCOME_PATTERN = /^(@\S+ )?:[^\s!@]+ 001 /;
 
+/** Pattern to match ERR_NICKNAMEINUSE (433) from a server */
+const ERR_NICKNAMEINUSE_PATTERN = /^(@\S+ )?:[^\s!@]+ 433 /;
+
 /** IRC line terminator */
 const IRC_LINE_ENDING = '\r\n';
 
@@ -178,6 +181,10 @@ class RawIrcClient extends EventEmitter {
     if (RPL_WELCOME_PATTERN.test(line)) {
       this.emit('connected');
     }
+
+    if (ERR_NICKNAMEINUSE_PATTERN.test(line)) {
+      this.emit('nick_in_use');
+    }
   }
 
   send(line: string): void {
@@ -253,8 +260,28 @@ export class IrcClient {
 
   async connect(host = '127.0.0.1', port = 6667): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.client.once('connected', resolve);
-      this.client.once('error', reject);
+      let nickAttempt = 0;
+      const tryNick = () => this.nick + (nickAttempt > 0 ? String(nickAttempt) : '');
+
+      const onNickInUse = () => {
+        nickAttempt++;
+        if (nickAttempt > 5) {
+          this.client.off('nick_in_use', onNickInUse);
+          reject(new Error(`Nick ${this.nick} and variants are all in use`));
+          return;
+        }
+        this.client.send(`NICK ${tryNick()}`);
+      };
+
+      this.client.on('nick_in_use', onNickInUse);
+      this.client.once('connected', () => {
+        this.client.off('nick_in_use', onNickInUse);
+        resolve();
+      });
+      this.client.once('error', (err) => {
+        this.client.off('nick_in_use', onNickInUse);
+        reject(err);
+      });
       this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick });
     });
   }

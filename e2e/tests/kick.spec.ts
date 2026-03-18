@@ -51,7 +51,7 @@ test.describe('Kick', () => {
 
     // Kick notification should be shown
     const chatLog = page.getByTestId('chat-log');
-    await expect(chatLog.getByText(/kicked/i)).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText(/you have been kicked|you are kicked/i).first()).toBeVisible({ timeout: 10_000 });
 
     bot.disconnect();
   });

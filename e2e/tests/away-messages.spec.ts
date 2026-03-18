@@ -53,16 +53,18 @@ test.describe('Away messages', () => {
 
     // Dialog should be visible
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('Away Messages')).toBeVisible();
-    await expect(page.getByText('Messages that mentioned you while you were away')).toBeVisible();
 
-    // Both messages should be listed
-    await expect(page.getByText('Hey away-tester, are you there?')).toBeVisible();
-    await expect(page.getByText('Pinging away-tester again')).toBeVisible();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Away Messages' })).toBeVisible();
+    await expect(dialog.getByText('Messages that mentioned you while you were away')).toBeVisible();
+
+    // Both messages should be listed in the dialog
+    await expect(dialog.getByText('Hey away-tester, are you there?')).toBeVisible();
+    await expect(dialog.getByText('Pinging away-tester again')).toBeVisible();
 
     // Each message should show the sender and channel
-    await expect(page.getByText('awaybot').first()).toBeVisible();
-    await expect(page.getByText('#away-test').first()).toBeVisible();
+    await expect(dialog.getByText('awaybot').first()).toBeVisible();
+    await expect(dialog.getByText('#away-test').first()).toBeVisible();
   });
 
   test('mark as read clears away messages', async ({ page }) => {

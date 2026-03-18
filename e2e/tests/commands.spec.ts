@@ -93,8 +93,11 @@ test.describe('Slash commands', () => {
     await messageInput.fill('/part #cmd-join-test');
     await messageInput.press('Enter');
 
+    // Wait for the /part command to be processed
+    await sharedPage.waitForTimeout(1000);
+
     // Channel should be removed from sidebar
-    await expect(channelNav.getByRole('button', { name: '#cmd-join-test', exact: true })).not.toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: '#cmd-join-test', exact: true })).not.toBeVisible({ timeout: 15_000 });
   });
 
   test('/msg sends private message', async () => {

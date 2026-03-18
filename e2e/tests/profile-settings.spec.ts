@@ -24,12 +24,14 @@ test.describe('Profile settings', () => {
 
   test('opens profile settings dialog', async () => {
     // Open user menu via avatar button
+    await expect(sharedPage.locator('[data-avatar-button]')).toBeVisible({ timeout: 10_000 });
     await sharedPage.locator('[data-avatar-button]').click();
+    await expect(sharedPage.getByRole('menuitem', { name: 'Profile Settings' })).toBeVisible({ timeout: 5_000 });
     await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
     // Dialog should be visible with title
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
-    await expect(sharedPage.getByText('Profile Settings')).toBeVisible();
+    await expect(sharedPage.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
 
     // Should show nickname field
     await expect(sharedPage.getByLabel('Nickname')).toBeVisible();

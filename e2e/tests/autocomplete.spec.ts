@@ -11,7 +11,7 @@ test.beforeAll(async ({ browser }) => {
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'comp-tester', { channels: ['#autocomplete'] });
+  await connectViaWizard(sharedPage, 'compuser', { channels: ['#autocomplete'] });
   await sharedPage.getByRole('button', { name: '#autocomplete', exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 

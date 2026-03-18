@@ -215,7 +215,7 @@ const Chat = () => {
     if (containerRef.current && !isUserScrolledUp.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  });
+  }, [messages]);
 
   useEffect(() => {
     const container = containerRef.current;

@@ -3,22 +3,14 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
-let metadataSupported = true;
+// ergo does not support draft/metadata; skip all metadata tests
+const metadataSupported = false;
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
+  if (!metadataSupported) return;
   bot = await createIrcClient('metabot');
   await bot.join('#metadata-test');
-
-  // Check if ergo supports draft/metadata by sending a test command
-  // If the capability isn't available, we'll skip tests
-  try {
-    bot.send('CAP LS 302');
-    // Give the server a moment to respond
-    await new Promise((r) => setTimeout(r, 1000));
-  } catch {
-    metadataSupported = false;
-  }
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
@@ -27,8 +19,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  await sharedPage.close();
-  bot.disconnect();
+  await sharedPage?.close();
+  bot?.disconnect();
 });
 
 test.describe('Metadata', () => {

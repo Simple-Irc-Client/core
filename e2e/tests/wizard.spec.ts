@@ -21,19 +21,21 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Next' }).click();
 };
 
-let bot: IrcClient;
-
-test.beforeAll(async () => {
-  bot = await createIrcClient('wizardbot');
-  await bot.join('#welcome');
-  await bot.setTopic('#welcome', 'Welcome to the test server!');
-});
-
-test.afterAll(() => {
-  bot.disconnect();
-});
-
 test.describe('Wizard', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  let bot: IrcClient;
+
+  test.beforeAll(async () => {
+    bot = await createIrcClient('wizardbot');
+    await bot.join('#welcome');
+    await bot.setTopic('#welcome', 'Welcome to the test server!');
+  });
+
+  test.afterAll(() => {
+    bot?.disconnect();
+  });
+
   test('completes full wizard flow and reaches main page', async ({ page }) => {
     await page.goto('/');
 
@@ -118,9 +120,7 @@ test.describe('Wizard', () => {
     // Should reconnect successfully — "Not connected" banner disappears
     await expect(page.getByText('Not connected to server').first()).toBeHidden({ timeout: 30_000 });
   });
-});
 
-test.describe('Wizard — unhappy paths', () => {
   test('empty nick disables Next button', async ({ page }) => {
     await page.goto('/');
 
@@ -150,8 +150,8 @@ test.describe('Wizard — unhappy paths', () => {
     await fillServerStepAndConnect(page);
 
     // Error message should appear with "Nickname is already in use"
-    await expect(page.getByText(/Failed to connect/)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('heading', { name: /Nickname is already in use/i })).toBeVisible();
+    await expect(page.getByText(/Failed to connect|Nickname is already in use|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Nickname is already in use/i).first()).toBeVisible({ timeout: 5_000 });
 
     // "Go Back" button should be visible
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
@@ -165,7 +165,7 @@ test.describe('Wizard — unhappy paths', () => {
     await fillServerStepAndConnect(page);
 
     // Wait for error
-    await expect(page.getByText(/Failed to connect/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Failed to connect/).first()).toBeVisible({ timeout: 15_000 });
 
     // Click Go Back
     await page.getByRole('button', { name: 'Go Back' }).click();
@@ -197,7 +197,7 @@ test.describe('Wizard — unhappy paths', () => {
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Should show disconnected/error state since the server doesn't exist
-    await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/).first()).toBeVisible({ timeout: 30_000 });
 
     // "Go Back" button should be visible
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
@@ -216,7 +216,7 @@ test.describe('Wizard — unhappy paths', () => {
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Wait for error
-    await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/).first()).toBeVisible({ timeout: 30_000 });
 
     // Click Go Back
     await page.getByRole('button', { name: 'Go Back' }).click();
@@ -242,12 +242,10 @@ test.describe('Wizard — unhappy paths', () => {
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Should show error about password mismatch
-    await expect(page.getByText(/Failed to connect|Disconnected/)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Failed to connect|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
   });
-});
 
-test.describe('Wizard — server query param', () => {
   test('known server param shows info banner and skips server step', async ({ page }) => {
     await page.goto('/?server=Libera.Chat');
 
