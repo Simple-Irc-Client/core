@@ -83,6 +83,49 @@ test.describe('Scroll behavior', () => {
     expect(isAtBottom).toBe(true);
   });
 
+  test('auto-scroll stays at bottom when async media loads after new messages', async () => {
+    const chatLog = sharedPage.getByTestId('chat-log');
+
+    // Ensure we start at the bottom
+    await chatLog.evaluate((el) => { el.scrollTop = el.scrollHeight; });
+    await sharedPage.waitForTimeout(200);
+
+    // Send messages with YouTube and image links (these load async previews)
+    bot.sendMessage('#scroll-test', 'Check this video https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    bot.sendMessage('#scroll-test', 'Look at this image https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png');
+    bot.sendMessage('#scroll-test', 'Another video https://youtu.be/jNQXAC9IVRw');
+
+    // Send several plain text messages after the media messages
+    for (let i = 1; i <= 5; i++) {
+      bot.sendMessage('#scroll-test', `Follow-up text message ${i}`);
+    }
+
+    // Wait for text messages to appear
+    await expect(chatLog.getByText('Follow-up text message 5')).toBeVisible({ timeout: 10_000 });
+
+    // Simulate a user joining (system event after media messages)
+    const joiner = await createIrcClient('scroll-joiner');
+    await joiner.join('#scroll-test');
+
+    // Wait for the join message to appear
+    await expect(chatLog.getByText(/scroll-joiner/)).toBeVisible({ timeout: 10_000 });
+
+    // Wait for async media previews to load (YouTube thumbnails, image previews)
+    await expect(chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(chatLog.getByRole('img', { name: 'Image thumbnail' }).first()).toBeVisible({ timeout: 15_000 });
+
+    // After all async content has loaded, we should still be at the bottom
+    // This is the key assertion: the ResizeObserver should keep us scrolled down
+    // even though images loaded after the join message was already rendered
+    const isAtBottom = await chatLog.evaluate((el) => {
+      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    });
+    expect(isAtBottom).toBe(true);
+
+    // Clean up the joiner bot
+    joiner.disconnect();
+  });
+
   test('switching channels resets scroll to bottom', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
