@@ -47,6 +47,7 @@ export const DESIRED_CAPABILITIES = [
   'draft/chathistory',
 
   // Metadata (draft)
+  'draft/metadata-2',
   'draft/metadata',
   'draft/metadata-notify-2',
 

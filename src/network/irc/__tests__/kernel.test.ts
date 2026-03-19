@@ -642,45 +642,28 @@ describe('kernel tests', () => {
     expect(mockIrcRequestChatHistory).not.toHaveBeenCalled();
   });
 
-  it('test raw JOIN self with draft/metadata enabled requests metadata list', () => {
-    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
-    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-    vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
-    const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
-    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/metadata');
+  it.each(['draft/metadata-2', 'draft/metadata', 'draft/metadata-notify-2'])(
+    'test raw JOIN self with %s enabled requests metadata list',
+    (capName) => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
+      const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+      vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === capName);
 
-    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
+      const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
 
-    new Kernel({ type: 'raw', line }).handle();
+      new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIrcRequestMetadataList).toHaveBeenCalledWith('#mychannel');
-    expect(mockIrcRequestMetadataList).toHaveBeenCalledTimes(1);
-  });
-
-  it('test raw JOIN self with draft/metadata-notify-2 enabled requests metadata list', () => {
-    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
-    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-    vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
-    const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
-    vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/metadata-notify-2');
-
-    const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
-
-    new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIrcRequestMetadataList).toHaveBeenCalledWith('#mychannel');
-    expect(mockIrcRequestMetadataList).toHaveBeenCalledTimes(1);
-  });
+      expect(mockIrcRequestMetadataList).toHaveBeenCalledWith('#mychannel');
+      expect(mockIrcRequestMetadataList).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('test raw JOIN self without metadata capability does not request metadata', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
@@ -3136,6 +3119,24 @@ describe('kernel tests', () => {
     expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-display-name');
     expect(mockSetSupportedOption).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 770 with multiple keys (ergo format)', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':ergo.test 770 * avatar status bot homepage display-name color';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-avatar');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-status');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-bot');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-homepage');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-display-name');
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('metadata-color');
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(6);
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 

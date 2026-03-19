@@ -47,7 +47,8 @@ const CAP_MAX_RETRIES = 2;
  *   :server CAP nick LS * :caps  (with server prefix, continuation)
  *   :server CAP nick LS :caps    (with server prefix, final)
  */
-const CAP_LS_PATTERN = /(?:^|\s)CAP \S+ LS(\s\*)?/;
+const CAP_LS_PATTERN = /(?:^|\s)CAP \S+ LS(\s\*)?\s*:?(.*)/;
+const CAP_ACK_PATTERN = /(?:^|\s)CAP \S+ ACK\s/;
 
 /** Strip CR/LF to prevent IRC line injection */
 const stripCRLF = (input: string): string => input.replace(/[\r\n]/g, '');
@@ -62,6 +63,8 @@ interface RawIrcClientOptions {
   encoding?: BufferEncoding;
   tls?: boolean;
   pongTimeout?: number;
+  /** Capabilities to request from the server during CAP negotiation */
+  requestCaps?: string[];
 }
 
 /**
@@ -79,6 +82,8 @@ class RawIrcClient extends EventEmitter {
   private capRetryCount = 0;
   private capResponseReceived = false;
   private capEndSent = false;
+  private requestedCaps: string[] = [];
+  private availableCaps: string[] = [];
 
   get connected(): boolean {
     return this.socket?.writable ?? false;
@@ -111,6 +116,8 @@ class RawIrcClient extends EventEmitter {
     this.capRetryCount = 0;
     this.capResponseReceived = false;
     this.capEndSent = false;
+    this.requestedCaps = options.requestCaps ?? [];
+    this.availableCaps = [];
     this.send('CAP LS 302');
     this.startCapResponseTimer();
     if (options.password) {
@@ -170,8 +177,29 @@ class RawIrcClient extends EventEmitter {
         this.capResponseReceived = true;
         this.clearCapResponseTimer();
       }
+      // Collect available caps from this LS line
+      const capsString = capLsMatch[2] ?? '';
+      for (const cap of capsString.split(' ')) {
+        const name = cap.split('=')[0];
+        if (name) this.availableCaps.push(name);
+      }
       const isContinuation = capLsMatch[1] !== undefined;
       if (!isContinuation && !this.capEndSent) {
+        // Request any desired caps that the server advertises
+        const toRequest = this.requestedCaps.filter((c) => this.availableCaps.includes(c));
+        if (toRequest.length > 0) {
+          this.send(`CAP REQ :${toRequest.join(' ')}`);
+          // CAP END will be sent after ACK
+        } else {
+          this.capEndSent = true;
+          this.send('CAP END');
+        }
+      }
+      return;
+    }
+
+    if (CAP_ACK_PATTERN.test(line)) {
+      if (!this.capEndSent) {
         this.capEndSent = true;
         this.send('CAP END');
       }
@@ -251,10 +279,12 @@ export class IrcClient {
   private readonly client: RawIrcClient;
   readonly nick: string;
   private readonly password?: string;
+  private readonly requestCaps?: string[];
 
-  constructor(nick: string, password?: string) {
+  constructor(nick: string, password?: string, requestCaps?: string[]) {
     this.nick = nick;
     this.password = password;
+    this.requestCaps = requestCaps;
     this.client = new RawIrcClient();
   }
 
@@ -282,7 +312,7 @@ export class IrcClient {
         this.client.off('nick_in_use', onNickInUse);
         reject(err);
       });
-      this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick });
+      this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick, requestCaps: this.requestCaps });
     });
   }
 
@@ -371,9 +401,9 @@ export class IrcClient {
   }
 }
 
-export const createIrcClient = async (nick: string, host = '127.0.0.1', port = 6667): Promise<IrcClient> => {
+export const createIrcClient = async (nick: string, host = '127.0.0.1', port = 6667, requestCaps?: string[]): Promise<IrcClient> => {
   const password = readFileSync(PASSWORD_FILE, 'utf8');
-  const client = new IrcClient(nick, password);
+  const client = new IrcClient(nick, password, requestCaps);
   await client.connect(host, port);
   return client;
 };

@@ -68,6 +68,11 @@ channels:
         enabled: false
     list-delay: 0s
 
+metadata:
+    enabled: true
+    max-keys: 100
+    max-subs: 100
+
 oper-classes:
     "server-admin":
         title: Server Admin

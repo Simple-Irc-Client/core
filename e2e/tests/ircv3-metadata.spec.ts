@@ -3,13 +3,10 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
-// ergo does not support draft/metadata; skip all metadata tests
-const metadataSupported = false;
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
-  if (!metadataSupported) return;
-  bot = await createIrcClient('metabot');
+  bot = await createIrcClient('metabot', '127.0.0.1', 6667, ['draft/metadata-2']);
   await bot.join('#metadata-test');
 
   sharedPage = await browser.newPage();
@@ -27,59 +24,48 @@ test.describe('Metadata', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('set avatar via profile settings', async () => {
-    test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
     // Open profile settings
     await sharedPage.locator('[data-avatar-button]').click();
     await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
-    // Look for avatar URL input
-    const avatarInput = sharedPage.getByLabel(/avatar/i);
-    if (await avatarInput.isVisible()) {
-      await avatarInput.fill('https://example.com/avatar.png');
+    // Avatar input is conditionally rendered when the server supports metadata
+    const avatarInput = sharedPage.locator('#avatar');
+    await expect(avatarInput).toBeVisible({ timeout: 10_000 });
+    await avatarInput.fill('https://example.com/avatar.png');
+    await avatarInput.press('Enter');
 
-      // Find and click the Set/Save button for avatar
-      const setButton = sharedPage.getByRole('button', { name: 'Set' });
-      if (await setButton.first().isVisible()) {
-        await setButton.first().click();
-      }
+    // Close dialog
+    await sharedPage.keyboard.press('Escape');
 
-      // Close dialog
-      await sharedPage.keyboard.press('Escape');
-
-      // Avatar should display in the users sidebar (as an img element)
-      const usersSidebar = sharedPage.getByTestId('users-sidebar');
-      await expect(usersSidebar.locator('img[src="https://example.com/avatar.png"]')).toBeVisible({ timeout: 10_000 });
-    }
+    // Avatar should display in the users sidebar (as an img element)
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    await expect(usersSidebar.locator('img[src="https://example.com/avatar.png"]')).toBeVisible({ timeout: 10_000 });
   });
 
   test('set nick color via profile settings', async () => {
-    test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
     // Open profile settings
     await sharedPage.locator('[data-avatar-button]').click();
     await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
-    // Look for color input
-    const colorInput = sharedPage.getByLabel(/color/i).first();
-    if (await colorInput.isVisible()) {
-      await colorInput.fill('#ff0000');
+    // Color input is conditionally rendered when the server supports metadata
+    const colorInput = sharedPage.locator('#color');
+    await expect(colorInput).toBeVisible({ timeout: 10_000 });
+    await colorInput.fill('#ff0000');
+    await colorInput.press('Enter');
 
-      const setButton = sharedPage.getByRole('button', { name: 'Set' });
-      if (await setButton.first().isVisible()) {
-        await setButton.first().click();
-      }
+    await sharedPage.keyboard.press('Escape');
 
-      await sharedPage.keyboard.press('Escape');
-
-      // Verify color is applied — nick in users sidebar should have the color style
-      const usersSidebar = sharedPage.getByTestId('users-sidebar');
-      await expect(usersSidebar.getByText('meta-tester')).toBeVisible({ timeout: 10_000 });
-    }
+    // Verify color is applied — nick in users sidebar should have the color style
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const nickEl = usersSidebar.getByText('meta-tester');
+    await expect(nickEl).toBeVisible({ timeout: 10_000 });
+    // The nick should have the chosen color applied
+    await expect(nickEl).toHaveCSS('color', 'rgb(255, 0, 0)');
   });
 
   test('bot metadata update is visible to browser user', async () => {
-    test.skip(!metadataSupported, 'Server does not support draft/metadata');
 
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('metabot')).toBeVisible({ timeout: 10_000 });

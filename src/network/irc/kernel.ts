@@ -1446,7 +1446,7 @@ export class Kernel {
         }
 
         // Handle special capabilities
-        if (isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
+        if (isCapabilityEnabled('draft/metadata-2') || isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
           ircRequestMetadata();
           setSupportedOption('metadata');
         }
@@ -1843,7 +1843,7 @@ export class Kernel {
         ircRequestChatHistory(channel, 'LATEST', undefined, 50);
       }
       // Request channel metadata (display-name, avatar) if metadata capability is enabled
-      if (isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
+      if (isCapabilityEnabled('draft/metadata-2') || isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
         ircRequestMetadataList(channel);
       }
     }
@@ -3656,15 +3656,16 @@ export class Kernel {
     //
   };
 
-  // :jowisz.pirc.pl 770 Merovingian :avatar
-  // :jowisz.pirc.pl 770 Merovingian :status
-  // :jowisz.pirc.pl 770 Merovingian :bot
+  // :jowisz.pirc.pl 770 Merovingian :avatar           (one key per line — pirc.pl)
+  // :ergo.test 770 * avatar status bot display-name   (multiple keys per line — ergo)
   private readonly onRaw770 = (): void => {
     this.line.shift(); // myNick
-    const metadataItem = this.trailing().toLowerCase();
+    const items = this.trailing().toLowerCase();
 
-    if (metadataItem.length > 0) {
-      setSupportedOption(`metadata-${metadataItem}`);
+    for (const item of items.split(' ')) {
+      if (item.length > 0) {
+        setSupportedOption(`metadata-${item}`);
+      }
     }
   };
 
