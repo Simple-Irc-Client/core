@@ -164,9 +164,9 @@ const WizardServer = () => {
                   setIsCustom(false);
                 }
               }}
-              className="flex-1"
+              className={cn('flex-1', customHost && 'bg-white')}
             />
-            <Input placeholder={t('wizard.server.port') ?? '6667'} aria-label={t('wizard.server.port')} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className="w-20" />
+            <Input placeholder={t('wizard.server.port') ?? '6667'} aria-label={t('wizard.server.port')} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className={cn('w-20', customPort && 'bg-white')} />
           </div>
         </div>
 
@@ -192,6 +192,7 @@ const WizardServer = () => {
                 value={serverPassword}
                 onChange={(e) => setServerPassword(e.target.value)}
                 autoComplete="off"
+                className={cn(serverPassword && 'bg-white')}
               />
             </div>
           </>
