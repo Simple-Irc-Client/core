@@ -76,4 +76,43 @@ test.describe('Metadata', () => {
     // Wait for the avatar to update in the users sidebar
     await expect(usersSidebar.locator('img[src="https://example.com/bot-avatar.png"]')).toBeVisible({ timeout: 10_000 });
   });
+
+  // Channel avatar tests for each image format. These use real image files
+  // served from the Vite dev server's public/ directory. A previous bug had
+  // workbox runtimeCaching intercept image fetches and reject with "no-response",
+  // breaking the Avatar component entirely.
+  for (const ext of ['webp', 'jpg', 'svg', 'png'] as const) {
+    test(`channel avatar renders ${ext} image`, async () => {
+      const avatarUrl = `https://simpleircclient.com/assets/test-image.${ext}`;
+      const channelNav = sharedPage.getByTestId('channels-sidebar');
+      const channelButton = channelNav.getByRole('button', { name: '#metadata-test', exact: true });
+
+      // Collect page errors to detect service worker "no-response" rejections
+      const pageErrors: string[] = [];
+      const onPageError = (error: Error) => { pageErrors.push(error.message); };
+      sharedPage.on('pageerror', onPageError);
+
+      // Bot (channel operator) sets the channel avatar
+      bot.send(`METADATA #metadata-test SET avatar :${avatarUrl}`);
+
+      // The img must stay visible (not replaced by fallback letter), confirming
+      // the image actually loaded. If the service worker intercepted and rejected
+      // the fetch, onError would fire and the img would be replaced by a <span>.
+      const avatarImg = channelButton.locator(`img[src="${avatarUrl}"]`);
+      await expect(avatarImg).toBeVisible({ timeout: 10_000 });
+
+      // Allow any async service worker errors to surface
+      await sharedPage.waitForTimeout(2_000);
+
+      // The img must still be visible after the wait — not swapped to fallback
+      await expect(avatarImg).toBeVisible();
+
+      sharedPage.off('pageerror', onPageError);
+
+      // No service worker "no-response" errors should have occurred
+      const swErrors = pageErrors.filter((msg) => msg.includes('no-response'));
+      expect(swErrors).toHaveLength(0);
+    });
+  }
 });
+
