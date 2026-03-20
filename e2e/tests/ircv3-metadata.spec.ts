@@ -24,6 +24,7 @@ test.describe('Metadata', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('set avatar via profile settings', async () => {
+    const avatarUrl = 'https://simpleircclient.com/assets/test-image.png';
 
     // Open profile settings
     await sharedPage.locator('[data-avatar-button]').click();
@@ -32,15 +33,18 @@ test.describe('Metadata', () => {
     // Avatar input is conditionally rendered when the server supports metadata
     const avatarInput = sharedPage.locator('#avatar');
     await expect(avatarInput).toBeVisible({ timeout: 10_000 });
-    await avatarInput.fill('https://example.com/avatar.png');
+    await avatarInput.fill(avatarUrl);
     await avatarInput.press('Enter');
 
     // Close dialog
     await sharedPage.keyboard.press('Escape');
 
-    // Avatar should display in the users sidebar (as an img element)
+    // Avatar should display in the users sidebar and actually load (not swap to fallback)
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    await expect(usersSidebar.locator('img[src="https://example.com/avatar.png"]')).toBeVisible({ timeout: 10_000 });
+    const avatarImg = usersSidebar.locator(`img[src="${avatarUrl}"]`);
+    await expect(avatarImg).toBeVisible({ timeout: 10_000 });
+    await sharedPage.waitForTimeout(2_000);
+    await expect(avatarImg).toBeVisible();
   });
 
   test('set nick color via profile settings', async () => {
@@ -66,15 +70,19 @@ test.describe('Metadata', () => {
   });
 
   test('bot metadata update is visible to browser user', async () => {
+    const avatarUrl = 'https://simpleircclient.com/assets/test-image.jpg';
 
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('metabot')).toBeVisible({ timeout: 10_000 });
 
     // Bot sets its avatar via raw METADATA command
-    bot.send('METADATA * SET avatar :https://example.com/bot-avatar.png');
+    bot.send(`METADATA * SET avatar :${avatarUrl}`);
 
-    // Wait for the avatar to update in the users sidebar
-    await expect(usersSidebar.locator('img[src="https://example.com/bot-avatar.png"]')).toBeVisible({ timeout: 10_000 });
+    // Avatar should load and stay visible (not swap to fallback letter)
+    const avatarImg = usersSidebar.locator(`img[src="${avatarUrl}"]`);
+    await expect(avatarImg).toBeVisible({ timeout: 10_000 });
+    await sharedPage.waitForTimeout(2_000);
+    await expect(avatarImg).toBeVisible();
   });
 
   // Channel avatar tests for each image format. These use real image files

@@ -60,13 +60,17 @@ test.describe('Previews', () => {
   });
 
   test('image link renders inline preview', async () => {
-    bot.sendMessage('#previews', 'Look at this https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png');
+    bot.sendMessage('#previews', 'Look at this https://simpleircclient.com/assets/test-image.png');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Look at this')).toBeVisible({ timeout: 10_000 });
 
     const preview = chatLog.getByRole('img', { name: 'Image thumbnail' }).last();
     await expect(preview).toBeVisible({ timeout: 10_000 });
+
+    // Verify the image actually loaded (not just the <img> tag existing)
+    await sharedPage.waitForTimeout(2_000);
+    await expect(preview).toBeVisible();
 
     const link = chatLog.getByRole('link', { name: /open image/i }).last();
     await expect(link).toHaveAttribute('target', '_blank');
@@ -77,11 +81,15 @@ test.describe('Previews', () => {
 
     const countBefore = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
 
-    bot.sendMessage('#previews', 'Two images https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png https://upload.wikimedia.org/wikipedia/commons/a/a7/Camponotus_flavomarginatus_ant.jpg');
+    bot.sendMessage('#previews', 'Two images https://simpleircclient.com/assets/test-image.jpg https://simpleircclient.com/assets/test-image.png');
     await expect(chatLog.getByText('Two images')).toBeVisible({ timeout: 10_000 });
 
     const previews = chatLog.getByRole('img', { name: 'Image thumbnail' });
     await expect(previews).toHaveCount(countBefore + 2, { timeout: 10_000 });
+
+    // Verify images actually loaded
+    await sharedPage.waitForTimeout(2_000);
+    await expect(previews).toHaveCount(countBefore + 2);
   });
 
   test('non-image link does not render image preview', async () => {
