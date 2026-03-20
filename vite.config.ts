@@ -17,15 +17,16 @@ const pwa = VitePWA({
   registerType: "autoUpdate",
   injectRegister: "script-defer",
   workbox: {
-    globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
+    globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2}"],
     globIgnores: ["**/*.map"],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i,
-        handler: "CacheFirst",
+        handler: "StaleWhileRevalidate",
         options: {
           cacheName: "images",
           expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
+          cacheableResponse: { statuses: [0, 200] },
         },
       },
     ],
