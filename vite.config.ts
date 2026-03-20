@@ -19,17 +19,6 @@ const pwa = VitePWA({
   workbox: {
     globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2}"],
     globIgnores: ["**/*.map"],
-    runtimeCaching: [
-      {
-        urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i,
-        handler: "StaleWhileRevalidate",
-        options: {
-          cacheName: "images",
-          expiration: { maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 },
-          cacheableResponse: { statuses: [0, 200] },
-        },
-      },
-    ],
   },
   manifest: {
     name: "Simple IRC Client",
