@@ -92,7 +92,7 @@ test.describe('Scroll behavior', () => {
 
     // Send messages with YouTube and image links (these load async previews)
     bot.sendMessage('#scroll-test', 'Check this video https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    bot.sendMessage('#scroll-test', 'Look at this image https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png');
+    bot.sendMessage('#scroll-test', 'Look at this image https://simpleircclient.com/assets/test-image.png');
     bot.sendMessage('#scroll-test', 'Another video https://youtu.be/jNQXAC9IVRw');
 
     // Send several plain text messages after the media messages
