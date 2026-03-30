@@ -13,22 +13,6 @@ This is a web-based IRC client application developed using React that connects d
 - **Channel Management** - Easy channel navigation and management
 - **User Interaction** - Private messages, WHOIS, and context menus
 
-## Tech Stack
-
-- [React 19](https://react.dev/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Vite](https://vite.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Zustand](https://github.com/pmndrs/zustand) - State management
-- [ws](https://github.com/websockets/ws) - WebSocket client
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Radix UI](https://www.radix-ui.com/) - Headless UI primitives
-- [i18next](https://www.i18next.com/) - Internationalization
-
-## Requirements
-
-- Node.js >= 24
-
 ## Getting Started
 
 ### Installation
