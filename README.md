@@ -18,7 +18,7 @@ This is a web-based IRC client application developed using React that connects d
 ### Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Development
@@ -26,7 +26,7 @@ npm install
 Start the development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 The application will be available at `http://localhost:5173`
