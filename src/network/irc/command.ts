@@ -182,12 +182,9 @@ const kickCommand = (channel: string, line: string[]): string | undefined => {
     return undefined;
   }
 
-  let reason = line.join(' ');
-  if (reason.length !== 0) {
-    reason = ` :${reason}`;
-  }
+  const reason = line.join(' ') || i18next.t('kernel.kick.defaultReason');
 
-  return `KICK ${channel} ${user}${reason}`;
+  return `KICK ${channel} ${user} :${reason}`;
 };
 
 const partCommand = (channel: string, line: string[]): string => {
@@ -227,12 +224,9 @@ const kickBanCommand = (channel: string, line: string[]): string | undefined => 
     return undefined;
   }
 
-  let reason = line.join(' ');
-  if (reason.length !== 0) {
-    reason = ` :${reason}`;
-  }
+  const reason = line.join(' ') || i18next.t('kernel.kick.defaultReason');
 
-  return `MODE ${channel} +b ${user}\nKICK ${channel} ${user}${reason}`;
+  return `MODE ${channel} +b ${user}\nKICK ${channel} ${user} :${reason}`;
 };
 
 const meCommand = (channel: string, line: string[]): string | undefined => {

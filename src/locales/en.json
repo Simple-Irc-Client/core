@@ -83,6 +83,7 @@
     "kernel.quit": "← {{nick}} has quit{{reason}}",
     "kernel.kick": "← {{kickedBy}} has kicked {{kicked}} {{reason}}",
     "kernel.kick-you": "You have been kicked from {{channel}} by {{kickedBy}} {{reason}}",
+    "kernel.kick.defaultReason": "Behave yourself! Any way you like, but behave!",
     "kernel.topic": "{{nick}} has changed the topic to: {{topic}}",
     "kernel.invite": "You have been invited to {{channel}} by {{nick}}",
     "kernel.ctcpRequest": "Received CTCP {{command}} request from {{nick}}",

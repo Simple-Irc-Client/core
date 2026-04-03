@@ -43,18 +43,22 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
     }
   };
 
+  const isItalic = italicCategories.has(message.category);
+
   return (
     <div className="py-1 px-4 overflow-hidden">
-      <code className={`${fontSizeClass} break-all ${italicCategories.has(message.category) ? 'italic' : ''}`}>
+      <code className={`${fontSizeClass} break-all ${isItalic ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
         &nbsp;
-        {nick !== undefined && (
+        {nick !== undefined && !isItalic && (
           <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
             &lt;{displayNick}&gt;
           </span>
         )}
         &nbsp;
-        <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+        <span onContextMenu={isItalic && nick ? handleNickContextMenu : undefined} className={isItalic && nick ? 'cursor-pointer' : undefined}>
+          <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+        </span>
       </code>
     </div>
   );
@@ -75,12 +79,14 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
     }
   };
 
+  const isItalic = italicCategories.has(message.category);
+
   return (
     <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-      <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
+      <div className={`${fontSizeClass} ${isItalic ? 'italic' : ''}`}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         <span className="inline-block w-3" />
-        {nick !== undefined ? (
+        {nick !== undefined && !isItalic ? (
           <>
             <span className="cursor-pointer hover:underline" style={nickColor ? { color: nickColor } : undefined} onContextMenu={handleNickContextMenu}>
               &lt;{displayNick}&gt;
@@ -91,7 +97,9 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
           ''
         )}
         <span className="inline-block w-2" />
-        <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+        <span onContextMenu={isItalic && nick ? handleNickContextMenu : undefined} className={isItalic && nick ? 'cursor-pointer' : undefined}>
+          <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+        </span>
       </div>
       <YouTubeThumbnail text={message.message} />
       <ImagesPreview text={message.message} />
@@ -123,7 +131,11 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
   return (
     <>
       {!showAvatarLayout && (
-        <div className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`} style={{ color: message.color ?? MessageColor.default }}>
+        <div
+          className={`py-1 px-4 pl-16 ${nick ? 'cursor-pointer' : ''} ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
+          style={{ color: message.color ?? MessageColor.default }}
+          onContextMenu={nick ? handleNickContextMenu : undefined}
+        >
           <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
             <MessageText text={message.message} />
           </div>

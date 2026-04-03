@@ -71,10 +71,10 @@ describe('command tests', () => {
 
   it('test kick command', () => {
     expect(parseMessageToCommand('#channel', '/kick')).toStrictEqual('kick');
-    expect(parseMessageToCommand('#channel', '/kick user1')).toStrictEqual('KICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kick user1')).toStrictEqual('KICK #channel user1 :Zachowuj się! Byle jak ale się zachowuj!');
     expect(parseMessageToCommand('#channel', '/kick user1 reason1 reason2')).toStrictEqual('KICK #channel user1 :reason1 reason2');
     expect(parseMessageToCommand('#channel', '/k')).toStrictEqual('k');
-    expect(parseMessageToCommand('#channel', '/k user1')).toStrictEqual('KICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/k user1')).toStrictEqual('KICK #channel user1 :Zachowuj się! Byle jak ale się zachowuj!');
     expect(parseMessageToCommand('#channel', '/k user1 reason1 reason2')).toStrictEqual('KICK #channel user1 :reason1 reason2');
   });
 
@@ -98,10 +98,10 @@ describe('command tests', () => {
 
   it('test kickban command', () => {
     expect(parseMessageToCommand('#channel', '/kb')).toStrictEqual('kb');
-    expect(parseMessageToCommand('#channel', '/kb user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kb user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :Zachowuj się! Byle jak ale się zachowuj!');
     expect(parseMessageToCommand('#channel', '/kb user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
     expect(parseMessageToCommand('#channel', '/kban')).toStrictEqual('kban');
-    expect(parseMessageToCommand('#channel', '/kban user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1');
+    expect(parseMessageToCommand('#channel', '/kban user1')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :Zachowuj się! Byle jak ale się zachowuj!');
     expect(parseMessageToCommand('#channel', '/kban user1 reason1 reason2')).toStrictEqual('MODE #channel +b user1\nKICK #channel user1 :reason1 reason2');
   });
 

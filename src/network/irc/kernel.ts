@@ -1814,6 +1814,7 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.join', { nick }),
+      nick: getUser(nick) ?? nick,
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.join,
@@ -1872,6 +1873,7 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t(`kernel.kick${kicked === currentNick ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
+      nick: getUser(nick) ?? nick,
       target: kicked === currentNick ? STATUS_CHANNEL : channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.kick,
@@ -2379,6 +2381,7 @@ export class Kernel {
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
+      nick: getUser(nick) ?? nick,
       target: channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.part,
@@ -2655,6 +2658,7 @@ export class Kernel {
     const message = {
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.quit', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
+      nick: getUser(nick) ?? nick,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.quit,
       color: MessageColor.quit,

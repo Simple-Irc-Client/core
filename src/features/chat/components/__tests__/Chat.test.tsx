@@ -1092,6 +1092,157 @@ describe('Chat tests', () => {
         'ObjectUser'
       );
     });
+
+    it('should trigger context menu on right-click on join message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'JoinUser joined the channel', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      const messageElement = container.querySelector('.cursor-pointer');
+      expect(messageElement).not.toBeNull();
+      if (messageElement) fireEvent.contextMenu(messageElement);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'JoinUser'
+      );
+    });
+
+    it('should trigger context menu on right-click on join message in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      const clickableSpan = container.querySelector('span.cursor-pointer');
+      expect(clickableSpan).not.toBeNull();
+      if (clickableSpan) fireEvent.contextMenu(clickableSpan);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'JoinUser'
+      );
+    });
+
+    it('should trigger context menu on right-click on join message in debug view', () => {
+      setupMocks({
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      const clickableSpan = container.querySelector('span.cursor-pointer');
+      expect(clickableSpan).not.toBeNull();
+      if (clickableSpan) fireEvent.contextMenu(clickableSpan);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'JoinUser'
+      );
+    });
+
+    it('should trigger context menu on right-click on part message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'PartUser left the channel', nick: 'PartUser', category: MessageCategory.part, color: MessageColor.part })],
+      });
+
+      const { container } = render(<Main />);
+
+      const messageElement = container.querySelector('.cursor-pointer');
+      expect(messageElement).not.toBeNull();
+      if (messageElement) fireEvent.contextMenu(messageElement);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'PartUser'
+      );
+    });
+
+    it('should trigger context menu on right-click on quit message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'QuitUser quit', nick: 'QuitUser', category: MessageCategory.quit, color: MessageColor.quit })],
+      });
+
+      const { container } = render(<Main />);
+
+      const messageElement = container.querySelector('.cursor-pointer');
+      expect(messageElement).not.toBeNull();
+      if (messageElement) fireEvent.contextMenu(messageElement);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'QuitUser'
+      );
+    });
+
+    it('should trigger context menu on right-click on kick message in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'KickUser was kicked', nick: 'KickUser', category: MessageCategory.kick, color: MessageColor.kick })],
+      });
+
+      const { container } = render(<Main />);
+
+      const messageElement = container.querySelector('.cursor-pointer');
+      expect(messageElement).not.toBeNull();
+      if (messageElement) fireEvent.contextMenu(messageElement);
+
+      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
+        expect.any(Object),
+        'user',
+        'KickUser'
+      );
+    });
+
+    it('should not show <nick> prefix for join messages in classic view', () => {
+      setupMocks({
+        theme: 'classic',
+        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(screen.queryByText('<JoinUser>')).not.toBeInTheDocument();
+      expect(container.textContent).toContain('JoinUser joined');
+    });
+
+    it('should not show <nick> prefix for join messages in debug view', () => {
+      setupMocks({
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(screen.queryByText('<JoinUser>')).not.toBeInTheDocument();
+      expect(container.textContent).toContain('JoinUser joined');
+    });
+
+    it('should not have cursor-pointer on join message without nick in modern view', () => {
+      setupMocks({
+        theme: 'modern',
+        messages: [createMessage({ id: '1', message: 'System join message', category: MessageCategory.join, color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      const joinDiv = container.querySelector('.pl-16');
+      expect(joinDiv).not.toBeNull();
+      expect(joinDiv).not.toHaveClass('cursor-pointer');
+    });
   });
 
   describe('Scroll behavior on channel change', () => {

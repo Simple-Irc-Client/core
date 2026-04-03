@@ -592,6 +592,35 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw JOIN includes nick in message for context menu', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockUser = { nick: 'SIC-test', ident: '~SIC-test', hostname: 'host', flags: [], channels: [] };
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
+
+    const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@host JOIN #channel1 * :realname';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ nick: mockUser }));
+  });
+
+  it('test raw JOIN falls back to nick string when user not found', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+
+    const line = '@msgid=abc;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@host JOIN #channel1 * :realname';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ nick: 'SIC-test' }));
+  });
+
   it('test raw JOIN self with chathistory enabled', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
@@ -742,6 +771,20 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#Religie', message: '← sic-test został wyrzucony przez ratler__ (ratler__)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw KICK includes nick (kicker) in message for context menu', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'test-user');
+    vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockUser = { nick: 'ratler__', ident: '~pirc', hostname: 'host', flags: [], channels: [] };
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
+
+    const line = '@msgid=abc;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@host KICK #Religie sic-test :ratler__';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ nick: mockUser }));
   });
 
   it('test raw KICK #2 self', () => {
@@ -1925,6 +1968,21 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw PART includes nick in message for context menu', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockUser = { nick: 'Merovingian', ident: '~pirc', hostname: 'host', flags: [], channels: [] };
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
+
+    const line = '@msgid=abc;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@host PART #sic :Leaving';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ nick: mockUser }));
+  });
+
   it('test raw PART #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
@@ -2077,6 +2135,19 @@ describe('kernel tests', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw QUIT includes nick in message for context menu', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetQuitUser = vi.spyOn(usersFile, 'setQuitUser').mockImplementation(() => {});
+    const mockUser = { nick: 'mero', ident: '~mero', hostname: 'host', flags: [], channels: [] };
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
+
+    const line = '@msgid=abc;time=2023-03-11T00:52:21.568Z :mero!~mero@host QUIT :Quit: Leaving';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetQuitUser).toHaveBeenCalledWith('mero', expect.objectContaining({ nick: mockUser }));
   });
 
   it('test raw TAGMSG', () => {

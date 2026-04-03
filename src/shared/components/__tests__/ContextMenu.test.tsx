@@ -1115,7 +1115,7 @@ describe('ContextMenu', () => {
         .find(el => el.textContent?.includes('contextmenu.user.operator.kick'));
       if (kickButton) fireEvent.click(kickButton);
 
-      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('KICK #ops targetUser');
+      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('KICK #ops targetUser :kernel.kick.defaultReason');
     });
 
     it('should send BAN command with host-based mask', () => {

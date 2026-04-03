@@ -207,7 +207,7 @@ export const ContextMenu = () => {
 
     const handleKick = (): void => {
       const channelName = getCurrentChannelName();
-      ircSendRawMessage(`KICK ${channelName} ${contextMenuItem}`);
+      ircSendRawMessage(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
       handleContextMenuClose();
     };
 
@@ -227,7 +227,7 @@ export const ContextMenu = () => {
       if (user !== undefined) {
         const hostmask = `*!*@${user.hostname}`;
         ircSendRawMessage(`MODE ${channelName} +b ${hostmask}`);
-        ircSendRawMessage(`KICK ${channelName} ${contextMenuItem}`);
+        ircSendRawMessage(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
       }
       handleContextMenuClose();
     };
