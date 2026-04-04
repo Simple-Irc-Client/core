@@ -29,6 +29,8 @@ import NickHighlightedMessage from './NickHighlightedMessage';
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
+const contentCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me, MessageCategory.notice]);
+
 const isBotMessage = (message: Message): boolean =>
   message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;
 
@@ -291,7 +293,7 @@ const Chat = () => {
           const prevMessage = messages[index - 1];
           const prevDate = prevMessage ? startOfDay(new Date(prevMessage.time)) : null;
           const showDateSeparator = prevDate !== null && currentDate.getTime() !== prevDate.getTime();
-          const lastNick = showDateSeparator ? '' : (getNickFromMessage(messages[index - 1]) ?? '');
+          const lastNick = showDateSeparator ? '' : (prevMessage && contentCategories.has(prevMessage.category) ? (getNickFromMessage(prevMessage) ?? '') : '');
           return (
             <div key={`message-${message.id}`}>
               {showDateSeparator && <DateSeparator date={currentDate} />}
