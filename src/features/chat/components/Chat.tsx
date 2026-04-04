@@ -25,6 +25,7 @@ import BotIndicator from './BotIndicator';
 import EchoedIndicator from './EchoedIndicator';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
+import NickHighlightedMessage from './NickHighlightedMessage';
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
@@ -56,9 +57,11 @@ const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeC
           </span>
         )}
         &nbsp;
-        <span onContextMenu={isItalic && nick ? handleNickContextMenu : undefined} className={isItalic && nick ? 'cursor-pointer' : undefined}>
+        {isItalic && nick ? (
+          <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
+        ) : (
           <MessageText text={message.message} color={message.color ?? MessageColor.default} />
-        </span>
+        )}
       </code>
     </div>
   );
@@ -97,9 +100,13 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
           ''
         )}
         <span className="inline-block w-2" />
-        <span onContextMenu={isItalic && nick ? handleNickContextMenu : undefined} className={isItalic && nick ? 'cursor-pointer' : undefined}>
-          <MessageText text={message.message} color={message.color ?? MessageColor.default} />
-        </span>
+        {isItalic && nick ? (
+          <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
+        ) : (
+          <span>
+            <MessageText text={message.message} color={message.color ?? MessageColor.default} />
+          </span>
+        )}
       </div>
       <YouTubeThumbnail text={message.message} />
       <ImagesPreview text={message.message} />
@@ -132,12 +139,15 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     <>
       {!showAvatarLayout && (
         <div
-          className={`py-1 px-4 pl-16 ${nick ? 'cursor-pointer' : ''} ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
+          className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
           style={{ color: message.color ?? MessageColor.default }}
-          onContextMenu={nick ? handleNickContextMenu : undefined}
         >
           <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
-            <MessageText text={message.message} />
+            {nick ? (
+              <NickHighlightedMessage text={message.message} displayNick={displayNick} onContextMenu={handleNickContextMenu} />
+            ) : (
+              <MessageText text={message.message} />
+            )}
           </div>
         </div>
       )}
