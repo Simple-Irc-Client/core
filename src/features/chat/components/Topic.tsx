@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent, type CSSProperties } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
 import { Menu, Save, Users } from 'lucide-react';
@@ -15,49 +15,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
-import { parseIrcFormatting, type FormattedSegment, type FormatState } from '@/shared/lib/ircFormatting';
-import { isSafeCssColor } from '@shared/lib/utils';
+import { parseIrcFormatting, renderFormattedSegments } from '@/shared/lib/ircFormatting';
 import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
-
-function getStyleFromFormatState(state: FormatState): CSSProperties {
-  const style: CSSProperties = {};
-
-  if (state.bold) { style.fontWeight = 'bold'; }
-  if (state.italic) { style.fontStyle = 'italic'; }
-  if (state.underline && state.strikethrough) {
-    style.textDecoration = 'underline line-through';
-  } else if (state.underline) {
-    style.textDecoration = 'underline';
-  } else if (state.strikethrough) {
-    style.textDecoration = 'line-through';
-  }
-  if (state.monospace) { style.fontFamily = 'monospace'; }
-
-  let fg = state.foreground;
-  let bg = state.background;
-  if (state.reverse) { [fg, bg] = [bg, fg]; }
-  if (fg && isSafeCssColor(fg)) { style.color = fg; }
-  if (bg && isSafeCssColor(bg)) { style.backgroundColor = bg; }
-
-  return style;
-}
-
-function renderFormattedSegments(segments: FormattedSegment[]): React.ReactNode[] {
-  let offset = 0;
-  return segments.map((segment) => {
-    const key = `${offset}-${segment.text.length}`;
-    offset += segment.text.length;
-    const style = getStyleFromFormatState(segment.style);
-    return (
-      <span key={key} style={Object.keys(style).length > 0 ? style : undefined}>
-        {segment.text}
-      </span>
-    );
-  });
-}
 
 const formatTopicTooltip = (channelName: string, t: TFunction): string | undefined => {
   const topicSetBy = getTopicSetBy(channelName);

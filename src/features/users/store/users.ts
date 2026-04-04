@@ -258,13 +258,14 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
     const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
     for (const userFromChannel of usersFromChannel) {
       useUsersStore.getState().setRemoveUser(userFromChannel.nick, channelName);
+      clearTyping(channelName, userFromChannel.nick);
     }
+  } else {
+    useUsersStore.getState().setRemoveUser(nick, channelName);
+    clearTyping(channelName, nick);
   }
 
-  useUsersStore.getState().setRemoveUser(nick, channelName);
-  clearTyping(channelName, nick);
-
-  if (getCurrentChannelName() === channelName && nick !== getCurrentNick()) {
+  if (getCurrentChannelName() === channelName) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
   }
 };

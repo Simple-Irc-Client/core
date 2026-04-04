@@ -1906,6 +1906,63 @@ export class Kernel {
     });
   };
 
+  private applyMetadata(nickOrChannel: string, item: string | undefined, value: string | undefined): void {
+    // Normalize: undefined and empty string both mean "cleared"
+    const normalizedValue = (value === undefined || value === '') ? undefined : value;
+
+    if (isChannel(nickOrChannel)) {
+      if (item === 'avatar') {
+        if (normalizedValue !== undefined) {
+          const avatarUrl = normalizedValue.replace('{size}', '64');
+          if (isSafeUrl(avatarUrl)) {
+            setChannelAvatar(nickOrChannel, avatarUrl);
+          }
+        }
+      }
+      if (item === 'display-name') {
+        setChannelDisplayName(nickOrChannel, normalizedValue ?? '');
+      }
+    } else {
+      const isCurrentUser = nickOrChannel.toLowerCase() === getCurrentNick().toLowerCase();
+
+      if (item === 'avatar') {
+        if (normalizedValue !== undefined) {
+          const avatarUrl = normalizedValue.replace('{size}', '64');
+          if (isSafeUrl(avatarUrl)) {
+            setUserAvatar(nickOrChannel, avatarUrl);
+            if (isCurrentUser) { setCurrentUserAvatar(avatarUrl); }
+          }
+        } else {
+          setUserAvatar(nickOrChannel, undefined);
+          if (isCurrentUser) { setCurrentUserAvatar(undefined); }
+        }
+      }
+      if (item === 'color') {
+        if (normalizedValue === undefined || isSafeCssColor(normalizedValue)) {
+          setUserColor(nickOrChannel, normalizedValue);
+          if (isCurrentUser) { setCurrentUserColor(normalizedValue); }
+        }
+      }
+      if (item === 'display-name') {
+        setUserDisplayName(nickOrChannel, normalizedValue);
+        if (isCurrentUser) { setCurrentUserDisplayName(normalizedValue); }
+      }
+      if (item === 'status') {
+        setUserStatus(nickOrChannel, normalizedValue);
+        if (isCurrentUser) { setCurrentUserStatus(normalizedValue); }
+      }
+      if (item === 'homepage') {
+        if (normalizedValue === undefined || isSafeUrl(normalizedValue)) {
+          setUserHomepage(nickOrChannel, normalizedValue);
+          if (isCurrentUser) { setCurrentUserHomepage(normalizedValue); }
+        }
+      }
+      if (item === 'bot') {
+        setUserBot(nickOrChannel, normalizedValue !== undefined);
+      }
+    }
+  }
+
   // https://ircv3.net/specs/core/metadata-3.2
   // :netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg
   // :netsplit.pirc.pl METADATA #channel avatar * :https://example.com/channel-avatar.png
@@ -1922,78 +1979,12 @@ export class Kernel {
       this.line = [];
     }
 
-    // Normalize: undefined and empty string both mean "cleared"
-    const normalizedValue = (value === undefined || value === '') ? undefined : value;
-
     if (nickOrChannel === undefined) {
       this.logParseError(this.onMetadata, 'nickOrChannel');
       return;
     }
 
-    if (isChannel(nickOrChannel)) {
-      // Handle channel metadata
-      if (item === 'avatar') {
-        if (normalizedValue !== undefined) {
-          const avatarUrl = normalizedValue.replace('{size}', '64');
-          if (isSafeUrl(avatarUrl)) {
-            setChannelAvatar(nickOrChannel, avatarUrl);
-          }
-        }
-      }
-      if (item === 'display-name') {
-        setChannelDisplayName(nickOrChannel, normalizedValue ?? '');
-      }
-    } else {
-      // Handle user metadata
-      if (item === 'avatar') {
-        if (normalizedValue !== undefined) {
-          const avatarUrl = normalizedValue.replace('{size}', '64');
-          if (isSafeUrl(avatarUrl)) {
-            setUserAvatar(nickOrChannel, avatarUrl);
-            if (nickOrChannel === getCurrentNick()) {
-              setCurrentUserAvatar(avatarUrl);
-            }
-          }
-        } else {
-          // Clear avatar
-          setUserAvatar(nickOrChannel, undefined);
-          if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserAvatar(undefined);
-          }
-        }
-      }
-      if (item === 'color') {
-        if (normalizedValue === undefined || isSafeCssColor(normalizedValue)) {
-          setUserColor(nickOrChannel, normalizedValue);
-          if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserColor(normalizedValue);
-          }
-        }
-      }
-      if (item === 'display-name') {
-        setUserDisplayName(nickOrChannel, normalizedValue);
-        if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserDisplayName(normalizedValue);
-        }
-      }
-      if (item === 'status') {
-        setUserStatus(nickOrChannel, normalizedValue);
-        if (nickOrChannel === getCurrentNick()) {
-          setCurrentUserStatus(normalizedValue);
-        }
-      }
-      if (item === 'homepage') {
-        if (normalizedValue === undefined || isSafeUrl(normalizedValue)) {
-          setUserHomepage(nickOrChannel, normalizedValue);
-          if (nickOrChannel === getCurrentNick()) {
-            setCurrentUserHomepage(normalizedValue);
-          }
-        }
-      }
-      if (item === 'bot') {
-        setUserBot(nickOrChannel, normalizedValue !== undefined);
-      }
-    }
+    this.applyMetadata(nickOrChannel, item, value);
   };
 
   // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
@@ -2143,16 +2134,14 @@ export class Kernel {
           continue; // set flag
         }
 
-        let message = '';
-
         const mode = `${plusMinus}${flag}`;
         const translate = `kernel.mode.user.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
+        const defaultMessage = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
 
         // https://docs.inspircd.org/4/user-modes/
         switch (flag) {
           case 'B': // Marks the user as a bot.
             setUserBot(user, plusMinus === '+');
-            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
             break;
           case 'i': // RFC 1459: Invisible - hides user from /who and /whois by non-opers.
           case 'w': // RFC 1459: Wallops - receives wallops messages.
@@ -2181,13 +2170,12 @@ export class Kernel {
           case 'a': // Services administrator.
           case 'v': // Receives informed about bad DCC/CTCP requests.
           case 'z': // Prevents messages from being sent to or received from a user that is not connected using TLS (SSL).
-            message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode }) });
             break;
           default:
-            message = i18next.t('kernel.mode.user.unknown', { user, setBy: nick, mode });
             if (import.meta.env.DEV) { console.log(`unknown mode: ${mode} / ${this.eventLine}`); }
             break;
         }
+        const message = i18next.t(translate, { user, setBy: nick, defaultValue: defaultMessage });
 
         // Track current user's +r flag (registered status)
         if (flag === 'r' && user === getCurrentNick()) {
@@ -3064,7 +3052,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    setCurrentUserFlag("away", false)
+    setCurrentUserFlag("away", false);
     if (myNick) { setUserAway(myNick, false); }
   };
 
@@ -3085,7 +3073,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    setCurrentUserFlag("away", true)
+    setCurrentUserFlag("away", true);
     if (myNick) { setUserAway(myNick, true); }
   };
 
@@ -3624,30 +3612,7 @@ export class Kernel {
       return;
     }
 
-    if (isChannel(nickOrChannel)) {
-      if (item === 'avatar' && value !== undefined) {
-        const avatarUrl = value.replace('{size}', '64');
-        if (isSafeUrl(avatarUrl)) {
-          setChannelAvatar(nickOrChannel, avatarUrl);
-        }
-      }
-      if (item === 'display-name') {
-        setChannelDisplayName(nickOrChannel, value ?? '');
-      }
-    } else {
-      if (item === 'avatar' && value !== undefined) {
-        const avatarUrl = value.replace('{size}', '64');
-        if (isSafeUrl(avatarUrl)) {
-          setUserAvatar(nickOrChannel, avatarUrl);
-          if (nickOrChannel.toLowerCase() === getCurrentNick().toLowerCase()) {
-            setCurrentUserAvatar(avatarUrl);
-          }
-        }
-      }
-      if (item === 'color' && value !== undefined && isSafeCssColor(value)) {
-        setUserColor(nickOrChannel, value);
-      }
-    }
+    this.applyMetadata(nickOrChannel, item, value);
   };
 
   // :chmurka.pirc.pl 762 SIC-test :end of metadata

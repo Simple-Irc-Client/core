@@ -35,10 +35,10 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
   let serverPort: string | undefined = tls ? '6697' : `${defaultIRCPort}`;
 
   if (serverString.includes(':')) {
-    [serverHost, serverPort] = serverString.split(':');
+    [serverHost, serverPort] = serverString.split(':', 2);
   }
 
-  return { host: serverHost, port: Number(serverPort || `${defaultIRCPort}`), tls };
+  return { host: serverHost, port: Number.parseInt(serverPort || `${defaultIRCPort}`, 10), tls };
 };
 
 /**

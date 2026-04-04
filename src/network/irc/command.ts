@@ -204,7 +204,11 @@ const partCommand = (channel: string, line: string[]): string => {
 };
 
 const topicCommand = (channel: string, line: string[]): string => {
-  return `TOPIC ${channel} :${line.join(' ')}`;
+  const topic = line.join(' ');
+  if (topic.length === 0) {
+    return `TOPIC ${channel}`;
+  }
+  return `TOPIC ${channel} :${topic}`;
 };
 
 const banCommand = (channel: string, line: string[]): string | undefined => {

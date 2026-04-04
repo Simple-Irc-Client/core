@@ -1,13 +1,14 @@
-import { useMemo, type CSSProperties } from 'react';
+import { useMemo } from 'react';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { getChannelTypes } from '@features/settings/store/settings';
 import {
   parseIrcFormatting,
   hasIrcFormatting,
   stripIrcFormatting,
+  renderFormattedSegments,
 } from '@/shared/lib/ircFormatting';
-import type { FormattedSegment, FormatState } from '@/shared/lib/ircFormatting';
-import { isSafeCssColor, isSafeUrl } from '@shared/lib/utils';
+import type { FormattedSegment } from '@/shared/lib/ircFormatting';
+import { isSafeUrl } from '@shared/lib/utils';
 
 interface MessageTextProps {
   text: string;
@@ -18,72 +19,6 @@ interface TextPart {
   type: 'text' | 'channel' | 'url';
   value: string;
   segments?: FormattedSegment[];
-}
-
-function getStyleFromFormatState(state: FormatState, baseColor?: string): CSSProperties {
-  const style: CSSProperties = {};
-
-  if (state.bold) {
-    style.fontWeight = 'bold';
-  }
-
-  if (state.italic) {
-    style.fontStyle = 'italic';
-  }
-
-  if (state.underline && state.strikethrough) {
-    style.textDecoration = 'underline line-through';
-  } else if (state.underline) {
-    style.textDecoration = 'underline';
-  } else if (state.strikethrough) {
-    style.textDecoration = 'line-through';
-  }
-
-  if (state.monospace) {
-    style.fontFamily = 'monospace';
-  }
-
-  // Handle colors with reverse support
-  let fg = state.foreground;
-  let bg = state.background;
-
-  if (state.reverse) {
-    [fg, bg] = [bg, fg];
-  }
-
-  if (fg && isSafeCssColor(fg)) {
-    style.color = fg;
-  } else if (baseColor) {
-    style.color = baseColor;
-  }
-
-  if (bg && isSafeCssColor(bg)) {
-    style.backgroundColor = bg;
-  }
-
-  return style;
-}
-
-function renderFormattedSegments(
-  segments: FormattedSegment[],
-  baseColor?: string
-): React.ReactNode[] {
-  let offset = 0;
-  return segments.map((segment) => {
-    const key = `${offset}-${segment.text.length}`;
-    offset += segment.text.length;
-    const style = getStyleFromFormatState(segment.style, baseColor);
-    const hasStyle = Object.keys(style).length > 0;
-
-    if (hasStyle) {
-      return (
-        <span key={key} style={style}>
-          {segment.text}
-        </span>
-      );
-    }
-    return <span key={key}>{segment.text}</span>;
-  });
 }
 
 const MessageText = ({ text, color }: MessageTextProps) => {
