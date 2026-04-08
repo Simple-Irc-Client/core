@@ -8,6 +8,17 @@ const chromiumConfig = {
   },
 };
 
+const firefoxConfig = {
+  ...devices['Desktop Firefox'],
+  launchOptions: {
+    firefoxUserPrefs: {
+      // Required to accept the self-signed cert used for ergo's WSS listener
+      'network.stricttransportsecurity.preloadlist': false,
+      'security.cert_pinning.enforcement_level': 0,
+    },
+  },
+};
+
 export default defineConfig({
   testDir: './e2e/tests',
   fullyParallel: true,
@@ -29,15 +40,42 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'parallel',
+      name: 'chromium-parallel',
       use: chromiumConfig,
-      testIgnore: /reconnect\.spec/,
+      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/],
     },
     {
-      name: 'reconnect',
+      name: 'firefox-parallel',
+      use: firefoxConfig,
+      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/],
+    },
+    {
+      name: 'chromium-reconnect',
       use: chromiumConfig,
       testMatch: /reconnect\.spec/,
-      dependencies: ['parallel'],
+      dependencies: ['chromium-parallel'],
+    },
+    {
+      name: 'firefox-reconnect',
+      use: firefoxConfig,
+      testMatch: /reconnect\.spec/,
+      dependencies: ['firefox-parallel'],
+    },
+    {
+      name: 'chromium-clipboard',
+      use: {
+        ...chromiumConfig,
+        permissions: ['clipboard-read', 'clipboard-write'],
+      },
+      testMatch: /input-context-menu\.spec/,
+    },
+    {
+      name: 'firefox-clipboard',
+      use: {
+        ...firefoxConfig,
+        ignoreHTTPSErrors: true,
+      },
+      testMatch: /input-context-menu\.spec/,
     },
   ],
 

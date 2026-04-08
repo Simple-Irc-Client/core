@@ -15,6 +15,24 @@ const writeClipboard = (text: string): Promise<void> =>
     ? Promise.resolve().then(() => { desktopClipboard.writeText(text); })
     : navigator.clipboard.writeText(text);
 
+// Internal clipboard buffer — stores text from our own copy/cut operations
+// so Firefox can paste without calling readText() (which triggers a popup).
+let internalClipboard: string | null = null;
+
+// Detect whether the browser supports clipboard-read permission (Chrome does,
+// Firefox doesn't). Resolved once at module load so paste decisions are synchronous.
+let canQueryClipboard = false;
+if (!desktopClipboard) {
+  navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
+    .then((perm) => { canQueryClipboard = perm.state !== 'denied'; })
+    .catch(() => { /* stays false — Firefox */ });
+}
+
+/** Exported for tests */
+export const _setInternalClipboard = (text: string | null): void => { internalClipboard = text; };
+export const _getInternalClipboard = (): string | null => internalClipboard;
+export const _setCanQueryClipboard = (value: boolean): void => { canQueryClipboard = value; };
+
 const isEditableElement = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement => {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 };
@@ -77,14 +95,18 @@ export const GlobalInputContextMenu = () => {
         case 'c': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
+            const text = input.value.substring(start, end);
+            internalClipboard = text;
+            writeClipboard(text).catch(() => { /* clipboard not available */ });
           }
           break;
         }
         case 'x': {
           if (start !== end) {
             event.preventDefault();
-            writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
+            const text = input.value.substring(start, end);
+            internalClipboard = text;
+            writeClipboard(text).catch(() => { /* clipboard not available */ });
             const newValue = input.value.substring(0, start) + input.value.substring(end);
             setNativeValue(input, newValue);
             requestAnimationFrame(() => input.setSelectionRange(start, start));
@@ -114,11 +136,18 @@ export const GlobalInputContextMenu = () => {
       setContextMenuPosition({ x: event.clientX, y: event.clientY });
     };
 
+    // Clear internal clipboard buffer when the user switches away from the app.
+    // If they copy text externally and come back, the stale buffer must not
+    // shadow the system clipboard — show the keyboard-shortcut hint instead.
+    const handleWindowBlur = () => { internalClipboard = null; };
+
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
+    globalThis.addEventListener('blur', handleWindowBlur);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
+      globalThis.removeEventListener('blur', handleWindowBlur);
     };
   }, []);
 
@@ -132,7 +161,9 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
+      const text = input.value.substring(start, end);
+      internalClipboard = text;
+      writeClipboard(text).catch(() => { /* clipboard not available */ });
       const newValue = input.value.substring(0, start) + input.value.substring(end);
       setNativeValue(input, newValue);
       requestAnimationFrame(() => {
@@ -148,7 +179,9 @@ export const GlobalInputContextMenu = () => {
     const start = input.selectionStart ?? 0;
     const end = input.selectionEnd ?? 0;
     if (start !== end) {
-      writeClipboard(input.value.substring(start, end)).catch(() => { /* clipboard not available */ });
+      const text = input.value.substring(start, end);
+      internalClipboard = text;
+      writeClipboard(text).catch(() => { /* clipboard not available */ });
       requestAnimationFrame(() => input.focus());
     }
   };
@@ -183,16 +216,14 @@ export const GlobalInputContextMenu = () => {
       } else {
         readClipboard().then(doPaste).catch(showHint);
       }
+    } else if (canQueryClipboard) {
+      // Chrome — readText() works with granted permission, no popup
+      navigator.clipboard.readText().then(doPaste).catch(showHint);
     } else {
-      // Chrome supports clipboard-read permission query — readText() works with its popup.
-      // Firefox doesn't support the query (rejects) and its readText() shows an
-      // unavoidable paste confirmation prompt, so show a keyboard hint instead.
-      navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
-        .then(perm => {
-          if (perm.state === 'denied') { return showHint(); }
-          navigator.clipboard.readText().then(doPaste).catch(showHint);
-        })
-        .catch(showHint);
+      // Firefox — readText() triggers an intrusive browser permission popup.
+      // Use the internal buffer (populated by our own copy/cut) instead.
+      // For text copied in external apps, only Ctrl+V works.
+      internalClipboard !== null ? doPaste(internalClipboard) : showHint();
     }
   };
 

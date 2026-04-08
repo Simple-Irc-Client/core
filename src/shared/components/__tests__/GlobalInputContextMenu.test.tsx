@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, act, fireEvent } from '@testing-library/react';
-import { GlobalInputContextMenu, handleNoContextMenu } from '../GlobalInputContextMenu';
+import { GlobalInputContextMenu, handleNoContextMenu, _setInternalClipboard, _getInternalClipboard, _setCanQueryClipboard } from '../GlobalInputContextMenu';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,10 +20,14 @@ describe('GlobalInputContextMenu', () => {
       clipboard: { readText: mockReadText, writeText: mockWriteText },
     });
     globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => { cb(0); return 0; };
+    _setInternalClipboard(null);
+    _setCanQueryClipboard(true);
   });
 
   afterEach(() => {
     globalThis.requestAnimationFrame = originalRAF;
+    _setInternalClipboard(null);
+    _setCanQueryClipboard(true);
   });
 
   const createInput = (value: string, selStart = 0, selEnd = 0): HTMLInputElement => {
@@ -292,6 +296,159 @@ describe('GlobalInputContextMenu', () => {
       fireContextMenu(input);
 
       expect(document.body.textContent).not.toContain('contextmenu.input.cut');
+      input.remove();
+    });
+  });
+
+  describe('paste fallback (Firefox path)', () => {
+    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
+      const event = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      });
+      act(() => { target.dispatchEvent(event); });
+    };
+
+    const clickPaste = (): void => {
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      const pasteItem = menuItems[2];
+      expect(pasteItem?.textContent).toBe('contextmenu.input.paste');
+      act(() => { fireEvent.click(pasteItem!); });
+    };
+
+    it('should paste from internal buffer when clipboard query is not supported', () => {
+      _setCanQueryClipboard(false);
+      _setInternalClipboard('buffered text');
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('', 0, 0);
+
+      fireContextMenu(input);
+      clickPaste();
+
+      expect(input.value).toBe('buffered text');
+      expect(mockReadText).not.toHaveBeenCalled();
+      input.remove();
+    });
+
+    it('should show hint when no internal buffer and clipboard query is not supported', () => {
+      _setCanQueryClipboard(false);
+      _setInternalClipboard(null);
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('', 0, 0);
+
+      fireContextMenu(input);
+      clickPaste();
+
+      expect(input.value).toBe('');
+      expect(document.body.textContent).toContain('contextmenu.input.pasteHint');
+      expect(mockReadText).not.toHaveBeenCalled();
+      input.remove();
+    });
+
+    it('should use readText when clipboard query is supported (Chrome path)', async () => {
+      _setCanQueryClipboard(true);
+      mockReadText.mockResolvedValue('chrome clipboard');
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('', 0, 0);
+
+      fireContextMenu(input);
+      clickPaste();
+
+      await act(async () => { await Promise.resolve(); });
+
+      expect(mockReadText).toHaveBeenCalled();
+      expect(input.value).toBe('chrome clipboard');
+      input.remove();
+    });
+
+    it('should show hint when readText rejects on Chrome path', async () => {
+      _setCanQueryClipboard(true);
+      mockReadText.mockRejectedValue(new Error('denied'));
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('', 0, 0);
+
+      fireContextMenu(input);
+      clickPaste();
+
+      await act(async () => { await Promise.resolve(); });
+
+      expect(input.value).toBe('');
+      expect(document.body.textContent).toContain('contextmenu.input.pasteHint');
+      input.remove();
+    });
+  });
+
+  describe('internal clipboard buffer', () => {
+    it('should populate buffer on Ctrl+C', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 0, 5);
+
+      const event = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(event);
+
+      expect(_getInternalClipboard()).toBe('hello');
+      input.remove();
+    });
+
+    it('should populate buffer on Ctrl+X', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 6, 11);
+
+      const event = new KeyboardEvent('keydown', { key: 'x', ctrlKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(event);
+
+      expect(_getInternalClipboard()).toBe('world');
+      input.remove();
+    });
+
+    it('should populate buffer on context menu copy', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('test text', 0, 4);
+
+      const ctxEvent = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 200 });
+      act(() => { input.dispatchEvent(ctxEvent); });
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      const copyItem = menuItems[1]; // Copy is second item
+      act(() => { fireEvent.click(copyItem!); });
+
+      expect(_getInternalClipboard()).toBe('test');
+      input.remove();
+    });
+
+    it('should populate buffer on context menu cut', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('cut this', 0, 3);
+
+      const ctxEvent = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 200 });
+      act(() => { input.dispatchEvent(ctxEvent); });
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      const cutItem = menuItems[0]; // Cut is first item
+      act(() => { fireEvent.click(cutItem!); });
+
+      expect(_getInternalClipboard()).toBe('cut');
+      input.remove();
+    });
+
+    it('should clear buffer on window blur', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 0, 5);
+
+      const event = new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true, cancelable: true });
+      document.dispatchEvent(event);
+      expect(_getInternalClipboard()).toBe('hello');
+
+      // Simulate user switching to another app
+      act(() => { globalThis.dispatchEvent(new Event('blur')); });
+
+      expect(_getInternalClipboard()).toBeNull();
       input.remove();
     });
   });
