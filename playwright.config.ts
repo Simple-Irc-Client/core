@@ -10,6 +10,7 @@ const chromiumConfig = {
 
 const firefoxConfig = {
   ...devices['Desktop Firefox'],
+  ignoreHTTPSErrors: true,
   launchOptions: {
     firefoxUserPrefs: {
       // Required to accept the self-signed cert used for ergo's WSS listener
@@ -71,10 +72,7 @@ export default defineConfig({
     },
     {
       name: 'firefox-clipboard',
-      use: {
-        ...firefoxConfig,
-        ignoreHTTPSErrors: true,
-      },
+      use: firefoxConfig,
       testMatch: /input-context-menu\.spec/,
     },
   ],
