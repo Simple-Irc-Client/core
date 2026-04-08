@@ -314,8 +314,9 @@ describe('GlobalInputContextMenu', () => {
     const clickPaste = (): void => {
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const pasteItem = menuItems[2];
+      expect(pasteItem).toBeDefined();
       expect(pasteItem?.textContent).toBe('contextmenu.input.paste');
-      act(() => { fireEvent.click(pasteItem!); });
+      act(() => { fireEvent.click(pasteItem as HTMLElement); });
     };
 
     it('should paste from internal buffer when clipboard query is not supported', () => {
@@ -416,7 +417,8 @@ describe('GlobalInputContextMenu', () => {
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const copyItem = menuItems[1]; // Copy is second item
-      act(() => { fireEvent.click(copyItem!); });
+      expect(copyItem).toBeDefined();
+      act(() => { fireEvent.click(copyItem as HTMLElement); });
 
       expect(_getInternalClipboard()).toBe('test');
       input.remove();
@@ -431,7 +433,8 @@ describe('GlobalInputContextMenu', () => {
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const cutItem = menuItems[0]; // Cut is first item
-      act(() => { fireEvent.click(cutItem!); });
+      expect(cutItem).toBeDefined();
+      act(() => { fireEvent.click(cutItem as HTMLElement); });
 
       expect(_getInternalClipboard()).toBe('cut');
       input.remove();

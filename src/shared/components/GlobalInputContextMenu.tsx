@@ -223,7 +223,11 @@ export const GlobalInputContextMenu = () => {
       // Firefox — readText() triggers an intrusive browser permission popup.
       // Use the internal buffer (populated by our own copy/cut) instead.
       // For text copied in external apps, only Ctrl+V works.
-      internalClipboard !== null ? doPaste(internalClipboard) : showHint();
+      if (internalClipboard !== null) {
+        doPaste(internalClipboard);
+      } else {
+        showHint();
+      }
     }
   };
 
