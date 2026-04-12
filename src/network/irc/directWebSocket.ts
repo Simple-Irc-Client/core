@@ -58,9 +58,7 @@ const processMessageQueue = async (): Promise<void> => {
       try {
         data = await decryptString(data);
       } catch (err) {
-        if (import.meta.env.DEV) {
-          console.error('Failed to decrypt WebSocket message:', err);
-        }
+        console.error('Failed to decrypt WebSocket message:', err);
         continue;
       }
     }

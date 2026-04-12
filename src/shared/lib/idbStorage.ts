@@ -13,8 +13,8 @@ const getServerStorageKey = (baseName: string): string => {
         return `${baseName}:${server.network}:${server.servers[server.default]}`;
       }
     }
-  } catch {
-    // Fall back to base name
+  } catch (error) {
+    console.warn('Failed to parse settings for storage key:', error);
   }
   return baseName;
 };
