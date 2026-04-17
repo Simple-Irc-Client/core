@@ -81,6 +81,24 @@ export const GlobalInputContextMenu = () => {
   const [hasContent, setHasContent] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
   const targetRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  // Snapshot of the input's selection captured on right-click mousedown,
+  // before macOS auto-selects the input contents (Electron #46493).
+  const savedSelectionRef = useRef<{
+    el: HTMLInputElement | HTMLTextAreaElement;
+    start: number;
+    end: number;
+  } | null>(null);
+
+  const resolveSelection = (input: HTMLInputElement | HTMLTextAreaElement): { start: number; end: number } => {
+    const saved = savedSelectionRef.current;
+    if (saved && saved.el === input) {
+      return { start: saved.start, end: saved.end };
+    }
+    return {
+      start: input.selectionStart ?? 0,
+      end: input.selectionEnd ?? 0,
+    };
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -128,12 +146,28 @@ export const GlobalInputContextMenu = () => {
       event.preventDefault();
       targetRef.current = target;
 
-      const start = target.selectionStart ?? 0;
-      const end = target.selectionEnd ?? 0;
+      // Prefer the pre-right-click snapshot (set by handleMouseDown) so the
+      // menu's enabled state reflects what the user actually selected, not
+      // what macOS auto-selected on right-click.
+      const { start, end } = resolveSelection(target);
       setHasSelection(start !== end);
       setHasContent(target.value.length > 0);
       setAllSelected(start === 0 && end === target.value.length && target.value.length > 0);
       setContextMenuPosition({ x: event.clientX, y: event.clientY });
+    };
+
+    // Capture the input's selection on right-click mousedown — fires before
+    // macOS AppKit auto-selects the input contents on right-click, which
+    // would otherwise make the menu actions operate on the wrong range.
+    const handleMouseDown = (event: MouseEvent): void => {
+      if (event.button !== 2) { return; }
+      const target = event.target;
+      if (!isEditableElement(target)) { return; }
+      savedSelectionRef.current = {
+        el: target,
+        start: target.selectionStart ?? target.value.length,
+        end: target.selectionEnd ?? target.value.length,
+      };
     };
 
     // Clear internal clipboard buffer when the user switches away from the app.
@@ -141,10 +175,12 @@ export const GlobalInputContextMenu = () => {
     // shadow the system clipboard — show the keyboard-shortcut hint instead.
     const handleWindowBlur = () => { internalClipboard = null; };
 
+    document.addEventListener('mousedown', handleMouseDown, true);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('contextmenu', handleContextMenu);
     globalThis.addEventListener('blur', handleWindowBlur);
     return () => {
+      document.removeEventListener('mousedown', handleMouseDown, true);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
       globalThis.removeEventListener('blur', handleWindowBlur);
@@ -158,8 +194,7 @@ export const GlobalInputContextMenu = () => {
   const cutSelection = (): void => {
     const input = targetRef.current;
     if (!input) { return; }
-    const start = input.selectionStart ?? 0;
-    const end = input.selectionEnd ?? 0;
+    const { start, end } = resolveSelection(input);
     if (start !== end) {
       const text = input.value.substring(start, end);
       internalClipboard = text;
@@ -176,8 +211,7 @@ export const GlobalInputContextMenu = () => {
   const copySelection = (): void => {
     const input = targetRef.current;
     if (!input) { return; }
-    const start = input.selectionStart ?? 0;
-    const end = input.selectionEnd ?? 0;
+    const { start, end } = resolveSelection(input);
     if (start !== end) {
       const text = input.value.substring(start, end);
       internalClipboard = text;
@@ -198,8 +232,22 @@ export const GlobalInputContextMenu = () => {
       }
     };
     const doPaste = (clipText: string) => {
-      const start = input.selectionStart ?? input.value.length;
-      const end = input.selectionEnd ?? input.value.length;
+      const { start, end } = resolveSelection(input);
+      input.focus();
+      input.setSelectionRange(start, end);
+      // execCommand('insertText') is the same primitive Chromium uses for
+      // native paste: it inserts at the current selection, fires the input
+      // event React's controlled inputs listen for, and preserves undo.
+      // It survives the focus bounce through the React menu portal that
+      // breaks setNativeValue on macOS.
+      const exec = (document as Document & { execCommand?: (cmd: string, ui: boolean, value: string) => boolean }).execCommand;
+      if (typeof exec === 'function') {
+        try {
+          if (exec.call(document, 'insertText', false, clipText)) { return; }
+        } catch { /* fall through to setNativeValue */ }
+      }
+      // Fallback for environments where execCommand is missing (jsdom) or
+      // returns false (Firefox returns false on plain <input>/<textarea>).
       const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
       setNativeValue(input, newValue);
       const cursorPos = start + clipText.length;
@@ -209,13 +257,7 @@ export const GlobalInputContextMenu = () => {
       });
     };
     if (desktopClipboard) {
-      if (isMac) {
-        // On macOS Electron, the menu is hidden and paste role is unavailable.
-        // Show a keyboard shortcut hint like Firefox does.
-        showHint();
-      } else {
-        readClipboard().then(doPaste).catch(showHint);
-      }
+      readClipboard().then(doPaste).catch(showHint);
     } else if (canQueryClipboard) {
       // Chrome — readText() works with granted permission, no popup
       navigator.clipboard.readText().then(doPaste).catch(showHint);

@@ -456,6 +456,138 @@ describe('GlobalInputContextMenu', () => {
     });
   });
 
+  describe('right-click selection snapshot (Electron #46493 workaround)', () => {
+    const fireRightMouseDown = (target: HTMLElement): void => {
+      act(() => {
+        target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 2 }));
+      });
+    };
+
+    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
+      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y });
+      act(() => { target.dispatchEvent(event); });
+    };
+
+    const clickMenuItem = (index: number): void => {
+      const item = document.body.querySelectorAll('[role="menuitem"]')[index];
+      expect(item).toBeDefined();
+      act(() => { fireEvent.click(item as HTMLElement); });
+    };
+
+    it('paste uses pre-right-click caret position even after macOS auto-selects all text', async () => {
+      mockReadText.mockResolvedValue('XXX');
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 5, 5);
+
+      // User right-clicks at the caret. AppKit/Electron then auto-selects
+      // the whole input before contextmenu fires (Electron #46493).
+      fireRightMouseDown(input);
+      input.setSelectionRange(0, input.value.length);
+      fireContextMenu(input);
+
+      clickMenuItem(2); // Paste
+      await act(async () => { await Promise.resolve(); });
+
+      // execCommand isn't implemented in jsdom, so the fallback path runs
+      // — but it must use the snapshot (5), not the post-auto-select range.
+      expect(input.value).toBe('helloXXX world');
+      input.remove();
+    });
+
+    it('copy uses pre-right-click selection even after macOS auto-selects all text', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 6, 11); // user selected "world"
+
+      fireRightMouseDown(input);
+      input.setSelectionRange(0, input.value.length); // simulate auto-select
+      fireContextMenu(input);
+
+      clickMenuItem(1); // Copy
+      expect(mockWriteText).toHaveBeenCalledWith('world');
+      expect(_getInternalClipboard()).toBe('world');
+      input.remove();
+    });
+
+    it('cut uses pre-right-click selection even after macOS auto-selects all text', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 6, 11);
+
+      fireRightMouseDown(input);
+      input.setSelectionRange(0, input.value.length);
+      fireContextMenu(input);
+
+      clickMenuItem(0); // Cut
+      expect(mockWriteText).toHaveBeenCalledWith('world');
+      expect(input.value).toBe('hello ');
+      input.remove();
+    });
+
+    it('menu hasSelection state reflects the snapshot, not the auto-select', () => {
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 2, 2); // caret only — nothing selected
+
+      fireRightMouseDown(input);
+      input.setSelectionRange(0, input.value.length); // auto-select
+      fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      // Cut and Copy must remain disabled because the user did not select
+      // anything before right-clicking.
+      expect(menuItems[0]).toHaveAttribute('aria-disabled');
+      expect(menuItems[1]).toHaveAttribute('aria-disabled');
+      input.remove();
+    });
+
+    it('left-click mousedown does not capture a snapshot', async () => {
+      mockReadText.mockResolvedValue('YY');
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('abc', 1, 1);
+
+      // Left-click first (should NOT snapshot), then live selection changes.
+      act(() => {
+        input.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+      });
+      input.setSelectionRange(0, 3);
+      fireContextMenu(input);
+
+      clickMenuItem(2); // Paste
+      await act(async () => { await Promise.resolve(); });
+
+      // No snapshot → falls back to live selection (0..3), so clipboard
+      // text replaces the whole input.
+      expect(input.value).toBe('YY');
+      input.remove();
+    });
+
+    it('subsequent right-click overwrites the snapshot', async () => {
+      mockReadText.mockResolvedValue('Z');
+
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello world', 0, 0);
+
+      // First right-click captures caret at 0.
+      input.setSelectionRange(0, 0);
+      fireRightMouseDown(input);
+      // Dismiss menu without acting.
+      fireContextMenu(input);
+      act(() => { document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
+
+      // Move caret, second right-click should capture the new position.
+      input.setSelectionRange(5, 5);
+      fireRightMouseDown(input);
+      input.setSelectionRange(0, input.value.length); // simulate auto-select
+      fireContextMenu(input);
+
+      clickMenuItem(2);
+      await act(async () => { await Promise.resolve(); });
+
+      expect(input.value).toBe('helloZ world');
+      input.remove();
+    });
+  });
+
   describe('Unhappy paths', () => {
     const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
       const event = new MouseEvent('contextmenu', {
