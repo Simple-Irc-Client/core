@@ -10,7 +10,7 @@ const Typing = () => {
   const filteredTyping = typing.filter((nick) => nick.trim().length > 0);
 
   return (
-    <div className="text-xs h-7 ml-16 px-2 truncate text-gray-500" role="status" aria-live="polite">
+    <div className="text-xs h-7 pl-[68px] pr-4 truncate text-gray-500" role="status" aria-live="polite">
       {isConnected && filteredTyping.length !== 0 && t('main.user-typing', { nicks: filteredTyping.join(', ') })}
     </div>
   );

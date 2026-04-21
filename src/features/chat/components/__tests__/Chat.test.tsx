@@ -1239,7 +1239,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const joinDiv = container.querySelector('.pl-16');
+      const joinDiv = container.querySelector('.pl-\\[68px\\]');
       expect(joinDiv).not.toBeNull();
       expect(joinDiv).not.toHaveClass('cursor-pointer');
     });

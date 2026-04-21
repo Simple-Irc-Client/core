@@ -141,7 +141,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
     <>
       {!showAvatarLayout && (
         <div
-          className={`py-1 px-4 pl-16 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
+          className={`py-1 pr-4 pl-[68px] ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
           style={{ color: message.color ?? MessageColor.default }}
         >
           <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
