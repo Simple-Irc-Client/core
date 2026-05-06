@@ -1,19 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputContextMenu } from '@features/chat/components/InputContextMenu';
+import { clipboard, isDesktop } from '@/runtime/desktop';
 
-const sicDesktop = (globalThis as unknown as Record<string, Record<string, unknown>>).sicDesktop;
-const desktopClipboard = sicDesktop?.clipboard as { readText: () => string; writeText: (text: string) => void } | undefined ?? null;
-
-const readClipboard = (): Promise<string> =>
-  desktopClipboard
-    ? Promise.resolve().then(() => desktopClipboard.readText())
-    : navigator.clipboard.readText();
-
-const writeClipboard = (text: string): Promise<void> =>
-  desktopClipboard
-    ? Promise.resolve().then(() => { desktopClipboard.writeText(text); })
-    : navigator.clipboard.writeText(text);
+const readClipboard = (): Promise<string> => clipboard.readText();
+const writeClipboard = (text: string): Promise<void> => clipboard.writeText(text);
 
 // Internal clipboard buffer — stores text from our own copy/cut operations
 // so Firefox can paste without calling readText() (which triggers a popup).
@@ -21,8 +12,9 @@ let internalClipboard: string | null = null;
 
 // Detect whether the browser supports clipboard-read permission (Chrome does,
 // Firefox doesn't). Resolved once at module load so paste decisions are synchronous.
+// Skipped in desktop runtime — the clipboard plugin handles permissions itself.
 let canQueryClipboard = false;
-if (!desktopClipboard) {
+if (!isDesktop()) {
   navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
     .then((perm) => { canQueryClipboard = perm.state !== 'denied'; })
     .catch(() => { /* stays false — Firefox */ });
@@ -256,7 +248,7 @@ export const GlobalInputContextMenu = () => {
         input.setSelectionRange(cursorPos, cursorPos);
       });
     };
-    if (desktopClipboard) {
+    if (isDesktop()) {
       readClipboard().then(doPaste).catch(showHint);
     } else if (canQueryClipboard) {
       // Chrome — readText() works with granted permission, no popup
