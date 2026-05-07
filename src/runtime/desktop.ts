@@ -10,6 +10,7 @@ import {
   writeText as tauriWriteText,
 } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl as tauriOpenUrl } from '@tauri-apps/plugin-opener';
+import { check as tauriCheckUpdate } from '@tauri-apps/plugin-updater';
 
 /**
  * True when the renderer is running inside a Tauri webview.
@@ -53,4 +54,36 @@ export const openExternal = async (url: string): Promise<void> => {
     return;
   }
   globalThis.open(url, '_blank', 'noopener,noreferrer');
+};
+
+/**
+ * Check the configured update endpoint and, if a newer version is available,
+ * prompt the user and install it. Match update-electron-app's UX (a confirm
+ * dialog with version) without pulling in tauri-plugin-dialog.
+ *
+ * No-op outside Tauri. Failures are logged and swallowed — a missing endpoint
+ * or network blip should never crash the app or block startup.
+ */
+export const checkForUpdates = async (): Promise<void> => {
+  if (!isDesktop()) {
+    return;
+  }
+  try {
+    const update = await tauriCheckUpdate();
+    if (!update) {
+      return;
+    }
+    const ok = globalThis.confirm(
+      `Version ${update.version} is available. Install now?`,
+    );
+    if (!ok) {
+      return;
+    }
+    // Tauri's updater handles the relaunch dance itself: on Windows the
+    // installer takes over, on macOS/Linux the app exits and the new
+    // bundle is in place on next launch.
+    await update.downloadAndInstall();
+  } catch (err) {
+    console.warn('[updater] check failed:', err);
+  }
 };
