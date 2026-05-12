@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
 import { isSafeUrl } from '@shared/lib/utils';
+import { clipboard, openExternal } from '@/runtime/desktop';
 
 // Helper to determine what mode hierarchy level a flag represents
 const getModeLevel = (flag: string): number => {
@@ -179,7 +180,7 @@ export const ContextMenu = () => {
     const handleVisitHomepage = (): void => {
       const user = getUser(contextMenuItem);
       if (user?.homepage && isSafeUrl(user.homepage)) {
-        globalThis.open(user.homepage, '_blank', 'noopener,noreferrer');
+        void openExternal(user.homepage);
       }
       handleContextMenuClose();
     };
@@ -432,13 +433,13 @@ export const ContextMenu = () => {
   if (contextMenuCategory === 'url' && contextMenuItem !== undefined) {
     const handleOpenUrl = (): void => {
       if (isSafeUrl(contextMenuItem)) {
-        globalThis.open(contextMenuItem, '_blank', 'noopener,noreferrer');
+        void openExternal(contextMenuItem);
       }
       handleContextMenuClose();
     };
 
     const handleCopyUrl = (): void => {
-      navigator.clipboard.writeText(contextMenuItem);
+      void clipboard.writeText(contextMenuItem);
       handleContextMenuClose();
     };
 
@@ -482,7 +483,7 @@ export const ContextMenu = () => {
 
   if (contextMenuCategory === 'text' && contextMenuItem !== undefined) {
     const handleCopy = (): void => {
-      navigator.clipboard.writeText(contextMenuItem);
+      void clipboard.writeText(contextMenuItem);
       handleContextMenuClose();
     };
 

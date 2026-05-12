@@ -19,7 +19,7 @@ import {
   disconnectDirect,
   setDirectEventCallback,
   setDirectEncryption,
-} from './directWebSocket';
+} from './transport';
 import { clearAllBatches, clearPendingLabels } from './batch';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
