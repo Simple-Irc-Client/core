@@ -4,8 +4,7 @@
  * which one is in play. Routes raw IRC lines through the `irc_*` Tauri
  * commands and listens on the per-connection event channel.
  */
-import { invoke } from '@tauri-apps/api/core';
-import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { invoke, Channel } from '@tauri-apps/api/core';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 
@@ -20,7 +19,6 @@ type TauriIrcEvent =
 let connectionId: string | null = null;
 let isConnectingFlag = false;
 let isConnectedFlag = false;
-let unlisten: UnlistenFn | null = null;
 let eventCallback: ((eventName: string, data: unknown) => void) | null = null;
 
 const triggerEvent = (eventName: string, data: unknown): void => {
@@ -28,11 +26,9 @@ const triggerEvent = (eventName: string, data: unknown): void => {
 };
 
 const cleanup = (): void => {
+  // The Rust driver stops sending on its channel once the connection ends,
+  // so there is no subscription to tear down — just forget the id.
   connectionId = null;
-  if (unlisten) {
-    void unlisten();
-    unlisten = null;
-  }
 };
 
 const handleEvent = (payload: TauriIrcEvent): void => {
@@ -105,6 +101,12 @@ export const initTauriIrc = (server: Server, nick: string): void => {
 
   void (async () => {
     try {
+      // Create the channel BEFORE invoking so the event sink exists before
+      // the Rust driver produces its first event. This closes the race the
+      // old emit/listen pair had, where the registration burst and the
+      // `connected` event could be emitted before `listen()` attached.
+      const channel = new Channel<TauriIrcEvent>();
+      channel.onmessage = handleEvent;
       const id = await invoke<string>('irc_connect', {
         options: {
           host: parsed.host,
@@ -117,11 +119,9 @@ export const initTauriIrc = (server: Server, nick: string): void => {
             gecos: nick,
           },
         },
+        onEvent: channel,
       });
       connectionId = id;
-      unlisten = await listen<TauriIrcEvent>(`irc://${id}`, (event) => {
-        handleEvent(event.payload);
-      });
     } catch (err) {
       isConnectingFlag = false;
       isConnectedFlag = false;
