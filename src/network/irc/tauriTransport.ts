@@ -11,7 +11,7 @@ import { parseServer } from './helpers';
 type TauriIrcEvent =
   | { type: 'socketConnected' }
   | { type: 'connected' }
-  | { type: 'raw'; line: string; fromServer: boolean }
+  | { type: 'raw'; line: string; inbound: boolean }
   | { type: 'capTimeout'; retries: number }
   | { type: 'closed' }
   | { type: 'error'; message: string };
@@ -42,10 +42,10 @@ const handleEvent = (payload: TauriIrcEvent): void => {
       triggerEvent('sic-irc-event', { type: 'connected' });
       break;
     case 'raw':
-      // Outbound lines are echoed too (fromServer: false). The kernel only
+      // Outbound lines are echoed too (inbound: false). The kernel only
       // expects inbound raw events, so drop the echoes to match WebSocket
       // transport behaviour.
-      if (payload.fromServer) {
+      if (payload.inbound) {
         triggerEvent('sic-irc-event', { type: 'raw', line: payload.line });
       }
       break;

@@ -49,13 +49,13 @@ const mockInvoke = vi.fn();
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
-  Channel: class {
-    constructor() {
-      const ch = new MockChannel();
-      lastChannel = ch;
-      return ch as unknown as object;
-    }
-  },
+  // Must be a `function` (not an arrow): production calls `new Channel()`,
+  // and a constructor returning an object yields that object — so production
+  // gets a MockChannel to wire `onmessage` on.
+  Channel: vi.fn(function ChannelMock() {
+    lastChannel = new MockChannel();
+    return lastChannel;
+  }),
 }));
 
 const baseServer: Server = {
@@ -112,7 +112,7 @@ describe('tauriTransport', () => {
       args.onEvent.emit({
         type: 'raw',
         line: ':srv 001 TestNick :Welcome',
-        fromServer: true,
+        inbound: true,
       });
       args.onEvent.emit({ type: 'connected' });
       return new Promise<string>((res) => {
@@ -141,11 +141,11 @@ describe('tauriTransport', () => {
     transport.initTauriIrc(baseServer, 'TestNick');
     await flush();
 
-    lastChannel?.emit({ type: 'raw', line: 'NICK TestNick', fromServer: false });
+    lastChannel?.emit({ type: 'raw', line: 'NICK TestNick', inbound: false });
     lastChannel?.emit({
       type: 'raw',
       line: ':nick!u@h PRIVMSG #chan :hi',
-      fromServer: true,
+      inbound: true,
     });
 
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
