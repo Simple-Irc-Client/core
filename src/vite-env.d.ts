@@ -12,3 +12,7 @@ interface ImportMeta {
 }
 
 declare const __GIT_REF__: string;
+
+// @fontsource packages ship CSS only (no type declarations); the side-effect
+// import is what pulls the self-hosted woff2 into the Vite bundle.
+declare module '@fontsource-variable/inter';

@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './app/App';
+import '@fontsource-variable/inter';
 import './index.css';
 import * as Sentry from '@sentry/react';
 import { checkForUpdates, isDesktop } from './runtime/desktop';
