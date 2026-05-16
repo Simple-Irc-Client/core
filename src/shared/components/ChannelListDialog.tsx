@@ -56,14 +56,16 @@ const ChannelListDialog = ({
           <DialogTitle>{t('channelListDialog.title')}</DialogTitle>
           <DialogDescription>{t('channelListDialog.description')}</DialogDescription>
         </DialogHeader>
-        <ChannelListTable
-          channelList={channelList}
-          isLoading={isLoading}
-          selectedChannels={selectedChannels}
-          onSelectionChange={setSelectedChannels}
-          excludeChannels={excludeChannels}
-          height={300}
-        />
+        {open && (
+          <ChannelListTable
+            channelList={channelList}
+            isLoading={isLoading}
+            selectedChannels={selectedChannels}
+            onSelectionChange={setSelectedChannels}
+            excludeChannels={excludeChannels}
+            height={300}
+          />
+        )}
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="outline" onClick={handleCancel}>
             {t('channelListDialog.button.cancel')}
