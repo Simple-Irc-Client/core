@@ -6,6 +6,31 @@ import { clipboard, isDesktop } from '@/runtime/desktop';
 const readClipboard = (): Promise<string> => clipboard.readText();
 const writeClipboard = (text: string): Promise<void> => clipboard.writeText(text);
 
+// Whether the clipboard currently holds pasteable text. Used to decide if the
+// context menu's Paste item should be enabled, so we never offer Paste (and
+// then show a misleading "use Ctrl+V" hint) when there is nothing to paste.
+const clipboardHasContent = async (): Promise<boolean> => {
+  if (isDesktop()) {
+    try {
+      return (await readClipboard()).length > 0;
+    } catch {
+      // Tauri's readText() rejects on an empty or non-text clipboard.
+      return false;
+    }
+  }
+  if (canQueryClipboard) {
+    try {
+      return (await navigator.clipboard.readText()).length > 0;
+    } catch {
+      return false;
+    }
+  }
+  // Firefox: probing the system clipboard triggers an intrusive permission
+  // popup, so we can't know whether it has content. Keep Paste enabled —
+  // clicking it pastes from the internal buffer or shows the Ctrl+V hint.
+  return true;
+};
+
 // Internal clipboard buffer — stores text from our own copy/cut operations
 // so Firefox can paste without calling readText() (which triggers a popup).
 let internalClipboard: string | null = null;
@@ -72,6 +97,7 @@ export const GlobalInputContextMenu = () => {
   const [hasSelection, setHasSelection] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
+  const [canPaste, setCanPaste] = useState(true);
   const targetRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   // Snapshot of the input's selection captured on right-click mousedown,
   // before macOS auto-selects the input contents (Electron #46493).
@@ -145,7 +171,14 @@ export const GlobalInputContextMenu = () => {
       setHasSelection(start !== end);
       setHasContent(target.value.length > 0);
       setAllSelected(start === 0 && end === target.value.length && target.value.length > 0);
-      setContextMenuPosition({ x: event.clientX, y: event.clientY });
+
+      // Resolve clipboard state before opening so the Paste item reflects
+      // whether there is anything to paste — open only once we know.
+      const position = { x: event.clientX, y: event.clientY };
+      void clipboardHasContent().then((hasText) => {
+        setCanPaste(hasText);
+        setContextMenuPosition(position);
+      });
     };
 
     // Capture the input's selection on right-click mousedown — fires before
@@ -281,6 +314,7 @@ export const GlobalInputContextMenu = () => {
         hasSelection={hasSelection}
         hasContent={hasContent}
         allSelected={allSelected}
+        canPaste={canPaste}
         onClose={closeContextMenu}
         onCut={cutSelection}
         onCopy={copySelection}

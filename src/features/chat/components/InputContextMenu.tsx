@@ -18,6 +18,7 @@ interface InputContextMenuProps {
   hasSelection: boolean;
   hasContent: boolean;
   allSelected: boolean;
+  canPaste: boolean;
   onClose: () => void;
   onCut: () => void;
   onCopy: () => void;
@@ -25,7 +26,7 @@ interface InputContextMenuProps {
   onSelectAll: () => void;
 }
 
-export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent, allSelected, onClose, onCut, onCopy, onPaste, onSelectAll }: InputContextMenuProps) => {
+export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent, allSelected, canPaste, onClose, onCut, onCopy, onPaste, onSelectAll }: InputContextMenuProps) => {
   const { t } = useTranslation();
   const menuRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -33,7 +34,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   const items = [
     { label: t('contextmenu.input.cut'), action: onCut, disabled: !hasSelection },
     { label: t('contextmenu.input.copy'), action: onCopy, disabled: !hasSelection },
-    { label: t('contextmenu.input.paste'), action: onPaste, disabled: false },
+    { label: t('contextmenu.input.paste'), action: onPaste, disabled: !canPaste },
     { label: t('contextmenu.input.selectAll'), action: onSelectAll, disabled: !hasContent || allSelected },
   ];
 

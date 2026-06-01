@@ -14,6 +14,7 @@ describe('InputContextMenu', () => {
     hasSelection: true,
     hasContent: true,
     allSelected: false,
+    canPaste: true,
     onClose: vi.fn(),
     onCut: vi.fn(),
     onCopy: vi.fn(),
@@ -88,6 +89,21 @@ describe('InputContextMenu', () => {
     expect(pasteItem).not.toHaveAttribute('aria-disabled');
   });
 
+  it('should disable Paste when clipboard is empty', () => {
+    render(<InputContextMenu {...defaultProps} canPaste={false} />);
+
+    const pasteItem = screen.getByText('contextmenu.input.paste');
+    expect(pasteItem).toHaveAttribute('aria-disabled');
+  });
+
+  it('should not call onPaste when Paste is disabled and clicked', () => {
+    const onPaste = vi.fn();
+    render(<InputContextMenu {...defaultProps} canPaste={false} onPaste={onPaste} />);
+
+    fireEvent.click(screen.getByText('contextmenu.input.paste'));
+    expect(onPaste).not.toHaveBeenCalled();
+  });
+
   it('should disable Select All when input is empty', () => {
     render(<InputContextMenu {...defaultProps} hasContent={false} hasSelection={false} />);
 
@@ -138,7 +154,7 @@ describe('InputContextMenu', () => {
       // Cut, Copy, and Select All should be disabled
       expect(menuItems[0]).toHaveAttribute('aria-disabled');
       expect(menuItems[1]).toHaveAttribute('aria-disabled');
-      // Paste is always enabled
+      // Paste stays enabled here because canPaste is true (clipboard has text)
       expect(menuItems[2]).not.toHaveAttribute('aria-disabled');
       expect(menuItems[3]).toHaveAttribute('aria-disabled');
     });

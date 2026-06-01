@@ -148,6 +148,35 @@ test.describe('Input context menu', () => {
     await sharedPage.keyboard.press('Escape');
   });
 
+  test('Paste is disabled when the clipboard is empty', async () => {
+    const input = messageInput();
+    await input.fill('some text');
+    await input.click(); // deselect so Cut/Copy don't distract
+
+    // Drop the in-app buffer so a stale in-app copy can't shadow an empty
+    // system clipboard.
+    await sharedPage.evaluate(() => globalThis.dispatchEvent(new Event('blur')));
+
+    if (isChromium) {
+      // Chromium grants clipboard-read, so the menu can probe the clipboard.
+      // Empty it, and Paste must come up disabled rather than offering a paste
+      // that would only surface the misleading "use Ctrl+V" hint.
+      await sharedPage.evaluate(() => navigator.clipboard.writeText(''));
+
+      await openContextMenu();
+      await expect(sharedPage.getByRole('menuitem', { name: 'Paste' }))
+        .toHaveAttribute('aria-disabled', 'true');
+    } else {
+      // Firefox can't probe the system clipboard without an intrusive popup,
+      // so Paste stays enabled regardless of clipboard contents.
+      await openContextMenu();
+      await expect(sharedPage.getByRole('menuitem', { name: 'Paste' }))
+        .not.toHaveAttribute('aria-disabled');
+    }
+
+    await sharedPage.keyboard.press('Escape');
+  });
+
   test('paste replaces selected text', async () => {
     const input = messageInput();
 

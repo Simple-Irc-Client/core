@@ -8,6 +8,23 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+// The context menu opens only after an async clipboard probe resolves, so
+// dispatching a contextmenu event must be awaited with a microtask flush
+// before the menu is in the DOM.
+const fireContextMenu = async (target: HTMLElement, x = 100, y = 200): Promise<void> => {
+  const event = new MouseEvent('contextmenu', {
+    bubbles: true,
+    cancelable: true,
+    clientX: x,
+    clientY: y,
+  });
+  await act(async () => {
+    target.dispatchEvent(event);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+};
+
 describe('GlobalInputContextMenu', () => {
   let mockReadText: ReturnType<typeof vi.fn>;
   let mockWriteText: ReturnType<typeof vi.fn>;
@@ -197,21 +214,11 @@ describe('GlobalInputContextMenu', () => {
   });
 
   describe('context menu', () => {
-    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
-      const event = new MouseEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-      });
-      act(() => { target.dispatchEvent(event); });
-    };
-
-    it('should show custom menu on input right-click', () => {
+    it('should show custom menu on input right-click', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello world');
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       expect(document.body.textContent).toContain('contextmenu.input.cut');
       expect(document.body.textContent).toContain('contextmenu.input.copy');
@@ -220,54 +227,58 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should show custom menu on textarea right-click', () => {
+    it('should show custom menu on textarea right-click', async () => {
       render(<GlobalInputContextMenu />);
       const textarea = createTextarea('hello');
 
-      fireContextMenu(textarea);
+      await fireContextMenu(textarea);
 
       expect(document.body.textContent).toContain('contextmenu.input.cut');
       textarea.remove();
     });
 
-    it('should not show menu on non-input right-click', () => {
+    it('should not show menu on non-input right-click', async () => {
       render(<GlobalInputContextMenu />);
       const div = document.createElement('div');
       document.body.appendChild(div);
 
-      fireContextMenu(div);
+      await fireContextMenu(div);
 
       expect(document.body.textContent).not.toContain('contextmenu.input.cut');
       div.remove();
     });
 
-    it('should prevent default on input right-click', () => {
+    it('should prevent default on input right-click', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello');
 
       const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 200 });
-      act(() => { input.dispatchEvent(event); });
+      await act(async () => {
+        input.dispatchEvent(event);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
 
       expect(event.defaultPrevented).toBe(true);
       input.remove();
     });
 
-    it('should set hasSelection when text is selected', () => {
+    it('should set hasSelection when text is selected', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello world', 0, 5);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       const cutItem = document.body.querySelector('[role="menuitem"]');
       expect(cutItem).not.toHaveAttribute('aria-disabled');
       input.remove();
     });
 
-    it('should disable cut/copy when no text is selected', () => {
+    it('should disable cut/copy when no text is selected', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello', 3, 3);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       // Cut and Copy should be disabled
@@ -276,11 +287,61 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should close menu when clicking outside', () => {
+    it('should enable Paste when the clipboard has text', async () => {
+      mockReadText.mockResolvedValue('something');
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 0, 0);
+
+      await fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      expect(menuItems[2]).not.toHaveAttribute('aria-disabled');
+      input.remove();
+    });
+
+    it('should disable Paste when the clipboard is empty', async () => {
+      mockReadText.mockResolvedValue('');
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 0, 0);
+
+      await fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      expect(menuItems[2]).toHaveAttribute('aria-disabled');
+      input.remove();
+    });
+
+    it('should disable Paste when the clipboard cannot be read', async () => {
+      mockReadText.mockRejectedValue(new Error('denied'));
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 0, 0);
+
+      await fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      expect(menuItems[2]).toHaveAttribute('aria-disabled');
+      input.remove();
+    });
+
+    it('should keep Paste enabled when clipboard cannot be probed (Firefox)', async () => {
+      _setCanQueryClipboard(false);
+      render(<GlobalInputContextMenu />);
+      const input = createInput('hello', 0, 0);
+
+      await fireContextMenu(input);
+
+      const menuItems = document.body.querySelectorAll('[role="menuitem"]');
+      // We cannot probe the system clipboard without a popup, so Paste stays
+      // available — clicking it pastes the internal buffer or shows the hint.
+      expect(menuItems[2]).not.toHaveAttribute('aria-disabled');
+      input.remove();
+    });
+
+    it('should close menu when clicking outside', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello');
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
       expect(document.body.querySelector('[role="menu"]')).not.toBeNull();
 
       act(() => { document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
@@ -288,12 +349,12 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should clean up context menu listener on unmount', () => {
+    it('should clean up context menu listener on unmount', async () => {
       const { unmount } = render(<GlobalInputContextMenu />);
       const input = createInput('hello');
 
       unmount();
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       expect(document.body.textContent).not.toContain('contextmenu.input.cut');
       input.remove();
@@ -301,16 +362,6 @@ describe('GlobalInputContextMenu', () => {
   });
 
   describe('paste fallback (Firefox path)', () => {
-    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
-      const event = new MouseEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-      });
-      act(() => { target.dispatchEvent(event); });
-    };
-
     const clickPaste = (): void => {
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const pasteItem = menuItems[2];
@@ -319,14 +370,14 @@ describe('GlobalInputContextMenu', () => {
       act(() => { fireEvent.click(pasteItem as HTMLElement); });
     };
 
-    it('should paste from internal buffer when clipboard query is not supported', () => {
+    it('should paste from internal buffer when clipboard query is not supported', async () => {
       _setCanQueryClipboard(false);
       _setInternalClipboard('buffered text');
 
       render(<GlobalInputContextMenu />);
       const input = createInput('', 0, 0);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
       clickPaste();
 
       expect(input.value).toBe('buffered text');
@@ -334,14 +385,14 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should show hint when no internal buffer and clipboard query is not supported', () => {
+    it('should show hint when no internal buffer and clipboard query is not supported', async () => {
       _setCanQueryClipboard(false);
       _setInternalClipboard(null);
 
       render(<GlobalInputContextMenu />);
       const input = createInput('', 0, 0);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
       clickPaste();
 
       expect(input.value).toBe('');
@@ -357,30 +408,13 @@ describe('GlobalInputContextMenu', () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('', 0, 0);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
       clickPaste();
 
       await act(async () => { await Promise.resolve(); });
 
       expect(mockReadText).toHaveBeenCalled();
       expect(input.value).toBe('chrome clipboard');
-      input.remove();
-    });
-
-    it('should show hint when readText rejects on Chrome path', async () => {
-      _setCanQueryClipboard(true);
-      mockReadText.mockRejectedValue(new Error('denied'));
-
-      render(<GlobalInputContextMenu />);
-      const input = createInput('', 0, 0);
-
-      fireContextMenu(input);
-      clickPaste();
-
-      await act(async () => { await Promise.resolve(); });
-
-      expect(input.value).toBe('');
-      expect(document.body.textContent).toContain('contextmenu.input.pasteHint');
       input.remove();
     });
   });
@@ -408,12 +442,11 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should populate buffer on context menu copy', () => {
+    it('should populate buffer on context menu copy', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('test text', 0, 4);
 
-      const ctxEvent = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 200 });
-      act(() => { input.dispatchEvent(ctxEvent); });
+      await fireContextMenu(input);
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const copyItem = menuItems[1]; // Copy is second item
@@ -424,12 +457,11 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('should populate buffer on context menu cut', () => {
+    it('should populate buffer on context menu cut', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('cut this', 0, 3);
 
-      const ctxEvent = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 100, clientY: 200 });
-      act(() => { input.dispatchEvent(ctxEvent); });
+      await fireContextMenu(input);
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       const cutItem = menuItems[0]; // Cut is first item
@@ -463,11 +495,6 @@ describe('GlobalInputContextMenu', () => {
       });
     };
 
-    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
-      const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: x, clientY: y });
-      act(() => { target.dispatchEvent(event); });
-    };
-
     const clickMenuItem = (index: number): void => {
       const item = document.body.querySelectorAll('[role="menuitem"]')[index];
       expect(item).toBeDefined();
@@ -484,7 +511,7 @@ describe('GlobalInputContextMenu', () => {
       // the whole input before contextmenu fires (Electron #46493).
       fireRightMouseDown(input);
       input.setSelectionRange(0, input.value.length);
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       clickMenuItem(2); // Paste
       await act(async () => { await Promise.resolve(); });
@@ -495,13 +522,13 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('copy uses pre-right-click selection even after macOS auto-selects all text', () => {
+    it('copy uses pre-right-click selection even after macOS auto-selects all text', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello world', 6, 11); // user selected "world"
 
       fireRightMouseDown(input);
       input.setSelectionRange(0, input.value.length); // simulate auto-select
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       clickMenuItem(1); // Copy
       expect(mockWriteText).toHaveBeenCalledWith('world');
@@ -509,13 +536,13 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('cut uses pre-right-click selection even after macOS auto-selects all text', () => {
+    it('cut uses pre-right-click selection even after macOS auto-selects all text', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello world', 6, 11);
 
       fireRightMouseDown(input);
       input.setSelectionRange(0, input.value.length);
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       clickMenuItem(0); // Cut
       expect(mockWriteText).toHaveBeenCalledWith('world');
@@ -523,13 +550,13 @@ describe('GlobalInputContextMenu', () => {
       input.remove();
     });
 
-    it('menu hasSelection state reflects the snapshot, not the auto-select', () => {
+    it('menu hasSelection state reflects the snapshot, not the auto-select', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello', 2, 2); // caret only — nothing selected
 
       fireRightMouseDown(input);
       input.setSelectionRange(0, input.value.length); // auto-select
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       // Cut and Copy must remain disabled because the user did not select
@@ -550,7 +577,7 @@ describe('GlobalInputContextMenu', () => {
         input.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
       });
       input.setSelectionRange(0, 3);
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       clickMenuItem(2); // Paste
       await act(async () => { await Promise.resolve(); });
@@ -571,14 +598,14 @@ describe('GlobalInputContextMenu', () => {
       input.setSelectionRange(0, 0);
       fireRightMouseDown(input);
       // Dismiss menu without acting.
-      fireContextMenu(input);
+      await fireContextMenu(input);
       act(() => { document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); });
 
       // Move caret, second right-click should capture the new position.
       input.setSelectionRange(5, 5);
       fireRightMouseDown(input);
       input.setSelectionRange(0, input.value.length); // simulate auto-select
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       clickMenuItem(2);
       await act(async () => { await Promise.resolve(); });
@@ -589,47 +616,37 @@ describe('GlobalInputContextMenu', () => {
   });
 
   describe('Unhappy paths', () => {
-    const fireContextMenu = (target: HTMLElement, x = 100, y = 200): void => {
-      const event = new MouseEvent('contextmenu', {
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-      });
-      act(() => { target.dispatchEvent(event); });
-    };
-
-    it('should not show context menu for contentEditable div', () => {
+    it('should not show context menu for contentEditable div', async () => {
       render(<GlobalInputContextMenu />);
       const div = document.createElement('div');
       div.contentEditable = 'true';
       document.body.appendChild(div);
       div.focus();
 
-      fireContextMenu(div);
+      await fireContextMenu(div);
 
       expect(document.body.textContent).not.toContain('contextmenu.input.cut');
       div.remove();
     });
 
-    it('should show only one menu on multiple rapid right-clicks', () => {
+    it('should show only one menu on multiple rapid right-clicks', async () => {
       render(<GlobalInputContextMenu />);
       const input = createInput('hello world', 0, 5);
 
-      fireContextMenu(input, 100, 200);
-      fireContextMenu(input, 150, 250);
+      await fireContextMenu(input, 100, 200);
+      await fireContextMenu(input, 150, 250);
 
       const menus = document.body.querySelectorAll('[role="menu"]');
       expect(menus).toHaveLength(1);
       input.remove();
     });
 
-    it('should not invoke callback when clicking aria-disabled menu item', () => {
+    it('should not invoke callback when clicking aria-disabled menu item', async () => {
       render(<GlobalInputContextMenu />);
       // Create input with no selection so Cut/Copy are disabled
       const input = createInput('hello', 3, 3);
 
-      fireContextMenu(input);
+      await fireContextMenu(input);
 
       const menuItems = document.body.querySelectorAll('[role="menuitem"]');
       // Cut should be disabled
