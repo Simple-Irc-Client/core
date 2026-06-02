@@ -8,40 +8,23 @@ import WizardPassword from '../components/WizardPassword';
 import WizardServer from '../components/WizardServer';
 import WizardLoading from '../components/WizardLoading';
 
-const getTimeOfDayGradient = (isDarkMode: boolean): string => {
+export const getTimeOfDayGradient = (isDarkMode: boolean): string => {
   const hour = new Date().getHours();
+  const isDay = hour >= 6 && hour < 18;
 
   if (isDarkMode) {
-    // Morning 6-12: warm amber → muted bronze
-    if (hour >= 6 && hour < 12) {
-      return 'linear-gradient(135deg, oklch(0.38 0.06 55) 0%, oklch(0.30 0.05 85) 100%)';
-    }
-    // Afternoon 12-18: dark teal → deep slate
-    if (hour >= 12 && hour < 18) {
-      return 'linear-gradient(135deg, oklch(0.32 0.05 155) 0%, oklch(0.25 0.04 220) 100%)';
-    }
-    // Evening 18-22: dark rose → deep plum
-    if (hour >= 18 && hour < 22) {
-      return 'linear-gradient(135deg, oklch(0.30 0.06 350) 0%, oklch(0.22 0.05 280) 100%)';
-    }
-    // Night 22-6: deep navy → near black teal
-    return 'linear-gradient(135deg, oklch(0.22 0.04 260) 0%, oklch(0.18 0.03 200) 100%)';
+    return isDay
+      // Day 6-18: dark teal → deep slate
+      ? 'linear-gradient(135deg, oklch(0.32 0.05 155) 0%, oklch(0.25 0.04 220) 100%)'
+      // Night 18-6: deep navy → near black teal
+      : 'linear-gradient(135deg, oklch(0.22 0.04 260) 0%, oklch(0.18 0.03 200) 100%)';
   }
 
-  // Morning 6-12: warm peach → soft gold
-  if (hour >= 6 && hour < 12) {
-    return 'linear-gradient(135deg, oklch(0.72 0.08 55) 0%, oklch(0.65 0.07 85) 100%)';
-  }
-  // Afternoon 12-18: teal → slate blue
-  if (hour >= 12 && hour < 18) {
-    return 'linear-gradient(135deg, oklch(0.65 0.08 155) 0%, oklch(0.55 0.06 220) 100%)';
-  }
-  // Evening 18-22: dusky rose → muted purple
-  if (hour >= 18 && hour < 22) {
-    return 'linear-gradient(135deg, oklch(0.55 0.08 350) 0%, oklch(0.45 0.07 280) 100%)';
-  }
-  // Night 22-6: deep navy → dark teal
-  return 'linear-gradient(135deg, oklch(0.35 0.05 260) 0%, oklch(0.30 0.04 200) 100%)';
+  return isDay
+    // Day 6-18: teal → slate blue
+    ? 'linear-gradient(135deg, oklch(0.65 0.08 155) 0%, oklch(0.55 0.06 220) 100%)'
+    // Night 18-6: deep navy → dark teal
+    : 'linear-gradient(135deg, oklch(0.35 0.05 260) 0%, oklch(0.30 0.04 200) 100%)';
 };
 
 const Wizard = () => {

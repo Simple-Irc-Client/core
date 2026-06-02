@@ -1,7 +1,7 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WizardPage from '../WizardPage';
+import WizardPage, { getTimeOfDayGradient } from '../WizardPage';
 import * as settingsStore from '@features/settings/store/settings';
 
 vi.mock('react-i18next', () => ({
@@ -246,6 +246,81 @@ describe('WizardPage', () => {
       render(<WizardPage />);
 
       expect(screen.getByRole('status')).toBeInTheDocument();
+    });
+  });
+
+  describe('getTimeOfDayGradient', () => {
+    // Day spans 06:00–17:59, night spans 18:00–05:59. Marker hue 155 (teal)
+    // identifies the day gradient; hue 260 (navy) identifies the night gradient.
+    const DAY_MARKER = '155';
+    const NIGHT_MARKER = '260';
+
+    const setHour = (hour: number) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 0, 1, hour, 0, 0));
+    };
+
+    beforeEach(() => {
+      vi.useRealTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      { hour: 6, label: 'start of day' },
+      { hour: 12, label: 'midday' },
+      { hour: 17, label: 'last hour of day' },
+    ])('should return the day gradient at $hour:00 ($label) in light mode', ({ hour }) => {
+      setHour(hour);
+      const gradient = getTimeOfDayGradient(false);
+      expect(gradient).toContain(DAY_MARKER);
+      expect(gradient).not.toContain(NIGHT_MARKER);
+    });
+
+    it.each([
+      { hour: 18, label: 'start of night' },
+      { hour: 23, label: 'late night' },
+      { hour: 0, label: 'midnight' },
+      { hour: 5, label: 'last hour of night' },
+    ])('should return the night gradient at $hour:00 ($label) in light mode', ({ hour }) => {
+      setHour(hour);
+      const gradient = getTimeOfDayGradient(false);
+      expect(gradient).toContain(NIGHT_MARKER);
+      expect(gradient).not.toContain(DAY_MARKER);
+    });
+
+    it('should return distinct dark-mode gradients for day and night', () => {
+      setHour(12);
+      const day = getTimeOfDayGradient(true);
+      setHour(0);
+      const night = getTimeOfDayGradient(true);
+
+      expect(day).toContain(DAY_MARKER);
+      expect(night).toContain(NIGHT_MARKER);
+      expect(day).not.toBe(night);
+    });
+
+    it('should return darker gradients in dark mode than light mode', () => {
+      setHour(12);
+      // Day gradient starts at lightness 0.65 (light) vs 0.32 (dark).
+      expect(getTimeOfDayGradient(false)).toContain('oklch(0.65');
+      expect(getTimeOfDayGradient(true)).toContain('oklch(0.32');
+    });
+
+    it('should switch from day to night exactly at the 18:00 boundary', () => {
+      setHour(17);
+      expect(getTimeOfDayGradient(false)).toContain(DAY_MARKER);
+      setHour(18);
+      expect(getTimeOfDayGradient(false)).toContain(NIGHT_MARKER);
+    });
+
+    it('should switch from night to day exactly at the 06:00 boundary', () => {
+      setHour(5);
+      expect(getTimeOfDayGradient(false)).toContain(NIGHT_MARKER);
+      setHour(6);
+      expect(getTimeOfDayGradient(false)).toContain(DAY_MARKER);
     });
   });
 

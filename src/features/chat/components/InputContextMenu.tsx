@@ -64,7 +64,6 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contextMenuPosition, onClose]);
 
   if (contextMenuPosition === null) { return null; }
