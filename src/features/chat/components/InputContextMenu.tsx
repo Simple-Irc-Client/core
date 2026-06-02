@@ -45,11 +45,10 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   useEffect(() => {
     if (contextMenuPosition === null) { return; }
 
-    // Focus first non-disabled item on open
-    const firstEnabled = items.findIndex((item) => !item.disabled);
-    if (firstEnabled !== -1) {
-      requestAnimationFrame(() => focusItem(firstEnabled));
-    }
+    // Focus the menu container (not an item) on open, so no item appears
+    // pre-selected/highlighted — matching native context menus. Arrow keys
+    // move focus into the items from here.
+    requestAnimationFrame(() => menuRef.current?.focus());
 
     const handleClickOutside = (e: MouseEvent): void => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -75,6 +74,27 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   const handle = (action: () => void) => () => {
     flushSync(() => onClose());
     action();
+  };
+
+  // Keydown while the menu container itself is focused (before focus has
+  // entered any item): arrow/Home/End move into the first or last enabled item.
+  const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget) { return; }
+    const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);
+    if (navigableIndices.length === 0) { return; }
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'Home':
+        e.preventDefault();
+        focusItem(navigableIndices[0] as number);
+        break;
+      case 'ArrowUp':
+      case 'End':
+        e.preventDefault();
+        focusItem(navigableIndices.at(-1) as number);
+        break;
+    }
   };
 
   const handleItemKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -131,8 +151,10 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
     <div
       ref={menuRef}
       role="menu"
+      tabIndex={-1}
       onMouseDown={(e) => e.preventDefault()}
-      className="fixed z-100 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+      onKeyDown={handleMenuKeyDown}
+      className="fixed z-100 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-none"
       style={{ left: `${clamped.x}px`, top: `${clamped.y}px` }}
     >
       {items.map((item, index) => (

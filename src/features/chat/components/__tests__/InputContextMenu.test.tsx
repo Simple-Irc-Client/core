@@ -220,6 +220,47 @@ describe('InputContextMenu', () => {
       expect(document.activeElement).toBe(pasteItem);
     });
 
+    it('should focus the menu container, not an item, on open', () => {
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={false}
+          allSelected={false}
+        />
+      );
+
+      // Only Paste is enabled here. It must not be auto-highlighted on open —
+      // focus rests on the menu container so nothing looks pre-selected.
+      const menu = document.body.querySelector('[role="menu"]');
+      const pasteItem = screen.getByText('contextmenu.input.paste');
+
+      // rAF-based focus runs synchronously enough in jsdom via fake timers;
+      // assert focus is not on the paste item.
+      expect(document.activeElement).not.toBe(pasteItem);
+      expect(menu).not.toBeNull();
+    });
+
+    it('should move focus into the first enabled item on ArrowDown from the container', () => {
+      render(
+        <InputContextMenu
+          {...defaultProps}
+          hasSelection={false}
+          hasContent={false}
+          allSelected={false}
+        />
+      );
+
+      const menu = document.body.querySelector('[role="menu"]') as HTMLElement;
+      const pasteItem = screen.getByText('contextmenu.input.paste');
+
+      menu.focus();
+      fireEvent.keyDown(menu, { key: 'ArrowDown' });
+
+      // First (and only) enabled item is Paste
+      expect(document.activeElement).toBe(pasteItem);
+    });
+
     it('should navigate to last enabled item on End key', () => {
       render(
         <InputContextMenu
