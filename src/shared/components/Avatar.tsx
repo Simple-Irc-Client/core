@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isSafeUrl } from '@shared/lib/utils';
+import { isSafeImageUrl } from '@shared/lib/utils';
 
 interface AvatarProps {
   src?: string;
@@ -12,7 +12,7 @@ interface AvatarProps {
 const Avatar = ({ src, alt, fallbackLetter, className = '', onContextMenu }: AvatarProps) => {
   const [hasError, setHasError] = useState(false);
 
-  const safeSrc = src && isSafeUrl(src) ? src : undefined;
+  const safeSrc = src && isSafeImageUrl(src) ? src : undefined;
   const showFallback = !safeSrc || hasError;
 
   return (

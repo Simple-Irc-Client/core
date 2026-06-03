@@ -157,6 +157,22 @@ describe('Avatar', () => {
       expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
+    it('should show fallback for http src (mixed content — blocked by CSP in the desktop webview)', () => {
+      // The desktop webview is a secure context and CSP allows only https images,
+      // so an http avatar would never load. Reject it up front and show fallback.
+      render(<Avatar src="http://example.com/avatar.png" alt="TestUser" fallbackLetter="T" />);
+
+      expect(screen.getByText('T')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should show fallback for https src on a private/internal host', () => {
+      render(<Avatar src="https://192.168.1.10/avatar.png" alt="TestUser" fallbackLetter="T" />);
+
+      expect(screen.getByText('T')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
     it('should reset error state when src changes from broken to valid URL', () => {
       const { rerender } = render(
         <Avatar src="https://example.com/broken.png" alt="TestUser" fallbackLetter="T" />

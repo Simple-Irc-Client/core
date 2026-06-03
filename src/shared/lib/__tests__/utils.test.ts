@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, isSafeCssColor, redactSensitiveIrc, ensureNickContrast } from '../utils';
+import { isSafeUrl, isSafeImageUrl, isSafeCssColor, redactSensitiveIrc, ensureNickContrast } from '../utils';
 
 describe('redactSensitiveIrc', () => {
   it('should redact AUTHENTICATE payloads', () => {
@@ -121,6 +121,38 @@ describe('URL Validation', () => {
       expect(isSafeUrl('https://example.com/path?query=value&other=test')).toBe(true);
       expect(isSafeUrl('http://example.com:8080/path#fragment')).toBe(true);
       expect(isSafeUrl('https://user:pass@example.com')).toBe(true);
+    });
+  });
+
+  describe('isSafeImageUrl', () => {
+    it('should allow https URLs on public hosts', () => {
+      expect(isSafeImageUrl('https://example.com/avatar.png')).toBe(true);
+      expect(isSafeImageUrl('https://img.youtube.com/vi/abc/default.jpg')).toBe(true);
+    });
+
+    it('should reject http URLs (mixed content in the secure webview)', () => {
+      expect(isSafeImageUrl('http://example.com/avatar.png')).toBe(false);
+      expect(isSafeImageUrl('http://img.youtube.com/vi/abc/default.jpg')).toBe(false);
+    });
+
+    it('should reject private and internal hosts', () => {
+      expect(isSafeImageUrl('https://localhost/avatar.png')).toBe(false);
+      expect(isSafeImageUrl('https://127.0.0.1/avatar.png')).toBe(false);
+      expect(isSafeImageUrl('https://192.168.1.10/avatar.png')).toBe(false);
+      expect(isSafeImageUrl('https://10.0.0.5/avatar.png')).toBe(false);
+      expect(isSafeImageUrl('https://169.254.0.1/avatar.png')).toBe(false);
+    });
+
+    it('should reject dangerous and non-https protocols', () => {
+      expect(isSafeImageUrl('javascript:alert(1)')).toBe(false);
+      expect(isSafeImageUrl('data:image/svg+xml;base64,PHN2Zz4=')).toBe(false);
+      expect(isSafeImageUrl('file:///etc/passwd')).toBe(false);
+    });
+
+    it('should handle invalid URLs', () => {
+      expect(isSafeImageUrl('not-a-url')).toBe(false);
+      expect(isSafeImageUrl('')).toBe(false);
+      expect(isSafeImageUrl('https://')).toBe(false);
     });
   });
 });

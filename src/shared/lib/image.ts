@@ -1,4 +1,4 @@
-import { isSafeUrl, isPrivateHost } from './utils';
+import { isSafeImageUrl } from './utils';
 
 const IMAGE_REGEX = /https:\/\/[^\s?#]+\.(?:jpg|jpeg|gif|png)(?=[?#\s]|$)(?:\?[^\s]*)?/gi;
 
@@ -11,13 +11,3 @@ export const extractImageUrls = (text: string): string[] => {
   }
   return urls;
 };
-
-function isSafeImageUrl(url: string): boolean {
-  if (!isSafeUrl(url)) { return false; }
-  try {
-    const { hostname } = new URL(url);
-    return !isPrivateHost(hostname);
-  } catch {
-    return false;
-  }
-}

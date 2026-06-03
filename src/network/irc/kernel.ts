@@ -127,7 +127,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
-import { isSafeUrl, isSafeCssColor, isValidNick, redactSensitiveIrc } from '@shared/lib/utils';
+import { isSafeUrl, isSafeImageUrl, isSafeCssColor, isValidNick, redactSensitiveIrc } from '@shared/lib/utils';
 
 export interface IrcEvent {
   type: string;
@@ -1914,7 +1914,7 @@ export class Kernel {
       if (item === 'avatar') {
         if (normalizedValue !== undefined) {
           const avatarUrl = normalizedValue.replace('{size}', '64');
-          if (isSafeUrl(avatarUrl)) {
+          if (isSafeImageUrl(avatarUrl)) {
             setChannelAvatar(nickOrChannel, avatarUrl);
           }
         }
@@ -1928,7 +1928,7 @@ export class Kernel {
       if (item === 'avatar') {
         if (normalizedValue !== undefined) {
           const avatarUrl = normalizedValue.replace('{size}', '64');
-          if (isSafeUrl(avatarUrl)) {
+          if (isSafeImageUrl(avatarUrl)) {
             setUserAvatar(nickOrChannel, avatarUrl);
             if (isCurrentUser) { setCurrentUserAvatar(avatarUrl); }
           }

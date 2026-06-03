@@ -888,6 +888,30 @@ describe('kernel tests', () => {
     expect(mockSetUserAvatar).not.toHaveBeenCalled();
   });
 
+  it('test raw METADATA rejects avatar with http: URL (mixed content, blocked by CSP)', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop avatar * :http://example.com/avatar.png';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
+  it('test raw METADATA rejects avatar on a private/internal host', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop avatar * :https://192.168.1.10/avatar.png';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserAvatar).not.toHaveBeenCalled();
+  });
+
   it('test raw METADATA rejects channel avatar with javascript: URL', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetChannelAvatar = vi.spyOn(channelsFile, 'setChannelAvatar').mockImplementation(() => {});
@@ -1022,6 +1046,19 @@ describe('kernel tests', () => {
     expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw METADATA homepage allows http: URL (navigation, not a sub-resource)', () => {
+    // Unlike avatars, homepages open in an external browser, so http stays valid.
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+
+    const line = ':netsplit.pirc.pl METADATA Noop homepage * :http://example.com';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserHomepage).toHaveBeenCalledWith('Noop', 'http://example.com');
   });
 
   it('test raw METADATA homepage clears with empty value', () => {

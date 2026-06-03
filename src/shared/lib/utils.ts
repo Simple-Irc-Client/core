@@ -22,6 +22,25 @@ export function isSafeUrl(url: string): boolean {
   }
 }
 
+/**
+ * Stricter check for URLs loaded as sub-resources (e.g. <img> avatars and
+ * inline images). Unlike isSafeUrl (which permits http for navigation/links),
+ * this requires https — http sources are blocked as mixed content in the
+ * secure desktop webview — and rejects private/internal hosts so untrusted
+ * URLs can't probe the local network.
+ */
+export function isSafeImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+    return !isPrivateHost(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 const SAFE_CSS_COLOR_RE = /^(#[0-9a-f]{3,8}|[a-z]{1,30}|rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)|rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*[\d.]+\s*\))$/i;
 
 export function isSafeCssColor(value: string): boolean {
