@@ -88,7 +88,7 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
 
   return (
     <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-      <div className={`${fontSizeClass} ${isItalic ? 'italic' : ''}`}>
+      <div className={fontSizeClass}>
         <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
         <span className="inline-block w-3" />
         {nick !== undefined && !isItalic ? (
@@ -103,9 +103,11 @@ const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSiz
         )}
         <span className="inline-block w-2" />
         {isItalic && nick ? (
-          <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
+          <span className="italic">
+            <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
+          </span>
         ) : (
-          <span>
+          <span className={isItalic ? 'italic' : ''}>
             <MessageText text={message.message} color={message.color ?? MessageColor.default} />
           </span>
         )}
