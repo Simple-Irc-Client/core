@@ -105,7 +105,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
 
       expect(lastCreatedSocket).toBeDefined();
       expect(lastCreatedSocket?.url).toBe('wss://testnet.example.com/');
@@ -121,7 +121,7 @@ describe('directWebSocket', () => {
         tls: true,
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
 
       expect(lastCreatedSocket).toBeDefined();
       expect(lastCreatedSocket?.url).toBe('wss://testnet.example.com:8080');
@@ -137,7 +137,7 @@ describe('directWebSocket', () => {
         tls: false,
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
 
       expect(lastCreatedSocket?.url).toBe('ws://testnet.example.com:8080');
     });
@@ -151,12 +151,12 @@ describe('directWebSocket', () => {
         connectionType: 'websocket',
       };
 
-      expect(() => directWebSocket.initDirectWebSocket(server, 'TestNick')).toThrow(
+      expect(() => directWebSocket.initDirectWebSocket(server)).toThrow(
         'Unable to connect - server host is empty'
       );
     });
 
-    it('should send CAP LS, NICK, and USER on connection open', async () => {
+    it('should NOT send registration on open (kernel owns CAP/NICK/USER)', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -166,15 +166,15 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
 
-      expect(lastCreatedSocket?.send).toHaveBeenCalledWith('CAP LS 302');
-      expect(lastCreatedSocket?.send).toHaveBeenCalledWith('NICK TestNick');
-      expect(lastCreatedSocket?.send).toHaveBeenCalledWith('USER TestNick 0 * :TestNick');
+      // Pure byte pipe: registration is sent by the kernel on the 'connect'
+      // event, not by the transport.
+      expect(lastCreatedSocket?.send).not.toHaveBeenCalled();
     });
 
-    it('should trigger connect event on socket open', async () => {
+    it('should trigger connect event (via sic-irc-event) on socket open', async () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -184,10 +184,11 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
 
-      expect(eventCallback).toHaveBeenCalledWith('connect', {});
+      // Routed through 'sic-irc-event' so the kernel's handleConnect runs.
+      expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connect' });
     });
 
     it('should close existing connection before creating new one', async () => {
@@ -200,13 +201,13 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       const firstSocket = lastCreatedSocket;
 
       // Simulate connection established to clear isDirectConnectingFlag
       await firstSocket?.onopen?.();
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick2');
+      directWebSocket.initDirectWebSocket(server);
 
       expect(firstSocket?.close).toHaveBeenCalled();
     });
@@ -221,7 +222,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       const firstSocket = lastCreatedSocket as MockWebSocket;
 
       // Simulate connection established to clear isDirectConnectingFlag
@@ -232,7 +233,7 @@ describe('directWebSocket', () => {
       expect(firstSocket.onmessage).not.toBeNull();
 
       // Create a second connection (replacing the first)
-      directWebSocket.initDirectWebSocket(server, 'TestNick2');
+      directWebSocket.initDirectWebSocket(server);
 
       // Handlers on the old socket should have been removed to prevent
       // stale onclose from nulling out the new socket reference
@@ -254,7 +255,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
@@ -286,7 +287,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       if (lastCreatedSocket) {
         lastCreatedSocket.readyState = 0; // CONNECTING
       }
@@ -313,7 +314,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       if (lastCreatedSocket) {
         lastCreatedSocket.readyState = 1; // OPEN
       }
@@ -331,7 +332,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       if (lastCreatedSocket) {
         lastCreatedSocket.readyState = 0; // CONNECTING
       }
@@ -355,7 +356,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       if (lastCreatedSocket) {
         lastCreatedSocket.readyState = 0; // CONNECTING
       }
@@ -375,7 +376,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
       lastCreatedSocket?.send.mockClear();
 
@@ -402,7 +403,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
       eventCallback.mockClear();
 
@@ -476,42 +477,22 @@ describe('directWebSocket', () => {
       });
     });
 
-    it('should trigger connected event when RPL_WELCOME (001) is received', async () => {
+    it('should NOT emit a connected event on 001 (kernel owns that from raw)', async () => {
       const socket = await connectAndGetSocket();
 
       socket.onmessage?.({ data: ':server 001 TestNick :Welcome to the network' });
 
-      // Should trigger 'connected' before the 'raw' event
-      expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connected' });
+      // The transport is a pure pipe: 001 is forwarded as a raw line only; the
+      // kernel detects RPL_WELCOME itself and owns the connected/registered
+      // transition.
       expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
         type: 'raw',
         line: ':server 001 TestNick :Welcome to the network',
       });
-    });
-
-    it('should trigger connected event for 001 with IRCv3 tags', async () => {
-      const socket = await connectAndGetSocket();
-
-      socket.onmessage?.({
-        data: '@time=2023-01-01T12:00:00.000Z :server 001 TestNick :Welcome',
-      });
-
-      expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connected' });
-    });
-
-    it('should only trigger connected event once', async () => {
-      const socket = await connectAndGetSocket();
-
-      // First 001 message
-      socket.onmessage?.({ data: ':server 001 TestNick :Welcome' });
-      // Second 001 message (shouldn't happen in practice, but test the guard)
-      socket.onmessage?.({ data: ':server 001 TestNick :Another welcome' });
-
-      // 'connected' should only be called once
       const connectedCalls = eventCallback.mock.calls.filter(
         (call) => call[0] === 'sic-irc-event' && call[1]?.type === 'connected'
       );
-      expect(connectedCalls).toHaveLength(1);
+      expect(connectedCalls).toHaveLength(0);
     });
   });
 
@@ -526,7 +507,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       lastCreatedSocket?.onclose?.();
 
       expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'close' });
@@ -542,7 +523,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       const mockError = new Event('error');
       lastCreatedSocket?.onerror?.(mockError);
 
@@ -561,7 +542,7 @@ describe('directWebSocket', () => {
         websocketUrl: 'wss://testnet.example.com/',
       };
 
-      directWebSocket.initDirectWebSocket(server, 'TestNick');
+      directWebSocket.initDirectWebSocket(server);
       await lastCreatedSocket?.onopen?.();
       eventCallback.mockClear();
 

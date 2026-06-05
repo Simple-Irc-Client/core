@@ -26,11 +26,11 @@ import {
   setTauriEncryption,
 } from './tauriTransport';
 
-export const initDirectWebSocket = (server: Server, nick: string): void => {
+export const initDirectWebSocket = (server: Server): void => {
   if (isDesktop()) {
-    initTauriIrc(server, nick);
+    initTauriIrc(server);
   } else {
-    wsInit(server, nick);
+    wsInit(server);
   }
 };
 

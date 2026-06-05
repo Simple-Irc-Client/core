@@ -76,7 +76,7 @@ const processMessageQueue = async (): Promise<void> => {
  * Initialize a direct WebSocket connection to an IRC server.
  * This bypasses the backend and connects directly from the browser.
  */
-export const initDirectWebSocket = (server: Server, nick: string): void => {
+export const initDirectWebSocket = (server: Server): void => {
   // Close existing connection if any (remove handlers to prevent stale
   // onclose from nulling the new socket reference)
   if (directSocket) {
@@ -93,7 +93,6 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
   }
 
   isDirectConnectingFlag = true;
-  hasReceivedWelcome = false;
 
   const parsedServer = parseServer(server);
   if (!parsedServer?.host) {
@@ -117,25 +116,19 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
   }
   directSocket = new WebSocket(wsUrl);
 
-  directSocket.onopen = async () => {
+  directSocket.onopen = () => {
     isDirectConnectingFlag = false;
     if (import.meta.env.DEV) {
       console.log('Direct WebSocket connected');
     }
 
-    // Send CAP LS to start capability negotiation
-    await sendDirectRaw('CAP LS 302');
-
-    // Send PASS before NICK/USER if server has a password
-    if (server.serverPassword) {
-      await sendDirectRaw(`PASS ${server.serverPassword}`);
-    }
-
-    // Send NICK and USER
-    await sendDirectRaw(`NICK ${nick}`);
-    await sendDirectRaw(`USER ${nick} 0 * :${nick}`);
-
-    triggerDirectEvent('connect', {});
+    // Pure transport: registration (CAP LS / PASS / NICK / USER) is owned by
+    // the kernel, which sends it when it sees this connect event. Routed
+    // through the 'sic-irc-event' channel the kernel listens on (like
+    // 'raw'/'close') so handleConnect actually runs — a bare 'connect' event
+    // name has no subscriber. Keeps the WebSocket and Tauri transports
+    // identical byte pipes.
+    triggerDirectEvent('sic-irc-event', { type: 'connect' });
   };
 
   directSocket.onmessage = (event) => {
@@ -161,47 +154,13 @@ export const initDirectWebSocket = (server: Server, nick: string): void => {
   };
 };
 
-// Track if we've received RPL_WELCOME (001) to trigger 'connected' event
-let hasReceivedWelcome = false;
-
 /**
  * Handle an incoming IRC message line.
- * Sends it to the kernel as a raw event (kernel handles parsing).
+ * Sends it to the kernel as a raw event (kernel handles parsing). The kernel
+ * detects RPL_WELCOME (001) itself and owns the connected/registered state, so
+ * this transport stays a pure pipe.
  */
 const handleIrcMessage = (line: string): void => {
-  // Check for RPL_WELCOME (001) to trigger 'connected' event
-  // This mirrors the backend behavior where 'connected' is sent after IRC registration completes
-  if (!hasReceivedWelcome) {
-    // Parse the command from the line
-    // Format: [@tags] [:prefix] command params
-    let workingLine = line;
-
-    // Skip IRCv3 tags if present
-    if (workingLine.startsWith('@')) {
-      const spaceIndex = workingLine.indexOf(' ');
-      if (spaceIndex !== -1) {
-        workingLine = workingLine.substring(spaceIndex + 1);
-      }
-    }
-
-    // Skip prefix if present
-    if (workingLine.startsWith(':')) {
-      const spaceIndex = workingLine.indexOf(' ');
-      if (spaceIndex !== -1) {
-        workingLine = workingLine.substring(spaceIndex + 1);
-      }
-    }
-
-    // Get the command (first word)
-    const command = workingLine.split(' ')[0];
-
-    if (command === '001') {
-      hasReceivedWelcome = true;
-      triggerDirectEvent('sic-irc-event', { type: 'connected' });
-    }
-  }
-
-  // Send raw line to kernel - it will parse using parseIrcRawMessage
   triggerDirectEvent('sic-irc-event', { type: 'raw', line });
 };
 
@@ -256,7 +215,6 @@ export const disconnectDirect = (): void => {
     directSocket = null;
   }
   isDirectConnectingFlag = false;
-  hasReceivedWelcome = false;
   useEncryption = false;
   messageQueue = [];
   isProcessingQueue = false;

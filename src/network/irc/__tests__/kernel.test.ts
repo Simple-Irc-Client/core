@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, afterEach, vi } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { Kernel } from '../kernel';
 import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
@@ -26,8 +26,43 @@ describe('kernel tests', () => {
     { symbol: '+', flag: 'v' },
   ];
 
+  beforeEach(() => {
+    // handleConnected (on 001) starts a real 30s keepalive interval; stub it by
+    // default so tests don't leak timers. Tests that assert on it re-spy.
+    vi.spyOn(networkFile, 'startKeepalive').mockImplementation(() => {});
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('test connect sends the registration burst (CAP LS / NICK / USER)', () => {
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+    new Kernel({ type: 'connect' }).handle();
+
+    // The kernel — not the transport — opens registration on connect.
+    expect(mockSend).toHaveBeenCalledWith('CAP LS 302');
+    expect(mockSend).toHaveBeenCalledWith('NICK TestNick');
+    expect(mockSend).toHaveBeenCalledWith('USER TestNick 0 * :TestNick');
+    // No server password configured -> no PASS line.
+    expect(mockSend).not.toHaveBeenCalledWith(expect.stringMatching(/^PASS /));
+  });
+
+  it('test connect sends PASS before NICK when server has a password', () => {
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(
+      () => ({ serverPassword: 'sekret' }) as unknown as ReturnType<typeof settingsFile.getServer>,
+    );
+    const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+    new Kernel({ type: 'connect' }).handle();
+
+    expect(mockSend).toHaveBeenCalledWith('PASS sekret');
+    const calls = mockSend.mock.calls.map((c) => c[0] as string);
+    expect(calls.indexOf('PASS sekret')).toBeLessThan(calls.indexOf('NICK TestNick'));
   });
 
   it('test connected', () => {
@@ -36,13 +71,36 @@ describe('kernel tests', () => {
     const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
-    new Kernel({ type: 'connected' }).handle();
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
 
     expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(true);
     expect(mockSetConnectedTime).toBeCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.connected') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  it('test connected starts the active keepalive', () => {
+    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockStartKeepalive = vi.spyOn(networkFile, 'startKeepalive').mockImplementation(() => {});
+
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
+
+    expect(mockStartKeepalive).toHaveBeenCalledTimes(1);
+  });
+
+  it('test close stops the active keepalive', () => {
+    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockStopKeepalive = vi.spyOn(networkFile, 'stopKeepalive').mockImplementation(() => {});
+
+    new Kernel({ type: 'close' }).handle();
+
+    expect(mockStopKeepalive).toHaveBeenCalled();
   });
 
   it('test close', () => {
@@ -111,7 +169,7 @@ describe('kernel tests', () => {
     const mockClearPendingSTSUpgrade = vi.spyOn(stsFile, 'clearPendingSTSUpgrade').mockImplementation(() => {});
     const mockResetSTSRetries = vi.spyOn(stsFile, 'resetSTSRetries').mockImplementation(() => {});
 
-    new Kernel({ type: 'connected' }).handle();
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
 
     expect(mockSetIsConnecting).toBeCalledWith(false);
     expect(mockSetIsConnected).toBeCalledWith(true);
@@ -140,7 +198,7 @@ describe('kernel tests', () => {
     const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
     vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
 
-    new Kernel({ type: 'socket close' }).handle();
+    new Kernel({ type: 'close' }).handle(); // pending STS upgrade -> delegates to handleSocketClose
 
     expect(mockGetPendingSTSUpgrade).toHaveBeenCalled();
     expect(mockIncrementSTSRetries).toHaveBeenCalledTimes(1);
@@ -274,7 +332,7 @@ describe('kernel tests', () => {
     const mockRestoreSaslCredentials = vi.spyOn(saslFile, 'restoreSaslCredentials').mockImplementation(async () => true);
     const mockIrcConnectWithTLS = vi.spyOn(networkFile, 'ircConnectWithTLS').mockImplementation(() => {});
 
-    new Kernel({ type: 'socket close' }).handle();
+    new Kernel({ type: 'close' }).handle(); // pending STS upgrade -> delegates to handleSocketClose
 
     expect(mockSetIsConnecting).toBeCalledWith(true);
 
@@ -5409,7 +5467,7 @@ describe('kernel tests', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
-      new Kernel({ type: 'connected' }).handle();
+      new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
 
       expect(mockIrcJoinChannels).toHaveBeenCalledTimes(1);
       expect(mockIrcJoinChannels).toHaveBeenCalledWith(['#test', '#general']);
@@ -5424,7 +5482,7 @@ describe('kernel tests', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
-      new Kernel({ type: 'connected' }).handle();
+      new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
 
       expect(mockIrcJoinChannels).not.toHaveBeenCalled();
     });
@@ -5438,7 +5496,7 @@ describe('kernel tests', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
       const mockIrcJoinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
 
-      new Kernel({ type: 'connected' }).handle();
+      new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
 
       expect(mockIrcJoinChannels).not.toHaveBeenCalled();
     });

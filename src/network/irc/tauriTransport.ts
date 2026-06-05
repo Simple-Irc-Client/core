@@ -10,9 +10,7 @@ import { parseServer } from './helpers';
 
 type TauriIrcEvent =
   | { type: 'socketConnected' }
-  | { type: 'connected' }
   | { type: 'raw'; line: string; inbound: boolean }
-  | { type: 'capTimeout'; retries: number }
   | { type: 'closed' }
   | { type: 'error'; message: string };
 
@@ -36,10 +34,10 @@ const handleEvent = (payload: TauriIrcEvent): void => {
     case 'socketConnected':
       isConnectingFlag = false;
       isConnectedFlag = true;
-      triggerEvent('connect', {});
-      break;
-    case 'connected':
-      triggerEvent('sic-irc-event', { type: 'connected' });
+      // Routed through the same 'sic-irc-event' channel the kernel listens on
+      // (like 'raw'/'close'), so the kernel's handleConnect runs and sends the
+      // registration burst. A bare 'connect' event name has no subscriber.
+      triggerEvent('sic-irc-event', { type: 'connect' });
       break;
     case 'raw':
       // Outbound lines are echoed too (inbound: false). The kernel only
@@ -48,9 +46,6 @@ const handleEvent = (payload: TauriIrcEvent): void => {
       if (payload.inbound) {
         triggerEvent('sic-irc-event', { type: 'raw', line: payload.line });
       }
-      break;
-    case 'capTimeout':
-      // No kernel hook for this today; silently move on.
       break;
     case 'error':
       triggerEvent('error', new Error(payload.message));
@@ -75,7 +70,7 @@ export const setTauriEncryption = (enabled: boolean): void => {
   void enabled;
 };
 
-export const initTauriIrc = (server: Server, nick: string): void => {
+export const initTauriIrc = (server: Server): void => {
   if (isConnectingFlag) {
     throw new Error('Tauri IRC connection already in progress');
   }
@@ -113,11 +108,6 @@ export const initTauriIrc = (server: Server, nick: string): void => {
           port,
           tls,
           encoding: server.encoding ?? 'utf8',
-          registration: {
-            nick,
-            username: nick,
-            gecos: nick,
-          },
         },
         onEvent: channel,
       });

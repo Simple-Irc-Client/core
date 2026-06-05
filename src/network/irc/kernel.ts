@@ -57,7 +57,7 @@ import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitU
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -422,17 +422,8 @@ export class Kernel {
       case 'connect':
         this.handleConnect();
         break;
-      case 'connected':
-        this.handleConnected();
-        break;
-      case 'socket connected':
-        // ignore for now
-        break;
       case 'close':
         this.handleDisconnected();
-        break;
-      case 'socket close':
-        this.handleSocketClose();
         break;
       case 'raw':
         if (this.event?.line !== undefined) {
@@ -450,12 +441,32 @@ export class Kernel {
     }
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
     setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+
+    // Registration is owned by the kernel for both transports (WebSocket and
+    // Tauri/network-rs), which are pure byte pipes. Opening the handshake here
+    // — exactly once, in one place — is what prevents the double CAP
+    // negotiation that previously desynced the server ("Registration
+    // Timeout"). The kernel's CAP/SASL state machine takes over from the
+    // server's CAP LS reply and finishes with CAP END.
+    const nick = getCurrentNick();
+    const serverPassword = getServer()?.serverPassword;
+
+    ircSendRawMessage('CAP LS 302');
+    if (serverPassword) {
+      ircSendRawMessage(`PASS ${serverPassword}`);
+    }
+    ircSendRawMessage(`NICK ${nick}`);
+    ircSendRawMessage(`USER ${nick} 0 * :${nick}`);
   };
 
   private readonly handleConnected = (): void => {
     setIsConnecting(false);
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
+
+    // Start the active keepalive now that we're registered. Idempotent, so a
+    // reconnect's fresh 001 safely replaces any prior timer.
+    startKeepalive();
 
     // Reset reconnection state on successful connection
     resetInactivityReconnectRetries();
@@ -491,6 +502,9 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
+    // Connection is going away — stop pinging it. (Re)started on the next 001.
+    stopKeepalive();
+
     // Check if this is part of an STS upgrade - if so, trigger reconnection with TLS
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
@@ -2737,6 +2751,12 @@ export class Kernel {
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
   private readonly onRaw001 = (): void => {
+    // RPL_WELCOME is the canonical "you are now registered" signal. The kernel
+    // owns the connected/registered transition here (it used to ride on a
+    // transport-level 'connected' event); transports are pure byte pipes that
+    // never inspect 001.
+    this.handleConnected();
+
     const myNick = this.line.shift();
 
     if (myNick && myNick !== getCurrentNick()) {

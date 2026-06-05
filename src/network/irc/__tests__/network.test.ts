@@ -74,6 +74,7 @@ vi.mock('@/network/encryption', () => ({
 // Mock settings store
 const mockGetServer = vi.fn();
 const mockGetCurrentNick = vi.fn();
+const mockSetNick = vi.fn();
 const mockSetIsConnected = vi.fn();
 const mockSetIsConnecting = vi.fn();
 const mockGetEncryptedPassword = vi.fn();
@@ -81,6 +82,7 @@ const mockGetPasswordNick = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
+  setNick: (val: string) => mockSetNick(val),
   setIsConnected: (val: boolean) => mockSetIsConnecting(val),
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
   getEncryptedPassword: () => mockGetEncryptedPassword(),
@@ -223,8 +225,7 @@ describe('network', () => {
         expect.objectContaining({
           connectionType: 'websocket',
           websocketUrl: expect.stringContaining('ws://localhost:8080/webirc?'),
-        }),
-        'testNick'
+        })
       );
 
       // Verify query parameters in WebSocket URL
@@ -288,7 +289,7 @@ describe('network', () => {
 
       expect(mockSetDirectEventCallback).toHaveBeenCalledWith(network.triggerEvent);
       expect(mockSetDirectEncryption).toHaveBeenCalledWith(false);
-      expect(mockInitDirectWebSocket).toHaveBeenCalledWith(server, 'testNick');
+      expect(mockInitDirectWebSocket).toHaveBeenCalledWith(server);
     });
   });
 
@@ -433,7 +434,7 @@ describe('network', () => {
   });
 
   describe('inactivity timeout', () => {
-    const INACTIVITY_TIMEOUT_MS = 180 * 1000; // 180 seconds
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000; // matches production INACTIVITY_TIMEOUT_MS
 
     it('should disconnect and show reconnecting message after timeout', async () => {
       // Setup server and nick for reconnect
@@ -635,8 +636,66 @@ describe('network', () => {
     });
   });
 
+  describe('active keepalive', () => {
+    const KEEPALIVE_INTERVAL_MS = 30 * 1000;
+    const PING_LINE = /^PING :\d+$/;
+
+    it('sends a client PING on each keepalive interval', () => {
+      network.startKeepalive();
+
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(expect.stringMatching(PING_LINE));
+
+      mockSendDirectRaw.mockClear();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(expect.stringMatching(PING_LINE));
+
+      network.stopKeepalive();
+    });
+
+    it('does not PING before the first interval elapses', () => {
+      network.startKeepalive();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS - 1);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+      network.stopKeepalive();
+    });
+
+    it('stopKeepalive halts the pings', () => {
+      network.startKeepalive();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
+      mockSendDirectRaw.mockClear();
+
+      network.stopKeepalive();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS * 3);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
+    it('startKeepalive is idempotent (no duplicate timers)', () => {
+      network.startKeepalive();
+      network.startKeepalive(); // replaces the first timer, does not stack
+
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
+      const pings = mockSendDirectRaw.mock.calls.filter((c) =>
+        PING_LINE.test(String(c[0])),
+      );
+      expect(pings).toHaveLength(1);
+
+      network.stopKeepalive();
+    });
+
+    it('ircDisconnect stops the keepalive', () => {
+      network.startKeepalive();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
+      mockSendDirectRaw.mockClear();
+
+      network.ircDisconnect();
+      vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS * 3);
+      expect(mockSendDirectRaw).not.toHaveBeenCalledWith(expect.stringMatching(PING_LINE));
+    });
+  });
+
   describe('NickServ password preservation on reconnect', () => {
-    const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000;
 
     it('should preserve NickServ password through disconnect/reconnect cycle', async () => {
       mockGetServer.mockReturnValue({
@@ -698,7 +757,7 @@ describe('network', () => {
   });
 
   describe('reconnection state tracking', () => {
-    const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000;
     const testServer = {
       default: 0,
       encoding: 'utf8',
@@ -785,7 +844,7 @@ describe('network', () => {
   });
 
   describe('handleReconnectFailure', () => {
-    const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000;
     const testServer = {
       default: 0,
       encoding: 'utf8',

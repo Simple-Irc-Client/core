@@ -6,7 +6,7 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
+import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
@@ -25,9 +25,35 @@ import { clearAllBatches, clearPendingLabels } from './batch';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 
-// Inactivity timeout - show disconnection message after 180 seconds of no activity
-const INACTIVITY_TIMEOUT_MS = 180 * 1000;
+// Inactivity watchdog: if no inbound data arrives within this window, treat the
+// connection as dead and reconnect. Safe to keep tight (~4 keepalive cycles)
+// precisely because of the active keepalive below — on a healthy link the
+// server's PONG to our PING is inbound traffic every ~30s, so reaching this
+// limit means several missed pings = genuinely dead.
+const INACTIVITY_TIMEOUT_MS = 120 * 1000;
 let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+// Active keepalive: core sends a client->server PING on this interval so
+// liveness no longer depends on the server's own (configurable) ping cadence.
+// It lives here, transport-agnostic, so it covers both the WebSocket and Tauri
+// transports (network-rs is a pure pipe and speaks no IRC). The server's PONG
+// is inbound traffic that resets the watchdog above.
+const KEEPALIVE_INTERVAL_MS = 30 * 1000;
+let keepaliveTimerId: ReturnType<typeof setInterval> | null = null;
+
+const stopKeepalive = (): void => {
+  if (keepaliveTimerId !== null) {
+    clearInterval(keepaliveTimerId);
+    keepaliveTimerId = null;
+  }
+};
+
+const startKeepalive = (): void => {
+  stopKeepalive();
+  keepaliveTimerId = setInterval(() => {
+    ircSendRawMessage(`PING :${Date.now()}`);
+  }, KEEPALIVE_INTERVAL_MS);
+};
 
 // Reconnection retry tracking
 const MAX_INACTIVITY_RECONNECT_RETRIES = 3;
@@ -113,6 +139,9 @@ const handleInactivityTimeout = async (): Promise<void> => {
   // Save credentials before disconnect (encrypted)
   await saveSaslCredentialsForReconnect();
 
+  // Stop pinging a connection we're tearing down (restarted on the next 001).
+  stopKeepalive();
+
   // Disconnect silently (disconnectDirect removes event handlers so no
   // stale 'close' event reaches the kernel during reconnection)
   disconnectDirect();
@@ -177,6 +206,7 @@ export const isWebSocketConnecting = (): boolean => {
 export const ircDisconnect = (): void => {
   // Clear inactivity timeout and cancel any pending reconnection
   clearInactivityTimeout();
+  stopKeepalive();
   cancelReconnect();
 
   // Reset IRCv3 state
@@ -195,6 +225,12 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
+  // The kernel builds the registration burst (NICK/USER) from the store at
+  // 'connect' time, so make sure the requested nick is the current nick before
+  // the transport comes up. Callers (wizard) already do this; doing it here too
+  // keeps ircConnect self-contained.
+  setNick(nick);
+
   const host = singleServer.host;
   const useTLS = singleServer.tls ?? false;
 
@@ -203,7 +239,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     setDirectEventCallback(triggerEvent);
     setDirectEncryption(false); // No encryption for direct WebSocket to IRC servers
     setCurrentConnectionInfo(host, useTLS);
-    initDirectWebSocket(currentServer, nick);
+    initDirectWebSocket(currentServer);
     return;
   }
 
@@ -229,7 +265,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       websocketUrl: gatewayWebSocketUrl,
     };
 
-    initDirectWebSocket(gatewayServer, nick);
+    initDirectWebSocket(gatewayServer);
     return;
   }
 
@@ -277,7 +313,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       websocketUrl: backendWebSocketUrl,
     };
 
-    initDirectWebSocket(backendServer, nick);
+    initDirectWebSocket(backendServer);
   }
 };
 
@@ -470,6 +506,7 @@ export const ircReconnect = async (): Promise<boolean> => {
 
   // Reset state without clearing saved credentials
   clearInactivityTimeout();
+  stopKeepalive();
   resetCapabilityState();
   resetSaslState();
   // Note: clearSaslCredentials() NOT called - credentials restored below
@@ -524,4 +561,4 @@ export const ircAutoAuthenticate = async (): Promise<boolean> => {
 };
 
 // Re-export for backward compatibility with tests and other modules
-export { resetInactivityTimeout, clearInactivityTimeout, clearSavedCredentials, cancelReconnect };
+export { resetInactivityTimeout, clearInactivityTimeout, startKeepalive, stopKeepalive, clearSavedCredentials, cancelReconnect };

@@ -88,7 +88,7 @@ describe('tauriTransport', () => {
   it('passes a Channel into irc_connect and wires its onmessage handler', async () => {
     mockInvoke.mockResolvedValue('conn-1');
 
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
     expect(mockInvoke).toHaveBeenCalledWith(
@@ -114,22 +114,22 @@ describe('tauriTransport', () => {
         line: ':srv 001 TestNick :Welcome',
         inbound: true,
       });
-      args.onEvent.emit({ type: 'connected' });
       return new Promise<string>((res) => {
         resolveConnect = res;
       });
     });
 
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
-    // All three were delivered even though irc_connect has not resolved.
-    expect(eventCallback).toHaveBeenCalledWith('connect', {});
+    // Delivered even though irc_connect has not resolved. Connect is routed
+    // through 'sic-irc-event' so the kernel's handleConnect runs; 001 is just a
+    // raw line (the kernel derives connected-state from it).
+    expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connect' });
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
       type: 'raw',
       line: ':srv 001 TestNick :Welcome',
     });
-    expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connected' });
     expect(transport.isTauriConnected()).toBe(true);
 
     resolveConnect('conn-1');
@@ -138,7 +138,7 @@ describe('tauriTransport', () => {
 
   it('forwards inbound raw lines and drops outbound echoes', async () => {
     mockInvoke.mockResolvedValue('conn-1');
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
     lastChannel?.emit({ type: 'raw', line: 'NICK TestNick', inbound: false });
@@ -160,7 +160,7 @@ describe('tauriTransport', () => {
 
   it('maps error and closed events and resets connection state', async () => {
     mockInvoke.mockResolvedValue('conn-1');
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
     lastChannel?.emit({ type: 'error', message: 'boom' });
@@ -174,7 +174,7 @@ describe('tauriTransport', () => {
 
   it('routes outbound lines through irc_send with the connection id', async () => {
     mockInvoke.mockResolvedValue('conn-42');
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
     mockInvoke.mockClear();
@@ -189,7 +189,7 @@ describe('tauriTransport', () => {
 
   it('surfaces a connect failure as an error + close', async () => {
     mockInvoke.mockRejectedValue(new Error('connect refused'));
-    transport.initTauriIrc(baseServer, 'TestNick');
+    transport.initTauriIrc(baseServer);
     await flush();
 
     expect(eventCallback).toHaveBeenCalledWith('error', new Error('connect refused'));
