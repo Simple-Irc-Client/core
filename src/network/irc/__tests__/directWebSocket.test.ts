@@ -513,7 +513,7 @@ describe('directWebSocket', () => {
       expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'close' });
     });
 
-    it('should trigger error event on socket error', () => {
+    it('should surface a socket error to the kernel via sic-irc-event', () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -524,10 +524,12 @@ describe('directWebSocket', () => {
       };
 
       directWebSocket.initDirectWebSocket(server);
-      const mockError = new Event('error');
-      lastCreatedSocket?.onerror?.(mockError);
+      lastCreatedSocket?.onerror?.(new Event('error'));
 
-      expect(eventCallback).toHaveBeenCalledWith('error', mockError);
+      expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
+        type: 'error',
+        line: 'WebSocket connection error',
+      });
     });
   });
 

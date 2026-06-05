@@ -425,6 +425,9 @@ export class Kernel {
       case 'close':
         this.handleDisconnected();
         break;
+      case 'error':
+        this.handleError();
+        break;
       case 'raw':
         if (this.event?.line !== undefined) {
           this.handleRaw(this.event.line);
@@ -434,6 +437,20 @@ export class Kernel {
         if (import.meta.env.DEV) { console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`); }
     }
   }
+
+  // Transport-level error (e.g. TLS failure, connect refused). Surfaces the
+  // reason in the status window instead of letting it vanish — a fatal error is
+  // followed by 'close', which shows the generic "Disconnected".
+  private readonly handleError = (): void => {
+    const message = this.eventLine || i18next.t('kernel.connectionError', { defaultValue: 'Connection error' });
+    setAddMessage({
+      id: uuidv4(),
+      message,
+      target: STATUS_CHANNEL,
+      time: new Date().toISOString(),
+      category: MessageCategory.error,
+    });
+  };
 
   private readonly handleConnect = (): void => {
     if (import.meta.env.DEV) {

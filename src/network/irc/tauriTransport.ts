@@ -10,7 +10,7 @@ import { parseServer } from './helpers';
 
 type TauriIrcEvent =
   | { type: 'socketConnected' }
-  | { type: 'raw'; line: string; inbound: boolean }
+  | { type: 'raw'; line: string }
   | { type: 'closed' }
   | { type: 'error'; message: string };
 
@@ -40,15 +40,14 @@ const handleEvent = (payload: TauriIrcEvent): void => {
       triggerEvent('sic-irc-event', { type: 'connect' });
       break;
     case 'raw':
-      // Outbound lines are echoed too (inbound: false). The kernel only
-      // expects inbound raw events, so drop the echoes to match WebSocket
-      // transport behaviour.
-      if (payload.inbound) {
-        triggerEvent('sic-irc-event', { type: 'raw', line: payload.line });
-      }
+      // The driver only emits inbound lines now (no outbound echo), so forward
+      // every one straight to the kernel.
+      triggerEvent('sic-irc-event', { type: 'raw', line: payload.line });
       break;
     case 'error':
-      triggerEvent('error', new Error(payload.message));
+      // Surface the reason to the kernel (status window) rather than dropping
+      // it. A fatal error is followed by 'closed'.
+      triggerEvent('sic-irc-event', { type: 'error', line: payload.message });
       break;
     case 'closed':
       isConnectedFlag = false;
@@ -115,11 +114,14 @@ export const initTauriIrc = (server: Server): void => {
     } catch (err) {
       isConnectingFlag = false;
       isConnectedFlag = false;
-      triggerEvent('error', err);
+      triggerEvent('sic-irc-event', { type: 'error', line: errorMessage(err) });
       triggerEvent('sic-irc-event', { type: 'close' });
     }
   })();
 };
+
+const errorMessage = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err);
 
 export const sendTauriRaw = async (line: string): Promise<void> => {
   if (!connectionId) {
@@ -128,7 +130,7 @@ export const sendTauriRaw = async (line: string): Promise<void> => {
   try {
     await invoke('irc_send', { id: connectionId, line });
   } catch (err) {
-    triggerEvent('error', err);
+    triggerEvent('sic-irc-event', { type: 'error', line: errorMessage(err) });
   }
 };
 

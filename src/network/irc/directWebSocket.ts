@@ -141,7 +141,9 @@ export const initDirectWebSocket = (server: Server): void => {
     if (import.meta.env.DEV) {
       console.error('Direct WebSocket error:', error);
     }
-    triggerDirectEvent('error', error);
+    // Browser WebSocket error events carry no useful detail; surface a generic
+    // reason to the kernel (status window). A close event follows.
+    triggerDirectEvent('sic-irc-event', { type: 'error', line: 'WebSocket connection error' });
   };
 
   directSocket.onclose = () => {

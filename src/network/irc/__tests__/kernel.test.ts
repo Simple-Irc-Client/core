@@ -116,6 +116,20 @@ describe('kernel tests', () => {
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
   });
 
+  it('test error surfaces the reason in the status window', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    new Kernel({ type: 'error', line: 'TLS error: cert expired' }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target: 'Status',
+        message: 'TLS error: cert expired',
+        category: 'error',
+      }),
+    );
+  });
+
   it('test close during reconnection should call handleReconnectFailure instead of showing disconnected', () => {
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});

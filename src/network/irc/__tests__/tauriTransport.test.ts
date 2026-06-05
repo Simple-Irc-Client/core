@@ -109,11 +109,7 @@ describe('tauriTransport', () => {
       // Simulate the Rust driver pushing its startup burst while the
       // invoke promise is still pending and connectionId is still null.
       args.onEvent.emit({ type: 'socketConnected' });
-      args.onEvent.emit({
-        type: 'raw',
-        line: ':srv 001 TestNick :Welcome',
-        inbound: true,
-      });
+      args.onEvent.emit({ type: 'raw', line: ':srv 001 TestNick :Welcome' });
       return new Promise<string>((res) => {
         resolveConnect = res;
       });
@@ -136,35 +132,28 @@ describe('tauriTransport', () => {
     await flush();
   });
 
-  it('forwards inbound raw lines and drops outbound echoes', async () => {
+  it('forwards raw lines to the kernel', async () => {
     mockInvoke.mockResolvedValue('conn-1');
     transport.initTauriIrc(baseServer);
     await flush();
 
-    lastChannel?.emit({ type: 'raw', line: 'NICK TestNick', inbound: false });
-    lastChannel?.emit({
-      type: 'raw',
-      line: ':nick!u@h PRIVMSG #chan :hi',
-      inbound: true,
-    });
+    // The driver only emits inbound lines now (no outbound echo), so every raw
+    // event is forwarded verbatim.
+    lastChannel?.emit({ type: 'raw', line: ':nick!u@h PRIVMSG #chan :hi' });
 
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', {
       type: 'raw',
       line: ':nick!u@h PRIVMSG #chan :hi',
     });
-    expect(eventCallback).not.toHaveBeenCalledWith('sic-irc-event', {
-      type: 'raw',
-      line: 'NICK TestNick',
-    });
   });
 
-  it('maps error and closed events and resets connection state', async () => {
+  it('maps error to a sic-irc-event and closed resets connection state', async () => {
     mockInvoke.mockResolvedValue('conn-1');
     transport.initTauriIrc(baseServer);
     await flush();
 
     lastChannel?.emit({ type: 'error', message: 'boom' });
-    expect(eventCallback).toHaveBeenCalledWith('error', new Error('boom'));
+    expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'error', line: 'boom' });
 
     lastChannel?.emit({ type: 'closed' });
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'close' });
@@ -192,7 +181,7 @@ describe('tauriTransport', () => {
     transport.initTauriIrc(baseServer);
     await flush();
 
-    expect(eventCallback).toHaveBeenCalledWith('error', new Error('connect refused'));
+    expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'error', line: 'connect refused' });
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'close' });
     expect(transport.isTauriConnecting()).toBe(false);
   });
