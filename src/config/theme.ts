@@ -7,6 +7,7 @@ export const MessageColor = {
   serverTo: 'var(--msg-server-to)',
   time: 'var(--msg-time)',
   default: 'var(--msg-default)',
+  body: 'var(--msg-body)',
   join: 'var(--msg-join)',
   part: 'var(--msg-part)',
   quit: 'var(--msg-quit)',

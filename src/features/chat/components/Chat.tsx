@@ -182,7 +182,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
                 </span>
               </div>
             )}
-            <div style={{ color: message.color ?? MessageColor.default }}>
+            <div style={{ color: message.color ?? MessageColor.body }}>
               {lastNick !== nick && (
                 <div className={fontSizeClass}>
                   <MessageText text={message.message} />

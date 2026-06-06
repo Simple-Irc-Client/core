@@ -122,6 +122,10 @@
   --msg-server-to: #2e7d32;
   --msg-time: #666666;
   --msg-default: #000000;
+  /* Modern-view message body: muted vs the bold nick so the two don't blend.
+     Kept distinct from --msg-default (pure black, classic/debug views) so the
+     name/body hierarchy survives WebKitGTK's heavier text rendering. */
+  --msg-body: #3a3a47;
   --msg-join: #009300;
   --msg-part: #4733FF;
   --msg-quit: #00007F;
@@ -170,6 +174,7 @@
   --msg-server-to: #7aaa7a;
   --msg-time: #444466;
   --msg-default: #b8b8d0;
+  --msg-body: #b8b8d0;
   --msg-join: #5a8a5a;
   --msg-part: #7a6a8a;
   --msg-quit: #6a6a8a;

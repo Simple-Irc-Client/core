@@ -896,7 +896,7 @@ describe('Chat tests', () => {
 
       expect(container.textContent).toContain('Default color');
       const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.default });
+      expect(coloredDiv).toHaveStyle({ color: MessageColor.body });
     });
 
     it('should use debug view only for debug/status channels', () => {
