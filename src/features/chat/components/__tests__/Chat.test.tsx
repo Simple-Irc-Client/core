@@ -341,8 +341,8 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       // User1 nick should appear twice (before message 1 and message 3)
-      // Look for nick spans with font-medium class (these are the header nicks, not message text)
-      const nickSpans = container.querySelectorAll('.font-medium');
+      // Look for nick spans with font-semibold class (these are the header nicks, not message text)
+      const nickSpans = container.querySelectorAll('.font-semibold');
       const user1Nicks = Array.from(nickSpans).filter(s => s.textContent === 'User1');
       expect(user1Nicks.length).toBe(2);
     });

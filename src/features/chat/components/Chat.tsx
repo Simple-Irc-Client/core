@@ -171,7 +171,7 @@ const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message
           <div className="flex-1 min-w-0">
             {lastNick !== nick && (
               <div className="flex items-baseline mb-1">
-                <span className={`font-medium ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
+                <span className={`font-semibold ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
                   {displayNick}
                 </span>
                 {isBotMessage(message) && <BotIndicator />}
