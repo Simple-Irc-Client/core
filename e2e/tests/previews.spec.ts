@@ -92,6 +92,23 @@ test.describe('Previews', () => {
     await expect(previews).toHaveCount(countBefore + 2);
   });
 
+  test('webp image link renders inline preview', async () => {
+    bot.sendMessage('#previews', 'WebP test https://simpleircclient.com/assets/test-image.webp');
+
+    const chatLog = sharedPage.getByTestId('chat-log');
+    await expect(chatLog.getByText('WebP test')).toBeVisible({ timeout: 10_000 });
+
+    const preview = chatLog.getByRole('img', { name: 'Image thumbnail' }).last();
+    await expect(preview).toBeVisible({ timeout: 10_000 });
+
+    // Verify the image actually loaded
+    await sharedPage.waitForTimeout(2_000);
+    await expect(preview).toBeVisible();
+
+    const link = chatLog.getByRole('link', { name: /open image/i }).last();
+    await expect(link).toHaveAttribute('target', '_blank');
+  });
+
   test('non-image link does not render image preview', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 

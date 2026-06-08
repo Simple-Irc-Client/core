@@ -23,13 +23,19 @@ describe('image utils', () => {
       expect(extractImageUrls(text)).toEqual(['https://example.com/animation.gif']);
     });
 
+    it('should extract webp URLs', () => {
+      const text = 'https://example.com/image.webp';
+      expect(extractImageUrls(text)).toEqual(['https://example.com/image.webp']);
+    });
+
     it('should extract multiple image URLs', () => {
-      const text = 'https://example.com/a.jpg https://example.com/b.png https://example.com/c.gif';
+      const text = 'https://example.com/a.jpg https://example.com/b.png https://example.com/c.gif https://example.com/d.webp';
       const result = extractImageUrls(text);
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(4);
       expect(result).toContain('https://example.com/a.jpg');
       expect(result).toContain('https://example.com/b.png');
       expect(result).toContain('https://example.com/c.gif');
+      expect(result).toContain('https://example.com/d.webp');
     });
 
     it('should handle URLs with query parameters', () => {
@@ -37,10 +43,15 @@ describe('image utils', () => {
       expect(extractImageUrls(text)).toEqual(['https://example.com/photo.jpg?size=large&quality=high']);
     });
 
+    it('should handle webp URLs with query parameters', () => {
+      const text = 'https://example.com/image.webp?quality=80';
+      expect(extractImageUrls(text)).toEqual(['https://example.com/image.webp?quality=80']);
+    });
+
     it('should be case insensitive for extensions', () => {
-      const text = 'https://example.com/a.JPG https://example.com/b.PNG https://example.com/c.GIF';
+      const text = 'https://example.com/a.JPG https://example.com/b.PNG https://example.com/c.GIF https://example.com/d.WEBP';
       const result = extractImageUrls(text);
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(4);
     });
 
     it('should not include duplicate URLs', () => {
@@ -93,6 +104,7 @@ describe('image utils', () => {
       expect(extractImageUrls('https://10.0.0.1/photo.jpg')).toEqual([]);
       expect(extractImageUrls('https://192.168.1.1/photo.png')).toEqual([]);
       expect(extractImageUrls('https://172.16.0.1/photo.gif')).toEqual([]);
+      expect(extractImageUrls('https://192.168.1.1/photo.webp')).toEqual([]);
     });
 
     it('should block link-local IP images', () => {

@@ -1,6 +1,6 @@
 import { isSafeImageUrl } from './utils';
 
-const IMAGE_REGEX = /https:\/\/[^\s?#]+\.(?:jpg|jpeg|gif|png)(?=[?#\s]|$)(?:\?[^\s]*)?/gi;
+const IMAGE_REGEX = /https:\/\/[^\s?#]+\.(?:jpg|jpeg|gif|png|webp)(?=[?#\s]|$)(?:\?[^\s]*)?/gi;
 
 export const extractImageUrls = (text: string): string[] => {
   const urls: string[] = [];
