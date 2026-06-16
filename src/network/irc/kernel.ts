@@ -105,6 +105,7 @@ import {
 } from './batch';
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
+import { notifyHighlight } from '@/runtime/notifications';
 import { defaultChannelTypes, defaultMaxPermission, clientVersion, clientSourceUrl } from '@/config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -2522,6 +2523,10 @@ export class Kernel {
       setHasMention(messageTarget);
     }
 
+    if (highlight) {
+      void notifyHighlight({ nick, target: messageTarget, message, isDirect: isPrivMessage });
+    }
+
     // Check if user is away and message mentions their nick (not for echoed messages)
     if (!isEchoMessage) {
       const userFlags = getCurrentUserFlags();
@@ -2665,6 +2670,10 @@ export class Kernel {
 
     if (highlight && messageTarget !== currentChannelName) {
       setHasMention(messageTarget);
+    }
+
+    if (highlight) {
+      void notifyHighlight({ nick, target: messageTarget, message: action, isDirect: isPrivMessage });
     }
   };
 

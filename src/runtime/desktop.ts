@@ -25,6 +25,25 @@ export const isDesktop = (): boolean => {
   );
 };
 
+/**
+ * True when running inside a Tauri webview on a mobile OS (Android/iOS).
+ *
+ * `isDesktop()` (really "is a Tauri webview") is true on mobile too, since
+ * Tauri injects the same internals on every platform. Use `isMobile()` to gate
+ * desktop-only platform features that have no mobile counterpart — chiefly the
+ * updater, which ships through the app store on mobile rather than
+ * `tauri-plugin-updater`. UA detection is dependency-free and reliable in the
+ * Tauri Android/iOS webview.
+ */
+export const isMobile = (): boolean => {
+  if (!isDesktop()) {
+    return false;
+  }
+  const ua =
+    typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  return /android|iphone|ipad|ipod/i.test(ua);
+};
+
 export const clipboard = {
   readText: async (): Promise<string> => {
     if (isDesktop()) {
@@ -65,7 +84,9 @@ export const openExternal = async (url: string): Promise<void> => {
  * or network blip should never crash the app or block startup.
  */
 export const checkForUpdates = async (): Promise<void> => {
-  if (!isDesktop()) {
+  // Desktop only: mobile builds don't register tauri-plugin-updater (updates
+  // ship via the app store / APK), so calling it would reject.
+  if (!isDesktop() || isMobile()) {
     return;
   }
   try {

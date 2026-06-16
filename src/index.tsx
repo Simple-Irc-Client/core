@@ -4,6 +4,7 @@ import App from './app/App';
 import './index.css';
 import * as Sentry from '@sentry/react';
 import { checkForUpdates, isDesktop } from './runtime/desktop';
+import { initMobileNotifications } from './runtime/notifications';
 
 Sentry.init({
   dsn: import.meta.env['VITE_SENTRY_DSN'],
@@ -25,6 +26,9 @@ if (isDesktop() && 'serviceWorker' in navigator) {
 
 // Fire-and-forget update check on desktop builds. No-op in the website.
 void checkForUpdates();
+
+// Request notification permission on mobile (no-op on web/desktop).
+void initMobileNotifications();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

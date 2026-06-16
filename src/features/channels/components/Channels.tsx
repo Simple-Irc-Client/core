@@ -123,7 +123,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       data-testid="channels-sidebar"
       aria-label={t('main.channels.title')}
       className={cn(
-        'border-r border-border overflow-y-auto bg-background',
+        'border-r border-border overflow-y-auto bg-background pt-safe pl-safe',
         !isChannelsDrawerOpen && 'hidden lg:block',
         isChannelsDrawerOpen && 'absolute left-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
       )}

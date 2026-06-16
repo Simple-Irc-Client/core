@@ -414,7 +414,7 @@ const Toolbar = () => {
 
   return (
     <>
-      <form className="px-4 flex" onSubmit={handleSubmit}>
+      <form className="px-4 flex pb-safe pl-safe pr-safe" onSubmit={handleSubmit}>
         {currentChannelName !== DEBUG_CHANNEL && (
           <>
             {/* User Avatar with Dropdown Menu */}

@@ -4,6 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Safe-area inset utilities for edge-to-edge mobile (Android/iOS in the Tauri
+   webview). `env(safe-area-inset-*)` resolves to 0 on desktop/web without a
+   display cutout, so applying these is a no-op outside mobile. Requires
+   `viewport-fit=cover` (set in index.html). */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
 /* Self-hosted Inter (variable, weight 100-900).
 
    We declare these @font-face rules ourselves instead of importing

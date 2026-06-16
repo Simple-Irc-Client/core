@@ -36,6 +36,33 @@ describe('runtime/desktop', () => {
     expect(isDesktop()).toBe(true);
   });
 
+  const setUserAgent = (ua: string): void => {
+    Object.defineProperty(navigator, 'userAgent', {
+      value: ua,
+      configurable: true,
+    });
+  };
+
+  it('isMobile is false outside a Tauri webview', async () => {
+    setUserAgent('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36');
+    const { isMobile } = await import('../desktop');
+    expect(isMobile()).toBe(false);
+  });
+
+  it('isMobile is true in a Tauri webview with a mobile user agent', async () => {
+    (globalThis as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+    setUserAgent('Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36');
+    const { isMobile } = await import('../desktop');
+    expect(isMobile()).toBe(true);
+  });
+
+  it('isMobile is false in a Tauri webview on desktop', async () => {
+    (globalThis as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+    setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36');
+    const { isMobile } = await import('../desktop');
+    expect(isMobile()).toBe(false);
+  });
+
   it('clipboard.readText routes to navigator in browser mode', async () => {
     const navReadText = vi.fn().mockResolvedValue('from-nav');
     Object.assign(navigator, {

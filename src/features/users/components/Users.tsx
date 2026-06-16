@@ -77,7 +77,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
           data-testid="users-sidebar"
           aria-label={t('main.users.title')}
           className={cn(
-            'border-l border-border overflow-y-auto bg-background',
+            'border-l border-border overflow-y-auto bg-background pt-safe pr-safe',
             !isUsersDrawerOpen && 'hidden lg:block',
             isUsersDrawerOpen && 'absolute right-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
           )}
