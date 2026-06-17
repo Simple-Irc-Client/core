@@ -7,7 +7,9 @@ export const DrawersProvider: FC<PropsWithChildren> = ({ children }) => {
 
   // Latest open-state, readable from the mount-once popstate handler below.
   const anyDrawerOpenRef = useRef(false);
-  anyDrawerOpenRef.current = isChannelsOpen || isUsersOpen;
+  useEffect(() => {
+    anyDrawerOpenRef.current = isChannelsOpen || isUsersOpen;
+  }, [isChannelsOpen, isUsersOpen]);
 
   // Clear browser history so the Android hardware back button / back-swipe
   // doesn't navigate to the website (simpleircclient.com). When a drawer is
