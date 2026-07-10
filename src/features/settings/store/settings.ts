@@ -417,6 +417,10 @@ export const useSettingsStore = create<SettingsStore>()(
   ),
 );
 
+export const syncCurrentUsers = (): void => {
+  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(getCurrentChannelName()));
+};
+
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
   useSettingsStore.getState().setCurrentChannelName(channelName, category);
 

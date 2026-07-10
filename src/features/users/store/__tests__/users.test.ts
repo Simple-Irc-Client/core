@@ -12,6 +12,7 @@ import {
   setUserAccount as setUserAccountExport,
   setUserHost as setUserHostExport,
   setUserRealname as setUserRealnameExport,
+  setQuitUser as setQuitUserExport,
   getUserChannels,
   getUser,
   getHasUser,
@@ -20,7 +21,8 @@ import {
   getCurrentUserChannelModes,
   pendingMetadata,
 } from '../users';
-import type { User, UserChannel } from '@shared/types';
+import { type User, type UserChannel, type ChannelExtended, ChannelCategory, MessageCategory } from '@shared/types';
+import { getChannel, setAddMessage } from '@features/channels/store/channels';
 
 const createUser = (nick: string, channels: UserChannel[]): User => ({
   nick,
@@ -46,6 +48,7 @@ vi.mock('@features/chat/store/current', () => ({
 vi.mock('@features/channels/store/channels', () => ({
   clearTyping: vi.fn(),
   setAddMessage: vi.fn(),
+  getChannel: vi.fn(() => undefined),
 }));
 
 describe('users store', () => {
@@ -1096,6 +1099,50 @@ describe('users store', () => {
 
       expect(useUsersStore.getState().users.length).toBe(50_000);
       expect(getHasUser('Overflow')).toBe(false);
+    });
+  });
+
+  describe('DM window participants', () => {
+    const mockPrivChannel = (name: string): void => {
+      vi.mocked(getChannel).mockImplementation((channelName: string) =>
+        channelName === name ? ({ name, category: ChannelCategory.priv } as ChannelExtended) : undefined,
+      );
+    };
+
+    it('should derive both participants for a DM window even when the users store is empty', () => {
+      mockPrivChannel('Bob');
+
+      const users = getUsersFromChannelSortedByMode('Bob');
+
+      expect(users.map((user) => user.nick)).toEqual(['Bob', 'TestUser']);
+    });
+
+    it('should use stored user data for a DM participant when available', () => {
+      mockPrivChannel('Bob');
+      useUsersStore.setState({
+        users: [{ ...createUser('Bob', [{ name: '#shared', flags: [], maxPermission: -1 }]), away: true }],
+      });
+
+      const users = getUsersFromChannelSortedByMode('Bob');
+
+      expect(users.map((user) => user.nick)).toEqual(['Bob', 'TestUser']);
+      expect(users[0]?.away).toBe(true);
+    });
+
+    it('should return a single participant for a DM with ourselves', () => {
+      mockPrivChannel('TestUser');
+
+      const users = getUsersFromChannelSortedByMode('TestUser');
+
+      expect(users.map((user) => user.nick)).toEqual(['TestUser']);
+    });
+
+    it('should post the quit message to an open DM window with the quitting user', () => {
+      mockPrivChannel('Bob');
+
+      setQuitUserExport('Bob', { id: '1', message: 'Bob quit', nick: 'Bob', time: '', category: MessageCategory.info });
+
+      expect(vi.mocked(setAddMessage)).toHaveBeenCalledWith(expect.objectContaining({ target: 'Bob', message: 'Bob quit' }));
     });
   });
 });

@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { type UserMode, type Message, type User } from '@shared/types';
+import { type UserMode, type Message, type User, ChannelCategory } from '@shared/types';
 import { devtools } from 'zustand/middleware';
 import { getCurrentChannelName, getCurrentNick } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
-import { clearTyping, setAddMessage } from '@features/channels/store/channels';
+import { clearTyping, getChannel, setAddMessage } from '@features/channels/store/channels';
 import { calculateMaxPermission } from '@/network/irc/helpers';
 
 const MAX_USERS = 50_000;
@@ -246,11 +246,7 @@ export const setAddUser = (newUser: User): void => {
     }
   }
 
-  const currentChannelName = getCurrentChannelName();
-
-  if (newUser.channels.some((channel) => channel.name === currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
-  }
+  syncCurrentChannelUsers(newUser.nick);
 };
 
 export const setRemoveUser = (nick: string, channelName: string): void => {
@@ -279,9 +275,15 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
     clearTyping(channel.name, nick);
   }
 
+  // An open DM window with the quitting user is not in their channel list - notify it too
+  if (isPrivChannel(nick)) {
+    setAddMessage({ ...message, target: nick });
+    clearTyping(nick, nick);
+  }
+
   useUsersStore.getState().setQuitUser(nick);
 
-  if (channels.some((channel) => channel.name === currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName) || (isPrivChannel(currentChannelName) && nick === currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -296,8 +298,9 @@ export const setRenameUser = (from: string, to: string): void => {
   }
 
   const currentChannelName = getCurrentChannelName();
+  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (from === currentChannelName || to === currentChannelName);
 
-  if (channels.some((channel) => channel.name === currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName) || isCurrentPrivParticipant) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -322,7 +325,30 @@ export const setJoinUser = (nick: string, channelName: string, flags?: string[],
   }
 };
 
+const isPrivChannel = (channelName: string): boolean => {
+  return getChannel(channelName)?.category === ChannelCategory.priv;
+};
+
+const createStubUser = (nick: string): User => {
+  return { nick, ident: '', hostname: '', flags: [], channels: [] };
+};
+
+/** A DM window always contains exactly the two participants: us and the peer the window is named after */
+const getPrivParticipants = (privName: string): User[] => {
+  const myNick = getCurrentNick();
+  const nicks = privName === myNick ? [privName] : [myNick, privName];
+
+  return nicks
+    .filter((nick) => nick.length > 0)
+    .map((nick) => getUser(nick) ?? createStubUser(nick))
+    .sort((a: User, b: User) => a.nick.toLowerCase().localeCompare(b.nick.toLowerCase()));
+};
+
 export const getUsersFromChannelSortedByMode = (channelName: string): User[] => {
+  if (isPrivChannel(channelName)) {
+    return getPrivParticipants(channelName);
+  }
+
   return useUsersStore
     .getState()
     .users.filter((user: User) => user.channels.some((channel) => channel.name === channelName))
@@ -352,8 +378,9 @@ export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
 const syncCurrentChannelUsers = (nick: string): void => {
   const channels = getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
+  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (nick === currentChannelName || nick === getCurrentNick());
 
-  if (channels.some((channel) => channel.name === currentChannelName)) {
+  if (channels.some((channel) => channel.name === currentChannelName) || isCurrentPrivParticipant) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };

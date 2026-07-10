@@ -64,6 +64,20 @@ test.describe('Private messages', () => {
     await expect(chatLog.getByText('Yes, here is my reply!')).toBeVisible({ timeout: 10_000 });
   });
 
+  test('DM window shows both participants in the users list', async () => {
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+
+    // Bot sends a DM and we open the DM tab
+    bot.sendMessage('dm-tester', 'Checking the users list');
+    await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
+    await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
+
+    // The users sidebar should list exactly the two participants
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    await expect(usersSidebar.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 5_000 });
+    await expect(usersSidebar.getByRole('button', { name: 'dm-tester' })).toBeVisible({ timeout: 5_000 });
+  });
+
   test('DM messages do not appear in channel tabs', async () => {
     // Ensure we're on #dm-test
     await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
@@ -78,5 +92,25 @@ test.describe('Private messages', () => {
     // Stay on #dm-test — the DM message should NOT appear in the channel chat log
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('This is a private message')).not.toBeVisible();
+  });
+
+  // Keep this test last: reloading leaves the client disconnected
+  test('DM participants survive a page reload (persisted DM window)', async () => {
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+
+    // Make the DM window the current one
+    await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
+    await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
+
+    // Channel state is persisted to IndexedDB with a 2s write debounce - let it flush
+    await sharedPage.waitForTimeout(2_500);
+
+    await sharedPage.reload();
+
+    // The DM window is restored from persistence; its users list must still
+    // show both participants even before reconnecting
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    await expect(usersSidebar.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByRole('button', { name: 'dm-tester' })).toBeVisible({ timeout: 5_000 });
   });
 });

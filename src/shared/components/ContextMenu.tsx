@@ -15,7 +15,7 @@ import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCu
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { getCurrentUserChannelModes, getHasUser, getUser, setAddUser, setJoinUser } from '@features/users/store/users';
+import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
 import { isSafeUrl } from '@shared/lib/utils';
 import { clipboard, openExternal } from '@/runtime/desktop';
 
@@ -152,22 +152,6 @@ export const ContextMenu = () => {
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
     const handlePriv = (): void => {
       setAddChannel(contextMenuItem, ChannelCategory.priv);
-
-      // Add both participants to the channel's user list
-      const myNick = getCurrentNick();
-      // Add the other person
-      if (getHasUser(contextMenuItem)) {
-        setJoinUser(contextMenuItem, contextMenuItem);
-      } else {
-        setAddUser({ nick: contextMenuItem, ident: '', hostname: '', flags: [], channels: [{ name: contextMenuItem, flags: [], maxPermission: -1 }] });
-      }
-      // Add myself
-      if (getHasUser(myNick)) {
-        setJoinUser(myNick, contextMenuItem);
-      } else {
-        setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: contextMenuItem, flags: [], maxPermission: -1 }] });
-      }
-
       setCurrentChannelName(contextMenuItem, ChannelCategory.priv);
       handleContextMenuClose();
     };

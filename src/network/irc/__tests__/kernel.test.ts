@@ -4042,8 +4042,8 @@ describe('kernel tests', () => {
     );
   });
 
-  describe('Private message user list population', () => {
-    it('should add both sender and receiver to users list when creating new priv channel', () => {
+  describe('Private message window creation', () => {
+    it('should create priv channel for incoming private message without touching the users store', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
@@ -4054,48 +4054,6 @@ describe('kernel tests', () => {
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
-
-      // Mock getHasUser to return false (users don't exist yet)
-      vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
-      const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-      vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
-
-      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello there';
-
-      new Kernel({ type: 'raw', line }).handle();
-
-      // Should create priv channel
-      expect(mockSetAddChannel).toHaveBeenCalledWith('OtherUser', ChannelCategory.priv);
-
-      // Should add both users to the channel
-      expect(mockSetAddUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nick: 'OtherUser',
-          channels: [expect.objectContaining({ name: 'OtherUser' })],
-        })
-      );
-      expect(mockSetAddUser).toHaveBeenCalledWith(
-        expect.objectContaining({
-          nick: 'MyNick',
-          channels: [expect.objectContaining({ name: 'OtherUser' })],
-        })
-      );
-    });
-
-    it('should use setJoinUser when users already exist', () => {
-      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
-      vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
-      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
-      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
-
-      // Mock getHasUser to return true (users already exist)
-      vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => true);
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
 
@@ -4103,10 +4061,32 @@ describe('kernel tests', () => {
 
       new Kernel({ type: 'raw', line }).handle();
 
-      // Should use setJoinUser instead of setAddUser
-      expect(mockSetJoinUser).toHaveBeenCalledWith('OtherUser', 'OtherUser');
-      expect(mockSetJoinUser).toHaveBeenCalledWith('MyNick', 'OtherUser');
+      // Should create priv channel; participants are derived from the window name, not stored
+      expect(mockSetAddChannel).toHaveBeenCalledWith('OtherUser', ChannelCategory.priv);
       expect(mockSetAddUser).not.toHaveBeenCalled();
+      expect(mockSetJoinUser).not.toHaveBeenCalled();
+    });
+
+    it('should create priv channel for own echoed direct message', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+      const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'echo-message');
+
+      // Our own message to OtherUser echoed back by the server
+      const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :MyNick!~me@host PRIVMSG OtherUser :Hello there';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      // The window is named after the peer and categorized as priv, not channel
+      expect(mockSetAddChannel).toHaveBeenCalledWith('OtherUser', ChannelCategory.priv);
     });
 
     it('should not add users to channel for regular channel messages', () => {
@@ -4159,7 +4139,7 @@ describe('kernel tests', () => {
       expect(mockSetJoinUser).not.toHaveBeenCalled();
     });
 
-    it('should add users for CTCP ACTION in private message', () => {
+    it('should create priv channel for CTCP ACTION in private message without touching the users store', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
@@ -4169,20 +4149,18 @@ describe('kernel tests', () => {
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-
-      vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
 
       // CTCP ACTION in private message
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :\x01ACTION waves\x01';
 
       new Kernel({ type: 'raw', line }).handle();
 
-      // Should create priv channel
+      // Should create priv channel; participants are derived from the window name, not stored
       expect(mockSetAddChannel).toHaveBeenCalledWith('OtherUser', ChannelCategory.priv);
-
-      // Should add both users
-      expect(mockSetAddUser).toHaveBeenCalledTimes(2);
+      expect(mockSetAddUser).not.toHaveBeenCalled();
+      expect(mockSetJoinUser).not.toHaveBeenCalled();
     });
   });
 

@@ -2468,29 +2468,14 @@ export class Kernel {
       return;
     }
 
-    const isPrivMessage = target === myNick;
-    // For echo-message to a channel, target is the channel
-    // For regular private message, target is our nick
-    const messageTarget = isPrivMessage ? nick : target;
+    // A direct message is either addressed to us, or is our own echoed message to a non-channel target
+    const isDirectMessage = target === myNick || (nick === myNick && !isChannel(target));
+    // For a message addressed to us the window is named after the sender,
+    // otherwise (channel or our own echoed direct message) after the target
+    const messageTarget = target === myNick ? nick : target;
 
     if (!existChannel(messageTarget)) {
-      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
-
-      // For private messages, add both participants to the channel's user list
-      if (isPrivMessage) {
-        // Add the other person
-        if (getHasUser(nick)) {
-          setJoinUser(nick, messageTarget);
-        } else {
-          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
-        }
-        // Add myself
-        if (getHasUser(myNick)) {
-          setJoinUser(myNick, messageTarget);
-        } else {
-          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
-        }
-      }
+      setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
     }
 
     // Don't increase unread count for our own echoed messages
@@ -2505,7 +2490,7 @@ export class Kernel {
 
     const messageId = this.tags?.msgid ?? uuidv4();
     const messageTime = this.tags?.time ?? new Date().toISOString();
-    const highlight = !isEchoMessage && (isPrivMessage || message.toLowerCase().includes(myNick.toLowerCase()));
+    const highlight = !isEchoMessage && (isDirectMessage || message.toLowerCase().includes(myNick.toLowerCase()));
 
     setAddMessage({
       id: messageId,
@@ -2524,7 +2509,7 @@ export class Kernel {
     }
 
     if (highlight) {
-      void notifyHighlight({ nick, target: messageTarget, message, isDirect: isPrivMessage });
+      void notifyHighlight({ nick, target: messageTarget, message, isDirect: isDirectMessage });
     }
 
     // Check if user is away and message mentions their nick (not for echoed messages)
@@ -2628,34 +2613,20 @@ export class Kernel {
     myNick: string,
     currentChannelName: string
   ): void => {
-    const isPrivMessage = target === myNick;
-    const messageTarget = isPrivMessage ? nick : target;
+    const isEchoMessage = nick === myNick && isCapabilityEnabled('echo-message');
+    // A direct message is either addressed to us, or is our own echoed action to a non-channel target
+    const isDirectMessage = target === myNick || (nick === myNick && !isChannel(target));
+    const messageTarget = target === myNick ? nick : target;
 
     if (!existChannel(messageTarget)) {
-      setAddChannel(messageTarget, isPrivMessage ? ChannelCategory.priv : ChannelCategory.channel);
-
-      // For private messages, add both participants to the channel's user list
-      if (isPrivMessage) {
-        // Add the other person
-        if (getHasUser(nick)) {
-          setJoinUser(nick, messageTarget);
-        } else {
-          setAddUser({ nick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
-        }
-        // Add myself
-        if (getHasUser(myNick)) {
-          setJoinUser(myNick, messageTarget);
-        } else {
-          setAddUser({ nick: myNick, ident: '', hostname: '', flags: [], channels: [{ name: messageTarget, flags: [], maxPermission: -1 }] });
-        }
-      }
+      setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
     }
 
-    if (messageTarget !== currentChannelName) {
+    if (messageTarget !== currentChannelName && !isEchoMessage) {
       setIncreaseUnreadMessages(messageTarget);
     }
 
-    const highlight = isPrivMessage || action.toLowerCase().includes(myNick.toLowerCase());
+    const highlight = !isEchoMessage && (isDirectMessage || action.toLowerCase().includes(myNick.toLowerCase()));
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2673,7 +2644,7 @@ export class Kernel {
     }
 
     if (highlight) {
-      void notifyHighlight({ nick, target: messageTarget, message: action, isDirect: isPrivMessage });
+      void notifyHighlight({ nick, target: messageTarget, message: action, isDirect: isDirectMessage });
     }
   };
 
