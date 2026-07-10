@@ -862,6 +862,7 @@ describe('kernel tests', () => {
   it('test raw KICK #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#Religie');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
@@ -2095,6 +2096,7 @@ describe('kernel tests', () => {
   it('test raw PART #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
@@ -2120,6 +2122,7 @@ describe('kernel tests', () => {
   it('test raw PART #3 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#chat');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
@@ -2140,6 +2143,23 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: '← mero-test opuścił kanał' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw PART self of a non-current channel does not switch the view', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+    const line = ':Merovingian!~pirc@cloak:Merovingian PART #sic :bye';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // The parted channel is removed, but the current view stays where it was
+    expect(mockSetRemoveChannel).toHaveBeenCalledWith('#sic');
+    expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
   });
 
   it('test raw PING', () => {
@@ -2341,6 +2361,52 @@ describe('kernel tests', () => {
     // The typing should be stored under M89's nick (the sender)
     expect(mockSetTyping).toHaveBeenCalledTimes(1);
     expect(mockSetTyping).toHaveBeenCalledWith('M89', 'M89', 'active');
+  });
+
+  it('test raw TAGMSG ignores our own echoed typing notification', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+    const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+
+    // Our own typing TAGMSG echoed back by the server (echo-message)
+    const line = '@+draft/typing=active;+typing=active;msgid=abc;time=2023-03-04T19:16:23.158Z :MyNick!~me@host TAGMSG #channel';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // We must never show ourselves as typing
+    expect(mockSetTyping).not.toHaveBeenCalled();
+  });
+
+  it('test raw NOTICE addressed to an open channel is routed to that channel', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(settingsFile, 'getChannelTypes').mockImplementation(() => ['#', '&']);
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === '#sic');
+
+    const line = ':Someone!~user@host NOTICE #sic :channel announcement';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    // The notice lands in #sic, not in the currently viewed #other
+    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#sic', message: 'channel announcement' }));
+  });
+
+  it('test raw NOTICE addressed to us goes to the current window', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(settingsFile, 'getChannelTypes').mockImplementation(() => ['#', '&']);
+
+    const line = ':Someone!~user@host NOTICE MyNick :psst';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#other', message: 'psst' }));
   });
 
   it('test raw TOPIC', () => {

@@ -94,5 +94,31 @@ test.describe('Typing indicator', () => {
     // Typing indicator should appear again
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
     await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+
+    // Clean up for the next tests
+    bot.send('@+typing=done TAGMSG #typing-test');
+    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
+  });
+
+  test('own typing does not show a self typing indicator', async () => {
+    // Type letter by letter so the client sends typing TAGMSGs,
+    // which the server echoes back (echo-message)
+    const messageInput = sharedPage.locator('#message-input');
+    await messageInput.pressSequentially('typing something slowly', { delay: 80 });
+
+    // Our own nick must never appear as typing
+    await expect(sharedPage.getByText('typing-watcher is typing...')).not.toBeVisible();
+    await messageInput.clear();
+  });
+
+  test('typing indicator expires when the sender goes silent', async () => {
+    // Bot starts typing and then never sends 'done' (e.g. its client died)
+    bot.send('@+typing=active TAGMSG #typing-test');
+
+    const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
+    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+
+    // The indicator goes stale after 6s without updates
+    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
   });
 });

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
-import { setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { getCurrentChannelName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
 import { serverIcons } from '@/network/irc/servers';
@@ -11,7 +11,7 @@ const fontSizeClasses: Record<FontSize, string> = {
   large: 'text-base',
 };
 import { useTranslation } from 'react-i18next';
-import { isPriv, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
+import { setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/DrawersContext';
@@ -82,8 +82,13 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleRemoveChannel = (channel: Channel): void => {
-    if (isPriv(channel.name)) {
+    if (channel.category === ChannelCategory.priv) {
       setRemoveChannel(channel.name);
+
+      // Don't leave the main view pointing at the removed window
+      if (getCurrentChannelName() === channel.name) {
+        setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      }
     } else {
       ircPartChannel(channel.name);
     }

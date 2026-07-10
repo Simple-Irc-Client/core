@@ -357,6 +357,57 @@ describe('channels store', () => {
     it('should return empty array for non-existent channel', () => {
       expect(getTyping('#nonexistent')).toEqual([]);
     });
+
+    it('should expire an active typing indicator after 6 seconds of silence', () => {
+      vi.useFakeTimers();
+      try {
+        setAddChannel('#test', ChannelCategory.channel);
+        setTyping('#test', 'alice', 'active');
+
+        vi.advanceTimersByTime(5_999);
+        expect(getTyping('#test')).toContain('alice');
+
+        vi.advanceTimersByTime(1);
+        expect(getTyping('#test')).not.toContain('alice');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should keep the indicator alive while typing updates keep arriving', () => {
+      vi.useFakeTimers();
+      try {
+        setAddChannel('#test', ChannelCategory.channel);
+        setTyping('#test', 'alice', 'active');
+
+        vi.advanceTimersByTime(5_000);
+        setTyping('#test', 'alice', 'active');
+
+        vi.advanceTimersByTime(5_000);
+        expect(getTyping('#test')).toContain('alice');
+
+        vi.advanceTimersByTime(1_000);
+        expect(getTyping('#test')).not.toContain('alice');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('should expire a paused typing indicator after 30 seconds', () => {
+      vi.useFakeTimers();
+      try {
+        setAddChannel('#test', ChannelCategory.channel);
+        setTyping('#test', 'alice', 'paused');
+
+        vi.advanceTimersByTime(29_999);
+        expect(getTyping('#test')).toContain('alice');
+
+        vi.advanceTimersByTime(1);
+        expect(getTyping('#test')).not.toContain('alice');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('existTyping', () => {

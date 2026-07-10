@@ -58,9 +58,11 @@ import {
   getEncryptedPassword,
   getPasswordNick,
   changeServer,
+  disconnectOnly,
   setWizardHintDismissed,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
+import { clearMonitorList } from '@features/monitor/store/monitor';
 
 vi.mock('@features/channels/store/channels', () => ({
   getMessages: vi.fn(() => []),
@@ -89,6 +91,10 @@ vi.mock('@features/users/store/users', () => ({
 
 vi.mock('@features/channels/store/channelList', () => ({
   setChannelListClear: vi.fn(),
+}));
+
+vi.mock('@features/monitor/store/monitor', () => ({
+  clearMonitorList: vi.fn(),
 }));
 
 vi.mock('@/network/irc/network', () => ({
@@ -325,10 +331,9 @@ describe('settings store', () => {
       expect(getChannelTypes()).toEqual(['#', '&']);
     });
 
-    it('should return default channel types when empty', () => {
+    it('should return default channel types when empty (before 005 arrives)', () => {
       setChannelTypes([]);
-      // Should return defaultChannelTypes from config
-      expect(getChannelTypes()).toBeDefined();
+      expect(getChannelTypes()).toEqual(['#', '&']);
     });
   });
 
@@ -1077,6 +1082,20 @@ describe('settings store', () => {
       expect(getIsDarkMode()).toBe(true);
       expect(getFontSize()).toBe('large');
       expect(getHideAvatarsInUsersList()).toBe(true);
+    });
+
+    it('should clear the monitor list so friend statuses do not leak across servers', () => {
+      changeServer();
+
+      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
+    });
+  });
+
+  describe('disconnectOnly', () => {
+    it('should clear the monitor list', () => {
+      disconnectOnly();
+
+      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
     });
   });
 });

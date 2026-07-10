@@ -94,11 +94,31 @@ test.describe('Private messages', () => {
     await expect(chatLog.getByText('This is a private message')).not.toBeVisible();
   });
 
+  test('closing the focused DM window does not leave a ghost current window', async () => {
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+
+    // Make the DM window the current one
+    bot.sendMessage('dm-tester', 'about to be closed');
+    const dmTab = channelNav.getByRole('button', { name: 'dmbot', exact: true });
+    await expect(dmTab).toBeVisible({ timeout: 10_000 });
+    await dmTab.click();
+    await expect(sharedPage.locator('#message-input')).toHaveAttribute('placeholder', /dmbot/);
+
+    // Close the focused DM via its X button (appears on hover)
+    await dmTab.hover();
+    await channelNav.getByRole('button', { name: 'Leave dmbot' }).click();
+    await expect(dmTab).not.toBeVisible();
+
+    // The main view must not still point at the removed window
+    await expect(sharedPage.locator('#message-input')).not.toHaveAttribute('placeholder', /dmbot/);
+  });
+
   // Keep this test last: reloading leaves the client disconnected
   test('DM participants survive a page reload (persisted DM window)', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
-    // Make the DM window the current one
+    // Recreate the DM window (the previous test closed it) and make it current
+    bot.sendMessage('dm-tester', 'before the reload');
     await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
     await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
 

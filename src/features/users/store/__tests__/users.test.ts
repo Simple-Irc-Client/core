@@ -13,6 +13,7 @@ import {
   setUserHost as setUserHostExport,
   setUserRealname as setUserRealnameExport,
   setQuitUser as setQuitUserExport,
+  setUsersClearAll,
   getUserChannels,
   getUser,
   getHasUser,
@@ -1099,6 +1100,20 @@ describe('users store', () => {
 
       expect(useUsersStore.getState().users.length).toBe(50_000);
       expect(getHasUser('Overflow')).toBe(false);
+    });
+  });
+
+  describe('setUsersClearAll', () => {
+    it('should clear users and any buffered pre-JOIN metadata', () => {
+      useUsersStore.getState().setAddUser(createUser('known', [{ name: '#c', flags: [], maxPermission: -1 }]));
+      // Metadata for a user that never JOINed stays buffered
+      setUserAvatarExport('ghost', 'https://example.com/a.png');
+      expect(pendingMetadata.size).toBe(1);
+
+      setUsersClearAll();
+
+      expect(useUsersStore.getState().users).toEqual([]);
+      expect(pendingMetadata.size).toBe(0);
     });
   });
 

@@ -382,8 +382,6 @@ describe('Channels', () => {
     });
 
     it('should call ircPartChannel when closing a channel', () => {
-      vi.spyOn(channelsStore, 'isPriv').mockReturnValue(false);
-
       setupMocks({
         openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
       });
@@ -400,9 +398,9 @@ describe('Channels', () => {
     });
 
     it('should call setRemoveChannel when closing a priv channel', () => {
-      vi.spyOn(channelsStore, 'isPriv').mockReturnValue(true);
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
+      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
 
       setupMocks({
         openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
@@ -417,6 +415,33 @@ describe('Channels', () => {
       fireEvent.click(closeButton);
 
       expect(mockSetRemoveChannel).toHaveBeenCalledWith('someUser');
+
+      // The closed DM was not the current window - the view stays put
+      expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
+    });
+
+    it('should switch to Status when closing the currently focused priv channel', () => {
+      const mockSetRemoveChannel = vi.fn();
+      vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
+      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('someUser');
+
+      setupMocks({
+        currentChannelName: 'someUser',
+        openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('someUser');
+      fireEvent.mouseEnter(channelContainer);
+
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
+      fireEvent.click(closeButton);
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('someUser');
+
+      // The main view must not keep pointing at the removed window
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('Status', ChannelCategory.status);
     });
 
     it('should hide unread badge when close button is shown', () => {

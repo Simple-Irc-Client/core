@@ -496,5 +496,6 @@ export const getCurrentUserChannelModes = (channelName: string): string[] => {
 };
 
 export const setUsersClearAll = (): void => {
+  pendingMetadata.clear();
   useUsersStore.getState().setClearAll();
 };

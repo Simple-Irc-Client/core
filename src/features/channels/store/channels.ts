@@ -325,7 +325,44 @@ export const getCategory = (channelName: string): ChannelCategory | undefined =>
   return getChannel(channelName)?.category ?? undefined;
 };
 
+// Typing indicators go stale without a 'done' if the sender's client dies mid-typing;
+// the typing spec mandates expiring 'active' after 6s and 'paused' after 30s of silence
+const TYPING_EXPIRY_MS: Partial<Record<UserTypingStatus, number>> = {
+  active: 6_000,
+  paused: 30_000,
+};
+
+const typingExpiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const typingExpiryKey = (channelName: string, nick: string): string => `${channelName} ${nick}`;
+
+const clearTypingExpiry = (channelName: string, nick: string): void => {
+  const key = typingExpiryKey(channelName, nick);
+  const timer = typingExpiryTimers.get(key);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    typingExpiryTimers.delete(key);
+  }
+};
+
+export const clearAllTypingExpiry = (): void => {
+  for (const timer of typingExpiryTimers.values()) {
+    clearTimeout(timer);
+  }
+  typingExpiryTimers.clear();
+};
+
 export const setTyping = (channelName: string, nick: string, status: UserTypingStatus): void => {
+  clearTypingExpiry(channelName, nick);
+
+  const expiryMs = TYPING_EXPIRY_MS[status];
+  if (expiryMs !== undefined) {
+    typingExpiryTimers.set(typingExpiryKey(channelName, nick), setTimeout(() => {
+      typingExpiryTimers.delete(typingExpiryKey(channelName, nick));
+      setTyping(channelName, nick, 'done');
+    }, expiryMs));
+  }
+
   useChannelsStore.getState().setTyping(channelName, nick, status);
 
   const currentChannelName = getCurrentChannelName();
@@ -350,6 +387,7 @@ export const clearTyping = (channelName: string, nick: string): void => {
 };
 
 export const clearAllTyping = (): void => {
+  clearAllTypingExpiry();
   useChannelsStore.getState().setClearAllTyping();
   useCurrentStore.getState().setUpdateTyping([]);
 };
@@ -394,6 +432,7 @@ let lastChannelsToAutoJoin: string[] = [];
 
 export const setChannelsClearAll = (): void => {
   lastChannelsToAutoJoin = getChannelsToAutoJoin();
+  clearAllTypingExpiry();
   useChannelsStore.getState().setClearAll();
 };
 

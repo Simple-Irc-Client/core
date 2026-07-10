@@ -1917,7 +1917,9 @@ export class Kernel {
     if (kicked === currentNick) {
       setRemoveChannel(channel);
 
-      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      if (getCurrentChannelName() === channel) {
+        setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      }
     }
   };
 
@@ -2370,6 +2372,15 @@ export class Kernel {
     // route to Status to avoid flooding the current channel during connection/reconnection
     const isServerNotice = !this.sender.includes('!');
 
+    // Notices addressed to a channel we have open belong in that channel's window;
+    // notices addressed to us go to the current window (classic IRC behavior)
+    let noticeTarget = currentChannelName;
+    if (isServerNotice) {
+      noticeTarget = STATUS_CHANNEL;
+    } else if (isChannel(target) && existChannel(target)) {
+      noticeTarget = target;
+    }
+
     const newMessage = {
       message,
       nick: nick.length !== 0 ? nick : undefined,
@@ -2378,7 +2389,7 @@ export class Kernel {
       color: MessageColor.notice,
     };
 
-    setAddMessage({ ...newMessage, target: isServerNotice ? STATUS_CHANNEL : currentChannelName, id: this.tags?.msgid ?? uuidv4() });
+    setAddMessage({ ...newMessage, target: noticeTarget, id: this.tags?.msgid ?? uuidv4() });
   };
 
   // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
@@ -2413,7 +2424,9 @@ export class Kernel {
     if (nick === getCurrentNick()) {
       setRemoveChannel(channel);
 
-      setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      if (getCurrentChannelName() === channel) {
+        setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      }
     }
   };
 
@@ -2702,6 +2715,11 @@ export class Kernel {
     }
 
     const { nick } = parseNick(this.sender, serverUserModes);
+
+    // Ignore our own typing notifications echoed back by the server (echo-message)
+    if (nick === getCurrentNick()) {
+      return;
+    }
 
     const status = this.tags?.['+typing'] ?? this.tags?.['+draft/typing'];
     if (status === undefined) {

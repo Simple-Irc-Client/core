@@ -11,6 +11,7 @@ import { getUsersFromChannelSortedByMode, setUsersClearAll } from '@features/use
 import { defaultChannelTypes } from '@/config/config';
 import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
+import { clearMonitorList } from '@features/monitor/store/monitor';
 import { ircDisconnect } from '@/network/irc/network';
 
 export type WizardStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
@@ -505,7 +506,8 @@ export const getCurrentChannelCategory = (): ChannelCategory => {
 };
 
 export const getChannelTypes = (): string[] => {
-  return useSettingsStore.getState().channelTypes ?? defaultChannelTypes;
+  const channelTypes = useSettingsStore.getState().channelTypes;
+  return channelTypes.length > 0 ? channelTypes : defaultChannelTypes;
 };
 
 export const getUserModes = (): UserMode[] => {
@@ -705,6 +707,7 @@ export const disconnectOnly = (): void => {
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
+  clearMonitorList();
 };
 
 export const resetAndGoToStart = (): void => {
@@ -716,6 +719,7 @@ export const resetAndGoToStart = (): void => {
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
+  clearMonitorList();
 
   // Reset settings store to initial state (this also sets wizardStep to 'nick')
   resetWizardState();
@@ -730,6 +734,7 @@ export const changeServer = (): void => {
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
+  clearMonitorList();
 
   // Reset wizard state and clear connection-specific data (passwords preserved per server)
   resetWizardState();
