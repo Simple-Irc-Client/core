@@ -59,30 +59,126 @@ test.describe('Profile settings', () => {
     await expect(usersSidebar.getByText('new-nick')).toBeVisible({ timeout: 10_000 });
   });
 
-  test('toggles layout between Classic and Modern', async () => {
+  test('switches theme between Classic and Modern', async () => {
     // Open profile settings
     await sharedPage.locator('[data-avatar-button]').click();
     await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 
-    // Find layout buttons
-    const classicButton = sharedPage.getByTestId('layout-classic');
-    const modernButton = sharedPage.getByTestId('layout-modern');
+    const themeSelect = sharedPage.getByTestId('theme-select');
+    await expect(themeSelect).toBeVisible();
 
-    // One should be pressed
-    const classicPressed = await classicButton.getAttribute('aria-pressed');
-    const modernPressed = await modernButton.getAttribute('aria-pressed');
-    expect(classicPressed === 'true' || modernPressed === 'true').toBe(true);
+    // Pick the builtin theme that is not currently active
+    const current = await themeSelect.textContent();
+    const target = current?.includes('Classic') ? 'modern' : 'classic';
+    await themeSelect.click();
+    await sharedPage.getByTestId(`theme-${target}`).click();
 
-    // Click the other one
-    if (classicPressed === 'true') {
-      await modernButton.click();
-      await expect(modernButton).toHaveAttribute('aria-pressed', 'true');
-      await expect(classicButton).toHaveAttribute('aria-pressed', 'false');
-    } else {
-      await classicButton.click();
-      await expect(classicButton).toHaveAttribute('aria-pressed', 'true');
-      await expect(modernButton).toHaveAttribute('aria-pressed', 'false');
-    }
+    await expect(themeSelect).toContainText(target === 'classic' ? 'Classic' : 'Modern');
+
+    // The injected theme stylesheet should follow the switch
+    const injectedCss = await sharedPage.locator('#sic-theme').textContent();
+    expect(injectedCss).toContain(target === 'classic' ? 'Classic theme' : 'Modern theme');
+
+    // Close dialog
+    await sharedPage.keyboard.press('Escape');
+  });
+
+  test('edits theme CSS with live apply and resets to default', async () => {
+    // Make sure at least one chat message exists to assert the applied styling on
+    bot.sendMessage('#settings', 'theme test message');
+    await expect(sharedPage.locator('.sic-msg').first()).toBeVisible({ timeout: 10_000 });
+
+    // Open profile settings
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+
+    // Edit opens the Creator; its "Edit CSS" button switches to the CSS editor
+    await sharedPage.getByTestId('theme-edit').click();
+    await sharedPage.getByTestId('creator-edit-css').click();
+    const editor = sharedPage.getByTestId('theme-css-editor');
+    await expect(editor).toBeVisible();
+
+    // Type a recognizable rule into the real CodeMirror editor
+    await editor.locator('.cm-content').click();
+    await sharedPage.keyboard.press('ControlOrMeta+a');
+    await sharedPage.keyboard.type('.sic-msg { background-color: rgb(1, 2, 3); }');
+    await sharedPage.getByTestId('theme-save').click();
+
+    // The saved CSS is injected and applied to chat messages
+    // (<style> has no visible text, so assert on textContent)
+    expect(await sharedPage.locator('#sic-theme').textContent()).toContain('rgb(1, 2, 3)');
+    await expect(sharedPage.locator('.sic-msg').first()).toHaveCSS('background-color', 'rgb(1, 2, 3)');
+
+    // Reset to the shipped default
+    await sharedPage.getByTestId('theme-edit').click();
+    await sharedPage.getByTestId('creator-edit-css').click();
+    await sharedPage.getByTestId('theme-reset').click();
+    await sharedPage.getByTestId('theme-save').click();
+
+    const resetCss = await sharedPage.locator('#sic-theme').textContent();
+    expect(resetCss).not.toContain('rgb(1, 2, 3)');
+
+    // Close dialog
+    await sharedPage.keyboard.press('Escape');
+  });
+
+  test('creates and deletes a custom theme', async () => {
+    // Open profile settings
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+
+    // New theme opens the Creator; switch to the CSS editor and save from there
+    await sharedPage.getByTestId('theme-new').click();
+    await sharedPage.getByTestId('creator-edit-css').click();
+    const nameInput = sharedPage.getByTestId('theme-name');
+    await nameInput.clear();
+    await nameInput.fill('E2E theme');
+    await sharedPage.getByTestId('theme-save').click();
+
+    // The new theme becomes active and deletable
+    await expect(sharedPage.getByTestId('theme-select')).toContainText('E2E theme');
+    await expect(sharedPage.getByTestId('theme-delete')).toBeVisible();
+
+    // Deleting it falls back to the Modern builtin
+    await sharedPage.getByTestId('theme-delete').click();
+    await expect(sharedPage.getByTestId('theme-select')).toContainText('Modern');
+    await expect(sharedPage.getByTestId('theme-delete')).not.toBeVisible();
+
+    // Close dialog
+    await sharedPage.keyboard.press('Escape');
+  });
+
+  test('creates a theme with the Theme Creator', async () => {
+    // Open profile settings
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+
+    await sharedPage.getByTestId('theme-new').click();
+
+    const nameInput = sharedPage.getByTestId('creator-theme-name');
+    await nameInput.clear();
+    await nameInput.fill('Creator theme');
+
+    // Pick the classic base and a custom join color
+    await sharedPage.getByTestId('creator-base-classic').click();
+    await sharedPage.getByTestId('creator-color-light-join').fill('#123456');
+    await sharedPage.getByTestId('creator-save').click();
+
+    // The generated theme is active and its palette is injected
+    await expect(sharedPage.getByTestId('theme-select')).toContainText('Creator theme');
+    const injectedCss = await sharedPage.locator('#sic-theme').textContent();
+    expect(injectedCss).toContain('--msg-join: #123456;');
+    expect(injectedCss).toContain('sic-creator:1');
+
+    // Re-opening the creator restores the settings from the CSS marker
+    await sharedPage.getByTestId('theme-edit').click();
+    await expect(sharedPage.getByTestId('creator-base-classic')).toHaveAttribute('aria-pressed', 'true');
+    await expect(sharedPage.getByTestId('creator-color-light-join')).toHaveValue('#123456');
+    await sharedPage.getByTestId('creator-cancel').click();
+
+    // Clean up: delete the theme
+    await sharedPage.getByTestId('theme-delete').click();
+    await expect(sharedPage.getByTestId('theme-select')).toContainText('Modern');
 
     // Close dialog
     await sharedPage.keyboard.press('Escape');

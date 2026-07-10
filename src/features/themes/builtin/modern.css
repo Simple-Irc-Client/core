@@ -1,0 +1,134 @@
+/*
+ * Modern theme — avatar + header layout with message grouping, like modern chat apps.
+ *
+ * Every chat message renders the same HTML; the theme's CSS decides which parts
+ * are visible and how they are arranged:
+ *
+ *   .sic-msg                  message row; attributes:
+ *                               [data-category="default|join|part|quit|kick|mode|notice|info|me|error|motd"]
+ *                               [data-content]   present on default/me/notice (user content)
+ *                               [data-grouped]   consecutive message from the same nick
+ *                               [data-highlight] message mentions your nick
+ *   .sic-msg-gutter           avatar column (.sic-msg-avatar inside)
+ *   .sic-msg-header           header row: .sic-msg-nick, bot icon, .sic-msg-time-header
+ *   .sic-msg-line             the message line itself:
+ *     .sic-msg-time-inline    timestamp: "HH:mm" + .sic-msg-time-seconds ":ss"
+ *     .sic-msg-nick-inline    sender nick (bare text — add <> via ::before/::after)
+ *     .sic-msg-bot-inline     bot icon next to the inline nick
+ *     .sic-msg-body           the message text
+ *     .sic-msg-time-trailing  timestamp at the end of the line
+ *   .sic-msg-embeds           link previews (YouTube, images, social)
+ *
+ * Colors: use the app palette variables (--msg-time, --msg-default, --msg-body,
+ * --msg-join, ..., --primary, --background). Prefix rules with `.dark` for
+ * dark-mode overrides, e.g. `.dark .sic-msg-body { color: #ccc; }`.
+ * You can also retheme the whole app by overriding variables on `:root` / `.dark`.
+ *
+ * Debug/Status channel output has fixed styling that themes do not override.
+ */
+
+.sic-msg {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.5rem 1rem;
+}
+
+.sic-msg:not([data-content]) {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.sic-msg[data-grouped] {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.sic-msg[data-highlight] {
+  border-left: 2px solid var(--primary);
+  background-color: color-mix(in oklab, var(--primary) 5%, transparent);
+}
+
+/* Avatar column; stays as an empty indent for system messages */
+.sic-msg-gutter {
+  width: 2.5rem;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.sic-msg-content {
+  flex: 1;
+}
+
+/* Modern uses the header layout: hide the classic single-line parts */
+.sic-msg-time-inline,
+.sic-msg-nick-inline,
+.sic-msg-bot-inline,
+.sic-msg-time-seconds,
+.sic-msg-time-trailing {
+  display: none;
+}
+
+.sic-msg-header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+
+.sic-msg-header .sic-msg-nick {
+  font-weight: 600;
+}
+
+.sic-msg-time {
+  color: var(--msg-time);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.sic-msg-time-header {
+  margin-left: auto;
+  padding-left: 0.5rem;
+  min-width: fit-content;
+}
+
+.sic-msg-body {
+  display: block;
+  color: var(--msg-body);
+}
+
+.sic-msg:not([data-content]) .sic-msg-body {
+  color: var(--msg-default);
+}
+
+/* Consecutive messages from the same nick: no avatar/header,
+   just the text with a small trailing timestamp */
+.sic-msg[data-grouped] .sic-msg-header,
+.sic-msg[data-grouped] .sic-msg-avatar {
+  display: none;
+}
+
+.sic-msg[data-grouped] .sic-msg-line {
+  display: flex;
+  align-items: baseline;
+}
+
+.sic-msg[data-grouped] .sic-msg-body {
+  flex: 1;
+}
+
+.sic-msg[data-grouped] .sic-msg-time-trailing {
+  display: inline;
+  margin-left: 0.5rem;
+  min-width: fit-content;
+}
+
+/* System messages: italic membership changes, no link previews */
+.sic-msg[data-category='join'] .sic-msg-body,
+.sic-msg[data-category='part'] .sic-msg-body,
+.sic-msg[data-category='quit'] .sic-msg-body,
+.sic-msg[data-category='kick'] .sic-msg-body {
+  font-style: italic;
+}
+
+.sic-msg:not([data-content]) .sic-msg-embeds {
+  display: none;
+}

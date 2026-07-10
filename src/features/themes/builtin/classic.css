@@ -1,0 +1,74 @@
+/*
+ * Classic theme — flat one-line-per-message layout, like a traditional IRC client.
+ *
+ * Every chat message renders the same HTML; the theme's CSS decides which parts
+ * are visible and how they are arranged:
+ *
+ *   .sic-msg                  message row; attributes:
+ *                               [data-category="default|join|part|quit|kick|mode|notice|info|me|error|motd"]
+ *                               [data-content]   present on default/me/notice (user content)
+ *                               [data-grouped]   consecutive message from the same nick
+ *                               [data-highlight] message mentions your nick
+ *   .sic-msg-gutter           avatar column (.sic-msg-avatar inside)
+ *   .sic-msg-header           header row: .sic-msg-nick, bot icon, .sic-msg-time-header
+ *   .sic-msg-line             the message line itself:
+ *     .sic-msg-time-inline    timestamp: "HH:mm" + .sic-msg-time-seconds ":ss"
+ *     .sic-msg-nick-inline    sender nick (bare text — add <> via ::before/::after)
+ *     .sic-msg-bot-inline     bot icon next to the inline nick
+ *     .sic-msg-body           the message text
+ *     .sic-msg-time-trailing  timestamp at the end of the line
+ *   .sic-msg-embeds           link previews (YouTube, images, social)
+ *
+ * Colors: use the app palette variables (--msg-time, --msg-default, --msg-body,
+ * --msg-join, ..., --primary, --background). Prefix rules with `.dark` for
+ * dark-mode overrides, e.g. `.dark .sic-msg-body { color: #ccc; }`.
+ * You can also retheme the whole app by overriding variables on `:root` / `.dark`.
+ *
+ * Debug/Status channel output has fixed styling that themes do not override.
+ */
+
+.sic-msg {
+  display: block;
+  padding: 0.25rem 1rem;
+}
+
+.sic-msg[data-highlight] {
+  border-left: 2px solid var(--primary);
+  background-color: color-mix(in oklab, var(--primary) 5%, transparent);
+}
+
+/* Classic is a single-line layout: no avatar column, no header row */
+.sic-msg-gutter,
+.sic-msg-header,
+.sic-msg-time-trailing,
+.sic-msg-time-seconds {
+  display: none;
+}
+
+.sic-msg-time {
+  color: var(--msg-time);
+}
+
+.sic-msg-time-inline {
+  margin-right: 0.75rem;
+}
+
+.sic-msg-nick-inline::before {
+  content: '<';
+}
+
+.sic-msg-nick-inline::after {
+  content: '>';
+}
+
+.sic-msg-body {
+  margin-left: 0.5rem;
+  color: var(--msg-default);
+}
+
+.sic-msg[data-category='join'] .sic-msg-body,
+.sic-msg[data-category='part'] .sic-msg-body,
+.sic-msg[data-category='quit'] .sic-msg-body,
+.sic-msg[data-category='kick'] .sic-msg-body {
+  font-style: italic;
+}

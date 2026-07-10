@@ -1,5 +1,8 @@
 import { create } from 'zustand';
+import { v4 as uuidv4 } from 'uuid';
 import { type Server } from '@/network/irc/servers';
+import { BUILTIN_THEMES, DEFAULT_THEME_ID, isBuiltinTheme, type BuiltinThemeId } from '@features/themes/builtinThemes';
+import { type CustomTheme } from '@features/themes/themeSelectors';
 import { devtools, persist } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '@shared/types';
 import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
@@ -37,7 +40,9 @@ export interface SettingsStore {
   connectedTime: number; // unix timestamp
   currentChannelName: string;
   currentChannelCategory: ChannelCategory;
-  theme: 'modern' | 'classic';
+  theme: string; // active theme id: a builtin id ('modern' | 'classic') or a custom theme uuid
+  customThemes: Record<string, CustomTheme>;
+  builtinThemeOverrides: Partial<Record<BuiltinThemeId, string>>; // user-edited CSS of builtin themes; absent key = shipped default
   userModes: UserMode[];
   channelModes: ChannelMode;
   listRequestRemainingSeconds: number;
@@ -74,7 +79,12 @@ export interface SettingsStore {
   setWizardStep: (newWizardStep: WizardStep) => void;
   setIsPasswordRequired: (status: boolean) => void;
   setCurrentChannelName: (channelName: string, category: ChannelCategory) => void;
-  setTheme: (theme: 'modern' | 'classic') => void;
+  setTheme: (theme: string) => void;
+  addCustomTheme: (name: string, css: string) => string;
+  updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
+  deleteCustomTheme: (id: string) => void;
+  setBuiltinThemeCss: (id: BuiltinThemeId, css: string) => void;
+  resetBuiltinThemeCss: (id: BuiltinThemeId) => void;
   setUserModes: (modes: UserMode[]) => void;
   setChannelModes: (modes: ChannelMode) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
@@ -118,7 +128,9 @@ export const useSettingsStore = create<SettingsStore>()(
     connectedTime: 0,
     currentChannelName: 'Status',
     currentChannelCategory: ChannelCategory.status,
-    theme: 'modern',
+    theme: DEFAULT_THEME_ID,
+    customThemes: {},
+    builtinThemeOverrides: {},
     userModes: [],
     channelModes: { A: [], B: [], C: [], D: [] },
     listRequestRemainingSeconds: -1,
@@ -191,8 +203,41 @@ export const useSettingsStore = create<SettingsStore>()(
         currentChannelCategory: category,
       }));
     },
-    setTheme: (newTheme: 'modern' | 'classic'): void => {
+    setTheme: (newTheme: string): void => {
       set(() => ({ theme: newTheme }));
+    },
+    addCustomTheme: (name: string, css: string): string => {
+      const id = uuidv4();
+      set((state) => ({ customThemes: { ...state.customThemes, [id]: { name, css } } }));
+      return id;
+    },
+    updateCustomTheme: (id: string, patch: Partial<CustomTheme>): void => {
+      set((state) => {
+        const existing = state.customThemes[id];
+        if (!existing) { return state; }
+        return { customThemes: { ...state.customThemes, [id]: { ...existing, ...patch } } };
+      });
+    },
+    deleteCustomTheme: (id: string): void => {
+      set((state) => ({
+        customThemes: Object.fromEntries(Object.entries(state.customThemes).filter(([key]) => key !== id)),
+        ...(state.theme === id ? { theme: DEFAULT_THEME_ID } : {}),
+      }));
+    },
+    setBuiltinThemeCss: (id: BuiltinThemeId, css: string): void => {
+      set((state) => {
+        // Storing the shipped default would freeze the theme at this version;
+        // dropping the override instead lets future default improvements through
+        if (css === BUILTIN_THEMES[id].css) {
+          return { builtinThemeOverrides: Object.fromEntries(Object.entries(state.builtinThemeOverrides).filter(([key]) => key !== id)) };
+        }
+        return { builtinThemeOverrides: { ...state.builtinThemeOverrides, [id]: css } };
+      });
+    },
+    resetBuiltinThemeCss: (id: BuiltinThemeId): void => {
+      set((state) => ({
+        builtinThemeOverrides: Object.fromEntries(Object.entries(state.builtinThemeOverrides).filter(([key]) => key !== id)),
+      }));
     },
     setUserModes: (modes: UserMode[]): void => {
       set(() => ({ userModes: modes }));
@@ -321,11 +366,20 @@ export const useSettingsStore = create<SettingsStore>()(
   }),
   {
     name: 'sic-settings',
-    version: 3,
+    version: 4,
     migrate: (persisted, version) => {
       const state = persisted as Record<string, unknown>;
       if (version < 2) {
         delete state.savedChannels;
+      }
+      if (version < 4) {
+        // v4 widens `theme` from 'modern' | 'classic' to arbitrary theme ids;
+        // the old values are already valid builtin ids
+        if (typeof state.theme !== 'string' || !isBuiltinTheme(state.theme)) {
+          state.theme = DEFAULT_THEME_ID;
+        }
+        state.customThemes = {};
+        state.builtinThemeOverrides = {};
       }
       if (version < 3) {
         // Migrate flat encryptedPassword/passwordNick to per-server serverPasswords
@@ -345,6 +399,8 @@ export const useSettingsStore = create<SettingsStore>()(
     partialize: (state) => ({
       isDarkMode: state.isDarkMode,
       theme: state.theme,
+      customThemes: state.customThemes,
+      builtinThemeOverrides: state.builtinThemeOverrides,
       fontSize: state.fontSize,
       hideAvatarsInUsersList: state.hideAvatarsInUsersList,
       hideTypingIndicator: state.hideTypingIndicator,
@@ -404,7 +460,7 @@ export const setIsPasswordRequired = (status: boolean): void => {
   useSettingsStore.getState().setIsPasswordRequired(status);
 };
 
-export const setTheme = (newTheme: 'modern' | 'classic'): void => {
+export const setTheme = (newTheme: string): void => {
   useSettingsStore.getState().setTheme(newTheme);
 };
 

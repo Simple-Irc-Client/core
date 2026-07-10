@@ -17,6 +17,10 @@ import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { Switch } from '@shared/components/ui/switch';
 import { cn, isSafeUrl, isSafeImageUrl } from '@shared/lib/utils';
+import { isBuiltinTheme } from '@features/themes/builtinThemes';
+import { getThemeList } from '@features/themes/themeSelectors';
+import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
+import ThemeCreatorDialog from '@features/themes/components/ThemeCreatorDialog';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -42,6 +46,14 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const currentUserColor = useSettingsStore((state) => state.currentUserColor);
   const theme = useSettingsStore((state) => state.theme);
   const setTheme = useSettingsStore((state) => state.setTheme);
+  const customThemes = useSettingsStore((state) => state.customThemes);
+  const builtinThemeOverrides = useSettingsStore((state) => state.builtinThemeOverrides);
+  const deleteCustomTheme = useSettingsStore((state) => state.deleteCustomTheme);
+  const [themeDialog, setThemeDialog] = useState<{
+    kind: 'editor' | 'creator';
+    mode: 'edit' | 'create';
+    draft?: { name: string; css: string };
+  } | null>(null);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
   const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
@@ -264,34 +276,76 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label id="layout-label" className="text-right">
-            {t('profileSettings.layout')}
+          <Label id="theme-label" className="text-right">
+            {t('profileSettings.theme')}
           </Label>
-          <div className="col-span-3 flex gap-2" role="group" aria-labelledby="layout-label">
-            <Button
-              type="button"
-              variant={theme === 'classic' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTheme('classic')}
-              className={cn('flex-1', theme === 'classic' && 'pointer-events-none')}
-              data-testid="layout-classic"
-              aria-pressed={theme === 'classic'}
-            >
-              {t('profileSettings.layoutClassic')}
-            </Button>
-            <Button
-              type="button"
-              variant={theme === 'modern' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTheme('modern')}
-              className={cn('flex-1', theme === 'modern' && 'pointer-events-none')}
-              data-testid="layout-modern"
-              aria-pressed={theme === 'modern'}
-            >
-              {t('profileSettings.layoutModern')}
-            </Button>
+          <div className="col-span-3 grid gap-2">
+            <Select value={theme} onValueChange={setTheme}>
+              <SelectTrigger data-testid="theme-select" aria-labelledby="theme-label">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getThemeList({ theme, customThemes, builtinThemeOverrides }, t).map(({ id, name }) => (
+                  <SelectItem key={id} value={id} data-testid={`theme-${id}`}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setThemeDialog({ kind: 'creator', mode: 'edit' })}
+                data-testid="theme-edit"
+              >
+                {t('profileSettings.themeEdit')}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setThemeDialog({ kind: 'creator', mode: 'create' })}
+                data-testid="theme-new"
+              >
+                {t('profileSettings.themeNew')}
+              </Button>
+              {!isBuiltinTheme(theme) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => deleteCustomTheme(theme)}
+                  data-testid="theme-delete"
+                >
+                  {t('profileSettings.themeDelete')}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+        {themeDialog?.kind === 'editor' && (
+          <ThemeEditorDialog
+            open
+            onOpenChange={(isOpen) => { if (!isOpen) { setThemeDialog(null); } }}
+            mode={themeDialog.mode}
+            themeId={themeDialog.mode === 'edit' ? theme : undefined}
+            draft={themeDialog.draft}
+          />
+        )}
+        {themeDialog?.kind === 'creator' && (
+          <ThemeCreatorDialog
+            open
+            onOpenChange={(isOpen) => { if (!isOpen) { setThemeDialog(null); } }}
+            mode={themeDialog.mode}
+            themeId={themeDialog.mode === 'edit' ? theme : undefined}
+            onEditCss={(draft) => setThemeDialog({ kind: 'editor', mode: themeDialog.mode, draft })}
+          />
+        )}
         <div className="flex items-center gap-4">
           <Switch
             id="hide-avatars"

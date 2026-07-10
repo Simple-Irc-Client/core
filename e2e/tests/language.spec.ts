@@ -54,8 +54,8 @@ test.describe('Language switching', () => {
     // Dialog title should be in Polish
     await expect(sharedPage.getByText('Ustawienia profilu')).toBeVisible();
 
-    // "Layout" → "Układ"
-    await expect(sharedPage.getByText('Układ')).toBeVisible();
+    // "Theme" → "Motyw"
+    await expect(sharedPage.getByText('Motyw', { exact: true })).toBeVisible();
 
     await sharedPage.keyboard.press('Escape');
   });

@@ -1,219 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
-import { MessageCategory, type Message } from '@shared/types';
 
 const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
   medium: 'text-sm',
   large: 'text-base',
 };
-import { format, startOfDay } from 'date-fns';
-import { getDateFnsLocale } from '@/shared/lib/dateLocale';
+import { startOfDay } from 'date-fns';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
-import Avatar from '@shared/components/Avatar';
-import ImagesPreview from '@shared/components/ImagesPreview';
-import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
-import SocialEmbed from '@shared/components/SocialEmbed';
-import MessageText from './MessageText';
 import DateSeparator from './DateSeparator';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
-import BotIndicator from './BotIndicator';
-import EchoedIndicator from './EchoedIndicator';
-import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
-import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
-import NickHighlightedMessage from './NickHighlightedMessage';
-
-const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
-
-const contentCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me, MessageCategory.notice]);
-
-const isBotMessage = (message: Message): boolean =>
-  message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;
-
-const ChatViewDebug = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
-  const { handleContextMenuUserClick } = useContextMenu();
-  const nick = getNickFromMessage(message);
-  const displayNick = getDisplayNickFromMessage(message);
-
-  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
-    if (nick) {
-      event.preventDefault();
-      handleContextMenuUserClick(event, 'user', nick);
-    }
-  };
-
-  const isItalic = italicCategories.has(message.category);
-
-  return (
-    <div className="py-1 px-4 overflow-hidden">
-      <code className={`${fontSizeClass} break-all ${isItalic ? 'italic' : ''}`}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm:ss', { locale: getDateFnsLocale() })}</span>
-        &nbsp;
-        {nick !== undefined && !isItalic && (
-          <span className="cursor-pointer hover:underline" onContextMenu={handleNickContextMenu}>
-            &lt;{displayNick}&gt;
-          </span>
-        )}
-        &nbsp;
-        {isItalic && nick ? (
-          <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
-        ) : (
-          <MessageText text={message.message} color={message.color ?? MessageColor.default} />
-        )}
-      </code>
-    </div>
-  );
-};
-
-const ChatViewClassic = ({ message, fontSizeClass }: { message: Message; fontSizeClass: string }) => {
-  const { handleContextMenuUserClick } = useContextMenu();
-  const nick = getNickFromMessage(message);
-  const displayNick = getDisplayNickFromMessage(message);
-  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
-  const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.color) : undefined;
-  const nickColor = rawNickColor && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : undefined;
-
-  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
-    if (nick) {
-      event.preventDefault();
-      handleContextMenuUserClick(event, 'user', nick);
-    }
-  };
-
-  const isItalic = italicCategories.has(message.category);
-
-  return (
-    <div className={`py-1 px-4 ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-      <div className={fontSizeClass}>
-        <span style={{ color: MessageColor.time }}>{format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}</span>
-        <span className="inline-block w-3" />
-        {nick !== undefined && !isItalic ? (
-          <>
-            <span className="cursor-pointer hover:underline" style={nickColor ? { color: nickColor } : undefined} onContextMenu={handleNickContextMenu}>
-              &lt;{displayNick}&gt;
-            </span>
-            {isBotMessage(message) && <BotIndicator />}
-          </>
-        ) : (
-          ''
-        )}
-        <span className="inline-block w-2" />
-        {isItalic && nick ? (
-          <span className="italic">
-            <NickHighlightedMessage text={message.message} displayNick={displayNick} color={message.color ?? MessageColor.default} onContextMenu={handleNickContextMenu} />
-          </span>
-        ) : (
-          <span className={isItalic ? 'italic' : ''}>
-            <MessageText text={message.message} color={message.color ?? MessageColor.default} />
-          </span>
-        )}
-      </div>
-      <YouTubeThumbnail text={message.message} />
-      <ImagesPreview text={message.message} />
-      <SocialEmbed text={message.message} />
-    </div>
-  );
-};
-
-
-const ChatViewModern = ({ message, lastNick, fontSizeClass }: { message: Message; lastNick: string; fontSizeClass: string }) => {
-  const { handleContextMenuUserClick } = useContextMenu();
-  const nick = getNickFromMessage(message) ?? '';
-  const displayNick = getDisplayNickFromMessage(message);
-  const avatar = message?.nick !== undefined ? (typeof message.nick === 'string' ? undefined : message.nick.avatar) : undefined;
-  const avatarLetter = getDisplayNickFromMessage(message).substring(0, 1);
-  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
-  const rawNickColor = message?.nick !== undefined ? (typeof message.nick === 'string' ? 'inherit' : message.nick.color) : 'inherit';
-  const nickColor = rawNickColor && rawNickColor !== 'inherit' && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : 'inherit';
-
-  const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
-    if (nick) {
-      event.preventDefault();
-      handleContextMenuUserClick(event, 'user', nick);
-    }
-  };
-
-  const showAvatarLayout = message.category === MessageCategory.default || message.category === MessageCategory.me || message.category === MessageCategory.notice;
-
-  return (
-    <>
-      {!showAvatarLayout && (
-        <div
-          className={`py-1 pr-4 pl-[68px] ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}
-          style={{ color: message.color ?? MessageColor.default }}
-        >
-          <div className={`${fontSizeClass} ${italicCategories.has(message.category) ? 'italic' : ''}`}>
-            {nick ? (
-              <NickHighlightedMessage text={message.message} displayNick={displayNick} onContextMenu={handleNickContextMenu} />
-            ) : (
-              <MessageText text={message.message} />
-            )}
-          </div>
-        </div>
-      )}
-      {showAvatarLayout && (
-        <div className={`flex items-start px-4 ${lastNick === nick ? 'py-0' : 'py-2'} ${message.highlight ? 'border-l-2 border-primary bg-primary/5' : ''}`}>
-          <div className="w-10 mr-3 shrink-0">
-            {lastNick !== nick && (
-              <Avatar
-                src={avatar}
-                alt={displayNick}
-                fallbackLetter={avatarLetter}
-                className="h-10 w-10 cursor-pointer"
-                onContextMenu={handleNickContextMenu}
-              />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            {lastNick !== nick && (
-              <div className="flex items-baseline mb-1">
-                <span className={`font-semibold ${fontSizeClass} cursor-pointer hover:underline`} style={{ color: nickColor }} onContextMenu={handleNickContextMenu}>
-                  {displayNick}
-                </span>
-                {isBotMessage(message) && <BotIndicator />}
-                <div className="flex-1" />
-                <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                  {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
-                  {message.echoed && <EchoedIndicator />}
-                </span>
-              </div>
-            )}
-            <div style={{ color: message.color ?? MessageColor.body }}>
-              {lastNick !== nick && (
-                <div className={fontSizeClass}>
-                  <MessageText text={message.message} />
-                </div>
-              )}
-              {lastNick === nick && (
-                <div className="flex items-baseline">
-                  <div className={`${fontSizeClass} flex-1`}>
-                    <MessageText text={message.message} />
-                  </div>
-                  <span className="text-xs min-w-fit ml-2" style={{ color: MessageColor.time }}>
-                    {format(new Date(message.time), 'HH:mm', { locale: getDateFnsLocale() })}
-                    {message.echoed && <EchoedIndicator />}
-                  </span>
-                </div>
-              )}
-            </div>
-            <YouTubeThumbnail text={message.message} />
-            <ImagesPreview text={message.message} />
-            <SocialEmbed text={message.message} />
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
+import { getNickFromMessage } from '@shared/lib/displayName';
+import ChatMessage, { contentCategories } from './ChatMessage';
 
 const Chat = () => {
   const { handleContextMenuUserClick } = useContextMenu();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
-  const theme: string = useSettingsStore((state) => state.theme);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const messages = useCurrentStore((state) => state.messages);
@@ -296,16 +101,12 @@ const Chat = () => {
           const prevDate = prevMessage ? startOfDay(new Date(prevMessage.time)) : null;
           const showDateSeparator = prevDate !== null && currentDate.getTime() !== prevDate.getTime();
           const lastNick = showDateSeparator ? '' : (prevMessage && contentCategories.has(prevMessage.category) ? (getNickFromMessage(prevMessage) ?? '') : '');
+          const isDebug = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
+          const grouped = !isDebug && contentCategories.has(message.category) && lastNick === (getNickFromMessage(message) ?? '');
           return (
             <div key={`message-${message.id}`}>
               {showDateSeparator && <DateSeparator date={currentDate} />}
-              {[DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && <ChatViewDebug message={message} fontSizeClass={fontSizeClass} />}
-              {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName) && (
-                <>
-                  {theme === 'classic' && <ChatViewClassic message={message} fontSizeClass={fontSizeClass} />}
-                  {theme === 'modern' && <ChatViewModern message={message} lastNick={lastNick} fontSizeClass={fontSizeClass} />}
-                </>
-              )}
+              <ChatMessage message={message} grouped={grouped} isDebug={isDebug} fontSizeClass={fontSizeClass} />
             </div>
           );
         })}

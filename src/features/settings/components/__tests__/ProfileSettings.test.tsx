@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfileSettings from '../ProfileSettings';
@@ -22,6 +22,22 @@ vi.mock('@/network/irc/network', () => ({
   ircConnect: vi.fn(),
 }));
 
+// CodeMirror needs DOM measurement APIs jsdom lacks; a plain textarea keeps the
+// editor flow testable (the real editor is covered by the e2e suite)
+vi.mock('@uiw/react-codemirror', () => ({
+  default: ({ value, onChange }: { value: string; onChange?: (newValue: string) => void }) => (
+    <textarea data-testid="codemirror-mock" value={value} onChange={(e) => onChange?.(e.target.value)} />
+  ),
+}));
+
+// Radix Select needs pointer-capture APIs and scrollIntoView, which jsdom lacks
+beforeAll(() => {
+  window.HTMLElement.prototype.hasPointerCapture = vi.fn();
+  window.HTMLElement.prototype.setPointerCapture = vi.fn();
+  window.HTMLElement.prototype.releasePointerCapture = vi.fn();
+  Element.prototype.scrollIntoView = vi.fn();
+});
+
 describe('ProfileSettings', () => {
   const mockOnOpenChange = vi.fn();
 
@@ -35,6 +51,8 @@ describe('ProfileSettings', () => {
       currentUserHomepage: undefined,
       currentUserColor: undefined,
       theme: 'modern',
+      customThemes: {},
+      builtinThemeOverrides: {},
       fontSize: 'medium',
       hideAvatarsInUsersList: false,
     });
@@ -261,8 +279,8 @@ describe('ProfileSettings', () => {
     });
   });
 
-  describe('Layout switch functionality', () => {
-    it('should render layout switch buttons', () => {
+  describe('Theme selection', () => {
+    it('should render the theme select showing the active theme', () => {
       render(
         <ProfileSettings
           open={true}
@@ -271,51 +289,13 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(screen.getByTestId('layout-classic')).toBeInTheDocument();
-      expect(screen.getByTestId('layout-modern')).toBeInTheDocument();
+      const trigger = screen.getByTestId('theme-select');
+      expect(trigger).toBeInTheDocument();
+      expect(trigger.textContent).toContain('profileSettings.layoutModern');
     });
 
-    it('should show Modern as selected when theme is modern', () => {
-      useSettingsStore.setState({ theme: 'modern' });
-
-      render(
-        <ProfileSettings
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          currentNick="testUser"
-        />
-      );
-
-      const modernButton = screen.getByTestId('layout-modern');
-      const classicButton = screen.getByTestId('layout-classic');
-
-      // Modern should have default variant (not outline)
-      expect(modernButton).not.toHaveClass('border-input');
-      expect(classicButton).toHaveClass('border-input');
-    });
-
-    it('should show Classic as selected when theme is classic', () => {
-      useSettingsStore.setState({ theme: 'classic' });
-
-      render(
-        <ProfileSettings
-          open={true}
-          onOpenChange={mockOnOpenChange}
-          currentNick="testUser"
-        />
-      );
-
-      const modernButton = screen.getByTestId('layout-modern');
-      const classicButton = screen.getByTestId('layout-classic');
-
-      // Classic should have default variant (not outline)
-      expect(classicButton).not.toHaveClass('border-input');
-      expect(modernButton).toHaveClass('border-input');
-    });
-
-    it('should switch to classic layout when Classic button is clicked', async () => {
+    it('should switch the theme via the dropdown', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ theme: 'modern' });
 
       render(
         <ProfileSettings
@@ -325,15 +305,15 @@ describe('ProfileSettings', () => {
         />
       );
 
-      const classicButton = screen.getByTestId('layout-classic');
-      await user.click(classicButton);
+      await user.click(screen.getByTestId('theme-select'));
+      await user.click(screen.getByTestId('theme-classic'));
 
       expect(useSettingsStore.getState().theme).toBe('classic');
     });
 
-    it('should switch to modern layout when Modern button is clicked', async () => {
+    it('should list custom themes in the dropdown', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ theme: 'classic' });
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
 
       render(
         <ProfileSettings
@@ -343,13 +323,13 @@ describe('ProfileSettings', () => {
         />
       );
 
-      const modernButton = screen.getByTestId('layout-modern');
-      await user.click(modernButton);
+      await user.click(screen.getByTestId('theme-select'));
 
-      expect(useSettingsStore.getState().theme).toBe('modern');
+      expect(screen.getByTestId(`theme-${id}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`theme-${id}`).textContent).toContain('Neon');
     });
 
-    it('should display translated layout labels', () => {
+    it('should show edit and new buttons, but no delete button for builtin themes', () => {
       render(
         <ProfileSettings
           open={true}
@@ -358,9 +338,317 @@ describe('ProfileSettings', () => {
         />
       );
 
-      expect(document.body.textContent).toContain('profileSettings.layout');
-      expect(document.body.textContent).toContain('profileSettings.layoutClassic');
-      expect(document.body.textContent).toContain('profileSettings.layoutModern');
+      expect(screen.getByTestId('theme-edit')).toBeInTheDocument();
+      expect(screen.getByTestId('theme-new')).toBeInTheDocument();
+      expect(screen.queryByTestId('theme-delete')).not.toBeInTheDocument();
+    });
+
+    it('should delete the active custom theme and fall back to modern', async () => {
+      const user = userEvent.setup();
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+      useSettingsStore.setState({ theme: id });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-delete'));
+
+      expect(useSettingsStore.getState().customThemes[id]).toBeUndefined();
+      expect(useSettingsStore.getState().theme).toBe('modern');
+    });
+  });
+
+  describe('Theme editor', () => {
+    // The Edit / New theme buttons open the Creator; its "Edit CSS" button
+    // switches to the CSS editor
+    const openCssEditor = async (user: ReturnType<typeof userEvent.setup>, buttonTestId: 'theme-edit' | 'theme-new') => {
+      await user.click(screen.getByTestId(buttonTestId));
+      await user.click(screen.getByTestId('creator-edit-css'));
+    };
+
+    it('should open the editor with the active theme CSS and save edits as a builtin override', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await openCssEditor(user, 'theme-edit');
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      expect(editor.value).toContain('.sic-msg');
+      // Builtin theme names are not editable
+      expect(screen.getByTestId('theme-name')).toBeDisabled();
+
+      fireEvent.change(editor, { target: { value: '.sic-msg { color: red; }' } });
+      await user.click(screen.getByTestId('theme-save'));
+
+      expect(useSettingsStore.getState().builtinThemeOverrides.modern).toBe('.sic-msg { color: red; }');
+    });
+
+    it('should reset a builtin theme to its shipped CSS', async () => {
+      const user = userEvent.setup();
+      useSettingsStore.setState({ builtinThemeOverrides: { modern: '.custom {}' } });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await openCssEditor(user, 'theme-edit');
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      expect(editor.value).toBe('.custom {}');
+
+      await user.click(screen.getByTestId('theme-reset'));
+      await user.click(screen.getByTestId('theme-save'));
+
+      // Saving the shipped default clears the override entirely
+      expect(useSettingsStore.getState().builtinThemeOverrides.modern).toBeUndefined();
+    });
+
+    it('should create a new custom theme seeded from the active theme and activate it', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await openCssEditor(user, 'theme-new');
+
+      const nameInput = screen.getByTestId('theme-name') as HTMLInputElement;
+      expect(nameInput).not.toBeDisabled();
+      fireEvent.change(nameInput, { target: { value: 'My neon theme' } });
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      expect(editor.value).toContain('.sic-msg');
+      fireEvent.change(editor, { target: { value: '.sic-msg { background: black; }' } });
+
+      await user.click(screen.getByTestId('theme-save'));
+
+      const { theme, customThemes } = useSettingsStore.getState();
+      expect(customThemes[theme]).toEqual({ name: 'My neon theme', css: '.sic-msg { background: black; }' });
+    });
+
+    it('should edit an existing custom theme', async () => {
+      const user = userEvent.setup();
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg { color: lime; }');
+      useSettingsStore.setState({ theme: id });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await openCssEditor(user, 'theme-edit');
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      expect(editor.value).toBe('.sic-msg { color: lime; }');
+      // No reset button for custom themes
+      expect(screen.queryByTestId('theme-reset')).not.toBeInTheDocument();
+
+      fireEvent.change(editor, { target: { value: '.sic-msg { color: cyan; }' } });
+      await user.click(screen.getByTestId('theme-save'));
+
+      expect(useSettingsStore.getState().customThemes[id]?.css).toBe('.sic-msg { color: cyan; }');
+    });
+
+    it('should not persist changes when cancelled', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await openCssEditor(user, 'theme-edit');
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      fireEvent.change(editor, { target: { value: '.sic-msg { color: red; }' } });
+      await user.click(screen.getByTestId('theme-cancel'));
+
+      expect(useSettingsStore.getState().builtinThemeOverrides.modern).toBeUndefined();
+    });
+
+    it('should carry unsaved Creator changes into the CSS editor', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-new'));
+      fireEvent.change(screen.getByTestId('creator-theme-name'), { target: { value: 'Draft theme' } });
+      fireEvent.change(screen.getByTestId('creator-color-light-join'), { target: { value: '#123456' } });
+      await user.click(screen.getByTestId('creator-edit-css'));
+
+      const editor = screen.getByTestId('codemirror-mock') as HTMLTextAreaElement;
+      expect(editor.value).toContain('sic-creator:1');
+      expect(editor.value).toContain('--msg-join: #123456;');
+      expect((screen.getByTestId('theme-name') as HTMLInputElement).value).toBe('Draft theme');
+
+      await user.click(screen.getByTestId('theme-save'));
+
+      const { theme, customThemes } = useSettingsStore.getState();
+      expect(customThemes[theme]?.name).toBe('Draft theme');
+      expect(customThemes[theme]?.css).toContain('--msg-join: #123456;');
+    });
+  });
+
+  describe('Theme creator', () => {
+    it('should open the Creator from the Edit and New theme buttons', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-edit'));
+      expect(screen.getByTestId('creator-save')).toBeInTheDocument();
+      await user.click(screen.getByTestId('creator-cancel'));
+
+      await user.click(screen.getByTestId('theme-new'));
+      expect(screen.getByTestId('creator-save')).toBeInTheDocument();
+    });
+
+    it('should create a custom theme from creator settings and activate it', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-new'));
+
+      fireEvent.change(screen.getByTestId('creator-theme-name'), { target: { value: 'Creator theme' } });
+      await user.click(screen.getByTestId('creator-base-classic'));
+      await user.click(screen.getByTestId('creator-compact'));
+      fireEvent.change(screen.getByTestId('creator-color-light-join'), { target: { value: '#123456' } });
+      await user.click(screen.getByTestId('creator-save'));
+
+      const { theme, customThemes } = useSettingsStore.getState();
+      const created = customThemes[theme];
+      expect(created?.name).toBe('Creator theme');
+      expect(created?.css).toContain('sic-creator:1');
+      expect(created?.css).toContain('--msg-join: #123456;');
+      expect(created?.css).toContain('padding-top: 0; padding-bottom: 0;');
+    });
+
+    it('should edit a builtin theme with the creator and save it as an override', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-edit'));
+
+      // Editing a builtin's shipped CSS should not warn about overwriting
+      expect(screen.queryByTestId('creator-overwrite-warning')).not.toBeInTheDocument();
+      expect(screen.getByTestId('creator-theme-name')).toBeDisabled();
+
+      await user.click(screen.getByTestId('creator-tab-dark'));
+      fireEvent.change(screen.getByTestId('creator-color-dark-error'), { target: { value: '#ff00ff' } });
+      await user.click(screen.getByTestId('creator-save'));
+
+      const override = useSettingsStore.getState().builtinThemeOverrides.modern;
+      expect(override).toContain('--msg-error: #ff00ff;');
+    });
+
+    it('should restore creator settings when re-opening a creator-made theme', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      // Create with a non-default toggle
+      await user.click(screen.getByTestId('theme-new'));
+      await user.click(screen.getByTestId('creator-show-seconds'));
+      await user.click(screen.getByTestId('creator-save'));
+
+      // Re-open: the toggle state comes back from the CSS marker
+      await user.click(screen.getByTestId('theme-edit'));
+      expect(screen.getByTestId('creator-show-seconds')).toHaveAttribute('data-state', 'checked');
+      expect(screen.queryByTestId('creator-overwrite-warning')).not.toBeInTheDocument();
+    });
+
+    it('should warn before overwriting hand-written CSS', async () => {
+      const user = userEvent.setup();
+      const id = useSettingsStore.getState().addCustomTheme('Handmade', '.sic-msg { color: red; }');
+      useSettingsStore.setState({ theme: id });
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-edit'));
+
+      expect(screen.getByTestId('creator-overwrite-warning')).toBeInTheDocument();
+    });
+
+    it('should disable the avatar toggle for the classic base', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-new'));
+
+      expect(screen.getByTestId('creator-show-avatars')).not.toBeDisabled();
+      await user.click(screen.getByTestId('creator-base-classic'));
+      expect(screen.getByTestId('creator-show-avatars')).toBeDisabled();
     });
   });
 

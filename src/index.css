@@ -248,3 +248,55 @@
     text-rendering: optimizeLegibility;
   }
 }
+
+/* Fixed styling for chat messages in the debug/Status channels.
+   User themes style `.sic-*` elements with plain class selectors; every rule
+   here includes the [data-debug] attribute, so it outranks theme rules by
+   specificity even though the injected theme <style> comes later in <head>.
+   Do not weaken these selectors — debug output must stay readable regardless
+   of what CSS a user theme ships. */
+.sic-msg[data-debug] {
+  display: block;
+  padding: 0.25rem 1rem;
+  overflow: hidden;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  word-break: break-all;
+}
+.sic-msg[data-debug] .sic-msg-gutter,
+.sic-msg[data-debug] .sic-msg-header,
+.sic-msg[data-debug] .sic-msg-time-trailing {
+  display: none;
+}
+.sic-msg[data-debug] .sic-msg-time-inline {
+  display: inline;
+  margin: 0 0.25em 0 0;
+  color: var(--msg-time);
+  font-size: inherit;
+}
+.sic-msg[data-debug] .sic-msg-time-seconds {
+  display: inline;
+}
+.sic-msg[data-debug] .sic-msg-nick-inline {
+  display: inline;
+  margin: 0 0.25em 0 0;
+  color: inherit;
+  font-weight: inherit;
+}
+.sic-msg[data-debug] .sic-msg-nick-inline::before {
+  content: '<';
+}
+.sic-msg[data-debug] .sic-msg-nick-inline::after {
+  content: '>';
+}
+.sic-msg[data-debug] .sic-msg-body {
+  display: inline;
+  margin: 0;
+  color: var(--msg-default);
+  font-style: inherit;
+}
+.sic-msg[data-debug][data-category='join'],
+.sic-msg[data-debug][data-category='part'],
+.sic-msg[data-debug][data-category='quit'],
+.sic-msg[data-debug][data-category='kick'] {
+  font-style: italic;
+}

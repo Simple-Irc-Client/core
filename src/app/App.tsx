@@ -7,6 +7,7 @@ import { DrawersProvider } from '@/providers/DrawersProvider';
 import { ContextMenuProvider } from '@/providers/ContextMenuProvider';
 import { ContextMenu } from '@/shared/components/ContextMenu';
 import MainLayout from '@/layouts/MainLayout';
+import ThemeStyleInjector from '@features/themes/components/ThemeStyleInjector';
 import { useSettingsStore } from '@features/settings/store/settings';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
     <DrawersProvider>
       <ContextMenuProvider>
         <ContextMenu />
+        <ThemeStyleInjector />
         <Network />
         <MainLayout />
       </ContextMenuProvider>

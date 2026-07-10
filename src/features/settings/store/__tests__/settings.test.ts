@@ -110,6 +110,8 @@ describe('settings store', () => {
       currentChannelName: 'Status',
       currentChannelCategory: ChannelCategory.status,
       theme: 'modern',
+      customThemes: {},
+      builtinThemeOverrides: {},
       userModes: [],
       channelModes: { A: [], B: [], C: [], D: [] },
       listRequestRemainingSeconds: -1,
@@ -347,6 +349,126 @@ describe('settings store', () => {
 
       setTheme('classic');
       expect(useSettingsStore.getState().theme).toBe('classic');
+    });
+
+    it('should set theme to a custom theme id', () => {
+      const id = useSettingsStore.getState().addCustomTheme('My theme', '.sic-msg {}');
+      setTheme(id);
+      expect(useSettingsStore.getState().theme).toBe(id);
+    });
+  });
+
+  describe('custom themes', () => {
+    it('should add a custom theme and return its id', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg { color: lime; }');
+
+      expect(id).toBeTruthy();
+      expect(useSettingsStore.getState().customThemes[id]).toEqual({ name: 'Neon', css: '.sic-msg { color: lime; }' });
+    });
+
+    it('should update a custom theme', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+
+      useSettingsStore.getState().updateCustomTheme(id, { css: '.sic-msg { color: red; }' });
+
+      expect(useSettingsStore.getState().customThemes[id]).toEqual({ name: 'Neon', css: '.sic-msg { color: red; }' });
+    });
+
+    it('should ignore updates to a nonexistent custom theme', () => {
+      useSettingsStore.getState().updateCustomTheme('missing-id', { css: 'x' });
+
+      expect(useSettingsStore.getState().customThemes).toEqual({});
+    });
+
+    it('should delete a custom theme', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+
+      useSettingsStore.getState().deleteCustomTheme(id);
+
+      expect(useSettingsStore.getState().customThemes[id]).toBeUndefined();
+    });
+
+    it('should fall back to the default theme when deleting the active custom theme', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+      setTheme(id);
+
+      useSettingsStore.getState().deleteCustomTheme(id);
+
+      expect(useSettingsStore.getState().theme).toBe('modern');
+    });
+
+    it('should keep the active theme when deleting another custom theme', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+      setTheme('classic');
+
+      useSettingsStore.getState().deleteCustomTheme(id);
+
+      expect(useSettingsStore.getState().theme).toBe('classic');
+    });
+  });
+
+  describe('builtin theme overrides', () => {
+    it('should store edited CSS for a builtin theme', () => {
+      useSettingsStore.getState().setBuiltinThemeCss('classic', '.sic-msg { color: red; }');
+
+      expect(useSettingsStore.getState().builtinThemeOverrides.classic).toBe('.sic-msg { color: red; }');
+    });
+
+    it('should drop the override when the CSS equals the shipped default', async () => {
+      const { BUILTIN_THEMES } = await import('@features/themes/builtinThemes');
+      useSettingsStore.getState().setBuiltinThemeCss('classic', '.sic-msg { color: red; }');
+
+      useSettingsStore.getState().setBuiltinThemeCss('classic', BUILTIN_THEMES.classic.css);
+
+      expect(useSettingsStore.getState().builtinThemeOverrides.classic).toBeUndefined();
+    });
+
+    it('should reset a builtin theme override', () => {
+      useSettingsStore.getState().setBuiltinThemeCss('modern', '.sic-msg { color: red; }');
+
+      useSettingsStore.getState().resetBuiltinThemeCss('modern');
+
+      expect(useSettingsStore.getState().builtinThemeOverrides.modern).toBeUndefined();
+    });
+
+    it('should keep other overrides when resetting one builtin theme', () => {
+      useSettingsStore.getState().setBuiltinThemeCss('modern', '.a {}');
+      useSettingsStore.getState().setBuiltinThemeCss('classic', '.b {}');
+
+      useSettingsStore.getState().resetBuiltinThemeCss('modern');
+
+      expect(useSettingsStore.getState().builtinThemeOverrides).toEqual({ classic: '.b {}' });
+    });
+  });
+
+  describe('theme persistence and migration', () => {
+    it('should persist theme, customThemes and builtinThemeOverrides', () => {
+      const id = useSettingsStore.getState().addCustomTheme('Neon', '.sic-msg {}');
+      useSettingsStore.getState().setBuiltinThemeCss('classic', '.override {}');
+      setTheme(id);
+
+      const persisted = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(persisted.state.theme).toBe(id);
+      expect(persisted.state.customThemes[id]).toEqual({ name: 'Neon', css: '.sic-msg {}' });
+      expect(persisted.state.builtinThemeOverrides).toEqual({ classic: '.override {}' });
+    });
+
+    it('should keep classic theme when migrating from version 3', async () => {
+      localStorage.setItem('sic-settings', JSON.stringify({ state: { theme: 'classic' }, version: 3 }));
+
+      await useSettingsStore.persist.rehydrate();
+
+      expect(useSettingsStore.getState().theme).toBe('classic');
+      expect(useSettingsStore.getState().customThemes).toEqual({});
+      expect(useSettingsStore.getState().builtinThemeOverrides).toEqual({});
+    });
+
+    it('should fall back to modern when migrating an unknown theme value', async () => {
+      localStorage.setItem('sic-settings', JSON.stringify({ state: { theme: 'weird' }, version: 3 }));
+
+      await useSettingsStore.persist.rehydrate();
+
+      expect(useSettingsStore.getState().theme).toBe('modern');
     });
   });
 

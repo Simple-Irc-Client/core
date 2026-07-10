@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test-setup.ts',
     exclude: ['e2e/**', 'node_modules/**'],
+    // Process CSS through Vite so `.css?raw` imports (builtin themes) return
+    // the real file contents instead of vitest's default empty CSS stub
+    css: true,
   },
   resolve: {
     alias: {

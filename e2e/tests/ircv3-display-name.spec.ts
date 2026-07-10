@@ -52,7 +52,8 @@ test.describe('IRCv3 display name', () => {
     // The message should appear in chat with the display name shown
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello with display name!')).toBeVisible({ timeout: 10_000 });
-    await expect(chatLog.getByText('Chat Display Name')).toBeVisible();
+    // The nick renders in two slots (header + inline); the active theme shows one
+    await expect(chatLog.getByText('Chat Display Name').first()).toBeVisible();
   });
 
   test('context menu uses real nick, not display name', async () => {

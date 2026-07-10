@@ -29,6 +29,15 @@ const createUserNick = (overrides: Partial<User> = {}): User => ({
   ...overrides,
 });
 
+// The chat renders one unified DOM per message (see ChatMessage.tsx); the active
+// theme's CSS decides which parts are visible. jsdom does not apply CSS, so these
+// tests assert the DOM contract (sic-* class names + data attributes), not the
+// visual outcome of a particular theme.
+const getMessages = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>('.sic-msg')];
+const getHeaderNick = (container: HTMLElement) => container.querySelector<HTMLElement>('.sic-msg-header .sic-msg-nick');
+const getInlineNick = (container: HTMLElement) => container.querySelector<HTMLElement>('.sic-msg-nick-inline');
+const getBody = (container: HTMLElement) => container.querySelector<HTMLElement>('.sic-msg-body');
+
 describe('Chat tests', () => {
   const mockHandleContextMenuUserClick = vi.fn();
   const mockHandleContextMenuClose = vi.fn();
@@ -135,6 +144,225 @@ describe('Chat tests', () => {
     });
   });
 
+  describe('Unified message DOM', () => {
+    it('should render one .sic-msg element with data-category per message', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'Hello', nick: 'TestUser' }),
+          createMessage({ id: '2', message: 'Joined', nick: 'Other', category: MessageCategory.join }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toHaveAttribute('data-category', 'default');
+      expect(messages[1]).toHaveAttribute('data-category', 'join');
+    });
+
+    it('should mark content categories with data-content', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'Hello', nick: 'TestUser', category: MessageCategory.default }),
+          createMessage({ id: '2', message: 'Joined', nick: 'Other', category: MessageCategory.join }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages[0]).toHaveAttribute('data-content');
+      expect(messages[1]).not.toHaveAttribute('data-content');
+    });
+
+    it('should render identical DOM regardless of the active theme', () => {
+      const messages = [
+        createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'TestUser' }) }),
+        createMessage({ id: '2', message: 'Joined', nick: 'Other', category: MessageCategory.join, color: MessageColor.join }),
+      ];
+
+      setupMocks({ theme: 'classic', messages });
+      const classic = render(<Main />).container.innerHTML;
+
+      setupMocks({ theme: 'modern', messages });
+      const modern = render(<Main />).container.innerHTML;
+
+      setupMocks({ theme: 'b1946ac9-2f77-4c47-ac25-b7a4f9f0be55', messages });
+      const custom = render(<Main />).container.innerHTML;
+
+      expect(classic).toBe(modern);
+      expect(classic).toBe(custom);
+    });
+
+    it('should render the timestamp in header, inline and trailing slots with a separate seconds span', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser', time: '2024-01-01T12:34:56Z' })],
+      });
+
+      const { container } = render(<Main />);
+
+      const header = container.querySelector('.sic-msg-time-header');
+      const inline = container.querySelector('.sic-msg-time-inline');
+      const trailing = container.querySelector('.sic-msg-time-trailing');
+      for (const slot of [header, inline, trailing]) {
+        expect(slot).toBeInTheDocument();
+        expect(slot?.textContent).toMatch(/^\d{2}:\d{2}:\d{2}$/);
+        expect(slot?.querySelector('.sic-msg-time-seconds')?.textContent).toMatch(/^:\d{2}$/);
+      }
+    });
+
+    it('should render the nick without angle brackets (brackets are theme CSS)', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getHeaderNick(container)?.textContent).toBe('TestUser');
+      expect(getInlineNick(container)?.textContent).toBe('TestUser');
+      expect(container.textContent).not.toContain('<TestUser>');
+    });
+
+    it('should not render an inline nick for italic categories', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getInlineNick(container)).not.toBeInTheDocument();
+    });
+
+    it('should apply the message color inline on the body', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Colored message', color: MessageColor.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getBody(container)).toHaveStyle({ color: MessageColor.join });
+    });
+
+    it('should not set an inline body color when the message has none (theme CSS decides)', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Default color', color: undefined })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getBody(container)?.style.color).toBe('');
+    });
+
+    it('should render embeds inside .sic-msg-embeds', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-embeds')).toBeInTheDocument();
+    });
+
+    it('should display avatar letter when no avatar image', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'Test', nick: 'TestUser' })],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('T')).toBeInTheDocument();
+    });
+
+    it('should display avatar letter from User object', () => {
+      setupMocks({
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Test',
+            nick: createUserNick({ nick: 'AvatarUser' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      expect(screen.getByText('A')).toBeInTheDocument();
+    });
+
+    it('should display avatar image when available', () => {
+      setupMocks({
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Test',
+            nick: createUserNick({ nick: 'ImageUser', avatar: 'https://example.com/avatar.png' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      const img = screen.getByRole('img');
+      expect(img).toHaveAttribute('src', 'https://example.com/avatar.png');
+      expect(img).toHaveAttribute('alt', 'ImageUser');
+    });
+
+    it('should display fallback letter when avatar fails to load', () => {
+      setupMocks({
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Test',
+            nick: createUserNick({ nick: 'BrokenAvatar', avatar: 'https://example.com/broken.png' }),
+          }),
+        ],
+      });
+
+      render(<Main />);
+
+      // Initially shows the image
+      const img = screen.getByRole('img');
+      expect(img).toBeInTheDocument();
+
+      // Simulate image load error (404 or network error)
+      fireEvent.error(img);
+
+      // After error, should show fallback letter instead of image
+      expect(screen.getByText('B')).toBeInTheDocument();
+      expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('should apply nick color from User object to both nick slots', () => {
+      setupMocks({
+        messages: [
+          createMessage({
+            id: '1',
+            message: 'Colored nick message',
+            nick: createUserNick({ nick: 'ColoredUser', color: '#ff0000' }),
+          }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getHeaderNick(container)).toHaveStyle({ color: '#ff0000' });
+      expect(getInlineNick(container)).toHaveStyle({ color: '#ff0000' });
+    });
+
+    it('should not render the avatar column content for non-content categories', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'User joined', nick: 'User', category: MessageCategory.join })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-gutter')).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-avatar')).not.toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-header')).not.toBeInTheDocument();
+    });
+  });
+
   describe('Debug channel view', () => {
     it('should render debug view for DEBUG_CHANNEL', () => {
       setupMocks({
@@ -146,6 +374,7 @@ describe('Chat tests', () => {
 
       expect(container.textContent).toContain('Debug message');
       expect(container.textContent).toContain('Server');
+      expect(container.querySelector('.sic-msg')).toHaveAttribute('data-debug');
     });
 
     it('should render debug view for STATUS_CHANNEL', () => {
@@ -157,18 +386,20 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(container.textContent).toContain('Status message');
+      expect(container.querySelector('.sic-msg')).toHaveAttribute('data-debug');
     });
 
-    it('should show time with seconds in debug view', () => {
+    it('should render the seconds span shown by the fixed debug styling', () => {
       setupMocks({
         currentChannelName: DEBUG_CHANNEL,
         messages: [createMessage({ id: '1', time: '2024-01-01T12:34:56Z' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      // Time format should be HH:mm:ss (with seconds)
-      expect(screen.getByText(/\d{2}:\d{2}:\d{2}/)).toBeInTheDocument();
+      const time = container.querySelector('.sic-msg[data-debug] .sic-msg-time-inline');
+      expect(time?.textContent).toMatch(/^\d{2}:\d{2}:\d{2}$/);
+      expect(time?.querySelector('.sic-msg-time-seconds')?.textContent).toMatch(/^:\d{2}$/);
     });
 
     it('should render message without nick in debug view', () => {
@@ -208,308 +439,55 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(container.textContent).toContain('Colored message');
-      // The color is applied to the MessageText span which wraps the message content
-      const coloredSpans = container.querySelectorAll(`span[style]`);
-      const messageSpan = Array.from(coloredSpans).find(s => s.textContent?.includes('Colored'));
-      expect(messageSpan).toHaveStyle({ color: MessageColor.error });
+      expect(getBody(container)).toHaveStyle({ color: MessageColor.error });
     });
-  });
 
-  describe('Classic theme view', () => {
-    it('should render classic view when theme is classic', () => {
+    it('should not render avatar, header or embeds in debug view', () => {
       setupMocks({
-        theme: 'classic',
-        messages: [createMessage({ id: '1', message: 'Classic message', nick: 'TestUser' })],
+        currentChannelName: DEBUG_CHANNEL,
+        messages: [createMessage({ id: '1', message: 'Debug message', nick: createUserNick({ nick: 'Server', avatar: 'https://example.com/a.png' }) })],
       });
 
       const { container } = render(<Main />);
 
-      expect(container.textContent).toContain('Classic message');
-      expect(container.textContent).toContain('TestUser');
-    });
-
-    it('should show time without seconds in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [createMessage({ id: '1', time: '2024-01-01T12:34:56Z' })],
-      });
-
-      render(<Main />);
-
-      // Time format should be HH:mm (without seconds) - match exactly 5 chars for HH:mm
-      const timeElement = screen.getByText(/^\d{2}:\d{2}$/);
-      expect(timeElement).toBeInTheDocument();
-    });
-
-    it('should render message with User object nick in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'User message',
-            nick: createUserNick({ nick: 'ClassicUser' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      expect(screen.getByText(/ClassicUser/)).toBeInTheDocument();
-    });
-
-    it('should apply custom color to classic message', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [createMessage({ id: '1', message: 'Colored message', color: MessageColor.join })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('Colored message');
-      // The color is applied to the MessageText span which wraps the message content
-      const coloredSpans = container.querySelectorAll(`span[style]`);
-      const messageSpan = Array.from(coloredSpans).find(s => s.textContent?.includes('Colored'));
-      expect(messageSpan).toHaveStyle({ color: MessageColor.join });
-    });
-  });
-
-  describe('Modern theme view', () => {
-    it('should render modern view when theme is modern', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Modern message', nick: 'TestUser' })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('Modern message');
-    });
-
-    it('should show nick for first message from user', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'First message', nick: 'TestUser' })],
-      });
-
-      render(<Main />);
-
-      expect(screen.getByText('TestUser')).toBeInTheDocument();
-    });
-
-    it('should group consecutive messages from same user', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({ id: '1', message: 'First message', nick: 'SameUser' }),
-          createMessage({ id: '2', message: 'Second message', nick: 'SameUser' }),
-        ],
-      });
-
-      render(<Main />);
-
-      // Nick should appear only once
-      const nicks = screen.getAllByText('SameUser');
-      expect(nicks.length).toBe(1);
-    });
-
-    it('should show nick again when different user sends message', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({ id: '1', message: 'User1 message', nick: 'User1' }),
-          createMessage({ id: '2', message: 'User2 message', nick: 'User2' }),
-        ],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('User1');
-      expect(container.textContent).toContain('User2');
-    });
-
-    it('should show nick again after messages from different user', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({ id: '1', message: 'First message', nick: 'User1' }),
-          createMessage({ id: '2', message: 'Second message', nick: 'User2' }),
-          createMessage({ id: '3', message: 'Third message', nick: 'User1' }),
-        ],
-      });
-
-      const { container } = render(<Main />);
-
-      // User1 nick should appear twice (before message 1 and message 3)
-      // Look for nick spans with font-semibold class (these are the header nicks, not message text)
-      const nickSpans = container.querySelectorAll('.font-semibold');
-      const user1Nicks = Array.from(nickSpans).filter(s => s.textContent === 'User1');
-      expect(user1Nicks.length).toBe(2);
-    });
-
-    it('should display avatar letter when no avatar image', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Test', nick: 'TestUser' })],
-      });
-
-      render(<Main />);
-
-      expect(screen.getByText('T')).toBeInTheDocument();
-    });
-
-    it('should display avatar letter from User object', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'Test',
-            nick: createUserNick({ nick: 'AvatarUser' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      expect(screen.getByText('A')).toBeInTheDocument();
-    });
-
-    it('should display avatar image when available', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'Test',
-            nick: createUserNick({ nick: 'ImageUser', avatar: 'https://example.com/avatar.png' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      const img = screen.getByRole('img');
-      expect(img).toHaveAttribute('src', 'https://example.com/avatar.png');
-      expect(img).toHaveAttribute('alt', 'ImageUser');
-    });
-
-    it('should display fallback letter when avatar fails to load', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'Test',
-            nick: createUserNick({ nick: 'BrokenAvatar', avatar: 'https://example.com/broken.png' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      // Initially shows the image
-      const img = screen.getByRole('img');
-      expect(img).toBeInTheDocument();
-
-      // Simulate image load error (404 or network error)
-      fireEvent.error(img);
-
-      // After error, should show fallback letter instead of image
-      expect(screen.getByText('B')).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-avatar')).not.toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-header')).not.toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-embeds')).not.toBeInTheDocument();
       expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
-
-    it('should apply nick color from User object', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'Colored nick message',
-            nick: createUserNick({ nick: 'ColoredUser', color: '#ff0000' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      const nick = screen.getByText('ColoredUser');
-      expect(nick).toHaveStyle({ color: '#ff0000' });
-    });
-
-    it('should apply message color', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Error message', color: MessageColor.error })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('Error message');
-      // Find the outer div with color style (the message container)
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.error });
-    });
   });
 
-  describe('Message categories in modern view', () => {
-    it('should render non-default category messages differently', () => {
+  describe('Message categories', () => {
+    it.each([
+      ['join', MessageCategory.join, MessageColor.join, 'User joined'],
+      ['part', MessageCategory.part, MessageColor.part, 'User left'],
+      ['quit', MessageCategory.quit, MessageColor.quit, 'User quit'],
+      ['error', MessageCategory.error, MessageColor.error, 'Error occurred'],
+    ])('should render %s message with its color on the body', (_name, category, color, text) => {
       setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'User joined', category: MessageCategory.join, color: MessageColor.join })],
+        messages: [createMessage({ id: '1', message: text, category, color })],
       });
 
       const { container } = render(<Main />);
 
-      expect(container.textContent).toContain('User joined');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.join });
-    });
-
-    it('should render part message with correct color', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'User left', category: MessageCategory.part, color: MessageColor.part })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('User left');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.part });
-    });
-
-    it('should render quit message with correct color', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'User quit', category: MessageCategory.quit, color: MessageColor.quit })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('User quit');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.quit });
+      expect(container.textContent).toContain(text);
+      expect(getBody(container)).toHaveStyle({ color });
     });
 
     describe('notice messages (MessageCategory.notice)', () => {
       it('should render notice message with correct color', () => {
         setupMocks({
-          theme: 'modern',
           messages: [createMessage({ id: '1', message: 'Notice message', category: MessageCategory.notice, color: MessageColor.notice })],
         });
 
         const { container } = render(<Main />);
 
         expect(container.textContent).toContain('Notice message');
-        const coloredDiv = container.querySelector(`div[style*="color"]`);
-        expect(coloredDiv).toHaveStyle({ color: MessageColor.notice });
+        expect(getBody(container)).toHaveStyle({ color: MessageColor.notice });
       });
 
       it('should show nick for notice messages', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -521,14 +499,13 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        expect(screen.getByText('NickServ')).toBeInTheDocument();
+        expect(getHeaderNick(container)?.textContent).toBe('NickServ');
       });
 
       it('should show avatar for notice messages with avatar', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -549,7 +526,6 @@ describe('Chat tests', () => {
 
       it('should show avatar fallback letter for notice messages without avatar', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -566,9 +542,8 @@ describe('Chat tests', () => {
         expect(screen.getByText('P')).toBeInTheDocument();
       });
 
-      it('should group consecutive notice messages from the same nick', () => {
+      it('should mark consecutive notice messages from the same nick as grouped', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -588,15 +563,15 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        const nickElements = screen.getAllByText('NickServ');
-        expect(nickElements).toHaveLength(1);
+        const messages = getMessages(container);
+        expect(messages[0]).not.toHaveAttribute('data-grouped');
+        expect(messages[1]).toHaveAttribute('data-grouped');
       });
 
       it('should show bot indicator for notice from bot', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -608,15 +583,14 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        expect(screen.getByText('Pomocnik')).toBeInTheDocument();
-        expect(screen.getByLabelText('Bot')).toBeInTheDocument();
+        expect(getHeaderNick(container)?.textContent).toBe('Pomocnik');
+        expect(container.querySelector('.sic-msg-header svg.lucide-bot')).toBeInTheDocument();
       });
 
       it('should render notice without nick when nick is not set', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -633,23 +607,9 @@ describe('Chat tests', () => {
       });
     });
 
-    it('should render error message with correct color', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Error occurred', category: MessageCategory.error, color: MessageColor.error })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(container.textContent).toContain('Error occurred');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.error });
-    });
-
     describe('/me messages (MessageCategory.me)', () => {
       it('should show avatar for /me messages', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -670,7 +630,6 @@ describe('Chat tests', () => {
 
       it('should show nick for /me messages', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -682,14 +641,13 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        expect(screen.getByText('ActionUser')).toBeInTheDocument();
+        expect(getHeaderNick(container)?.textContent).toBe('ActionUser');
       });
 
       it('should show avatar fallback letter for /me messages without avatar', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -708,7 +666,6 @@ describe('Chat tests', () => {
 
       it('should apply /me message color', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -723,13 +680,11 @@ describe('Chat tests', () => {
         const { container } = render(<Main />);
 
         expect(container.textContent).toContain('waves hello');
-        const coloredDiv = container.querySelector(`div[style*="color"]`);
-        expect(coloredDiv).toHaveStyle({ color: MessageColor.me });
+        expect(getBody(container)).toHaveStyle({ color: MessageColor.me });
       });
 
-      it('should group consecutive /me messages from same user', () => {
+      it('should mark consecutive /me messages from same user as grouped', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -748,16 +703,13 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        // Nick should appear only once (grouped)
-        const nicks = screen.getAllByText('ActionUser');
-        expect(nicks.length).toBe(1);
+        expect(getMessages(container)[1]).toHaveAttribute('data-grouped');
       });
 
       it('should group /me messages with regular messages from same user', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -775,16 +727,13 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        // Nick should appear only once (grouped with previous message)
-        const nicks = screen.getAllByText('TestUser');
-        expect(nicks.length).toBe(1);
+        expect(getMessages(container)[1]).toHaveAttribute('data-grouped');
       });
 
-      it('should show nick again when /me message is from different user', () => {
+      it('should not mark /me message from a different user as grouped', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -794,7 +743,7 @@ describe('Chat tests', () => {
             }),
             createMessage({
               id: '2',
-              message: 'waves at User1',
+              message: 'waves at everyone',
               nick: 'User2',
               category: MessageCategory.me,
               color: MessageColor.me,
@@ -804,13 +753,11 @@ describe('Chat tests', () => {
 
         const { container } = render(<Main />);
 
-        expect(container.textContent).toContain('User1');
-        expect(container.textContent).toContain('User2');
+        expect(getMessages(container)[1]).not.toHaveAttribute('data-grouped');
       });
 
       it('should trigger context menu on right-click on nick in /me message', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -822,10 +769,11 @@ describe('Chat tests', () => {
           ],
         });
 
-        render(<Main />);
+        const { container } = render(<Main />);
 
-        const nickElement = screen.getByText('ActionUser');
-        fireEvent.contextMenu(nickElement);
+        const nickElement = getHeaderNick(container);
+        expect(nickElement).not.toBeNull();
+        if (nickElement) fireEvent.contextMenu(nickElement);
 
         expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
           expect.any(Object),
@@ -836,7 +784,6 @@ describe('Chat tests', () => {
 
       it('should trigger context menu on right-click on avatar in /me message', () => {
         setupMocks({
-          theme: 'modern',
           messages: [
             createMessage({
               id: '1',
@@ -866,7 +813,6 @@ describe('Chat tests', () => {
   describe('Edge cases', () => {
     it('should handle empty nick string', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Test', nick: '' })],
       });
 
@@ -877,7 +823,6 @@ describe('Chat tests', () => {
 
     it('should handle undefined nick', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'No nick message', nick: undefined })],
       });
 
@@ -886,40 +831,78 @@ describe('Chat tests', () => {
       expect(container.textContent).toContain('No nick message');
     });
 
-    it('should handle messages without color', () => {
+    it('should use the debug DOM only for debug/status channels', () => {
       setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'Default color', color: undefined })],
+        currentChannelName: '#regular',
+        messages: [createMessage({ id: '1', time: '2024-01-01T12:34:56Z' })],
       });
 
       const { container } = render(<Main />);
 
-      expect(container.textContent).toContain('Default color');
-      const coloredDiv = container.querySelector(`div[style*="color"]`);
-      expect(coloredDiv).toHaveStyle({ color: MessageColor.body });
-    });
-
-    it('should use debug view only for debug/status channels', () => {
-      setupMocks({
-        currentChannelName: '#regular',
-        theme: 'modern',
-        messages: [createMessage({ id: '1', time: '2024-01-01T12:34:56Z' })],
-      });
-
-      render(<Main />);
-
-      // Regular channel should show HH:mm format (without seconds)
-      const timeElement = screen.getByText(/^\d{2}:\d{2}$/);
-      expect(timeElement).toBeInTheDocument();
-      // Should not have seconds format
-      expect(screen.queryByText(/^\d{2}:\d{2}:\d{2}$/)).not.toBeInTheDocument();
+      expect(container.querySelector('.sic-msg')).not.toHaveAttribute('data-debug');
     });
   });
 
-  describe('Message deduplication (lastNick logic)', () => {
-    it('should not show avatar for consecutive messages from same user', () => {
+  describe('Message grouping (data-grouped)', () => {
+    it('should mark consecutive messages from the same user as grouped', () => {
       setupMocks({
-        theme: 'modern',
+        messages: [
+          createMessage({ id: '1', message: 'First', nick: 'User1' }),
+          createMessage({ id: '2', message: 'Second', nick: 'User1' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages[0]).not.toHaveAttribute('data-grouped');
+      expect(messages[1]).toHaveAttribute('data-grouped');
+    });
+
+    it('should not mark messages from a different user as grouped', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'User1 msg', nick: 'User1' }),
+          createMessage({ id: '2', message: 'User2 msg', nick: 'User2' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages[1]).not.toHaveAttribute('data-grouped');
+    });
+
+    it('should not mark a message as grouped after a non-content message in between', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'Hello', nick: 'User1' }),
+          createMessage({ id: '2', message: 'User2 joined', nick: 'User2', category: MessageCategory.join }),
+          createMessage({ id: '3', message: 'Hello again', nick: 'User1' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages[2]).not.toHaveAttribute('data-grouped');
+    });
+
+    it('should handle mixed string and User object nicks for grouping', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'First', nick: 'TestUser' }),
+          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'TestUser' }) }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getMessages(container)[1]).toHaveAttribute('data-grouped');
+    });
+
+    it('should still render avatar and header slots for grouped messages (hidden by theme CSS)', () => {
+      setupMocks({
         messages: [
           createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
           createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
@@ -928,54 +911,23 @@ describe('Chat tests', () => {
 
       render(<Main />);
 
-      // Only one avatar should be rendered
-      const avatars = screen.getAllByRole('img');
-      expect(avatars.length).toBe(1);
-    });
-
-    it('should show avatar for each new user in conversation', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({ id: '1', message: 'User1 msg', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }) }),
-          createMessage({ id: '2', message: 'User2 msg', nick: createUserNick({ nick: 'User2', avatar: 'https://example.com/b.png' }) }),
-        ],
-      });
-
-      render(<Main />);
-
-      const avatars = screen.getAllByRole('img');
-      expect(avatars.length).toBe(2);
-    });
-
-    it('should handle mixed string and User object nicks for grouping', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [
-          createMessage({ id: '1', message: 'First', nick: 'TestUser' }),
-          createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'TestUser' }) }),
-        ],
-      });
-
-      render(<Main />);
-
-      // Same nick should be grouped (only one nick display)
-      const nicks = screen.getAllByText('TestUser');
-      expect(nicks.length).toBe(1);
+      // The superset DOM keeps the avatar/header in grouped messages so custom
+      // themes can opt out of grouping purely via CSS
+      expect(screen.getAllByRole('img')).toHaveLength(2);
     });
   });
 
   describe('Nick context menu', () => {
-    it('should trigger context menu on right-click on nick in classic view', () => {
+    it('should trigger context menu on right-click on the inline nick', () => {
       setupMocks({
-        theme: 'classic',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('<TestUser>');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getInlineNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),
@@ -990,10 +942,11 @@ describe('Chat tests', () => {
         messages: [createMessage({ id: '1', message: 'Debug msg', nick: 'DebugUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('<DebugUser>');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getInlineNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),
@@ -1002,16 +955,16 @@ describe('Chat tests', () => {
       );
     });
 
-    it('should trigger context menu on right-click on nick in modern view', () => {
+    it('should trigger context menu on right-click on the header nick', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'ModernUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('ModernUser');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getHeaderNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),
@@ -1020,9 +973,8 @@ describe('Chat tests', () => {
       );
     });
 
-    it('should trigger context menu on right-click on avatar in modern view', () => {
+    it('should trigger context menu on right-click on avatar', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1047,31 +999,28 @@ describe('Chat tests', () => {
 
     it('should have cursor-pointer class on clickable nick elements', () => {
       setupMocks({
-        theme: 'classic',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('<TestUser>');
-      expect(nickElement).toHaveClass('cursor-pointer');
+      expect(getInlineNick(container)).toHaveClass('cursor-pointer');
+      expect(getHeaderNick(container)).toHaveClass('cursor-pointer');
     });
 
     it('should have hover:underline class on clickable nick elements', () => {
       setupMocks({
-        theme: 'classic',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('<TestUser>');
-      expect(nickElement).toHaveClass('hover:underline');
+      expect(getInlineNick(container)).toHaveClass('hover:underline');
+      expect(getHeaderNick(container)).toHaveClass('hover:underline');
     });
 
-    it('should handle User object nick for context menu in modern view', () => {
+    it('should handle User object nick for context menu', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1081,10 +1030,11 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('ObjectUser');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getHeaderNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),
@@ -1093,41 +1043,26 @@ describe('Chat tests', () => {
       );
     });
 
-    it('should trigger context menu on right-click on join message in modern view', () => {
+    it.each([
+      ['join', MessageCategory.join, MessageColor.join, 'JoinUser joined the channel', 'JoinUser'],
+      ['part', MessageCategory.part, MessageColor.part, 'PartUser left the channel', 'PartUser'],
+      ['quit', MessageCategory.quit, MessageColor.quit, 'QuitUser quit', 'QuitUser'],
+      ['kick', MessageCategory.kick, MessageColor.kick, 'KickUser was kicked', 'KickUser'],
+    ])('should trigger context menu on right-click on %s message nick', (_name, category, color, text, nick) => {
       setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'JoinUser joined the channel', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
+        messages: [createMessage({ id: '1', message: text, nick, category, color })],
       });
 
       const { container } = render(<Main />);
 
-      const messageElement = container.querySelector('.cursor-pointer');
+      const messageElement = container.querySelector('.sic-msg-body .cursor-pointer');
       expect(messageElement).not.toBeNull();
       if (messageElement) fireEvent.contextMenu(messageElement);
 
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
         expect.any(Object),
         'user',
-        'JoinUser'
-      );
-    });
-
-    it('should trigger context menu on right-click on join message in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
-      });
-
-      const { container } = render(<Main />);
-
-      const clickableSpan = container.querySelector('span.cursor-pointer');
-      expect(clickableSpan).not.toBeNull();
-      if (clickableSpan) fireEvent.contextMenu(clickableSpan);
-
-      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
-        expect.any(Object),
-        'user',
-        'JoinUser'
+        nick
       );
     });
 
@@ -1150,98 +1085,27 @@ describe('Chat tests', () => {
       );
     });
 
-    it('should trigger context menu on right-click on part message in modern view', () => {
+    it('should not render an inline nick element for join messages', () => {
       setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'PartUser left the channel', nick: 'PartUser', category: MessageCategory.part, color: MessageColor.part })],
-      });
-
-      const { container } = render(<Main />);
-
-      const messageElement = container.querySelector('.cursor-pointer');
-      expect(messageElement).not.toBeNull();
-      if (messageElement) fireEvent.contextMenu(messageElement);
-
-      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
-        expect.any(Object),
-        'user',
-        'PartUser'
-      );
-    });
-
-    it('should trigger context menu on right-click on quit message in modern view', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'QuitUser quit', nick: 'QuitUser', category: MessageCategory.quit, color: MessageColor.quit })],
-      });
-
-      const { container } = render(<Main />);
-
-      const messageElement = container.querySelector('.cursor-pointer');
-      expect(messageElement).not.toBeNull();
-      if (messageElement) fireEvent.contextMenu(messageElement);
-
-      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
-        expect.any(Object),
-        'user',
-        'QuitUser'
-      );
-    });
-
-    it('should trigger context menu on right-click on kick message in modern view', () => {
-      setupMocks({
-        theme: 'modern',
-        messages: [createMessage({ id: '1', message: 'KickUser was kicked', nick: 'KickUser', category: MessageCategory.kick, color: MessageColor.kick })],
-      });
-
-      const { container } = render(<Main />);
-
-      const messageElement = container.querySelector('.cursor-pointer');
-      expect(messageElement).not.toBeNull();
-      if (messageElement) fireEvent.contextMenu(messageElement);
-
-      expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
-        expect.any(Object),
-        'user',
-        'KickUser'
-      );
-    });
-
-    it('should not show <nick> prefix for join messages in classic view', () => {
-      setupMocks({
-        theme: 'classic',
         messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
       });
 
       const { container } = render(<Main />);
 
-      expect(screen.queryByText('<JoinUser>')).not.toBeInTheDocument();
+      expect(getInlineNick(container)).not.toBeInTheDocument();
       expect(container.textContent).toContain('JoinUser joined');
     });
 
-    it('should not show <nick> prefix for join messages in debug view', () => {
+    it('should not have cursor-pointer on join message without nick', () => {
       setupMocks({
-        currentChannelName: DEBUG_CHANNEL,
-        messages: [createMessage({ id: '1', message: 'JoinUser joined', nick: 'JoinUser', category: MessageCategory.join, color: MessageColor.join })],
-      });
-
-      const { container } = render(<Main />);
-
-      expect(screen.queryByText('<JoinUser>')).not.toBeInTheDocument();
-      expect(container.textContent).toContain('JoinUser joined');
-    });
-
-    it('should not have cursor-pointer on join message without nick in modern view', () => {
-      setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'System join message', category: MessageCategory.join, color: MessageColor.join })],
       });
 
       const { container } = render(<Main />);
 
-      const joinDiv = container.querySelector('.pl-\\[68px\\]');
-      expect(joinDiv).not.toBeNull();
-      expect(joinDiv).not.toHaveClass('cursor-pointer');
+      const joinMsg = container.querySelector('.sic-msg[data-category="join"]');
+      expect(joinMsg).not.toBeNull();
+      expect(joinMsg?.querySelector('.cursor-pointer')).toBeNull();
     });
   });
 
@@ -1330,23 +1194,22 @@ describe('Chat tests', () => {
     });
   });
 
-  describe('Echo message indicator in modern view', () => {
-    it('should display echoed indicator when message has echoed=true', () => {
+  describe('Echo message indicator', () => {
+    it('should display echoed indicator in the header and trailing time slots when echoed=true', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
       });
 
       const { container } = render(<Main />);
 
-      // Should find the CheckCheck icon (lucide-react renders as svg)
-      const checkIcon = container.querySelector('svg.lucide-check-check');
-      expect(checkIcon).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-time-header svg.lucide-check-check')).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-time-trailing svg.lucide-check-check')).toBeInTheDocument();
+      // The inline (classic) time slot never shows the indicator
+      expect(container.querySelector('.sic-msg-time-inline svg.lucide-check-check')).not.toBeInTheDocument();
     });
 
     it('should not display echoed indicator when message has echoed=false', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Not echoed message', nick: 'TestUser', echoed: false })],
       });
 
@@ -1358,7 +1221,6 @@ describe('Chat tests', () => {
 
     it('should not display echoed indicator when echoed is undefined', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Regular message', nick: 'TestUser' })],
       });
 
@@ -1370,7 +1232,6 @@ describe('Chat tests', () => {
 
     it('should display echoed indicator for grouped messages (same user)', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'First message', nick: 'TestUser', echoed: true }),
           createMessage({ id: '2', message: 'Second message', nick: 'TestUser', echoed: true }),
@@ -1379,14 +1240,13 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      // Both messages should have the indicator
-      const checkIcons = container.querySelectorAll('svg.lucide-check-check');
-      expect(checkIcons.length).toBe(2);
+      // Each message renders the indicator in the trailing slot (shown for grouped rows)
+      const trailingIcons = container.querySelectorAll('.sic-msg-time-trailing svg.lucide-check-check');
+      expect(trailingIcons.length).toBe(2);
     });
 
     it('should display echoed indicator only for echoed messages in mixed list', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Echoed message', nick: 'User1', echoed: true }),
           createMessage({ id: '2', message: 'Not echoed message', nick: 'User2', echoed: false }),
@@ -1396,23 +1256,11 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const checkIcons = container.querySelectorAll('svg.lucide-check-check');
-      expect(checkIcons.length).toBe(2);
+      const messagesWithIcon = getMessages(container).filter((m) => m.querySelector('svg.lucide-check-check'));
+      expect(messagesWithIcon.length).toBe(2);
     });
 
-    it('should not display echoed indicator in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
-      });
-
-      const { container } = render(<Main />);
-
-      const checkIcon = container.querySelector('svg.lucide-check-check');
-      expect(checkIcon).not.toBeInTheDocument();
-    });
-
-    it('should not display echoed indicator in debug view', () => {
+    it('should not render echoed indicator in debug view', () => {
       setupMocks({
         currentChannelName: DEBUG_CHANNEL,
         messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
@@ -1426,7 +1274,6 @@ describe('Chat tests', () => {
 
     it('should have tooltip trigger on echoed indicator', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
       });
 
@@ -1439,7 +1286,6 @@ describe('Chat tests', () => {
 
     it('should display echoed indicator with correct styling', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Echoed message', nick: 'TestUser', echoed: true })],
       });
 
@@ -1451,33 +1297,28 @@ describe('Chat tests', () => {
   });
 
   describe('Bot indicator', () => {
-    it('should display bot indicator in modern view when nick is a bot user', () => {
+    it('should display bot indicator in the header when nick is a bot user', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
       });
 
       const { container } = render(<Main />);
 
-      const botIcon = container.querySelector('svg.lucide-bot');
-      expect(botIcon).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-header svg.lucide-bot')).toBeInTheDocument();
     });
 
-    it('should display bot indicator in classic view when nick is a bot user', () => {
+    it('should display bot indicator next to the inline nick when nick is a bot user', () => {
       setupMocks({
-        theme: 'classic',
         messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
       });
 
       const { container } = render(<Main />);
 
-      const botIcon = container.querySelector('svg.lucide-bot');
-      expect(botIcon).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-bot-inline svg.lucide-bot')).toBeInTheDocument();
     });
 
     it('should not display bot indicator when nick is not a bot', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'RegularUser' }) })],
       });
 
@@ -1489,7 +1330,6 @@ describe('Chat tests', () => {
 
     it('should not display bot indicator when nick is a string', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'StringNick' })],
       });
 
@@ -1501,7 +1341,6 @@ describe('Chat tests', () => {
 
     it('should not display bot indicator when bot is false', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'NotBot', bot: false }) })],
       });
 
@@ -1525,7 +1364,6 @@ describe('Chat tests', () => {
 
     it('should display bot indicator with correct styling', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: createUserNick({ nick: 'BotUser', bot: true }) })],
       });
 
@@ -1537,7 +1375,6 @@ describe('Chat tests', () => {
 
     it('should display bot indicator only for bot messages in mixed list', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Bot msg', nick: createUserNick({ nick: 'Bot1', bot: true }) }),
           createMessage({ id: '2', message: 'Human msg', nick: createUserNick({ nick: 'Human' }) }),
@@ -1547,8 +1384,8 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const botIcons = container.querySelectorAll('svg.lucide-bot');
-      expect(botIcons).toHaveLength(2);
+      const messagesWithBot = getMessages(container).filter((m) => m.querySelector('svg.lucide-bot'));
+      expect(messagesWithBot).toHaveLength(2);
     });
   });
 
@@ -1642,9 +1479,8 @@ describe('Chat tests', () => {
   });
 
   describe('Display name support', () => {
-    it('should display displayName instead of nick when available in modern view', () => {
+    it('should display displayName instead of nick when available', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1654,30 +1490,14 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(getHeaderNick(container)?.textContent).toBe('John Doe');
+      expect(getInlineNick(container)?.textContent).toBe('John Doe');
       expect(screen.queryByText('john')).not.toBeInTheDocument();
     });
 
-    it('should display displayName instead of nick when available in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [
-          createMessage({
-            id: '1',
-            message: 'Hello world',
-            nick: createUserNick({ nick: 'john', displayName: 'John Doe' }),
-          }),
-        ],
-      });
-
-      render(<Main />);
-
-      expect(screen.getByText('<John Doe>')).toBeInTheDocument();
-    });
-
-    it('should display displayName instead of nick when available in debug view', () => {
+    it('should display displayName in debug view', () => {
       setupMocks({
         currentChannelName: DEBUG_CHANNEL,
         messages: [
@@ -1689,14 +1509,13 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      expect(screen.getByText('<John Doe>')).toBeInTheDocument();
+      expect(getInlineNick(container)?.textContent).toBe('John Doe');
     });
 
     it('should use displayName for avatar fallback letter', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1714,7 +1533,6 @@ describe('Chat tests', () => {
 
     it('should fall back to nick when displayName is not set', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1724,14 +1542,13 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      expect(screen.getByText('john')).toBeInTheDocument();
+      expect(getHeaderNick(container)?.textContent).toBe('john');
     });
 
     it('should fall back to nick when displayName is empty string', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1741,14 +1558,13 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      expect(screen.getByText('john')).toBeInTheDocument();
+      expect(getHeaderNick(container)?.textContent).toBe('john');
     });
 
     it('should still use nick for context menu even when displayName is shown', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1758,10 +1574,11 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      const nickElement = screen.getByText('John Doe');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getHeaderNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       // Context menu should receive the actual nick, not displayName
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledWith(
@@ -1773,7 +1590,6 @@ describe('Chat tests', () => {
 
     it('should group messages by nick, not by displayName', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({
             id: '1',
@@ -1788,18 +1604,15 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      // displayName should appear only once due to grouping
-      const displayNames = screen.getAllByText('John Doe');
-      expect(displayNames.length).toBe(1);
+      expect(getMessages(container)[1]).toHaveAttribute('data-grouped');
     });
   });
 
   describe('Highlight styling', () => {
-    it('should apply highlight class to highlighted message in modern view', () => {
+    it('should mark highlighted messages with data-highlight', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Hey you!', nick: 'SomeUser', highlight: true }),
         ],
@@ -1807,13 +1620,11 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
-      expect(highlightedEl).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg')).toHaveAttribute('data-highlight');
     });
 
-    it('should not apply highlight class to non-highlighted message in modern view', () => {
+    it('should not mark non-highlighted messages with data-highlight', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Normal message', nick: 'SomeUser', highlight: false }),
         ],
@@ -1821,36 +1632,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
-      expect(highlightedEl).not.toBeInTheDocument();
-    });
-
-    it('should apply highlight class to highlighted message in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [
-          createMessage({ id: '1', message: 'Hey you!', nick: 'SomeUser', highlight: true }),
-        ],
-      });
-
-      const { container } = render(<Main />);
-
-      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
-      expect(highlightedEl).toBeInTheDocument();
-    });
-
-    it('should not apply highlight class to non-highlighted message in classic view', () => {
-      setupMocks({
-        theme: 'classic',
-        messages: [
-          createMessage({ id: '1', message: 'Normal message', nick: 'SomeUser', highlight: false }),
-        ],
-      });
-
-      const { container } = render(<Main />);
-
-      const highlightedEl = container.querySelector(String.raw`.border-primary.bg-primary\/5`);
-      expect(highlightedEl).not.toBeInTheDocument();
+      expect(container.querySelector('.sic-msg')).not.toHaveAttribute('data-highlight');
     });
   });
 
@@ -1892,7 +1674,6 @@ describe('Chat tests', () => {
   describe('Chat context menu', () => {
     it('should open text context menu when right-clicking with text selected', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
       });
 
@@ -1918,7 +1699,6 @@ describe('Chat tests', () => {
     it('should open chat context menu when right-clicking on empty space without selection', () => {
       setupMocks({
         currentChannelName: '#mychannel',
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
       });
 
@@ -1943,15 +1723,15 @@ describe('Chat tests', () => {
 
     it('should not open chat/text context menu when nick context menu already handled', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello', nick: 'TestUser' })],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
       // Right-click on nick triggers the nick handler which calls preventDefault
-      const nickElement = screen.getByText('TestUser');
-      fireEvent.contextMenu(nickElement);
+      const nickElement = getHeaderNick(container);
+      expect(nickElement).not.toBeNull();
+      if (nickElement) fireEvent.contextMenu(nickElement);
 
       // Should be called once (for user context menu from nick click)
       expect(mockHandleContextMenuUserClick).toHaveBeenCalledTimes(1);
@@ -1964,7 +1744,6 @@ describe('Chat tests', () => {
 
     it('should preventDefault and stopPropagation when showing text context menu', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
       });
 
@@ -1988,7 +1767,6 @@ describe('Chat tests', () => {
 
     it('should preventDefault and stopPropagation when showing chat context menu', () => {
       setupMocks({
-        theme: 'modern',
         messages: [createMessage({ id: '1', message: 'Hello world', nick: 'TestUser' })],
       });
 
@@ -2017,7 +1795,6 @@ describe('Chat tests', () => {
 
     it('should show date separator between messages on different days', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Yesterday msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T12:00:00Z' }),
           createMessage({ id: '2', message: 'Today msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-02T12:00:00Z' }),
@@ -2031,7 +1808,6 @@ describe('Chat tests', () => {
 
     it('should not show date separator between messages on the same day', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Morning msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T08:00:00Z' }),
           createMessage({ id: '2', message: 'Afternoon msg', nick: createUserNick({ nick: 'User1' }), time: '2024-01-01T14:00:00Z' }),
@@ -2043,29 +1819,23 @@ describe('Chat tests', () => {
       expect(getDateSeparators(container).length).toBe(0);
     });
 
-    it('should reset nick grouping after date separator so avatar and nick are shown', () => {
+    it('should reset nick grouping after date separator', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'Before midnight', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
           createMessage({ id: '2', message: 'After midnight', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-02T12:00:00Z' }),
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      // Both messages should show avatar since date separator resets grouping
-      const avatars = screen.getAllByRole('img');
-      expect(avatars.length).toBe(2);
-
-      // Both messages should show the nick
-      const nicks = screen.getAllByText('User1');
-      expect(nicks.length).toBe(2);
+      const messages = getMessages(container);
+      expect(messages[0]).not.toHaveAttribute('data-grouped');
+      expect(messages[1]).not.toHaveAttribute('data-grouped');
     });
 
     it('should still group consecutive messages from same user without date change', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'First', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
           createMessage({ id: '2', message: 'Second', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:01:00Z' }),
@@ -2074,16 +1844,14 @@ describe('Chat tests', () => {
         ],
       });
 
-      render(<Main />);
+      const { container } = render(<Main />);
 
-      // 2 avatars: one for the first group, one after date separator
-      const avatars = screen.getAllByRole('img');
-      expect(avatars.length).toBe(2);
+      const grouped = container.querySelectorAll('.sic-msg[data-grouped]');
+      expect(grouped.length).toBe(2);
     });
 
     it('should reset nick grouping after date separator with different users', () => {
       setupMocks({
-        theme: 'modern',
         messages: [
           createMessage({ id: '1', message: 'User1 day1', nick: createUserNick({ nick: 'User1', avatar: 'https://example.com/a.png' }), time: '2024-01-01T12:00:00Z' }),
           createMessage({ id: '2', message: 'User2 day2', nick: createUserNick({ nick: 'User2', avatar: 'https://example.com/b.png' }), time: '2024-01-02T12:00:00Z' }),
@@ -2092,9 +1860,7 @@ describe('Chat tests', () => {
 
       const { container } = render(<Main />);
 
-      // Both users should have avatars
-      const avatars = screen.getAllByRole('img');
-      expect(avatars.length).toBe(2);
+      expect(container.querySelectorAll('.sic-msg[data-grouped]').length).toBe(0);
 
       // Date separator should be present
       expect(getDateSeparators(container).length).toBe(1);
