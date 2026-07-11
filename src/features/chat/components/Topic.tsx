@@ -112,7 +112,7 @@ const Topic = () => {
   const isAnyDrawerOpen = isChannelsDrawerOpen || isUsersDrawerOpen;
 
   return (
-    <div className="px-4 flex min-h-12 min-w-0 items-center border-b border-border pt-safe pl-safe pr-safe">
+    <div className="flex min-h-12 min-w-0 items-center border-b border-border pt-safe pl-safe-4 pr-safe-4">
       {!isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-10 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
