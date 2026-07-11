@@ -17,7 +17,7 @@ const pwa = VitePWA({
   registerType: "autoUpdate",
   injectRegister: "script-defer",
   workbox: {
-    globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2}"],
+    globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2,wasm}"],
     globIgnores: ["**/*.map"],
   },
   manifest: {
@@ -66,6 +66,13 @@ export default defineConfig(({ command }) => {
       server: {
         host: true,
         hmr: true,
+      },
+      optimizeDeps: {
+        // The script engine is loaded lazily; if these deps are discovered at
+        // that first dynamic import, Vite re-optimizes and full-page-reloads,
+        // dropping the live IRC connection. Exclude serves them as native ESM
+        // (include would break the variant's import.meta.url wasm resolution).
+        exclude: ["quickjs-emscripten-core", "@jitl/quickjs-wasmfile-release-sync"],
       },
     }
   } else {

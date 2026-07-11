@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Network } from './Network';
+import { initScripts } from '@features/scripts/runtime/ScriptManager';
 
 import './i18n';
 
@@ -20,6 +21,12 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // Starts enabled user scripts once the scripts store rehydrates;
+  // the QuickJS engine is only fetched if at least one script is enabled
+  useEffect(() => {
+    initScripts();
+  }, []);
 
   return (
     <DrawersProvider>

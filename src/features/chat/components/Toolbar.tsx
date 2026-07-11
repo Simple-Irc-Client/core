@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
@@ -33,6 +33,7 @@ import ColorPicker from './ColorPicker';
 import StylePicker from './StylePicker';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import type { FontFormatting } from '@features/settings/store/settings';
+import { subscribeScriptCommands, getScriptCommandNames } from '@features/scripts/runtime/commandRegistry';
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -99,14 +100,16 @@ const Toolbar = () => {
     return prefix + text + suffix;
   };
 
+  const scriptCommands = useSyncExternalStore(subscribeScriptCommands, getScriptCommandNames);
+
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
-    return commandsNotSorted.sort((a, b) => {
+    return commandsNotSorted.concat(scriptCommands).sort((a, b) => {
       const A = a.toLowerCase();
       const B = b.toLowerCase();
       return A < B ? -1 : A > B ? 1 : 0;
     });
-  }, [currentChannelCategory]);
+  }, [currentChannelCategory, scriptCommands]);
 
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
