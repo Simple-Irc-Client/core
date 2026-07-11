@@ -15,6 +15,8 @@ import * as stsStoreFile from '../store/stsStore';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL, clientVersion } from '../../../config/config';
 import { ChannelCategory } from '@shared/types';
+import { useFriendsStore } from '@features/friends/store/friends';
+import { resetFriendsSubscription } from '@features/friends/friends';
 
 describe('kernel tests', () => {
   const defaultUserModes = [
@@ -78,6 +80,61 @@ describe('kernel tests', () => {
     expect(mockSetConnectedTime).toBeCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.connected') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  it('test end of MOTD (376) subscribes persisted friends once per connection', () => {
+    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(
+      () => ({ network: 'testnet' }) as unknown as ReturnType<typeof settingsFile.getServer>,
+    );
+    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
+
+    useFriendsStore.setState({ friendsByNetwork: { testnet: ['Alice', 'Bob'] } });
+    resetFriendsSubscription();
+
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
+    new Kernel({ type: 'raw', line: ':srv 376 TestNick :End of /MOTD command.' }).handle();
+    // A manual /MOTD replays 376 — must not resend the list on this connection
+    new Kernel({ type: 'raw', line: ':srv 376 TestNick :End of /MOTD command.' }).handle();
+
+    expect(mockMonitorAdd).toHaveBeenCalledTimes(1);
+    expect(mockMonitorAdd).toHaveBeenCalledWith(['Alice', 'Bob']);
+
+    // A reconnect's fresh 001 re-arms the subscription
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
+    new Kernel({ type: 'raw', line: ':srv 376 TestNick :End of /MOTD command.' }).handle();
+
+    expect(mockMonitorAdd).toHaveBeenCalledTimes(2);
+
+    useFriendsStore.setState({ friendsByNetwork: {} });
+  });
+
+  it('test missing MOTD (422) also subscribes persisted friends', () => {
+    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(
+      () => ({ network: 'testnet' }) as unknown as ReturnType<typeof settingsFile.getServer>,
+    );
+    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
+
+    useFriendsStore.setState({ friendsByNetwork: { testnet: ['Alice'] } });
+    resetFriendsSubscription();
+
+    new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
+    new Kernel({ type: 'raw', line: ':srv 422 TestNick :MOTD File is missing' }).handle();
+
+    expect(mockMonitorAdd).toHaveBeenCalledWith(['Alice']);
+
+    useFriendsStore.setState({ friendsByNetwork: {} });
   });
 
   it('test connected starts the active keepalive', () => {

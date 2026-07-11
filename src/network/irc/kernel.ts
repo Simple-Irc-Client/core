@@ -55,6 +55,7 @@ import {
 } from '@features/settings/store/settings';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
+import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
@@ -481,6 +482,10 @@ export class Kernel {
     setIsConnecting(false);
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
+
+    // Friends are re-subscribed at end of MOTD; arm the guard for this
+    // (re)connection so that happens exactly once.
+    resetFriendsSubscription();
 
     // Start the active keepalive now that we're registered. Idempotent, so a
     // reconnect's fresh 001 safely replaces any prior timer.
@@ -3435,6 +3440,9 @@ export class Kernel {
       category: MessageCategory.motd,
       color: MessageColor.info,
     });
+
+    // End of registration burst: 005 limits are known, subscribe friends.
+    subscribeFriendsOnRegistration();
   };
 
   // :chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host
@@ -4568,6 +4576,9 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    // No MOTD is still end of the registration burst: subscribe friends.
+    subscribeFriendsOnRegistration();
   };
 
   // :server 431 mynick :No nickname given

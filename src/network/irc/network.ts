@@ -482,6 +482,22 @@ export const ircMonitorStatus = (): void => {
   ircSendRawMessage('MONITOR S');
 };
 
+/**
+ * Add nicks to the WATCH list (pre-IRCv3 fallback for servers without MONITOR)
+ */
+export const ircWatchAdd = (nicks: string[]): void => {
+  if (nicks.length === 0) { return; }
+  ircSendRawMessage(`WATCH ${nicks.map((nick) => `+${nick}`).join(' ')}`);
+};
+
+/**
+ * Remove nicks from the WATCH list
+ */
+export const ircWatchRemove = (nicks: string[]): void => {
+  if (nicks.length === 0) { return; }
+  ircSendRawMessage(`WATCH ${nicks.map((nick) => `-${nick}`).join(' ')}`);
+};
+
 // IRC protocol max message length: 512 bytes including \r\n
 const MAX_IRC_MESSAGE_LENGTH = 510;
 

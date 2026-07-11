@@ -22,6 +22,7 @@ import { Badge } from '@shared/components/ui/badge';
 import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import ChannelListDialog from '@shared/components/ChannelListDialog';
+import Friends from '@features/friends/components/Friends';
 
 interface ChannelsProps {
   width?: number;
@@ -253,6 +254,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                 ))}
               </div>
             ))}
+            <Friends fontSizeClass={fontSizeClass} />
           </div>
         </div>
       <ChannelListDialog

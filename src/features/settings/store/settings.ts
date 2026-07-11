@@ -550,6 +550,10 @@ export const getCurrentUserFlags = (): string[] => {
   return useSettingsStore.getState().currentUserFlags;
 };
 
+export const getIsConnected = (): boolean => {
+  return useSettingsStore.getState().isConnected;
+};
+
 export const setWatchLimit = (limit: number): void => {
   useSettingsStore.getState().setWatchLimit(limit);
 };

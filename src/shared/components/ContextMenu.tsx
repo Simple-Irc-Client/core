@@ -16,6 +16,7 @@ import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
+import { addFriend, isFriend, removeFriend } from '@features/friends/friends';
 import { isSafeUrl } from '@shared/lib/utils';
 import { clipboard, openExternal } from '@/runtime/desktop';
 
@@ -170,14 +171,12 @@ export const ContextMenu = () => {
     };
 
     const handleAddFriend = (): void => {
-      const watchLimit = getWatchLimit();
-      const monitorLimit = getMonitorLimit();
+      addFriend(contextMenuItem);
+      handleContextMenuClose();
+    };
 
-      if (monitorLimit > 0) {
-        ircSendRawMessage(`MONITOR + ${contextMenuItem}`);
-      } else if (watchLimit > 0) {
-        ircSendRawMessage(`WATCH +${contextMenuItem}`);
-      }
+    const handleRemoveFriend = (): void => {
+      removeFriend(contextMenuItem);
       handleContextMenuClose();
     };
 
@@ -241,7 +240,8 @@ export const ContextMenu = () => {
     const watchLimit = getWatchLimit();
     const monitorLimit = getMonitorLimit();
     const silenceLimit = getSilenceLimit();
-    const canAddFriend = !isCurrentUser && isRegistered && (watchLimit > 0 || monitorLimit > 0);
+    const isFriendAlready = isFriend(contextMenuItem);
+    const canAddFriend = !isCurrentUser && !isFriendAlready && isRegistered && (watchLimit > 0 || monitorLimit > 0);
     const canIgnore = !isCurrentUser && isRegistered && silenceLimit > 0;
 
     // Check channel-specific operator permissions
@@ -280,6 +280,12 @@ export const ContextMenu = () => {
             <DropdownMenuItem onClick={handleAddFriend}>
               <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('contextmenu.user.addfriend')}
+            </DropdownMenuItem>
+          )}
+          {isFriendAlready && !isCurrentUser && (
+            <DropdownMenuItem onClick={handleRemoveFriend}>
+              <UserMinus className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('contextmenu.user.removefriend')}
             </DropdownMenuItem>
           )}
           {canIgnore && (

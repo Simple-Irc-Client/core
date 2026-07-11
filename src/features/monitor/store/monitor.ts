@@ -24,6 +24,8 @@ interface MonitorStore {
 
   /** Add nick to monitor list */
   addMonitoredNick: (nick: string) => void;
+  /** Add multiple nicks to monitor list (existing entries keep their status) */
+  addMonitoredNicks: (nicks: string[]) => void;
   /** Remove nick from monitor list */
   removeMonitoredNick: (nick: string) => void;
   /** Set online status of a monitored nick */
@@ -49,6 +51,22 @@ export const useMonitorStore = create<MonitorStore>()(
             online: false,
             lastUpdate: Date.now(),
           });
+        }
+        return { monitoredUsers: newMap };
+      });
+    },
+
+    addMonitoredNicks: (nicks: string[]): void => {
+      set((state) => {
+        const newMap = new Map(state.monitoredUsers);
+        for (const nick of nicks) {
+          if (!newMap.has(nick.toLowerCase())) {
+            newMap.set(nick.toLowerCase(), {
+              nick,
+              online: false,
+              lastUpdate: Date.now(),
+            });
+          }
         }
         return { monitoredUsers: newMap };
       });
@@ -140,6 +158,10 @@ export const useMonitorStore = create<MonitorStore>()(
 
 export const addMonitoredNick = (nick: string): void => {
   useMonitorStore.getState().addMonitoredNick(nick);
+};
+
+export const addMonitoredNicks = (nicks: string[]): void => {
+  useMonitorStore.getState().addMonitoredNicks(nicks);
 };
 
 export const removeMonitoredNick = (nick: string): void => {
