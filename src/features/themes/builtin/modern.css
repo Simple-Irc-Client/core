@@ -75,7 +75,7 @@
 }
 
 .sic-msg-header .sic-msg-nick {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold, 600);
 }
 
 .sic-msg-time {

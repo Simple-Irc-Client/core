@@ -92,6 +92,14 @@
   /* Self-hosted Inter so Electron (Chromium) and Tauri (WebKitGTK) render the
      identical typeface instead of each engine's divergent OS fallback. */
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  /* Inter's large x-height reads heavier than the system fonts (Segoe UI,
+     Ubuntu) the pre-Tauri builds displayed; shift the whole weight scale
+     down so text keeps the density users were used to. Inter Variable spans
+     wght 100-900, so these render as true instances, not synthetic weights. */
+  --font-weight-normal: 380;
+  --font-weight-medium: 480;
+  --font-weight-semibold: 570;
+  --font-weight-bold: 650;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -241,8 +249,12 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    /* Match Chromium's lighter grayscale antialiasing under WebKitGTK,
-       which would otherwise render Inter noticeably heavier on Linux. */
+    font-weight: var(--font-weight-normal);
+    /* Inter's dynamic-metrics tracking for ~14px UI text; counters Inter
+       running wider than the system fonts the pre-Tauri builds displayed. */
+    letter-spacing: -0.01em;
+    /* macOS-only: keeps WKWebView on grayscale antialiasing instead of the
+       heavier subpixel default. No-op on Linux (WebKitGTK) and Windows. */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
