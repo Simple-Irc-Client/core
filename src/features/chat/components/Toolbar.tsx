@@ -417,11 +417,11 @@ const Toolbar = () => {
 
   return (
     <>
-      <form className="px-4 flex pb-safe pl-safe pr-safe" onSubmit={handleSubmit}>
+      <form className="flex items-center pt-1 pb-safe-2 pl-safe-4 pr-safe-4" onSubmit={handleSubmit}>
         {currentChannelName !== DEBUG_CHANNEL && (
           <>
             {/* User Avatar with Dropdown Menu */}
-            <div className="relative mr-2 mt-1 mb-1">
+            <div className="relative mr-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -499,7 +499,7 @@ const Toolbar = () => {
               )}
             </div>
 
-            <div className="flex-1 mt-1 mb-1 relative">
+            <div className="flex-1 relative">
               <Input
                 id="message-input"
                 autoFocus
@@ -515,7 +515,7 @@ const Toolbar = () => {
               />
             </div>
             {message && (
-              <Button className="mt-1 mb-1" type="submit" aria-label={t('main.toolbar.send')} variant="ghost" size="icon">
+              <Button type="submit" aria-label={t('main.toolbar.send')} variant="ghost" size="icon">
                 <Send className="h-4 w-4" />
               </Button>
             )}
@@ -526,7 +526,7 @@ const Toolbar = () => {
                 setEmojiPickerOpen(open);
               }}>
               <PopoverTrigger asChild>
-                <Button className="mt-1 mb-1" type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon" disabled={!isConnected}>
+                <Button type="button" aria-label={t('main.toolbar.emoticons')} variant="ghost" size="icon" disabled={!isConnected}>
                   <Smile className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>

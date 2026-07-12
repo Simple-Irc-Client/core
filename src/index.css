@@ -7,7 +7,13 @@
 /* Safe-area inset utilities for edge-to-edge mobile (Android/iOS in the Tauri
    webview). `env(safe-area-inset-*)` resolves to 0 on desktop/web without a
    display cutout, so applying these is a no-op outside mobile. Requires
-   `viewport-fit=cover` (set in index.html). */
+   `viewport-fit=cover` (set in index.html).
+
+   The bare forms set padding to the inset alone. Never combine them with a
+   regular padding utility on the same side (e.g. `px-4 pl-safe`) — both set
+   the same property and only one survives the cascade. When a side needs
+   design padding too, use the spacing-scale forms (`pl-safe-4`), which
+   resolve to whichever is larger: the design padding or the inset. */
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
@@ -19,6 +25,18 @@
 }
 @utility pr-safe {
   padding-right: env(safe-area-inset-right);
+}
+@utility pt-safe-* {
+  padding-top: max(--spacing(--value(number)), env(safe-area-inset-top));
+}
+@utility pb-safe-* {
+  padding-bottom: max(--spacing(--value(number)), env(safe-area-inset-bottom));
+}
+@utility pl-safe-* {
+  padding-left: max(--spacing(--value(number)), env(safe-area-inset-left));
+}
+@utility pr-safe-* {
+  padding-right: max(--spacing(--value(number)), env(safe-area-inset-right));
 }
 
 /* Self-hosted Inter (variable, weight 100-900).

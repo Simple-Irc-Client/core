@@ -32,7 +32,7 @@ const ColorPicker = ({ open, onOpenChange, disabled }: ColorPickerProps) => {
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button
-          className="mt-1 mb-1 relative"
+          className="relative"
           type="button"
           aria-label={t('main.toolbar.textColorAriaLabel')}
           variant="ghost"

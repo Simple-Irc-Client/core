@@ -48,9 +48,13 @@ export const connectViaWizard = async (
     // Wait for channel list to finish loading
     await page.getByText('Downloading channels list').waitFor({ state: 'hidden', timeout: 15_000 });
 
-    // Select each channel by clicking its row
+    // Select each channel by clicking its row. The row's accessible name is
+    // "<channel> <users> <topic>", so match it anchored at the start to avoid
+    // one channel name being a substring of another (e.g. #settings vs.
+    // #chan-settings).
     for (const channel of options.channels) {
-      await page.getByRole('button', { name: new RegExp(channel.replace('#', '')) }).click();
+      const escaped = channel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      await page.getByRole('button', { name: new RegExp(`^${escaped}(\\s|$)`) }).click();
     }
     await page.getByRole('button', { name: 'Next' }).click();
   } else {
