@@ -1,3 +1,4 @@
+import { runDccCommand } from '@features/dcc/command';
 import { defaultQuitMessage, STATUS_CHANNEL } from '@/config/config';
 import { useChannelsStore, isChannel, setAddMessage } from '@features/channels/store/channels';
 import { MessageCategory } from '@shared/types';
@@ -8,7 +9,8 @@ import i18next from '@/app/i18n';
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
   '/whois', '/whereis', '/who', '/notice', '/nick', '/mode', '/whowas', '/names', '/knock', '/watch',
-  '/ns', '/cs', '/hs', '/bs', '/ms'
+  '/ns', '/cs', '/hs', '/bs', '/ms',
+  '/dcc'
 ];
 export const channelCommands = [
   '/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic',
@@ -76,6 +78,11 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return knockCommand(line) ?? originalLine;
     case 'watch':
       return watchCommand(line);
+    case 'dcc':
+      // Handled entirely out-of-band (sockets, not IRC). '' means "nothing to
+      // put on the wire" — ircSendRawMessage ignores an empty payload.
+      runDccCommand(channel, line);
+      return '';
   }
 
   if (channel !== STATUS_CHANNEL) {

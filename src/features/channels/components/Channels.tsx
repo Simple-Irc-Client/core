@@ -23,6 +23,8 @@ import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import ChannelListDialog from '@shared/components/ChannelListDialog';
 import Friends from '@features/friends/components/Friends';
+import DccTransfers from '@features/dcc/components/DccTransfers';
+import DccOfferDialog from '@features/dcc/components/DccOfferDialog';
 
 interface ChannelsProps {
   width?: number;
@@ -52,12 +54,13 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const groupedChannels = useMemo(() => {
     const groups: { category: ChannelCategory; label: string; channels: Channel[] }[] = [];
-    const categoryOrder: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv];
+    const categoryOrder: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv, ChannelCategory.dcc];
     const labelKeys: Record<ChannelCategory, string> = {
       [ChannelCategory.status]: '',
       [ChannelCategory.debug]: '',
       [ChannelCategory.channel]: 'main.channels.categoryChannels',
       [ChannelCategory.priv]: 'main.channels.categoryDirectMessages',
+      [ChannelCategory.dcc]: 'dcc.categoryChats',
     };
 
     for (const cat of categoryOrder) {
@@ -255,8 +258,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               </div>
             ))}
             <Friends fontSizeClass={fontSizeClass} />
+            <DccTransfers fontSizeClass={fontSizeClass} />
           </div>
         </div>
+      <DccOfferDialog />
       <ChannelListDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

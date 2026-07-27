@@ -13,6 +13,7 @@ import { setDraft, getDraft } from '@features/chat/store/drafts';
 import { getUser, useUsersStore } from '@features/users/store/users';
 import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
+import { isDccChatChannel, sendDccChatLine } from '@features/dcc/manager';
 import { getChannelListSortedByAZ } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -206,6 +207,20 @@ const Toolbar = () => {
     event.preventDefault();
 
     if (message.length === 0) {
+      return;
+    }
+
+    // A DCC chat window is not an IRC target: plain text goes down the peer
+    // socket and must never reach the server. Commands still fall through so
+    // /dcc close and friends keep working from inside the window.
+    if (!message.startsWith('/') && isDccChatChannel(currentChannelName)) {
+      if (sendDccChatLine(currentChannelName, message)) {
+        messageHistory.current = [message, ...messageHistory.current].slice(0, 10);
+        historyIndex.current = -1;
+        currentInputBeforeHistory.current = '';
+        setDraft(currentChannelName, '');
+        setMessage('');
+      }
       return;
     }
 

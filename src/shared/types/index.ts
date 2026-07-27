@@ -60,6 +60,8 @@ export const ChannelCategory = {
   priv: 'priv',
   status: 'status',
   debug: 'debug',
+  /** DCC CHAT session — a chat window whose text bypasses IRC entirely */
+  dcc: 'dcc',
 } as const;
 
 export type ChannelCategory = (typeof ChannelCategory)[keyof typeof ChannelCategory];
