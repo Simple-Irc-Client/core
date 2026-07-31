@@ -5743,4 +5743,202 @@ describe('kernel tests', () => {
       expect(mockSetAddMessage).toHaveBeenCalledTimes(2); // debug + regular notice
     });
   });
+
+  // A channel is one channel no matter how the server or the user cased it.
+  // Reported as: two "#religie" entries, one with the system messages, one with
+  // the chat, and neither removable on its own.
+  describe('channel name casing', () => {
+    it('should adopt the server casing for a channel we already had open', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'getChannel').mockImplementation(() => ({
+        name: '#religie',
+        category: ChannelCategory.channel,
+        messages: [],
+        topic: '',
+        topicSetBy: '',
+        topicSetTime: 0,
+        unReadMessages: 0,
+        typing: [],
+      }));
+      const mockSetRenameChannel = vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {});
+
+      const line = ':SIC-test!~SIC-test@host JOIN #Religie';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetRenameChannel).toHaveBeenCalledWith('#religie', '#Religie');
+    });
+
+    it('should not rename when the casing already matches', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'getChannel').mockImplementation(() => ({
+        name: '#Religie',
+        category: ChannelCategory.channel,
+        messages: [],
+        topic: '',
+        topicSetBy: '',
+        topicSetTime: 0,
+        unReadMessages: 0,
+        typing: [],
+      }));
+      const mockSetRenameChannel = vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':SIC-test!~SIC-test@host JOIN #Religie' }).handle();
+
+      expect(mockSetRenameChannel).not.toHaveBeenCalled();
+    });
+
+    it('should not rename on someone else joining', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+      const mockSetRenameChannel = vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':Someone!~s@host JOIN #Religie' }).handle();
+
+      expect(mockSetRenameChannel).not.toHaveBeenCalled();
+    });
+
+    it('should treat a PART echoed in another casing as parting our channel', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#religie');
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+      const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':SIC-test!~SIC-test@host PART #Religie :bye' }).handle();
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('#Religie');
+      // the window we were looking at is the same one, just cased differently
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+    });
+
+    it('should recognise our own KICK when the nick casing differs', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#religie');
+      vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
+      const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':op!~op@host KICK #Religie sic-TEST :out' }).handle();
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('#Religie');
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL }));
+    });
+
+    it('should deliver a PRIVMSG to us when our nick comes back in another casing', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':Merovingian!~m@host PRIVMSG sic-TEST :hello' }).handle();
+
+      // addressed to us, so it opens/goes to the DM window with the sender
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: 'Merovingian', message: 'hello' }));
+    });
+  });
+
+  describe('CASEMAPPING', () => {
+    it('should take the mapping from 005', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':server 005 SIC-test CASEMAPPING=ascii CHANTYPES=# :are supported by this server' }).handle();
+
+      expect(mockSetCaseMapping).toHaveBeenCalledWith('ascii');
+    });
+
+    it('should fall back to the spec default for a mapping we do not implement', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':server 005 SIC-test CASEMAPPING=utf8 :are supported by this server' }).handle();
+
+      expect(mockSetCaseMapping).toHaveBeenCalledWith('rfc1459');
+    });
+
+    it('should not touch the mapping when 005 does not advertise one', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':server 005 SIC-test CHANTYPES=# NICKLEN=30 :are supported by this server' }).handle();
+
+      expect(mockSetCaseMapping).not.toHaveBeenCalled();
+    });
+  });
+
+  // Without this, the remove button on a channel the server no longer has us in
+  // sends a PART, gets 442 back, and the window never goes away
+  describe('442 leftover window', () => {
+    it('should drop a window the server says we are not on', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
+      const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: `:server 442 sic-test #religie :You're not on that channel` }).handle();
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('#religie');
+    });
+
+    it('should switch away from the window when it is the one on screen', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#Religie');
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
+      vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+      const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: `:server 442 sic-test #religie :You're not on that channel` }).handle();
+
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+    });
+
+    it('should keep a channel we are tracked as being on', () => {
+      // 442 can answer commands other than PART; a channel we hold membership
+      // for locally is not a leftover and must survive
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#Religie']);
+      const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: `:server 442 sic-test #religie :You're not on that channel` }).handle();
+
+      expect(mockSetRemoveChannel).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing when there is no window for it', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+      vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
+      const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: `:server 442 sic-test #kanjpa :You're not on that channel` }).handle();
+
+      expect(mockSetRemoveChannel).not.toHaveBeenCalled();
+    });
+  });
 });

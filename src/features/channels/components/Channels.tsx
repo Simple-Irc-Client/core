@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
-import { getCurrentChannelName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
 import { serverIcons } from '@/network/irc/servers';
@@ -87,7 +87,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       setRemoveChannel(channel.name);
 
       // Don't leave the main view pointing at the removed window
-      if (getCurrentChannelName() === channel.name) {
+      if (isSameName(getCurrentChannelName(), channel.name)) {
         setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
       }
     } else {
@@ -205,13 +205,13 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                   >
                     <button
                       aria-label={channel.name}
-                      aria-current={currentChannelName === channel.name ? 'page' : undefined}
+                      aria-current={isSameName(currentChannelName, channel.name) ? 'page' : undefined}
                       onClick={() => {
                         handleListItemClick(channel);
                       }}
                       className={cn(
                         `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-muted`,
-                        currentChannelName === channel.name && 'bg-muted',
+                        isSameName(currentChannelName, channel.name) && 'bg-muted',
                       )}
                     >
                       <span className="min-w-7.5 flex items-center justify-center">

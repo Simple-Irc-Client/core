@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { DEFAULT_CASE_MAPPING, namesEqual } from '@shared/lib/caseMapping';
 import {
   useChannelsStore,
   setAddChannel,
@@ -23,9 +24,12 @@ import {
   setHasMention,
   isPriv,
   isChannel,
+  setAddMessage,
+  setRenameChannel,
+  migrateChannels,
 } from '@features/channels/store/channels';
 import { ChannelCategory, MessageCategory } from '@shared/types';
-import type { Message } from '@shared/types';
+import type { Channel, ChannelExtended, Message } from '@shared/types';
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn(() => Promise.resolve(null)),
@@ -36,6 +40,11 @@ vi.mock('idb-keyval', () => ({
 vi.mock('@features/settings/store/settings', () => ({
   getCurrentChannelName: vi.fn(() => '#test'),
   getChannelTypes: vi.fn(() => ['#', '&']),
+  // Real folding: the store's channel identity depends on it
+  getCaseMapping: vi.fn(() => DEFAULT_CASE_MAPPING),
+  isSameName: vi.fn((a: string, b: string) => namesEqual(a, b)),
+  setCurrentChannelName: vi.fn(),
+  syncCurrentUsers: vi.fn(),
 }));
 
 const mockSetUpdateTyping = vi.fn();
@@ -56,6 +65,11 @@ const createMessage = (id: string, message: string, target: string): Message => 
   target,
   time: new Date().toISOString(),
   category: MessageCategory.default,
+});
+
+const createMessageAt = (id: string, message: string, target: string, time: string): Message => ({
+  ...createMessage(id, message, target),
+  time,
 });
 
 describe('channels store', () => {
@@ -689,6 +703,303 @@ describe('channels store', () => {
 
       const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
       expect(shortListChannel?.hasMention).toBe(false);
+    });
+  });
+
+  // Reported by a user: two "#religie" entries in the channel list - one showing
+  // only the system messages, the other the actual chat, and removing either one
+  // left the other behind.
+  describe('channel name casing', () => {
+    it('should not open a second window when the server echoes a different casing', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+
+      setAddMessage(createMessage('1', 'hello', '#Religie'));
+
+      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(1);
+      expect(getMessages('#religie').length).toBe(1);
+    });
+
+    it('should find an existing channel regardless of the casing asked for', () => {
+      setAddChannel('#Religie', ChannelCategory.channel);
+
+      expect(existChannel('#religie')).toBe(true);
+      expect(existChannel('#RELIGIE')).toBe(true);
+      expect(getChannel('#religie')?.name).toBe('#Religie');
+      expect(getCategory('#religie')).toBe(ChannelCategory.channel);
+    });
+
+    it('should not add a duplicate when setAddChannel is called with another casing', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+      setAddChannel('#Religie', ChannelCategory.channel);
+
+      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+    });
+
+    it('should remove the channel whatever casing the remove is asked for', () => {
+      setAddChannel('#Religie', ChannelCategory.channel);
+
+      setRemoveChannel('#religie');
+
+      expect(existChannel('#Religie')).toBe(false);
+      expect(useChannelsStore.getState().openChannels.length).toBe(0);
+      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(0);
+    });
+
+    it('should route topic, messages and typing to the one window', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+
+      setTopic('#Religie', 'a topic');
+      setAddMessage(createMessage('1', 'chat', '#RELIGIE'));
+      setTyping('#Religie', 'someone', 'active');
+
+      expect(getTopic('#religie')).toBe('a topic');
+      expect(getMessages('#religie').length).toBe(1);
+      expect(getTyping('#religie')).toEqual(['someone']);
+    });
+
+    it('should treat DM windows for the same nick as one', () => {
+      setAddChannel('Merovingian', ChannelCategory.priv);
+
+      setAddMessage(createMessage('1', 'hi', 'merovingian'));
+
+      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(getMessages('Merovingian').length).toBe(1);
+    });
+
+    it('should still keep genuinely different channels apart', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+      setAddChannel('#religia', ChannelCategory.channel);
+
+      expect(useChannelsStore.getState().openChannels.length).toBe(2);
+    });
+  });
+
+  describe('setRenameChannel', () => {
+    it('should adopt the server casing in both lists', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+
+      setRenameChannel('#religie', '#Religie');
+
+      expect(getChannel('#religie')?.name).toBe('#Religie');
+      expect(useChannelsStore.getState().openChannelsShortList[0]?.name).toBe('#Religie');
+    });
+
+    it('should keep the messages and retarget them at the new name', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+      setAddMessage(createMessage('1', 'chat', '#religie'));
+
+      setRenameChannel('#religie', '#Religie');
+
+      const messages = getMessages('#Religie');
+      expect(messages.length).toBe(1);
+      expect(messages[0]?.target).toBe('#Religie');
+    });
+
+    it('should do nothing when the channel is not open', () => {
+      setRenameChannel('#religie', '#Religie');
+
+      expect(useChannelsStore.getState().openChannels.length).toBe(0);
+    });
+
+    it('should do nothing when the name is unchanged', () => {
+      setAddChannel('#religie', ChannelCategory.channel);
+      const before = useChannelsStore.getState().openChannels;
+
+      setRenameChannel('#religie', '#religie');
+
+      expect(useChannelsStore.getState().openChannels).toBe(before);
+    });
+  });
+
+  describe('migrateChannels', () => {
+    const channel = (name: string, overrides: Partial<ChannelExtended> = {}): ChannelExtended => ({
+      name,
+      category: ChannelCategory.channel,
+      messages: [],
+      topic: '',
+      topicSetBy: '',
+      topicSetTime: 0,
+      unReadMessages: 0,
+      typing: [],
+      ...overrides,
+    });
+
+    const shortListChannel = (name: string, overrides: Partial<Channel> = {}): Channel => ({
+      name,
+      category: ChannelCategory.channel,
+      unReadMessages: 0,
+      ...overrides,
+    });
+
+    it('should merge case-duplicate channels into one window', () => {
+      const migrated = migrateChannels({
+        openChannels: [channel('#religie'), channel('#Religie')],
+        openChannelsShortList: [shortListChannel('#religie'), shortListChannel('#Religie')],
+      }, 1);
+
+      expect(migrated.openChannels.length).toBe(1);
+      expect(migrated.openChannelsShortList.length).toBe(1);
+    });
+
+    it('should keep the first name so a later JOIN can correct it', () => {
+      const migrated = migrateChannels({
+        openChannels: [channel('#religie'), channel('#Religie')],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.name).toBe('#religie');
+    });
+
+    it('should interleave the messages of both windows by time', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { messages: [
+            createMessageAt('sys-1', 'connected', '#religie', '2026-07-30T10:00:00.000Z'),
+            createMessageAt('sys-2', 'connected', '#religie', '2026-07-30T12:00:00.000Z'),
+          ] }),
+          channel('#Religie', { messages: [
+            createMessageAt('chat-1', 'hello', '#Religie', '2026-07-30T11:00:00.000Z'),
+          ] }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.messages.map((message) => message.id)).toEqual(['sys-1', 'chat-1', 'sys-2']);
+    });
+
+    it('should drop messages that both windows already hold', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { messages: [createMessage('same', 'hello', '#religie')] }),
+          channel('#Religie', { messages: [createMessage('same', 'hello', '#Religie')] }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.messages.length).toBe(1);
+    });
+
+    it('should cap the merged history at maxMessages', () => {
+      const many = (prefix: string, count: number): Message[] =>
+        Array.from({ length: count }, (_, index) => createMessageAt(`${prefix}-${index}`, 'm', '#religie', `2026-07-30T10:00:${String(index % 60).padStart(2, '0')}.000Z`));
+
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { messages: many('a', 250) }),
+          channel('#Religie', { messages: many('b', 250) }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.messages.length).toBe(300);
+    });
+
+    it('should carry over the topic from the window that has one', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie'),
+          channel('#Religie', { topic: 'the topic', topicSetBy: 'op', topicSetTime: 42 }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.topic).toBe('the topic');
+      expect(migrated.openChannels[0]?.topicSetBy).toBe('op');
+      expect(migrated.openChannels[0]?.topicSetTime).toBe(42);
+    });
+
+    it('should keep the topic of the first window when both have one', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { topic: 'first' }),
+          channel('#Religie', { topic: 'second' }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.topic).toBe('first');
+    });
+
+    it('should add up the unread counts and keep a mention from either window', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { unReadMessages: 2 }),
+          channel('#Religie', { unReadMessages: 3, hasMention: true }),
+        ],
+        openChannelsShortList: [
+          shortListChannel('#religie', { unReadMessages: 2 }),
+          shortListChannel('#Religie', { unReadMessages: 3, hasMention: true }),
+        ],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.unReadMessages).toBe(5);
+      expect(migrated.openChannels[0]?.hasMention).toBe(true);
+      expect(migrated.openChannelsShortList[0]?.unReadMessages).toBe(5);
+      expect(migrated.openChannelsShortList[0]?.hasMention).toBe(true);
+    });
+
+    it('should keep metadata from whichever window carries it', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie'),
+          channel('#Religie', { avatar: 'https://avatar.png', displayName: 'Religie' }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.avatar).toBe('https://avatar.png');
+      expect(migrated.openChannels[0]?.displayName).toBe('Religie');
+    });
+
+    it('should drop stale typing state', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('#religie', { typing: ['someone'] }),
+          channel('#Religie', { typing: ['other'] }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels[0]?.typing).toEqual([]);
+    });
+
+    it('should merge DM windows for the same nick', () => {
+      const migrated = migrateChannels({
+        openChannels: [
+          channel('Merovingian', { category: ChannelCategory.priv }),
+          channel('merovingian', { category: ChannelCategory.priv }),
+        ],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels.length).toBe(1);
+    });
+
+    it('should leave channels that only differ outside ASCII alone', () => {
+      // ascii folding is the conservative choice: it must never join two
+      // channels a server with another CASEMAPPING considers distinct
+      const migrated = migrateChannels({
+        openChannels: [channel('#a[b]'), channel('#a{b}')],
+        openChannelsShortList: [],
+      }, 1);
+
+      expect(migrated.openChannels.length).toBe(2);
+    });
+
+    it('should leave an already migrated state untouched', () => {
+      const state = { openChannels: [channel('#religie'), channel('#Religie')], openChannelsShortList: [] };
+
+      const migrated = migrateChannels(state, 2);
+
+      expect(migrated.openChannels.length).toBe(2);
+    });
+
+    it('should survive persisted state that is missing or malformed', () => {
+      expect(migrateChannels({}, 1).openChannels).toEqual([]);
+      expect(migrateChannels({ openChannels: 'nonsense' }, 1).openChannels).toEqual([]);
+      expect(migrateChannels(undefined, 1).openChannels).toEqual([]);
+      expect(migrateChannels({ openChannels: [null, 42, { noName: true }, channel('#ok')] }, 1).openChannels.length).toBe(1);
     });
   });
 });

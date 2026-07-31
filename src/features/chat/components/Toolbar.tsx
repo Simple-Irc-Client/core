@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
+import { getCurrentNick, isSameName, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
 import { ircSendRawMessage, ircReconnect } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
@@ -114,7 +114,7 @@ const Toolbar = () => {
   const users = useMemo(
     () =>
       allUsers
-        .filter((user: User) => user.channels.some((channel) => channel.name === currentChannelName))
+        .filter((user: User) => user.channels.some((channel) => isSameName(channel.name, currentChannelName)))
         .sort((a: User, b: User) => {
           const A = a.nick.toLowerCase();
           const B = b.nick.toLowerCase();

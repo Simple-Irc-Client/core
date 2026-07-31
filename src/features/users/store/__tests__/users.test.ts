@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { DEFAULT_CASE_MAPPING, foldName, namesEqual } from '@shared/lib/caseMapping';
 import {
   useUsersStore,
   setAddUser as setAddUserExport,
@@ -36,6 +37,9 @@ const createUser = (nick: string, channels: UserChannel[]): User => ({
 vi.mock('@features/settings/store/settings', () => ({
   getCurrentChannelName: vi.fn(() => '#test'),
   getCurrentNick: vi.fn(() => 'TestUser'),
+  // Real folding: the store's channel/nick identity depends on it
+  getCaseMapping: vi.fn(() => DEFAULT_CASE_MAPPING),
+  isSameName: vi.fn((a: string, b: string) => namesEqual(a, b)),
 }));
 
 vi.mock('@features/chat/store/current', () => ({
@@ -360,7 +364,7 @@ describe('users store', () => {
       setUserAvatarExport('NewUser', 'https://avatar.png');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ avatar: 'https://avatar.png' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ avatar: 'https://avatar.png' });
     });
   });
 
@@ -391,7 +395,7 @@ describe('users store', () => {
       setUserColorExport('NewUser', '#ff0000');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ color: '#ff0000' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ color: '#ff0000' });
     });
   });
 
@@ -434,7 +438,7 @@ describe('users store', () => {
       setUserStatusExport('NewUser', 'Away');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ status: 'Away' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ status: 'Away' });
     });
   });
 
@@ -465,7 +469,7 @@ describe('users store', () => {
       setUserHomepageExport('NewUser', 'https://example.com');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ homepage: 'https://example.com' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ homepage: 'https://example.com' });
     });
   });
 
@@ -510,7 +514,7 @@ describe('users store', () => {
       setUserBotExport('NewUser', true);
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ bot: true });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ bot: true });
     });
   });
 
@@ -836,7 +840,7 @@ describe('users store', () => {
       // METADATA avatar arrives before JOIN - buffered, not in store
       setUserAvatarExport('ProrokCodzienny', 'https://gravatar.com/avatar/abc.jpg');
       expect(getUser('ProrokCodzienny')).toBeUndefined();
-      expect(pendingMetadata.has('ProrokCodzienny')).toBe(true);
+      expect(pendingMetadata.has(foldName('ProrokCodzienny'))).toBe(true);
 
       // JOIN arrives - exported setAddUser applies buffered metadata
       setAddUserExport({
@@ -852,7 +856,7 @@ describe('users store', () => {
       expect(user?.ident).toBe('~ProrokCod');
       expect(user?.hostname).toBe('2BD8A2CC.22667CD.897C74C8.IP');
       expect(user?.channels).toEqual([{ name: '#Religie', flags: [], maxPermission: -1 }]);
-      expect(pendingMetadata.has('ProrokCodzienny')).toBe(false);
+      expect(pendingMetadata.has(foldName('ProrokCodzienny'))).toBe(false);
     });
 
     it('should preserve color when METADATA arrives before JOIN after QUIT', () => {
@@ -901,7 +905,7 @@ describe('users store', () => {
       expect(user?.ident).toBe('user');
       expect(user?.hostname).toBe('host.example.com');
       expect(user?.channels.length).toBe(1);
-      expect(pendingMetadata.has('NewUser')).toBe(false);
+      expect(pendingMetadata.has(foldName('NewUser'))).toBe(false);
     });
 
     it('should not leave buffered metadata if JOIN never comes', () => {
@@ -918,21 +922,21 @@ describe('users store', () => {
       setUserAccountExport('NewUser', 'account-name');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ account: 'account-name' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ account: 'account-name' });
     });
 
     it('should buffer away when user does not exist', () => {
       setUserAwayExport('NewUser', true, 'gone');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ away: true, awayReason: 'gone' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ away: true, awayReason: 'gone' });
     });
 
     it('should buffer host when user does not exist (CHGHOST before JOIN)', () => {
       setUserHostExport('NewUser', '~newident', 'new.host.com');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ ident: '~newident', hostname: 'new.host.com' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ ident: '~newident', hostname: 'new.host.com' });
     });
 
     it('should apply buffered host when user JOINs', () => {
@@ -949,14 +953,14 @@ describe('users store', () => {
       const user = getUser('NewUser');
       expect(user?.ident).toBe('~updated');
       expect(user?.hostname).toBe('updated.host');
-      expect(pendingMetadata.has('NewUser')).toBe(false);
+      expect(pendingMetadata.has(foldName('NewUser'))).toBe(false);
     });
 
     it('should buffer realname when user does not exist', () => {
       setUserRealnameExport('NewUser', 'Real Name');
 
       expect(getUser('NewUser')).toBeUndefined();
-      expect(pendingMetadata.get('NewUser')).toEqual({ realname: 'Real Name' });
+      expect(pendingMetadata.get(foldName('NewUser'))).toEqual({ realname: 'Real Name' });
     });
   });
 

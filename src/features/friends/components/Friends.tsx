@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPlus, X } from 'lucide-react';
 import { setAddChannel } from '@features/channels/store/channels';
-import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
+import { isSameName, setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
 import { useMonitorStore } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { removeFriend } from '@features/friends/friends';
@@ -81,11 +81,11 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
         >
           <button
             aria-label={friend.nick}
-            aria-current={currentChannelName === friend.nick ? 'page' : undefined}
+            aria-current={isSameName(currentChannelName, friend.nick) ? 'page' : undefined}
             onClick={() => handleFriendClick(friend.nick)}
             className={cn(
               `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-muted`,
-              currentChannelName === friend.nick && 'bg-muted',
+              isSameName(currentChannelName, friend.nick) && 'bg-muted',
             )}
           >
             <span className="min-w-7.5 flex items-center justify-center">

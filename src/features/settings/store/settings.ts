@@ -13,6 +13,7 @@ import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { ircDisconnect } from '@/network/irc/network';
+import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
 
 export type WizardStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
 
@@ -48,6 +49,7 @@ export interface SettingsStore {
   channelModes: ChannelMode;
   listRequestRemainingSeconds: number;
   channelTypes: string[];
+  caseMapping: CaseMapping; // CASEMAPPING from 005, decides channel/nick name identity
   supportedOptions: string[];
   wizardProgress: WizardProgress;
   currentUserFlags: string[]; // Current user's flags (e.g., +r for registered)
@@ -90,6 +92,7 @@ export interface SettingsStore {
   setChannelModes: (modes: ChannelMode) => void;
   setListRequestRemainingSeconds: (seconds: number) => void;
   setChannelTypes: (types: string[]) => void;
+  setCaseMapping: (mapping: CaseMapping) => void;
   setSupportedOption: (option: string) => void;
   setWizardProgress: (value: number, label: string) => void;
   setCurrentUserFlag: (flag: string, add: boolean) => void;
@@ -136,6 +139,7 @@ export const useSettingsStore = create<SettingsStore>()(
     channelModes: { A: [], B: [], C: [], D: [] },
     listRequestRemainingSeconds: -1,
     channelTypes: [],
+    caseMapping: DEFAULT_CASE_MAPPING,
     supportedOptions: [],
     wizardProgress: { value: 0, label: '' },
     currentUserFlags: [],
@@ -252,6 +256,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setChannelTypes: (types: string[]): void => {
       set(() => ({ channelTypes: types }));
     },
+    setCaseMapping: (mapping: CaseMapping): void => {
+      set(() => ({ caseMapping: mapping }));
+    },
     setSupportedOption: (option: string): void => {
       set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
     },
@@ -348,6 +355,7 @@ export const useSettingsStore = create<SettingsStore>()(
         channelModes: { A: [], B: [], C: [], D: [] },
         listRequestRemainingSeconds: -1,
         channelTypes: [],
+        caseMapping: DEFAULT_CASE_MAPPING,
         supportedOptions: [],
         wizardProgress: { value: 0, label: '' },
         currentUserFlags: [],
@@ -509,6 +517,23 @@ export const getChannelTypes = (): string[] => {
   const channelTypes = useSettingsStore.getState().channelTypes;
   return channelTypes.length > 0 ? channelTypes : defaultChannelTypes;
 };
+
+export const setCaseMapping = (mapping: CaseMapping): void => {
+  useSettingsStore.getState().setCaseMapping(mapping);
+};
+
+export const getCaseMapping = (): CaseMapping => {
+  return useSettingsStore.getState().caseMapping;
+};
+
+/**
+ * Whether two channel names (or nicks) identify the same thing on this server.
+ * Always use this instead of `===` when comparing IRC names.
+ */
+export const isSameName = (a: string, b: string): boolean => {
+  return namesEqual(a, b, getCaseMapping());
+};
+
 
 export const getUserModes = (): UserMode[] => {
   return useSettingsStore.getState().userModes;

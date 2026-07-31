@@ -1,5 +1,6 @@
 import {
   existChannel,
+  getChannel,
   isChannel,
   setAddChannel,
   setAddMessage,
@@ -10,6 +11,7 @@ import {
   setHasMention,
   setIncreaseUnreadMessages,
   setRemoveChannel,
+  setRenameChannel,
   setTopic,
   setTopicSetBy,
   setTyping,
@@ -23,7 +25,9 @@ import {
   getIsWizardCompleted,
   getServer,
   getUserModes,
+  isSameName,
   isSupportedOption,
+  setCaseMapping,
   setChannelModes,
   setChannelTypes,
   setConnectedTime,
@@ -53,6 +57,7 @@ import {
   getPasswordNick,
   getCurrentUserFlags,
 } from '@features/settings/store/settings';
+import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
@@ -1848,6 +1853,14 @@ export class Kernel {
     // distinguish a fresh join from a rejoin during reconnect.
     const channelExisted = existChannel(channel);
 
+    // The server is authoritative for a channel's casing. Adopt it before the
+    // join message lands, otherwise a window restored as #religie and the
+    // server's #Religie would keep drifting apart in the UI.
+    const openedAs = getChannel(channel)?.name;
+    if (openedAs !== undefined && openedAs !== channel) {
+      setRenameChannel(openedAs, channel);
+    }
+
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
       message: i18next.t('kernel.join', { nick }),
@@ -1867,7 +1880,7 @@ export class Kernel {
       channels: [{ name: channel, flags: [], maxPermission: defaultMaxPermission }],
     });
 
-    if (nick === getCurrentNick()) {
+    if (isSameName(nick, getCurrentNick())) {
       // Only switch to the channel if it's a new join (not a rejoin during reconnect)
       if (!channelExisted) {
         setCurrentChannelName(channel, ChannelCategory.channel);
@@ -1909,9 +1922,9 @@ export class Kernel {
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
-      message: i18next.t(`kernel.kick${kicked === currentNick ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
+      message: i18next.t(`kernel.kick${isSameName(kicked, currentNick) ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
       nick: getUser(nick) ?? nick,
-      target: kicked === currentNick ? STATUS_CHANNEL : channel,
+      target: isSameName(kicked, currentNick) ? STATUS_CHANNEL : channel,
       time: this.tags?.time ?? new Date().toISOString(),
       category: MessageCategory.kick,
       color: MessageColor.kick,
@@ -1919,10 +1932,10 @@ export class Kernel {
 
     setRemoveUser(kicked, channel);
 
-    if (kicked === currentNick) {
+    if (isSameName(kicked, currentNick)) {
       setRemoveChannel(channel);
 
-      if (getCurrentChannelName() === channel) {
+      if (isSameName(getCurrentChannelName(), channel)) {
         setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
       }
     }
@@ -1962,7 +1975,7 @@ export class Kernel {
         setChannelDisplayName(nickOrChannel, normalizedValue ?? '');
       }
     } else {
-      const isCurrentUser = nickOrChannel.toLowerCase() === getCurrentNick().toLowerCase();
+      const isCurrentUser = isSameName(nickOrChannel, getCurrentNick());
 
       if (item === 'avatar') {
         if (normalizedValue !== undefined) {
@@ -2217,7 +2230,7 @@ export class Kernel {
         const message = i18next.t(translate, { user, setBy: nick, defaultValue: defaultMessage });
 
         // Track current user's +r flag (registered status)
-        if (flag === 'r' && user === getCurrentNick()) {
+        if (flag === 'r' && isSameName(user, getCurrentNick())) {
           setCurrentUserFlag('r', plusMinus === '+');
         }
 
@@ -2264,7 +2277,7 @@ export class Kernel {
       });
     }
 
-    if (oldNick === getCurrentNick()) {
+    if (isSameName(oldNick, getCurrentNick())) {
       setNick(newNick);
     }
   };
@@ -2296,17 +2309,17 @@ export class Kernel {
       setUserBot(nick, true);
     }
 
-    if (nick === 'NickServ' && target === getCurrentNick() && passwordRequired.test(message)) {
+    if (isSameName(nick, 'NickServ') && isSameName(target, getCurrentNick()) && passwordRequired.test(message)) {
       setIsPasswordRequired(true);
       // If wizard is already completed and we have a saved password for this nick, auto-authenticate
-      if (getIsWizardCompleted() && getEncryptedPassword() && getPasswordNick() === getCurrentNick()) {
+      if (getIsWizardCompleted() && getEncryptedPassword() && isSameName(getPasswordNick() ?? '', getCurrentNick())) {
         void ircAutoAuthenticate();
       } else {
         setWizardStep('password');
       }
     }
 
-    if (list.test(message) && target === getCurrentNick()) {
+    if (list.test(message) && isSameName(target, getCurrentNick())) {
       const regexpGroups = list.exec(message)?.groups;
       const seconds = regexpGroups?.secs1 ?? regexpGroups?.secs2 ?? regexpGroups?.secs3;
 
@@ -2353,7 +2366,7 @@ export class Kernel {
     // Handle CTCP replies (NOTICE with \x01 delimiters)
     if (message.startsWith('\x01')) {
       // Only show CTCP replies addressed to us
-      if (target !== getCurrentNick()) {
+      if (!isSameName(target, getCurrentNick())) {
         return;
       }
 
@@ -2426,10 +2439,10 @@ export class Kernel {
 
     setRemoveUser(nick, channel);
 
-    if (nick === getCurrentNick()) {
+    if (isSameName(nick, getCurrentNick())) {
       setRemoveChannel(channel);
 
-      if (getCurrentChannelName() === channel) {
+      if (isSameName(getCurrentChannelName(), channel)) {
         setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
       }
     }
@@ -2475,7 +2488,7 @@ export class Kernel {
 
     // IRCv3 echo-message: When this is our own message echoed back by the server
     // We use the server-provided msgid and timestamp for accurate message ordering
-    const isEchoMessage = nick === myNick && isCapabilityEnabled('echo-message');
+    const isEchoMessage = isSameName(nick, myNick) && isCapabilityEnabled('echo-message');
 
     // Common IRC services - don't create query windows for echoed messages to these
     const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
@@ -2487,10 +2500,10 @@ export class Kernel {
     }
 
     // A direct message is either addressed to us, or is our own echoed message to a non-channel target
-    const isDirectMessage = target === myNick || (nick === myNick && !isChannel(target));
+    const isDirectMessage = isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target));
     // For a message addressed to us the window is named after the sender,
     // otherwise (channel or our own echoed direct message) after the target
-    const messageTarget = target === myNick ? nick : target;
+    const messageTarget = isSameName(target, myNick) ? nick : target;
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
@@ -2502,7 +2515,7 @@ export class Kernel {
     }
 
     // Clear typing indicator (but not for our own echoed messages)
-    if (messageTarget === currentChannelName && !isEchoMessage) {
+    if (isSameName(messageTarget, currentChannelName) && !isEchoMessage) {
       setTyping(messageTarget, nick, 'done');
     }
 
@@ -2631,10 +2644,10 @@ export class Kernel {
     myNick: string,
     currentChannelName: string
   ): void => {
-    const isEchoMessage = nick === myNick && isCapabilityEnabled('echo-message');
+    const isEchoMessage = isSameName(nick, myNick) && isCapabilityEnabled('echo-message');
     // A direct message is either addressed to us, or is our own echoed action to a non-channel target
-    const isDirectMessage = target === myNick || (nick === myNick && !isChannel(target));
-    const messageTarget = target === myNick ? nick : target;
+    const isDirectMessage = isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target));
+    const messageTarget = isSameName(target, myNick) ? nick : target;
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
@@ -2722,7 +2735,7 @@ export class Kernel {
     const { nick } = parseNick(this.sender, serverUserModes);
 
     // Ignore our own typing notifications echoed back by the server (echo-message)
-    if (nick === getCurrentNick()) {
+    if (isSameName(nick, getCurrentNick())) {
       return;
     }
 
@@ -2732,7 +2745,7 @@ export class Kernel {
     }
 
     // For private messages, target is our nick but the channel is stored under the sender's nick
-    const isPrivMessage = target === getCurrentNick();
+    const isPrivMessage = isSameName(target, getCurrentNick());
     const channel = isPrivMessage ? nick : target;
 
     // For private messages, create the PRIV channel if it doesn't exist
@@ -2779,7 +2792,7 @@ export class Kernel {
 
     const myNick = this.line.shift();
 
-    if (myNick && myNick !== getCurrentNick()) {
+    if (myNick && !isSameName(myNick, getCurrentNick())) {
       setNick(myNick);
     }
 
@@ -2868,6 +2881,9 @@ export class Kernel {
           switch (key) {
             case 'CHANTYPES':
               setChannelTypes(value !== undefined ? value.split('') : defaultChannelTypes);
+              break;
+            case 'CASEMAPPING':
+              setCaseMapping(parseCaseMapping(value));
               break;
             case 'PREFIX':
               setUserModes(parseUserModes(value));
@@ -3522,6 +3538,19 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    // The server says we are not on it, so an open window for it is a leftover
+    // (a stale persisted entry, or one we already parted). Without this, the
+    // PART that the remove button sends is answered with 442 and the window
+    // stays put no matter how often the user clicks it.
+    const isTrackedMember = getUserChannels(getCurrentNick()).some((name) => isSameName(name, channel));
+    if (existChannel(channel) && !isTrackedMember) {
+      setRemoveChannel(channel);
+
+      if (isSameName(currentChannelName, channel)) {
+        setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
+      }
+    }
   };
 
   // :chommik.pirc.pl 473 sic-test #sic :Cannot join channel (+i)
