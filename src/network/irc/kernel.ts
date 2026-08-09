@@ -3693,8 +3693,22 @@ export class Kernel {
   };
 
   // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
+  // :ergo.test 766 * probebot display-name :Key deleted
+  //
+  // Sent both as the answer to a GET for an unset key and — with draft/metadata-2 — as the
+  // notification subscribers get when a key is *deleted*. Either way the key now has no value,
+  // so clear it locally; without this a cleared display-name/avatar keeps showing the old value.
   private readonly onRaw766 = (): void => {
-    //
+    this.line.shift(); // my nick
+    const nickOrChannel = this.line.shift();
+    const item = this.line.shift()?.toLowerCase();
+
+    if (nickOrChannel === undefined) {
+      this.logParseError(this.onRaw766, 'nickOrChannel');
+      return;
+    }
+
+    this.applyMetadata(nickOrChannel, item, undefined);
   };
 
   // :jowisz.pirc.pl 770 Merovingian :avatar           (one key per line — pirc.pl)

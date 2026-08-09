@@ -3374,13 +3374,52 @@ describe('kernel tests', () => {
 
   it('test raw 766', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
 
     const line = ':insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key';
 
     new Kernel({ type: 'raw', line }).handle();
 
+    expect(mockSetUserAvatar).toHaveBeenCalledWith('SIC-test', undefined);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+  });
+
+  // ergo notifies subscribers of a *deleted* key with 766, not with a valueless 761/METADATA
+  it('test raw 766 clears display name', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserDisplayName = vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
+
+    const line = ':ergo.test 766 * Merovingian display-name :Key deleted';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetUserDisplayName).toHaveBeenCalledWith('Merovingian', undefined);
+  });
+
+  it('test raw 766 clears current user display name', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
+    const mockSetCurrentUserDisplayName = vi.spyOn(settingsFile, 'setCurrentUserDisplayName').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+
+    const line = ':ergo.test 766 * TestUser display-name :Key deleted';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetCurrentUserDisplayName).toHaveBeenCalledWith(undefined);
+  });
+
+  it('test raw 766 clears channel display name', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation((name) => name?.startsWith('#'));
+    const mockSetChannelDisplayName = vi.spyOn(channelsFile, 'setChannelDisplayName').mockImplementation(() => {});
+
+    const line = ':ergo.test 766 * #quizowagra display-name :Key deleted';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetChannelDisplayName).toHaveBeenCalledWith('#quizowagra', '');
   });
 
   it('test raw 770 avatar', () => {
