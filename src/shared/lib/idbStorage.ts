@@ -19,7 +19,7 @@ const getServerStorageKey = (baseName: string): string => {
   return baseName;
 };
 
-const idbStorage: StateStorage = {
+export const globalIdbStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     try {
       return (await get(name)) ?? null;
@@ -51,7 +51,7 @@ export const createServerScopedStorage = (): StateStorage => {
   return {
     getItem: async (name: string): Promise<string | null> => {
       const key = getServerStorageKey(name);
-      return idbStorage.getItem(key);
+      return globalIdbStorage.getItem(key);
     },
     setItem: (name: string, value: string): void => {
       pendingKey = getServerStorageKey(name);
@@ -63,7 +63,7 @@ export const createServerScopedStorage = (): StateStorage => {
       pendingWrite = setTimeout(async () => {
         pendingWrite = null;
         if (pendingValue !== null && pendingKey !== null) {
-          await idbStorage.setItem(pendingKey, pendingValue);
+          await globalIdbStorage.setItem(pendingKey, pendingValue);
         }
       }, WRITE_DEBOUNCE_MS);
     },
@@ -73,7 +73,7 @@ export const createServerScopedStorage = (): StateStorage => {
         clearTimeout(pendingWrite);
         pendingWrite = null;
       }
-      await idbStorage.removeItem(key);
+      await globalIdbStorage.removeItem(key);
     },
   };
 };

@@ -4,6 +4,7 @@ import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageColor } from '@/config/theme';
 import i18next from '@/app/i18n';
+import { hasScriptCommand, dispatchScriptCommand } from '@features/scripts/runtime/commandRegistry';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
@@ -28,6 +29,14 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   const line = message.split(' ');
 
   const command = line.shift()?.toLowerCase();
+
+  // Script-registered commands take precedence (collisions with builtins are
+  // rejected at registration). '' is the established "handled, send nothing"
+  // result — ircSendRawMessage ignores empty payloads.
+  if (command !== undefined && hasScriptCommand(command)) {
+    dispatchScriptCommand(command, line.join(' '), channel);
+    return '';
+  }
 
   switch (command) {
     case 'amsg':

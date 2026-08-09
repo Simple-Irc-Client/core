@@ -134,6 +134,7 @@ import {
   useChannelSettingsStore,
 } from '@features/channels/store/channelSettings';
 import * as Sentry from '@sentry/react';
+import { runScriptHook } from '@features/scripts/hook';
 import { isSafeUrl, isSafeImageUrl, isSafeCssColor, isValidNick, redactSensitiveIrc } from '@shared/lib/utils';
 
 export interface IrcEvent {
@@ -527,6 +528,8 @@ export class Kernel {
         ircJoinChannels(channels);
       }
     }
+
+    runScriptHook({ type: 'connect' });
   };
 
   private readonly handleDisconnected = (): void => {
@@ -563,6 +566,8 @@ export class Kernel {
       category: MessageCategory.info,
       color: MessageColor.info,
     });
+
+    runScriptHook({ type: 'disconnect' });
   };
 
   /**
@@ -626,6 +631,12 @@ export class Kernel {
         category: MessageCategory.info,
         color: MessageColor.serverFrom,
       });
+    }
+
+    // Before the batch check so scripts see exactly one 'raw' per wire line
+    // (batched messages replay through the semantic handlers, not through here)
+    if (runScriptHook({ type: 'raw', line: event }).blocked) {
+      return;
     }
 
     // Check if this message belongs to an active batch
@@ -1849,6 +1860,8 @@ export class Kernel {
       channel = channel.substring(1);
     }
 
+    runScriptHook({ type: 'join', nick, channel });
+
     // Check before setAddMessage (which auto-creates the channel) so we can
     // distinguish a fresh join from a rejoin during reconnect.
     const channelExisted = existChannel(channel);
@@ -2263,6 +2276,8 @@ export class Kernel {
       return;
     }
 
+    runScriptHook({ type: 'nick', oldNick, newNick });
+
     const channels = getUserChannels(oldNick);
     setRenameUser(oldNick, newNick);
 
@@ -2300,7 +2315,7 @@ export class Kernel {
       return;
     }
 
-    const message = this.trailing();
+    let message = this.trailing();
 
     const { nick } = parseNick(this.sender, getUserModes());
 
@@ -2386,6 +2401,16 @@ export class Kernel {
       return;
     }
 
+    // Scripts run after the NickServ/LIST/Alis/CTCP state machines above so a
+    // vetoing script cannot break auto-auth or /LIST timing
+    const scriptResult = runScriptHook({ type: 'notice', nick, target, text: message, tags: this.tags });
+    if (scriptResult.blocked) {
+      return;
+    }
+    if (scriptResult.text !== undefined) {
+      message = scriptResult.text;
+    }
+
     // Server notices (sender has no '!' — it's a server hostname, not a user)
     // route to Status to avoid flooding the current channel during connection/reconnection
     const isServerNotice = !this.sender.includes('!');
@@ -2426,6 +2451,8 @@ export class Kernel {
     }
 
     const { nick } = parseNick(this.sender, getUserModes());
+
+    runScriptHook({ type: 'part', nick, channel, reason });
 
     setAddMessage({
       id: this.tags?.msgid ?? uuidv4(),
@@ -2468,7 +2495,7 @@ export class Kernel {
     const myNick = getCurrentNick();
 
     const target = this.line.shift();
-    const message = this.trailing();
+    let message = this.trailing();
     const { nick } = parseNick(this.sender, serverUserModes);
 
     if (target === undefined) {
@@ -2484,6 +2511,16 @@ export class Kernel {
     if (message.startsWith('\x01')) {
       this.handleCtcp(nick, target, message);
       return;
+    }
+
+    // Scripts run before any side effect, so a blocked message never reaches
+    // the channel, unread counters, mentions, or notifications
+    const scriptResult = runScriptHook({ type: 'message', nick, target, text: message, self: nick === myNick, tags: this.tags });
+    if (scriptResult.blocked) {
+      return;
+    }
+    if (scriptResult.text !== undefined) {
+      message = scriptResult.text;
     }
 
     // IRCv3 echo-message: When this is our own message echoed back by the server
@@ -2684,6 +2721,8 @@ export class Kernel {
     const reason = this.trailing() ?? '';
 
     const { nick } = parseNick(this.sender, getUserModes());
+
+    runScriptHook({ type: 'quit', nick, reason });
 
     const message = {
       id: this.tags?.msgid ?? uuidv4(),

@@ -21,6 +21,7 @@ import { isBuiltinTheme } from '@features/themes/builtinThemes';
 import { getThemeList } from '@features/themes/themeSelectors';
 import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
 import ThemeCreatorDialog from '@features/themes/components/ThemeCreatorDialog';
+import ScriptsSettings from '@features/scripts/components/ScriptsSettings';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -436,6 +437,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             </Select>
           </div>
         </div>
+        <ScriptsSettings />
       </div>
     </>
   );
