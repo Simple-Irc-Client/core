@@ -68,6 +68,11 @@ describe('Chat tests', () => {
       contextMenuPosition: null,
     });
 
+    vi.spyOn(ContextMenuContext, 'useContextMenuActions').mockReturnValue({
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      handleContextMenuClose: mockHandleContextMenuClose,
+    });
+
     // Default channel types mock
     vi.spyOn(settingsStore, 'getChannelTypes').mockReturnValue(['#']);
   });

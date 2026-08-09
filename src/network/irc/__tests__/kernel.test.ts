@@ -3031,45 +3031,22 @@ describe('kernel tests', () => {
   it('test raw 353 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
-    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockSetNamesUsers = vi.spyOn(usersFile, 'setNamesUsers').mockImplementation(() => {});
 
     const line =
       ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia +Alisha!~user@397FF66D:D8E4ABEE:5838DA6D:IP +ProrokCodzienny!~ProrokCod@AB43659:6EA4AE53:B58B785A:IP &@Pomocnik!pomocny@bot:kanalowy.pomocnik';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(4);
-    expect(mockGetHasUser).toHaveBeenCalledTimes(4);
-    expect(mockSetAddUser).toHaveBeenCalledTimes(4);
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(1, {
-      channels: [{ name: '#Religie', flags: [], maxPermission: -1 }],
-      hostname: 'vhost:kohana.aleksia',
-      ident: '~aleksa7',
-      flags: [],
-      nick: 'aleksa7',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(2, {
-      channels: [{ name: '#Religie', flags: ['v'], maxPermission: 251 }],
-      hostname: '397FF66D:D8E4ABEE:5838DA6D:IP',
-      ident: '~user',
-      flags: [],
-      nick: 'Alisha',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
-      channels: [{ name: '#Religie', flags: ['v'], maxPermission: 251 }],
-      hostname: 'AB43659:6EA4AE53:B58B785A:IP',
-      ident: '~ProrokCod',
-      flags: [],
-      nick: 'ProrokCodzienny',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
-      channels: [{ name: '#Religie', flags: ['a', 'o'], maxPermission: 254 }],
-      hostname: 'bot:kanalowy.pomocnik',
-      ident: 'pomocny',
-      flags: [],
-      nick: 'Pomocnik',
-    });
+    // The whole roster goes to the store in one call, so the modes are read once
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockSetNamesUsers).toHaveBeenCalledTimes(1);
+    expect(mockSetNamesUsers).toHaveBeenCalledWith('#Religie', [
+      { nick: 'aleksa7', ident: '~aleksa7', hostname: 'vhost:kohana.aleksia', flags: [], maxPermission: -1 },
+      { nick: 'Alisha', ident: '~user', hostname: '397FF66D:D8E4ABEE:5838DA6D:IP', flags: ['v'], maxPermission: 251 },
+      { nick: 'ProrokCodzienny', ident: '~ProrokCod', hostname: 'AB43659:6EA4AE53:B58B785A:IP', flags: ['v'], maxPermission: 251 },
+      { nick: 'Pomocnik', ident: 'pomocny', hostname: 'bot:kanalowy.pomocnik', flags: ['a', 'o'], maxPermission: 254 },
+    ]);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -3077,18 +3054,16 @@ describe('kernel tests', () => {
   it('test raw 353 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => true);
-    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
+    const mockSetNamesUsers = vi.spyOn(usersFile, 'setNamesUsers').mockImplementation(() => {});
 
     const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
 
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockGetUserModes).toHaveBeenCalledTimes(1);
-    expect(mockGetHasUser).toHaveBeenCalledTimes(1);
-    expect(mockSetAddUser).toHaveBeenCalledTimes(0);
-    expect(mockSetJoinUser).toHaveBeenNthCalledWith(1, 'aleksa7', '#Religie', [], -1);
+    expect(mockSetNamesUsers).toHaveBeenCalledWith('#Religie', [
+      { nick: 'aleksa7', ident: '~aleksa7', hostname: 'vhost:kohana.aleksia', flags: [], maxPermission: -1 },
+    ]);
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
@@ -3096,53 +3071,21 @@ describe('kernel tests', () => {
   it('test raw 353 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetHasUser = vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
-    const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
+    const mockSetNamesUsers = vi.spyOn(usersFile, 'setNamesUsers').mockImplementation(() => {});
 
     const line =
       ':irc01-black.librairc.net 353 mero-test = #chat :ircbot!ircbot@ircbot.botop.librairc.net Freak!Freak@LibraIRC-ug4.vta.mvnbg3.IP WatchDog!WatchDog@Watchdog.botop.librairc.net !~@iBan!iBan@iBan.botop.librairc.net !iBot!iBot@iBot.botop.librairc.net';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(5);
-    expect(mockGetHasUser).toHaveBeenCalledTimes(5);
-
-    expect(mockSetAddUser).toHaveBeenCalledTimes(5);
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(1, {
-      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
-      hostname: 'ircbot.botop.librairc.net',
-      ident: 'ircbot',
-      flags: [],
-      nick: 'ircbot',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(2, {
-      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
-      hostname: 'LibraIRC-ug4.vta.mvnbg3.IP',
-      ident: 'Freak',
-      flags: [],
-      nick: 'Freak',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(3, {
-      channels: [{ name: '#chat', flags: [], maxPermission: -1 }],
-      hostname: 'Watchdog.botop.librairc.net',
-      ident: 'WatchDog',
-      flags: [],
-      nick: 'WatchDog',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(4, {
-      channels: [{ name: '#chat', flags: ['y', 'q', 'o'], maxPermission: 256 }],
-      hostname: 'iBan.botop.librairc.net',
-      ident: 'iBan',
-      flags: [],
-      nick: 'iBan',
-    });
-    expect(mockSetAddUser).toHaveBeenNthCalledWith(5, {
-      channels: [{ name: '#chat', flags: ['y'], maxPermission: 256 }],
-      hostname: 'iBot.botop.librairc.net',
-      ident: 'iBot',
-      flags: [],
-      nick: 'iBot',
-    });
+    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
+    expect(mockSetNamesUsers).toHaveBeenCalledWith('#chat', [
+      { nick: 'ircbot', ident: 'ircbot', hostname: 'ircbot.botop.librairc.net', flags: [], maxPermission: -1 },
+      { nick: 'Freak', ident: 'Freak', hostname: 'LibraIRC-ug4.vta.mvnbg3.IP', flags: [], maxPermission: -1 },
+      { nick: 'WatchDog', ident: 'WatchDog', hostname: 'Watchdog.botop.librairc.net', flags: [], maxPermission: -1 },
+      { nick: 'iBan', ident: 'iBan', hostname: 'iBan.botop.librairc.net', flags: ['y', 'q', 'o'], maxPermission: 256 },
+      { nick: 'iBot', ident: 'iBot', hostname: 'iBot.botop.librairc.net', flags: ['y'], maxPermission: 256 },
+    ]);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);

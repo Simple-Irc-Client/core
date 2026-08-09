@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
 
 const fontSizeClasses: Record<FontSize, string> = {
@@ -7,22 +7,53 @@ const fontSizeClasses: Record<FontSize, string> = {
   large: 'text-base',
 };
 import { startOfDay } from 'date-fns';
+import type { Message } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { useCurrentStore } from '@features/chat/store/current';
 import DateSeparator from './DateSeparator';
-import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage, { contentCategories } from './ChatMessage';
 
 const Chat = () => {
-  const { handleContextMenuUserClick } = useContextMenu();
+  const { handleContextMenuUserClick } = useContextMenuActions();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const messages = useCurrentStore((state) => state.messages);
   const fontSizeClass = fontSizeClasses[fontSize];
+
+  const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
+
+  /**
+   * Grouping and date separators are decided by comparing each message with the
+   * one before it, so the whole list is walked once here instead of re-deriving
+   * the previous message's day and nick inside every row.
+   */
+  const rows = useMemo(() => {
+    const result: { message: Message; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
+    let prevDayStart: number | null = null;
+    let prevNick = '';
+
+    for (const message of messages) {
+      const currentDate = startOfDay(new Date(message.time));
+      const dayStart = currentDate.getTime();
+      const showDateSeparator = prevDayStart !== null && dayStart !== prevDayStart;
+      const isContent = contentCategories.has(message.category);
+      const nick = getNickFromMessage(message) ?? '';
+      // A separator breaks the run, so the message after it starts a fresh group
+      const lastNick = showDateSeparator ? '' : prevNick;
+
+      result.push({ message, currentDate, showDateSeparator, grouped: !isDebug && isContent && lastNick === nick });
+
+      prevDayStart = dayStart;
+      prevNick = isContent ? nick : '';
+    }
+
+    return result;
+  }, [messages, isDebug]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUp = useRef(false);
@@ -95,14 +126,7 @@ const Chat = () => {
       {!isConnected && <DisconnectedBanner />}
       {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
-        {messages.map((message, index) => {
-          const currentDate = startOfDay(new Date(message.time));
-          const prevMessage = messages[index - 1];
-          const prevDate = prevMessage ? startOfDay(new Date(prevMessage.time)) : null;
-          const showDateSeparator = prevDate !== null && currentDate.getTime() !== prevDate.getTime();
-          const lastNick = showDateSeparator ? '' : (prevMessage && contentCategories.has(prevMessage.category) ? (getNickFromMessage(prevMessage) ?? '') : '');
-          const isDebug = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
-          const grouped = !isDebug && contentCategories.has(message.category) && lastNick === (getNickFromMessage(message) ?? '');
+        {rows.map(({ message, showDateSeparator, currentDate, grouped }) => {
           return (
             <div key={`message-${message.id}`}>
               {showDateSeparator && <DateSeparator date={currentDate} />}

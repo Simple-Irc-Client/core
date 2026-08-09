@@ -21,6 +21,11 @@ describe('MessageText', () => {
       handleContextMenuUserClick: mockHandleContextMenuUserClick,
       contextMenuPosition: null,
     });
+
+    vi.spyOn(ContextMenuContext, 'useContextMenuActions').mockReturnValue({
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      handleContextMenuClose: mockHandleContextMenuClose,
+    });
   });
 
   describe('Basic rendering', () => {

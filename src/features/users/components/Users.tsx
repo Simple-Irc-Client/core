@@ -9,7 +9,7 @@ const fontSizeClasses: Record<FontSize, string> = {
 import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
-import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X, WifiOff, Bot } from 'lucide-react';
 import { cn, isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
@@ -57,7 +57,7 @@ interface UsersProps {
 const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
-  const { handleContextMenuUserClick } = useContextMenu();
+  const { handleContextMenuUserClick } = useContextMenuActions();
   const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);

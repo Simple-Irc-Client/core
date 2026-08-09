@@ -1,5 +1,5 @@
 import React, { type FC, type PropsWithChildren, useMemo, useState, useCallback } from 'react';
-import { type ContextMenuCategory, ContextMenuContext } from './ContextMenuContext';
+import { type ContextMenuCategory, ContextMenuActionsContext, ContextMenuContext } from './ContextMenuContext';
 
 export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
   const [contextMenuAnchorElement, setContextMenuAnchorElement] = useState<HTMLElement | null>(null);
@@ -25,6 +25,11 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
     setContextMenuOpen(false);
   }, []);
 
+  const actions = useMemo(
+    () => ({ handleContextMenuUserClick, handleContextMenuClose }),
+    [handleContextMenuUserClick, handleContextMenuClose],
+  );
+
   const value = useMemo(
     () => ({
       contextMenuAnchorElement,
@@ -38,5 +43,9 @@ export const ContextMenuProvider: FC<PropsWithChildren> = ({ children }) => {
     [contextMenuAnchorElement, contextMenuOpen, contextMenuCategory, contextMenuItem, contextMenuPosition, handleContextMenuUserClick, handleContextMenuClose],
   );
 
-  return <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>;
+  return (
+    <ContextMenuActionsContext.Provider value={actions}>
+      <ContextMenuContext.Provider value={value}>{children}</ContextMenuContext.Provider>
+    </ContextMenuActionsContext.Provider>
+  );
 };

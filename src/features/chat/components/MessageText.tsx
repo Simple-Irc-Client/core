@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import { getChannelTypes } from '@features/settings/store/settings';
 import {
   parseIrcFormatting,
@@ -22,7 +22,7 @@ interface TextPart {
 }
 
 const MessageText = ({ text, color }: MessageTextProps) => {
-  const { handleContextMenuUserClick } = useContextMenu();
+  const { handleContextMenuUserClick } = useContextMenuActions();
 
   const parts = useMemo((): TextPart[] => {
     const channelTypes = getChannelTypes();

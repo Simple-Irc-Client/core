@@ -58,7 +58,7 @@ import {
   getCurrentUserFlags,
 } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
-import { getHasUser, getUser, getUserChannels, setAddUser, setJoinUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
+import { type NamesUser, getHasUser, getUser, getUserChannels, setAddUser, setNamesUsers, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
@@ -3377,32 +3377,20 @@ export class Kernel {
       return;
     }
 
+    const serverPrefixes = getUserModes();
+    const entries: NamesUser[] = [];
+
     for (let user of this.line) {
       if (user.startsWith(':')) {
         user = user.substring(1);
       }
 
-      const serverPrefixes = getUserModes();
       const { flags, nick, ident, hostname } = parseNick(user, serverPrefixes);
 
-      if (getHasUser(nick)) {
-        setJoinUser(nick, channel, flags, calculateMaxPermission(flags, serverPrefixes));
-      } else {
-        setAddUser({
-          nick,
-          ident,
-          hostname,
-          flags: [],
-          channels: [
-            {
-              name: channel,
-              flags,
-              maxPermission: calculateMaxPermission(flags, serverPrefixes),
-            },
-          ],
-        });
-      }
+      entries.push({ nick, ident, hostname, flags, maxPermission: calculateMaxPermission(flags, serverPrefixes) });
     }
+
+    setNamesUsers(channel, entries);
   };
 
   // :bzyk.pirc.pl 366 SIC-test #sic :End of /NAMES list.

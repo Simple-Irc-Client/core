@@ -14,6 +14,7 @@ import {
   setUserHost as setUserHostExport,
   setUserRealname as setUserRealnameExport,
   setQuitUser as setQuitUserExport,
+  setNamesUsers as setNamesUsersExport,
   setUsersClearAll,
   getUserChannels,
   getUser,
@@ -1162,6 +1163,95 @@ describe('users store', () => {
       setQuitUserExport('Bob', { id: '1', message: 'Bob quit', nick: 'Bob', time: '', category: MessageCategory.info });
 
       expect(vi.mocked(setAddMessage)).toHaveBeenCalledWith(expect.objectContaining({ target: 'Bob', message: 'Bob quit' }));
+    });
+  });
+
+  describe('setNamesUsers', () => {
+    const entry = (nick: string, flags: string[] = [], maxPermission = -1) => ({
+      nick,
+      ident: 'ident',
+      hostname: 'hostname',
+      flags,
+      maxPermission,
+    });
+
+    it('should add every nick of the roster in one update', () => {
+      setNamesUsersExport('#channel1', [entry('Alice'), entry('Bob', ['o'], 254)]);
+
+      const { users } = useUsersStore.getState();
+      expect(users.map((user) => user.nick)).toEqual(['Alice', 'Bob']);
+      expect(users[1]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
+    });
+
+    it('should give a known user the new channel without duplicating them', () => {
+      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
+
+      setNamesUsersExport('#channel1', [entry('Alice', ['v'], 251)]);
+
+      const { users } = useUsersStore.getState();
+      expect(users).toHaveLength(1);
+      expect(users[0]?.channels).toEqual([
+        { name: '#other', flags: [], maxPermission: -1 },
+        { name: '#channel1', flags: ['v'], maxPermission: 251 },
+      ]);
+    });
+
+    it('should refresh the flags of a user already in the channel', () => {
+      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
+
+      setNamesUsersExport('#channel1', [entry('Alice', ['o'], 254)]);
+
+      expect(useUsersStore.getState().users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
+    });
+
+    it('should leave an existing user untouched when the roster carries no flags', () => {
+      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: ['o'], maxPermission: 254 }])] });
+
+      setNamesUsersExport('#channel1', [entry('Alice')]);
+
+      expect(useUsersStore.getState().users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
+    });
+
+    it('should match a known user under a different casing', () => {
+      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
+
+      setNamesUsersExport('#channel1', [entry('ALICE')]);
+
+      const { users } = useUsersStore.getState();
+      expect(users).toHaveLength(1);
+      expect(users[0]?.nick).toBe('Alice');
+    });
+
+    it('should apply metadata that arrived before the roster', () => {
+      pendingMetadata.set(foldName('Alice', DEFAULT_CASE_MAPPING), { avatar: 'https://example.com/a.png' });
+
+      setNamesUsersExport('#channel1', [entry('Alice')]);
+
+      expect(useUsersStore.getState().users[0]?.avatar).toBe('https://example.com/a.png');
+      expect(pendingMetadata.size).toBe(0);
+    });
+
+    it('should keep the same users array when the roster changes nothing', () => {
+      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
+      const before = useUsersStore.getState().users;
+
+      setNamesUsersExport('#channel1', [entry('Alice')]);
+
+      expect(useUsersStore.getState().users).toBe(before);
+    });
+
+    it('should ignore an empty roster', () => {
+      setNamesUsersExport('#channel1', []);
+
+      expect(useUsersStore.getState().users).toEqual([]);
+    });
+
+    it('should collapse a nick repeated within one roster', () => {
+      setNamesUsersExport('#channel1', [entry('Alice'), entry('alice', ['o'], 254)]);
+
+      const { users } = useUsersStore.getState();
+      expect(users).toHaveLength(1);
+      expect(users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
     });
   });
 });

@@ -5,19 +5,64 @@ import { getCaseMapping, getCurrentChannelName, getCurrentNick, isSameName } fro
 import { useCurrentStore } from '@features/chat/store/current';
 import { clearTyping, getChannel, setAddMessage } from '@features/channels/store/channels';
 import { calculateMaxPermission } from '@/network/irc/helpers';
-import { foldName } from '@shared/lib/caseMapping';
+import { foldName, type CaseMapping } from '@shared/lib/caseMapping';
 
 const MAX_USERS = 50_000;
+
+/**
+ * Nick -> user index, rebuilt whenever the store hands back a different `users`
+ * array (zustand replaces it on every mutation) or the server changes its
+ * CASEMAPPING. Looking a nick up by scanning and casefolding every user made
+ * populating a busy channel quadratic: RPL_NAMREPLY asks "do we know this
+ * nick?" once per nick, against a list that is growing by one each time.
+ */
+let indexedUsers: User[] | null = null;
+let indexedMapping: CaseMapping | null = null;
+let nickIndex = new Map<string, User>();
+
+const getNickIndex = (): Map<string, User> => {
+  const users = useUsersStore.getState().users;
+  const mapping = getCaseMapping();
+
+  if (users !== indexedUsers || mapping !== indexedMapping) {
+    nickIndex = new Map<string, User>();
+    for (const user of users) {
+      const key = foldName(user.nick, mapping);
+      // First wins, matching the `find()` this replaced
+      if (!nickIndex.has(key)) {
+        nickIndex.set(key, user);
+      }
+    }
+    indexedUsers = users;
+    indexedMapping = mapping;
+  }
+
+  return nickIndex;
+};
+
+/** Resolved once instead of per comparison — `localeCompare` reparses its options on every call */
+const nickCollator = new Intl.Collator();
 
 /** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect), keyed by folded nick */
 export const pendingMetadata = new Map<string, Partial<User>>();
 
 const metadataKey = (nick: string): string => foldName(nick, getCaseMapping());
 
+/** One entry of a parsed RPL_NAMREPLY roster */
+export interface NamesUser {
+  nick: string;
+  ident: string;
+  hostname: string;
+  flags: string[];
+  maxPermission: number;
+}
+
 interface UsersStore {
   users: User[];
 
   setAddUser: (newUser: User) => void;
+  /** A whole RPL_NAMREPLY roster applied in one update — see `setNamesUsers` */
+  setNamesUsers: (channelName: string, entries: NamesUser[]) => void;
   setRemoveUser: (nick: string, channelName: string) => void;
   setQuitUser: (nick: string) => void;
   setRenameUser: (from: string, to: string) => void;
@@ -53,6 +98,69 @@ export const useUsersStore = create<UsersStore>()(
       set((state) => ({
         users: [...state.users, newUser],
       }));
+    },
+    setNamesUsers: (channelName: string, entries: NamesUser[]): void => {
+      set((state) => {
+        const mapping = getCaseMapping();
+        const indexByNick = new Map<string, number>();
+        state.users.forEach((user, index) => {
+          const key = foldName(user.nick, mapping);
+          if (!indexByNick.has(key)) {
+            indexByNick.set(key, index);
+          }
+        });
+
+        const users = [...state.users];
+        let changed = false;
+
+        for (const entry of entries) {
+          const key = foldName(entry.nick, mapping);
+          const index = indexByNick.get(key);
+
+          if (index === undefined) {
+            if (users.length >= MAX_USERS) {
+              continue;
+            }
+            // Metadata that arrived before we knew the nick
+            const buffered = pendingMetadata.get(key);
+            if (buffered !== undefined) {
+              pendingMetadata.delete(key);
+            }
+            indexByNick.set(key, users.length);
+            users.push({
+              nick: entry.nick,
+              ident: entry.ident,
+              hostname: entry.hostname,
+              flags: [],
+              channels: [{ name: channelName, flags: entry.flags, maxPermission: entry.maxPermission }],
+              ...buffered,
+            });
+            changed = true;
+            continue;
+          }
+
+          const user = users[index];
+          if (user === undefined) {
+            continue;
+          }
+
+          const existingChannel = user.channels.find((channel) => isSameName(channel.name, channelName));
+          if (existingChannel === undefined) {
+            users[index] = { ...user, channels: [...user.channels, { name: channelName, flags: entry.flags, maxPermission: entry.maxPermission }] };
+            changed = true;
+          } else if (entry.flags.length > 0) {
+            users[index] = {
+              ...user,
+              channels: user.channels.map((channel) =>
+                isSameName(channel.name, channelName) ? { ...channel, flags: entry.flags, maxPermission: entry.maxPermission } : channel,
+              ),
+            };
+            changed = true;
+          }
+        }
+
+        return changed ? { users } : state;
+      });
     },
     setRemoveUser: (nick: string, channelName: string): void => {
       set((state) => ({
@@ -252,6 +360,31 @@ export const setAddUser = (newUser: User): void => {
   syncCurrentChannelUsers(newUser.nick);
 };
 
+/**
+ * Apply a whole RPL_NAMREPLY roster at once.
+ *
+ * Adding the nicks one by one copied the entire user array and re-sorted (and
+ * re-rendered) the visible user list once per nick, so joining a busy channel
+ * cost O(n²) — over a second of blocked main thread at 2000 users.
+ */
+export const setNamesUsers = (channelName: string, entries: NamesUser[]): void => {
+  if (entries.length === 0) {
+    return;
+  }
+
+  useUsersStore.getState().setNamesUsers(channelName, entries);
+
+  const currentChannelName = getCurrentChannelName();
+  const myNick = getCurrentNick();
+  // A roster can also name the peer of an open DM window, whose participant list is derived from the same users
+  const touchesCurrentPriv = isPrivChannel(currentChannelName)
+    && entries.some((entry) => isSameName(entry.nick, currentChannelName) || isSameName(entry.nick, myNick));
+
+  if (isSameName(currentChannelName, channelName) || touchesCurrentPriv) {
+    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+  }
+};
+
 export const setRemoveUser = (nick: string, channelName: string): void => {
   if (isSameName(nick, getCurrentNick())) {
     const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
@@ -309,7 +442,7 @@ export const setRenameUser = (from: string, to: string): void => {
 };
 
 export const getUser = (nick: string): User | undefined => {
-  return useUsersStore.getState().users.find((user: User) => isSameName(user.nick, nick));
+  return getNickIndex().get(foldName(nick, getCaseMapping()));
 };
 
 export const getUserChannels = (nick: string): string[] => {
@@ -352,19 +485,22 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
     return getPrivParticipants(channelName);
   }
 
-  return useUsersStore
-    .getState()
-    .users.filter((user: User) => user.channels.some((channel) => isSameName(channel.name, channelName)))
-    .sort((a: User, b: User) => {
-      const aPermission = a.channels.find((c) => isSameName(c.name, channelName))?.maxPermission ?? -1;
-      const bPermission = b.channels.find((c) => isSameName(c.name, channelName))?.maxPermission ?? -1;
+  // The permission and the lowercased nick are read once per user rather than
+  // twice per comparison — the comparator runs O(n log n) times, and each
+  // `find()` walked the user's channel list casefolding names as it went
+  const entries: { user: User; permission: number; sortKey: string }[] = [];
 
-      if (aPermission !== bPermission) {
-        return bPermission - aPermission;
-      }
+  for (const user of useUsersStore.getState().users) {
+    const channel = user.channels.find((c) => isSameName(c.name, channelName));
+    if (channel === undefined) {
+      continue;
+    }
+    entries.push({ user, permission: channel.maxPermission ?? -1, sortKey: user.nick.toLowerCase() });
+  }
 
-      return a.nick.toLowerCase().localeCompare(b.nick.toLowerCase());
-    });
+  entries.sort((a, b) => (a.permission === b.permission ? nickCollator.compare(a.sortKey, b.sortKey) : b.permission - a.permission));
+
+  return entries.map((entry) => entry.user);
 };
 
 export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {

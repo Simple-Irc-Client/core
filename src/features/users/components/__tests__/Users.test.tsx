@@ -91,6 +91,11 @@ describe('Users', () => {
       contextMenuPosition: null,
     });
 
+    vi.spyOn(ContextMenuContext, 'useContextMenuActions').mockReturnValue({
+      handleContextMenuUserClick: mockHandleContextMenuUserClick,
+      handleContextMenuClose: vi.fn(),
+    });
+
     vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
       isUsersDrawerOpen,
       setUsersDrawerStatus: mockSetUsersDrawerStatus,

@@ -1,8 +1,9 @@
+import { memo } from 'react';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { MessageCategory, type Message } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import Avatar from '@shared/components/Avatar';
 import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
@@ -41,7 +42,7 @@ interface ChatMessageProps {
  * must stay identical across themes so switching is pure CSS.
  */
 const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessageProps) => {
-  const { handleContextMenuUserClick } = useContextMenu();
+  const { handleContextMenuUserClick } = useContextMenuActions();
   const isDarkMode = useSettingsStore((s) => s.isDarkMode);
 
   const nick = getNickFromMessage(message);
@@ -147,4 +148,10 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
   );
 };
 
-export default ChatMessage;
+/**
+ * Every new line in a channel replaces the `messages` array, so without this the
+ * whole visible backlog (up to `maxMessages`) re-runs its date formatting and
+ * its URL/image/embed scans on each incoming message. The `Message` objects
+ * themselves keep their identity across that update, so the comparison holds.
+ */
+export default memo(ChatMessage);
