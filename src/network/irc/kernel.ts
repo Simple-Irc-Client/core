@@ -58,7 +58,7 @@ import {
   getCurrentUserFlags,
 } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
-import { type NamesUser, getHasUser, getUser, getUserChannels, setAddUser, setNamesUsers, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
+import { type NamesUser, bufferNamesUsers, flushNamesUsers, getHasUser, getUser, getUserChannels, setAddUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
 import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
@@ -3390,12 +3390,21 @@ export class Kernel {
       entries.push({ nick, ident, hostname, flags, maxPermission: calculateMaxPermission(flags, serverPrefixes) });
     }
 
-    setNamesUsers(channel, entries);
+    // Held until RPL_ENDOFNAMES so the whole roster lands in one store update
+    bufferNamesUsers(channel, entries);
   };
 
   // :bzyk.pirc.pl 366 SIC-test #sic :End of /NAMES list.
   private readonly onRaw366 = (): void => {
-    //
+    this.line.shift(); // my nick
+    const channel = this.line.shift();
+
+    if (channel === undefined) {
+      this.logParseError(this.onRaw366, 'channel');
+      return;
+    }
+
+    flushNamesUsers(channel);
   };
 
   // :saturn.pirc.pl 372 SIC-test :- 2/6/2022 11:27

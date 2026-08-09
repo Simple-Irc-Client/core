@@ -385,6 +385,63 @@ export const setNamesUsers = (channelName: string, entries: NamesUser[]): void =
   }
 };
 
+/**
+ * A roster still being streamed, keyed by folded channel name so the closing
+ * RPL_ENDOFNAMES finds it whatever casing the server echoes back.
+ */
+const namesBuffer = new Map<string, { channelName: string; entries: NamesUser[] }>();
+
+/**
+ * A server that never closes the roster must not strand it. Flushing early
+ * costs one extra pass over the user list, which is far cheaper than never
+ * showing the users at all.
+ */
+const MAX_BUFFERED_NAMES = 1000;
+
+/**
+ * Collect one RPL_NAMREPLY line.
+ *
+ * A roster arrives ~15 nicks at a time and is terminated by RPL_ENDOFNAMES.
+ * Applying each line on its own re-indexes and re-copies the whole user list
+ * per line, which stays quadratic across a big channel — 20 000 users cost
+ * ~4.7 s that way. Holding the lines until the roster ends turns it into a
+ * single pass.
+ */
+export const bufferNamesUsers = (channelName: string, entries: NamesUser[]): void => {
+  if (entries.length === 0) {
+    return;
+  }
+
+  const key = foldName(channelName, getCaseMapping());
+  const buffered = namesBuffer.get(key);
+
+  if (buffered === undefined) {
+    namesBuffer.set(key, { channelName, entries: [...entries] });
+  } else {
+    for (const entry of entries) {
+      buffered.entries.push(entry);
+    }
+  }
+
+  if ((namesBuffer.get(key)?.entries.length ?? 0) >= MAX_BUFFERED_NAMES) {
+    flushNamesUsers(channelName);
+  }
+};
+
+/** Apply a collected roster — RPL_ENDOFNAMES, or the safety valve above */
+export const flushNamesUsers = (channelName: string): void => {
+  const key = foldName(channelName, getCaseMapping());
+  const buffered = namesBuffer.get(key);
+
+  if (buffered === undefined) {
+    return;
+  }
+
+  namesBuffer.delete(key);
+  // The name from the roster itself, not the one on the closing line
+  setNamesUsers(buffered.channelName, buffered.entries);
+};
+
 export const setRemoveUser = (nick: string, channelName: string): void => {
   if (isSameName(nick, getCurrentNick())) {
     const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
@@ -637,5 +694,7 @@ export const getCurrentUserChannelModes = (channelName: string): string[] => {
 
 export const setUsersClearAll = (): void => {
   pendingMetadata.clear();
+  // A roster half-received when the connection dropped belongs to the old session
+  namesBuffer.clear();
   useUsersStore.getState().setClearAll();
 };
