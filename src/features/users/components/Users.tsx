@@ -1,11 +1,12 @@
 import { isSameName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
-import { ChannelCategory, type UserMode } from '@shared/types';
+import { ChannelCategory, type User, type UserMode } from '@shared/types';
 
 const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
   medium: 'text-sm',
   large: 'text-base',
 };
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useCurrentStore } from '@features/chat/store/current';
@@ -50,6 +51,79 @@ const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   return icons.length > 0 ? icons : null;
 };
 
+interface UserRowProps {
+  user: User;
+  currentChannelName: string;
+  userModes: UserMode[];
+  hideAvatar: boolean;
+  fontSizeClass: string;
+  isDarkMode: boolean;
+}
+
+/**
+ * One entry of the user list.
+ *
+ * Anything that touches the roster — a join, a part, an away change, a mode —
+ * replaces the `users` array, which would otherwise re-render every row of a
+ * channel that can hold thousands. The `User` objects keep their identity
+ * across that update (the store only replaces the ones it changed), so the
+ * comparison holds and only the affected row re-renders.
+ */
+const UserRow = memo(({ user, currentChannelName, userModes, hideAvatar, fontSizeClass, isDarkMode }: UserRowProps) => {
+  const { t } = useTranslation();
+  const { handleContextMenuUserClick } = useContextMenuActions();
+
+  const channelFlags = user.channels.find((ch) => isSameName(ch.name, currentChannelName))?.flags ?? [];
+  const isAway = user.away || channelFlags.includes('a');
+
+  return (
+    <button
+      onClick={(event) => {
+        handleContextMenuUserClick(event, 'user', user.nick);
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        handleContextMenuUserClick(event, 'user', user.nick);
+      }}
+      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted text-left"
+    >
+      {!hideAvatar && (
+        <Avatar
+          src={user.avatar}
+          alt={user.displayName || user.nick}
+          fallbackLetter={(user.displayName || user.nick).substring(0, 1).toUpperCase()}
+          className="h-10 w-10"
+        />
+      )}
+      <div className="flex flex-col">
+        <div className="flex items-center gap-1">
+          {getModeIcons(channelFlags, userModes)}
+          {user.bot && (
+            <span title={t('main.users.bot')} aria-label={t('main.users.bot')}>
+              <Bot className="h-4 w-4 text-orange-400" />
+            </span>
+          )}
+          {isAway && (
+            <span title={user.awayReason || 'Away'} aria-label={user.awayReason || 'Away'}>
+              <Moon className="h-4 w-4 text-yellow-500" />
+            </span>
+          )}
+          <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? ensureNickContrast(user.color, isDarkMode) : 'inherit' }}>
+            {user.displayName || user.nick}
+          </span>
+        </div>
+        {user.status && (
+          <span className="text-xs text-muted-foreground truncate max-w-37.5">
+            {user.status}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+});
+
+UserRow.displayName = 'UserRow';
+
 interface UsersProps {
   width?: number;
 }
@@ -57,7 +131,6 @@ interface UsersProps {
 const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
-  const { handleContextMenuUserClick } = useContextMenuActions();
   const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
@@ -100,57 +173,15 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
             )}
             <div className="space-y-1">
               {users.map((user) => (
-                <button
+                <UserRow
                   key={user.nick}
-                  onClick={(event) => {
-                    handleContextMenuUserClick(event, 'user', user.nick);
-                  }}
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    handleContextMenuUserClick(event, 'user', user.nick);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted text-left"
-                >
-                  {!hideAvatarsInUsersList && (
-                    <Avatar
-                      src={user.avatar}
-                      alt={user.displayName || user.nick}
-                      fallbackLetter={(user.displayName || user.nick).substring(0, 1).toUpperCase()}
-                      className="h-10 w-10"
-                    />
-                  )}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      {(() => {
-                        const channelFlags = user.channels.find((ch) => isSameName(ch.name, currentChannelName))?.flags ?? [];
-                        const isAway = user.away || channelFlags.includes('a');
-                        return (
-                          <>
-                            {getModeIcons(channelFlags, userModes)}
-                            {user.bot && (
-                              <span title={t('main.users.bot')} aria-label={t('main.users.bot')}>
-                                <Bot className="h-4 w-4 text-orange-400" />
-                              </span>
-                            )}
-                            {isAway && (
-                              <span title={user.awayReason || 'Away'} aria-label={user.awayReason || 'Away'}>
-                                <Moon className="h-4 w-4 text-yellow-500" />
-                              </span>
-                            )}
-                          </>
-                        );
-                      })()}
-                      <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? ensureNickContrast(user.color, isDarkMode) : 'inherit' }}>
-                        {user.displayName || user.nick}
-                      </span>
-                    </div>
-                    {user.status && (
-                      <span className="text-xs text-muted-foreground truncate max-w-37.5">
-                        {user.status}
-                      </span>
-                    )}
-                  </div>
-                </button>
+                  user={user}
+                  currentChannelName={currentChannelName}
+                  userModes={userModes}
+                  hideAvatar={hideAvatarsInUsersList}
+                  fontSizeClass={fontSizeClass}
+                  isDarkMode={isDarkMode}
+                />
               ))}
             </div>
           </div>
