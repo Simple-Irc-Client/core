@@ -112,6 +112,8 @@ import {
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { notifyHighlight } from '@/runtime/notifications';
+import { handleDccCtcp } from '@features/dcc/manager';
+import { isDccAvailable } from '@features/dcc/transport';
 import { defaultChannelTypes, defaultMaxPermission, clientVersion, clientSourceUrl } from '@/config/config';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -2580,6 +2582,15 @@ export class Kernel {
       case 'ACTION':
         this.handleCtcpAction(nick, target, ctcpParams, myNick, currentChannelName);
         return;
+      case 'DCC':
+        // DCC negotiation is only meaningful one-to-one. A DCC CTCP addressed
+        // to a channel is either a broken client or a mass-offer flood, so drop
+        // it. Returning here also skips the generic auto-reply below — echoing
+        // the offer back as a NOTICE would leak our presence to a prober.
+        if (target === myNick) {
+          handleDccCtcp(nick, ctcpParams);
+        }
+        return;
       case 'VERSION':
         ctcpResponse = clientVersion;
         break;
@@ -2599,7 +2610,10 @@ export class Kernel {
         ctcpResponse = clientSourceUrl;
         break;
       case 'CLIENTINFO':
-        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO';
+        // Only claim DCC where a raw socket is actually available — the web
+        // build declines every offer, so advertising it there would invite
+        // requests we always refuse.
+        ctcpResponse = `ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO${isDccAvailable() ? ' DCC' : ''}`;
         break;
       default:
         // Unknown CTCP, ignore silently

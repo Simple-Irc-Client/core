@@ -4876,6 +4876,39 @@ describe('kernel tests', () => {
         }));
       });
 
+      it('should not auto-reply to a DCC CTCP', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+        const mockSendRaw = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+        // 3467383817 === 206.172.20.9
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG testuser :\x01DCC CHAT chat 3467383817 5000\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        // The generic CTCP path would emit a NOTICE reply plus two Status
+        // notices; DCC must take neither of those routes.
+        expect(mockSendRaw).not.toHaveBeenCalledWith(expect.stringContaining('NOTICE sender :\x01DCC'));
+        const ctcpNotices = mockSetAddMessage.mock.calls.filter(
+          ([arg]) => arg.message === i18next.t('kernel.ctcpRequest', { nick: 'sender', command: 'DCC' }),
+        );
+        expect(ctcpNotices).toHaveLength(0);
+      });
+
+      it('should ignore a DCC CTCP addressed to a channel', () => {
+        setupMocks();
+        const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+        const mockSendRaw = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+        // A mass DCC offer to a channel is a flood, never a real invitation.
+        const line = '@msgid=test;time=2023-01-01T00:00:00.000Z :sender!~user@host PRIVMSG #test :\x01DCC CHAT chat 3467383817 5000\x01';
+        new Kernel({ type: 'raw', line }).handle();
+
+        expect(mockSendRaw).not.toHaveBeenCalled();
+        // The Debug window echoes every raw line; nothing else may appear.
+        const nonDebug = mockSetAddMessage.mock.calls.filter(([arg]) => arg.target !== 'Debug');
+        expect(nonDebug).toHaveLength(0);
+      });
+
       it('should not show notification for CTCP ACTION', () => {
         setupMocks();
         const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});

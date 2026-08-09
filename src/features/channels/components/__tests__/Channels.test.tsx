@@ -24,6 +24,9 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
   }),
+  // The DCC section reaches `@/app/i18n`, which registers this plugin at import
+  // time, so the mock has to provide it.
+  initReactI18next: { type: '3rdParty', init: () => undefined },
 }));
 
 vi.mock('@/network/irc/network', () => ({
