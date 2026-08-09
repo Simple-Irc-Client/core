@@ -60,13 +60,21 @@ const idbStorage: StateStorage = {
  * object across the debounce window is safe because the stores it serves update
  * immutably — the captured graph is a snapshot, not a live view.
  */
-export const createServerScopedStorage = <S>(): PersistStorage<S> => {
+export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: () => void } => {
   let pendingWrite: ReturnType<typeof setTimeout> | null = null;
   let pendingValue: StorageValue<S> | null = null;
   let pendingKey: string | null = null;
 
-  const flush = async (): Promise<void> => {
-    pendingWrite = null;
+  /**
+   * Deliberately fire-and-forget: the write also has to run while the page is
+   * being torn down, where there is nothing left to await into. `idbStorage`
+   * swallows its own failures, so the promise never rejects.
+   */
+  const flush = (): void => {
+    if (pendingWrite !== null) {
+      clearTimeout(pendingWrite);
+      pendingWrite = null;
+    }
 
     const key = pendingKey;
     const value = pendingValue;
@@ -86,10 +94,53 @@ export const createServerScopedStorage = <S>(): PersistStorage<S> => {
       return;
     }
 
-    await idbStorage.setItem(key, encoded);
+    void idbStorage.setItem(key, encoded);
   };
 
+  /**
+   * Without this, closing or navigating away within the debounce window drops
+   * whatever arrived in the last couple of seconds — exactly the messages the
+   * user just read.
+   *
+   * `visibilitychange` to hidden is the last event a page is reliably given:
+   * a tab that gets closed, discarded under memory pressure, or backgrounded on
+   * mobile may never see `unload`, and `beforeunload` is skipped there too.
+   * `pagehide` covers navigating away within the same tab, including into the
+   * back/forward cache. Both can fire for one teardown, but a flush with an
+   * empty queue is a no-op, so the duplicate costs nothing.
+   */
+  const onVisibilityChange = (): void => {
+    if (document.visibilityState === 'hidden') {
+      flush();
+    }
+  };
+  const onPageHide = (): void => {
+    flush();
+  };
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    globalThis.addEventListener('pagehide', onPageHide);
+  }
+
   return {
+    /**
+     * Detach from the page. The app holds a single storage for its whole
+     * lifetime and never needs this, but a listener with no way off the page is
+     * a leak waiting to happen — and tests need to not inherit each other's.
+     */
+    dispose: (): void => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        globalThis.removeEventListener('pagehide', onPageHide);
+      }
+      if (pendingWrite !== null) {
+        clearTimeout(pendingWrite);
+        pendingWrite = null;
+      }
+      pendingKey = null;
+      pendingValue = null;
+    },
     getItem: async (name: string): Promise<StorageValue<S> | null> => {
       const raw = await idbStorage.getItem(getServerStorageKey(name));
       if (raw === null) {
@@ -111,7 +162,7 @@ export const createServerScopedStorage = <S>(): PersistStorage<S> => {
       if (pendingWrite !== null) {
         clearTimeout(pendingWrite);
       }
-      pendingWrite = setTimeout(() => void flush(), WRITE_DEBOUNCE_MS);
+      pendingWrite = setTimeout(flush, WRITE_DEBOUNCE_MS);
     },
     removeItem: async (name: string): Promise<void> => {
       const key = getServerStorageKey(name);

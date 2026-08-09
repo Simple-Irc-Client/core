@@ -18,6 +18,15 @@ const settings = (network: string, servers: string[], index: number): string =>
   JSON.stringify({ state: { server: { network, servers, default: index } } });
 
 describe('idbStorage', () => {
+  const created: { dispose: () => void }[] = [];
+
+  /** Tracked so no test inherits another's page listeners or queued write */
+  const createStorage = () => {
+    const storage = createServerScopedStorage<TestState>();
+    created.push(storage);
+    return storage;
+  };
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
@@ -28,13 +37,16 @@ describe('idbStorage', () => {
   });
 
   afterEach(() => {
+    for (const storage of created.splice(0)) {
+      storage.dispose();
+    }
     vi.useRealTimers();
   });
 
   describe('storage key', () => {
     it('should scope the key to the network and the selected server', async () => {
       localStorage.setItem('sic-settings', settings('PIrc', ['a.pirc.pl', 'b.pirc.pl'], 1));
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await storage.getItem('sic-channels');
 
@@ -42,7 +54,7 @@ describe('idbStorage', () => {
     });
 
     it('should fall back to the bare name when no settings are stored', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await storage.getItem('sic-channels');
 
@@ -52,7 +64,7 @@ describe('idbStorage', () => {
     it('should fall back to the bare name when the settings are corrupt', async () => {
       localStorage.setItem('sic-settings', '{not json');
       vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await storage.getItem('sic-channels');
 
@@ -63,13 +75,13 @@ describe('idbStorage', () => {
   describe('getItem', () => {
     it('should parse the stored payload', async () => {
       vi.mocked(get).mockResolvedValue(JSON.stringify({ state: { value: 'hello' }, version: 2 }));
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await expect(storage.getItem('sic-channels')).resolves.toEqual({ state: { value: 'hello' }, version: 2 });
     });
 
     it('should return null when nothing is stored', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await expect(storage.getItem('sic-channels')).resolves.toBeNull();
     });
@@ -77,14 +89,14 @@ describe('idbStorage', () => {
     it('should return null instead of throwing on truncated data', async () => {
       vi.mocked(get).mockResolvedValue('{"state":{"value":"hel');
       vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await expect(storage.getItem('sic-channels')).resolves.toBeNull();
     });
 
     it('should return null when IndexedDB is unavailable', async () => {
       vi.mocked(get).mockRejectedValue(new Error('private browsing'));
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await expect(storage.getItem('sic-channels')).resolves.toBeNull();
     });
@@ -92,7 +104,7 @@ describe('idbStorage', () => {
 
   describe('setItem', () => {
     it('should not touch storage before the debounce elapses', () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
 
@@ -100,7 +112,7 @@ describe('idbStorage', () => {
     });
 
     it('should write the payload once the debounce elapses', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
       await vi.advanceTimersByTimeAsync(WRITE_DEBOUNCE_MS);
@@ -109,7 +121,7 @@ describe('idbStorage', () => {
     });
 
     it('should collapse a burst of updates into a single write of the last value', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       for (const value of ['a', 'b', 'c']) {
         storage.setItem('sic-channels', { state: { value }, version: 2 });
@@ -120,7 +132,7 @@ describe('idbStorage', () => {
     });
 
     it('should serialize only at flush time, so superseded states are never encoded', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
       let encoded = 0;
       const state = { get value() { encoded++; return 'a'; } };
 
@@ -136,7 +148,7 @@ describe('idbStorage', () => {
 
     it('should keep working when the write fails', async () => {
       vi.mocked(set).mockRejectedValue(new Error('quota exceeded'));
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
       await expect(vi.advanceTimersByTimeAsync(WRITE_DEBOUNCE_MS)).resolves.not.toThrow();
@@ -144,7 +156,7 @@ describe('idbStorage', () => {
 
     it('should skip a value that cannot be serialized', async () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
       const circular: Record<string, unknown> = {};
       circular.self = circular;
 
@@ -155,7 +167,7 @@ describe('idbStorage', () => {
     });
 
     it('should write again after a flush', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
       await vi.advanceTimersByTimeAsync(WRITE_DEBOUNCE_MS);
@@ -167,10 +179,75 @@ describe('idbStorage', () => {
     });
   });
 
+  describe('flush before the page goes away', () => {
+    const setVisibility = (state: 'visible' | 'hidden'): void => {
+      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+
+    it('should write a queued snapshot when the page is hidden', () => {
+      const storage = createStorage();
+
+      storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
+      setVisibility('hidden');
+
+      expect(vi.mocked(set)).toHaveBeenCalledExactlyOnceWith('sic-channels', JSON.stringify({ state: { value: 'a' }, version: 2 }));
+    });
+
+    it('should not write again when the debounce would have fired', async () => {
+      const storage = createStorage();
+
+      storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
+      setVisibility('hidden');
+      await vi.advanceTimersByTimeAsync(WRITE_DEBOUNCE_MS);
+
+      expect(vi.mocked(set)).toHaveBeenCalledTimes(1);
+    });
+
+    it('should ignore the page becoming visible', () => {
+      const storage = createStorage();
+
+      storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
+      setVisibility('visible');
+
+      expect(vi.mocked(set)).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing when hidden with no queued write', () => {
+      createStorage();
+
+      setVisibility('hidden');
+
+      expect(vi.mocked(set)).not.toHaveBeenCalled();
+    });
+
+    it('should write a queued snapshot on pagehide', () => {
+      const storage = createStorage();
+
+      storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
+      globalThis.dispatchEvent(new Event('pagehide'));
+
+      expect(vi.mocked(set)).toHaveBeenCalledExactlyOnceWith('sic-channels', JSON.stringify({ state: { value: 'a' }, version: 2 }));
+    });
+
+    it('should keep persisting normally after a hidden flush', async () => {
+      const storage = createStorage();
+
+      storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
+      setVisibility('hidden');
+      setVisibility('visible');
+      storage.setItem('sic-channels', { state: { value: 'b' }, version: 2 });
+      await vi.advanceTimersByTimeAsync(WRITE_DEBOUNCE_MS);
+
+      expect(vi.mocked(set)).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(set)).toHaveBeenLastCalledWith('sic-channels', JSON.stringify({ state: { value: 'b' }, version: 2 }));
+    });
+  });
+
   describe('removeItem', () => {
     it('should delete the scoped key', async () => {
       localStorage.setItem('sic-settings', settings('PIrc', ['a.pirc.pl'], 0));
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       await storage.removeItem('sic-channels');
 
@@ -178,7 +255,7 @@ describe('idbStorage', () => {
     });
 
     it('should drop a queued write so it cannot resurrect the removed data', async () => {
-      const storage = createServerScopedStorage<TestState>();
+      const storage = createStorage();
 
       storage.setItem('sic-channels', { state: { value: 'a' }, version: 2 });
       await storage.removeItem('sic-channels');
