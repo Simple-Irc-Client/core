@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
-import { devtools, persist, createJSONStorage } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
 import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName, syncCurrentUsers } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
@@ -289,9 +289,11 @@ export const useChannelsStore = create<ChannelsStore>()(
         name: 'sic-channels',
         version: 2,
         migrate: migrateChannels,
-        storage: createJSONStorage(() => createServerScopedStorage()),
+        storage: createServerScopedStorage<ChannelsStore>(),
+        // Runs on every mutation, so only the channels that actually carry a
+        // transient typing list are copied to strip it
         partialize: (state) => ({
-          openChannels: state.openChannels.map((ch) => ({ ...ch, typing: [] as string[] })),
+          openChannels: state.openChannels.map((ch) => (ch.typing.length === 0 ? ch : { ...ch, typing: [] as string[] })),
           openChannelsShortList: state.openChannelsShortList,
         }) as unknown as ChannelsStore,
         onRehydrateStorage: () => {
