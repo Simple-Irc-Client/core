@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
 import { Menu, Save, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { isSameName, useSettingsStore } from '@features/settings/store/settings';
 import { useUsersStore } from '@features/users/store/users';
 import { getCurrentNick } from '@features/settings/store/settings';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
@@ -45,7 +45,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
   const canEditTopic = useUsersStore((state) => {
     const nick = getCurrentNick();
     const user = state.users.find((u) => u.nick === nick);
-    const channel = user?.channels.find((ch) => ch.name === currentChannelName);
+    const channel = user?.channels.find((ch) => isSameName(ch.name, currentChannelName));
     return channel?.flags.some((flag) => TOPIC_EDIT_FLAGS.has(flag)) ?? false;
   });
 

@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 import { type UserMode, type Message, type User, ChannelCategory } from '@shared/types';
 import { devtools } from 'zustand/middleware';
-import { getCurrentChannelName, getCurrentNick } from '@features/settings/store/settings';
+import { getCaseMapping, getCurrentChannelName, getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
 import { clearTyping, getChannel, setAddMessage } from '@features/channels/store/channels';
 import { calculateMaxPermission } from '@/network/irc/helpers';
+import { foldName } from '@shared/lib/caseMapping';
 
 const MAX_USERS = 50_000;
 
-/** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect) */
+/** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect), keyed by folded nick */
 export const pendingMetadata = new Map<string, Partial<User>>();
+
+const metadataKey = (nick: string): string => foldName(nick, getCaseMapping());
 
 interface UsersStore {
   users: User[];
@@ -55,23 +58,23 @@ export const useUsersStore = create<UsersStore>()(
       set((state) => ({
         users: state.users
           .map((user: User) => {
-            if (user.nick !== nick) {
+            if (!isSameName(user.nick, nick)) {
               return user;
             }
-            return { ...user, channels: user.channels.filter((channel) => channel.name !== channelName) };
+            return { ...user, channels: user.channels.filter((channel) => !isSameName(channel.name, channelName)) };
           })
           .filter((user) => user.channels.length !== 0),
       }));
     },
     setQuitUser: (nick: string): void => {
       set((state) => ({
-        users: state.users.filter((user: User) => user.nick !== nick),
+        users: state.users.filter((user: User) => !isSameName(user.nick, nick)),
       }));
     },
     setRenameUser: (from: string, to: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== from) {
+          if (!isSameName(user.nick, from)) {
             return user;
           }
           return { ...user, nick: to };
@@ -81,17 +84,17 @@ export const useUsersStore = create<UsersStore>()(
     setJoinUser: (nick: string, channel: string, flags?: string[], maxPermission?: number): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (!isSameName(user.nick, nick)) {
             return user;
           }
-          const existingChannel = user.channels.find((c) => c.name === channel);
+          const existingChannel = user.channels.find((c) => isSameName(c.name, channel));
           if (existingChannel) {
             // Update flags if provided (e.g. from NAMES response after JOIN)
             if (flags && flags.length > 0) {
               return {
                 ...user,
                 channels: user.channels.map((c) =>
-                  c.name === channel ? { ...c, flags, maxPermission: maxPermission ?? c.maxPermission } : c,
+                  isSameName(c.name, channel) ? { ...c, flags, maxPermission: maxPermission ?? c.maxPermission } : c,
                 ),
               };
             }
@@ -104,7 +107,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAvatar: (nick: string, avatar: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.avatar === avatar) {
+          if (!isSameName(user.nick, nick) || user.avatar === avatar) {
             return user;
           }
           return { ...user, avatar };
@@ -114,7 +117,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserColor: (nick: string, color: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.color === color) {
+          if (!isSameName(user.nick, nick) || user.color === color) {
             return user;
           }
           return { ...user, color };
@@ -124,7 +127,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAccount: (nick: string, account: string | null): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.account === (account ?? undefined)) {
+          if (!isSameName(user.nick, nick) || user.account === (account ?? undefined)) {
             return user;
           }
           return { ...user, account: account ?? undefined };
@@ -134,7 +137,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserAway: (nick: string, away: boolean, reason?: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || (user.away === away && user.awayReason === reason)) {
+          if (!isSameName(user.nick, nick) || (user.away === away && user.awayReason === reason)) {
             return user;
           }
           return { ...user, away, awayReason: reason };
@@ -144,7 +147,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserHost: (nick: string, ident: string, hostname: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || (user.ident === ident && user.hostname === hostname)) {
+          if (!isSameName(user.nick, nick) || (user.ident === ident && user.hostname === hostname)) {
             return user;
           }
           return { ...user, ident, hostname };
@@ -154,7 +157,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserRealname: (nick: string, realname: string): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.realname === realname) {
+          if (!isSameName(user.nick, nick) || user.realname === realname) {
             return user;
           }
           return { ...user, realname };
@@ -164,7 +167,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserDisplayName: (nick: string, displayName: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.displayName === displayName) {
+          if (!isSameName(user.nick, nick) || user.displayName === displayName) {
             return user;
           }
           return { ...user, displayName };
@@ -174,7 +177,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserStatus: (nick: string, status: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.status === status) {
+          if (!isSameName(user.nick, nick) || user.status === status) {
             return user;
           }
           return { ...user, status };
@@ -184,7 +187,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserHomepage: (nick: string, homepage: string | undefined): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.homepage === homepage) {
+          if (!isSameName(user.nick, nick) || user.homepage === homepage) {
             return user;
           }
           return { ...user, homepage };
@@ -194,7 +197,7 @@ export const useUsersStore = create<UsersStore>()(
     setUserBot: (nick: string, bot: boolean): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick || user.bot === bot) {
+          if (!isSameName(user.nick, nick) || user.bot === bot) {
             return user;
           }
           return { ...user, bot };
@@ -204,13 +207,13 @@ export const useUsersStore = create<UsersStore>()(
     setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
       set((state) => ({
         users: state.users.map((user: User) => {
-          if (user.nick !== nick) {
+          if (!isSameName(user.nick, nick)) {
             return user;
           }
           return {
             ...user,
             channels: user.channels.map((channel) => {
-              if (channel.name !== channelName) {
+              if (!isSameName(channel.name, channelName)) {
                 return channel;
               }
               const flags = plusMinus === '+' ? [...channel.flags, newFlag] : channel.flags.filter((flag) => flag !== newFlag);
@@ -237,10 +240,10 @@ export const setAddUser = (newUser: User): void => {
   } else {
     if (useUsersStore.getState().users.length >= MAX_USERS) { return; }
     // Apply any buffered metadata that arrived before JOIN
-    const buffered = pendingMetadata.get(newUser.nick);
+    const buffered = pendingMetadata.get(metadataKey(newUser.nick));
     if (buffered) {
       useUsersStore.getState().setAddUser({ ...newUser, ...buffered });
-      pendingMetadata.delete(newUser.nick);
+      pendingMetadata.delete(metadataKey(newUser.nick));
     } else {
       useUsersStore.getState().setAddUser(newUser);
     }
@@ -250,7 +253,7 @@ export const setAddUser = (newUser: User): void => {
 };
 
 export const setRemoveUser = (nick: string, channelName: string): void => {
-  if (nick === getCurrentNick()) {
+  if (isSameName(nick, getCurrentNick())) {
     const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
     for (const userFromChannel of usersFromChannel) {
       useUsersStore.getState().setRemoveUser(userFromChannel.nick, channelName);
@@ -261,7 +264,7 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
     clearTyping(channelName, nick);
   }
 
-  if (getCurrentChannelName() === channelName) {
+  if (isSameName(getCurrentChannelName(), channelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
   }
 };
@@ -283,7 +286,7 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
 
   useUsersStore.getState().setQuitUser(nick);
 
-  if (channels.some((channel) => channel.name === currentChannelName) || (isPrivChannel(currentChannelName) && nick === currentChannelName)) {
+  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || (isPrivChannel(currentChannelName) && isSameName(nick, currentChannelName))) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -298,15 +301,15 @@ export const setRenameUser = (from: string, to: string): void => {
   }
 
   const currentChannelName = getCurrentChannelName();
-  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (from === currentChannelName || to === currentChannelName);
+  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(from, currentChannelName) || isSameName(to, currentChannelName));
 
-  if (channels.some((channel) => channel.name === currentChannelName) || isCurrentPrivParticipant) {
+  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
 
 export const getUser = (nick: string): User | undefined => {
-  return useUsersStore.getState().users.find((user: User) => user.nick === nick);
+  return useUsersStore.getState().users.find((user: User) => isSameName(user.nick, nick));
 };
 
 export const getUserChannels = (nick: string): string[] => {
@@ -320,7 +323,7 @@ export const getHasUser = (nick: string): boolean => {
 export const setJoinUser = (nick: string, channelName: string, flags?: string[], maxPermission?: number): void => {
   useUsersStore.getState().setJoinUser(nick, channelName, flags, maxPermission);
 
-  if (getCurrentChannelName() === channelName) {
+  if (isSameName(getCurrentChannelName(), channelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
   }
 };
@@ -336,7 +339,7 @@ const createStubUser = (nick: string): User => {
 /** A DM window always contains exactly the two participants: us and the peer the window is named after */
 const getPrivParticipants = (privName: string): User[] => {
   const myNick = getCurrentNick();
-  const nicks = privName === myNick ? [privName] : [myNick, privName];
+  const nicks = isSameName(privName, myNick) ? [privName] : [myNick, privName];
 
   return nicks
     .filter((nick) => nick.length > 0)
@@ -351,10 +354,10 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
 
   return useUsersStore
     .getState()
-    .users.filter((user: User) => user.channels.some((channel) => channel.name === channelName))
+    .users.filter((user: User) => user.channels.some((channel) => isSameName(channel.name, channelName)))
     .sort((a: User, b: User) => {
-      const aPermission = a.channels.find((c) => c.name === channelName)?.maxPermission ?? -1;
-      const bPermission = b.channels.find((c) => c.name === channelName)?.maxPermission ?? -1;
+      const aPermission = a.channels.find((c) => isSameName(c.name, channelName))?.maxPermission ?? -1;
+      const bPermission = b.channels.find((c) => isSameName(c.name, channelName))?.maxPermission ?? -1;
 
       if (aPermission !== bPermission) {
         return bPermission - aPermission;
@@ -367,7 +370,7 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
 export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
   return useUsersStore
     .getState()
-    .users.filter((user: User) => user.channels.some((channel) => channel.name === channelName))
+    .users.filter((user: User) => user.channels.some((channel) => isSameName(channel.name, channelName)))
     .sort((a: User, b: User) => {
       const A = a.nick.toLowerCase();
       const B = b.nick.toLowerCase();
@@ -378,17 +381,18 @@ export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
 const syncCurrentChannelUsers = (nick: string): void => {
   const channels = getUser(nick)?.channels ?? [];
   const currentChannelName = getCurrentChannelName();
-  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (nick === currentChannelName || nick === getCurrentNick());
+  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(nick, currentChannelName) || isSameName(nick, getCurrentNick()));
 
-  if (channels.some((channel) => channel.name === currentChannelName) || isCurrentPrivParticipant) {
+  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
 
 /** Buffer metadata for a user not yet in the store (arrives before JOIN) */
 const bufferMetadata = (nick: string, data: Partial<User>): void => {
-  const existing = pendingMetadata.get(nick) ?? {};
-  pendingMetadata.set(nick, { ...existing, ...data });
+  const key = metadataKey(nick);
+  const existing = pendingMetadata.get(key) ?? {};
+  pendingMetadata.set(key, { ...existing, ...data });
 };
 
 export const setUserAvatar = (nick: string, avatar: string | undefined): void => {
@@ -483,7 +487,7 @@ export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: 
 
   const currentChannelName = getCurrentChannelName();
 
-  if (channelName === currentChannelName) {
+  if (isSameName(channelName, currentChannelName)) {
     useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
   }
 };
@@ -491,7 +495,7 @@ export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: 
 export const getCurrentUserChannelModes = (channelName: string): string[] => {
   const currentNick = getCurrentNick();
   const user = getUser(currentNick);
-  const channel = user?.channels.find((ch) => ch.name === channelName);
+  const channel = user?.channels.find((ch) => isSameName(ch.name, channelName));
   return channel?.flags ?? [];
 };
 

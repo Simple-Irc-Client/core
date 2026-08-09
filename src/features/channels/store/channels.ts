@@ -2,15 +2,16 @@ import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
-import { getChannelTypes, getCurrentChannelName, syncCurrentUsers } from '@features/settings/store/settings';
+import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName, syncCurrentUsers } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
 import { createServerScopedStorage } from '@shared/lib/idbStorage';
+import { foldName } from '@shared/lib/caseMapping';
 
 const updateChannelInBothLists = <T extends { name: string }>(
   list: T[],
   channelName: string,
   updater: (channel: T) => T,
-): T[] => list.map((channel) => (channel.name === channelName ? updater(channel) : channel));
+): T[] => list.map((channel) => (isSameName(channel.name, channelName) ? updater(channel) : channel));
 
 interface ChannelsStore {
   openChannels: ChannelExtended[];
@@ -18,6 +19,8 @@ interface ChannelsStore {
 
   setAddChannel: (channelName: string, category: ChannelCategory) => void;
   setRemoveChannel: (channelName: string) => void;
+  /** Adopt a different casing for an already open channel (the server is authoritative) */
+  setRenameChannel: (from: string, to: string) => void;
   setTopic: (channelName: string, newTopic: string) => void;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
   setAddMessage: (newMessage: Message) => void;
@@ -38,13 +41,85 @@ interface ChannelsStore {
 const syncCurrentAfterHydration = (): void => {
   const currentChannelName = getCurrentChannelName();
   const state = useChannelsStore.getState();
-  const channel = state.openChannels.find((ch) => ch.name === currentChannelName);
+  const channel = state.openChannels.find((ch) => isSameName(ch.name, currentChannelName));
   if (channel) {
     useCurrentStore.getState().setUpdateMessages([...channel.messages]);
     useCurrentStore.getState().setUpdateTopic(channel.topic);
     useCurrentStore.getState().setUpdateTyping([]);
     syncCurrentUsers();
   }
+};
+
+/**
+ * Before channel names were compared case-insensitively, a window opened as
+ * `#religie` and the server's canonical `#Religie` were persisted as two
+ * separate channels — one collecting the chat, the other only the broadcast
+ * system messages, and neither removable in one go.
+ *
+ * Folding with `ascii` rather than the server's actual CASEMAPPING is
+ * deliberate: names equal under `ascii` are equal under every mapping, so the
+ * merge can never join two channels the server considers distinct.
+ */
+const mergeCaseDuplicates = <T extends { name?: unknown }>(
+  channels: unknown,
+  merge: (existing: T, duplicate: T) => T,
+): T[] => {
+  if (!Array.isArray(channels)) {
+    return [];
+  }
+
+  const byFoldedName = new Map<string, T>();
+
+  for (const channel of channels as T[]) {
+    if (channel === null || typeof channel !== 'object' || typeof channel.name !== 'string') {
+      continue;
+    }
+
+    const key = foldName(channel.name, 'ascii');
+    const existing = byFoldedName.get(key);
+    byFoldedName.set(key, existing === undefined ? channel : merge(existing, channel));
+  }
+
+  return [...byFoldedName.values()];
+};
+
+const mergeMessages = (existing: Message[], duplicate: Message[]): Message[] => {
+  const seenIds = new Set(existing.map((message) => message.id));
+
+  return [...existing, ...duplicate.filter((message) => !seenIds.has(message.id))]
+    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
+    .slice(-maxMessages);
+};
+
+export const migrateChannels = (persisted: unknown, version: number): ChannelsStore => {
+  const state = persisted as ChannelsStore;
+
+  if (version < 2) {
+    return {
+      ...state,
+      openChannels: mergeCaseDuplicates<ChannelExtended>(state?.openChannels, (existing, duplicate) => ({
+        ...existing,
+        messages: mergeMessages(existing.messages ?? [], duplicate.messages ?? []),
+        // An empty topic means we never received one for that window, so the
+        // other one's topic (and who set it) is the better information
+        ...(existing.topic ? {} : { topic: duplicate.topic, topicSetBy: duplicate.topicSetBy, topicSetTime: duplicate.topicSetTime }),
+        unReadMessages: (existing.unReadMessages ?? 0) + (duplicate.unReadMessages ?? 0),
+        hasMention: existing.hasMention === true || duplicate.hasMention === true,
+        avatar: existing.avatar ?? duplicate.avatar,
+        displayName: existing.displayName ?? duplicate.displayName,
+        typing: [],
+      })),
+      openChannelsShortList: mergeCaseDuplicates<Channel>(state?.openChannelsShortList, (existing, duplicate) => ({
+        ...existing,
+        unReadMessages: (existing.unReadMessages ?? 0) + (duplicate.unReadMessages ?? 0),
+        hasMention: existing.hasMention === true || duplicate.hasMention === true,
+        avatar: existing.avatar ?? duplicate.avatar,
+        displayName: existing.displayName ?? duplicate.displayName,
+      })),
+    };
+  }
+
+  return state;
 };
 
 export const useChannelsStore = create<ChannelsStore>()(
@@ -74,14 +149,26 @@ export const useChannelsStore = create<ChannelsStore>()(
     },
     setRemoveChannel: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.filter((channel) => channel.name !== channelName),
-        openChannels: state.openChannels.filter((channel) => channel.name !== channelName),
+        openChannelsShortList: state.openChannelsShortList.filter((channel) => !isSameName(channel.name, channelName)),
+        openChannels: state.openChannels.filter((channel) => !isSameName(channel.name, channelName)),
+      }));
+    },
+    setRenameChannel: (from: string, to: string) => {
+      set((state) => ({
+        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, from, (ch) => ({ ...ch, name: to })),
+        openChannels: updateChannelInBothLists(state.openChannels, from, (ch) => ({
+          ...ch,
+          name: to,
+          // Messages carry the window they belong to; leaving the old casing
+          // behind would strand them if anything ever re-routes by target
+          messages: ch.messages.map((message) => (isSameName(message.target, from) ? { ...message, target: to } : message)),
+        })),
       }));
     },
     setTopic: (channelName: string, newTopic: string) => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
+          if (!isSameName(channel.name, channelName)) {
             return channel;
           }
 
@@ -92,7 +179,7 @@ export const useChannelsStore = create<ChannelsStore>()(
     setTopicSetBy: (channelName: string, nick: string, when: number) => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
+          if (!isSameName(channel.name, channelName)) {
             return channel;
           }
 
@@ -103,7 +190,7 @@ export const useChannelsStore = create<ChannelsStore>()(
     setAddMessage: (newMessage: Message): void => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== newMessage.target) {
+          if (!isSameName(channel.name, newMessage.target)) {
             return channel;
           }
 
@@ -123,7 +210,7 @@ export const useChannelsStore = create<ChannelsStore>()(
     setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
-          if (channel.name !== channelName) {
+          if (!isSameName(channel.name, channelName)) {
             return channel;
           }
 
@@ -184,7 +271,7 @@ export const useChannelsStore = create<ChannelsStore>()(
     setClearMessages: (channelName: string) => {
       set((state) => ({
         openChannels: state.openChannels.map((channel) => {
-          if (channel.name !== channelName) {
+          if (!isSameName(channel.name, channelName)) {
             return channel;
           }
           return { ...channel, messages: [] };
@@ -200,7 +287,8 @@ export const useChannelsStore = create<ChannelsStore>()(
   }),
       {
         name: 'sic-channels',
-        version: 1,
+        version: 2,
+        migrate: migrateChannels,
         storage: createJSONStorage(() => createServerScopedStorage()),
         partialize: (state) => ({
           openChannels: state.openChannels.map((ch) => ({ ...ch, typing: [] as string[] })),
@@ -233,11 +321,29 @@ export const setRemoveChannel = (channelName: string): void => {
 };
 
 export const getChannel = (channelName: string): ChannelExtended | undefined => {
-  return useChannelsStore.getState().openChannels.find((channel: ChannelExtended) => channel.name === channelName);
+  return useChannelsStore.getState().openChannels.find((channel: ChannelExtended) => isSameName(channel.name, channelName));
 };
 
 export const existChannel = (channelName: string): boolean => {
-  return useChannelsStore.getState().openChannels.some((channel: ChannelExtended) => channel.name === channelName);
+  return getChannel(channelName) !== undefined;
+};
+
+/**
+ * Adopt the server's casing for a channel we already have open. Servers echo a
+ * channel's canonical name, which may differ from what the user typed or what
+ * we restored from storage; without this the two casings drift apart in the UI.
+ */
+export const setRenameChannel = (from: string, to: string): void => {
+  if (from === to || !existChannel(from)) {
+    return;
+  }
+
+  useChannelsStore.getState().setRenameChannel(from, to);
+
+  const currentChannelName = getCurrentChannelName();
+  if (isSameName(currentChannelName, to)) {
+    setCurrentChannelName(to, getCategory(to) ?? ChannelCategory.channel);
+  }
 };
 
 export const getChannelsToAutoJoin = (): string[] => {
@@ -252,7 +358,7 @@ export const setTopic = (channelName: string, newTopic: string): void => {
 
   const currentChannelName = getCurrentChannelName();
 
-  if (currentChannelName === channelName) {
+  if (isSameName(currentChannelName, channelName)) {
     useCurrentStore.getState().setUpdateTopic(newTopic);
   }
 };
@@ -276,9 +382,9 @@ export const getTopicTime = (channelName: string): number => {
 export const setAddMessage = (newMessage: Message): void => {
   if (!existChannel(newMessage.target)) {
     let category;
-    if (newMessage.target === DEBUG_CHANNEL) {
+    if (isSameName(newMessage.target, DEBUG_CHANNEL)) {
       category = ChannelCategory.debug;
-    } else if (newMessage.target === STATUS_CHANNEL) {
+    } else if (isSameName(newMessage.target, STATUS_CHANNEL)) {
       category = ChannelCategory.status;
     } else {
       category = isPriv(newMessage.target) ? ChannelCategory.priv : ChannelCategory.channel;
@@ -291,7 +397,7 @@ export const setAddMessage = (newMessage: Message): void => {
 
   const currentChannelName = getCurrentChannelName();
 
-  if (currentChannelName === newMessage.target) {
+  if (isSameName(currentChannelName, newMessage.target)) {
     useCurrentStore.getState().setUpdateMessages(getMessages(newMessage.target));
   }
 };
@@ -303,7 +409,7 @@ export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>):
   for (const channel of channels) {
     useChannelsStore.getState().setAddMessage({ ...newMessage, target: channel.name });
 
-    if (currentChannelName === channel.name) {
+    if (isSameName(currentChannelName, channel.name)) {
       useCurrentStore.getState().setUpdateMessages(getMessages(currentChannelName));
     }
   }
@@ -316,7 +422,7 @@ export const getMessages = (channelName: string): Message[] => {
 export const setClearMessages = (channelName: string): void => {
   useChannelsStore.getState().setClearMessages(channelName);
   const currentChannelName = getCurrentChannelName();
-  if (currentChannelName === channelName) {
+  if (isSameName(currentChannelName, channelName)) {
     useCurrentStore.getState().setUpdateMessages([]);
   }
 };
@@ -334,7 +440,12 @@ const TYPING_EXPIRY_MS: Partial<Record<UserTypingStatus, number>> = {
 
 const typingExpiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-const typingExpiryKey = (channelName: string, nick: string): string => `${channelName} ${nick}`;
+// Folded so a timer armed for #Religie is found again when the 'done' arrives for #religie
+const typingExpiryKey = (channelName: string, nick: string): string => {
+  const mapping = getCaseMapping();
+  // U+0000 cannot occur in a channel name or nick, so it separates the two halves unambiguously
+  return `${foldName(channelName, mapping)}\u0000${foldName(nick, mapping)}`;
+};
 
 const clearTypingExpiry = (channelName: string, nick: string): void => {
   const key = typingExpiryKey(channelName, nick);
@@ -367,7 +478,7 @@ export const setTyping = (channelName: string, nick: string, status: UserTypingS
 
   const currentChannelName = getCurrentChannelName();
 
-  if (currentChannelName === channelName) {
+  if (isSameName(currentChannelName, channelName)) {
     useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
   }
 };

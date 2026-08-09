@@ -1,4 +1,4 @@
-import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { isSameName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type UserMode } from '@shared/types';
 
 const fontSizeClasses: Record<FontSize, string> = {
@@ -122,7 +122,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                   <div className="flex flex-col">
                     <div className="flex items-center gap-1">
                       {(() => {
-                        const channelFlags = user.channels.find((ch) => ch.name === currentChannelName)?.flags ?? [];
+                        const channelFlags = user.channels.find((ch) => isSameName(ch.name, currentChannelName))?.flags ?? [];
                         const isAway = user.away || channelFlags.includes('a');
                         return (
                           <>
