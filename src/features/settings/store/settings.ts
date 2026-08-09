@@ -7,7 +7,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '@shared/types';
 import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
 import { useCurrentStore, setCurrentClearAll } from '@features/chat/store/current';
-import { getUsersFromChannelSortedByMode, setUsersClearAll } from '@features/users/store/users';
+import { flushCurrentUsers, setUsersClearAll } from '@features/users/store/users';
 import { defaultChannelTypes } from '@/config/config';
 import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
@@ -427,7 +427,7 @@ export const useSettingsStore = create<SettingsStore>()(
 );
 
 export const syncCurrentUsers = (): void => {
-  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(getCurrentChannelName()));
+  flushCurrentUsers();
 };
 
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
@@ -437,7 +437,9 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
 
   useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
   useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
-  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
+  // Switching channels must paint immediately, and this also settles any
+  // roster sync a burst had queued for the channel we are leaving
+  flushCurrentUsers();
   useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
 };
 

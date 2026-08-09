@@ -15,6 +15,7 @@ import {
   setUserRealname as setUserRealnameExport,
   setQuitUser as setQuitUserExport,
   setNamesUsers as setNamesUsersExport,
+  flushCurrentUsers,
   setUsersClearAll,
   getUserChannels,
   getUser,
@@ -43,10 +44,12 @@ vi.mock('@features/settings/store/settings', () => ({
   isSameName: vi.fn((a: string, b: string) => namesEqual(a, b)),
 }));
 
+const { mockSetUpdateUsers } = vi.hoisted(() => ({ mockSetUpdateUsers: vi.fn() }));
+
 vi.mock('@features/chat/store/current', () => ({
   useCurrentStore: {
     getState: () => ({
-      setUpdateUsers: vi.fn(),
+      setUpdateUsers: mockSetUpdateUsers,
     }),
   },
 }));
@@ -1163,6 +1166,57 @@ describe('users store', () => {
       setQuitUserExport('Bob', { id: '1', message: 'Bob quit', nick: 'Bob', time: '', category: MessageCategory.info });
 
       expect(vi.mocked(setAddMessage)).toHaveBeenCalledWith(expect.objectContaining({ target: 'Bob', message: 'Bob quit' }));
+    });
+  });
+
+  describe('visible user list sync', () => {
+    const joinCurrentChannel = (nick: string): void => {
+      setAddUserExport({ nick, ident: 'i', hostname: 'h', flags: [], channels: [{ name: '#test', flags: [], maxPermission: -1 }] });
+    };
+
+    it('should not recompute the list synchronously', () => {
+      joinCurrentChannel('Alice');
+
+      expect(mockSetUpdateUsers).not.toHaveBeenCalled();
+    });
+
+    it('should collapse a burst of roster events into one recompute', async () => {
+      for (let i = 0; i < 50; i++) {
+        joinCurrentChannel(`user${i}`);
+      }
+      await Promise.resolve();
+
+      expect(mockSetUpdateUsers).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(mockSetUpdateUsers).mock.calls[0]?.[0]).toHaveLength(50);
+    });
+
+    it('should recompute again for a later burst', async () => {
+      joinCurrentChannel('Alice');
+      await Promise.resolve();
+      joinCurrentChannel('Bob');
+      await Promise.resolve();
+
+      expect(mockSetUpdateUsers).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(mockSetUpdateUsers).mock.calls[1]?.[0]).toHaveLength(2);
+    });
+
+    it('should stay quiet when the burst touches another channel', async () => {
+      setAddUserExport({ nick: 'Alice', ident: 'i', hostname: 'h', flags: [], channels: [{ name: '#elsewhere', flags: [], maxPermission: -1 }] });
+      await Promise.resolve();
+
+      expect(mockSetUpdateUsers).not.toHaveBeenCalled();
+    });
+
+    it('should settle a queued sync immediately on flush, without a second one', async () => {
+      joinCurrentChannel('Alice');
+      flushCurrentUsers();
+
+      expect(mockSetUpdateUsers).toHaveBeenCalledTimes(1);
+
+      await Promise.resolve();
+
+      // The queued microtask must not repeat the work the flush already did
+      expect(mockSetUpdateUsers).toHaveBeenCalledTimes(1);
     });
   });
 

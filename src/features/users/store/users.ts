@@ -43,6 +43,46 @@ const getNickIndex = (): Map<string, User> => {
 /** Resolved once instead of per comparison — `localeCompare` reparses its options on every call */
 const nickCollator = new Intl.Collator();
 
+let currentUsersSyncScheduled = false;
+
+/**
+ * Recompute the visible user list now.
+ *
+ * Reads the current channel at call time rather than taking it as an argument,
+ * so a sync scheduled before a channel switch still produces the right list.
+ */
+export const flushCurrentUsers = (): void => {
+  currentUsersSyncScheduled = false;
+  useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(getCurrentChannelName()));
+};
+
+/**
+ * Queue a recompute of the visible user list for the end of the current tick.
+ *
+ * The visible list is derived by filtering every known user and sorting the
+ * survivors, and every roster event used to redo that immediately — and
+ * re-render the sidebar with it. A join/part flood on a 2000-user channel cost
+ * ~1.5 ms per user that way, all of it thrown away by the next event.
+ *
+ * One WebSocket frame is split into lines and handled in a synchronous loop, so
+ * a burst produces one recompute at the end of it instead of one per line. A
+ * microtask lands before the browser paints, so nothing stale is ever shown,
+ * and it needs no cooperation from the transports.
+ */
+const scheduleCurrentUsersSync = (): void => {
+  if (currentUsersSyncScheduled) {
+    return;
+  }
+
+  currentUsersSyncScheduled = true;
+  queueMicrotask(() => {
+    // A channel switch or a disconnect may have flushed it already
+    if (currentUsersSyncScheduled) {
+      flushCurrentUsers();
+    }
+  });
+};
+
 /** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect), keyed by folded nick */
 export const pendingMetadata = new Map<string, Partial<User>>();
 
@@ -381,7 +421,7 @@ export const setNamesUsers = (channelName: string, entries: NamesUser[]): void =
     && entries.some((entry) => isSameName(entry.nick, currentChannelName) || isSameName(entry.nick, myNick));
 
   if (isSameName(currentChannelName, channelName) || touchesCurrentPriv) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -455,7 +495,7 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
   }
 
   if (isSameName(getCurrentChannelName(), channelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -477,7 +517,7 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
   useUsersStore.getState().setQuitUser(nick);
 
   if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || (isPrivChannel(currentChannelName) && isSameName(nick, currentChannelName))) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -494,7 +534,7 @@ export const setRenameUser = (from: string, to: string): void => {
   const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(from, currentChannelName) || isSameName(to, currentChannelName));
 
   if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -514,7 +554,7 @@ export const setJoinUser = (nick: string, channelName: string, flags?: string[],
   useUsersStore.getState().setJoinUser(nick, channelName, flags, maxPermission);
 
   if (isSameName(getCurrentChannelName(), channelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(channelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -577,7 +617,7 @@ const syncCurrentChannelUsers = (nick: string): void => {
   const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(nick, currentChannelName) || isSameName(nick, getCurrentNick()));
 
   if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+    scheduleCurrentUsersSync();
   }
 };
 
@@ -681,7 +721,7 @@ export const setUpdateUserFlag = (nick: string, channelName: string, plusMinus: 
   const currentChannelName = getCurrentChannelName();
 
   if (isSameName(channelName, currentChannelName)) {
-    useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(currentChannelName));
+    scheduleCurrentUsersSync();
   }
 };
 
