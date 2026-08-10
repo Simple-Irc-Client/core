@@ -57,6 +57,19 @@ const shouldAnswerWithReset = (nick: string, now: number): boolean => {
 /** The window an inbound direct message belongs in: ours is named after the sender. */
 const resolveWindow = (nick: string, target: string): string => (isSameName(target, getCurrentNick()) ? nick : target);
 
+/**
+ * Build the local id for a decrypted message.
+ *
+ * The server's `msgid` cannot be used as-is. This id is what the placeholder is
+ * inserted under and what `setUpdateMessage` later patches by, so a server that
+ * reused a msgid it had already given to a *plaintext* message would have the
+ * decrypted text overwrite that unrelated message's body. Namespacing keeps the
+ * server's value — so a frame delivered twice in one session still dedupes —
+ * while making it impossible to collide with an id from outside this path.
+ */
+const localMessageId = (msgid?: string): string =>
+  msgid !== undefined && msgid.length > 0 ? `e2ee:${msgid}` : `e2ee:${uuidv4()}`;
+
 const ensureWindow = (window: string): void => {
   if (!existChannel(window)) {
     setAddChannel(window, ChannelCategory.priv);
@@ -92,7 +105,10 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
     addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }));
     return;
   }
-  if (before === E2eeState.active && after === E2eeState.none) {
+  // Any move away from `active` ends the encrypted conversation, not just a
+  // teardown: a fresh OFFER from the peer replaces the session outright, and
+  // the user needs to know the padlock they had is gone.
+  if (before === E2eeState.active) {
     addInfoMessage(nick, i18next.t('e2ee.info.ended', { nick }));
     return;
   }
@@ -101,10 +117,14 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   }
 };
 
-const handleHandshake = (nick: string, frame: E2eeFrame): void => {
+const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'notice'): void => {
   const before = getSessionState(nick);
 
-  void handleHandshakeFrame(nick, frame, frame.type === 'offer' ? 'privmsg' : 'notice').then(() => {
+  // The real source has to be passed through. Deriving it from the frame type
+  // instead would make `handleHandshakeFrame`'s verb check unfalsifiable — it
+  // would only ever see the verb the frame claims to be, so a peer could drive
+  // the state machine with an OFFER sent as a NOTICE, or a RESET as a PRIVMSG.
+  void handleHandshakeFrame(nick, frame, source).then(() => {
     announceStateChange(nick, before, getSessionState(nick));
   });
 };
@@ -228,11 +248,11 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
     if (source !== 'privmsg') {
       return false;
     }
-    handleCipher(nick, window, frame, context.msgid ?? uuidv4(), context.time ?? new Date().toISOString());
+    handleCipher(nick, window, frame, localMessageId(context.msgid), context.time ?? new Date().toISOString());
     return true;
   }
 
-  handleHandshake(nick, frame);
+  handleHandshake(nick, frame, source);
 
   return true;
 };

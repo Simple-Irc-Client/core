@@ -17,12 +17,18 @@ const acceptIncomingOffer = vi.fn();
 const declineIncomingOffer = vi.fn();
 const endSession = vi.fn();
 const offerEncryption = vi.fn();
+const acknowledgePlaintext = vi.fn();
+
+/** Whether the peer in the window has ever been pinned on this network. */
+const peerIsPinned = { value: false };
 
 vi.mock('../session', () => ({
   acceptIncomingOffer: (nick: string) => acceptIncomingOffer(nick),
   declineIncomingOffer: (nick: string) => declineIncomingOffer(nick),
   endSession: (nick: string, notify?: boolean) => endSession(nick, notify),
   offerEncryption: (nick: string) => offerEncryption(nick),
+  acknowledgePlaintext: (nick: string) => acknowledgePlaintext(nick),
+  hasPinnedPeer: () => peerIsPinned.value,
 }));
 
 const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory };
@@ -39,9 +45,10 @@ const setSessionState = (session: Partial<E2eeSession> & { state: E2eeState }): 
 describe('E2eeBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useE2eeStore.setState({ sessions: {} });
+    useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
     settings.currentChannelName = 'bob';
     settings.currentChannelCategory = ChannelCategory.priv;
+    peerIsPinned.value = false;
   });
 
   it('shows nothing when there is no session', () => {
@@ -138,5 +145,91 @@ describe('E2eeBanner', () => {
     render(<E2eeBanner />);
 
     expect(screen.getByTestId('e2ee-banner')).toBeInTheDocument();
+  });
+
+  describe('plaintext downgrade warning', () => {
+    it('stays quiet for a peer never encrypted with', () => {
+      render(<E2eeBanner />);
+
+      expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
+    });
+
+    it('warns when a previously encrypted conversation is in the clear', () => {
+      peerIsPinned.value = true;
+
+      render(<E2eeBanner />);
+
+      expect(screen.getByTestId('e2ee-banner')).toHaveTextContent('e2ee.banner.plaintextAgain:bob');
+    });
+
+    it('offers to encrypt again', async () => {
+      const user = userEvent.setup();
+      peerIsPinned.value = true;
+
+      render(<E2eeBanner />);
+      await user.click(screen.getByRole('button', { name: 'e2ee.action.encrypt' }));
+
+      expect(offerEncryption).toHaveBeenCalledWith('bob');
+    });
+
+    it('records the acknowledgement when dismissed', async () => {
+      const user = userEvent.setup();
+      peerIsPinned.value = true;
+
+      render(<E2eeBanner />);
+      await user.click(screen.getByRole('button', { name: 'e2ee.action.dismiss' }));
+
+      expect(acknowledgePlaintext).toHaveBeenCalledWith('bob');
+    });
+
+    it('goes quiet once the acknowledgement is recorded', () => {
+      peerIsPinned.value = true;
+      useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: { bob: true } });
+
+      render(<E2eeBanner />);
+
+      expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
+    });
+
+    it('defers to the more specific banner while a handshake is in progress', () => {
+      peerIsPinned.value = true;
+      setSessionState({ state: E2eeState.offered });
+
+      render(<E2eeBanner />);
+
+      expect(screen.getByTestId('e2ee-banner')).toHaveTextContent('e2ee.banner.offered:bob');
+    });
+
+    it('shows nothing while the session is active', () => {
+      peerIsPinned.value = true;
+      setSessionState({ state: E2eeState.active, verified: true });
+
+      render(<E2eeBanner />);
+
+      expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
+    });
+
+    it('does not raise a second banner when the user dismisses an error', async () => {
+      const user = userEvent.setup();
+      peerIsPinned.value = true;
+      setSessionState({ state: E2eeState.error, errorMessage: 'bob did not respond' });
+
+      render(<E2eeBanner />);
+      await user.click(screen.getByRole('button', { name: 'e2ee.action.dismiss' }));
+
+      // Without this the dismissed error would be replaced instantly by the
+      // downgrade warning, and the user would be closing banners in a loop.
+      expect(acknowledgePlaintext).toHaveBeenCalledWith('bob');
+    });
+
+    it('does not warn on a channel window', () => {
+      peerIsPinned.value = true;
+      settings.currentChannelName = '#chan';
+      settings.currentChannelCategory = ChannelCategory.channel;
+
+      render(<E2eeBanner />);
+
+      expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
+    });
   });
 });

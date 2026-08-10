@@ -52,6 +52,7 @@ const createClient = async (nick: string, network = `${nick}-net`): Promise<Clie
     getServer: (): { network: string } => ({ network }),
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => autoOffer.enabled,
+    getCurrentNick: (): string => nick,
   }));
 
   vi.doMock('@/features/users/store/users', () => ({
@@ -338,6 +339,116 @@ describe('e2ee session', () => {
     });
   });
 
+  describe('re-handshaking', () => {
+    it('resolves simultaneous offers into one session both sides can use', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      // Neither has seen the other's offer yet — this is the glare case.
+      await alice.session.offerEncryption('bob');
+      await bob.session.offerEncryption('alice');
+
+      await deliver(alice, bob);
+      await deliver(bob, alice);
+      await deliver(bob, alice);
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(bob.store.getSessionState('alice')).toBe(E2eeState.active);
+
+      // The real failure this guards against was two "active" sessions built
+      // from different ephemeral pairs: both padlocks on, nothing decryptable.
+      expect(await sendAndReceive(alice, bob, 'glare survived')).toEqual({
+        kind: BodyKind.message,
+        text: 'glare survived',
+      });
+      expect(await sendAndReceive(bob, alice, 'both directions')).toEqual({
+        kind: BodyKind.message,
+        text: 'both directions',
+      });
+    });
+
+    it('settles glare the same way regardless of which side is asked first', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await alice.session.offerEncryption('bob');
+      await bob.session.offerEncryption('alice');
+
+      // Deliver in the opposite order to the previous test.
+      await deliver(bob, alice);
+      await deliver(alice, bob);
+      await deliver(bob, alice);
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(bob.store.getSessionState('alice')).toBe(E2eeState.active);
+      expect(await sendAndReceive(alice, bob, 'still fine')).toEqual({
+        kind: BodyKind.message,
+        text: 'still fine',
+      });
+    });
+
+    // Characterisation, not a regression guard: the store and the key material
+    // already moved together here. Pinned so a future change to the re-offer
+    // path cannot let the window keep a padlock it can no longer back.
+    it('does not keep claiming an active session when the peer offers again', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+
+      // Bob restarts and asks to start over; Alice still holds the old session.
+      bob.session.endAllSessions();
+      await bob.session.offerEncryption('alice');
+      await deliver(bob, alice);
+
+      // The store and the key material must agree. Previously the offer
+      // overwrote the keys while the store still read `active`, so the window
+      // kept its padlock and every send threw.
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.incoming);
+      await expect(alice.session.sendEncrypted('bob', 'no session', BodyKind.message)).rejects.toThrow();
+    });
+
+    it('recovers to a working session after the peer re-offers', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      bob.session.endAllSessions();
+      await bob.session.offerEncryption('alice');
+      await deliver(bob, alice);
+
+      await alice.session.acceptIncomingOffer('bob');
+      await deliver(alice, bob);
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(await sendAndReceive(alice, bob, 'recovered')).toEqual({
+        kind: BodyKind.message,
+        text: 'recovered',
+      });
+    });
+
+    it('still refuses a re-offer carrying a different identity key', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+
+      // Someone else answers to `bob` and offers to start over.
+      const impostor = await createClient('bob', 'impostor-net');
+      await impostor.session.offerEncryption('alice');
+      const [offer] = drain(impostor);
+      const { parseCtcpFrame } = await import('../protocol');
+      const frame = parseCtcpFrame(offer?.body ?? '');
+      if (frame?.type !== 'offer') {
+        throw new Error('expected an offer frame');
+      }
+      await alice.session.handleHandshakeFrame('bob', frame, 'privmsg');
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.fingerprintChanged);
+    });
+  });
+
   describe('pinning', () => {
     it('pins the peer identity on first contact', async () => {
       const alice = await createClient('alice');
@@ -419,6 +530,120 @@ describe('e2ee session', () => {
       await completeHandshake(alice, bob);
 
       expect(alice.store.getSession('bob')?.verified).toBe(true);
+    });
+  });
+
+  describe('plaintext downgrade warning', () => {
+    it('stays quiet for a peer we have never encrypted with', async () => {
+      const alice = await createClient('alice');
+
+      expect(alice.session.hasPinnedPeer('stranger')).toBe(false);
+      expect(alice.session.shouldWarnPlaintext('stranger')).toBe(false);
+    });
+
+    it('warns once a peer has been pinned and the conversation is in the clear', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(false);
+
+      // An injected RESET is exactly how an attacker forces plaintext.
+      const { parseCtcpFrame } = await import('../protocol');
+      const reset = parseCtcpFrame('SIC-E2EE RESET');
+      if (reset?.type !== 'reset') {
+        throw new Error('expected a reset frame');
+      }
+      await alice.session.handleHandshakeFrame('bob', reset, 'notice');
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.none);
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(true);
+    });
+
+    it('warns when a handshake never happens at all, which is the silent case', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions();
+
+      // Fresh connection, pin survives, no session was ever established because
+      // the offers were dropped in transit.
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(true);
+    });
+
+    it('stops warning once the user accepts the plaintext conversation', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(true);
+
+      alice.session.acknowledgePlaintext('bob');
+
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(false);
+    });
+
+    it('warns again after encryption comes back and is lost a second time', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+      alice.session.acknowledgePlaintext('bob');
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(false);
+
+      // Re-encrypting spends the acknowledgement: a later loss is news again.
+      bob.session.endAllSessions();
+      drain(alice);
+      drain(bob);
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(true);
+    });
+
+    it('does not warn while a handshake is in progress or already flagged', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+      drain(alice);
+
+      // Offering again puts a more specific banner on screen; this one defers.
+      await alice.session.offerEncryption('bob');
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.offered);
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(false);
+    });
+
+    it('forgets acknowledgements on disconnect', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+      alice.session.acknowledgePlaintext('bob');
+
+      alice.session.endAllSessions();
+
+      // A new connection is a new conversation; the pin outlives it, the
+      // "plaintext is fine here" decision does not.
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(true);
+    });
+
+    it('keys the warning per peer', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endSession('bob', false);
+      alice.session.acknowledgePlaintext('bob');
+
+      expect(alice.session.shouldWarnPlaintext('bob')).toBe(false);
+      expect(alice.session.shouldWarnPlaintext('carol')).toBe(false);
+      expect(alice.session.hasPinnedPeer('bob')).toBe(true);
     });
   });
 

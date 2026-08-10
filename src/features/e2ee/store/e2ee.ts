@@ -59,9 +59,17 @@ export interface E2eeSession {
 interface E2eeStore {
   /** Keyed by IRC-folded nick. */
   sessions: Record<string, E2eeSession>;
+  /**
+   * Peers where the user has accepted that this conversation is in the clear,
+   * so the downgrade warning stops asking. Keyed by IRC-folded nick, and reset
+   * on disconnect — an acknowledgement is about the conversation in front of
+   * you, not a standing decision.
+   */
+  plaintextAcknowledged: Record<string, boolean>;
   upsertSession: (key: string, session: E2eeSession) => void;
   patchSession: (key: string, patch: Partial<E2eeSession>) => void;
   removeSession: (key: string) => void;
+  setPlaintextAcknowledged: (key: string, acknowledged: boolean) => void;
   clearSessions: () => void;
 }
 
@@ -69,6 +77,7 @@ export const useE2eeStore = create<E2eeStore>()(
   devtools(
     (set) => ({
       sessions: {},
+      plaintextAcknowledged: {},
 
       upsertSession: (key: string, session: E2eeSession): void => {
         set((state) => ({ sessions: { ...state.sessions, [key]: session } }));
@@ -93,8 +102,24 @@ export const useE2eeStore = create<E2eeStore>()(
         });
       },
 
+      setPlaintextAcknowledged: (key: string, acknowledged: boolean): void => {
+        set((state) => {
+          if ((state.plaintextAcknowledged[key] ?? false) === acknowledged) {
+            return state;
+          }
+          if (!acknowledged) {
+            return {
+              plaintextAcknowledged: Object.fromEntries(
+                Object.entries(state.plaintextAcknowledged).filter(([entry]) => entry !== key),
+              ),
+            };
+          }
+          return { plaintextAcknowledged: { ...state.plaintextAcknowledged, [key]: true } };
+        });
+      },
+
       clearSessions: (): void => {
-        set(() => ({ sessions: {} }));
+        set(() => ({ sessions: {}, plaintextAcknowledged: {} }));
       },
     }),
     { name: 'e2ee' },
@@ -131,3 +156,15 @@ export const removeSession = (nick: string): void => {
 export const clearSessions = (): void => {
   useE2eeStore.getState().clearSessions();
 };
+
+/**
+ * Record that the user is content for this conversation to be unencrypted, so
+ * the downgrade warning stops. Cleared again the moment a session comes up, so
+ * a later loss is surfaced afresh rather than staying silent.
+ */
+export const setPlaintextAcknowledged = (nick: string, acknowledged: boolean): void => {
+  useE2eeStore.getState().setPlaintextAcknowledged(getSessionKey(nick), acknowledged);
+};
+
+export const isPlaintextAcknowledged = (nick: string): boolean =>
+  useE2eeStore.getState().plaintextAcknowledged[getSessionKey(nick)] === true;

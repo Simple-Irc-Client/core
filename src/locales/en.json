@@ -444,5 +444,9 @@
   "e2ee.command.status": "Encrypted with {{nick}} ({{state}}). Yours: {{mine}} — theirs: {{theirs}}",
   "contextmenu.user.encrypt": "Encrypt conversation",
   "profileSettings.autoOfferEncryption": "Offer encryption automatically in private messages",
-  "help.cmd.e2ee": "Turn end-to-end encryption on or off for a private conversation"
+  "help.cmd.e2ee": "Turn end-to-end encryption on or off for a private conversation",
+  "e2ee.banner.plaintextAgain": "This conversation is not encrypted, but you have encrypted with {{nick}} before.",
+  "e2ee.action.encrypt": "Encrypt again",
+  "e2ee.status.plaintextAgain": "Not encrypted — but you have encrypted with this person before",
+  "e2ee.panel.plaintextAgainHint": "You and {{nick}} have used encryption before, so their key is known. This conversation is readable by the IRC server. That can simply mean they reinstalled or are using another client — but suppressing encryption is also what someone would do to read your messages."
 }

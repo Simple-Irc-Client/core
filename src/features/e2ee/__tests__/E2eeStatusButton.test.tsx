@@ -14,11 +14,17 @@ vi.mock('react-i18next', () => ({
 const endSession = vi.fn();
 const markVerified = vi.fn();
 const offerEncryption = vi.fn();
+const acknowledgePlaintext = vi.fn();
+
+/** Whether this peer has ever been pinned on this network. */
+const peerIsPinned = { value: false };
 
 vi.mock('../session', () => ({
   endSession: (nick: string, notify?: boolean) => endSession(nick, notify),
   markVerified: (nick: string, verified: boolean) => markVerified(nick, verified),
   offerEncryption: (nick: string) => offerEncryption(nick),
+  acknowledgePlaintext: (nick: string) => acknowledgePlaintext(nick),
+  hasPinnedPeer: () => peerIsPinned.value,
 }));
 
 vi.mock('@features/settings/store/settings', () => ({ getCaseMapping: () => 'ascii' }));
@@ -30,7 +36,8 @@ const setSessionState = (session: Partial<E2eeSession> & { state: E2eeState }): 
 describe('E2eeStatusButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useE2eeStore.setState({ sessions: {} });
+    useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
+    peerIsPinned.value = false;
   });
 
   it('labels the button as not encrypted when there is no session', () => {
@@ -114,5 +121,50 @@ describe('E2eeStatusButton', () => {
     expect(screen.queryByTestId('e2ee-verify-button')).not.toBeInTheDocument();
     expect(screen.getByText('AAAA BBBB CCCC DDDD')).toBeInTheDocument();
     expect(screen.getByText('EEEE FFFF 0000 1111')).toBeInTheDocument();
+  });
+
+  describe('plaintext downgrade', () => {
+    it('marks an unencrypted conversation with a known peer differently from a stranger', () => {
+      const { rerender } = render(<E2eeStatusButton channelName="bob" />);
+      expect(screen.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', 'e2ee.status.off');
+
+      peerIsPinned.value = true;
+      rerender(<E2eeStatusButton channelName="bob" />);
+
+      expect(screen.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', 'e2ee.status.plaintextAgain');
+    });
+
+    it('explains the situation in the panel', async () => {
+      const user = userEvent.setup();
+      peerIsPinned.value = true;
+
+      render(<E2eeStatusButton channelName="bob" />);
+      await user.click(screen.getByTestId('e2ee-status-button'));
+
+      expect(screen.getByText('e2ee.panel.plaintextAgainHint:bob')).toBeInTheDocument();
+    });
+
+    it('treats turning encryption off as accepting plaintext', async () => {
+      const user = userEvent.setup();
+      setSessionState({ state: E2eeState.active });
+
+      render(<E2eeStatusButton channelName="bob" />);
+      await user.click(screen.getByTestId('e2ee-status-button'));
+      await user.click(screen.getByTestId('e2ee-end-button'));
+
+      // Otherwise the downgrade warning would appear the instant the user
+      // turned it off themselves.
+      expect(endSession).toHaveBeenCalledWith('bob', undefined);
+      expect(acknowledgePlaintext).toHaveBeenCalledWith('bob');
+    });
+
+    it('keeps the changed-key state louder than the downgrade state', () => {
+      peerIsPinned.value = true;
+      setSessionState({ state: E2eeState.fingerprintChanged, expectedFingerprint: 'AAAA', theirFingerprint: 'BBBB' });
+
+      render(<E2eeStatusButton channelName="bob" />);
+
+      expect(screen.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', 'e2ee.status.fingerprintChanged');
+    });
   });
 });

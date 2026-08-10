@@ -5,8 +5,9 @@ import { Button } from '@shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 
-import { endSession, markVerified, offerEncryption } from '../session';
+import { acknowledgePlaintext, endSession, hasPinnedPeer, markVerified, offerEncryption } from '../session';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '../store/e2ee';
+import { useE2eePinsStore } from '../store/pins';
 
 interface E2eeStatusButtonProps {
   /** The peer nick — private windows are named after them. */
@@ -27,9 +28,13 @@ interface E2eeStatusButtonProps {
 const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const { t } = useTranslation();
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
+  const pinned = useE2eePinsStore(() => hasPinnedPeer(channelName));
 
   const isActive = session?.state === E2eeState.active;
   const isAlarming = session?.state === E2eeState.fingerprintChanged;
+  // An open padlock means something different for a peer we have encrypted with
+  // before, so it does not get the same neutral grey as a stranger's.
+  const isUnexpectedlyPlaintext = !isActive && !isAlarming && pinned;
 
   const Icon = isAlarming ? ShieldAlert : isActive ? Lock : LockOpen;
   const iconClass = isAlarming
@@ -38,7 +43,9 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
       ? session.verified
         ? 'text-green-600 dark:text-green-400'
         : 'text-yellow-600 dark:text-yellow-400'
-      : 'text-muted-foreground';
+      : isUnexpectedlyPlaintext
+        ? 'text-yellow-600 dark:text-yellow-400'
+        : 'text-muted-foreground';
 
   const tooltip = isAlarming
     ? t('e2ee.status.fingerprintChanged')
@@ -46,7 +53,9 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
       ? session.verified
         ? t('e2ee.status.verified')
         : t('e2ee.status.unverified')
-      : t('e2ee.status.off');
+      : isUnexpectedlyPlaintext
+        ? t('e2ee.status.plaintextAgain')
+        : t('e2ee.status.off');
 
   return (
     <Popover>
@@ -105,7 +114,11 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
                 variant="outline"
                 className="flex-1"
                 data-testid="e2ee-end-button"
-                onClick={() => { endSession(channelName); }}
+                onClick={() => {
+                  endSession(channelName);
+                  // Chosen, not lost — warning about it would be nagging.
+                  acknowledgePlaintext(channelName);
+                }}
               >
                 {t('e2ee.action.end')}
               </Button>
@@ -130,7 +143,9 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
           </>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground mb-3">{t('e2ee.panel.offHint')}</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              {isUnexpectedlyPlaintext ? t('e2ee.panel.plaintextAgainHint', { nick: channelName }) : t('e2ee.panel.offHint')}
+            </p>
             <Button
               variant="outline"
               className="w-full"

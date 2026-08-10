@@ -15,11 +15,16 @@
  * and from the responder's side an inbound OFFER lands in `incoming`, where it
  * waits for the user (there is no auto-accept for an unknown key), then
  * `acceptIncomingOffer()` derives and answers.
+ *
+ * When both sides offer at once, the folded nicks decide it: the lower one
+ * keeps the initiator role and ignores the incoming offer, the higher one
+ * abandons its own and answers immediately. Both compute the same comparison,
+ * so it costs no extra round trip.
  */
 
 import i18next from 'i18next';
 
-import { getAutoOfferEncryption, getServer } from '@/features/settings/store/settings';
+import { getAutoOfferEncryption, getCurrentNick, getServer } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { ircSendRawMessage } from '@/network/irc/network';
 
@@ -55,8 +60,10 @@ import {
   getSession,
   getSessionKey,
   getSessionState,
+  isPlaintextAcknowledged,
   patchSession,
   removeSession,
+  setPlaintextAcknowledged,
   setSession,
   clearSessions,
 } from './store/e2ee';
@@ -216,6 +223,10 @@ const completeHandshake = async (
   secrets.set(key, { ...entry, role, keys });
   clearOfferTimer(key);
 
+  // Encryption is back, so any earlier "yes, plaintext is fine" is spent. If
+  // this session is lost again the user gets told again.
+  setPlaintextAcknowledged(nick, false);
+
   setSession(nick, {
     state: E2eeState.active,
     verified,
@@ -306,14 +317,28 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
   await importPublicKey(frame.identityKeyB64);
   await importPublicKey(frame.ephemeralKeyB64);
 
+  const key = getSessionKey(nick);
+  const previousState = getSessionState(nick);
+
+  // Glare: both sides sent an OFFER at the same time. Without a tie-break each
+  // side would answer the other's offer as responder, and the two would derive
+  // from different ephemeral pairs — leaving both windows showing a padlock
+  // while nothing decrypts. Comparing folded nicks gives both clients the same
+  // answer with no extra round trip, and exactly one of them yields.
+  const yieldingToGlare = previousState === E2eeState.offered;
+  if (yieldingToGlare && getSessionKey(getCurrentNick()) < key) {
+    // We hold the initiator role; our own offer is still outstanding.
+    return;
+  }
+
   const theirFingerprint = await fingerprintFromB64(frame.identityKeyB64);
   const identity = await getIdentity();
-  const ephemeral = await generateEphemeral();
-  const key = getSessionKey(nick);
 
   const mismatch = checkPin(nick, frame.identityKeyB64);
   if (mismatch) {
+    clearOfferTimer(key);
     secrets.delete(key);
+    reassembler.forget(nick);
     setSession(nick, {
       state: E2eeState.fingerprintChanged,
       verified: false,
@@ -323,6 +348,19 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
     });
     return;
   }
+
+  // Only now is whatever we were holding discarded. An OFFER replaces any
+  // existing session outright — the peer evidently no longer holds the old keys
+  // or they would not be asking to start again — so the half-assembled frames
+  // and the outstanding offer timer that belonged to it have to go with it.
+  // Leaving buffered chunks behind would let fragments of a dead session sit in
+  // memory waiting to be mixed with the new one's.
+  clearOfferTimer(key);
+  reassembler.forget(nick);
+
+  // Generated after the pin check, not before: a peer whose key already fails
+  // should not cost us an ECDH keypair per offer.
+  const ephemeral = await generateEphemeral();
 
   secrets.set(key, {
     role: 'responder',
@@ -338,11 +376,17 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
     theirFingerprint,
   });
 
-  // Auto-accept only for a peer whose identity key we have seen before and that
-  // still matches. An unknown key is exactly the case where the user's judgement
-  // is the security control, so it always waits for them — the setting speeds up
-  // conversations you already have, it never trusts a stranger on your behalf.
-  if (getAutoOfferEncryption() && getPin(getNetwork(), peerKeyFor(nick)) !== undefined) {
+  // Yielding to glare answers immediately: this user already asked for
+  // encryption by sending their own offer, so prompting them again for the
+  // same decision would be noise. The pin is still checked in either case.
+  //
+  // Auto-accept otherwise applies only to a peer whose identity key we have
+  // seen before and that still matches. An unknown key is exactly the case
+  // where the user's judgement is the security control, so it always waits for
+  // them — the setting speeds up conversations you already have, it never
+  // trusts a stranger on your behalf.
+  const pinnedAndTrusted = getAutoOfferEncryption() && getPin(getNetwork(), peerKeyFor(nick)) !== undefined;
+  if (yieldingToGlare || pinnedAndTrusted) {
     await acceptIncomingOffer(nick);
   }
 };
@@ -512,6 +556,34 @@ export const handlePeerRename = (oldNick: string, newNick: string): void => {
     verified: false,
     errorMessage: i18next.t('e2ee.error.peerRenamed', { oldNick, newNick }),
   });
+};
+
+/**
+ * Has this peer's identity ever been pinned on this network?
+ *
+ * This is what turns the pin store into a downgrade defence rather than just a
+ * key cache. Encryption here is opt-in and best-effort, so an attacker who can
+ * drop OFFER frames or inject RESET notices gets the conversation back in the
+ * clear — and, without this, gets it silently. Knowing that the two of you have
+ * encrypted before is exactly the fact that makes the silence suspicious.
+ */
+export const hasPinnedPeer = (nick: string): boolean =>
+  getPin(getNetwork(), peerKeyFor(nick)) !== undefined;
+
+/**
+ * Should the conversation warn that it is unencrypted?
+ *
+ * Only when there is no session at all: the other states carry their own,
+ * more specific banner. Deliberately does not try to distinguish an attack
+ * from the peer simply having quit — we cannot tell the two apart, and a
+ * warning that guessed would be worse than one that states what is true.
+ */
+export const shouldWarnPlaintext = (nick: string): boolean =>
+  getSessionState(nick) === E2eeState.none && !isPlaintextAcknowledged(nick) && hasPinnedPeer(nick);
+
+/** The user has seen the plaintext warning and accepted it for this conversation. */
+export const acknowledgePlaintext = (nick: string): void => {
+  setPlaintextAcknowledged(nick, true);
 };
 
 /** Record that the user compared fingerprints out of band. */

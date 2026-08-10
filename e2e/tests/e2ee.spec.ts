@@ -239,8 +239,11 @@ test.describe('End-to-end encryption', () => {
     // The bot deliberately ignores the offer, exactly as any non-SIC client does.
     await page.getByTestId('e2ee-status-button').click();
     await page.getByTestId('e2ee-start-button').click();
-    // The popover stays open over the banner and would swallow the click below.
+    // The popover stays open over the banner and would swallow the click below,
+    // and closing it leaves focus on the lock button, which opens its tooltip
+    // in the same spot. Move focus away so neither overlays the banner.
     await page.keyboard.press('Escape');
+    await page.locator('#message-input').click();
 
     const offerLine = await waitForCapturedLine(capture, 'SIC-E2EE OFFER');
     capture.stop();
@@ -275,6 +278,36 @@ test.describe('End-to-end encryption', () => {
     // The original pin survives, so the genuine peer still works afterwards.
     await handshakeAsInitiator();
     await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted, unverified/);
+  });
+
+  test('warns that a conversation is in the clear after an injected RESET', async () => {
+    await openDmWithBot();
+    await handshakeAsInitiator();
+
+    // Tearing the session down with a RESET is how an attacker forces the
+    // conversation back to plaintext. Doing it silently is the actual risk.
+    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+
+    await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted/, { timeout: 5_000 });
+
+    // A RESET is only honoured over NOTICE, so the PRIVMSG above must be ignored.
+    bot.send(`NOTICE ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+
+    await expect(page.getByTestId('e2ee-banner')).toContainText('you have encrypted with', { timeout: 20_000 });
+    await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute(
+      'aria-label',
+      /encrypted with this person before/,
+    );
+
+    // Dismissing is a decision, so it must actually stick.
+    await page.getByRole('button', { name: 'Dismiss' }).click();
+    await expect(page.getByTestId('e2ee-banner')).toBeHidden();
+
+    // ...and re-encrypting must arm the warning again for a later loss.
+    await handshakeAsInitiator();
+    bot.send(`NOTICE ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+    await expect(page.getByTestId('e2ee-banner')).toContainText('you have encrypted with', { timeout: 20_000 });
+    await page.getByRole('button', { name: 'Dismiss' }).click();
   });
 
   test('encrypted history is not written to disk', async () => {

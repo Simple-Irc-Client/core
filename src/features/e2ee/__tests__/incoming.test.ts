@@ -225,7 +225,7 @@ describe('e2ee incoming CTCP handling', () => {
 
       // The placeholder goes in, then is patched to a failure — the raw bytes
       // are never shown as if they were a message from the peer.
-      expect(addedMessages[0]).toMatchObject({ id: 'msg-1', e2ee: 'decrypting' });
+      expect(addedMessages[0]).toMatchObject({ id: 'e2ee:msg-1', e2ee: 'decrypting' });
       expect(updatedMessages.at(-1)?.patch).toMatchObject({ e2ee: 'failed' });
       expect(notifications).toHaveLength(0);
     });
@@ -243,9 +243,9 @@ describe('e2ee incoming CTCP handling', () => {
       await until(() => updatedMessages.length > 0);
 
       expect(addedMessages).toHaveLength(1);
-      expect(addedMessages[0]).toMatchObject({ id: 'msg-42', e2ee: 'decrypting' });
+      expect(addedMessages[0]).toMatchObject({ id: 'e2ee:msg-42', e2ee: 'decrypting' });
       expect(updatedMessages.at(-1)).toMatchObject({
-        id: 'msg-42',
+        id: 'e2ee:msg-42',
         patch: { message: 'the meeting is at six', e2ee: 'ok' },
       });
       expect(notifications).toEqual([{ nick: 'bob', message: 'the meeting is at six' }]);
@@ -298,6 +298,102 @@ describe('e2ee incoming CTCP handling', () => {
       expect(unreadBumps).toContain('bob');
     });
   });
+
+  describe('handshake verb enforcement', () => {
+    /**
+     * These must go through `handleE2eeCtcp`, not `handleHandshakeFrame`.
+     * Testing the inner function directly is what let a bug ship where the
+     * outer one synthesised the source from the frame type, so the verb check
+     * could never fail in the code path the kernel actually uses.
+     */
+    it('ignores an OFFER delivered as a NOTICE', async () => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      const offerBody = bodyOf(peer.drain()[0] ?? '');
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'notice' });
+      await flush();
+
+      expect(getSessionState('bob')).toBe(E2eeState.none);
+    });
+
+    it('accepts an OFFER delivered as a PRIVMSG', async () => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      const offerBody = bodyOf(peer.drain()[0] ?? '');
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+
+      expect(getSessionState('bob')).toBe(E2eeState.incoming);
+    });
+
+    it('ignores a RESET delivered as a PRIVMSG', async () => {
+      await establishSession();
+      expect(getSessionState('bob')).toBe(E2eeState.active);
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: 'SIC-E2EE RESET', source: 'privmsg' });
+      await flush();
+
+      expect(getSessionState('bob')).toBe(E2eeState.active);
+    });
+
+    it('honours a RESET delivered as a NOTICE', async () => {
+      await establishSession();
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: 'SIC-E2EE RESET', source: 'notice' });
+      await until(() => getSessionState('bob') === E2eeState.none);
+
+      expect(getSessionState('bob')).toBe(E2eeState.none);
+    });
+
+    it('ignores a DECLINE delivered as a PRIVMSG', async () => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(peer.drain()[0] ?? ''), source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: 'SIC-E2EE DECLINE', source: 'privmsg' });
+      await flush();
+
+      expect(getSessionState('bob')).toBe(E2eeState.incoming);
+    });
+  });
+
+  describe('message identity', () => {
+    it('namespaces the server msgid so it cannot collide with another message', async () => {
+      const peer = await establishSession();
+      addedMessages.length = 0;
+      updatedMessages.length = 0;
+
+      await peer.sendEncrypted('me', 'decrypted body', BodyKind.message);
+      for (const line of peer.drain()) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(line), source: 'privmsg', msgid: 'collide' });
+      }
+      await until(() => updatedMessages.length > 0);
+
+      // A server that reused `collide` for an earlier plaintext message must not
+      // have that message's body replaced with this decrypted text.
+      expect(addedMessages[0]?.id).toBe('e2ee:collide');
+      expect(updatedMessages.at(-1)?.id).toBe('e2ee:collide');
+      expect(addedMessages.some((message) => message.id === 'collide')).toBe(false);
+    });
+
+    it('still generates an id when the server sends no msgid', async () => {
+      const peer = await establishSession();
+      addedMessages.length = 0;
+      updatedMessages.length = 0;
+
+      await peer.sendEncrypted('me', 'no msgid here', BodyKind.message);
+      for (const line of peer.drain()) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(line), source: 'privmsg' });
+      }
+      await until(() => updatedMessages.length > 0);
+
+      expect(addedMessages[0]?.id).toMatch(/^e2ee:/);
+    });
+  });
+
 });
 
 // --- Helpers that stand up a real second client ---
@@ -327,6 +423,7 @@ const createPeer = async (): Promise<Peer> => {
     getServer: (): { network: string } => ({ network: 'peernet' }),
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => false,
+    getCurrentNick: (): string => 'bob',
   }));
   vi.doMock('@/features/users/store/users', () => ({ getUser: (): undefined => undefined }));
 

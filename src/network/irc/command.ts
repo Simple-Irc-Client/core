@@ -4,7 +4,7 @@ import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageColor } from '@/config/theme';
 import i18next from '@/app/i18n';
-import { endSession, markVerified, offerEncryption } from '@features/e2ee/session';
+import { acknowledgePlaintext, endSession, markVerified, offerEncryption } from '@features/e2ee/session';
 import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2ee';
 
 export const generalCommands = [
@@ -181,6 +181,8 @@ const e2eeCommand = (channel: string, line: string[]): string => {
     case 'off':
     case 'stop':
       endSession(channel);
+      // Turning it off deliberately should not then warn about the result.
+      acknowledgePlaintext(channel);
       print(i18next.t('e2ee.command.stopped', { nick: channel }));
       break;
     case 'verify':

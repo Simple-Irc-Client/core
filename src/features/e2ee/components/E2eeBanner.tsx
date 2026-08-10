@@ -4,8 +4,9 @@ import { Lock, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { ChannelCategory } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
 
-import { acceptIncomingOffer, declineIncomingOffer, endSession, offerEncryption } from '../session';
+import { acceptIncomingOffer, acknowledgePlaintext, declineIncomingOffer, endSession, hasPinnedPeer, offerEncryption } from '../session';
 import { E2eeState, useE2eeStore, getSessionKey, type E2eeSession } from '../store/e2ee';
+import { useE2eePinsStore } from '../store/pins';
 
 /**
  * The prompt strip at the top of a private conversation.
@@ -16,6 +17,11 @@ import { E2eeState, useE2eeStore, getSessionKey, type E2eeSession } from '../sto
  *
  * Nothing is shown for the steady states: an active *verified* session is
  * represented by the lock in the header, not by a banner that never goes away.
+ *
+ * Every dismissal here also records that the user accepts plaintext for this
+ * conversation. Without that, closing one banner would immediately raise the
+ * "you have encrypted with this person before" one, and the user would be
+ * playing whack-a-mole with warnings about a decision they just made.
  */
 
 interface BannerAction {
@@ -41,7 +47,12 @@ const E2eeBanner = () => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
-  const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(currentChannelName)]);
+  const sessionKey = getSessionKey(currentChannelName);
+  const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[sessionKey]);
+  const plaintextAcknowledged = useE2eeStore((state) => state.plaintextAcknowledged[sessionKey] === true);
+  // Subscribed rather than read once: a pin is written the moment a handshake
+  // completes, and this banner has to stop showing when that happens.
+  const pinned = useE2eePinsStore(() => hasPinnedPeer(currentChannelName));
 
   // Encryption is one-to-one only, so this never appears on a channel window.
   if (currentChannelCategory !== ChannelCategory.priv) {
@@ -59,7 +70,13 @@ const E2eeBanner = () => {
           text: t('e2ee.banner.incoming', { nick: peer }),
           actions: [
             { label: t('e2ee.action.accept'), onClick: () => void acceptIncomingOffer(peer) },
-            { label: t('e2ee.action.decline'), onClick: () => { declineIncomingOffer(peer); } },
+            {
+              label: t('e2ee.action.decline'),
+              onClick: () => {
+                declineIncomingOffer(peer);
+                acknowledgePlaintext(peer);
+              },
+            },
           ],
         };
 
@@ -68,7 +85,15 @@ const E2eeBanner = () => {
           tone: 'info',
           icon: Lock,
           text: t('e2ee.banner.offered', { nick: peer }),
-          actions: [{ label: t('e2ee.action.cancel'), onClick: () => { endSession(peer); } }],
+          actions: [
+            {
+              label: t('e2ee.action.cancel'),
+              onClick: () => {
+                endSession(peer);
+                acknowledgePlaintext(peer);
+              },
+            },
+          ],
         };
 
       case E2eeState.active:
@@ -88,7 +113,15 @@ const E2eeBanner = () => {
           tone: 'danger',
           icon: ShieldAlert,
           text: t('e2ee.banner.fingerprintChanged', { nick: peer }),
-          actions: [{ label: t('e2ee.action.dismiss'), onClick: () => { endSession(peer, false); } }],
+          actions: [
+            {
+              label: t('e2ee.action.dismiss'),
+              onClick: () => {
+                endSession(peer, false);
+                acknowledgePlaintext(peer);
+              },
+            },
+          ],
         };
 
       case E2eeState.error:
@@ -98,14 +131,39 @@ const E2eeBanner = () => {
           text: session.errorMessage ?? t('e2ee.error.handshakeFailed'),
           actions: [
             { label: t('e2ee.action.retry'), onClick: () => void offerEncryption(peer) },
-            { label: t('e2ee.action.dismiss'), onClick: () => { endSession(peer, false); } },
+            {
+              label: t('e2ee.action.dismiss'),
+              onClick: () => {
+                endSession(peer, false);
+                acknowledgePlaintext(peer);
+              },
+            },
           ],
         };
 
-      // `declined` and `none` deliberately show nothing: the user said no, or
-      // never asked, and a banner in either case is nagging.
-      default:
+      // `declined` shows nothing: the peer refused and the info line already
+      // said so, so a standing banner would just nag.
+      case E2eeState.declined:
         return null;
+
+      default:
+        // No session at all. Silence is right for someone we have never
+        // encrypted with — but not for someone we have. Encryption here is
+        // opt-in and best-effort, so anyone able to drop OFFER frames or inject
+        // a RESET can put the conversation back in the clear; pinning that peer
+        // earlier is what lets us notice. Deliberately not phrased as an
+        // accusation: a peer who simply reinstalled looks identical from here.
+        return pinned && !plaintextAcknowledged
+          ? {
+              tone: 'warning',
+              icon: ShieldAlert,
+              text: t('e2ee.banner.plaintextAgain', { nick: peer }),
+              actions: [
+                { label: t('e2ee.action.encrypt'), onClick: () => void offerEncryption(peer) },
+                { label: t('e2ee.action.dismiss'), onClick: () => { acknowledgePlaintext(peer); } },
+              ],
+            }
+          : null;
     }
   })();
 
