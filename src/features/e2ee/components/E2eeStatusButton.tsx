@@ -1,0 +1,149 @@
+import { useTranslation } from 'react-i18next';
+import { Lock, LockOpen, ShieldAlert } from 'lucide-react';
+
+import { Button } from '@shared/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
+
+import { endSession, markVerified, offerEncryption } from '../session';
+import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '../store/e2ee';
+
+interface E2eeStatusButtonProps {
+  /** The peer nick — private windows are named after them. */
+  channelName: string;
+}
+
+/**
+ * The lock in the conversation header: current state at a glance, and the
+ * fingerprint pair behind a click.
+ *
+ * The fingerprints are the whole reason this popover exists. TOFU pinning
+ * catches a key that changes later, but an attacker present at the very first
+ * handshake is only caught by two people comparing these strings somewhere the
+ * IRC network cannot reach — so the panel states plainly that an unverified
+ * session is unverified, rather than showing a reassuring padlock and leaving it
+ * there.
+ */
+const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
+  const { t } = useTranslation();
+  const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
+
+  const isActive = session?.state === E2eeState.active;
+  const isAlarming = session?.state === E2eeState.fingerprintChanged;
+
+  const Icon = isAlarming ? ShieldAlert : isActive ? Lock : LockOpen;
+  const iconClass = isAlarming
+    ? 'text-red-600 dark:text-red-400'
+    : isActive
+      ? session.verified
+        ? 'text-green-600 dark:text-green-400'
+        : 'text-yellow-600 dark:text-yellow-400'
+      : 'text-muted-foreground';
+
+  const tooltip = isAlarming
+    ? t('e2ee.status.fingerprintChanged')
+    : isActive
+      ? session.verified
+        ? t('e2ee.status.verified')
+        : t('e2ee.status.unverified')
+      : t('e2ee.status.off');
+
+  return (
+    <Popover>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                className="h-12 ml-2 shrink-0"
+                data-testid="e2ee-status-button"
+                aria-label={tooltip}
+              >
+                <Icon className={`h-4 w-4 ${iconClass}`} />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{tooltip}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      <PopoverContent className="w-80 text-sm" align="end">
+        <div className="font-semibold mb-2">{t('e2ee.panel.title', { nick: channelName })}</div>
+
+        {isActive ? (
+          <>
+            <dl className="space-y-2 mb-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t('e2ee.panel.yourFingerprint')}</dt>
+                <dd className="font-mono text-xs break-all" data-testid="e2ee-my-fingerprint">
+                  {session.myFingerprint}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t('e2ee.panel.theirFingerprint', { nick: channelName })}</dt>
+                <dd className="font-mono text-xs break-all" data-testid="e2ee-their-fingerprint">
+                  {session.theirFingerprint}
+                </dd>
+              </div>
+            </dl>
+
+            <p className="text-xs text-muted-foreground mb-3">
+              {session.verified ? t('e2ee.panel.verifiedHint') : t('e2ee.panel.unverifiedHint')}
+            </p>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                data-testid="e2ee-verify-button"
+                onClick={() => { markVerified(channelName, !session.verified); }}
+              >
+                {session.verified ? t('e2ee.action.unverify') : t('e2ee.action.verify')}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                data-testid="e2ee-end-button"
+                onClick={() => { endSession(channelName); }}
+              >
+                {t('e2ee.action.end')}
+              </Button>
+            </div>
+          </>
+        ) : isAlarming ? (
+          <>
+            <p className="text-xs mb-3">{t('e2ee.panel.fingerprintChangedHint', { nick: channelName })}</p>
+            <dl className="space-y-2 mb-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">{t('e2ee.panel.expectedFingerprint')}</dt>
+                <dd className="font-mono text-xs break-all">{session.expectedFingerprint}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">{t('e2ee.panel.receivedFingerprint')}</dt>
+                <dd className="font-mono text-xs break-all">{session.theirFingerprint}</dd>
+              </div>
+            </dl>
+            <Button variant="outline" className="w-full" onClick={() => { endSession(channelName, false); }}>
+              {t('e2ee.action.dismiss')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">{t('e2ee.panel.offHint')}</p>
+            <Button
+              variant="outline"
+              className="w-full"
+              data-testid="e2ee-start-button"
+              onClick={() => void offerEncryption(channelName)}
+            >
+              {t('e2ee.action.start')}
+            </Button>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+export default E2eeStatusButton;

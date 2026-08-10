@@ -24,6 +24,8 @@ interface ChannelsStore {
   setTopic: (channelName: string, newTopic: string) => void;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
   setAddMessage: (newMessage: Message) => void;
+  /** Patch a message already in the list, keeping its position (E2EE decryption) */
+  setUpdateMessage: (channelName: string, messageId: string, patch: Partial<Message>) => void;
   /** IRCv3 message-tags (typing) */
   setTyping: (channelName: string, nick: string, status: UserTypingStatus) => void;
   setClearAllTyping: () => void;
@@ -89,6 +91,34 @@ const mergeMessages = (existing: Message[], duplicate: Message[]): Message[] => 
   return [...existing, ...duplicate.filter((message) => !seenIds.has(message.id))]
     .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
     .slice(-maxMessages);
+};
+
+/**
+ * Drop what must never reach IndexedDB from a channel before it is persisted.
+ *
+ * Typing lists are merely transient. End-to-end encrypted messages are a
+ * deliberate exclusion: session keys are ephemeral by design, so writing the
+ * decrypted text to disk would leave plaintext behind that outlives the
+ * conversation's forward secrecy — the one thing an encrypted DM is supposed to
+ * prevent. Encrypted history therefore lives only as long as the tab does.
+ *
+ * The identity comparison at the end matters for performance: `partialize` runs
+ * on every store mutation, and returning the original object when nothing needs
+ * stripping keeps the common case allocation-free.
+ */
+const stripUnpersisted = (channel: ChannelExtended): ChannelExtended => {
+  const hasTyping = channel.typing.length > 0;
+  const hasEncrypted = channel.messages.some((message) => message.e2ee !== undefined);
+
+  if (!hasTyping && !hasEncrypted) {
+    return channel;
+  }
+
+  return {
+    ...channel,
+    ...(hasTyping ? { typing: [] as string[] } : {}),
+    ...(hasEncrypted ? { messages: channel.messages.filter((message) => message.e2ee === undefined) } : {}),
+  };
 };
 
 export const migrateChannels = (persisted: unknown, version: number): ChannelsStore => {
@@ -207,6 +237,24 @@ export const useChannelsStore = create<ChannelsStore>()(
         }),
       }));
     },
+    setUpdateMessage: (channelName: string, messageId: string, patch: Partial<Message>): void => {
+      set((state) => ({
+        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+          if (!isSameName(channel.name, channelName)) {
+            return channel;
+          }
+
+          const index = channel.messages.findIndex((message) => message.id === messageId);
+          if (index === -1) {
+            return channel;
+          }
+
+          const messages = [...channel.messages];
+          messages[index] = { ...messages[index], ...patch } as Message;
+          return { ...channel, messages };
+        }),
+      }));
+    },
     setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
@@ -287,13 +335,14 @@ export const useChannelsStore = create<ChannelsStore>()(
   }),
       {
         name: 'sic-channels',
-        version: 2,
+        version: 3,
         migrate: migrateChannels,
         storage: createServerScopedStorage<ChannelsStore>(),
-        // Runs on every mutation, so only the channels that actually carry a
-        // transient typing list are copied to strip it
+        // Runs on every mutation, so channels are only copied when they actually
+        // carry something to strip: a transient typing list, or end-to-end
+        // encrypted messages.
         partialize: (state) => ({
-          openChannels: state.openChannels.map((ch) => (ch.typing.length === 0 ? ch : { ...ch, typing: [] as string[] })),
+          openChannels: state.openChannels.map((ch) => stripUnpersisted(ch)),
           openChannelsShortList: state.openChannelsShortList,
         }) as unknown as ChannelsStore,
         onRehydrateStorage: () => {
@@ -401,6 +450,21 @@ export const setAddMessage = (newMessage: Message): void => {
 
   if (isSameName(currentChannelName, newMessage.target)) {
     useCurrentStore.getState().setUpdateMessages(getMessages(newMessage.target));
+  }
+};
+
+/**
+ * Patch a message that is already in the list, leaving its position untouched.
+ *
+ * Used by the E2EE receive path: the kernel inserts a placeholder synchronously
+ * so arrival order is preserved, then replaces the body once the asynchronous
+ * decryption resolves.
+ */
+export const setUpdateMessage = (channelName: string, messageId: string, patch: Partial<Message>): void => {
+  useChannelsStore.getState().setUpdateMessage(channelName, messageId, patch);
+
+  if (isSameName(getCurrentChannelName(), channelName)) {
+    useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
   }
 };
 

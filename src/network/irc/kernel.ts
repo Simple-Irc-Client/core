@@ -118,6 +118,8 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
+import { clearIncomingState, handleE2eeCtcp } from '@features/e2ee/incoming';
+import { endAllSessions, endSession, handlePeerRename } from '@features/e2ee/session';
 import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
@@ -552,6 +554,12 @@ export class Kernel {
     setIsConnecting(false);
     setIsConnected(false);
     clearAllTyping();
+
+    // Session keys are per-connection. Keeping them across a reconnect would
+    // leave windows badged as encrypted while the peer has already forgotten
+    // the session, so every message would fail to decrypt.
+    endAllSessions();
+    clearIncomingState();
 
     // Reset STS retries on WebSocket disconnect
     resetSTSRetries();
@@ -2266,6 +2274,11 @@ export class Kernel {
     const channels = getUserChannels(oldNick);
     setRenameUser(oldNick, newNick);
 
+    // An encrypted session does not follow a nick change: the keys would still
+    // work, but a NICK we observe is no proof the same person is behind it, and
+    // silently moving a lock-badged window is not ours to decide.
+    handlePeerRename(oldNick, newNick);
+
     for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
@@ -2371,6 +2384,13 @@ export class Kernel {
       }
 
       const ctcpContent = message.split('\x01').join('');
+
+      // E2EE handshake replies (ACCEPT/DECLINE/RESET) arrive as CTCP replies by
+      // convention; they drive the session, not the Status window.
+      if (handleE2eeCtcp({ nick, target, ctcpContent, source: 'notice', msgid: this.tags?.msgid, time: this.tags?.time })) {
+        return;
+      }
+
       const spaceIndex = ctcpContent.indexOf(' ');
       const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
       const ctcpResponse = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
@@ -2570,6 +2590,23 @@ export class Kernel {
 
     // Remove \x01 (CTCP delimiter) characters and parse CTCP command
     const ctcpContent = message.split('\x01').join('');
+
+    // End-to-end encryption frames are handled before the standard CTCP switch
+    // and deliberately produce no Status-window notices — otherwise every
+    // encrypted message would log a "CTCP request received"/"response sent" pair.
+    if (
+      handleE2eeCtcp({
+        nick,
+        target,
+        ctcpContent,
+        source: 'privmsg',
+        msgid: this.tags?.msgid,
+        time: this.tags?.time,
+      })
+    ) {
+      return;
+    }
+
     const spaceIndex = ctcpContent.indexOf(' ');
     const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
     const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
@@ -2599,7 +2636,9 @@ export class Kernel {
         ctcpResponse = clientSourceUrl;
         break;
       case 'CLIENTINFO':
-        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO';
+        // SIC-E2EE is advertised so another client can tell we speak it without
+        // having to send a speculative offer.
+        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO SIC-E2EE';
         break;
       default:
         // Unknown CTCP, ignore silently
@@ -2693,6 +2732,10 @@ export class Kernel {
       category: MessageCategory.quit,
       color: MessageColor.quit,
     };
+
+    // The peer is gone, so their session keys are dead; drop ours rather than
+    // leaving a window looking encrypted. No RESET — there is nobody to tell.
+    endSession(nick, false);
 
     setQuitUser(nick, message);
   };

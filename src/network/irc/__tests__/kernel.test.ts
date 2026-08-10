@@ -4870,7 +4870,7 @@ describe('kernel tests', () => {
           category: 'notice',
         }));
         expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
-          message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'CLIENTINFO', response: 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO' }),
+          message: i18next.t('kernel.ctcpResponse', { nick: 'sender', command: 'CLIENTINFO', response: 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO SIC-E2EE' }),
           target: STATUS_CHANNEL,
           category: 'notice',
         }));

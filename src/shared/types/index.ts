@@ -51,6 +51,15 @@ export interface Message {
    * Whether this message mentions the current user's nick
    */
   highlight?: boolean;
+  /**
+   * End-to-end encryption state of a private message.
+   *
+   * `decrypting` is the placeholder inserted synchronously on arrival so the
+   * message keeps its position while WebCrypto works; it is patched to `ok` or
+   * `failed` a tick later. Any value here also keeps the message out of
+   * IndexedDB — encrypted conversations are deliberately not written to disk.
+   */
+  e2ee?: 'decrypting' | 'ok' | 'failed';
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

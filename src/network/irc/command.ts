@@ -4,11 +4,13 @@ import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageColor } from '@/config/theme';
 import i18next from '@/app/i18n';
+import { endSession, markVerified, offerEncryption } from '@features/e2ee/session';
+import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2ee';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
   '/whois', '/whereis', '/who', '/notice', '/nick', '/mode', '/whowas', '/names', '/knock', '/watch',
-  '/ns', '/cs', '/hs', '/bs', '/ms'
+  '/ns', '/cs', '/hs', '/bs', '/ms', '/e2ee'
 ];
 export const channelCommands = [
   '/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic',
@@ -46,6 +48,8 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return quoteCommand(channel, line);
     case 'msg':
       return msgCommand(line) ?? originalLine;
+    case 'e2ee':
+      return e2eeCommand(channel, line);
     case 'whereis':
       return whoisCommand(line);
     case 'who':
@@ -141,6 +145,70 @@ const quoteCommand = (channel: string, line: string[]): string => {
     });
   }
   return raw;
+};
+
+/**
+ * `/e2ee [on|off|status|verify]` — drive end-to-end encryption for the current
+ * private conversation.
+ *
+ * Returns an empty string in every branch: this command talks to the session
+ * module and prints its own feedback rather than producing a line for the
+ * server. `parseMessageToCommand`'s callers already skip empty payloads.
+ */
+const e2eeCommand = (channel: string, line: string[]): string => {
+  const time = new Date().toISOString();
+  const print = (message: string): void => {
+    setAddMessage({
+      id: uuidv4(),
+      message,
+      target: channel,
+      time,
+      category: MessageCategory.info,
+      color: MessageColor.info,
+    });
+  };
+
+  if (isChannel(channel) || channel === STATUS_CHANNEL) {
+    print(i18next.t('e2ee.command.privateOnly'));
+    return '';
+  }
+
+  switch ((line.shift() ?? 'status').toLowerCase()) {
+    case 'on':
+    case 'start':
+      void offerEncryption(channel);
+      break;
+    case 'off':
+    case 'stop':
+      endSession(channel);
+      print(i18next.t('e2ee.command.stopped', { nick: channel }));
+      break;
+    case 'verify':
+      if (getSessionState(channel) === E2eeState.active) {
+        markVerified(channel, true);
+        print(i18next.t('e2ee.command.verified', { nick: channel }));
+      } else {
+        print(i18next.t('e2ee.command.notActive', { nick: channel }));
+      }
+      break;
+    default: {
+      const session = getSession(channel);
+      if (session?.state === E2eeState.active) {
+        print(
+          i18next.t('e2ee.command.status', {
+            nick: channel,
+            mine: session.myFingerprint,
+            theirs: session.theirFingerprint,
+            state: i18next.t(session.verified ? 'e2ee.status.verified' : 'e2ee.status.unverified'),
+          }),
+        );
+      } else {
+        print(i18next.t('e2ee.command.notActive', { nick: channel }));
+      }
+    }
+  }
+
+  return '';
 };
 
 const msgCommand = (line: string[]): string | undefined => {
@@ -348,6 +416,7 @@ const helpCommands = [
   { cmd: '/dehalfop <nick>', key: 'help.cmd.dehalfop' },
   { cmd: '/deop <nick>', key: 'help.cmd.deop' },
   { cmd: '/devoice <nick>', key: 'help.cmd.devoice' },
+  { cmd: '/e2ee [on|off|status|verify]', key: 'help.cmd.e2ee' },
   { cmd: '/halfop <nick>', key: 'help.cmd.halfop' },
   { cmd: '/help', key: 'help.cmd.help' },
   { cmd: '/hs <command>', key: 'help.cmd.hs' },

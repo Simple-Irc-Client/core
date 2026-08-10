@@ -11,6 +11,7 @@ import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
 import BotIndicator from './BotIndicator';
 import EchoedIndicator from './EchoedIndicator';
+import E2eeIndicator from '@features/e2ee/components/E2eeIndicator';
 import NickHighlightedMessage from './NickHighlightedMessage';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
@@ -72,6 +73,13 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       {format(time, 'HH:mm', { locale })}
       <span className="sic-msg-time-seconds">{format(time, ':ss', { locale })}</span>
       {withEcho && message.echoed && <EchoedIndicator />}
+      {/*
+        Rendered in every time slot, not just the header one: Classic hides the
+        header and shows the inline time, so gating this on `withEcho` the way
+        the echo tick does would leave Classic users with no lock at all. Themes
+        hide the slots they don't use, so exactly one is ever visible.
+      */}
+      {message.e2ee && <E2eeIndicator state={message.e2ee} />}
     </span>
   );
 
@@ -83,6 +91,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       data-grouped={grouped || undefined}
       data-highlight={message.highlight || undefined}
       data-debug={isDebug || undefined}
+      data-e2ee={message.e2ee}
     >
       <div className="sic-msg-gutter">
         {showHeaderLayout && (

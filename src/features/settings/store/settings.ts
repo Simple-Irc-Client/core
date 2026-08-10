@@ -68,6 +68,7 @@ export interface SettingsStore {
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
+  autoOfferEncryption: boolean; // Whether to offer end-to-end encryption automatically in private messages
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
@@ -112,6 +113,7 @@ export interface SettingsStore {
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
   setHideTypingIndicator: (hide: boolean) => void;
+  setAutoOfferEncryption: (autoOffer: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
@@ -158,6 +160,7 @@ export const useSettingsStore = create<SettingsStore>()(
     isDarkMode: false,
     hideAvatarsInUsersList: false,
     hideTypingIndicator: false,
+    autoOfferEncryption: false,
     fontSize: 'medium',
     language: 'auto',
     serverPasswords: {},
@@ -322,6 +325,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setHideTypingIndicator: (hide: boolean): void => {
       set(() => ({ hideTypingIndicator: hide }));
     },
+    setAutoOfferEncryption: (autoOffer: boolean): void => {
+      set(() => ({ autoOfferEncryption: autoOffer }));
+    },
     setFontSize: (fontSize: FontSize): void => {
       set(() => ({ fontSize }));
     },
@@ -413,6 +419,7 @@ export const useSettingsStore = create<SettingsStore>()(
       fontSize: state.fontSize,
       hideAvatarsInUsersList: state.hideAvatarsInUsersList,
       hideTypingIndicator: state.hideTypingIndicator,
+      autoOfferEncryption: state.autoOfferEncryption,
       fontFormatting: state.fontFormatting,
       nick: state.nick,
       server: state.server,
@@ -709,6 +716,14 @@ export const setHideTypingIndicator = (hide: boolean): void => {
 
 export const getHideTypingIndicator = (): boolean => {
   return useSettingsStore.getState().hideTypingIndicator;
+};
+
+export const setAutoOfferEncryption = (autoOffer: boolean): void => {
+  useSettingsStore.getState().setAutoOfferEncryption(autoOffer);
+};
+
+export const getAutoOfferEncryption = (): boolean => {
+  return useSettingsStore.getState().autoOfferEncryption;
 };
 
 export const setFontSize = (fontSize: FontSize): void => {

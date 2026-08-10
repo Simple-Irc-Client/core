@@ -505,7 +505,17 @@ export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {
     return;
   }
-  sendDirectRaw(data.length > MAX_IRC_MESSAGE_LENGTH ? data.slice(0, MAX_IRC_MESSAGE_LENGTH) : data);
+  if (data.length > MAX_IRC_MESSAGE_LENGTH) {
+    // Truncating is what the protocol forces on us, but doing it silently has
+    // hidden real data loss in the past — an over-long line just arrived cut in
+    // half with no trace. Callers that must not be truncated (E2EE frames, where
+    // a cut line fails authentication and the message is lost outright) split
+    // their payload up front; this warning is how we find the ones that don't.
+    console.warn(`IRC message exceeds ${MAX_IRC_MESSAGE_LENGTH} chars and will be truncated:`, `${data.slice(0, 80)}…`);
+    sendDirectRaw(data.slice(0, MAX_IRC_MESSAGE_LENGTH));
+    return;
+  }
+  sendDirectRaw(data);
 };
 
 /**

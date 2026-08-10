@@ -8,7 +8,10 @@ import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut,
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
-import { setAddMessage } from '@features/channels/store/channels';
+import { setAddMessage, setUpdateMessage } from '@features/channels/store/channels';
+import { BodyKind } from '@features/e2ee/protocol';
+import { sendEncrypted } from '@features/e2ee/session';
+import { isSessionActive } from '@features/e2ee/store/e2ee';
 import { setDraft, getDraft } from '@features/chat/store/drafts';
 import { getUser, useUsersStore } from '@features/users/store/users';
 import { MessageColor } from '@/config/theme';
@@ -33,6 +36,34 @@ import ColorPicker from './ColorPicker';
 import StylePicker from './StylePicker';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import type { FontFormatting } from '@features/settings/store/settings';
+
+/**
+ * Decide whether a command's raw output must go out encrypted instead.
+ *
+ * Only an entire single line addressed to the encrypted peer qualifies. A
+ * multi-line payload (`/amsg`) or one aimed at someone else (`/msg other`) is
+ * left alone — those genuinely are plaintext messages to other targets, and
+ * quietly encrypting them would send ciphertext to someone with no session.
+ */
+export const parseEncryptableCommand = (
+  payload: string,
+  target: string,
+): { kind: BodyKind; body: string } | null => {
+  if (payload.includes('\n')) {
+    return null;
+  }
+
+  const prefix = `PRIVMSG ${target} :`;
+  if (!payload.startsWith(prefix)) {
+    return null;
+  }
+
+  const body = payload.slice(prefix.length);
+  // eslint-disable-next-line no-control-regex
+  const action = /^\x01ACTION (.*)\x01$/.exec(body);
+
+  return action ? { kind: BodyKind.action, body: action[1] ?? '' } : { kind: BodyKind.message, body };
+};
 
 const Toolbar = () => {
   const { t } = useTranslation();
@@ -193,6 +224,13 @@ const Toolbar = () => {
       return;
     }
 
+    // Typing notifications are sent in the clear and would leak when the user
+    // is composing and how long they hesitated — metadata the ciphertext does
+    // not cover. In an encrypted conversation they are simply not sent.
+    if (isSessionActive(currentChannelName)) {
+      return;
+    }
+
     if (event.target.value.length === 0 && typingStatus.current === 'active') {
       typingStatus.current = 'done';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
@@ -202,51 +240,37 @@ const Toolbar = () => {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
-    event.preventDefault();
+  /**
+   * Encrypt and send, rendering the message locally straight away.
+   *
+   * A failure here never falls back to plaintext — silently downgrading a
+   * conversation the user believes is encrypted is the one outcome worth
+   * avoiding above all others. It shows an error in the window instead.
+   */
+  const sendEncryptedMessage = (target: string, body: string, senderNick: string, kind: BodyKind): void => {
+    const localId = uuidv4();
+    const isAction = kind === BodyKind.action;
 
-    if (message.length === 0) {
-      return;
-    }
+    setAddMessage({
+      id: localId,
+      message: body,
+      nick: getUser(senderNick) ?? senderNick,
+      target,
+      time: new Date().toISOString(),
+      category: isAction ? MessageCategory.me : MessageCategory.default,
+      color: isAction ? MessageColor.me : MessageColor.default,
+      e2ee: 'ok',
+    });
 
-    let payload = '';
-    if (message.startsWith('/')) {
-      // Commands are sent without formatting
-      payload = parseMessageToCommand(currentChannelName, message);
-    } else {
-      if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
-        const nick = getCurrentNick();
+    void sendEncrypted(target, body, kind).catch((error: unknown) => {
+      console.warn('E2EE: could not send message:', error);
+      setUpdateMessage(target, localId, { e2ee: 'failed', message: t('e2ee.message.sendFailed', { message: body }) });
+    });
+  };
 
-        // Check if any formatting is applied
-        const hasFormatting =
-          fontFormatting.bold ||
-          fontFormatting.italic ||
-          fontFormatting.underline ||
-          fontFormatting.colorCode !== null;
-
-        // Apply formatting to the message for sending
-        const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
-
-        // Only add message locally if echo-message capability is NOT enabled
-        // When echo-message is enabled, the server will echo the message back and we'll add it then
-        if (!isCapabilityEnabled('echo-message')) {
-          setAddMessage({
-            id: uuidv4(),
-            message: formattedMessage,
-            nick: getUser(nick) ?? nick,
-            target: currentChannelName,
-            time: new Date().toISOString(),
-            category: MessageCategory.default,
-            color: MessageColor.default,
-          });
-        }
-
-        payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
-      }
-    }
-    ircSendRawMessage(payload);
-
-    if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+  /** Everything that happens after a message goes out, whichever path sent it. */
+  const finishSend = (): void => {
+    if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName) && !isSessionActive(currentChannelName)) {
       typingStatus.current = 'done';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
@@ -269,6 +293,76 @@ const Toolbar = () => {
     setDraft(currentChannelName, '');
 
     setMessage('');
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+
+    if (message.length === 0) {
+      return;
+    }
+
+    let payload = '';
+    if (message.startsWith('/')) {
+      // Commands are sent without formatting
+      payload = parseMessageToCommand(currentChannelName, message);
+
+      // A command whose whole output is a message to the encrypted peer has to
+      // take the encrypted path too. `/me` is the one that matters today: it
+      // would otherwise put a plaintext CTCP ACTION on the wire from a window
+      // the user is being told is encrypted.
+      const encryptable = isSessionActive(currentChannelName)
+        ? parseEncryptableCommand(payload, currentChannelName)
+        : null;
+      if (encryptable) {
+        sendEncryptedMessage(currentChannelName, encryptable.body, getCurrentNick(), encryptable.kind);
+        finishSend();
+        return;
+      }
+    } else {
+      if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+        const nick = getCurrentNick();
+
+        // Check if any formatting is applied
+        const hasFormatting =
+          fontFormatting.bold ||
+          fontFormatting.italic ||
+          fontFormatting.underline ||
+          fontFormatting.colorCode !== null;
+
+        // Apply formatting to the message for sending
+        const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
+
+        if (isSessionActive(currentChannelName)) {
+          // The encrypted path always renders locally, even under echo-message:
+          // the echoed copy is a SICE frame we drop by frame id, because
+          // decrypting our own outgoing traffic just to display it would be
+          // work with no benefit.
+          sendEncryptedMessage(currentChannelName, formattedMessage, nick, BodyKind.message);
+          finishSend();
+          return;
+        }
+
+        // Only add message locally if echo-message capability is NOT enabled
+        // When echo-message is enabled, the server will echo the message back and we'll add it then
+        if (!isCapabilityEnabled('echo-message')) {
+          setAddMessage({
+            id: uuidv4(),
+            message: formattedMessage,
+            nick: getUser(nick) ?? nick,
+            target: currentChannelName,
+            time: new Date().toISOString(),
+            category: MessageCategory.default,
+            color: MessageColor.default,
+          });
+        }
+
+        payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
+      }
+    }
+    ircSendRawMessage(payload);
+
+    finishSend();
   };
 
   const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>): void => {

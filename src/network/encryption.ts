@@ -23,7 +23,7 @@ export async function initSessionEncryption(): Promise<void> {
 /**
  * Convert base64 to Uint8Array (browser-compatible)
  */
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -35,7 +35,7 @@ function base64ToBytes(base64: string): Uint8Array {
 /**
  * Convert Uint8Array to base64 (browser-compatible)
  */
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
