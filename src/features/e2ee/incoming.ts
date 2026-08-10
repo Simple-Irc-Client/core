@@ -33,26 +33,33 @@ import { notifyHighlight } from '@/runtime/notifications';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 
 import { BodyKind, parseCtcpFrame, type E2eeFrame } from './protocol';
+import { createThrottle } from './rateLimit';
 import { acceptCipherChunk, decryptSealed, handleHandshakeFrame, sendReset } from './session';
-import { E2eeState, getSessionState } from './store/e2ee';
+import { E2eeState, getSessionKey, getSessionState } from './store/e2ee';
+
+/**
+ * One inbound OFFER per peer per second.
+ *
+ * Generous enough that no legitimate pattern is affected — a handshake is one
+ * offer, and glare or a retry after the offer timeout are both far slower than
+ * this — while stopping a peer from spending our CPU at whatever rate the
+ * server permits.
+ */
+const offers = createThrottle(1_000);
 
 /**
  * A peer talking to us with keys we no longer have would otherwise produce one
- * error line and one RESET per frame. Answer at most this often per peer.
+ * error line and one RESET per frame.
  */
-const RESET_THROTTLE_MS = 10_000;
+const resetReplies = createThrottle(10_000);
 
-const lastResetAt = new Map<string, number>();
-
-const shouldAnswerWithReset = (nick: string, now: number): boolean => {
-  const previous = lastResetAt.get(nick.toLowerCase());
-  if (previous !== undefined && now - previous < RESET_THROTTLE_MS) {
-    return false;
-  }
-  lastResetAt.set(nick.toLowerCase(), now);
-
-  return true;
-};
+/**
+ * Decide whether to act on an inbound OFFER.
+ *
+ * Called from the synchronous entry point, before any key import or keypair
+ * generation, so a refused frame costs a map lookup and nothing else.
+ */
+const allowOffer = (nick: string): boolean => offers.allow(getSessionKey(nick));
 
 /** The window an inbound direct message belongs in: ours is named after the sender. */
 const resolveWindow = (nick: string, target: string): string => (isSameName(target, getCurrentNick()) ? nick : target);
@@ -196,7 +203,7 @@ const handleCipher = (nick: string, window: string, frame: Extract<E2eeFrame, { 
       renderDecrypted({ nick, window, messageId, time }, result.sealed);
       return;
     case 'noSession':
-      if (shouldAnswerWithReset(nick, Date.now())) {
+      if (resetReplies.allow(getSessionKey(nick))) {
         sendReset(nick);
         addInfoMessage(window, i18next.t('e2ee.info.unreadable', { nick }));
       }
@@ -244,6 +251,13 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
     return false;
   }
 
+  // Refused before any crypto runs: an OFFER is the only inbound frame that
+  // costs real work regardless of whether it is wanted. ACCEPT is self-limiting
+  // (it does nothing unless we are waiting for one) and the rest are trivial.
+  if (frame.type === 'offer' && !allowOffer(nick)) {
+    return true;
+  }
+
   if (frame.type === 'cipher') {
     if (source !== 'privmsg') {
       return false;
@@ -259,5 +273,6 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
 
 /** Drop throttle bookkeeping — called alongside `endAllSessions` on disconnect. */
 export const clearIncomingState = (): void => {
-  lastResetAt.clear();
+  offers.clear();
+  resetReplies.clear();
 };

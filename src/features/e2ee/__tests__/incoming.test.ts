@@ -65,7 +65,7 @@ vi.mock('idb-keyval', () => {
 const { handleE2eeCtcp, clearIncomingState } = await import('../incoming');
 const sessionModule = await import('../session');
 const { resetSessionModuleForTests, acceptIncomingOffer } = sessionModule;
-const { getSessionState, E2eeState } = await import('../store/e2ee');
+const { getSessionState, removeSession, E2eeState } = await import('../store/e2ee');
 const { parseCtcpFrame, BodyKind } = await import('../protocol');
 const { useE2eePinsStore } = await import('../store/pins');
 
@@ -393,6 +393,60 @@ describe('e2ee incoming CTCP handling', () => {
       expect(addedMessages[0]?.id).toMatch(/^e2ee:/);
     });
   });
+
+
+  describe('offer flood protection', () => {
+    /** A valid offer body from a freshly created peer. */
+    const offerBodyFrom = async (): Promise<string> => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      return bodyOf(peer.drain()[0] ?? '');
+    };
+
+    it('stops acting on a flood from one peer', async () => {
+      const offerBody = await offerBodyFrom();
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+      removeSession('bob');
+
+      for (let attempt = 0; attempt < 20; attempt++) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      }
+      await flush();
+
+      // Refused before any key import or keypair generation, so nothing moved.
+      expect(getSessionState('bob')).toBe(E2eeState.none);
+    });
+
+    it('swallows a throttled offer instead of passing it to the CTCP handler', async () => {
+      const offerBody = await offerBodyFrom();
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await flush();
+
+      // Still ours, so the kernel does not go on to answer it as unknown CTCP.
+      expect(handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' })).toBe(true);
+      expect(addedMessages.some((message) => message.target === 'Status')).toBe(false);
+    });
+
+    it('does not let one peer flooding block another', async () => {
+      const offerBody = await offerBodyFrom();
+
+      for (let index = 0; index < 40; index++) {
+        handleE2eeCtcp({ nick: 'flooder', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      }
+      await flush();
+
+      // Throttling per peer rather than globally is what makes this hold — a
+      // shared ceiling could be exhausted by a flood and used to force plaintext.
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+
+      expect(getSessionState('bob')).toBe(E2eeState.incoming);
+    });
+  });
+
 
 });
 

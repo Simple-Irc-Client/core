@@ -84,6 +84,12 @@ const waitForCapturedLine = async (capture: { lines: string[] }, needle: string)
 
 /** Drive the handshake with the bot as initiator; leaves both sides active. */
 const handshakeAsInitiator = async (): Promise<void> => {
+  // Inbound offers are throttled to one per peer per second, and this file
+  // re-handshakes once per test — several offers inside a second, far faster
+  // than any real client. Pacing the suite is the right fix; loosening the
+  // throttle so the tests pass would let the tests set a security parameter.
+  await page.waitForTimeout(1100);
+
   await peer.newHandshake();
   const capture = bot.captureLines();
 
