@@ -53,6 +53,8 @@ const createClient = async (nick: string, network = `${nick}-net`): Promise<Clie
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => autoOffer.enabled,
     getCurrentNick: (): string => nick,
+    // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
+    getLineLenLimit: (): number => 0,
   }));
 
   vi.doMock('@/features/users/store/users', () => ({

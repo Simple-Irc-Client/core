@@ -21,6 +21,8 @@ vi.mock('@/features/settings/store/settings', () => ({
   getCurrentChannelName: (): string => 'Status',
   isSameName: (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase(),
   getAutoOfferEncryption: (): boolean => false,
+  // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
+  getLineLenLimit: (): number => 0,
 }));
 
 vi.mock('@/features/users/store/users', () => ({
@@ -251,6 +253,46 @@ describe('e2ee incoming CTCP handling', () => {
       expect(notifications).toEqual([{ nick: 'bob', message: 'the meeting is at six' }]);
     });
 
+    it('keeps two back-to-back messages in arrival order even if their decryptions settle the other way round', async () => {
+      // The whole reason `handleCipher` inserts a placeholder synchronously
+      // (see incoming.ts's file header) is that WebCrypto is not synchronous:
+      // on a slow connection or a loaded machine, nothing guarantees the
+      // *first* message's decryption is also the *first* to finish. Display
+      // order must still follow arrival order, not whichever settles first.
+      const peer = await establishSession();
+      addedMessages.length = 0;
+      updatedMessages.length = 0;
+
+      await peer.sendEncrypted('me', 'first', BodyKind.message);
+      const firstLines = peer.drain();
+      await peer.sendEncrypted('me', 'second', BodyKind.message);
+      const secondLines = peer.drain();
+
+      // Both arrive before either decryption has had any chance to resolve —
+      // no `await` between them, exactly as two lines arriving back-to-back
+      // over the wire would be handled by the synchronous kernel dispatch.
+      for (const line of firstLines) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(line), source: 'privmsg', msgid: 'first-id' });
+      }
+      for (const line of secondLines) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(line), source: 'privmsg', msgid: 'second-id' });
+      }
+
+      // Placeholders must already reflect arrival order at this point — before
+      // any awaiting, and therefore before any decryption could possibly have
+      // settled either way.
+      expect(addedMessages).toHaveLength(2);
+      expect(addedMessages[0]).toMatchObject({ id: 'e2ee:first-id', e2ee: 'decrypting' });
+      expect(addedMessages[1]).toMatchObject({ id: 'e2ee:second-id', e2ee: 'decrypting' });
+
+      await until(() => updatedMessages.length >= 2);
+
+      const byId = (id: string): { message?: string } | undefined =>
+        updatedMessages.find((update) => update.id === id)?.patch;
+      expect(byId('e2ee:first-id')).toMatchObject({ message: 'first', e2ee: 'ok' });
+      expect(byId('e2ee:second-id')).toMatchObject({ message: 'second', e2ee: 'ok' });
+    });
+
     it('renders an encrypted /me as an action', async () => {
       const peer = await establishSession();
       updatedMessages.length = 0;
@@ -478,6 +520,7 @@ const createPeer = async (): Promise<Peer> => {
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => false,
     getCurrentNick: (): string => 'bob',
+    getLineLenLimit: (): number => 0,
   }));
   vi.doMock('@/features/users/store/users', () => ({ getUser: (): undefined => undefined }));
 

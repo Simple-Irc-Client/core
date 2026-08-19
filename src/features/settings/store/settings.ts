@@ -58,6 +58,7 @@ export interface SettingsStore {
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   nickLenLimit: number; // NICKLEN from 005, default 50
+  lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
   networkName: string | undefined; // NETWORK from 005, overrides server.network for display
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
@@ -102,6 +103,7 @@ export interface SettingsStore {
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
   setNickLenLimit: (limit: number) => void;
+  setLineLenLimit: (limit: number) => void;
   setNetworkName: (name: string | undefined) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
@@ -150,6 +152,7 @@ export const useSettingsStore = create<SettingsStore>()(
     monitorLimit: 0,
     silenceLimit: 0,
     nickLenLimit: 50,
+    lineLenLimit: 0,
     networkName: undefined,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
@@ -290,6 +293,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setNickLenLimit: (limit: number): void => {
       set(() => ({ nickLenLimit: limit }));
     },
+    setLineLenLimit: (limit: number): void => {
+      set(() => ({ lineLenLimit: limit }));
+    },
     setNetworkName: (name: string | undefined): void => {
       set(() => ({ networkName: name }));
     },
@@ -370,6 +376,7 @@ export const useSettingsStore = create<SettingsStore>()(
         monitorLimit: 0,
         silenceLimit: 0,
         nickLenLimit: 50,
+        lineLenLimit: 0,
     networkName: undefined,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
@@ -622,6 +629,15 @@ export const setNetworkName = (name: string | undefined): void => {
 
 export const getNickLenLimit = (): number => {
   return useSettingsStore.getState().nickLenLimit;
+};
+
+export const setLineLenLimit = (limit: number): void => {
+  useSettingsStore.getState().setLineLenLimit(limit);
+};
+
+/** The server's advertised max line length (ISUPPORT `LINELEN`), or `0` if it never sent one. */
+export const getLineLenLimit = (): number => {
+  return useSettingsStore.getState().lineLenLimit;
 };
 
 export const setCurrentUserAvatar = (avatar: string | undefined): void => {

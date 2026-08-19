@@ -1,6 +1,15 @@
+/**
+ * Tests for `identity.ts` — where the long-term identity key pair (the one
+ * `crypto.ts`'s handshake authenticates against) is created and persisted.
+ * IndexedDB is stubbed with a plain in-memory `Map` below, so these can force
+ * storage failures on demand and check the fallback: no stored key should
+ * ever mean no encryption, only a fresh one.
+ */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+/** Stand-in for IndexedDB — `idb-keyval` is mocked below to read/write this instead. */
 const store = new Map<string, unknown>();
+/** Flip these on to simulate storage failing (private browsing, quota, corruption) without touching real IndexedDB. */
 let getShouldThrow = false;
 let setShouldThrow = false;
 

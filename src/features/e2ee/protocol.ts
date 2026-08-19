@@ -38,16 +38,44 @@ export const HANDSHAKE_CTCP = 'SIC-E2EE';
 export const CIPHER_CTCP = 'SICE';
 
 /**
- * Base64 characters per chunk.
+ * Base64 characters per chunk, when the server hasn't told us it can take
+ * more (see `chunkCharsFor` below).
  *
- * The IRC line limit is 512 including CRLF, but what has to fit is the line the
- * *server* relays, which is our line plus a `:nick!ident@host ` prefix we don't
- * control and can't measure — a long cloak runs to ~100 characters. Add the
- * `PRIVMSG <target> :` envelope and the frame header, and 320 leaves comfortable
- * margin. Getting this wrong is not a cosmetic bug: a truncated chunk makes the
- * reassembled ciphertext fail GCM authentication and the message is lost.
+ * The traditional IRC line limit is 512 bytes including CRLF, but what has to
+ * fit is the line the *server* relays, which is our line plus a
+ * `:nick!ident@host ` prefix we don't control and can't measure — a long
+ * cloak runs to ~100 characters. Add the `PRIVMSG <target> :` envelope and the
+ * frame header, and 320 leaves comfortable margin. Getting this wrong is not
+ * a cosmetic bug: a truncated chunk makes the reassembled ciphertext fail GCM
+ * authentication and the message is lost.
  */
-const MAX_CHUNK_CHARS = 320;
+export const DEFAULT_CHUNK_CHARS = 320;
+
+/**
+ * The gap between a server's advertised line length and how much of it we
+ * actually get to fill with chunk data — the same `:nick!ident@host ` prefix,
+ * `PRIVMSG <target> :` envelope, and frame header margin `DEFAULT_CHUNK_CHARS`
+ * reserves out of the traditional 512-byte line (512 − 320). Treated as a
+ * fixed cost regardless of the server's line length, since none of it scales
+ * with how long a line the server is willing to relay.
+ */
+const LINE_LEN_OVERHEAD = 512 - DEFAULT_CHUNK_CHARS;
+
+/** Never fragment below this, even if a server advertises an implausibly short line length. */
+const MIN_CHUNK_CHARS = 32;
+
+/**
+ * How many base64 characters fit in one chunk on this server.
+ *
+ * Some servers advertise a longer (or shorter) line length than the
+ * traditional 512 bytes via ISUPPORT's `LINELEN` token — see `kernel.ts`'s
+ * `onRaw005`. When they do, chunking to match means fewer frames for a large
+ * message on a server that allows more, and correctly smaller ones on a
+ * server that allows less. `serverLineLen` is `0` when the server never sent
+ * one, in which case `buildCipherFrames` keeps using `DEFAULT_CHUNK_CHARS`.
+ */
+export const chunkCharsFor = (serverLineLen: number): number =>
+  serverLineLen > 0 ? Math.max(MIN_CHUNK_CHARS, serverLineLen - LINE_LEN_OVERHEAD) : DEFAULT_CHUNK_CHARS;
 
 /** A single message may span at most this many frames (~5 KB of ciphertext). */
 export const MAX_PARTS = 16;
@@ -127,16 +155,18 @@ export const buildResetFrame = (): string => `${HANDSHAKE_CTCP} RESET`;
 
 /**
  * Split a sealed (encrypted) payload into one or more `SICE` CTCP bodies, each
- * carrying at most `MAX_CHUNK_CHARS` of it plus an `<index>/<total>` header so
- * the receiver's `Reassembler` can put them back in order.
+ * carrying at most `chunkChars` of it plus an `<index>/<total>` header so the
+ * receiver's `Reassembler` can put them back in order. `chunkChars` defaults
+ * to `DEFAULT_CHUNK_CHARS`; pass `chunkCharsFor(getLineLenLimit())` to size it
+ * to what this particular server actually allows.
  *
  * Throws if the message is too large to send, rather than emitting frames the
  * peer will discard — the caller surfaces that to the user as a failed send.
  */
-export const buildCipherFrames = (sealedB64: string, frameId = newFrameId()): string[] => {
+export const buildCipherFrames = (sealedB64: string, frameId = newFrameId(), chunkChars = DEFAULT_CHUNK_CHARS): string[] => {
   const chunks: string[] = [];
-  for (let offset = 0; offset < sealedB64.length; offset += MAX_CHUNK_CHARS) {
-    chunks.push(sealedB64.slice(offset, offset + MAX_CHUNK_CHARS));
+  for (let offset = 0; offset < sealedB64.length; offset += chunkChars) {
+    chunks.push(sealedB64.slice(offset, offset + chunkChars));
   }
   if (chunks.length === 0) {
     chunks.push('');

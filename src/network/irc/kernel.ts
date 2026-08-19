@@ -49,6 +49,7 @@ import {
   setSilenceLimit,
   setNickLenLimit,
   getNickLenLimit,
+  setLineLenLimit,
   setNetworkName,
   setSupportedOption,
   setUserModes,
@@ -2948,6 +2949,12 @@ export class Kernel {
               break;
             case 'NICKLEN':
               setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
+              break;
+            case 'LINELEN':
+              // Not every server sends this; e2ee's message chunking
+              // (protocol.ts's `chunkCharsFor`) falls back to a conservative
+              // default line length when it's 0.
+              setLineLenLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'NETWORK':
               if (value !== undefined) { setNetworkName(value); }

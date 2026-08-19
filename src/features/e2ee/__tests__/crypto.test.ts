@@ -1,3 +1,10 @@
+/**
+ * Tests for `crypto.ts` — the actual cryptographic properties the handshake
+ * relies on, not mocked. If these hold, the guarantees `session.ts` promises
+ * (a substituted key breaks the session instead of silently working, a
+ * tampered or replayed message fails to decrypt, two conversations never
+ * share a key) are real rather than assumed.
+ */
 import { describe, it, expect } from 'vitest';
 
 import {
@@ -13,6 +20,7 @@ import {
   type SessionKeys,
 } from '../crypto';
 
+/** One participant in a handshake: a long-term identity plus a fresh per-conversation ephemeral, same shape `session.ts` builds for real. */
 interface Party {
   identity: Identity;
   ephemeral: KeyPairWithPublic;
@@ -23,7 +31,7 @@ const createParty = async (): Promise<Party> => ({
   ephemeral: await generateEphemeral(),
 });
 
-/** Run the full handshake between two freshly generated parties. */
+/** Run the full handshake between two freshly generated parties, exactly as `session.ts`'s initiator and responder would. */
 const handshake = async (alice: Party, bob: Party): Promise<{ alice: SessionKeys; bob: SessionKeys }> => ({
   alice: await deriveSessionKeys({
     role: 'initiator',
@@ -109,6 +117,9 @@ describe('e2ee crypto', () => {
     });
 
     it('derives a different session for every conversation', async () => {
+      // Alice talks to both Bob and Mallory. A message meant for Bob must not
+      // be readable by Mallory just because Alice used the same identity key
+      // for both — each conversation has to end up with its own keys.
       const [alice, bob, mallory] = await Promise.all([createParty(), createParty(), createParty()]);
       const withBob = await handshake(alice, bob);
       const withMallory = await handshake(alice, mallory);
@@ -165,6 +176,8 @@ describe('e2ee crypto', () => {
     });
 
     it('rejects a peer key that is not a valid public key', async () => {
+      // A peer's OFFER frame reaches this with attacker-controlled bytes as
+      // the "public key" — must throw, not derive keys from garbage.
       const alice = await createParty();
 
       await expect(
@@ -190,6 +203,8 @@ describe('e2ee crypto', () => {
     });
 
     it('produces a different ciphertext each time for the same body', async () => {
+      // Proves `seal` really does use a fresh random nonce per call (see
+      // `IV_LENGTH` in crypto.ts) — a reused nonce is what breaks AES-GCM.
       const [alice, bob] = await Promise.all([createParty(), createParty()]);
       const keys = await handshake(alice, bob);
 

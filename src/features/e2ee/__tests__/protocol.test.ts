@@ -1,3 +1,11 @@
+/**
+ * Tests for `protocol.ts` — the wire format: turning handshake data and
+ * ciphertext into the CTCP lines that actually go out over IRC, and back.
+ * The "rejecting malformed input" block is the important one from a security
+ * standpoint: a hostile or buggy peer's malformed frame must be thrown away
+ * before it reaches `session.ts`'s state machine, never accepted with a guess
+ * at what was meant.
+ */
 import { describe, it, expect } from 'vitest';
 
 import {
@@ -7,8 +15,10 @@ import {
   buildDeclineFrame,
   buildOfferFrame,
   buildResetFrame,
+  chunkCharsFor,
   createReassembler,
   decodeBody,
+  DEFAULT_CHUNK_CHARS,
   encodeBody,
   FRAME_TTL_MS,
   MAX_PARTS,
@@ -138,6 +148,34 @@ describe('e2ee protocol', () => {
       const ids = new Set(Array.from({ length: 200 }, () => newFrameId()));
 
       expect(ids.size).toBe(200);
+    });
+
+    it('respects an explicit chunk size, for a server with a non-default LINELEN', () => {
+      const frames = buildCipherFrames(base64Payload(150), 'abcd1234', 50);
+
+      expect(frames).toEqual([
+        `SICE abcd1234 1/3 ${base64Payload(150).slice(0, 50)}`,
+        `SICE abcd1234 2/3 ${base64Payload(150).slice(50, 100)}`,
+        `SICE abcd1234 3/3 ${base64Payload(150).slice(100, 150)}`,
+      ]);
+    });
+  });
+
+  describe('chunkCharsFor — sizing chunks to what this server actually allows', () => {
+    it('falls back to the default when the server never advertised ISUPPORT LINELEN', () => {
+      expect(chunkCharsFor(0)).toBe(DEFAULT_CHUNK_CHARS);
+    });
+
+    it('allows bigger chunks — and so fewer frames per message — on a server with a longer LINELEN', () => {
+      expect(chunkCharsFor(1024)).toBeGreaterThan(DEFAULT_CHUNK_CHARS);
+    });
+
+    it('shrinks chunks to match a server with a shorter LINELEN', () => {
+      expect(chunkCharsFor(300)).toBeLessThan(DEFAULT_CHUNK_CHARS);
+    });
+
+    it('never fragments down to nothing for an implausibly short advertised LINELEN', () => {
+      expect(chunkCharsFor(1)).toBeGreaterThan(0);
     });
   });
 

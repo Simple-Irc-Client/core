@@ -219,30 +219,28 @@ export interface DeriveSessionKeysInput {
 /**
  * Derive the pair of directional AES-256-GCM keys for a conversation.
  *
- * Three Diffie-Hellmans (see `deriveSharedBits`) are concatenated into the
- * HKDF input:
+ * Three ECDH results (`deriveSharedBits`) are combined, each side computing
+ * the same three with "mine" and "theirs" swapped:
  *
- *   dh1 = ECDH(ephInitiator, ephResponder)   forward secrecy
- *   dh2 = ECDH(idInitiator,  ephResponder)   authenticates the initiator
- *   dh3 = ECDH(ephInitiator, idResponder)    authenticates the responder
+ *   dh1   ephInitiator × ephResponder    forward secrecy
+ *   dh2   idInitiator  × ephResponder    authenticates the initiator
+ *   dh3   ephInitiator × idResponder     authenticates the responder
  *
- * Each side computes the same three values with the roles of "mine" and
- * "theirs" swapped. Because dh2 and dh3 involve the long-term identity keys, an
- * attacker who substitutes only the ephemerals cannot produce a session that
- * works against a *pinned* identity — which is what makes the trust-on-first-
- * use pin in `store/pins.ts` meaningful rather than decorative.
+ * dh2 and dh3 use the long-term identity keys, so an attacker who substitutes
+ * only the ephemerals can't produce a session that matches a *pinned*
+ * identity — that's what makes the trust-on-first-use pin in `store/pins.ts`
+ * meaningful rather than decorative. Those three feed into `hkdf` as:
  *
- * The salt is a transcript hash over all four public keys, so any tampering
- * with the handshake produces a different key and the first message simply
- * fails to authenticate. Note that nicknames are deliberately *not* mixed in:
- * IRC casemapping varies per server (rfc1459 folds `[]\` to `{}|`, ascii does
- * not), and two clients disagreeing on how to fold a nick would silently derive
- * different keys. The transcript hash binds the handshake without that hazard.
+ *   ikm    dh1 ‖ dh2 ‖ dh3               the combined secret to stretch
+ *   salt   hash of all 4 public keys     any handshake tampering changes the key
+ *   info   "i2r" / "r2i" labels          gives send/receive independent keys
  *
- * Send and receive use separate keys derived with different `info` labels. That
- * removes any chance of an IV collision between the two directions, and makes a
- * reflected frame — our own ciphertext bounced back at us — fail to decrypt
- * instead of appearing to be a genuine message from the peer.
+ * Nicknames are deliberately left out of the salt: IRC casemapping differs
+ * per server, so two clients folding the same nick differently would silently
+ * derive different keys. The transcript hash binds the handshake without that
+ * risk. Separate send/receive keys also mean a reflected frame — our own
+ * ciphertext bounced back at us — fails to decrypt instead of appearing to be
+ * a genuine message from the peer.
  */
 export const deriveSessionKeys = async (input: DeriveSessionKeysInput): Promise<SessionKeys> => {
   const { role, identity, ephemeral, theirIdentityKeyB64, theirEphemeralKeyB64 } = input;

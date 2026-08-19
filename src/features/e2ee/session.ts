@@ -47,7 +47,7 @@
 
 import i18next from 'i18next';
 
-import { getAutoOfferEncryption, getCurrentNick, getServer } from '@/features/settings/store/settings';
+import { getAutoOfferEncryption, getCurrentNick, getLineLenLimit, getServer } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { ircSendRawMessage } from '@/network/irc/network';
 
@@ -70,6 +70,7 @@ import {
   buildDeclineFrame,
   buildOfferFrame,
   buildResetFrame,
+  chunkCharsFor,
   createReassembler,
   decodeBody,
   encodeBody,
@@ -562,7 +563,7 @@ export const sendEncrypted = async (target: string, text: string, kind: BodyKind
 
   const sealed = await seal(entry.keys.sendKey, encodeBody(kind, text));
   const frameId = newFrameId();
-  const frames = buildCipherFrames(sealed, frameId);
+  const frames = buildCipherFrames(sealed, frameId, chunkCharsFor(getLineLenLimit()));
 
   rememberOwnFrame(frameId);
   for (const frame of frames) {
