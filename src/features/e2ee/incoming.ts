@@ -136,10 +136,15 @@ const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'no
   });
 };
 
+/** Everything `renderDecrypted` needs to place and later patch one incoming message. */
 interface CipherContext {
+  /** Who sent it. */
   nick: string;
+  /** Which chat window it belongs in — see `resolveWindow`. */
   window: string;
+  /** The placeholder's id, so the eventual plaintext (or failure) can patch the same row — see `localMessageId`. */
   messageId: string;
+  /** ISO timestamp to display, taken from the server's `time` tag when present. */
   time: string;
 }
 
@@ -195,22 +200,35 @@ const renderDecrypted = (context: CipherContext, sealed: string): void => {
   );
 };
 
+/**
+ * Feed one `SICE` chunk to the reassembler (`acceptCipherChunk`) and react
+ * once it says the message is whole. Most chunks just get buffered and
+ * produce no visible effect yet — see the `'incomplete'` case below.
+ */
 const handleCipher = (nick: string, window: string, frame: Extract<E2eeFrame, { type: 'cipher' }>, messageId: string, time: string): void => {
   const result = acceptCipherChunk(nick, frame);
 
   switch (result.status) {
     case 'complete':
+      // Every chunk has arrived — decrypt and render it.
       renderDecrypted({ nick, window, messageId, time }, result.sealed);
       return;
     case 'noSession':
+      // We have no session key for this peer (never handshook, or it ended
+      // since). Tell them so they know to stop, and tell our own user rather
+      // than silently dropping their message.
       if (resetReplies.allow(getSessionKey(nick))) {
         sendReset(nick);
         addInfoMessage(window, i18next.t('e2ee.info.unreadable', { nick }));
       }
       return;
-    // 'echo' — our own message, already rendered locally on send.
-    // 'incomplete' — waiting on more frames.
-    default:
+    case 'echo':
+      // Our own message, bounced back to us by `echo-message` — already
+      // rendered locally when we sent it, so there is nothing to do here.
+      return;
+    case 'incomplete':
+      // Buffered; waiting on the rest of this message's chunks.
+      return;
   }
 };
 

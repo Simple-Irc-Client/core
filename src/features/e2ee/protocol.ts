@@ -1,25 +1,40 @@
 /**
  * SIC-E2EE v1 — wire format.
  *
- * Everything travels as CTCP. `Kernel.handleCtcp` ends in
+ * Everything travels as CTCP — the same convention behind `/me` actions
+ * (`\x01ACTION ...\x01`): wrap a payload in `\x01` bytes inside a normal
+ * PRIVMSG/NOTICE, and any client that doesn't recognise the verb inside just
+ * shows nothing, no stray text or error. `Kernel.handleCtcp` ends in
  * `default: // Unknown CTCP, ignore silently`, and virtually every other IRC
- * client does the same, so a peer running HexChat or irssi sees nothing at all
- * when we send these — no stray text, no error. That is the whole reason for
- * choosing CTCP over, say, a message tag: it degrades to silence.
+ * client does the same — that's the whole reason to use CTCP here rather than
+ * a message tag: it degrades to silence on a peer running HexChat or irssi.
  *
- * Two CTCP verbs:
+ * Two CTCP verbs, sent as the literal text between the `\x01` delimiters:
  *
  *   SIC-E2EE OFFER 1 <identityKey> <ephemeralKey>   (PRIVMSG)
  *   SIC-E2EE ACCEPT 1 <identityKey> <ephemeralKey>  (NOTICE)
  *   SIC-E2EE DECLINE                                (NOTICE)
  *   SIC-E2EE RESET                                  (NOTICE)
  *   SICE <frameId> <index>/<total> <chunk>          (PRIVMSG)
+ *
+ * `SIC-E2EE` carries the handshake (see `session.ts`): trading public keys and
+ * agreeing to encrypt. `SICE` carries the actual ciphertext — see `HANDSHAKE_CTCP`
+ * and `CIPHER_CTCP` below for why it needs more than one line per message.
  */
 
 /** Bumped only on an incompatible wire change; peers ignore versions they don't know. */
 export const PROTOCOL_VERSION = '1';
 
+/** CTCP verb for handshake frames: OFFER / ACCEPT / DECLINE / RESET. See the file header. */
 export const HANDSHAKE_CTCP = 'SIC-E2EE';
+
+/**
+ * CTCP verb for a chunk of ciphertext. A single IRC line isn't always big
+ * enough to hold a whole encrypted message, so `buildCipherFrames` below
+ * splits one into several `SICE` lines, each carrying up to `MAX_CHUNK_CHARS`
+ * of it plus an `<index>/<total>` header; `createReassembler` puts them back
+ * together on arrival.
+ */
 export const CIPHER_CTCP = 'SICE';
 
 /**
@@ -40,11 +55,36 @@ export const MAX_PARTS = 16;
 /** Distinct incomplete messages held per peer set, before the oldest is evicted. */
 const MAX_PENDING_FRAMES = 64;
 
-/** How long an incomplete message waits for its missing chunks. */
-const FRAME_TTL_MS = 30_000;
+/**
+ * How long an incomplete message waits for its missing chunks before being
+ * given up on and dropped.
+ *
+ * A message can be split into up to `MAX_PARTS` (16) separate IRC lines, and
+ * every one of them has to actually arrive before it can be read. On a slow
+ * connection, a client under load, or a server enforcing flood control (many
+ * throttle a client to roughly one line every second or two once a burst
+ * allowance runs out), sending all 16 can legitimately take the better part
+ * of a minute — and this clock starts counting from the *first* chunk, not
+ * the last. Too short a wait here means a real message quietly vanishes for
+ * no reason visible to either person: the sender sees it as sent, the
+ * receiver never sees anything arrive at all. Memory use is still bounded
+ * regardless of this value, by `MAX_PENDING_FRAMES` below.
+ */
+export const FRAME_TTL_MS = 120_000;
 
+/** Length in bytes of the random id `newFrameId` generates to tell a message's chunks apart from another message's. */
 const FRAME_ID_LENGTH = 8;
+
+/** A base64 string: letters, digits, `+`, `/`, with up to two `=` padding characters at the end. */
 const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * The `<index>/<total>` token from a `SICE` line, e.g. `3/16`. Both numbers are
+ * capped at two digits because `MAX_PARTS` (16) never needs more; anything
+ * longer is already malformed and `parseCipher` below rejects it before the
+ * numbers are even inspected.
+ */
+const CHUNK_SEQUENCE_PATTERN = /^(?<index>\d{1,2})\/(?<total>\d{1,2})$/;
 
 /** Message kinds carried inside the encrypted body. */
 export const BodyKind = {
@@ -56,6 +96,7 @@ export const BodyKind = {
 
 export type BodyKind = (typeof BodyKind)[keyof typeof BodyKind];
 
+/** A parsed, validated wire line — what `parseCtcpFrame` produces and `session.ts`'s state machine consumes. */
 export type E2eeFrame =
   | { type: 'offer'; version: string; identityKeyB64: string; ephemeralKeyB64: string }
   | { type: 'accept'; version: string; identityKeyB64: string; ephemeralKeyB64: string }
@@ -70,7 +111,9 @@ export const newFrameId = (): string => {
   return [...bytes].map((byte) => (byte % 36).toString(36)).join('');
 };
 
-// --- Building ---
+// ---------------------------------------------------------------------------
+// Building — turn handshake data / ciphertext into wire lines
+// ---------------------------------------------------------------------------
 
 export const buildOfferFrame = (identityKeyB64: string, ephemeralKeyB64: string): string =>
   `${HANDSHAKE_CTCP} OFFER ${PROTOCOL_VERSION} ${identityKeyB64} ${ephemeralKeyB64}`;
@@ -83,7 +126,9 @@ export const buildDeclineFrame = (): string => `${HANDSHAKE_CTCP} DECLINE`;
 export const buildResetFrame = (): string => `${HANDSHAKE_CTCP} RESET`;
 
 /**
- * Split a sealed payload into one or more CTCP bodies.
+ * Split a sealed (encrypted) payload into one or more `SICE` CTCP bodies, each
+ * carrying at most `MAX_CHUNK_CHARS` of it plus an `<index>/<total>` header so
+ * the receiver's `Reassembler` can put them back in order.
  *
  * Throws if the message is too large to send, rather than emitting frames the
  * peer will discard — the caller surfaces that to the user as a failed send.
@@ -101,7 +146,7 @@ export const buildCipherFrames = (sealedB64: string, frameId = newFrameId()): st
     throw new Error(`Message is too long to encrypt: needs ${chunks.length} frames, limit is ${MAX_PARTS}`);
   }
 
-  return chunks.map((chunk, index) => `${CIPHER_CTCP} ${frameId} ${index + 1}/${chunks.length} ${chunk}`);
+  return chunks.map((chunk, position) => `${CIPHER_CTCP} ${frameId} ${position + 1}/${chunks.length} ${chunk}`);
 };
 
 /** Wrap a message body with its kind, so `/me` survives the round trip. */
@@ -116,7 +161,10 @@ export const decodeBody = (plaintext: string): { kind: BodyKind; text: string } 
   return { kind, text: plaintext.slice(1) };
 };
 
-// --- Parsing ---
+// ---------------------------------------------------------------------------
+// Parsing — turn wire lines back into handshake data / ciphertext, rejecting
+// anything malformed rather than guessing at what a peer meant.
+// ---------------------------------------------------------------------------
 
 const parseHandshake = (params: string[]): E2eeFrame | null => {
   const verb = params[0]?.toUpperCase();
@@ -149,24 +197,27 @@ const parseHandshake = (params: string[]): E2eeFrame | null => {
     : { type: 'accept', version, identityKeyB64, ephemeralKeyB64 };
 };
 
+/**
+ * Parse one `SICE <frameId> <index>/<total> <chunk>` line (the CTCP verb
+ * itself already stripped by the caller, so `params` is `[frameId,
+ * "<index>/<total>", chunk]`).
+ */
 const parseCipher = (params: string[]): E2eeFrame | null => {
   if (params.length !== 3) {
     return null;
   }
-  const frameId = params[0];
-  const sequence = params[1];
-  const chunk = params[2];
-  if (frameId === undefined || sequence === undefined || chunk === undefined) {
+  const [frameId, chunkSequence, chunk] = params;
+  if (frameId === undefined || chunkSequence === undefined || chunk === undefined) {
     return null;
   }
 
-  const match = /^(\d{1,2})\/(\d{1,2})$/.exec(sequence);
-  if (!match) {
+  const sequence = CHUNK_SEQUENCE_PATTERN.exec(chunkSequence);
+  if (!sequence?.groups) {
     return null;
   }
 
-  const index = Number(match[1]);
-  const total = Number(match[2]);
+  const index = Number(sequence.groups.index);
+  const total = Number(sequence.groups.total);
   if (total < 1 || total > MAX_PARTS || index < 1 || index > total) {
     return null;
   }
@@ -178,7 +229,7 @@ const parseCipher = (params: string[]): E2eeFrame | null => {
 };
 
 /**
- * Parse a CTCP body (delimiters already stripped) into a frame.
+ * Parse a CTCP body (the `\x01` delimiters already stripped) into a frame.
  *
  * Returns `null` for anything malformed. Callers treat that as "not ours" and
  * fall through to the normal CTCP handling — a hostile or buggy peer must not
@@ -198,12 +249,19 @@ export const parseCtcpFrame = (ctcpContent: string): E2eeFrame | null => {
   return null;
 };
 
-// --- Reassembly ---
+// ---------------------------------------------------------------------------
+// Reassembly — put a message's chunks back together on the receiving side
+// ---------------------------------------------------------------------------
 
+/** One message's worth of chunks, still being collected. Tracked per `frameId` in `createReassembler`'s `pending` map. */
 interface PendingFrame {
+  /** One slot per chunk, filled in as each arrives; `undefined` where a chunk is still missing. */
   parts: (string | undefined)[];
+  /** How many chunks this message was split into — every chunk that arrives must agree on this. */
   total: number;
+  /** How many slots in `parts` are filled so far, so "are we done?" is a cheap comparison instead of scanning `parts`. */
   received: number;
+  /** `Date.now()` value after which this entry is dropped even if incomplete — see `FRAME_TTL_MS`. */
   expiresAt: number;
 }
 
@@ -229,6 +287,8 @@ export interface Reassembler {
  * buffer is bounded, and the oldest entry is evicted once it is full.
  */
 export const createReassembler = (): Reassembler => {
+  // Keyed by "<peer, lowercased> <frameId>", so two peers who happen to pick
+  // the same random frameId at the same time don't collide with each other.
   const pending = new Map<string, PendingFrame>();
 
   const evictExpired = (now: number): void => {
@@ -243,7 +303,7 @@ export const createReassembler = (): Reassembler => {
     accept(peer, frame, now = Date.now()) {
       evictExpired(now);
 
-      const key = `${peer.toLowerCase()} ${frame.frameId}`;
+      const key = `${peer.toLowerCase()} ${frame.frameId}`;
       let entry = pending.get(key);
 
       // A total that disagrees with what we already hold means a resent or forged
@@ -288,7 +348,7 @@ export const createReassembler = (): Reassembler => {
     },
 
     forget(peer) {
-      const prefix = `${peer.toLowerCase()} `;
+      const prefix = `${peer.toLowerCase()} `;
       for (const key of pending.keys()) {
         if (key.startsWith(prefix)) {
           pending.delete(key);

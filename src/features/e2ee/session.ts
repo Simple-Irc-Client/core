@@ -1,6 +1,28 @@
 /**
  * SIC-E2EE v1 — handshake state machine and message sealing.
  *
+ * At a glance — the questions a new contributor or a security review asks
+ * first, answered before any code:
+ *
+ *   key exchange      ECDH, curve P-256                        (crypto.ts)
+ *   key derivation    HKDF-SHA256                               (crypto.ts)
+ *   cipher            AES-256-GCM                               (crypto.ts)
+ *   library           browser WebCrypto only, no 3rd-party crypto
+ *
+ *   encrypted         body of a 1:1 message, or a /me action
+ *   never encrypted   channel messages — no group mode exists
+ *   not hidden        who talks to whom, and when — IRC exposes that already
+ *   not hidden        roughly how long a message is (chunk count shows)
+ *
+ *   trust model       TOFU: first key seen is trusted           (store/pins.ts)
+ *                     a later, different key blocks the session, not silently
+ *   verified by       comparing fingerprints out of band         (shown in UI)
+ *
+ *   forward secrecy   per handshake, not per message — no ratchet
+ *   key storage       identity private key is non-extractable    (identity.ts)
+ *   abuse handling    rate-limited handshakes                    (rateLimit.ts)
+ *   abuse handling    one message capped at 16 chunks             (protocol.ts)
+ *
  * This module owns all key material. The zustand store next door holds only
  * what the UI renders; private keys and derived session keys live here in a
  * plain module-level map that nothing serialises.
@@ -87,12 +109,21 @@ const OFFER_TIMEOUT_MS = 60_000;
 /** How many of our own recent frame ids to remember, so echoed frames can be dropped. */
 const OWN_FRAME_MEMORY = 256;
 
+/**
+ * Everything a handshake-in-progress (or completed one) needs to hold onto.
+ * Lives only in the module-level `secrets` map below, never in the zustand
+ * store — see the file header for why key material stays out of there.
+ */
 interface SessionSecrets {
+  /** Whether we sent the OFFER or are answering one — passed to `deriveSessionKeys` once the handshake completes. */
   role: HandshakeRole;
+  /** Our long-term key pair for this network. */
   identity: Identity;
+  /** Our throwaway key pair for this conversation. */
   ephemeral: KeyPairWithPublic;
   /** The peer's keys from an inbound OFFER, held while the user decides. */
   pendingOffer?: { identityKeyB64: string; ephemeralKeyB64: string };
+  /** Set once the handshake completes — encrypts/decrypts this conversation's messages until the session ends. */
   keys?: SessionKeys;
 }
 
@@ -173,6 +204,11 @@ const checkPin = (nick: string, identityKeyB64: string): { pinnedFingerprint: st
   return { pinnedFingerprint: pin.fingerprint };
 };
 
+/**
+ * Pin this key for the peer if we haven't already, and report whether it was
+ * already verified — `completeHandshake` uses that to decide whether the new
+ * session starts out trusted or needs the fingerprint checked again.
+ */
 const savePin = (nick: string, identityKeyB64: string, fingerprint: string): boolean => {
   const network = getNetwork();
   const peerKey = peerKeyFor(nick);

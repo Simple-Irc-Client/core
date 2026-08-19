@@ -10,6 +10,7 @@ import {
   createReassembler,
   decodeBody,
   encodeBody,
+  FRAME_TTL_MS,
   MAX_PARTS,
   newFrameId,
   parseCtcpFrame,
@@ -229,7 +230,7 @@ describe('e2ee protocol', () => {
 
       // The missing chunk turns up too late; the partial message must be gone,
       // not silently completed with stale data.
-      expect(reassembler.accept('bob', frameAt(frames, 1), start + 31_000)).toBeNull();
+      expect(reassembler.accept('bob', frameAt(frames, 1), start + FRAME_TTL_MS + 1_000)).toBeNull();
       expect(reassembler.size).toBe(1);
     });
 
