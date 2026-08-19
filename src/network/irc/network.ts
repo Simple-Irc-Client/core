@@ -145,6 +145,7 @@ const handleInactivityTimeout = async (): Promise<void> => {
   // Disconnect silently (disconnectDirect removes event handlers so no
   // stale 'close' event reaches the kernel during reconnection)
   disconnectDirect();
+  notifyConnectionTornDown();
   setIsConnecting(false);
   setIsConnected(false);
   clearAllTyping();
@@ -195,6 +196,36 @@ export const off = (eventName: string, callback: (data: any) => void): void => {
   }
 };
 
+/**
+ * Listeners notified whenever the underlying connection goes away — on every
+ * path that can end it: the natural "server hung up" case (`kernel.ts`'s
+ * `handleDisconnected`, driven by the transport's own close event) and the
+ * three places *this module* deliberately tears the connection down
+ * (`ircDisconnect`, `ircReconnect`, `handleInactivityTimeout`).
+ *
+ * Those three call `disconnectDirect()`, which removes the transport's event
+ * handlers before closing specifically so a stale close event doesn't reach
+ * the kernel mid-reconnect and flash a "Disconnected" message the user never
+ * needed to see. That's the right call for the UI, but it also means nothing
+ * downstream heard the connection end — which matters for state that is only
+ * valid for one connection, such as e2ee sessions (see kernel.ts, which
+ * registers cleanup here rather than in `handleDisconnected` so it isn't
+ * only run on the natural-close path). A plain listener list, rather than
+ * folding this into the full `'sic-irc-event'` pipeline above, keeps it from
+ * ever re-triggering that UI flow.
+ */
+const connectionTornDownListeners: (() => void)[] = [];
+
+export const onConnectionTornDown = (listener: () => void): void => {
+  connectionTornDownListeners.push(listener);
+};
+
+const notifyConnectionTornDown = (): void => {
+  for (const listener of connectionTornDownListeners) {
+    listener();
+  }
+};
+
 export const isConnected = (): boolean => {
   return isDirectConnected();
 };
@@ -217,6 +248,7 @@ export const ircDisconnect = (): void => {
 
   // Disconnect direct WebSocket (server/backend handles QUIT)
   disconnectDirect();
+  notifyConnectionTornDown();
 };
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
@@ -549,6 +581,7 @@ export const ircReconnect = async (): Promise<boolean> => {
   clearAllBatches();
   clearPendingLabels();
   disconnectDirect();
+  notifyConnectionTornDown();
 
   // Restore saved credentials for SASL re-authentication (decrypted)
   const restored = await restoreSaslCredentials();

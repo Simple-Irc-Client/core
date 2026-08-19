@@ -64,7 +64,7 @@ import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick }
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate, onConnectionTornDown } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -379,6 +379,21 @@ const RPL_HELPTXT = '705';
 const RPL_ENDOFHELP = '706';
 // const ERR_NOPRIVS = '723';
 const RPL_SASLMECHS = '908';
+
+// Session keys are per-connection (see `handleDisconnected` below), but
+// `disconnectDirect` deliberately hides the transport's own close event from
+// this module whenever *we* initiate the teardown — a manual disconnect, a
+// reconnect, or the inactivity watchdog — precisely so a stale "Disconnected"
+// message doesn't flash mid-reconnect. That means those three paths never
+// reached `handleDisconnected`, so e2ee sessions survived a reconnect the
+// peer's own client had already torn its half of down. Registering here,
+// once, covers exactly those three paths (`network.ts`'s `onConnectionTornDown`
+// doc comment has the full list) without touching the natural-close path,
+// which already clears sessions correctly inside `handleDisconnected` itself.
+onConnectionTornDown(() => {
+  endAllSessions();
+  clearIncomingState();
+});
 
 export class Kernel {
   private tags: Record<string, string>;

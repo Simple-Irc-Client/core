@@ -209,6 +209,20 @@ describe('network', () => {
       network.ircDisconnect();
       expect(mockDisconnectDirect).toHaveBeenCalled();
     });
+
+    it('should notify onConnectionTornDown listeners', () => {
+      // disconnectDirect() removes the transport's event handlers before
+      // closing, so the kernel's normal close-event path never fires for a
+      // manual disconnect — this is the dedicated hook connection-scoped
+      // state (e2ee sessions) relies on instead. See network.ts's doc
+      // comment on onConnectionTornDown for the full story.
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      network.ircDisconnect();
+
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('ircConnect', () => {
@@ -486,6 +500,24 @@ describe('network', () => {
         time: expect.any(String),
         category: 'info',
       });
+    });
+
+    it('should notify onConnectionTornDown listeners on inactivity timeout, not just on a natural close', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should clear all typing indicators on inactivity timeout', async () => {
@@ -1001,6 +1033,26 @@ describe('network', () => {
       expect(mockDisconnectDirect).toHaveBeenCalled();
       await flushPromises();
       expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
+    it('should notify onConnectionTornDown listeners', async () => {
+      // A reconnect tears down the old connection the same way a manual
+      // disconnect does — connection-scoped state (e2ee sessions) has to be
+      // cleared here too, not just when the connection dies unexpectedly.
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      await network.ircReconnect();
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should reset SASL state without clearing credentials', async () => {
