@@ -10,7 +10,8 @@
  *   offerEncryption()  ──OFFER(PRIVMSG)──▶            state: offered
  *                      ◀─ACCEPT(NOTICE)──   pin check, derive → state: active
  *                      ◀─DECLINE(NOTICE)─                     → state: declined
- *                      (no reply within 15 s)                 → state: none
+ *                      (no reply within OFFER_TIMEOUT_MS)     → state: error
+ *                      (a late ACCEPT still completes it from here)
  *
  * and from the responder's side an inbound OFFER lands in `incoming`, where it
  * waits for the user (there is no auto-accept for an unknown key), then
@@ -69,8 +70,19 @@ import {
 } from './store/e2ee';
 import { getPeerKey, getPin, putPin, setPinVerified } from './store/pins';
 
-/** How long to wait for a reply before concluding the peer is not a SIC client. */
-const OFFER_TIMEOUT_MS = 15_000;
+/**
+ * How long to show "waiting" before telling the user there has been no reply.
+ *
+ * This budget has to cover network RTT *and* the peer noticing our OFFER and
+ * clicking Accept — the second part is human reaction time, not bandwidth,
+ * and dwarfs the first on anything but a dead link. 15s used to be tight
+ * enough that a peer who took a moment to notice the prompt, or was on a slow
+ * connection, would routinely trip it. The outstanding keys are kept regardless
+ * (see the timeout callback in `offerEncryption`), so an ACCEPT that arrives
+ * after this fires still completes the handshake — this only controls when we
+ * stop saying "waiting" and start saying "no reply yet".
+ */
+const OFFER_TIMEOUT_MS = 60_000;
 
 /** How many of our own recent frame ids to remember, so echoed frames can be dropped. */
 const OWN_FRAME_MEMORY = 256;
@@ -259,7 +271,12 @@ export const offerEncryption = async (nick: string): Promise<void> => {
         offerTimers.delete(key);
         // Only give up if nothing moved us on; a late ACCEPT still wins.
         if (getSessionState(nick) === E2eeState.offered) {
-          secrets.delete(key);
+          // The ephemeral keypair deliberately survives this: an ACCEPT that
+          // was already on its way when this fired — slow link, or a peer who
+          // took a moment to click — must still be able to complete the
+          // handshake. `handleAccept` allows exactly that as long as nothing
+          // has superseded this offer (a fresh offerEncryption(), or the user
+          // cancelling) in the meantime. Only the visible state changes here.
           setSession(nick, {
             state: E2eeState.error,
             verified: false,
@@ -392,9 +409,16 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
 };
 
 const handleAccept = async (nick: string, frame: Extract<E2eeFrame, { type: 'accept' }>): Promise<void> => {
-  if (getSessionState(nick) !== E2eeState.offered) {
-    // An ACCEPT we never asked for. Ignore it rather than deriving a session
-    // some third party talked us into.
+  const key = getSessionKey(nick);
+  const state = getSessionState(nick);
+  // Still our outstanding offer either while we're actively waiting, or — a
+  // late reply — after the wait timed out but nothing has superseded it
+  // since (a fresh offer, a cancel, or a completed handshake all replace or
+  // clear this entry). Anything else is an ACCEPT we never asked for; ignore
+  // it rather than deriving a session some third party talked us into.
+  const awaitingOurOffer =
+    state === E2eeState.offered || (state === E2eeState.error && secrets.get(key)?.role === 'initiator');
+  if (!awaitingOurOffer) {
     return;
   }
   if (frame.version !== PROTOCOL_VERSION) {

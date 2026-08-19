@@ -322,20 +322,62 @@ describe('e2ee session', () => {
       await alice.session.offerEncryption('hexchatuser');
       expect(alice.store.getSessionState('hexchatuser')).toBe(E2eeState.offered);
 
-      await vi.advanceTimersByTimeAsync(16_000);
+      await vi.advanceTimersByTimeAsync(61_000);
 
       expect(alice.store.getSessionState('hexchatuser')).toBe(E2eeState.error);
     });
 
-    it('lets a late accept win over the timeout', async () => {
+    it('lets a late accept win when it arrives just before the timeout fires', async () => {
       vi.useFakeTimers();
       const alice = await createClient('alice');
       const bob = await createClient('bob');
 
       await completeHandshake(alice, bob);
-      await vi.advanceTimersByTimeAsync(30_000);
+      await vi.advanceTimersByTimeAsync(61_000);
 
       expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+    });
+
+    it('still completes the handshake from an accept that arrives after the wait already timed out', async () => {
+      // A slow link or a peer who took a moment to click Accept: our own wait
+      // gives up and shows an error before their reply is actually delivered.
+      // The keys must not have been thrown away for this to still work.
+      vi.useFakeTimers();
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await alice.session.offerEncryption('bob');
+      await deliver(alice, bob);
+
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.error);
+
+      await bob.session.acceptIncomingOffer('alice');
+      await deliver(bob, alice);
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(await sendAndReceive(alice, bob, 'hello after the timeout')).toEqual({
+        kind: BodyKind.message,
+        text: 'hello after the timeout',
+      });
+    });
+
+    it('does not resurrect a timed-out offer once the user has cancelled it', async () => {
+      vi.useFakeTimers();
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await alice.session.offerEncryption('bob');
+      await deliver(alice, bob);
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.error);
+
+      alice.session.endSession('bob', false);
+
+      await bob.session.acceptIncomingOffer('alice');
+      await deliver(bob, alice);
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.none);
     });
   });
 

@@ -37,32 +37,54 @@ import StylePicker from './StylePicker';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import type { FontFormatting } from '@features/settings/store/settings';
 
+// eslint-disable-next-line no-control-regex
+const ACTION_BODY = /^\x01ACTION (.*)\x01$/;
+const PRIVMSG_OR_NOTICE = /^(PRIVMSG|NOTICE) (\S+) :([\s\S]*)$/;
+
+export type OutgoingCommandGate = { verdict: 'encrypt'; kind: BodyKind; body: string } | { verdict: 'block' };
+
 /**
- * Decide whether a command's raw output must go out encrypted instead.
+ * Decide what a slash command's raw wire output must do when it addresses a
+ * peer we have an active encrypted session with.
  *
- * Only an entire single line addressed to the encrypted peer qualifies. A
- * multi-line payload (`/amsg`) or one aimed at someone else (`/msg other`) is
- * left alone — those genuinely are plaintext messages to other targets, and
- * quietly encrypting them would send ciphertext to someone with no session.
+ * This reads the line that is actually about to hit the wire — `PRIVMSG
+ * <target> :body` or `NOTICE <target> :body` — rather than trying to guess
+ * from the command name, so it catches every command that can produce one of
+ * those two verbs (today: `/msg`, `/me`, `/notice`, and `/quote`/`/raw` typed
+ * by hand) without needing a per-command allowlist that a new command could
+ * fall through unnoticed.
+ *
+ * A PRIVMSG is content we can encrypt (message or `/me` action). A NOTICE has
+ * no encrypted representation in the wire protocol (`BodyKind` only carries
+ * message/action), so it is blocked outright rather than sent as plaintext
+ * out of a window the user is being told is encrypted — the same
+ * never-silently-downgrade rule `session.ts` applies to handshake failures.
+ * Anything whose target has no active session, or that isn't a single-line
+ * PRIVMSG/NOTICE, is left alone.
  */
-export const parseEncryptableCommand = (
-  payload: string,
-  target: string,
-): { kind: BodyKind; body: string } | null => {
+export const gateOutgoingCommand = (payload: string): OutgoingCommandGate | null => {
   if (payload.includes('\n')) {
     return null;
   }
 
-  const prefix = `PRIVMSG ${target} :`;
-  if (!payload.startsWith(prefix)) {
+  const match = PRIVMSG_OR_NOTICE.exec(payload);
+  if (!match) {
     return null;
   }
 
-  const body = payload.slice(prefix.length);
-  // eslint-disable-next-line no-control-regex
-  const action = /^\x01ACTION (.*)\x01$/.exec(body);
+  const verb = match[1] ?? '';
+  const target = match[2] ?? '';
+  const body = match[3] ?? '';
+  if (!isSessionActive(target)) {
+    return null;
+  }
 
-  return action ? { kind: BodyKind.action, body: action[1] ?? '' } : { kind: BodyKind.message, body };
+  if (verb === 'NOTICE') {
+    return { verdict: 'block' };
+  }
+
+  const action = ACTION_BODY.exec(body);
+  return action ? { verdict: 'encrypt', kind: BodyKind.action, body: action[1] ?? '' } : { verdict: 'encrypt', kind: BodyKind.message, body };
 };
 
 const Toolbar = () => {
@@ -307,16 +329,23 @@ const Toolbar = () => {
       // Commands are sent without formatting
       payload = parseMessageToCommand(currentChannelName, message);
 
-      // A command whose whole output is a message to the encrypted peer has to
-      // take the encrypted path too. `/me` is the one that matters today: it
-      // would otherwise put a plaintext CTCP ACTION on the wire from a window
-      // the user is being told is encrypted.
-      const encryptable = isSessionActive(currentChannelName)
-        ? parseEncryptableCommand(payload, currentChannelName)
-        : null;
-      if (encryptable) {
-        sendEncryptedMessage(currentChannelName, encryptable.body, getCurrentNick(), encryptable.kind);
+      // A command whose whole output is a message to a peer we have an active
+      // session with has to take the encrypted path too — see gateOutgoingCommand.
+      const gated = gateOutgoingCommand(payload);
+      if (gated?.verdict === 'encrypt') {
+        sendEncryptedMessage(currentChannelName, gated.body, getCurrentNick(), gated.kind);
         finishSend();
+        return;
+      }
+      if (gated?.verdict === 'block') {
+        setAddMessage({
+          id: uuidv4(),
+          message: t('e2ee.error.noticeBlocked', { nick: currentChannelName }),
+          target: currentChannelName,
+          time: new Date().toISOString(),
+          category: MessageCategory.info,
+          color: MessageColor.error,
+        });
         return;
       }
     } else {
