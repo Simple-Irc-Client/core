@@ -16,20 +16,10 @@
  * The three-DH mixing itself lives in `deriveSessionKeys` below.
  */
 
-import { base64ToBytes, bytesToBase64 } from '@/network/encryption';
+import { base64ToBytes, bytesToBase64, openBytes, sealBytes } from '@/network/encryption';
 
 /** Protocol label — mixed into every derivation and used as AES-GCM additional data. */
 const PROTOCOL_LABEL = 'sic-e2ee-v1';
-
-/**
- * AES-GCM nonce length in bytes. 96 bits is the size the GCM spec optimises for.
- *
- * A "nonce" (here also called an IV, initialization vector) is a value that
- * must never repeat under the same key — GCM needs a fresh one per message so
- * that encrypting the same text twice doesn't produce the same ciphertext
- * twice. `seal` below generates one at random for every call.
- */
-const IV_LENGTH = 12;
 
 /** How many bytes of the public-key hash the user-visible fingerprint shows. */
 const FINGERPRINT_BYTES = 8;
@@ -65,7 +55,6 @@ export interface SessionKeys {
 }
 
 const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
 
 /** WebCrypto wants plain ArrayBuffers; Uint8Array views can be offset into a larger buffer. */
 const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
@@ -245,21 +234,29 @@ export interface DeriveSessionKeysInput {
 export const deriveSessionKeys = async (input: DeriveSessionKeysInput): Promise<SessionKeys> => {
   const { role, identity, ephemeral, theirIdentityKeyB64, theirEphemeralKeyB64 } = input;
 
-  const theirIdentityKey = await importPublicKey(theirIdentityKeyB64);
-  const theirEphemeralKey = await importPublicKey(theirEphemeralKeyB64);
+  // Neither import depends on the other, and none of dh1/dh2/dh3 below depend
+  // on one another either — each is an independent WebCrypto round trip, so
+  // running them concurrently rather than one after another costs nothing and
+  // shaves real latency off every handshake.
+  const [theirIdentityKey, theirEphemeralKey] = await Promise.all([
+    importPublicKey(theirIdentityKeyB64),
+    importPublicKey(theirEphemeralKeyB64),
+  ]);
 
   const isInitiator = role === 'initiator';
 
-  const dh1 = await deriveSharedBits(ephemeral.privateKey, theirEphemeralKey);
-  // dh2 is always ECDH(identity of initiator, ephemeral of responder): as the
-  // initiator that is our identity against their ephemeral, and vice versa.
-  const dh2 = isInitiator
-    ? await deriveSharedBits(identity.privateKey, theirEphemeralKey)
-    : await deriveSharedBits(ephemeral.privateKey, theirIdentityKey);
-  // dh3 is the mirror: ECDH(ephemeral of initiator, identity of responder).
-  const dh3 = isInitiator
-    ? await deriveSharedBits(ephemeral.privateKey, theirIdentityKey)
-    : await deriveSharedBits(identity.privateKey, theirEphemeralKey);
+  const [dh1, dh2, dh3] = await Promise.all([
+    deriveSharedBits(ephemeral.privateKey, theirEphemeralKey),
+    // dh2 is always ECDH(identity of initiator, ephemeral of responder): as
+    // the initiator that is our identity against their ephemeral, and vice versa.
+    isInitiator
+      ? deriveSharedBits(identity.privateKey, theirEphemeralKey)
+      : deriveSharedBits(ephemeral.privateKey, theirIdentityKey),
+    // dh3 is the mirror: ECDH(ephemeral of initiator, identity of responder).
+    isInitiator
+      ? deriveSharedBits(ephemeral.privateKey, theirIdentityKey)
+      : deriveSharedBits(identity.privateKey, theirEphemeralKey),
+  ]);
 
   // The combined "input keying material" HKDF will stretch into real keys —
   // see the `hkdf` helper above.
@@ -279,8 +276,10 @@ export const deriveSessionKeys = async (input: DeriveSessionKeysInput): Promise<
   );
   const salt = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBuffer(transcript)));
 
-  const initiatorToResponder = await hkdf(ikm, salt, `${PROTOCOL_LABEL} i2r`);
-  const responderToInitiator = await hkdf(ikm, salt, `${PROTOCOL_LABEL} r2i`);
+  const [initiatorToResponder, responderToInitiator] = await Promise.all([
+    hkdf(ikm, salt, `${PROTOCOL_LABEL} i2r`),
+    hkdf(ikm, salt, `${PROTOCOL_LABEL} r2i`),
+  ]);
 
   return isInitiator
     ? { sendKey: initiatorToResponder, recvKey: responderToInitiator }
@@ -294,25 +293,19 @@ export const deriveSessionKeys = async (input: DeriveSessionKeysInput): Promise<
 /**
  * Encrypt a message body with AES-GCM, which — unlike plain AES — also
  * produces an authentication tag proving the ciphertext wasn't modified in
- * transit; `open` below rejects anything where that check fails. Output is
- * base64 of `IV ‖ ciphertext ‖ tag`, matching the layout already used by
- * `network/encryption.ts`.
+ * transit; `open` below rejects anything where that check fails.
  *
- * `additionalData` is our protocol label: authenticated the same way as the
- * rest of the message, but not itself encrypted, so a ciphertext produced for
- * a different protocol version can't be replayed here even though the label
- * is visible.
+ * The actual framing (nonce generation, `IV ‖ ciphertext ‖ tag` packing) is
+ * `network/encryption.ts`'s `sealBytes` — this file used to reimplement it
+ * inline, but it's the exact same AEAD wire format either way, so one
+ * implementation is one less place a future fix has to be remembered twice.
+ * What's specific to e2ee is `additionalData`: our protocol label,
+ * authenticated the same way as the rest of the message but not itself
+ * encrypted, so a ciphertext produced for a different protocol version can't
+ * be replayed here even though the label is visible.
  */
-export const seal = async (key: CryptoKey, plaintext: string): Promise<string> => {
-  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: textEncoder.encode(PROTOCOL_LABEL) },
-    key,
-    textEncoder.encode(plaintext),
-  );
-
-  return bytesToBase64(concatBytes(iv, new Uint8Array(encrypted)));
-};
+export const seal = async (key: CryptoKey, plaintext: string): Promise<string> =>
+  sealBytes(key, plaintext, textEncoder.encode(PROTOCOL_LABEL));
 
 /**
  * Decrypt a sealed body. Rejects on a wrong key, a tampered byte, a truncated
@@ -320,21 +313,5 @@ export const seal = async (key: CryptoKey, plaintext: string): Promise<string> =
  * authentication makes all of those indistinguishable failures, which is the
  * behaviour we want.
  */
-export const open = async (key: CryptoKey, sealedB64: string): Promise<string> => {
-  const combined = base64ToBytes(sealedB64);
-  if (combined.length <= IV_LENGTH) {
-    throw new Error('Sealed payload is too short to contain a nonce');
-  }
-
-  const decrypted = await crypto.subtle.decrypt(
-    {
-      name: 'AES-GCM',
-      iv: combined.slice(0, IV_LENGTH),
-      additionalData: textEncoder.encode(PROTOCOL_LABEL),
-    },
-    key,
-    toArrayBuffer(combined.slice(IV_LENGTH)),
-  );
-
-  return textDecoder.decode(decrypted);
-};
+export const open = async (key: CryptoKey, sealedB64: string): Promise<string> =>
+  openBytes(key, sealedB64, textEncoder.encode(PROTOCOL_LABEL));

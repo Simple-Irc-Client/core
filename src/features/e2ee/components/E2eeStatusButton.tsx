@@ -14,6 +14,23 @@ interface E2eeStatusButtonProps {
   channelName: string;
 }
 
+type StatusKind = 'fingerprintChanged' | 'verified' | 'unverified' | 'plaintextAgain' | 'off';
+
+/**
+ * Icon, color, and tooltip for each status, kept in one place rather than as
+ * three parallel branches that all have to be edited in lockstep to add or
+ * change a status — the same shape `E2eeBanner`'s `TONE_CLASSES` uses.
+ */
+const STATUS_DISPLAY: Record<StatusKind, { Icon: typeof Lock; iconClass: string; tooltipKey: string }> = {
+  fingerprintChanged: { Icon: ShieldAlert, iconClass: 'text-red-600 dark:text-red-400', tooltipKey: 'e2ee.status.fingerprintChanged' },
+  verified: { Icon: Lock, iconClass: 'text-green-600 dark:text-green-400', tooltipKey: 'e2ee.status.verified' },
+  unverified: { Icon: Lock, iconClass: 'text-yellow-600 dark:text-yellow-400', tooltipKey: 'e2ee.status.unverified' },
+  // An open padlock means something different for a peer we have encrypted
+  // with before, so it does not get the same neutral grey as a stranger's.
+  plaintextAgain: { Icon: LockOpen, iconClass: 'text-yellow-600 dark:text-yellow-400', tooltipKey: 'e2ee.status.plaintextAgain' },
+  off: { Icon: LockOpen, iconClass: 'text-muted-foreground', tooltipKey: 'e2ee.status.off' },
+};
+
 /**
  * The lock in the conversation header: current state at a glance, and the
  * fingerprint pair behind a click.
@@ -32,30 +49,20 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
 
   const isActive = session?.state === E2eeState.active;
   const isAlarming = session?.state === E2eeState.fingerprintChanged;
-  // An open padlock means something different for a peer we have encrypted with
-  // before, so it does not get the same neutral grey as a stranger's.
   const isUnexpectedlyPlaintext = !isActive && !isAlarming && pinned;
 
-  const Icon = isAlarming ? ShieldAlert : isActive ? Lock : LockOpen;
-  const iconClass = isAlarming
-    ? 'text-red-600 dark:text-red-400'
+  const statusKind: StatusKind = isAlarming
+    ? 'fingerprintChanged'
     : isActive
       ? session.verified
-        ? 'text-green-600 dark:text-green-400'
-        : 'text-yellow-600 dark:text-yellow-400'
+        ? 'verified'
+        : 'unverified'
       : isUnexpectedlyPlaintext
-        ? 'text-yellow-600 dark:text-yellow-400'
-        : 'text-muted-foreground';
+        ? 'plaintextAgain'
+        : 'off';
 
-  const tooltip = isAlarming
-    ? t('e2ee.status.fingerprintChanged')
-    : isActive
-      ? session.verified
-        ? t('e2ee.status.verified')
-        : t('e2ee.status.unverified')
-      : isUnexpectedlyPlaintext
-        ? t('e2ee.status.plaintextAgain')
-        : t('e2ee.status.off');
+  const { Icon, iconClass, tooltipKey } = STATUS_DISPLAY[statusKind];
+  const tooltip = t(tooltipKey);
 
   return (
     <Popover>

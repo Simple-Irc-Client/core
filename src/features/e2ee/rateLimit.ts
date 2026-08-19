@@ -41,10 +41,20 @@ export const createThrottle = (cooldownMs: number, maxKeys = 256): Throttle => {
       // Pruning first means "still present" is exactly "still in cooldown",
       // which keeps the check below a single lookup and bounds the table by
       // traffic rate rather than by however many peers have ever appeared.
+      //
+      // A `Map` iterates in insertion order, and an entry is only ever
+      // (re-)inserted once its previous one — if any — has already expired
+      // and been pruned (see the `has` check below), so insertion order here
+      // is also chronological order by `at`. That means the moment we reach
+      // an entry that has not yet expired, every entry after it is even
+      // younger and cannot have expired either — this is reachable from every
+      // inbound OFFER, including from peers we have no session with, so
+      // stopping there instead of scanning the rest matters.
       for (const [tracked, at] of lastAllowed) {
-        if (now - at >= cooldownMs) {
-          lastAllowed.delete(tracked);
+        if (now - at < cooldownMs) {
+          break;
         }
+        lastAllowed.delete(tracked);
       }
 
       if (lastAllowed.has(key)) {
