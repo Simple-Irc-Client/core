@@ -39,9 +39,16 @@ import type { FontFormatting } from '@features/settings/store/settings';
 
 // eslint-disable-next-line no-control-regex
 const ACTION_BODY = /^\x01ACTION (.*)\x01$/;
-const PRIVMSG_OR_NOTICE = /^(PRIVMSG|NOTICE) (\S+) :([\s\S]*)$/;
+// Case-insensitive: IRC command verbs are, by protocol, case-insensitive
+// (a server treats `privmsg` identically to `PRIVMSG`), and unlike our own
+// generated commands — always uppercase — a hand-typed `/quote`/`/raw` can
+// use any case. Matching only the uppercase form would let a lowercase-typed
+// raw command slip past this gate as plaintext.
+const PRIVMSG_OR_NOTICE = /^(PRIVMSG|NOTICE) (\S+) :([\s\S]*)$/i;
 
-export type OutgoingCommandGate = { verdict: 'encrypt'; kind: BodyKind; body: string } | { verdict: 'block' };
+export type OutgoingCommandGate =
+  | { verdict: 'encrypt'; target: string; kind: BodyKind; body: string }
+  | { verdict: 'block'; target: string };
 
 /**
  * Decide what a slash command's raw wire output must do when it addresses a
@@ -52,7 +59,10 @@ export type OutgoingCommandGate = { verdict: 'encrypt'; kind: BodyKind; body: st
  * from the command name, so it catches every command that can produce one of
  * those two verbs (today: `/msg`, `/me`, `/notice`, and `/quote`/`/raw` typed
  * by hand) without needing a per-command allowlist that a new command could
- * fall through unnoticed.
+ * fall through unnoticed. `target` is the line's *own* target — not
+ * necessarily the window the user is currently looking at, e.g. `/msg other`
+ * typed from an encrypted window — so callers must send to `target`, not to
+ * whatever channel is currently open.
  *
  * A PRIVMSG is content we can encrypt (message or `/me` action). A NOTICE has
  * no encrypted representation in the wire protocol (`BodyKind` only carries
@@ -72,7 +82,7 @@ export const gateOutgoingCommand = (payload: string): OutgoingCommandGate | null
     return null;
   }
 
-  const verb = match[1] ?? '';
+  const verb = (match[1] ?? '').toUpperCase();
   const target = match[2] ?? '';
   const body = match[3] ?? '';
   if (!isSessionActive(target)) {
@@ -80,11 +90,13 @@ export const gateOutgoingCommand = (payload: string): OutgoingCommandGate | null
   }
 
   if (verb === 'NOTICE') {
-    return { verdict: 'block' };
+    return { verdict: 'block', target };
   }
 
   const action = ACTION_BODY.exec(body);
-  return action ? { verdict: 'encrypt', kind: BodyKind.action, body: action[1] ?? '' } : { verdict: 'encrypt', kind: BodyKind.message, body };
+  return action
+    ? { verdict: 'encrypt', target, kind: BodyKind.action, body: action[1] ?? '' }
+    : { verdict: 'encrypt', target, kind: BodyKind.message, body };
 };
 
 const Toolbar = () => {
@@ -333,14 +345,14 @@ const Toolbar = () => {
       // session with has to take the encrypted path too — see gateOutgoingCommand.
       const gated = gateOutgoingCommand(payload);
       if (gated?.verdict === 'encrypt') {
-        sendEncryptedMessage(currentChannelName, gated.body, getCurrentNick(), gated.kind);
+        sendEncryptedMessage(gated.target, gated.body, getCurrentNick(), gated.kind);
         finishSend();
         return;
       }
       if (gated?.verdict === 'block') {
         setAddMessage({
           id: uuidv4(),
-          message: t('e2ee.error.noticeBlocked', { nick: currentChannelName }),
+          message: t('e2ee.error.noticeBlocked', { nick: gated.target }),
           target: currentChannelName,
           time: new Date().toISOString(),
           category: MessageCategory.info,

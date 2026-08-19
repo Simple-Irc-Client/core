@@ -6,7 +6,7 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
+import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
@@ -498,21 +498,30 @@ export const ircWatchRemove = (nicks: string[]): void => {
   ircSendRawMessage(`WATCH ${nicks.map((nick) => `-${nick}`).join(' ')}`);
 };
 
-// IRC protocol max message length: 512 bytes including \r\n
-const MAX_IRC_MESSAGE_LENGTH = 510;
+// IRC protocol max message length: 512 bytes including \r\n, when the server
+// hasn't told us it accepts something else (ISUPPORT `LINELEN`, see
+// `getLineLenLimit`). E2EE's own chunk sizing (`e2ee/protocol.ts`'s
+// `chunkCharsFor`) is derived from the same server value specifically so its
+// frames never exceed what this function will actually send unmodified — if
+// the two ever disagreed, a chunk would get truncated here and fail GCM
+// authentication on the other end with no visible error.
+const DEFAULT_MAX_IRC_MESSAGE_LENGTH = 510;
+
+const getMaxIrcMessageLength = (): number => getLineLenLimit() || DEFAULT_MAX_IRC_MESSAGE_LENGTH;
 
 export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {
     return;
   }
-  if (data.length > MAX_IRC_MESSAGE_LENGTH) {
+  const maxLength = getMaxIrcMessageLength();
+  if (data.length > maxLength) {
     // Truncating is what the protocol forces on us, but doing it silently has
     // hidden real data loss in the past — an over-long line just arrived cut in
     // half with no trace. Callers that must not be truncated (E2EE frames, where
     // a cut line fails authentication and the message is lost outright) split
     // their payload up front; this warning is how we find the ones that don't.
-    console.warn(`IRC message exceeds ${MAX_IRC_MESSAGE_LENGTH} chars and will be truncated:`, `${data.slice(0, 80)}…`);
-    sendDirectRaw(data.slice(0, MAX_IRC_MESSAGE_LENGTH));
+    console.warn(`IRC message exceeds ${maxLength} chars and will be truncated:`, `${data.slice(0, 80)}…`);
+    sendDirectRaw(data.slice(0, maxLength));
     return;
   }
   sendDirectRaw(data);

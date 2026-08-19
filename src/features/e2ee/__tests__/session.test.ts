@@ -505,6 +505,21 @@ describe('e2ee session', () => {
       expect(pin?.verified).toBe(false);
     });
 
+    it('pins under the same casemapping the session key uses, not a hardcoded default', async () => {
+      // Test clients use ascii casemapping (see createClient's settings mock),
+      // which leaves `[`/`]` alone. rfc1459 — foldName's own default when no
+      // mapping is passed — folds `[` to `{`, so a peer key built without
+      // consulting the real casemapping would land on `nick:bob{1}` instead
+      // of the `nick:bob[1]` the session itself is keyed under, and every
+      // later pin lookup for this peer would silently miss.
+      const alice = await createClient('alice');
+      const bob = await createClient('bob[1]');
+
+      await completeHandshake(alice, bob);
+
+      expect(alice.pins.getPin('alice-net', 'nick:bob[1]')).toBeDefined();
+    });
+
     it('anchors the pin to a services account when the peer has one', async () => {
       accounts.set('bob', 'BobAccount');
       const alice = await createClient('alice');

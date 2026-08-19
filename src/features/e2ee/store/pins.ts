@@ -21,6 +21,7 @@ import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 import { foldName } from '@shared/lib/caseMapping';
+import { getCaseMapping } from '@/features/settings/store/settings';
 
 export interface E2eePin {
   /** Base64 SPKI of the peer's long-term identity key. */
@@ -108,9 +109,16 @@ export const useE2eePinsStore = create<PinsStore>()(
  *
  * The `account:`/`nick:` prefixes keep the two namespaces from colliding, and
  * let callers tell at a glance whether a pin is anchored to something durable.
+ *
+ * The nick fallback folds with the server's actual negotiated casemapping —
+ * the same one `store/e2ee.ts`'s `getSessionKey` uses — rather than assuming
+ * a default. Folding differently between the two would mean a pin and the
+ * session it is supposed to guard could disagree on whether two nicks are the
+ * same peer (rfc1459 folds `{}|^` together with `[]\~`; plain ascii does not),
+ * silently breaking the pin lookup for exactly the servers that differ.
  */
 export const getPeerKey = (nick: string, account?: string): string =>
-  account && account.length > 0 ? `account:${account.toLowerCase()}` : `nick:${foldName(nick)}`;
+  account && account.length > 0 ? `account:${account.toLowerCase()}` : `nick:${foldName(nick, getCaseMapping())}`;
 
 /** True when this pin is anchored to a registered account rather than a reusable nick. */
 export const isAccountPeerKey = (peerKey: string): boolean => peerKey.startsWith('account:');

@@ -19,12 +19,14 @@ const activate = (nick: string): void => {
 describe('gateOutgoingCommand', () => {
   afterEach(() => {
     removeSession('bob');
+    removeSession('carol');
   });
 
   it('routes /me through the encrypted path as an action', () => {
     activate('bob');
     expect(gateOutgoingCommand('PRIVMSG bob :\x01ACTION waves slowly\x01')).toEqual({
       verdict: 'encrypt',
+      target: 'bob',
       kind: BodyKind.action,
       body: 'waves slowly',
     });
@@ -34,6 +36,7 @@ describe('gateOutgoingCommand', () => {
     activate('bob');
     expect(gateOutgoingCommand('PRIVMSG bob :hello there')).toEqual({
       verdict: 'encrypt',
+      target: 'bob',
       kind: BodyKind.message,
       body: 'hello there',
     });
@@ -43,6 +46,7 @@ describe('gateOutgoingCommand', () => {
     activate('bob');
     expect(gateOutgoingCommand('PRIVMSG bob :see: \x02bold\x02 12:30')).toEqual({
       verdict: 'encrypt',
+      target: 'bob',
       kind: BodyKind.message,
       body: 'see: \x02bold\x02 12:30',
     });
@@ -52,6 +56,7 @@ describe('gateOutgoingCommand', () => {
     activate('bob');
     expect(gateOutgoingCommand('PRIVMSG bob :\x01ACTION \x01')).toEqual({
       verdict: 'encrypt',
+      target: 'bob',
       kind: BodyKind.action,
       body: '',
     });
@@ -59,7 +64,26 @@ describe('gateOutgoingCommand', () => {
 
   it('blocks a /notice to a peer with an active session instead of leaking it', () => {
     activate('bob');
-    expect(gateOutgoingCommand('NOTICE bob :hi')).toEqual({ verdict: 'block' });
+    expect(gateOutgoingCommand('NOTICE bob :hi')).toEqual({ verdict: 'block', target: 'bob' });
+  });
+
+  it('reports the target from the line itself, not assumed by the caller — a /msg to a peer other than the open window', () => {
+    // The caller must send the encrypted body to `target`, not to whichever
+    // channel happens to be open — this is what /msg typed from a different
+    // window relies on to reach the right peer.
+    activate('carol');
+    expect(gateOutgoingCommand('PRIVMSG carol :hello')).toMatchObject({ verdict: 'encrypt', target: 'carol' });
+  });
+
+  it('matches the verb case-insensitively, since IRC commands are and a hand-typed /quote or /raw may use any case', () => {
+    activate('bob');
+    expect(gateOutgoingCommand('privmsg bob :hello')).toEqual({
+      verdict: 'encrypt',
+      target: 'bob',
+      kind: BodyKind.message,
+      body: 'hello',
+    });
+    expect(gateOutgoingCommand('Notice bob :hi')).toEqual({ verdict: 'block', target: 'bob' });
   });
 
   it('leaves a message aimed at somebody with no session alone', () => {

@@ -79,6 +79,7 @@ const mockSetIsConnected = vi.fn();
 const mockSetIsConnecting = vi.fn();
 const mockGetEncryptedPassword = vi.fn();
 const mockGetPasswordNick = vi.fn();
+const mockGetLineLenLimit = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
@@ -87,6 +88,7 @@ vi.mock('@features/settings/store/settings', () => ({
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
   getEncryptedPassword: () => mockGetEncryptedPassword(),
   getPasswordNick: () => mockGetPasswordNick(),
+  getLineLenLimit: () => mockGetLineLenLimit(),
 }));
 
 // Mock channels store
@@ -144,6 +146,8 @@ describe('network', () => {
     // Persistent password mocks
     mockGetEncryptedPassword.mockClear().mockReturnValue(undefined);
     mockGetPasswordNick.mockClear().mockReturnValue(undefined);
+    // 0 = server never sent ISUPPORT LINELEN; ircSendRawMessage falls back to the default.
+    mockGetLineLenLimit.mockClear().mockReturnValue(0);
     mockDecryptPersistent.mockClear().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
     network = await import('../network');
   });
@@ -430,6 +434,29 @@ describe('network', () => {
       network.ircSendRawMessage(shortMessage);
 
       expect(mockSendDirectRaw).toHaveBeenCalledWith(shortMessage);
+    });
+
+    it('should truncate at the server-advertised ISUPPORT LINELEN instead of 510, when the server sent one', () => {
+      // A server allowing longer lines is exactly what e2ee's chunkCharsFor
+      // (protocol.ts) sizes its chunks against — if this function kept the
+      // hardcoded 510 cap regardless, a chunk sized for the larger limit
+      // would get cut here and fail to decrypt on the other end.
+      mockGetLineLenLimit.mockReturnValue(1024);
+      const longMessage = 'A'.repeat(1100);
+
+      network.ircSendRawMessage(longMessage);
+
+      const sentMessage = mockSendDirectRaw.mock.calls[0]?.[0] as string;
+      expect(sentMessage.length).toBe(1024);
+    });
+
+    it('should not truncate a message that fits the server-advertised LINELEN even though it exceeds 510', () => {
+      mockGetLineLenLimit.mockReturnValue(1024);
+      const message = 'A'.repeat(700);
+
+      network.ircSendRawMessage(message);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(message);
     });
   });
 
