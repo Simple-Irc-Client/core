@@ -1,0 +1,6 @@
+minimumReleaseAgeExclude:
+  - '@rollup/rollup-linux-x64-gnu@4.62.5'
+  - '@vitejs/plugin-react@6.1.0'
+  - i18next@26.4.0
+  - react-i18next@17.0.12
+  - vite@8.2.2
