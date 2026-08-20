@@ -151,7 +151,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
         ) : (
           <>
             <p className="text-xs text-muted-foreground mb-3">
-              {isUnexpectedlyPlaintext ? t('e2ee.panel.plaintextAgainHint', { nick: channelName }) : t('e2ee.panel.offHint')}
+              {isUnexpectedlyPlaintext ? t('e2ee.panel.plaintextAgainHint', { nick: channelName }) : t('e2ee.panel.offHint', { nick: channelName })}
             </p>
             <Button
               variant="outline"
