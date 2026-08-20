@@ -121,6 +121,18 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   }
   if (after === E2eeState.declined) {
     addInfoMessage(nick, i18next.t('e2ee.info.declined', { nick }));
+    return;
+  }
+  // An inbound OFFER may be the very first thing we hear from this peer — the
+  // window this creates is exactly like an incoming plain message, so it needs
+  // the same "you weren't looking at this" treatment or the request is invisible
+  // until the peer happens to send a plaintext line too.
+  if (after === E2eeState.incoming) {
+    addInfoMessage(nick, i18next.t('e2ee.info.incomingOffer', { nick }));
+    if (!isSameName(nick, getCurrentChannelName())) {
+      setIncreaseUnreadMessages(nick);
+      setHasMention(nick);
+    }
   }
 };
 

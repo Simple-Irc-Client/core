@@ -422,6 +422,7 @@
     "e2ee.panel.unverifiedHint": "Przeczytajcie sobie te odciski gdzie indziej — przez telefon albo w innej aplikacji. Jeśli się zgadzają, nikt Was nie podsłuchuje.",
     "e2ee.panel.fingerprintChangedHint": "{{nick}} używa innego klucza niż ten, któremu zaufano. Tak bywa po ponownej instalacji, ale tak samo wygląda atak. Skontaktuj się z tą osobą przed ponownym włączeniem szyfrowania.",
     "e2ee.panel.offHint": "Wiadomości w tej rozmowie są czytelne dla serwera IRC. Szyfrowanie zadziała tylko, jeśli {{nick}} też używa Simple IRC Client.",
+    "e2ee.info.incomingOffer": "{{nick}} chce rozpocząć szyfrowaną rozmowę.",
     "e2ee.info.started": "Ta rozmowa jest teraz szyfrowana end-to-end.",
     "e2ee.info.ended": "Szyfrowanie w tej rozmowie zostało wyłączone.",
     "e2ee.info.declined": "{{nick}} odrzucił szyfrowanie tej rozmowy.",

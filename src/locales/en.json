@@ -422,6 +422,7 @@
     "e2ee.panel.unverifiedHint": "Read these fingerprints to each other somewhere else — a call, or another app. If they match, nobody is in the middle.",
     "e2ee.panel.fingerprintChangedHint": "{{nick}} is using a different key than the one you trusted. That happens after a reinstall, but it is also what an interception attack looks like. Check with them before turning encryption back on.",
     "e2ee.panel.offHint": "Messages in this conversation are readable by the IRC server. Encryption works only if {{nick}} also uses Simple IRC Client.",
+    "e2ee.info.incomingOffer": "{{nick}} wants to start an encrypted conversation.",
     "e2ee.info.started": "This conversation is now end-to-end encrypted.",
     "e2ee.info.ended": "Encryption is no longer active in this conversation.",
     "e2ee.info.declined": "{{nick}} declined to encrypt this conversation.",

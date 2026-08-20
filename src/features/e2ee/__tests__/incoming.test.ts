@@ -193,6 +193,18 @@ describe('e2ee incoming CTCP handling', () => {
 
       expect(getSessionState('bob')).toBe(E2eeState.incoming);
     });
+
+    it('announces an inbound offer and bumps unread even when no window exists for the peer yet', async () => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      const offerBody = bodyOf(peer.drain()[0] ?? '');
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+
+      expect(addedMessages.some((message) => message.target === 'bob')).toBe(true);
+      expect(unreadBumps).toContain('bob');
+    });
   });
 
   describe('cipher frames', () => {
