@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, expect, it, vi, beforeEach, afterEach, beforeAll } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import Channels from '../Channels';
 import * as settingsStore from '@features/settings/store/settings';
 import * as channelsStore from '@features/channels/store/channels';
@@ -36,6 +36,15 @@ const createChannel = (overrides: Partial<Channel> & { name: string }): Channel 
   unReadMessages: 0,
   ...overrides,
 });
+
+const getChannelContainer = (name: string): HTMLElement => {
+  const button = screen.getByRole('button', { name });
+  const container = button.parentElement;
+  if (!container) {
+    throw new Error(`Parent element not found for channel: ${name}`);
+  }
+  return container;
+};
 
 describe('Channels', () => {
   const mockSetCurrentChannelName = vi.fn();
@@ -298,15 +307,6 @@ describe('Channels', () => {
   });
 
   describe('Remove channel', () => {
-    const getChannelContainer = (name: string): HTMLElement => {
-      const button = screen.getByRole('button', { name });
-      const container = button.parentElement;
-      if (!container) {
-        throw new Error(`Parent element not found for channel: ${name}`);
-      }
-      return container;
-    };
-
     it('should show close button on hover for channel category', () => {
       setupMocks({
         openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
@@ -458,6 +458,169 @@ describe('Channels', () => {
 
       expect(screen.queryByText('5')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Long-press to reveal (touch)', () => {
+    const LONG_PRESS_MS = 500;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('should not show close button right after touch starts', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.touchStart(channelContainer);
+
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+    });
+
+    it('should show close button once the touch is held past the long-press threshold', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.touchStart(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
+    });
+
+    it('should not reveal the close button when the touch ends before the threshold (a normal tap)', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.touchStart(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS - 100);
+      });
+      fireEvent.touchEnd(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+    });
+
+    it('should cancel the pending long-press when the finger moves (a scroll gesture)', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.touchStart(channelContainer);
+      fireEvent.touchMove(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+    });
+
+    it('should cancel the pending long-press on touchCancel', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.touchStart(channelContainer);
+      fireEvent.touchCancel(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+    });
+
+    it('should not navigate on the tap that releases a long-press, so the reveal is not immediately dismissed', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      const channelButton = screen.getByRole('button', { name: '#general' });
+
+      fireEvent.touchStart(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+      fireEvent.touchEnd(channelContainer);
+      // Mobile browsers fire a click after touchend unless the gesture was consumed elsewhere.
+      fireEvent.click(channelButton);
+
+      expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
+    });
+
+    it('should navigate normally on the next tap after a long-press reveal, and hide the close button', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      const channelButton = screen.getByRole('button', { name: '#general' });
+
+      fireEvent.touchStart(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+      fireEvent.touchEnd(channelContainer);
+      fireEvent.click(channelButton); // swallowed — releases the long-press
+
+      fireEvent.click(channelButton); // a fresh tap
+
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#general', ChannelCategory.channel);
+      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+    });
+
+    it('should call handleRemoveChannel when the long-press-revealed close button is tapped', () => {
+      const mockSetRemoveChannel = vi.fn();
+      vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
+      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
+
+      setupMocks({
+        openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('someUser');
+      fireEvent.touchStart(channelContainer);
+      act(() => {
+        vi.advanceTimersByTime(LONG_PRESS_MS);
+      });
+
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
+      fireEvent.click(closeButton);
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('someUser');
     });
   });
 

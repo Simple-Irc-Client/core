@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
 import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
@@ -28,6 +28,9 @@ interface ChannelsProps {
   width?: number;
 }
 
+/** How long a touch has to be held on a channel row before it counts as a long-press, not a tap. */
+const LONG_PRESS_MS = 500;
+
 const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { t } = useTranslation();
 
@@ -47,6 +50,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Long-press-to-reveal (touch equivalent of the desktop hover-to-reveal close icon).
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
 
   const openChannelNames = useMemo(() => openChannelsShort.map((ch) => ch.name), [openChannelsShort]);
 
@@ -82,6 +89,27 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     }
   };
 
+  const clearLongPressTimer = (): void => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchStart = (channel: string): void => {
+    longPressTriggeredRef.current = false;
+    clearLongPressTimer();
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setShowRemoveChannelIcon(channel);
+      navigator.vibrate?.(10);
+    }, LONG_PRESS_MS);
+  };
+
+  // A finger moving (scrolling the list) is not a long-press attempt.
+  const handleTouchMove = clearLongPressTimer;
+  const handleTouchEnd = clearLongPressTimer;
+
   const handleRemoveChannel = (channel: Channel): void => {
     if (channel.category === ChannelCategory.priv) {
       setRemoveChannel(channel.name);
@@ -102,6 +130,15 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleListItemClick = (channel: Channel): void => {
+    // The tap that releases a long-press only reveals the close icon — it must
+    // not also navigate, or the reveal is unusable (you'd land on the channel
+    // the moment you meant to remove it).
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+
+    setShowRemoveChannelIcon('');
     setCurrentChannelName(channel.name, channel.category);
     // Close drawer on mobile/tablet (below lg breakpoint)
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
@@ -201,7 +238,16 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     onMouseLeave={() => {
                       handleHover(channel.name, false);
                     }}
-                    className="relative"
+                    onTouchStart={() => {
+                      handleTouchStart(channel.name);
+                    }}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                    }}
+                    className="relative select-none [-webkit-touch-callout:none]"
                   >
                     <button
                       aria-label={channel.name}
