@@ -352,6 +352,42 @@ export class IrcClient {
     this.client.send(`PRIVMSG ${target} :${message}`);
   }
 
+  /**
+   * Record every line the server sends us from now on.
+   *
+   * Needed to assert what actually crossed the wire — an E2EE test that only
+   * checks the UI proves nothing about whether the plaintext leaked.
+   */
+  captureLines(): { lines: string[]; stop: () => void } {
+    const lines: string[] = [];
+    const handler = (line: string, incoming: boolean): void => {
+      if (incoming) {
+        lines.push(line);
+      }
+    };
+    this.client.on('raw', handler);
+
+    return { lines, stop: (): void => { this.client.off('raw', handler); } };
+  }
+
+  /** Wait for an incoming line matching `predicate`, or reject on timeout. */
+  async waitForLine(predicate: (line: string) => boolean, timeoutMs = 15_000): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const handler = (line: string, incoming: boolean): void => {
+        if (incoming && predicate(line)) {
+          clearTimeout(timer);
+          this.client.off('raw', handler);
+          resolve(line);
+        }
+      };
+      const timer = setTimeout(() => {
+        this.client.off('raw', handler);
+        reject(new Error('Timed out waiting for a matching IRC line'));
+      }, timeoutMs);
+      this.client.on('raw', handler);
+    });
+  }
+
   sendAction(target: string, text: string): void {
     this.client.send(`PRIVMSG ${target} :\x01ACTION ${text}\x01`);
   }

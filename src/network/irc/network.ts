@@ -6,7 +6,7 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
+import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import i18next from '@/app/i18n';
@@ -145,6 +145,7 @@ const handleInactivityTimeout = async (): Promise<void> => {
   // Disconnect silently (disconnectDirect removes event handlers so no
   // stale 'close' event reaches the kernel during reconnection)
   disconnectDirect();
+  notifyConnectionTornDown();
   setIsConnecting(false);
   setIsConnected(false);
   clearAllTyping();
@@ -195,6 +196,36 @@ export const off = (eventName: string, callback: (data: any) => void): void => {
   }
 };
 
+/**
+ * Listeners notified whenever the underlying connection goes away — on every
+ * path that can end it: the natural "server hung up" case (`kernel.ts`'s
+ * `handleDisconnected`, driven by the transport's own close event) and the
+ * three places *this module* deliberately tears the connection down
+ * (`ircDisconnect`, `ircReconnect`, `handleInactivityTimeout`).
+ *
+ * Those three call `disconnectDirect()`, which removes the transport's event
+ * handlers before closing specifically so a stale close event doesn't reach
+ * the kernel mid-reconnect and flash a "Disconnected" message the user never
+ * needed to see. That's the right call for the UI, but it also means nothing
+ * downstream heard the connection end — which matters for state that is only
+ * valid for one connection, such as e2ee sessions (see kernel.ts, which
+ * registers cleanup here rather than in `handleDisconnected` so it isn't
+ * only run on the natural-close path). A plain listener list, rather than
+ * folding this into the full `'sic-irc-event'` pipeline above, keeps it from
+ * ever re-triggering that UI flow.
+ */
+const connectionTornDownListeners: (() => void)[] = [];
+
+export const onConnectionTornDown = (listener: () => void): void => {
+  connectionTornDownListeners.push(listener);
+};
+
+const notifyConnectionTornDown = (): void => {
+  for (const listener of connectionTornDownListeners) {
+    listener();
+  }
+};
+
 export const isConnected = (): boolean => {
   return isDirectConnected();
 };
@@ -217,6 +248,7 @@ export const ircDisconnect = (): void => {
 
   // Disconnect direct WebSocket (server/backend handles QUIT)
   disconnectDirect();
+  notifyConnectionTornDown();
 };
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
@@ -498,14 +530,33 @@ export const ircWatchRemove = (nicks: string[]): void => {
   ircSendRawMessage(`WATCH ${nicks.map((nick) => `-${nick}`).join(' ')}`);
 };
 
-// IRC protocol max message length: 512 bytes including \r\n
-const MAX_IRC_MESSAGE_LENGTH = 510;
+// IRC protocol max message length: 512 bytes including \r\n, when the server
+// hasn't told us it accepts something else (ISUPPORT `LINELEN`, see
+// `getLineLenLimit`). E2EE's own chunk sizing (`e2ee/protocol.ts`'s
+// `chunkCharsFor`) is derived from the same server value specifically so its
+// frames never exceed what this function will actually send unmodified — if
+// the two ever disagreed, a chunk would get truncated here and fail GCM
+// authentication on the other end with no visible error.
+const DEFAULT_MAX_IRC_MESSAGE_LENGTH = 510;
+
+const getMaxIrcMessageLength = (): number => getLineLenLimit() || DEFAULT_MAX_IRC_MESSAGE_LENGTH;
 
 export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {
     return;
   }
-  sendDirectRaw(data.length > MAX_IRC_MESSAGE_LENGTH ? data.slice(0, MAX_IRC_MESSAGE_LENGTH) : data);
+  const maxLength = getMaxIrcMessageLength();
+  if (data.length > maxLength) {
+    // Truncating is what the protocol forces on us, but doing it silently has
+    // hidden real data loss in the past — an over-long line just arrived cut in
+    // half with no trace. Callers that must not be truncated (E2EE frames, where
+    // a cut line fails authentication and the message is lost outright) split
+    // their payload up front; this warning is how we find the ones that don't.
+    console.warn(`IRC message exceeds ${maxLength} chars and will be truncated:`, `${data.slice(0, 80)}…`);
+    sendDirectRaw(data.slice(0, maxLength));
+    return;
+  }
+  sendDirectRaw(data);
 };
 
 /**
@@ -530,6 +581,7 @@ export const ircReconnect = async (): Promise<boolean> => {
   clearAllBatches();
   clearPendingLabels();
   disconnectDirect();
+  notifyConnectionTornDown();
 
   // Restore saved credentials for SASL re-authentication (decrypted)
   const restored = await restoreSaslCredentials();

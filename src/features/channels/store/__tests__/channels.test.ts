@@ -25,6 +25,7 @@ import {
   isPriv,
   isChannel,
   setAddMessage,
+  setUpdateMessage,
   setRenameChannel,
   migrateChannels,
 } from '@features/channels/store/channels';
@@ -1000,6 +1001,123 @@ describe('channels store', () => {
       expect(migrateChannels({ openChannels: 'nonsense' }, 1).openChannels).toEqual([]);
       expect(migrateChannels(undefined, 1).openChannels).toEqual([]);
       expect(migrateChannels({ openChannels: [null, 42, { noName: true }, channel('#ok')] }, 1).openChannels.length).toBe(1);
+    });
+  });
+
+  describe('setUpdateMessage', () => {
+    beforeEach(() => {
+      useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+      setAddChannel('bob', ChannelCategory.priv);
+    });
+
+    const message = (id: string, text: string, extra: Partial<Message> = {}): Message => ({
+      id,
+      message: text,
+      target: 'bob',
+      time: '2026-08-10T10:00:00.000Z',
+      category: MessageCategory.default,
+      ...extra,
+    });
+
+    it('should patch a message without moving it', () => {
+      setAddMessage(message('a', 'first'));
+      setAddMessage(message('b', 'placeholder', { e2ee: 'decrypting' }));
+      setAddMessage(message('c', 'third'));
+
+      setUpdateMessage('bob', 'b', { message: 'decrypted', e2ee: 'ok' });
+
+      const messages = getMessages('bob');
+      expect(messages.map((entry) => entry.message)).toEqual(['first', 'decrypted', 'third']);
+      expect(messages[1]?.e2ee).toBe('ok');
+    });
+
+    it('should leave other fields of the patched message intact', () => {
+      setAddMessage(message('a', 'placeholder', { e2ee: 'decrypting', highlight: true }));
+
+      setUpdateMessage('bob', 'a', { message: 'real text', e2ee: 'ok' });
+
+      expect(getMessages('bob')[0]).toMatchObject({ message: 'real text', e2ee: 'ok', highlight: true });
+    });
+
+    it('should do nothing for an unknown message id', () => {
+      setAddMessage(message('a', 'only'));
+
+      setUpdateMessage('bob', 'missing', { message: 'should not appear' });
+
+      expect(getMessages('bob').map((entry) => entry.message)).toEqual(['only']);
+    });
+
+    it('should do nothing for an unknown channel', () => {
+      setAddMessage(message('a', 'only'));
+
+      expect(() => { setUpdateMessage('nobody', 'a', { message: 'x' }); }).not.toThrow();
+      expect(getMessages('bob').map((entry) => entry.message)).toEqual(['only']);
+    });
+
+    it('should match the channel case-insensitively', () => {
+      setAddMessage(message('a', 'placeholder'));
+
+      setUpdateMessage('BOB', 'a', { message: 'patched' });
+
+      expect(getMessages('bob')[0]?.message).toBe('patched');
+    });
+  });
+
+  describe('persistence of encrypted messages', () => {
+    /** The real partialize the persist middleware is wired with. */
+    const partialize = (): ((state: unknown) => { openChannels: ChannelExtended[] }) =>
+      useChannelsStore.persist.getOptions().partialize as unknown as (state: unknown) => { openChannels: ChannelExtended[] };
+
+    beforeEach(() => {
+      useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+      setAddChannel('bob', ChannelCategory.priv);
+    });
+
+    const message = (id: string, text: string, extra: Partial<Message> = {}): Message => ({
+      id,
+      message: text,
+      target: 'bob',
+      time: '2026-08-10T10:00:00.000Z',
+      category: MessageCategory.default,
+      ...extra,
+    });
+
+    it('should keep end-to-end encrypted messages out of storage', () => {
+      setAddMessage(message('a', 'plaintext dm'));
+      setAddMessage(message('b', 'secret', { e2ee: 'ok' }));
+      setAddMessage(message('c', 'still decrypting', { e2ee: 'decrypting' }));
+      setAddMessage(message('d', 'could not decrypt', { e2ee: 'failed' }));
+
+      const persisted = partialize()(useChannelsStore.getState());
+
+      expect(persisted.openChannels[0]?.messages.map((entry) => entry.message)).toEqual(['plaintext dm']);
+    });
+
+    it('should not disturb the in-memory messages while persisting', () => {
+      setAddMessage(message('a', 'plaintext dm'));
+      setAddMessage(message('b', 'secret', { e2ee: 'ok' }));
+
+      partialize()(useChannelsStore.getState());
+
+      expect(getMessages('bob')).toHaveLength(2);
+    });
+
+    it('should still strip the transient typing list', () => {
+      setTyping('bob', 'someone', 'active');
+
+      const persisted = partialize()(useChannelsStore.getState());
+
+      expect(persisted.openChannels[0]?.typing).toEqual([]);
+    });
+
+    it('should reuse the channel object when there is nothing to strip', () => {
+      setAddMessage(message('a', 'plaintext dm'));
+      const before = useChannelsStore.getState().openChannels[0];
+
+      const persisted = partialize()(useChannelsStore.getState());
+
+      // partialize runs on every mutation, so the untouched case must not allocate
+      expect(persisted.openChannels[0]).toBe(before);
     });
   });
 });

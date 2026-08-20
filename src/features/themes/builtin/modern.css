@@ -15,6 +15,7 @@
  *     .sic-msg-time-inline    timestamp: "HH:mm" + .sic-msg-time-seconds ":ss"
  *     .sic-msg-nick-inline    sender nick (bare text — add <> via ::before/::after)
  *     .sic-msg-bot-inline     bot icon next to the inline nick
+ *     .sic-msg-e2ee           lock shown on end-to-end encrypted private messages
  *     .sic-msg-body           the message text
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
@@ -131,4 +132,17 @@
 
 .sic-msg:not([data-content]) .sic-msg-embeds {
   display: none;
+}
+
+/* End-to-end encryption indicator: inherits the timestamp colour by default,
+   with the failure state left in its inline error colour so an unreadable
+   message stays visually distinct from a successfully decrypted one. */
+.sic-msg-e2ee {
+  vertical-align: -0.125em;
+  opacity: 0.85;
+}
+
+.sic-msg[data-e2ee='failed'] .sic-msg-body {
+  font-style: italic;
+  opacity: 0.75;
 }

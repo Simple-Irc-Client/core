@@ -49,6 +49,7 @@ import {
   setSilenceLimit,
   setNickLenLimit,
   getNickLenLimit,
+  setLineLenLimit,
   setNetworkName,
   setSupportedOption,
   setUserModes,
@@ -63,7 +64,7 @@ import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick }
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
-import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate } from './network';
+import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate, onConnectionTornDown } from './network';
 import {
   addAvailableCapabilities,
   endCapNegotiation,
@@ -118,6 +119,8 @@ import { format } from 'date-fns';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
+import { clearIncomingState, handleE2eeCtcp } from '@features/e2ee/incoming';
+import { endAllSessions, endSession, handlePeerRename } from '@features/e2ee/session';
 import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
@@ -377,6 +380,21 @@ const RPL_ENDOFHELP = '706';
 // const ERR_NOPRIVS = '723';
 const RPL_SASLMECHS = '908';
 
+// Session keys are per-connection (see `handleDisconnected` below), but
+// `disconnectDirect` deliberately hides the transport's own close event from
+// this module whenever *we* initiate the teardown — a manual disconnect, a
+// reconnect, or the inactivity watchdog — precisely so a stale "Disconnected"
+// message doesn't flash mid-reconnect. That means those three paths never
+// reached `handleDisconnected`, so e2ee sessions survived a reconnect the
+// peer's own client had already torn its half of down. Registering here,
+// once, covers exactly those three paths (`network.ts`'s `onConnectionTornDown`
+// doc comment has the full list) without touching the natural-close path,
+// which already clears sessions correctly inside `handleDisconnected` itself.
+onConnectionTornDown(() => {
+  endAllSessions();
+  clearIncomingState();
+});
+
 export class Kernel {
   private tags: Record<string, string>;
   private sender: string;
@@ -552,6 +570,12 @@ export class Kernel {
     setIsConnecting(false);
     setIsConnected(false);
     clearAllTyping();
+
+    // Session keys are per-connection. Keeping them across a reconnect would
+    // leave windows badged as encrypted while the peer has already forgotten
+    // the session, so every message would fail to decrypt.
+    endAllSessions();
+    clearIncomingState();
 
     // Reset STS retries on WebSocket disconnect
     resetSTSRetries();
@@ -2266,6 +2290,11 @@ export class Kernel {
     const channels = getUserChannels(oldNick);
     setRenameUser(oldNick, newNick);
 
+    // An encrypted session does not follow a nick change: the keys would still
+    // work, but a NICK we observe is no proof the same person is behind it, and
+    // silently moving a lock-badged window is not ours to decide.
+    handlePeerRename(oldNick, newNick);
+
     for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
@@ -2371,6 +2400,13 @@ export class Kernel {
       }
 
       const ctcpContent = message.split('\x01').join('');
+
+      // E2EE handshake replies (ACCEPT/DECLINE/RESET) arrive as CTCP replies by
+      // convention; they drive the session, not the Status window.
+      if (handleE2eeCtcp({ nick, target, ctcpContent, source: 'notice', msgid: this.tags?.msgid, time: this.tags?.time })) {
+        return;
+      }
+
       const spaceIndex = ctcpContent.indexOf(' ');
       const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
       const ctcpResponse = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
@@ -2570,6 +2606,23 @@ export class Kernel {
 
     // Remove \x01 (CTCP delimiter) characters and parse CTCP command
     const ctcpContent = message.split('\x01').join('');
+
+    // End-to-end encryption frames are handled before the standard CTCP switch
+    // and deliberately produce no Status-window notices — otherwise every
+    // encrypted message would log a "CTCP request received"/"response sent" pair.
+    if (
+      handleE2eeCtcp({
+        nick,
+        target,
+        ctcpContent,
+        source: 'privmsg',
+        msgid: this.tags?.msgid,
+        time: this.tags?.time,
+      })
+    ) {
+      return;
+    }
+
     const spaceIndex = ctcpContent.indexOf(' ');
     const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
     const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
@@ -2599,7 +2652,9 @@ export class Kernel {
         ctcpResponse = clientSourceUrl;
         break;
       case 'CLIENTINFO':
-        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO';
+        // SIC-E2EE is advertised so another client can tell we speak it without
+        // having to send a speculative offer.
+        ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO SIC-E2EE';
         break;
       default:
         // Unknown CTCP, ignore silently
@@ -2693,6 +2748,10 @@ export class Kernel {
       category: MessageCategory.quit,
       color: MessageColor.quit,
     };
+
+    // The peer is gone, so their session keys are dead; drop ours rather than
+    // leaving a window looking encrypted. No RESET — there is nobody to tell.
+    endSession(nick, false);
 
     setQuitUser(nick, message);
   };
@@ -2905,6 +2964,12 @@ export class Kernel {
               break;
             case 'NICKLEN':
               setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
+              break;
+            case 'LINELEN':
+              // Not every server sends this; e2ee's message chunking
+              // (protocol.ts's `chunkCharsFor`) falls back to a conservative
+              // default line length when it's 0.
+              setLineLenLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'NETWORK':
               if (value !== undefined) { setNetworkName(value); }

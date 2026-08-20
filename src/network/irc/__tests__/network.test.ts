@@ -79,6 +79,7 @@ const mockSetIsConnected = vi.fn();
 const mockSetIsConnecting = vi.fn();
 const mockGetEncryptedPassword = vi.fn();
 const mockGetPasswordNick = vi.fn();
+const mockGetLineLenLimit = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
@@ -87,6 +88,7 @@ vi.mock('@features/settings/store/settings', () => ({
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
   getEncryptedPassword: () => mockGetEncryptedPassword(),
   getPasswordNick: () => mockGetPasswordNick(),
+  getLineLenLimit: () => mockGetLineLenLimit(),
 }));
 
 // Mock channels store
@@ -144,6 +146,8 @@ describe('network', () => {
     // Persistent password mocks
     mockGetEncryptedPassword.mockClear().mockReturnValue(undefined);
     mockGetPasswordNick.mockClear().mockReturnValue(undefined);
+    // 0 = server never sent ISUPPORT LINELEN; ircSendRawMessage falls back to the default.
+    mockGetLineLenLimit.mockClear().mockReturnValue(0);
     mockDecryptPersistent.mockClear().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
     network = await import('../network');
   });
@@ -204,6 +208,20 @@ describe('network', () => {
     it('should call disconnectDirect', () => {
       network.ircDisconnect();
       expect(mockDisconnectDirect).toHaveBeenCalled();
+    });
+
+    it('should notify onConnectionTornDown listeners', () => {
+      // disconnectDirect() removes the transport's event handlers before
+      // closing, so the kernel's normal close-event path never fires for a
+      // manual disconnect — this is the dedicated hook connection-scoped
+      // state (e2ee sessions) relies on instead. See network.ts's doc
+      // comment on onConnectionTornDown for the full story.
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      network.ircDisconnect();
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -431,6 +449,29 @@ describe('network', () => {
 
       expect(mockSendDirectRaw).toHaveBeenCalledWith(shortMessage);
     });
+
+    it('should truncate at the server-advertised ISUPPORT LINELEN instead of 510, when the server sent one', () => {
+      // A server allowing longer lines is exactly what e2ee's chunkCharsFor
+      // (protocol.ts) sizes its chunks against — if this function kept the
+      // hardcoded 510 cap regardless, a chunk sized for the larger limit
+      // would get cut here and fail to decrypt on the other end.
+      mockGetLineLenLimit.mockReturnValue(1024);
+      const longMessage = 'A'.repeat(1100);
+
+      network.ircSendRawMessage(longMessage);
+
+      const sentMessage = mockSendDirectRaw.mock.calls[0]?.[0] as string;
+      expect(sentMessage.length).toBe(1024);
+    });
+
+    it('should not truncate a message that fits the server-advertised LINELEN even though it exceeds 510', () => {
+      mockGetLineLenLimit.mockReturnValue(1024);
+      const message = 'A'.repeat(700);
+
+      network.ircSendRawMessage(message);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(message);
+    });
   });
 
   describe('inactivity timeout', () => {
@@ -459,6 +500,24 @@ describe('network', () => {
         time: expect.any(String),
         category: 'info',
       });
+    });
+
+    it('should notify onConnectionTornDown listeners on inactivity timeout, not just on a natural close', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should clear all typing indicators on inactivity timeout', async () => {
@@ -974,6 +1033,26 @@ describe('network', () => {
       expect(mockDisconnectDirect).toHaveBeenCalled();
       await flushPromises();
       expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
+    it('should notify onConnectionTornDown listeners', async () => {
+      // A reconnect tears down the old connection the same way a manual
+      // disconnect does — connection-scoped state (e2ee sessions) has to be
+      // cleared here too, not just when the connection dies unexpectedly.
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      const listener = vi.fn();
+      network.onConnectionTornDown(listener);
+
+      await network.ircReconnect();
+
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('should reset SASL state without clearing credentials', async () => {

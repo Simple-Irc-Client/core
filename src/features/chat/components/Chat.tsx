@@ -14,6 +14,7 @@ import DateSeparator from './DateSeparator';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
+import E2eeBanner from '@features/e2ee/components/E2eeBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage, { contentCategories } from './ChatMessage';
 
@@ -124,6 +125,7 @@ const Chat = () => {
       }
     }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
       {!isConnected && <DisconnectedBanner />}
+      <E2eeBanner />
       {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
         {rows.map(({ message, showDateSeparator, currentDate, grouped }) => {

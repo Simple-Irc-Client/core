@@ -1,3 +1,73 @@
+/**
+ * AES-GCM nonce length in bytes. 96 bits is the size the GCM spec optimises for.
+ *
+ * A "nonce" (here also called an IV, initialization vector) is a value that
+ * must never repeat under the same key — GCM needs a fresh one per message so
+ * that encrypting the same text twice doesn't produce the same ciphertext
+ * twice. `sealBytes` below generates one at random for every call.
+ */
+const IV_LENGTH = 12;
+
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+/** WebCrypto wants a plain `ArrayBuffer`; a `Uint8Array` view (e.g. from `TextEncoder.encode`) isn't guaranteed to be one. */
+const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
+  const copy = new Uint8Array(bytes.length);
+  copy.set(bytes);
+  return copy.buffer;
+};
+
+/**
+ * Encrypt with AES-GCM and pack the result as base64 of `IV ‖ ciphertext ‖ tag`.
+ *
+ * Shared by every encrypt/decrypt pair in this file, and by `e2ee/crypto.ts`'s
+ * `seal`/`open` — same AEAD framing, same nonce handling, one place to get it
+ * right. `additionalData` is authenticated but not encrypted; e2ee passes its
+ * protocol label there so a ciphertext from a different protocol version
+ * can't be replayed as one of its frames, while this file's own callers have
+ * no need for it.
+ */
+export async function sealBytes(key: CryptoKey, plaintext: string, additionalData?: Uint8Array): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: additionalData && toArrayBuffer(additionalData) },
+    key,
+    textEncoder.encode(plaintext),
+  );
+
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  return bytesToBase64(combined);
+}
+
+/**
+ * Decrypt a payload `sealBytes` produced. Rejects on a wrong key, a tampered
+ * byte, a truncated frame, or a mismatched `additionalData` — GCM
+ * authentication makes all of those indistinguishable failures, which is the
+ * behaviour callers want: never return plaintext that hasn't been verified.
+ */
+export async function openBytes(key: CryptoKey, sealedB64: string, additionalData?: Uint8Array): Promise<string> {
+  const combined = base64ToBytes(sealedB64);
+  if (combined.length <= IV_LENGTH) {
+    throw new Error('Sealed payload is too short to contain a nonce');
+  }
+
+  const decrypted = await crypto.subtle.decrypt(
+    {
+      name: 'AES-GCM',
+      iv: combined.slice(0, IV_LENGTH),
+      additionalData: additionalData && toArrayBuffer(additionalData),
+    },
+    key,
+    toArrayBuffer(combined.slice(IV_LENGTH)),
+  );
+
+  return textDecoder.decode(decrypted);
+}
+
 let cryptoKey: CryptoKey | null = null;
 
 /**
@@ -23,7 +93,7 @@ export async function initSessionEncryption(): Promise<void> {
 /**
  * Convert base64 to Uint8Array (browser-compatible)
  */
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -35,7 +105,7 @@ function base64ToBytes(base64: string): Uint8Array {
 /**
  * Convert Uint8Array to base64 (browser-compatible)
  */
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) {
     binary += String.fromCharCode(byte);
@@ -66,21 +136,7 @@ export async function encryptMessage(data: unknown): Promise<string> {
     throw new Error('Encryption not initialized');
   }
 
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const messageBytes = new TextEncoder().encode(JSON.stringify(data));
-
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    messageBytes
-  );
-
-  // Combine IV + encrypted data
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encrypted), iv.length);
-
-  return bytesToBase64(combined);
+  return sealBytes(cryptoKey, JSON.stringify(data));
 }
 
 /**
@@ -91,19 +147,7 @@ export async function decryptMessage(encryptedBase64: string): Promise<unknown> 
     throw new Error('Encryption not initialized');
   }
 
-  const combined = base64ToBytes(encryptedBase64);
-
-  // Extract IV (first 12 bytes) and encrypted data
-  const iv = combined.slice(0, 12);
-  const encryptedData = combined.slice(12);
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    encryptedData
-  );
-
-  return JSON.parse(new TextDecoder().decode(decrypted));
+  return JSON.parse(await openBytes(cryptoKey, encryptedBase64));
 }
 
 /**
@@ -114,21 +158,7 @@ export async function encryptString(data: string): Promise<string> {
     throw new Error('Encryption not initialized');
   }
 
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const messageBytes = new TextEncoder().encode(data);
-
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    messageBytes
-  );
-
-  // Combine IV + encrypted data
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encrypted), iv.length);
-
-  return bytesToBase64(combined);
+  return sealBytes(cryptoKey, data);
 }
 
 /**
@@ -139,19 +169,7 @@ export async function decryptString(encryptedBase64: string): Promise<string> {
     throw new Error('Encryption not initialized');
   }
 
-  const combined = base64ToBytes(encryptedBase64);
-
-  // Extract IV (first 12 bytes) and encrypted data
-  const iv = combined.slice(0, 12);
-  const encryptedData = combined.slice(12);
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    cryptoKey,
-    encryptedData
-  );
-
-  return new TextDecoder().decode(decrypted);
+  return openBytes(cryptoKey, encryptedBase64);
 }
 
 // --- Persistent encryption (key stored in localStorage) ---
@@ -196,20 +214,7 @@ export async function encryptPersistent(data: string): Promise<string> {
     throw new Error('Persistent encryption not initialized');
   }
 
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const messageBytes = new TextEncoder().encode(data);
-
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    messageBytes
-  );
-
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encrypted), iv.length);
-
-  return bytesToBase64(combined);
+  return sealBytes(key, data);
 }
 
 /**
@@ -225,17 +230,6 @@ export async function decryptPersistent(encryptedBase64: string): Promise<string
     throw new Error('Persistent encryption not initialized');
   }
 
-  const combined = base64ToBytes(encryptedBase64);
-
-  const iv = combined.slice(0, 12);
-  const encryptedData = combined.slice(12);
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    encryptedData
-  );
-
-  return new TextDecoder().decode(decrypted);
+  return openBytes(key, encryptedBase64);
 }
 

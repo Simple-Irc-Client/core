@@ -58,6 +58,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
   const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
   const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
+  const autoOfferEncryption = useSettingsStore((state) => state.autoOfferEncryption);
+  const setAutoOfferEncryption = useSettingsStore((state) => state.setAutoOfferEncryption);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const language = useSettingsStore((state) => state.language);
@@ -366,6 +368,17 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           />
           <Label htmlFor="hide-typing">
             {t('profileSettings.hideTyping')}
+          </Label>
+        </div>
+        <div className="flex items-center gap-4">
+          <Switch
+            id="auto-offer-encryption"
+            checked={autoOfferEncryption}
+            onCheckedChange={setAutoOfferEncryption}
+            data-testid="auto-offer-encryption-toggle"
+          />
+          <Label htmlFor="auto-offer-encryption">
+            {t('profileSettings.autoOfferEncryption')}
           </Label>
         </div>
         <div className="grid grid-cols-4 items-center gap-4">

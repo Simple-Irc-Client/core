@@ -58,6 +58,7 @@ export interface SettingsStore {
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
   nickLenLimit: number; // NICKLEN from 005, default 50
+  lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
   networkName: string | undefined; // NETWORK from 005, overrides server.network for display
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
@@ -68,6 +69,7 @@ export interface SettingsStore {
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
+  autoOfferEncryption: boolean; // Whether to offer end-to-end encryption automatically in private messages
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
@@ -101,6 +103,7 @@ export interface SettingsStore {
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
   setNickLenLimit: (limit: number) => void;
+  setLineLenLimit: (limit: number) => void;
   setNetworkName: (name: string | undefined) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
@@ -112,6 +115,7 @@ export interface SettingsStore {
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
   setHideTypingIndicator: (hide: boolean) => void;
+  setAutoOfferEncryption: (autoOffer: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
@@ -148,6 +152,7 @@ export const useSettingsStore = create<SettingsStore>()(
     monitorLimit: 0,
     silenceLimit: 0,
     nickLenLimit: 50,
+    lineLenLimit: 0,
     networkName: undefined,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
@@ -158,6 +163,7 @@ export const useSettingsStore = create<SettingsStore>()(
     isDarkMode: false,
     hideAvatarsInUsersList: false,
     hideTypingIndicator: false,
+    autoOfferEncryption: false,
     fontSize: 'medium',
     language: 'auto',
     serverPasswords: {},
@@ -287,6 +293,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setNickLenLimit: (limit: number): void => {
       set(() => ({ nickLenLimit: limit }));
     },
+    setLineLenLimit: (limit: number): void => {
+      set(() => ({ lineLenLimit: limit }));
+    },
     setNetworkName: (name: string | undefined): void => {
       set(() => ({ networkName: name }));
     },
@@ -321,6 +330,9 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setHideTypingIndicator: (hide: boolean): void => {
       set(() => ({ hideTypingIndicator: hide }));
+    },
+    setAutoOfferEncryption: (autoOffer: boolean): void => {
+      set(() => ({ autoOfferEncryption: autoOffer }));
     },
     setFontSize: (fontSize: FontSize): void => {
       set(() => ({ fontSize }));
@@ -364,6 +376,7 @@ export const useSettingsStore = create<SettingsStore>()(
         monitorLimit: 0,
         silenceLimit: 0,
         nickLenLimit: 50,
+        lineLenLimit: 0,
     networkName: undefined,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
@@ -413,6 +426,7 @@ export const useSettingsStore = create<SettingsStore>()(
       fontSize: state.fontSize,
       hideAvatarsInUsersList: state.hideAvatarsInUsersList,
       hideTypingIndicator: state.hideTypingIndicator,
+      autoOfferEncryption: state.autoOfferEncryption,
       fontFormatting: state.fontFormatting,
       nick: state.nick,
       server: state.server,
@@ -617,6 +631,15 @@ export const getNickLenLimit = (): number => {
   return useSettingsStore.getState().nickLenLimit;
 };
 
+export const setLineLenLimit = (limit: number): void => {
+  useSettingsStore.getState().setLineLenLimit(limit);
+};
+
+/** The server's advertised max line length (ISUPPORT `LINELEN`), or `0` if it never sent one. */
+export const getLineLenLimit = (): number => {
+  return useSettingsStore.getState().lineLenLimit;
+};
+
 export const setCurrentUserAvatar = (avatar: string | undefined): void => {
   useSettingsStore.getState().setCurrentUserAvatar(avatar);
 };
@@ -709,6 +732,14 @@ export const setHideTypingIndicator = (hide: boolean): void => {
 
 export const getHideTypingIndicator = (): boolean => {
   return useSettingsStore.getState().hideTypingIndicator;
+};
+
+export const setAutoOfferEncryption = (autoOffer: boolean): void => {
+  useSettingsStore.getState().setAutoOfferEncryption(autoOffer);
+};
+
+export const getAutoOfferEncryption = (): boolean => {
+  return useSettingsStore.getState().autoOfferEncryption;
 };
 
 export const setFontSize = (fontSize: FontSize): void => {

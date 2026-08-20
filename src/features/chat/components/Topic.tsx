@@ -18,6 +18,7 @@ import type { TFunction } from 'i18next';
 import { parseIrcFormatting, renderFormattedSegments } from '@/shared/lib/ircFormatting';
 import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
+import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
@@ -126,6 +127,7 @@ const Topic = () => {
         </>
       )}
       {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
+      {currentChannelCategory === 'priv' && !isAnyDrawerOpen && <E2eeStatusButton channelName={currentChannelName} />}
       {showUsersToggle && !isAnyDrawerOpen && (
         <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-10 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
           <Users className="h-4 w-4" />
