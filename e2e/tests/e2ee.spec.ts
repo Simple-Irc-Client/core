@@ -238,6 +238,13 @@ test.describe('End-to-end encryption', () => {
   });
 
   test('a client that does not answer leaves the user informed, not stuck', async () => {
+    // The app waits OFFER_TIMEOUT_MS (session.ts) before giving up on a
+    // reply — 60s, deliberately generous so a slow link or a human taking a
+    // moment to respond doesn't false-positive as "not a SIC client". That's
+    // longer than Playwright's own default per-test timeout, so this test
+    // needs its own room to actually wait it out.
+    test.setTimeout(90_000);
+
     await openDmWithBot();
 
     const capture = bot.captureLines();
@@ -257,7 +264,7 @@ test.describe('End-to-end encryption', () => {
     // A well-formed CTCP is what makes other clients drop it silently.
     expect(ctcpBody(offerLine)).toMatch(/^SIC-E2EE OFFER 1 \S+ \S+$/);
 
-    await expect(page.getByTestId('e2ee-banner')).toContainText('did not respond', { timeout: 30_000 });
+    await expect(page.getByTestId('e2ee-banner')).toContainText('did not respond', { timeout: 70_000 });
     await page.getByRole('button', { name: 'Dismiss' }).click();
   });
 
