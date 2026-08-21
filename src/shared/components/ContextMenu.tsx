@@ -11,7 +11,7 @@ import {
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
-import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getE2eeEnabled, getMonitorLimit, getSilenceLimit, getWatchLimit, setCurrentChannelName } from '@features/settings/store/settings';
+import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getE2eeEnabled, getMonitorLimit, getSilenceLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, Lock, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
@@ -262,6 +262,9 @@ export const ContextMenu = () => {
     // Check channel-specific operator permissions
     const channelCategory = getCurrentChannelCategory();
     const isInChannel = channelCategory === ChannelCategory.channel;
+    // Already looking at this exact DM window — offering to open it or start
+    // encrypting from here would just duplicate what the banner/header already do
+    const isAlreadyInThisDm = channelCategory === ChannelCategory.priv && isSameName(channelName, contextMenuItem);
     const currentUserChannelModes = isInChannel ? getCurrentUserChannelModes(channelName) : [];
     const targetUser = getUser(contextMenuItem);
     const targetUserChannelModes = isInChannel && targetUser ? (targetUser.channels.find(ch => ch.name === channelName)?.flags ?? []) : [];
@@ -281,13 +284,13 @@ export const ContextMenu = () => {
               {t('contextmenu.user.homepage')}
             </DropdownMenuItem>
           )}
-          {!isCurrentUser && (
+          {!isCurrentUser && !isAlreadyInThisDm && (
             <DropdownMenuItem onClick={handlePriv}>
               <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('contextmenu.user.priv')}
             </DropdownMenuItem>
           )}
-          {!isCurrentUser && getE2eeEnabled() && (
+          {!isCurrentUser && !isAlreadyInThisDm && getE2eeEnabled() && (
             <DropdownMenuItem onClick={handleEncrypt} data-testid="contextmenu-encrypt">
               <Lock className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('contextmenu.user.encrypt')}

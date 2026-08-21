@@ -107,6 +107,42 @@ describe('ContextMenu', () => {
     });
   });
 
+  describe('Priv/Encrypt hidden inside the same DM', () => {
+    it('should not show Priv or Encrypt when already in a DM with this user', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('otherUser');
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.user.priv');
+      expect(document.body.textContent).not.toContain('contextmenu.user.encrypt');
+    });
+
+    it('should still show Priv and Encrypt for a user other than the one this DM is with', () => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser' })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('someoneElse');
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).toContain('contextmenu.user.priv');
+      expect(document.body.textContent).toContain('contextmenu.user.encrypt');
+    });
+  });
+
   describe('Add Friend functionality', () => {
     it('should not show Add Friend when user is not registered', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
