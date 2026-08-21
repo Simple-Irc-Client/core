@@ -46,6 +46,7 @@ const E2eeBanner = () => {
   const { t } = useTranslation();
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
 
   const sessionKey = getSessionKey(currentChannelName);
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[sessionKey]);
@@ -130,7 +131,7 @@ const E2eeBanner = () => {
           icon: ShieldAlert,
           text: session.errorMessage ?? t('e2ee.error.handshakeFailed'),
           actions: [
-            { label: t('e2ee.action.retry'), onClick: () => void offerEncryption(peer) },
+            ...(e2eeEnabled ? [{ label: t('e2ee.action.retry'), onClick: () => void offerEncryption(peer) }] : []),
             {
               label: t('e2ee.action.dismiss'),
               onClick: () => {
@@ -159,7 +160,7 @@ const E2eeBanner = () => {
               icon: ShieldAlert,
               text: t('e2ee.banner.plaintextAgain', { nick: peer }),
               actions: [
-                { label: t('e2ee.action.encrypt'), onClick: () => void offerEncryption(peer) },
+                ...(e2eeEnabled ? [{ label: t('e2ee.action.encrypt'), onClick: () => void offerEncryption(peer) }] : []),
                 { label: t('e2ee.action.dismiss'), onClick: () => { acknowledgePlaintext(peer); } },
               ],
             }

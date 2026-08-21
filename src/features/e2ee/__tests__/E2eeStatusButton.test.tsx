@@ -27,7 +27,12 @@ vi.mock('../session', () => ({
   hasPinnedPeer: () => peerIsPinned.value,
 }));
 
-vi.mock('@features/settings/store/settings', () => ({ getCaseMapping: () => 'ascii' }));
+const settings = { e2eeEnabled: true };
+
+vi.mock('@features/settings/store/settings', () => ({
+  getCaseMapping: () => 'ascii',
+  useSettingsStore: (selector: (state: typeof settings) => unknown) => selector(settings),
+}));
 
 const setSessionState = (session: Partial<E2eeSession> & { state: E2eeState }): void => {
   useE2eeStore.setState({ sessions: { bob: { peer: 'bob', verified: false, ...session } } });
@@ -38,6 +43,7 @@ describe('E2eeStatusButton', () => {
     vi.clearAllMocks();
     useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
     peerIsPinned.value = false;
+    settings.e2eeEnabled = true;
   });
 
   it('labels the button as not encrypted when there is no session', () => {

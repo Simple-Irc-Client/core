@@ -52,6 +52,7 @@ const createClient = async (nick: string, network = `${nick}-net`): Promise<Clie
     getServer: (): { network: string } => ({ network }),
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => autoOffer.enabled,
+    getE2eeEnabled: (): boolean => true,
     getCurrentNick: (): string => nick,
     // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
     getLineLenLimit: (): number => 0,

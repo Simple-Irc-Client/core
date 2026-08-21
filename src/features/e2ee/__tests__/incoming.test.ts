@@ -21,6 +21,7 @@ vi.mock('@/features/settings/store/settings', () => ({
   getCurrentChannelName: (): string => 'Status',
   isSameName: (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase(),
   getAutoOfferEncryption: (): boolean => false,
+  getE2eeEnabled: (): boolean => true,
   // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
   getLineLenLimit: (): number => 0,
 }));
@@ -531,6 +532,7 @@ const createPeer = async (): Promise<Peer> => {
     getServer: (): { network: string } => ({ network: 'peernet' }),
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => false,
+  getE2eeEnabled: (): boolean => true,
     getCurrentNick: (): string => 'bob',
     getLineLenLimit: (): number => 0,
   }));

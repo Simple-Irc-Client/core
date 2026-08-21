@@ -60,6 +60,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
   const autoOfferEncryption = useSettingsStore((state) => state.autoOfferEncryption);
   const setAutoOfferEncryption = useSettingsStore((state) => state.setAutoOfferEncryption);
+  const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
+  const setE2eeEnabled = useSettingsStore((state) => state.setE2eeEnabled);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const setFontSize = useSettingsStore((state) => state.setFontSize);
   const language = useSettingsStore((state) => state.language);
@@ -372,15 +374,28 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
         </div>
         <div className="flex items-center gap-4">
           <Switch
-            id="auto-offer-encryption"
-            checked={autoOfferEncryption}
-            onCheckedChange={setAutoOfferEncryption}
-            data-testid="auto-offer-encryption-toggle"
+            id="e2ee-enabled"
+            checked={e2eeEnabled}
+            onCheckedChange={setE2eeEnabled}
+            data-testid="e2ee-enabled-toggle"
           />
-          <Label htmlFor="auto-offer-encryption">
-            {t('profileSettings.autoOfferEncryption')}
+          <Label htmlFor="e2ee-enabled">
+            {t('profileSettings.e2eeEnabled')}
           </Label>
         </div>
+        {e2eeEnabled && (
+          <div className="flex items-center gap-4">
+            <Switch
+              id="auto-offer-encryption"
+              checked={autoOfferEncryption}
+              onCheckedChange={setAutoOfferEncryption}
+              data-testid="auto-offer-encryption-toggle"
+            />
+            <Label htmlFor="auto-offer-encryption">
+              {t('profileSettings.autoOfferEncryption')}
+            </Label>
+          </div>
+        )}
         <div className="grid grid-cols-4 items-center gap-4">
           <Label id="font-size-label" className="text-right">
             {t('profileSettings.fontSize')}

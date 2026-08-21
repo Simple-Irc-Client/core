@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 import { acknowledgePlaintext, endSession, hasPinnedPeer, markVerified, offerEncryption } from '../session';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '../store/e2ee';
 import { useE2eePinsStore } from '../store/pins';
+import { useSettingsStore } from '@features/settings/store/settings';
 
 interface E2eeStatusButtonProps {
   /** The peer nick — private windows are named after them. */
@@ -46,6 +47,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const { t } = useTranslation();
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
   const pinned = useE2eePinsStore(() => hasPinnedPeer(channelName));
+  const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
 
   const isActive = session?.state === E2eeState.active;
   const isAlarming = session?.state === E2eeState.fingerprintChanged;
@@ -153,14 +155,18 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <p className="text-xs text-muted-foreground mb-3">
               {isUnexpectedlyPlaintext ? t('e2ee.panel.plaintextAgainHint', { nick: channelName }) : t('e2ee.panel.offHint', { nick: channelName })}
             </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              data-testid="e2ee-start-button"
-              onClick={() => void offerEncryption(channelName)}
-            >
-              {t('e2ee.action.start')}
-            </Button>
+            {e2eeEnabled ? (
+              <Button
+                variant="outline"
+                className="w-full"
+                data-testid="e2ee-start-button"
+                onClick={() => void offerEncryption(channelName)}
+              >
+                {t('e2ee.action.start')}
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">{t('e2ee.panel.disabledGloballyHint')}</p>
+            )}
           </>
         )}
       </PopoverContent>

@@ -6,6 +6,7 @@ import { MessageColor } from '@/config/theme';
 import i18next from '@/app/i18n';
 import { acknowledgePlaintext, endSession, markVerified, offerEncryption } from '@features/e2ee/session';
 import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2ee';
+import { getE2eeEnabled } from '@features/settings/store/settings';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
@@ -176,6 +177,10 @@ const e2eeCommand = (channel: string, line: string[]): string => {
   switch ((line.shift() ?? 'status').toLowerCase()) {
     case 'on':
     case 'start':
+      if (!getE2eeEnabled()) {
+        print(i18next.t('e2ee.command.disabledGlobally'));
+        break;
+      }
       void offerEncryption(channel);
       break;
     case 'off':

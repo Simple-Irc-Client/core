@@ -446,9 +446,12 @@
     "e2ee.command.status": "Szyfrowane z {{nick}} ({{state}}). Twój: {{mine}} — jego/jej: {{theirs}}",
     "contextmenu.user.encrypt": "Zaszyfruj rozmowę",
     "profileSettings.autoOfferEncryption": "Automatycznie proponuj szyfrowanie w rozmowach prywatnych",
+    "profileSettings.e2eeEnabled": "Włącz szyfrowanie end-to-end wiadomości prywatnych",
     "help.cmd.e2ee": "Włącza lub wyłącza szyfrowanie end-to-end w rozmowie prywatnej",
     "e2ee.banner.plaintextAgain": "Ta rozmowa nie jest szyfrowana, chociaż szyfrowałeś już z {{nick}} wcześniej.",
     "e2ee.action.encrypt": "Zaszyfruj ponownie",
     "e2ee.status.plaintextAgain": "Nieszyfrowane — ale ta osoba szyfrowała z Tobą wcześniej",
-    "e2ee.panel.plaintextAgainHint": "Ty i {{nick}} korzystaliście już z szyfrowania, więc znamy klucz tej osoby. Ta rozmowa jest czytelna dla serwera IRC. Może to po prostu oznaczać ponowną instalację albo inny klient — ale blokowanie szyfrowania to również sposób na czytanie Twoich wiadomości."
+    "e2ee.panel.plaintextAgainHint": "Ty i {{nick}} korzystaliście już z szyfrowania, więc znamy klucz tej osoby. Ta rozmowa jest czytelna dla serwera IRC. Może to po prostu oznaczać ponowną instalację albo inny klient — ale blokowanie szyfrowania to również sposób na czytanie Twoich wiadomości.",
+    "e2ee.panel.disabledGloballyHint": "Szyfrowanie end-to-end jest wyłączone w Ustawieniach profilu.",
+    "e2ee.command.disabledGlobally": "Szyfrowanie jest wyłączone w Ustawieniach profilu."
 }

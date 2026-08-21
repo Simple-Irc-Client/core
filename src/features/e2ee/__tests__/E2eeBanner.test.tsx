@@ -31,7 +31,7 @@ vi.mock('../session', () => ({
   hasPinnedPeer: () => peerIsPinned.value,
 }));
 
-const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory };
+const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory, e2eeEnabled: true };
 
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: (selector: (state: typeof settings) => unknown) => selector(settings),

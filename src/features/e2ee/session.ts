@@ -47,7 +47,7 @@
 
 import i18next from 'i18next';
 
-import { getAutoOfferEncryption, getCurrentNick, getLineLenLimit, getServer } from '@/features/settings/store/settings';
+import { getAutoOfferEncryption, getCurrentNick, getE2eeEnabled, getLineLenLimit, getServer } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { ircSendRawMessage } from '@/network/irc/network';
 
@@ -286,6 +286,14 @@ const completeHandshake = async (
 
 /** Send an OFFER and wait. A peer that isn't a SIC client simply never answers. */
 export const offerEncryption = async (nick: string): Promise<void> => {
+  // The UI is expected to hide every path that reaches this (button, context
+  // menu, slash command), but the guard lives here too: this is the one
+  // choke point every one of those paths goes through, so it is what actually
+  // stops an offer regardless of which surface is missed.
+  if (!getE2eeEnabled()) {
+    return;
+  }
+
   const key = getSessionKey(nick);
 
   if (getSessionState(nick) === E2eeState.active) {
@@ -357,6 +365,15 @@ export const declineIncomingOffer = (nick: string): void => {
 };
 
 const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offer' }>): Promise<void> => {
+  // Encryption turned off locally: decline without ever surfacing the offer,
+  // so the user isn't shown a prompt for a choice that's already been made.
+  // The peer still gets a DECLINE, same as a user-driven refusal, so their
+  // banner resolves instead of hanging on OFFER_TIMEOUT_MS.
+  if (!getE2eeEnabled()) {
+    sendNoticeCtcp(nick, buildDeclineFrame());
+    return;
+  }
+
   if (frame.version !== PROTOCOL_VERSION) {
     setSession(nick, {
       state: E2eeState.error,

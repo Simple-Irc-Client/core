@@ -70,6 +70,7 @@ export interface SettingsStore {
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
   hideTypingIndicator: boolean; // Whether to hide the typing indicator
   autoOfferEncryption: boolean; // Whether to offer end-to-end encryption automatically in private messages
+  e2eeEnabled: boolean; // Whether end-to-end encryption is available at all; off suppresses offers and auto-declines incoming ones
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
@@ -116,6 +117,7 @@ export interface SettingsStore {
   setHideAvatarsInUsersList: (hide: boolean) => void;
   setHideTypingIndicator: (hide: boolean) => void;
   setAutoOfferEncryption: (autoOffer: boolean) => void;
+  setE2eeEnabled: (enabled: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
@@ -164,6 +166,7 @@ export const useSettingsStore = create<SettingsStore>()(
     hideAvatarsInUsersList: false,
     hideTypingIndicator: false,
     autoOfferEncryption: false,
+    e2eeEnabled: true,
     fontSize: 'medium',
     language: 'auto',
     serverPasswords: {},
@@ -334,6 +337,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setAutoOfferEncryption: (autoOffer: boolean): void => {
       set(() => ({ autoOfferEncryption: autoOffer }));
     },
+    setE2eeEnabled: (enabled: boolean): void => {
+      set(() => ({ e2eeEnabled: enabled }));
+    },
     setFontSize: (fontSize: FontSize): void => {
       set(() => ({ fontSize }));
     },
@@ -427,6 +433,7 @@ export const useSettingsStore = create<SettingsStore>()(
       hideAvatarsInUsersList: state.hideAvatarsInUsersList,
       hideTypingIndicator: state.hideTypingIndicator,
       autoOfferEncryption: state.autoOfferEncryption,
+      e2eeEnabled: state.e2eeEnabled,
       fontFormatting: state.fontFormatting,
       nick: state.nick,
       server: state.server,
@@ -740,6 +747,14 @@ export const setAutoOfferEncryption = (autoOffer: boolean): void => {
 
 export const getAutoOfferEncryption = (): boolean => {
   return useSettingsStore.getState().autoOfferEncryption;
+};
+
+export const setE2eeEnabled = (enabled: boolean): void => {
+  useSettingsStore.getState().setE2eeEnabled(enabled);
+};
+
+export const getE2eeEnabled = (): boolean => {
+  return useSettingsStore.getState().e2eeEnabled;
 };
 
 export const setFontSize = (fontSize: FontSize): void => {
