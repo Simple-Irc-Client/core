@@ -116,6 +116,11 @@ test.describe('Channel name casing', () => {
   test('removing the channel removes it for good', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
+    // The previous test's .click() on this exact row already left the cursor
+    // resting on it, so hovering the same coordinates again dispatches no new
+    // mouseenter and the reveal-on-hover close icon never appears. Move away
+    // first so this hover is a genuine pointer entry.
+    await sharedPage.mouse.move(0, 0);
     await channelNav.getByRole('button', { name: SERVER_CASING, exact: true }).hover();
     await channelNav.getByRole('button', { name: `Leave ${SERVER_CASING}` }).click();
 
