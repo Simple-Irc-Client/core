@@ -57,6 +57,11 @@ test.describe('Language switching', () => {
     // "Theme" → "Motyw"
     await expect(sharedPage.getByText('Motyw', { exact: true })).toBeVisible();
 
+    // Radix Select returns focus to its trigger only once its own closing
+    // animation finishes; pressing Escape before that lands on the still-
+    // present Select layer (completing its focus restore) instead of the
+    // Dialog, leaving the dialog open for the next test.
+    await expect(sharedPage.getByTestId('language-select')).toBeFocused();
     await sharedPage.keyboard.press('Escape');
   });
 
@@ -74,6 +79,9 @@ test.describe('Language switching', () => {
     await expect(sharedPage.getByLabel('Nickname')).toBeVisible({ timeout: 5_000 });
     await expect(sharedPage.getByText('Profile Settings')).toBeVisible();
 
+    // See the comment in the previous test: wait for the Select's own close
+    // to finish before Escape, or the Dialog is left open for the next test.
+    await expect(sharedPage.getByTestId('language-select')).toBeFocused();
     await sharedPage.keyboard.press('Escape');
   });
 
@@ -90,6 +98,9 @@ test.describe('Language switching', () => {
     // UI should remain in English
     await expect(sharedPage.getByLabel('Nickname')).toBeVisible({ timeout: 5_000 });
 
+    // See the comment further up: wait for the Select's own close to finish
+    // before Escape, or the Dialog is left open for the next test.
+    await expect(sharedPage.getByTestId('language-select')).toBeFocused();
     await sharedPage.keyboard.press('Escape');
   });
 });

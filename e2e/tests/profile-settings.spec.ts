@@ -79,6 +79,11 @@ test.describe('Profile settings', () => {
     const injectedCss = await sharedPage.locator('#sic-theme').textContent();
     expect(injectedCss).toContain(target === 'classic' ? 'Classic theme' : 'Modern theme');
 
+    // Radix Select returns focus to its trigger only once its own closing
+    // animation finishes; pressing Escape before that lands on the still-
+    // present Select layer (completing its focus restore) instead of the
+    // Dialog, leaving the dialog open for the next test.
+    await expect(themeSelect).toBeFocused();
     // Close dialog
     await sharedPage.keyboard.press('Escape');
   });

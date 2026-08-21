@@ -104,7 +104,11 @@ test.describe('Private messages', () => {
     await dmTab.click();
     await expect(sharedPage.locator('#message-input')).toHaveAttribute('placeholder', /dmbot/);
 
-    // Close the focused DM via its X button (appears on hover)
+    // Close the focused DM via its X button (appears on hover). The .click()
+    // above already left the cursor resting on this exact tab, so hovering
+    // the same coordinates again would dispatch no new mouseenter and the
+    // close icon would never appear — move away first.
+    await sharedPage.mouse.move(0, 0);
     await dmTab.hover();
     await channelNav.getByRole('button', { name: 'Leave dmbot' }).click();
     await expect(dmTab).not.toBeVisible();
