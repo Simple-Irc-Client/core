@@ -60,6 +60,7 @@ describe('Channels', () => {
     isChannelsDrawerOpen?: boolean;
     isChannelListLoadingFinished?: boolean;
     channelsList?: { name: string; users: number; topic: string }[];
+    isConnected?: boolean;
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -67,12 +68,13 @@ describe('Channels', () => {
       isChannelsDrawerOpen = true,
       isChannelListLoadingFinished = false,
       channelsList = [],
+      isConnected = true,
     } = overrides;
 
     vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
       selector({
         currentChannelName,
-        isConnected: true,
+        isConnected,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -441,6 +443,65 @@ describe('Channels', () => {
       expect(mockSetRemoveChannel).toHaveBeenCalledWith('someUser');
 
       // The main view must not keep pointing at the removed window
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('Status', ChannelCategory.status);
+    });
+
+    it('should still show the close button for a channel while disconnected', () => {
+      setupMocks({
+        isConnected: false,
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.mouseEnter(channelContainer);
+
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
+    });
+
+    it('should remove a channel locally instead of sending PART while disconnected', () => {
+      const mockSetRemoveChannel = vi.fn();
+      vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
+      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
+
+      setupMocks({
+        isConnected: false,
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.mouseEnter(channelContainer);
+
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
+      fireEvent.click(closeButton);
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('#general');
+      expect(network.ircPartChannel).not.toHaveBeenCalled();
+    });
+
+    it('should switch to Status when closing the currently focused channel while disconnected', () => {
+      const mockSetRemoveChannel = vi.fn();
+      vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
+      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#general');
+
+      setupMocks({
+        isConnected: false,
+        currentChannelName: '#general',
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      const channelContainer = getChannelContainer('#general');
+      fireEvent.mouseEnter(channelContainer);
+
+      const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
+      fireEvent.click(closeButton);
+
+      expect(mockSetRemoveChannel).toHaveBeenCalledWith('#general');
       expect(mockSetCurrentChannelName).toHaveBeenCalledWith('Status', ChannelCategory.status);
     });
 

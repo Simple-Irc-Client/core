@@ -111,7 +111,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const handleTouchEnd = clearLongPressTimer;
 
   const handleRemoveChannel = (channel: Channel): void => {
-    if (channel.category === ChannelCategory.priv) {
+    // A DM is never on the server's side to begin with, and while disconnected
+    // there is no PART to send or echo to wait for — either way the window is
+    // only ever local state, so it comes off the list immediately.
+    if (channel.category === ChannelCategory.priv || !isConnected) {
       setRemoveChannel(channel.name);
 
       // Don't leave the main view pointing at the removed window
@@ -119,6 +122,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
       }
     } else {
+      // Connected: leave for real. The row itself is removed once the server
+      // echoes the PART back (kernel's onPart), not here — a PART that never
+      // arrives should leave the channel showing, not silently disappear.
       ircPartChannel(channel.name);
     }
   };
@@ -280,7 +286,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                           {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
                             <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
                           )}
-                          {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && isConnected && (
+                          {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                             <Button
                               variant="ghost"
                               size="icon"
