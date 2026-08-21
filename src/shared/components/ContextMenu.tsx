@@ -99,11 +99,13 @@ export const getMenuPosition = (
 
 const PositionedMenuContent = ({
   source,
+  anchorElement,
   menuWidth,
   menuHeight,
   children,
 }: {
   source: HTMLElement | { x: number; y: number } | null;
+  anchorElement: HTMLElement | null;
   menuWidth?: number;
   menuHeight?: number;
   children: React.ReactNode;
@@ -120,6 +122,16 @@ const PositionedMenuContent = ({
             }
           : undefined
       }
+      onPointerDownOutside={(event) => {
+        // The element that opened this menu (e.g. a nick row bound to both
+        // onClick and onContextMenu) can still be mid-gesture when Radix's
+        // dismiss layer mounts — a right-click's trailing mouseup/click on
+        // that same element must not be mistaken for a dismiss.
+        const target = event.detail.originalEvent.target;
+        if (anchorElement && target instanceof Node && anchorElement.contains(target)) {
+          event.preventDefault();
+        }
+      }}
     >
       {children}
     </DropdownMenuContent>
@@ -139,7 +151,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} menuHeight={80}>
+        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={80}>
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleJoin}>
@@ -275,7 +287,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} menuHeight={300}>
+        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={300}>
           <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {userHomepage && (
@@ -461,7 +473,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} menuWidth={340}>
+        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement} menuWidth={340}>
           <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleOpenUrl}>
@@ -485,7 +497,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition}>
+        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
           <DropdownMenuItem onClick={handleClearScreen}>
             <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.chat.clear')}
@@ -505,7 +517,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} menuWidth={280}>
+        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement} menuWidth={280}>
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCopy}>

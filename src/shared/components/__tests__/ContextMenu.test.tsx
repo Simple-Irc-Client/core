@@ -1136,4 +1136,66 @@ describe('ContextMenu', () => {
       expect(mockIrcSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('MODE'));
     });
   });
+
+  describe('Dismiss-on-outside-pointerdown vs. the opening element', () => {
+    // Some right-click flows (WebKitGTK/Linux, and rows bound to both onClick
+    // and onContextMenu) can still deliver a trailing mousedown/pointerdown on
+    // the very element that opened the menu, after Radix's dismiss layer has
+    // mounted. That must not be treated as an outside click.
+    it('does not close the menu when the trailing pointerdown lands on the anchor element', async () => {
+      const anchorElement = document.createElement('button');
+      document.body.appendChild(anchorElement);
+
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+
+      render(<ContextMenu />);
+
+      // Radix defers registering its outside-pointerdown listener by one tick.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(anchorElement);
+
+      expect(mockHandleContextMenuClose).not.toHaveBeenCalled();
+
+      document.body.removeChild(anchorElement);
+    });
+
+    it('still closes the menu when the pointerdown lands elsewhere', async () => {
+      const anchorElement = document.createElement('button');
+      const elsewhere = document.createElement('div');
+      document.body.appendChild(anchorElement);
+      document.body.appendChild(elsewhere);
+
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+
+      render(<ContextMenu />);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(elsewhere);
+
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+
+      document.body.removeChild(anchorElement);
+      document.body.removeChild(elsewhere);
+    });
+  });
 });
