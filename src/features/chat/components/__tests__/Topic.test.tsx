@@ -209,7 +209,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(4); // Menu button + Save button + Settings button + Users button
+      expect(buttons.length).toBe(5); // Menu button + Save button + Settings button + Encryption hint + Users button
     });
 
     it('should not show save button when topic is unchanged', () => {
@@ -218,7 +218,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(3); // Menu button + Settings button + Users button (no save)
+      expect(buttons.length).toBe(4); // Menu button + Settings button + Encryption hint + Users button (no save)
     });
 
     it('should not show save button when user cannot edit', () => {
@@ -230,7 +230,7 @@ describe('Topic', () => {
       // The save button should not appear regardless
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons.length).toBe(2); // Menu button + Users button
+      expect(buttons.length).toBe(3); // Menu button + Encryption hint + Users button
     });
   });
 
@@ -244,7 +244,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(4); // Menu + Save + Settings + Users
+      expect(buttons).toHaveLength(5); // Menu + Save + Settings + Encryption hint + Users
       fireEvent.click(buttons[1] as HTMLElement); // Save button is second
 
       expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
@@ -303,7 +303,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(2); // Menu + Users (no settings without permissions)
+      expect(buttons).toHaveLength(3); // Menu + Encryption hint + Users (no settings without permissions)
       fireEvent.click(buttons[0] as HTMLElement);
 
       expect(mockSetChannelsDrawerStatus).toHaveBeenCalledTimes(1);
@@ -595,7 +595,7 @@ describe('Topic', () => {
       render(<Topic />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(3); // Menu + Settings + Users
+      expect(buttons).toHaveLength(4); // Menu + Settings + Encryption hint + Users
     });
   });
 
@@ -622,12 +622,12 @@ describe('Topic', () => {
       // Edit topic
       fireEvent.change(input, { target: { value: 'Changed' } });
       let buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(4); // Menu + Save + Settings + Users
+      expect(buttons).toHaveLength(5); // Menu + Save + Settings + Encryption hint + Users
 
       // Restore to original
       fireEvent.change(input, { target: { value: 'Original Topic' } });
       buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(3); // Menu + Settings + Users (no save)
+      expect(buttons).toHaveLength(4); // Menu + Settings + Encryption hint + Users (no save)
     });
 
     it('should not render topic input for priv channel category', () => {

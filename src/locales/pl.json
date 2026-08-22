@@ -413,6 +413,7 @@
     "e2ee.status.verified": "Zaszyfrowane i zweryfikowane",
     "e2ee.status.unverified": "Zaszyfrowane, niezweryfikowane",
     "e2ee.status.fingerprintChanged": "Klucz się zmienił — niebezpieczne",
+    "e2ee.status.channelNotEncrypted": "Nieszyfrowane — kanałów nie można szyfrować end-to-end, więc wiadomości są czytelne dla serwera IRC i wszystkich uczestników kanału",
     "e2ee.panel.title": "Szyfrowanie z {{nick}}",
     "e2ee.panel.yourFingerprint": "Twój odcisk klucza",
     "e2ee.panel.theirFingerprint": "Odcisk klucza {{nick}}",

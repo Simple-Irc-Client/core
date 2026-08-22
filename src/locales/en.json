@@ -413,6 +413,7 @@
     "e2ee.status.verified": "Encrypted and verified",
     "e2ee.status.unverified": "Encrypted, unverified",
     "e2ee.status.fingerprintChanged": "Encryption key changed — not safe",
+    "e2ee.status.channelNotEncrypted": "Not encrypted — channels can't be end-to-end encrypted, messages are visible to the IRC server and everyone in the channel",
     "e2ee.panel.title": "Encryption with {{nick}}",
     "e2ee.panel.yourFingerprint": "Your fingerprint",
     "e2ee.panel.theirFingerprint": "{{nick}}'s fingerprint",
