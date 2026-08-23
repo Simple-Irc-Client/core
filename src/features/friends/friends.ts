@@ -7,62 +7,14 @@
  * that support neither still keep the persisted list (shown offline).
  */
 
-import { getIsConnected, getMonitorLimit, getNickLenLimit, getServer, getWatchLimit } from '@features/settings/store/settings';
-import { ircMonitorAdd, ircMonitorRemove, ircWatchAdd, ircWatchRemove } from '@/network/irc/network';
+import { getIsConnected, getNickLenLimit, getServer, isSameName } from '@features/settings/store/settings';
 import { addMonitoredNicks, removeMonitoredNick } from '@features/monitor/store/monitor';
+import { subscribeNicks, unsubscribeNicks } from '@features/monitor/subscribe';
+import { getOpenDmNicks } from '@features/channels/store/channels';
 import { isValidNick } from '@shared/lib/utils';
 import { getFriendsForNetwork, isFriendOnNetwork, useFriendsStore } from './store/friends';
 
-// Budget for the nick portion of one MONITOR/WATCH command, keeping the full
-// line comfortably below the 512-byte IRC limit.
-const MAX_NICKS_BYTES = 400;
-
 const getNetworkKey = (): string | undefined => getServer()?.network;
-
-/** Split nicks into chunks that fit a single command line. */
-const chunkNicks = (nicks: string[], perNickOverhead: number): string[][] => {
-  const chunks: string[][] = [];
-  let current: string[] = [];
-  let bytes = 0;
-  for (const nick of nicks) {
-    const cost = nick.length + perNickOverhead;
-    if (current.length > 0 && bytes + cost > MAX_NICKS_BYTES) {
-      chunks.push(current);
-      current = [];
-      bytes = 0;
-    }
-    current.push(nick);
-    bytes += cost;
-  }
-  if (current.length > 0) {
-    chunks.push(current);
-  }
-  return chunks;
-};
-
-const subscribeNicks = (nicks: string[]): void => {
-  if (getMonitorLimit() > 0) {
-    for (const chunk of chunkNicks(nicks, ','.length)) {
-      ircMonitorAdd(chunk);
-    }
-  } else if (getWatchLimit() > 0) {
-    for (const chunk of chunkNicks(nicks, ' +'.length)) {
-      ircWatchAdd(chunk);
-    }
-  }
-};
-
-const unsubscribeNicks = (nicks: string[]): void => {
-  if (getMonitorLimit() > 0) {
-    for (const chunk of chunkNicks(nicks, ','.length)) {
-      ircMonitorRemove(chunk);
-    }
-  } else if (getWatchLimit() > 0) {
-    for (const chunk of chunkNicks(nicks, ' -'.length)) {
-      ircWatchRemove(chunk);
-    }
-  }
-};
 
 /** Friends of the currently configured network. */
 export const getFriends = (): string[] => {
@@ -94,17 +46,38 @@ export const addFriend = (nick: string): boolean => {
   return true;
 };
 
-/** Remove a friend: unpersist it and, when connected, unsubscribe. */
+/**
+ * Remove a friend: unpersist it and, when connected, unsubscribe — unless an
+ * open DM window still wants this nick's status, in which case that window
+ * (see features/dmPresence) now owns the subscription and it must stay up.
+ */
 export const removeFriend = (nick: string): void => {
   const network = getNetworkKey();
   if (network === undefined) {
     return;
   }
   useFriendsStore.getState().removeFriend(network, nick);
+  if (getOpenDmNicks().some((open) => isSameName(open, nick))) {
+    return;
+  }
   removeMonitoredNick(nick);
   if (getIsConnected()) {
     unsubscribeNicks([nick]);
   }
+};
+
+/**
+ * Rename a friend in place after observing their NICK change. A no-op if
+ * `oldNick` isn't a friend. Purely a data rename — the MONITOR/WATCH
+ * subscription for the nick is owned centrally by
+ * features/dmPresence's `handlePresenceNickChange`, which calls this.
+ */
+export const renameFriend = (oldNick: string, newNick: string): void => {
+  const network = getNetworkKey();
+  if (network === undefined) {
+    return;
+  }
+  useFriendsStore.getState().renameFriend(network, oldNick, newNick);
 };
 
 // The Kernel is constructed per event, so the once-per-connection guard for

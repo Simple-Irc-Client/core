@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   addMonitoredNick,
   removeMonitoredNick,
+  renameMonitoredNick,
   setMonitorOnline,
   setMonitorOffline,
   setMultipleMonitorOnline,
@@ -230,6 +231,44 @@ describe('monitor store', () => {
 
     it('should return false for non-monitored nick', () => {
       expect(isNickOnline('Unknown')).toBe(false);
+    });
+  });
+
+  describe('renameMonitoredNick', () => {
+    it('should move the entry to the new key, preserving its online status', () => {
+      addMonitoredNick('Bob');
+      setMonitorOnline('Bob', 'Bob!user@host');
+
+      renameMonitoredNick('Bob', 'Bob2');
+
+      expect(isNickMonitored('Bob')).toBe(false);
+      expect(isNickMonitored('Bob2')).toBe(true);
+      expect(isNickOnline('Bob2')).toBe(true);
+      expect(getMonitoredUsers()[0]?.nick).toBe('Bob2');
+    });
+
+    it('should preserve offline status too', () => {
+      addMonitoredNick('Bob');
+
+      renameMonitoredNick('Bob', 'Bob2');
+
+      expect(isNickOnline('Bob2')).toBe(false);
+    });
+
+    it('should be a no-op when the old nick is not monitored', () => {
+      renameMonitoredNick('Ghost', 'Ghost2');
+
+      expect(isNickMonitored('Ghost')).toBe(false);
+      expect(isNickMonitored('Ghost2')).toBe(false);
+    });
+
+    it('should be case insensitive on the old key', () => {
+      addMonitoredNick('Bob');
+
+      renameMonitoredNick('BOB', 'Bob2');
+
+      expect(isNickMonitored('Bob')).toBe(false);
+      expect(isNickMonitored('Bob2')).toBe(true);
     });
   });
 

@@ -381,6 +381,8 @@
     "main.topic.toggleUsers": "Przełącz użytkowników",
     "main.topic.topicInput": "Temat kanału",
     "main.topic.saveTopic": "Zapisz temat",
+    "main.dmPresence.online": "Dostępny",
+    "main.dmPresence.offline": "Niedostępny",
     "channelListDialog.search.ariaLabel": "Szukaj kanałów",
     "main.toolbar.send": "Wyślij wiadomość",
     "main.toolbar.emoticons": "Emotikony",

@@ -30,6 +30,7 @@ import {
 import { getCurrentChannelName, getCurrentNick, isSameName } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { notifyHighlight } from '@/runtime/notifications';
+import { subscribeDmPresence } from '@/features/dmPresence/dmPresence';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 
 import { BodyKind, parseCtcpFrame, type E2eeFrame } from './protocol';
@@ -80,6 +81,7 @@ const localMessageId = (msgid?: string): string =>
 const ensureWindow = (window: string): void => {
   if (!existChannel(window)) {
     setAddChannel(window, ChannelCategory.priv);
+    subscribeDmPresence(window);
   }
 };
 

@@ -18,6 +18,8 @@ interface FriendsStore {
   addFriend: (network: string, nick: string) => void;
   /** Remove nick from a network's friends list */
   removeFriend: (network: string, nick: string) => void;
+  /** Rename a friend in place (e.g. after observing their NICK change), preserving list order */
+  renameFriend: (network: string, oldNick: string, newNick: string) => void;
 }
 
 export const useFriendsStore = create<FriendsStore>()(
@@ -50,6 +52,22 @@ export const useFriendsStore = create<FriendsStore>()(
               return { friendsByNetwork: Object.fromEntries(Object.entries(state.friendsByNetwork).filter(([key]) => key !== network)) };
             }
             return { friendsByNetwork: { ...state.friendsByNetwork, [network]: remaining } };
+          });
+        },
+
+        renameFriend: (network: string, oldNick: string, newNick: string): void => {
+          set((state) => {
+            const friends = state.friendsByNetwork[network];
+            if (friends === undefined) {
+              return state;
+            }
+            const index = friends.findIndex((friend) => friend.toLowerCase() === oldNick.toLowerCase());
+            if (index === -1) {
+              return state;
+            }
+            const renamed = [...friends];
+            renamed[index] = newNick;
+            return { friendsByNetwork: { ...state.friendsByNetwork, [network]: renamed } };
           });
         },
       }),

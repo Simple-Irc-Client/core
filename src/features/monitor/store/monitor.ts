@@ -28,6 +28,8 @@ interface MonitorStore {
   addMonitoredNicks: (nicks: string[]) => void;
   /** Remove nick from monitor list */
   removeMonitoredNick: (nick: string) => void;
+  /** Move a monitored nick's entry to a new key, preserving its known status (e.g. after NICK) */
+  renameMonitoredNick: (oldNick: string, newNick: string) => void;
   /** Set online status of a monitored nick */
   setOnlineStatus: (nick: string, online: boolean, userString?: string) => void;
   /** Set multiple nicks online at once */
@@ -76,6 +78,20 @@ export const useMonitorStore = create<MonitorStore>()(
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
         newMap.delete(nick.toLowerCase());
+        return { monitoredUsers: newMap };
+      });
+    },
+
+    renameMonitoredNick: (oldNick: string, newNick: string): void => {
+      set((state) => {
+        const oldKey = oldNick.toLowerCase();
+        const existing = state.monitoredUsers.get(oldKey);
+        if (!existing) {
+          return state;
+        }
+        const newMap = new Map(state.monitoredUsers);
+        newMap.delete(oldKey);
+        newMap.set(newNick.toLowerCase(), { ...existing, nick: newNick, lastUpdate: Date.now() });
         return { monitoredUsers: newMap };
       });
     },
@@ -166,6 +182,10 @@ export const addMonitoredNicks = (nicks: string[]): void => {
 
 export const removeMonitoredNick = (nick: string): void => {
   useMonitorStore.getState().removeMonitoredNick(nick);
+};
+
+export const renameMonitoredNick = (oldNick: string, newNick: string): void => {
+  useMonitorStore.getState().renameMonitoredNick(oldNick, newNick);
 };
 
 export const setMonitorOnline = (nick: string, userString?: string): void => {

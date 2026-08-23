@@ -380,19 +380,27 @@ export const existChannel = (channelName: string): boolean => {
 };
 
 /**
- * Adopt the server's casing for a channel we already have open. Servers echo a
- * channel's canonical name, which may differ from what the user typed or what
- * we restored from storage; without this the two casings drift apart in the UI.
+ * Rename an already-open channel/window in place — either the server
+ * adopting a different casing for the same channel (JOIN echoes the
+ * canonical casing back, which may differ from what the user typed or what
+ * was restored from storage), or a DM window following its peer's NICK
+ * change. Either way `from` is the window's identity *before* the rename, so
+ * that's what the current-view check must match against — `to` would only
+ * work by coincidence for the case-normalization path (where `from` and `to`
+ * are case-insensitively the same name) and silently fail to follow a real
+ * identity change like a nick rename.
  */
 export const setRenameChannel = (from: string, to: string): void => {
   if (from === to || !existChannel(from)) {
     return;
   }
 
+  const currentChannelName = getCurrentChannelName();
+  const wasCurrent = isSameName(currentChannelName, from);
+
   useChannelsStore.getState().setRenameChannel(from, to);
 
-  const currentChannelName = getCurrentChannelName();
-  if (isSameName(currentChannelName, to)) {
+  if (wasCurrent) {
     setCurrentChannelName(to, getCategory(to) ?? ChannelCategory.channel);
   }
 };
@@ -402,6 +410,13 @@ export const getChannelsToAutoJoin = (): string[] => {
     .filter((ch) => ch.category === ChannelCategory.channel)
     .map((ch) => ch.name);
   return channels.length > 0 ? channels : lastChannelsToAutoJoin;
+};
+
+/** Nicks of every currently open direct-message window (plain or E2EE, same category). */
+export const getOpenDmNicks = (): string[] => {
+  return useChannelsStore.getState().openChannelsShortList
+    .filter((ch) => ch.category === ChannelCategory.priv)
+    .map((ch) => ch.name);
 };
 
 export const setTopic = (channelName: string, newTopic: string): void => {

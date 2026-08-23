@@ -23,6 +23,8 @@ import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import ChannelListDialog from '@shared/components/ChannelListDialog';
 import Friends from '@features/friends/components/Friends';
+import { unsubscribeDmPresence } from '@features/dmPresence/dmPresence';
+import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
 
 interface ChannelsProps {
   width?: number;
@@ -115,6 +117,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     // there is no PART to send or echo to wait for — either way the window is
     // only ever local state, so it comes off the list immediately.
     if (channel.category === ChannelCategory.priv || !isConnected) {
+      if (channel.category === ChannelCategory.priv) {
+        unsubscribeDmPresence(channel.name);
+      }
       setRemoveChannel(channel.name);
 
       // Don't leave the main view pointing at the removed window
@@ -278,7 +283,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                           getChannelIcon(channel.category)
                         )}
                       </span>
-                      <span className="flex-1">{channel.displayName || channel.name}</span>
+                      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="truncate">{channel.displayName || channel.name}</span>
+                        {channel.category === ChannelCategory.priv && <DmPresenceDot nick={channel.name} />}
+                      </span>
                     </button>
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                       {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (

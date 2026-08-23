@@ -60,8 +60,9 @@ import {
 } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { type NamesUser, bufferNamesUsers, flushNamesUsers, getHasUser, getUser, getUserChannels, setAddUser, setQuitUser, setRemoveUser, setRenameUser, setUpdateUserFlag, setUserAvatar, setUserColor, setUserAccount, setUserAway, setUserBot, setUserDisplayName, setUserStatus, setUserHomepage, setUserHost, setUserRealname } from '@features/users/store/users';
-import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick } from '@features/monitor/store/monitor';
+import { setMultipleMonitorOnline, setMultipleMonitorOffline, addMonitoredNick, clearMonitorList } from '@features/monitor/store/monitor';
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
+import { handlePresenceNickChange, resetDmPresenceSubscription, subscribeDmPresence, subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
 import { ChannelCategory, MessageCategory, type UserTypingStatus, type ParsedIrcRawMessage } from '@shared/types';
 import { channelModeType, calculateMaxPermission, parseChannelModes, parseIrcRawMessage, parseNick, parseUserModes, parseChannel } from './helpers';
 import { ircRequestChatHistory, ircRequestMetadata, ircRequestMetadataList, ircJoinChannels, ircSendList, ircSendAlisListRequest, ircSendNamesXProto, ircSendRawMessage, ircConnectWithTLS, ircDisconnect, resetInactivityTimeout, resetInactivityReconnectRetries, startKeepalive, stopKeepalive, clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircAutoAuthenticate, onConnectionTornDown } from './network';
@@ -380,19 +381,22 @@ const RPL_ENDOFHELP = '706';
 // const ERR_NOPRIVS = '723';
 const RPL_SASLMECHS = '908';
 
-// Session keys are per-connection (see `handleDisconnected` below), but
-// `disconnectDirect` deliberately hides the transport's own close event from
-// this module whenever *we* initiate the teardown — a manual disconnect, a
-// reconnect, or the inactivity watchdog — precisely so a stale "Disconnected"
-// message doesn't flash mid-reconnect. That means those three paths never
-// reached `handleDisconnected`, so e2ee sessions survived a reconnect the
-// peer's own client had already torn its half of down. Registering here,
-// once, covers exactly those three paths (`network.ts`'s `onConnectionTornDown`
-// doc comment has the full list) without touching the natural-close path,
-// which already clears sessions correctly inside `handleDisconnected` itself.
+// Session keys and MONITOR/WATCH online status are both per-connection (see
+// `handleDisconnected` below), but `disconnectDirect` deliberately hides the
+// transport's own close event from this module whenever *we* initiate the
+// teardown — a manual disconnect, a reconnect, or the inactivity watchdog —
+// precisely so a stale "Disconnected" message doesn't flash mid-reconnect.
+// That means those three paths never reached `handleDisconnected`, so e2ee
+// sessions survived a reconnect the peer's own client had already torn its
+// half of down, and friends/DM presence dots kept showing the last status we
+// heard before the connection dropped. Registering here, once, covers
+// exactly those three paths (`network.ts`'s `onConnectionTornDown` doc
+// comment has the full list) without touching the natural-close path, which
+// already clears both correctly inside `handleDisconnected` itself.
 onConnectionTornDown(() => {
   endAllSessions();
   clearIncomingState();
+  clearMonitorList();
 });
 
 export class Kernel {
@@ -509,6 +513,7 @@ export class Kernel {
     // Friends are re-subscribed at end of MOTD; arm the guard for this
     // (re)connection so that happens exactly once.
     resetFriendsSubscription();
+    resetDmPresenceSubscription();
 
     // Start the active keepalive now that we're registered. Idempotent, so a
     // reconnect's fresh 001 safely replaces any prior timer.
@@ -576,6 +581,11 @@ export class Kernel {
     // the session, so every message would fail to decrypt.
     endAllSessions();
     clearIncomingState();
+
+    // The server's MONITOR/WATCH list dies with the socket. Keeping the old
+    // online/offline flags would leave friends/DM presence dots showing
+    // whatever we last heard, which is no longer something we can vouch for.
+    clearMonitorList();
 
     // Reset STS retries on WebSocket disconnect
     resetSTSRetries();
@@ -2295,6 +2305,12 @@ export class Kernel {
     // silently moving a lock-badged window is not ours to decide.
     handlePeerRename(oldNick, newNick);
 
+    // Unlike E2EE sessions, presence tracking has no such trust question —
+    // MONITOR/WATCH is keyed by nick string regardless, so following the
+    // rename (and the DM window / friend entry along with it) just keeps
+    // that existing subscription pointed at the right string.
+    handlePresenceNickChange(oldNick, newNick);
+
     for (const channel of channels) {
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
@@ -2543,6 +2559,9 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
+      if (isDirectMessage) {
+        subscribeDmPresence(messageTarget);
+      }
     }
 
     // Don't increase unread count for our own echoed messages
@@ -2706,6 +2725,9 @@ export class Kernel {
 
     if (!existChannel(messageTarget)) {
       setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
+      if (isDirectMessage) {
+        subscribeDmPresence(messageTarget);
+      }
     }
 
     if (messageTarget !== currentChannelName && !isEchoMessage) {
@@ -2811,6 +2833,7 @@ export class Kernel {
     // This allows typing to work even before the first message is received
     if (isPrivMessage && !existChannel(channel)) {
       setAddChannel(channel, ChannelCategory.priv);
+      subscribeDmPresence(channel);
     }
 
     setTyping(channel, nick, status as UserTypingStatus);
@@ -3521,6 +3544,7 @@ export class Kernel {
 
     // End of registration burst: 005 limits are known, subscribe friends.
     subscribeFriendsOnRegistration();
+    subscribeDmPresenceOnRegistration();
   };
 
   // :chmurka.pirc.pl 396 sic-test A.A.A.IP :is now your displayed host
@@ -4684,6 +4708,7 @@ export class Kernel {
 
     // No MOTD is still end of the registration burst: subscribe friends.
     subscribeFriendsOnRegistration();
+    subscribeDmPresenceOnRegistration();
   };
 
   // :server 431 mynick :No nickname given

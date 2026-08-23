@@ -6,8 +6,10 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as networkFile from '@/network/irc/network';
 import { clearMonitorList, isNickMonitored } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '../store/friends';
-import { addFriend, getFriends, isFriend, removeFriend, resetFriendsSubscription, subscribeFriendsOnRegistration } from '../friends';
+import { addFriend, getFriends, isFriend, removeFriend, renameFriend, resetFriendsSubscription, subscribeFriendsOnRegistration } from '../friends';
 import { type Server } from '@/network/irc/servers';
+import { useChannelsStore, setAddChannel, setRemoveChannel } from '@features/channels/store/channels';
+import { ChannelCategory } from '@shared/types';
 
 const testServer = { network: 'pirc.pl' } as Server;
 
@@ -20,6 +22,7 @@ describe('friends actions', () => {
 
   beforeEach(() => {
     useFriendsStore.setState({ friendsByNetwork: {} });
+    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
     clearMonitorList();
     resetFriendsSubscription();
     vi.spyOn(settingsFile, 'getServer').mockImplementation(() => testServer);
@@ -136,6 +139,40 @@ describe('friends actions', () => {
 
       expect(getFriends()).toEqual([]);
       expect(mockMonitorRemove).not.toHaveBeenCalled();
+    });
+
+    it('unpersists but keeps the MONITOR subscription while a DM window is still open (features/dmPresence)', () => {
+      addFriend('Alice');
+      setAddChannel('Alice', ChannelCategory.priv);
+      mockMonitorRemove.mockClear();
+
+      removeFriend('Alice');
+
+      expect(getFriends()).toEqual([]);
+      expect(isNickMonitored('Alice')).toBe(true);
+      expect(mockMonitorRemove).not.toHaveBeenCalled();
+
+      setRemoveChannel('Alice');
+    });
+  });
+
+  describe('renameFriend', () => {
+    it('renames a persisted friend', () => {
+      addFriend('Alice');
+
+      renameFriend('Alice', 'Alicia');
+
+      expect(getFriends()).toEqual(['Alicia']);
+      expect(isFriend('Alice')).toBe(false);
+      expect(isFriend('Alicia')).toBe(true);
+    });
+
+    it('is a no-op when there is no network configured', () => {
+      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+
+      renameFriend('Alice', 'Alicia');
+
+      expect(getFriends()).toEqual([]);
     });
   });
 

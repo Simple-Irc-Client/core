@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, Lock, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
 import { addFriend, isFriend, removeFriend } from '@features/friends/friends';
+import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { offerEncryption } from '@features/e2ee/session';
 import { isSafeUrl } from '@shared/lib/utils';
 import { clipboard, openExternal } from '@/runtime/desktop';
@@ -166,6 +167,7 @@ export const ContextMenu = () => {
   if (contextMenuCategory === 'user' && contextMenuItem !== undefined) {
     const handlePriv = (): void => {
       setAddChannel(contextMenuItem, ChannelCategory.priv);
+      subscribeDmPresence(contextMenuItem);
       setCurrentChannelName(contextMenuItem, ChannelCategory.priv);
       // Opening a conversation is the natural moment to offer, and only when the
       // user asked for that: a peer who isn't running SIC never answers, which
@@ -184,6 +186,7 @@ export const ContextMenu = () => {
     /** Open the private window first — the banner and lock both live in it. */
     const handleEncrypt = (): void => {
       setAddChannel(contextMenuItem, ChannelCategory.priv);
+      subscribeDmPresence(contextMenuItem);
       setCurrentChannelName(contextMenuItem, ChannelCategory.priv);
       void offerEncryption(contextMenuItem);
       handleContextMenuClose();

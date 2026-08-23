@@ -61,4 +61,40 @@ describe('friends store', () => {
       expect(getFriendsForNetwork('pirc.pl')).toEqual(['Bob']);
     });
   });
+
+  describe('renameFriend', () => {
+    it('should rename in place, preserving list order', () => {
+      useFriendsStore.getState().addFriend('pirc.pl', 'Alice');
+      useFriendsStore.getState().addFriend('pirc.pl', 'Bob');
+      useFriendsStore.getState().addFriend('pirc.pl', 'Carol');
+
+      useFriendsStore.getState().renameFriend('pirc.pl', 'Bob', 'Bob2');
+
+      expect(getFriendsForNetwork('pirc.pl')).toEqual(['Alice', 'Bob2', 'Carol']);
+      expect(isFriendOnNetwork('pirc.pl', 'Bob')).toBe(false);
+      expect(isFriendOnNetwork('pirc.pl', 'Bob2')).toBe(true);
+    });
+
+    it('should match the old nick case-insensitively', () => {
+      useFriendsStore.getState().addFriend('pirc.pl', 'Alice');
+
+      useFriendsStore.getState().renameFriend('pirc.pl', 'ALICE', 'Alicia');
+
+      expect(getFriendsForNetwork('pirc.pl')).toEqual(['Alicia']);
+    });
+
+    it('should be a no-op when the nick is not a friend', () => {
+      useFriendsStore.getState().addFriend('pirc.pl', 'Alice');
+
+      useFriendsStore.getState().renameFriend('pirc.pl', 'Ghost', 'Ghost2');
+
+      expect(getFriendsForNetwork('pirc.pl')).toEqual(['Alice']);
+    });
+
+    it('should be a no-op for an unknown network', () => {
+      useFriendsStore.getState().renameFriend('unknown', 'Alice', 'Alicia');
+
+      expect(useFriendsStore.getState().friendsByNetwork).toEqual({});
+    });
+  });
 });

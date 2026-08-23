@@ -381,6 +381,8 @@
     "main.topic.toggleUsers": "Toggle users",
     "main.topic.topicInput": "Channel topic",
     "main.topic.saveTopic": "Save topic",
+    "main.dmPresence.online": "Online",
+    "main.dmPresence.offline": "Offline",
     "channelListDialog.search.ariaLabel": "Search channels",
     "main.toolbar.send": "Send message",
     "main.toolbar.emoticons": "Emoticons",

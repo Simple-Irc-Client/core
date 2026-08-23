@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import * as settingsFile from '@features/settings/store/settings';
 import { DEFAULT_CASE_MAPPING, namesEqual } from '@shared/lib/caseMapping';
 import {
   useChannelsStore,
@@ -810,6 +811,32 @@ describe('channels store', () => {
       setRenameChannel('#religie', '#religie');
 
       expect(useChannelsStore.getState().openChannels).toBe(before);
+    });
+
+    it('should follow the rename when the renamed window is the one currently viewed (matched by its old name, not the new one)', () => {
+      // A DM window renaming after its peer's NICK: 'Bob' and 'Bob2' are not
+      // the same name under any case-folding, so only matching against `from`
+      // (the identity before the rename) can catch this — matching against
+      // `to` only worked by coincidence for same-name-different-casing JOINs.
+      setAddChannel('Bob', ChannelCategory.priv);
+      vi.mocked(settingsFile.getCurrentChannelName).mockReturnValue('Bob');
+      const mockSetCurrentChannelName = vi.mocked(settingsFile.setCurrentChannelName);
+      mockSetCurrentChannelName.mockClear();
+
+      setRenameChannel('Bob', 'Bob2');
+
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('Bob2', ChannelCategory.priv);
+    });
+
+    it('should not touch the current view when renaming a window that is not the one currently viewed', () => {
+      setAddChannel('Bob', ChannelCategory.priv);
+      vi.mocked(settingsFile.getCurrentChannelName).mockReturnValue('#test');
+      const mockSetCurrentChannelName = vi.mocked(settingsFile.setCurrentChannelName);
+      mockSetCurrentChannelName.mockClear();
+
+      setRenameChannel('Bob', 'Bob2');
+
+      expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
     });
   });
 

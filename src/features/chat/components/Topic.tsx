@@ -20,6 +20,7 @@ import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 import ChannelEncryptionHint from '@features/e2ee/components/ChannelEncryptionHint';
+import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
@@ -120,7 +121,10 @@ const Topic = () => {
           <Menu className="h-4 w-4" />
         </Button>
       )}
-      <span className="font-semibold text-sm shrink-0">{currentChannelName}</span>
+      <span data-testid="chat-header-name" className="font-semibold text-sm shrink-0 flex items-center gap-1.5">
+        {currentChannelName}
+        {currentChannelCategory === 'priv' && <DmPresenceDot nick={currentChannelName} />}
+      </span>
       {!isDebugChannel && (
         <>
           <span className="mx-2 text-border shrink-0" aria-hidden="true">|</span>
