@@ -74,11 +74,11 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-12 ml-2 shrink-0"
+                className="h-12 ml-2 shrink-0 group"
                 data-testid="e2ee-status-button"
                 aria-label={tooltip}
               >
-                <Icon className={`h-4 w-4 ${iconClass}`} />
+                <Icon className={`h-4 w-4 ${iconClass} group-hover:text-accent-foreground`} />
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>
