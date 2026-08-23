@@ -2760,7 +2760,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Jest nieobecny (gone)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop jest nieobecny (gone)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2826,7 +2826,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Jest na serwerze: insomnia.pirc.pl (IRC lepszy od spania!)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop jest na serwerze: insomnia.pirc.pl (IRC lepszy od spania!)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2871,7 +2871,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Host: ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop host: ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2888,7 +2888,7 @@ describe('kernel tests', () => {
     expect(mockGetUserModes).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Jest na kanałach: #onet_quiz #scc #sic' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop jest na kanałach: #onet_quiz #scc #sic' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -3026,7 +3026,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop To Bot' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop to Bot' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
