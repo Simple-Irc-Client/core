@@ -36,6 +36,7 @@ vi.mock('@features/settings/store/settings', () => ({
   setEncryptedPassword: vi.fn(),
   useSettingsStore: vi.fn(),
   getCurrentNick: vi.fn(),
+  isSameName: vi.fn((a: string, b: string) => a.toLowerCase() === b.toLowerCase()),
 }));
 
 vi.mock('@/network/encryption', () => ({

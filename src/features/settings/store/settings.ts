@@ -787,7 +787,7 @@ export const disconnectOnly = (): void => {
   clearMonitorList();
 };
 
-export const resetAndGoToStart = (): void => {
+export const resetAndGoToStart = (clearNick = false): void => {
   // Disconnect from the network
   ircDisconnect();
 
@@ -800,6 +800,17 @@ export const resetAndGoToStart = (): void => {
 
   // Reset settings store to initial state (this also sets wizardStep to 'nick')
   resetWizardState();
+
+  // Ending a live session may have left `nick` holding a server-forced rename
+  // (e.g. a NickServ identify-timeout enforcement, see kernel.ts `onNick`) rather
+  // than the nick the user actually wants to use going forward. Clear it so the
+  // wizard doesn't silently carry that forced nick into the next connection
+  // attempt and fail to match it against a saved password. Callers that abort a
+  // connection attempt before it ever went live (e.g. WizardLoading's "Go back")
+  // pass clearNick=false to keep the just-typed nick prefilled.
+  if (clearNick) {
+    useSettingsStore.setState({ nick: '' });
+  }
 };
 
 export const changeServer = (): void => {

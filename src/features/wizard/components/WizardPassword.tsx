@@ -5,7 +5,7 @@ import { Label } from '@shared/components/ui/label';
 import { Switch } from '@shared/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword, ircJoinChannels } from '@/network/irc/network';
-import { getCurrentNick, setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
+import { getCurrentNick, isSameName, setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { encryptPersistent, decryptPersistent } from '@/network/encryption';
 
@@ -23,12 +23,12 @@ const WizardPassword = () => {
   const encryptedPassword = serverPassword?.encrypted;
   const passwordNick = serverPassword?.nick;
 
-  const hasSavedPassword = !!(encryptedPassword && passwordNick === initialNick);
+  const hasSavedPassword = !!(encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, initialNick));
   const [rememberPassword, setRememberPassword] = useState(hasSavedPassword);
 
   // Pre-fill from saved encrypted password
   useEffect(() => {
-    if (encryptedPassword && passwordNick === initialNick) {
+    if (encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, initialNick)) {
       decryptPersistent(encryptedPassword).then((decrypted) => {
         setPassword(decrypted);
       }).catch(() => {
@@ -36,6 +36,8 @@ const WizardPassword = () => {
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const nickMatches = isSameName(initialNick, nick);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -57,7 +59,7 @@ const WizardPassword = () => {
   };
 
   const handleClick = (): void => {
-    if (initialNick === nick) {
+    if (nickMatches) {
       ircSendPassword(password);
       if (rememberPassword) {
         // Save encrypted password for future sessions
@@ -83,7 +85,7 @@ const WizardPassword = () => {
     <>
       <h1 className="text-2xl font-semibold text-center">{t('wizard.password.title')}</h1>
       <form className="mt-8" onSubmit={handleSubmit}>
-        {initialNick !== nick && (
+        {!nickMatches && (
           <div className="space-y-2 text-center">
             <p className="text-base">{t('wizard.password.message.timeout1')}</p>
             <p className="text-base">{t('wizard.password.message.timeout2')}</p>
@@ -91,7 +93,7 @@ const WizardPassword = () => {
             <p className="text-sm">{t('wizard.password.message.timeout4')}</p>
           </div>
         )}
-        {initialNick === nick && (
+        {nickMatches && (
           <div className="space-y-2">
             <Label htmlFor="password">{t('wizard.password.password')}</Label>
             <Input id="password" type="password" required autoComplete="password" autoFocus value={password} onChange={handleChange} />
@@ -108,10 +110,10 @@ const WizardPassword = () => {
             </div>
           </div>
         )}
-        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={initialNick === nick && password === ''}>
+        <Button onClick={handleClick} type="button" className="w-full mt-8 mb-4" disabled={nickMatches && password === ''}>
           {t('wizard.password.button.next')}
         </Button>
-        {initialNick === nick && password === '' && (
+        {nickMatches && password === '' && (
           <Button onClick={handleSkip} type="button" variant="ghost" className="w-full">
             {t('wizard.password.button.skip')}
           </Button>
