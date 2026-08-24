@@ -30,11 +30,13 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
  */
 export async function sealBytes(key: CryptoKey, plaintext: string, additionalData?: Uint8Array): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: additionalData && toArrayBuffer(additionalData) },
-    key,
-    textEncoder.encode(plaintext),
-  );
+  // WebCrypto treats an explicit `additionalData: undefined` as present-but-invalid
+  // (throws "Not a BufferSource") rather than as absent, so the key must be
+  // omitted entirely when there's no AAD instead of set to undefined.
+  const algorithm: AesGcmParams = additionalData
+    ? { name: 'AES-GCM', iv, additionalData: toArrayBuffer(additionalData) }
+    : { name: 'AES-GCM', iv };
+  const encrypted = await crypto.subtle.encrypt(algorithm, key, textEncoder.encode(plaintext));
 
   const combined = new Uint8Array(iv.length + encrypted.byteLength);
   combined.set(iv, 0);
@@ -55,15 +57,10 @@ export async function openBytes(key: CryptoKey, sealedB64: string, additionalDat
     throw new Error('Sealed payload is too short to contain a nonce');
   }
 
-  const decrypted = await crypto.subtle.decrypt(
-    {
-      name: 'AES-GCM',
-      iv: combined.slice(0, IV_LENGTH),
-      additionalData: additionalData && toArrayBuffer(additionalData),
-    },
-    key,
-    toArrayBuffer(combined.slice(IV_LENGTH)),
-  );
+  const algorithm: AesGcmParams = additionalData
+    ? { name: 'AES-GCM', iv: combined.slice(0, IV_LENGTH), additionalData: toArrayBuffer(additionalData) }
+    : { name: 'AES-GCM', iv: combined.slice(0, IV_LENGTH) };
+  const decrypted = await crypto.subtle.decrypt(algorithm, key, toArrayBuffer(combined.slice(IV_LENGTH)));
 
   return textDecoder.decode(decrypted);
 }
