@@ -33,7 +33,7 @@ const DmPresenceDot = ({ nick, className }: DmPresenceDotProps) => {
             aria-label={label}
             className={cn(
               'inline-block h-2 w-2 rounded-full flex-shrink-0',
-              status.online ? 'bg-green-500' : 'border border-muted-foreground/60',
+              status.online ? 'bg-green-500' : 'bg-background border border-muted-foreground/60',
               className,
             )}
           />
