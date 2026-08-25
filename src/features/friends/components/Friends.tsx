@@ -79,34 +79,41 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
           onMouseLeave={() => setHoveredFriend('')}
           className="relative"
         >
-          <button
-            aria-label={friend.nick}
-            aria-current={isSameName(currentChannelName, friend.nick) ? 'page' : undefined}
-            onClick={() => handleFriendClick(friend.nick)}
-            className={cn(
-              `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-muted`,
-              isSameName(currentChannelName, friend.nick) && 'bg-muted',
-            )}
-          >
-            <span className="min-w-7.5 flex items-center justify-center">
-              <span
-                role="img"
-                aria-label={friend.online ? t('main.friends.online') : t('main.friends.offline')}
-                className={cn('h-2.5 w-2.5 rounded-full', friend.online ? 'bg-green-500' : 'border border-muted-foreground/60')}
-              />
-            </span>
-            <span className={cn('flex-1', !friend.online && 'text-muted-foreground')}>{friend.nick}</span>
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  aria-label={friend.nick}
+                  aria-current={isSameName(currentChannelName, friend.nick) ? 'page' : undefined}
+                  onClick={() => handleFriendClick(friend.nick)}
+                  className={cn(
+                    `w-full flex items-center gap-2 pl-4 pr-10 py-2 text-left ${fontSizeClass} hover:bg-muted`,
+                    isSameName(currentChannelName, friend.nick) && 'bg-muted',
+                  )}
+                >
+                  <span className="min-w-7.5 flex items-center justify-center">
+                    <span
+                      role="img"
+                      aria-label={friend.online ? t('main.friends.online') : t('main.friends.offline')}
+                      className={cn('h-2.5 w-2.5 rounded-full', friend.online ? 'bg-green-500' : 'border border-muted-foreground/60')}
+                    />
+                  </span>
+                  <span className={cn('flex-1 min-w-0 truncate', !friend.online && 'text-muted-foreground')}>{friend.nick}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{friend.nick}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {hoveredFriend === friend.nick && (
             <div className="absolute right-2 top-1/2 -translate-y-1/2">
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label={t('main.friends.remove', { nick: friend.nick })}
-                className="h-8 w-8"
+                className="h-7 w-7 rounded-full bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
                 onClick={() => removeFriend(friend.nick)}
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}
