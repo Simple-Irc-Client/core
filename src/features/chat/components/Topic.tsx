@@ -20,7 +20,6 @@ import { getUserDisplayName } from '@shared/lib/displayName';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 import ChannelEncryptionHint from '@features/e2ee/components/ChannelEncryptionHint';
-import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
@@ -123,7 +122,6 @@ const Topic = () => {
       )}
       <span data-testid="chat-header-name" className="font-semibold text-sm shrink-0 flex items-center gap-1.5">
         {currentChannelName}
-        {currentChannelCategory === 'priv' && <DmPresenceDot nick={currentChannelName} />}
       </span>
       {!isDebugChannel && (
         <>

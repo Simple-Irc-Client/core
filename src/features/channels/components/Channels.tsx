@@ -267,11 +267,11 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                         handleListItemClick(channel);
                       }}
                       className={cn(
-                        `w-full flex items-center gap-2 px-4 py-2 text-left ${fontSizeClass} hover:bg-muted`,
+                        `w-full flex items-center gap-2 pl-4 pr-10 py-2 text-left ${fontSizeClass} hover:bg-muted`,
                         isSameName(currentChannelName, channel.name) && 'bg-muted',
                       )}
                     >
-                      <span className="min-w-7.5 flex items-center justify-center">
+                      <span className="relative min-w-7.5 flex items-center justify-center">
                         {channel.avatar ? (
                           <Avatar
                             src={channel.avatar}
@@ -282,10 +282,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                         ) : (
                           getChannelIcon(channel.category)
                         )}
+                        {channel.category === ChannelCategory.priv && (
+                          <DmPresenceDot nick={channel.name} className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background" />
+                        )}
                       </span>
                       <span className="flex-1 min-w-0 flex items-center gap-1.5">
                         <span className="truncate">{channel.displayName || channel.name}</span>
-                        {channel.category === ChannelCategory.priv && <DmPresenceDot nick={channel.name} />}
                       </span>
                     </button>
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">

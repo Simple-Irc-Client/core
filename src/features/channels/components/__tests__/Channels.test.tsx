@@ -8,6 +8,7 @@ import * as DrawersContext from '@/providers/DrawersContext';
 import * as network from '@/network/irc/network';
 import { ChannelCategory } from '@shared/types';
 import type { Channel } from '@shared/types';
+import { useMonitorStore } from '@features/monitor/store/monitor';
 
 // Mock browser APIs for Dialog components
 beforeAll(() => {
@@ -197,6 +198,56 @@ describe('Channels', () => {
 
       const button = screen.getByRole('button', { name: 'Debug' });
       expect(button).toBeInTheDocument();
+    });
+  });
+
+  describe('DM presence dot', () => {
+    beforeEach(() => {
+      useMonitorStore.getState().clearAll();
+    });
+
+    it('should render an online presence dot for a priv channel that is monitored online', () => {
+      useMonitorStore.getState().setOnlineStatus('someUser', true);
+      setupMocks({
+        openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
+      });
+
+      render(<Channels />);
+
+      expect(screen.getByLabelText('main.dmPresence.online')).toBeInTheDocument();
+    });
+
+    it('should render an offline presence dot for a priv channel that is monitored offline', () => {
+      useMonitorStore.getState().setOnlineStatus('someUser', false);
+      setupMocks({
+        openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
+      });
+
+      render(<Channels />);
+
+      expect(screen.getByLabelText('main.dmPresence.offline')).toBeInTheDocument();
+    });
+
+    it('should not render a presence dot for a priv channel with unknown status', () => {
+      setupMocks({
+        openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
+      });
+
+      render(<Channels />);
+
+      expect(screen.queryByLabelText('main.dmPresence.online')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('main.dmPresence.offline')).not.toBeInTheDocument();
+    });
+
+    it('should not render a presence dot for a non-priv channel', () => {
+      useMonitorStore.getState().setOnlineStatus('#general', true);
+      setupMocks({
+        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+      });
+
+      render(<Channels />);
+
+      expect(screen.queryByLabelText('main.dmPresence.online')).not.toBeInTheDocument();
     });
   });
 
