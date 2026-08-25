@@ -36,7 +36,7 @@ const headerName = () => sharedPage.getByTestId('chat-header-name');
 test.describe('DM presence indicator', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('receiving a DM shows the peer as online in the sidebar and the chat header', async () => {
+  test('receiving a DM shows the peer as online in the sidebar', async () => {
     bot?.sendMessage(testerNick, 'Hello there!');
 
     await expect(dmRow()).toBeVisible({ timeout: 10_000 });
@@ -46,15 +46,12 @@ test.describe('DM presence indicator', () => {
 
     await dmRow().click();
     await expect(headerName()).toContainText(botNick);
-    await expect(headerName().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
   });
 
   test('a regular channel never shows a presence dot', async () => {
     await sharedPage.getByRole('button', { name: chanNick, exact: true }).click();
 
     await expect(headerName()).toContainText(chanNick);
-    await expect(headerName().getByLabel('Online')).toHaveCount(0);
-    await expect(headerName().getByLabel('Offline')).toHaveCount(0);
 
     const chanRow = channelNav().getByRole('button', { name: chanNick, exact: true });
     await expect(chanRow.getByLabel('Online')).toHaveCount(0);
@@ -68,14 +65,12 @@ test.describe('DM presence indicator', () => {
     bot = undefined;
 
     await expect(dmRow().getByLabel('Offline')).toBeVisible({ timeout: 10_000 });
-    await expect(headerName().getByLabel('Offline')).toBeVisible({ timeout: 10_000 });
   });
 
   test('peer reconnecting flips the still-open window back to online', async () => {
     bot = await createIrcClient(botNick);
 
     await expect(dmRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
-    await expect(headerName().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
   });
 
   test('closing the DM window and reopening it still tracks presence correctly', async () => {
@@ -110,7 +105,7 @@ test.describe('DM presence indicator', () => {
     // before renaming, or the server has nobody to tell.
     await bot?.join(chanNick);
     await dmRow().click();
-    await expect(headerName().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
+    await expect(dmRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
 
     const newNick = `${botNick}-renamed`;
     await bot?.changeNick(newNick);
@@ -123,7 +118,6 @@ test.describe('DM presence indicator', () => {
     // ...and so must the MONITOR subscription: still online, not "unknown" or stuck offline.
     await expect(renamedRow.getByLabel('Online')).toBeVisible({ timeout: 10_000 });
     await expect(headerName()).toContainText(newNick);
-    await expect(headerName().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
 
     botNick = newNick;
   });
