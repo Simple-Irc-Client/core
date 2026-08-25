@@ -92,11 +92,16 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
                   )}
                 >
                   <span className="min-w-7.5 flex items-center justify-center">
-                    <span
-                      role="img"
-                      aria-label={friend.online ? t('main.friends.online') : t('main.friends.offline')}
-                      className={cn('h-2.5 w-2.5 rounded-full', friend.online ? 'bg-green-500' : 'border border-muted-foreground/60')}
-                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          role="img"
+                          aria-label={friend.online ? t('main.friends.online') : t('main.friends.offline')}
+                          className={cn('h-2.5 w-2.5 rounded-full', friend.online ? 'bg-green-500' : 'border border-muted-foreground/60')}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>{friend.online ? t('main.friends.online') : t('main.friends.offline')}</TooltipContent>
+                    </Tooltip>
                   </span>
                   <span className={cn('flex-1 min-w-0 truncate', !friend.online && 'text-muted-foreground')}>{friend.nick}</span>
                 </button>
