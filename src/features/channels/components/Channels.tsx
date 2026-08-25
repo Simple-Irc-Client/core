@@ -274,20 +274,22 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                               isSameName(currentChannelName, channel.name) && 'bg-muted',
                             )}
                           >
-                            <span className="relative min-w-7.5 flex items-center justify-center">
-                              {channel.avatar ? (
-                                <Avatar
-                                  src={channel.avatar}
-                                  alt={channel.name}
-                                  fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
-                                  className="h-4 w-4"
-                                />
-                              ) : (
-                                getChannelIcon(channel.category)
-                              )}
-                              {channel.category === ChannelCategory.priv && (
-                                <DmPresenceDot nick={channel.name} className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background" />
-                              )}
+                            <span className="min-w-7.5 flex items-center justify-center">
+                              <span className="relative inline-flex h-4 w-4">
+                                {channel.avatar ? (
+                                  <Avatar
+                                    src={channel.avatar}
+                                    alt={channel.name}
+                                    fallbackLetter={channel.name.substring(1, 2).toUpperCase()}
+                                    className="h-4 w-4"
+                                  />
+                                ) : (
+                                  getChannelIcon(channel.category)
+                                )}
+                                {channel.category === ChannelCategory.priv && (
+                                  <DmPresenceDot nick={channel.name} className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background" />
+                                )}
+                              </span>
                             </span>
                             <span className="flex-1 min-w-0 flex items-center gap-1.5">
                               <span className="truncate">{channel.displayName || channel.name}</span>
