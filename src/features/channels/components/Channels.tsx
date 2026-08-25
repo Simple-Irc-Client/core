@@ -301,12 +301,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                               variant="ghost"
                               size="icon"
                               aria-label={t('main.channels.leave', { channel: channel.name })}
-                              className="h-8 w-8"
+                              className="h-7 w-7 rounded-full bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
                               onClick={() => {
                                 handleRemoveChannel(channel);
                               }}
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3.5 w-3.5" />
                             </Button>
                           )}
                         </>
