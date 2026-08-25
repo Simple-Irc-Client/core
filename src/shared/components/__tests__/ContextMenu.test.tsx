@@ -107,8 +107,8 @@ describe('ContextMenu', () => {
     });
   });
 
-  describe('Priv/Encrypt hidden inside the same DM', () => {
-    it('should not show Priv or Encrypt when already in a DM with this user', () => {
+  describe('Priv hidden inside the same DM', () => {
+    it('should not show Priv when already in a DM with this user', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
@@ -122,10 +122,9 @@ describe('ContextMenu', () => {
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.priv');
-      expect(document.body.textContent).not.toContain('contextmenu.user.encrypt');
     });
 
-    it('should still show Priv and Encrypt for a user other than the one this DM is with', () => {
+    it('should still show Priv for a user other than the one this DM is with', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
@@ -139,7 +138,6 @@ describe('ContextMenu', () => {
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.user.priv');
-      expect(document.body.textContent).toContain('contextmenu.user.encrypt');
     });
   });
 

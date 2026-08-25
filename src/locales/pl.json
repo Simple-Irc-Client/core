@@ -447,7 +447,6 @@
     "e2ee.command.verified": "Odcisk klucza {{nick}} oznaczony jako zweryfikowany.",
     "e2ee.command.notActive": "Ta rozmowa nie jest szyfrowana.",
     "e2ee.command.status": "Szyfrowane z {{nick}} ({{state}}). Twój: {{mine}} — jego/jej: {{theirs}}",
-    "contextmenu.user.encrypt": "Zaszyfruj rozmowę",
     "profileSettings.autoOfferEncryption": "Automatycznie proponuj szyfrowanie w rozmowach prywatnych",
     "profileSettings.e2eeEnabled": "Włącz szyfrowanie end-to-end wiadomości prywatnych",
     "help.cmd.e2ee": "Włącza lub wyłącza szyfrowanie end-to-end w rozmowie prywatnej",
