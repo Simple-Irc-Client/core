@@ -66,6 +66,7 @@
     "main.channels.categoryDirectMessages": "Wiadomości prywatne",
     "main.channels.search": "Szukaj kanałów",
     "main.channels.no-results": "Nie znaleziono kanałów",
+    "main.channels.lag": "Lag: {{ms}}ms",
     "main.friends.title": "Znajomi",
     "main.friends.add": "Dodaj znajomego",
     "main.friends.remove": "Usuń {{nick}} ze znajomych",

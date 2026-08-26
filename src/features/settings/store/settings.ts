@@ -60,6 +60,7 @@ export interface SettingsStore {
   nickLenLimit: number; // NICKLEN from 005, default 50
   lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
   networkName: string | undefined; // NETWORK from 005, overrides server.network for display
+  lagMs: number | undefined; // Round-trip time of the last PING/PONG keepalive, undefined until measured
   currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
   currentUserDisplayName: string | undefined; // Current user's display name from metadata
   currentUserStatus: string | undefined; // Current user's status text from metadata
@@ -106,6 +107,7 @@ export interface SettingsStore {
   setNickLenLimit: (limit: number) => void;
   setLineLenLimit: (limit: number) => void;
   setNetworkName: (name: string | undefined) => void;
+  setLagMs: (lagMs: number | undefined) => void;
   setCurrentUserAvatar: (avatar: string | undefined) => void;
   setCurrentUserDisplayName: (displayName: string | undefined) => void;
   setCurrentUserStatus: (status: string | undefined) => void;
@@ -156,6 +158,7 @@ export const useSettingsStore = create<SettingsStore>()(
     nickLenLimit: 50,
     lineLenLimit: 0,
     networkName: undefined,
+    lagMs: undefined,
     currentUserAvatar: undefined,
     currentUserDisplayName: undefined,
     currentUserStatus: undefined,
@@ -302,6 +305,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setNetworkName: (name: string | undefined): void => {
       set(() => ({ networkName: name }));
     },
+    setLagMs: (lagMs: number | undefined): void => {
+      set(() => ({ lagMs }));
+    },
     setCurrentUserAvatar: (avatar: string | undefined): void => {
       set(() => ({ currentUserAvatar: avatar }));
     },
@@ -384,6 +390,7 @@ export const useSettingsStore = create<SettingsStore>()(
         nickLenLimit: 50,
         lineLenLimit: 0,
     networkName: undefined,
+        lagMs: undefined,
         currentUserAvatar: undefined,
         currentUserDisplayName: undefined,
         currentUserStatus: undefined,
@@ -632,6 +639,10 @@ export const setNickLenLimit = (limit: number): void => {
 
 export const setNetworkName = (name: string | undefined): void => {
   useSettingsStore.getState().setNetworkName(name);
+};
+
+export const setLagMs = (lagMs: number | undefined): void => {
+  useSettingsStore.getState().setLagMs(lagMs);
 };
 
 export const getNickLenLimit = (): number => {

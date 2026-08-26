@@ -50,6 +50,9 @@ const stopKeepalive = (): void => {
 
 const startKeepalive = (): void => {
   stopKeepalive();
+  // Fire one immediately so the lag indicator has a reading right after
+  // connect instead of waiting a full interval for the first PONG.
+  ircSendRawMessage(`PING :${Date.now()}`);
   keepaliveTimerId = setInterval(() => {
     ircSendRawMessage(`PING :${Date.now()}`);
   }, KEEPALIVE_INTERVAL_MS);

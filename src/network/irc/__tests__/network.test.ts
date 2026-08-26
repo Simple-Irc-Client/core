@@ -712,8 +712,11 @@ describe('network', () => {
       network.stopKeepalive();
     });
 
-    it('does not PING before the first interval elapses', () => {
+    it('sends an immediate PING, then none before the next interval elapses', () => {
       network.startKeepalive();
+      expect(mockSendDirectRaw).toHaveBeenCalledTimes(1);
+      mockSendDirectRaw.mockClear();
+
       vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS - 1);
       expect(mockSendDirectRaw).not.toHaveBeenCalled();
       network.stopKeepalive();
@@ -732,6 +735,7 @@ describe('network', () => {
     it('startKeepalive is idempotent (no duplicate timers)', () => {
       network.startKeepalive();
       network.startKeepalive(); // replaces the first timer, does not stack
+      mockSendDirectRaw.mockClear(); // drop the two immediate PINGs above
 
       vi.advanceTimersByTime(KEEPALIVE_INTERVAL_MS);
       const pings = mockSendDirectRaw.mock.calls.filter((c) =>

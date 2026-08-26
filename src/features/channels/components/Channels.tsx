@@ -33,6 +33,21 @@ interface ChannelsProps {
 /** How long a touch has to be held on a channel row before it counts as a long-press, not a tap. */
 const LONG_PRESS_MS = 500;
 
+/**
+ * Keep the lag badge's width bounded no matter how large the reading gets —
+ * a stalled connection, a suspended background tab, or a clock jump can all
+ * produce a value far past anything a live round-trip would show, and an
+ * unbounded digit string would blow out the sidebar's fixed width (worst on
+ * the narrow mobile drawer).
+ */
+const formatLagMs = (ms: number): string => {
+  if (ms < 1000) {
+    return `${ms}ms`;
+  }
+  const seconds = ms / 1000;
+  return seconds < 100 ? `${seconds.toFixed(1)}s` : '99s+';
+};
+
 const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { t } = useTranslation();
 
@@ -41,6 +56,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const fontSize = useSettingsStore((state) => state.fontSize);
   const server = useSettingsStore((state) => state.server);
   const networkName = useSettingsStore((state) => state.networkName);
+  const lagMs = useSettingsStore((state) => state.lagMs);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -201,6 +217,25 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               })()}
               <h3 className={`${fontSizeClass} font-semibold truncate`}>{networkName ?? server?.network ?? t('main.channels.title')}</h3>
             </div>
+            {isConnected && lagMs !== undefined && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className={cn(
+                        'ml-1.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums',
+                        lagMs < 150 && 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400',
+                        lagMs >= 150 && lagMs < 400 && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400',
+                        lagMs >= 400 && 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-400',
+                      )}
+                    >
+                      {formatLagMs(lagMs)}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('main.channels.lag', { ms: lagMs })}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {isChannelsDrawerOpen && (
               <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden flex-shrink-0" aria-label={t('main.channels.closeDrawer')}>
                 <X className="h-4 w-4" />

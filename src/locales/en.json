@@ -66,6 +66,7 @@
     "main.channels.categoryDirectMessages": "Direct Messages",
     "main.channels.search": "Search channels",
     "main.channels.no-results": "No channels found",
+    "main.channels.lag": "Lag: {{ms}}ms",
     "main.friends.title": "Friends",
     "main.friends.add": "Add friend",
     "main.friends.remove": "Remove {{nick}} from friends",

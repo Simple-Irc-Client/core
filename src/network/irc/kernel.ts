@@ -51,6 +51,7 @@ import {
   getNickLenLimit,
   setLineLenLimit,
   setNetworkName,
+  setLagMs,
   setSupportedOption,
   setUserModes,
   setWatchLimit,
@@ -574,6 +575,7 @@ export class Kernel {
 
     setIsConnecting(false);
     setIsConnected(false);
+    setLagMs(undefined);
     clearAllTyping();
 
     // Session keys are per-connection. Keeping them across a reconnect would
@@ -2508,7 +2510,20 @@ export class Kernel {
 
   // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686
   private readonly onPong = (): void => {
-    //
+    // The keepalive PING (network.ts) sends `PING :<Date.now()>`, which the
+    // server echoes back verbatim as the trailing param here — round-tripping
+    // it gives us lag without a separate request/response id to track.
+    const token = this.line[this.line.length - 1];
+    if (token === undefined) {
+      return;
+    }
+    const sentAt = Number.parseInt(this.stripColon(token), 10);
+    if (!Number.isNaN(sentAt)) {
+      // A backwards system clock adjustment between send and receive would
+      // otherwise show as negative lag, which is meaningless as a network
+      // measurement.
+      setLagMs(Math.max(0, Date.now() - sentAt));
+    }
   };
 
   // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
