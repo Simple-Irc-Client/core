@@ -122,7 +122,7 @@ import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { clearIncomingState, handleE2eeCtcp } from '@features/e2ee/incoming';
-import { endAllSessions, endSession, handlePeerRename } from '@features/e2ee/session';
+import { endAllSessions, endSession, handlePeerOffline, handlePeerRename } from '@features/e2ee/session';
 import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
@@ -4526,6 +4526,12 @@ export class Kernel {
 
     if (message === 'No such nick/channel') {
       message = i18next.t('kernel.401.no-such-nick-channel', { defaultValue: message });
+    }
+
+    if (target) {
+      // The target of a pending encryption offer just turned out not to
+      // exist — fail it now instead of waiting out the full offer timeout.
+      handlePeerOffline(target);
     }
 
     setAddMessage({

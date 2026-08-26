@@ -441,6 +441,7 @@
     "e2ee.error.noHandshakeInProgress": "No encryption handshake is in progress.",
     "e2ee.error.versionMismatch": "{{nick}} uses an incompatible version of encryption.",
     "e2ee.error.noReply": "{{nick}} did not respond — they are probably not using Simple IRC Client.",
+    "e2ee.error.peerOffline": "This person is not connected to the server.",
     "e2ee.error.peerRenamed": "{{oldNick}} is now {{newNick}}. Encryption was turned off, because a nick change is not proof of identity.",
     "e2ee.error.noticeBlocked": "Not sent — /notice cannot be encrypted. This conversation with {{nick}} is end-to-end encrypted; use /msg or a plain message instead.",
     "e2ee.command.privateOnly": "Encryption is only available in private conversations.",

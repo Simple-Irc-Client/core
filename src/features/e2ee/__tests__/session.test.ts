@@ -851,6 +851,27 @@ describe('e2ee session', () => {
       await expect(alice.session.sendEncrypted('bob_away', 'still safe?', BodyKind.message)).rejects.toThrow();
     });
 
+    it('fails a pending offer immediately when the peer turns out not to exist', async () => {
+      const alice = await createClient('alice');
+
+      await alice.session.offerEncryption('ghost');
+      expect(alice.store.getSessionState('ghost')).toBe(E2eeState.offered);
+
+      alice.session.handlePeerOffline('ghost');
+
+      expect(alice.store.getSessionState('ghost')).toBe(E2eeState.error);
+    });
+
+    it('ignores a stray no-such-nick reply that does not match a pending offer', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.handlePeerOffline('bob');
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+    });
+
     it('clears everything on disconnect', async () => {
       const alice = await createClient('alice');
       const bob = await createClient('bob');

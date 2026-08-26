@@ -441,6 +441,7 @@
     "e2ee.error.noHandshakeInProgress": "Żadna wymiana kluczy nie jest w toku.",
     "e2ee.error.versionMismatch": "{{nick}} używa niezgodnej wersji szyfrowania.",
     "e2ee.error.noReply": "{{nick}} nie odpowiedział — prawdopodobnie nie używa Simple IRC Client.",
+    "e2ee.error.peerOffline": "Ta osoba nie jest połączona z serwerem.",
     "e2ee.error.peerRenamed": "{{oldNick}} to teraz {{newNick}}. Szyfrowanie zostało wyłączone, bo zmiana nicka nie potwierdza tożsamości.",
     "e2ee.error.noticeBlocked": "Nie wysłano — /notice nie może być zaszyfrowane. Ta rozmowa z {{nick}} jest szyfrowana end-to-end; użyj /msg albo zwykłej wiadomości.",
     "e2ee.command.privateOnly": "Szyfrowanie jest dostępne tylko w rozmowach prywatnych.",

@@ -637,6 +637,21 @@ export const handlePeerRename = (oldNick: string, newNick: string): void => {
 };
 
 /**
+ * The server just told us this nick doesn't exist — fail a pending offer to
+ * it right away rather than waiting out the full `OFFER_TIMEOUT_MS`.
+ *
+ * Only cancels an actual pending offer: a 401 for an unrelated nick, or one
+ * that arrives after the offer already settled, must not clobber whatever
+ * state the session is really in.
+ */
+export const handlePeerOffline = (nick: string): void => {
+  if (getSessionState(nick) !== E2eeState.offered) {
+    return;
+  }
+  failSession(nick, 'e2ee.error.peerOffline');
+};
+
+/**
  * Has this peer's identity ever been pinned on this network?
  *
  * This is what turns the pin store into a downgrade defence rather than just a
