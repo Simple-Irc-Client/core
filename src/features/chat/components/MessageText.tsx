@@ -6,9 +6,11 @@ import {
   hasIrcFormatting,
   stripIrcFormatting,
   renderFormattedSegments,
+  getStyleFromFormatState,
 } from '@/shared/lib/ircFormatting';
 import type { FormattedSegment } from '@/shared/lib/ircFormatting';
 import { isSafeUrl } from '@shared/lib/utils';
+import { splitEmoji } from '@/shared/lib/emoji';
 
 interface MessageTextProps {
   text: string;
@@ -71,6 +73,26 @@ const MessageText = ({ text, color }: MessageTextProps) => {
     return result;
   }, [text]);
 
+  /** Renders a text run with any emoji inside it wrapped for larger display (see .sic-emoji in the builtin themes). */
+  const renderWithEmoji = (runText: string, key: string, style?: React.CSSProperties): React.ReactNode => {
+    const runs = splitEmoji(runText);
+    const hasEmoji = runs.some((run) => run.isEmoji);
+    if (!hasEmoji) {
+      return style ? <span key={key} style={style}>{runText}</span> : runText;
+    }
+    return (
+      <span key={key} style={style}>
+        {runs.map((run, i) =>
+          run.isEmoji ? (
+            <span key={i} className="sic-emoji">{run.text}</span>
+          ) : (
+            <span key={i}>{run.text}</span>
+          )
+        )}
+      </span>
+    );
+  };
+
   const handleChannelClick = (event: React.MouseEvent<HTMLElement>, channel: string) => {
     event.preventDefault();
     handleContextMenuUserClick(event, 'channel', channel);
@@ -115,11 +137,14 @@ const MessageText = ({ text, color }: MessageTextProps) => {
             );
           }
 
-          if (part.segments) {
-            return <span key={key}>{renderFormattedSegments(part.segments, color)}</span>;
+          const [firstSegment] = part.segments ?? [];
+          if (firstSegment) {
+            const style = getStyleFromFormatState(firstSegment.style, color);
+            const hasStyle = Object.keys(style).length > 0;
+            return <span key={key}>{renderWithEmoji(part.value, key, hasStyle ? style : undefined)}</span>;
           }
 
-          return <span key={key}>{part.value}</span>;
+          return <span key={key}>{renderWithEmoji(part.value, key)}</span>;
         });
       })()}
     </span>

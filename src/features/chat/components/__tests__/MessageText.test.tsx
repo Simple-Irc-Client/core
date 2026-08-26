@@ -153,6 +153,41 @@ describe('MessageText', () => {
     });
   });
 
+  describe('Emoji sizing', () => {
+    it('wraps an emoji in .sic-emoji for larger display', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="nice 😀" />);
+
+      const emojiSpan = container.querySelector('.sic-emoji');
+      expect(emojiSpan).not.toBeNull();
+      expect(emojiSpan?.textContent).toBe('😀');
+      expect(container.textContent).toBe('nice 😀');
+    });
+
+    it('does not add .sic-emoji spans for plain text', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text="just plain text" />);
+
+      expect(container.querySelectorAll('.sic-emoji')).toHaveLength(0);
+    });
+
+    it('wraps emoji inside IRC-formatted text and keeps the formatting style', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(
+        <MessageText text={`${IRC_FORMAT.BOLD}bold 😀${IRC_FORMAT.BOLD}`} />
+      );
+
+      const emojiSpan = container.querySelector('.sic-emoji');
+      expect(emojiSpan).not.toBeNull();
+      expect(emojiSpan?.textContent).toBe('😀');
+      expect(container.querySelector('span[style*="font-weight"]')).not.toBeNull();
+      expect(container.textContent).toBe('bold 😀');
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle empty text', () => {
       vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);

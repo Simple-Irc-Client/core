@@ -17,6 +17,7 @@
  *     .sic-msg-bot-inline     bot icon next to the inline nick
  *     .sic-msg-e2ee           lock shown on end-to-end encrypted private messages
  *     .sic-msg-body           the message text
+ *       .sic-emoji            wraps each emoji character/sequence inside the body
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
  *
@@ -118,6 +119,16 @@
 .sic-msg-body {
   display: block;
   color: var(--msg-body);
+}
+
+/* Emoji render larger than surrounding text so they stay recognizable.
+   text-bottom keeps the surrounding text pinned to its normal baseline —
+   the (taller) emoji grows upward instead of the whole line re-centering. */
+.sic-emoji {
+  display: inline-block;
+  font-size: 1.4em;
+  line-height: 1;
+  vertical-align: text-bottom;
 }
 
 .sic-msg:not([data-content]) .sic-msg-body {
