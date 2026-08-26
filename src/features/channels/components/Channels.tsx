@@ -30,9 +30,6 @@ interface ChannelsProps {
   width?: number;
 }
 
-/** How long a touch has to be held on a channel row before it counts as a long-press, not a tap. */
-const LONG_PRESS_MS = 500;
-
 /**
  * Keep the lag badge's width bounded no matter how large the reading gets —
  * a stalled connection, a suspended background tab, or a clock jump can all
@@ -69,9 +66,11 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Long-press-to-reveal (touch equivalent of the desktop hover-to-reveal close icon).
-  const longPressTimerRef = useRef<number | null>(null);
-  const longPressTriggeredRef = useRef(false);
+  // Tap-to-reveal (touch equivalent of the desktop hover-to-reveal close icon):
+  // the first tap on a row reveals its close icon instead of navigating; a
+  // second tap (row already revealed) navigates like a normal click.
+  const touchMovedRef = useRef(false);
+  const tapRevealTriggeredRef = useRef(false);
 
   const openChannelNames = useMemo(() => openChannelsShort.map((ch) => ch.name), [openChannelsShort]);
 
@@ -107,26 +106,30 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     }
   };
 
-  const clearLongPressTimer = (): void => {
-    if (longPressTimerRef.current !== null) {
-      window.clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+  const handleTouchStart = (): void => {
+    touchMovedRef.current = false;
+  };
+
+  // A finger moving (scrolling the list) is not a tap.
+  const handleTouchMove = (): void => {
+    touchMovedRef.current = true;
+  };
+
+  const handleTouchEnd = (channel: string): void => {
+    if (touchMovedRef.current) {
+      return;
+    }
+    if (showRemoveChannelIcon !== channel) {
+      tapRevealTriggeredRef.current = true;
+      setShowRemoveChannelIcon(channel);
+      navigator.vibrate?.(10);
     }
   };
 
-  const handleTouchStart = (channel: string): void => {
-    longPressTriggeredRef.current = false;
-    clearLongPressTimer();
-    longPressTimerRef.current = window.setTimeout(() => {
-      longPressTriggeredRef.current = true;
-      setShowRemoveChannelIcon(channel);
-      navigator.vibrate?.(10);
-    }, LONG_PRESS_MS);
+  // Treat a cancelled touch (e.g. an interrupting system gesture) as a non-tap.
+  const handleTouchCancel = (): void => {
+    touchMovedRef.current = true;
   };
-
-  // A finger moving (scrolling the list) is not a long-press attempt.
-  const handleTouchMove = clearLongPressTimer;
-  const handleTouchEnd = clearLongPressTimer;
 
   const handleRemoveChannel = (channel: Channel): void => {
     // A DM is never on the server's side to begin with, and while disconnected
@@ -157,11 +160,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleListItemClick = (channel: Channel): void => {
-    // The tap that releases a long-press only reveals the close icon — it must
-    // not also navigate, or the reveal is unusable (you'd land on the channel
-    // the moment you meant to remove it).
-    if (longPressTriggeredRef.current) {
-      longPressTriggeredRef.current = false;
+    // The tap that reveals the close icon must not also navigate, or the
+    // reveal is unusable (you'd land on the channel the moment it appears).
+    if (tapRevealTriggeredRef.current) {
+      tapRevealTriggeredRef.current = false;
       return;
     }
 
@@ -284,12 +286,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     onMouseLeave={() => {
                       handleHover(channel.name, false);
                     }}
-                    onTouchStart={() => {
-                      handleTouchStart(channel.name);
-                    }}
+                    onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchCancel={handleTouchEnd}
+                    onTouchEnd={() => {
+                      handleTouchEnd(channel.name);
+                    }}
+                    onTouchCancel={handleTouchCancel}
                     onContextMenu={(e) => {
                       e.preventDefault();
                     }}
