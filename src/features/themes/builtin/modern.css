@@ -69,6 +69,14 @@
   display: none;
 }
 
+/* System messages (info/join/part/quit/kick/mode/error/motd) never get a
+   header — it only renders for content categories — so the inline time is
+   their only timestamp slot and must stay visible here. */
+.sic-msg:not([data-content]) .sic-msg-time-inline {
+  display: inline;
+  margin-right: 0.5rem;
+}
+
 .sic-msg-header {
   display: flex;
   align-items: baseline;

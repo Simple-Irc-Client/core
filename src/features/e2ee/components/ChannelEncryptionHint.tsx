@@ -20,7 +20,7 @@ const ChannelEncryptionHint = () => {
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
-            className="h-12 ml-2 shrink-0 cursor-default hover:bg-transparent"
+            className="hidden lg:inline-flex h-12 ml-2 shrink-0 cursor-default hover:bg-transparent"
             data-testid="channel-encryption-hint"
             aria-label={tooltip}
           >

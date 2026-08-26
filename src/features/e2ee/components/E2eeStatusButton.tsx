@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Lock, LockOpen, ShieldAlert } from 'lucide-react';
 
@@ -45,6 +46,7 @@ const STATUS_DISPLAY: Record<StatusKind, { Icon: typeof Lock; iconClass: string;
  */
 const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
   const pinned = useE2eePinsStore(() => hasPinnedPeer(channelName));
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
@@ -67,7 +69,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const tooltip = t(tooltipKey);
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -160,7 +162,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
                 variant="outline"
                 className="w-full"
                 data-testid="e2ee-start-button"
-                onClick={() => void offerEncryption(channelName)}
+                onClick={() => { void offerEncryption(channelName); setOpen(false); }}
               >
                 {t('e2ee.action.start')}
               </Button>

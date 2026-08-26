@@ -9,6 +9,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useContextMenu } from '@/providers/ContextMenuContext';
+import { useUsersDrawer } from '@/providers/DrawersContext';
 import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
 import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
@@ -143,6 +144,7 @@ export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem, contextMenuPosition } = useContextMenu();
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
+  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
 
   if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {
     const handleJoin = (): void => {
@@ -174,6 +176,11 @@ export const ContextMenu = () => {
       // costs one silently-ignored CTCP and nothing else.
       if (getAutoOfferEncryption()) {
         void offerEncryption(contextMenuItem);
+      }
+      // Started from the users drawer on mobile/tablet: close it so the new
+      // conversation is visible instead of staying hidden behind it.
+      if (isUsersDrawerOpen && globalThis.matchMedia?.('(max-width: 1023px)').matches) {
+        setUsersDrawerStatus();
       }
       handleContextMenuClose();
     };
