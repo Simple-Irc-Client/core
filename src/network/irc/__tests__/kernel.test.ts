@@ -69,6 +69,24 @@ describe('kernel tests', () => {
     expect(calls.indexOf('PASS sekret')).toBeLessThan(calls.indexOf('NICK TestNick'));
   });
 
+  it('does not force the view back to Status on a reconnect (only the first connect of the session may do that)', () => {
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+
+    // First connect this session — whatever it does is not what's under test.
+    new Kernel({ type: 'connect' }).handle();
+    mockSetCurrentChannelName.mockClear();
+
+    // The socket dropped and reconnected (or an STS upgrade reconnected it) —
+    // this is the transport's 'connect' event firing again. It must not steal
+    // the view away from whatever channel/DM the user was looking at.
+    new Kernel({ type: 'connect' }).handle();
+
+    expect(mockSetCurrentChannelName).not.toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+  });
+
   it('test connected', () => {
     const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
     const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
