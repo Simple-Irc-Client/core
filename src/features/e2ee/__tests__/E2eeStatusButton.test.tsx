@@ -98,6 +98,29 @@ describe('E2eeStatusButton', () => {
     expect(markVerified).toHaveBeenCalledWith('bob', true);
   });
 
+  it('closes the popover once marked verified', async () => {
+    const user = userEvent.setup();
+    setSessionState({ state: E2eeState.active, verified: false });
+
+    render(<E2eeStatusButton channelName="bob" />);
+    await user.click(screen.getByTestId('e2ee-status-button'));
+    await user.click(screen.getByTestId('e2ee-verify-button'));
+
+    expect(screen.queryByTestId('e2ee-verify-button')).not.toBeInTheDocument();
+  });
+
+  it('keeps the popover open when unverifying', async () => {
+    const user = userEvent.setup();
+    setSessionState({ state: E2eeState.active, verified: true });
+
+    render(<E2eeStatusButton channelName="bob" />);
+    await user.click(screen.getByTestId('e2ee-status-button'));
+    await user.click(screen.getByTestId('e2ee-verify-button'));
+
+    expect(markVerified).toHaveBeenCalledWith('bob', false);
+    expect(screen.getByTestId('e2ee-verify-button')).toBeInTheDocument();
+  });
+
   it('ends the session from the panel', async () => {
     const user = userEvent.setup();
     setSessionState({ state: E2eeState.active });

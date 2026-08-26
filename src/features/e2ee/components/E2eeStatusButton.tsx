@@ -115,15 +115,24 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 min-w-0"
                 data-testid="e2ee-verify-button"
-                onClick={() => { markVerified(channelName, !session.verified); }}
+                onClick={() => {
+                  const nowVerified = !session.verified;
+                  markVerified(channelName, nowVerified);
+                  // Marking verified is the end of the flow this popover exists
+                  // for — close it. Unverifying stays open since it's a step
+                  // toward re-checking fingerprints, not a conclusion.
+                  if (nowVerified) {
+                    setOpen(false);
+                  }
+                }}
               >
                 {session.verified ? t('e2ee.action.unverify') : t('e2ee.action.verify')}
               </Button>
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 min-w-0"
                 data-testid="e2ee-end-button"
                 onClick={() => {
                   endSession(channelName);

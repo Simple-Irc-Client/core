@@ -70,11 +70,27 @@
 }
 
 /* System messages (info/join/part/quit/kick/mode/error/motd) never get a
-   header — it only renders for content categories — so the inline time is
-   their only timestamp slot and must stay visible here. */
+   header — it only renders for content categories, so .sic-msg-time-trailing
+   never renders either — the inline time is their only timestamp slot and
+   must stay visible here. The line itself needs to be a flex row too, or the
+   block-level .sic-msg-body drops below the inline timestamp instead of
+   sitting next to it. Modern puts timestamps on the right everywhere else
+   (.sic-msg-time-header, .sic-msg-time-trailing), so the body is reordered
+   ahead of the DOM-first time-inline to match, rather than moved in markup. */
+.sic-msg:not([data-content]) .sic-msg-line {
+  display: flex;
+  align-items: baseline;
+}
+
 .sic-msg:not([data-content]) .sic-msg-time-inline {
   display: inline;
-  margin-right: 0.5rem;
+  margin-left: 0.5rem;
+  min-width: fit-content;
+}
+
+.sic-msg:not([data-content]) .sic-msg-body {
+  flex: 1;
+  order: -1;
 }
 
 .sic-msg-header {

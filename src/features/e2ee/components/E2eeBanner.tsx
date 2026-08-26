@@ -179,12 +179,12 @@ const E2eeBanner = () => {
       role="status"
       aria-live="polite"
       data-testid="e2ee-banner"
-      className={`sticky top-0 z-10 flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs ${TONE_CLASSES[content.tone]}`}
+      className={`sticky top-0 z-10 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-2.5 text-xs ${TONE_CLASSES[content.tone]}`}
     >
       <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
       <span>{content.text}</span>
       {content.actions.map((action, index) => (
-        <span key={action.label} className="flex items-center gap-1.5">
+        <span key={action.label} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
           {index > 0 && <span aria-hidden="true">|</span>}
           <button
             type="button"
