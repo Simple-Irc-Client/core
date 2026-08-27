@@ -335,7 +335,7 @@ describe('Channels', () => {
       expect(screen.queryByText('10')).not.toBeInTheDocument();
     });
 
-    it('should use destructive badge variant when channel has mention', () => {
+    it('should use the highlight color when channel has mention', () => {
       setupMocks({
         openChannelsShort: [createChannel({ name: '#general', unReadMessages: 3, hasMention: true })],
       });
@@ -343,10 +343,10 @@ describe('Channels', () => {
       render(<Channels />);
 
       const badge = screen.getByText('3');
-      expect(badge).toHaveClass('bg-destructive');
+      expect(badge).toHaveClass('bg-[var(--msg-highlight)]');
     });
 
-    it('should use default badge variant when channel has no mention', () => {
+    it('should use the default badge color when channel has no mention', () => {
       setupMocks({
         openChannelsShort: [createChannel({ name: '#general', unReadMessages: 3 })],
       });
@@ -355,7 +355,7 @@ describe('Channels', () => {
 
       const badge = screen.getByText('3');
       expect(badge).toHaveClass('bg-primary');
-      expect(badge).not.toHaveClass('bg-destructive');
+      expect(badge).not.toHaveClass('bg-[var(--msg-highlight)]');
     });
   });
 
@@ -843,7 +843,7 @@ describe('Channels', () => {
       expect(network.ircJoinChannels).not.toHaveBeenCalled();
     });
 
-    it('should show destructive badge on multiple channels with hasMention', () => {
+    it('should show the highlight color on multiple channels with hasMention', () => {
       setupMocks({
         openChannelsShort: [
           createChannel({ name: '#channel1', unReadMessages: 2, hasMention: true }),
@@ -855,8 +855,8 @@ describe('Channels', () => {
 
       const badge1 = screen.getByText('2');
       const badge2 = screen.getByText('5');
-      expect(badge1).toHaveClass('bg-destructive');
-      expect(badge2).toHaveClass('bg-destructive');
+      expect(badge1).toHaveClass('bg-[var(--msg-highlight)]');
+      expect(badge2).toHaveClass('bg-[var(--msg-highlight)]');
     });
   });
 });

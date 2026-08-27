@@ -299,7 +299,18 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                       {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
                         <>
                           {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
-                            <Badge variant={channel.hasMention ? 'destructive' : 'default'} className="h-5 min-w-5 flex items-center justify-center text-xs" aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}>{channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}</Badge>
+                            <Badge
+                              variant="default"
+                              className={cn(
+                                'h-5 min-w-5 flex items-center justify-center text-xs',
+                                // Same amber as the in-message highlight tint — a mention
+                                // is "pay attention", not the alarm red destructive implies.
+                                channel.hasMention && 'bg-[var(--msg-highlight)] text-white hover:bg-[var(--msg-highlight)] border-transparent',
+                              )}
+                              aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}
+                            >
+                              {channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}
+                            </Badge>
                           )}
                           {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                             <Button
