@@ -6,7 +6,8 @@ import { Button } from '@shared/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 
-import { acknowledgePlaintext, endSession, hasPinnedPeer, markVerified, offerEncryption } from '../session';
+import { acknowledgePlaintext, hasPinnedPeer, markVerified, offerEncryption } from '../session';
+import { endSessionAndAnnounce } from '../incoming';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '../store/e2ee';
 import { useE2eePinsStore } from '../store/pins';
 import { useSettingsStore } from '@features/settings/store/settings';
@@ -115,7 +116,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 h-auto whitespace-normal py-2 text-center"
                 data-testid="e2ee-verify-button"
                 onClick={() => {
                   const nowVerified = !session.verified;
@@ -132,10 +133,10 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 min-w-0"
+                className="flex-1 min-w-0 h-auto whitespace-normal py-2 text-center"
                 data-testid="e2ee-end-button"
                 onClick={() => {
-                  endSession(channelName);
+                  endSessionAndAnnounce(channelName);
                   // Chosen, not lost — warning about it would be nagging.
                   acknowledgePlaintext(channelName);
                 }}
@@ -157,7 +158,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
                 <dd className="font-mono text-xs break-all">{session.theirFingerprint}</dd>
               </div>
             </dl>
-            <Button variant="outline" className="w-full" onClick={() => { endSession(channelName, false); }}>
+            <Button variant="outline" className="w-full" onClick={() => { endSessionAndAnnounce(channelName, false); }}>
               {t('e2ee.action.dismiss')}
             </Button>
           </>

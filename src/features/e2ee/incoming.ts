@@ -35,7 +35,7 @@ import { ChannelCategory, MessageCategory } from '@shared/types';
 
 import { BodyKind, parseCtcpFrame, type E2eeFrame } from './protocol';
 import { createThrottle } from './rateLimit';
-import { acceptCipherChunk, decryptSealed, handleHandshakeFrame, sendReset } from './session';
+import { acceptCipherChunk, acceptIncomingOffer, decryptSealed, endSession, handleHandshakeFrame, sendReset } from './session';
 import { E2eeState, getSessionKey, getSessionState } from './store/e2ee';
 
 /**
@@ -86,7 +86,7 @@ const ensureWindow = (window: string): void => {
 };
 
 /** Add a system line to a private window — used for handshake outcomes. */
-const addInfoMessage = (window: string, text: string): void => {
+const addInfoMessage = (window: string, text: string, color: MessageColor = MessageColor.info): void => {
   ensureWindow(window);
   setAddMessage({
     id: uuidv4(),
@@ -94,7 +94,7 @@ const addInfoMessage = (window: string, text: string): void => {
     target: window,
     time: new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
+    color,
   });
 };
 
@@ -111,14 +111,16 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   }
 
   if (after === E2eeState.active) {
-    addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }));
+    // Reuses the join color rather than adding a dedicated variable — both mean
+    // "something good just happened" and it's already themeable per-style.
+    addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }), MessageColor.join);
     return;
   }
   // Any move away from `active` ends the encrypted conversation, not just a
   // teardown: a fresh OFFER from the peer replaces the session outright, and
   // the user needs to know the padlock they had is gone.
   if (before === E2eeState.active) {
-    addInfoMessage(nick, i18next.t('e2ee.info.ended', { nick }));
+    addInfoMessage(nick, i18next.t('e2ee.info.ended', { nick }), MessageColor.error);
     return;
   }
   if (after === E2eeState.declined) {
@@ -130,12 +132,44 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   // the same "you weren't looking at this" treatment or the request is invisible
   // until the peer happens to send a plaintext line too.
   if (after === E2eeState.incoming) {
-    addInfoMessage(nick, i18next.t('e2ee.info.incomingOffer', { nick }));
+    // Same blue as the top banner's "info" tone — this is a decision to make,
+    // not a good/bad outcome like the started/ended lines above.
+    addInfoMessage(nick, i18next.t('e2ee.info.incomingOffer', { nick }), MessageColor.notice);
     if (!isSameName(nick, getCurrentChannelName())) {
       setIncreaseUnreadMessages(nick);
       setHasMention(nick);
     }
   }
+};
+
+/**
+ * Accept an inbound OFFER from the UI and announce the result.
+ *
+ * `session.ts`'s `acceptIncomingOffer` only drives the state machine — it has
+ * no business knowing about chat windows (see `announceStateChange`) — so a
+ * click on the banner's Accept button has to go through here instead of
+ * calling it directly, or the accepting side never gets the "now encrypted"
+ * line that the initiator gets via `handleHandshake` below.
+ */
+export const acceptOfferAndAnnounce = async (nick: string): Promise<void> => {
+  const before = getSessionState(nick);
+  await acceptIncomingOffer(nick);
+  announceStateChange(nick, before, getSessionState(nick));
+};
+
+/**
+ * End a session from the UI and announce the result.
+ *
+ * Same gap as above but for the "Wyłącz szyfrowanie"/cancel/dismiss buttons:
+ * `session.ts`'s `endSession` only drives the state machine, so ending an
+ * *active* session locally needs to go through here or the person who turned
+ * it off never sees the "encryption ended" line — only the peer does, via the
+ * RESET notice arriving through `handleHandshake`.
+ */
+export const endSessionAndAnnounce = (nick: string, notifyPeer = true): void => {
+  const before = getSessionState(nick);
+  endSession(nick, notifyPeer);
+  announceStateChange(nick, before, getSessionState(nick));
 };
 
 const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'notice'): void => {

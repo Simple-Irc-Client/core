@@ -292,12 +292,23 @@
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
   word-break: break-all;
 }
+/* Modern reorders non-content categories (info/error/motd/join/part/...) to
+   push the timestamp to the right (see modern.css's `:not([data-content])`
+   rule). That must not reach debug output, so this overrides `display`/`order`
+   back to normal flow with a selector specific enough to outrank it
+   regardless of source order. */
+.sic-msg[data-debug] .sic-msg-content .sic-msg-line {
+  display: block;
+}
+.sic-msg[data-debug] .sic-msg-content .sic-msg-body {
+  order: 0;
+}
 .sic-msg[data-debug] .sic-msg-gutter,
 .sic-msg[data-debug] .sic-msg-header,
 .sic-msg[data-debug] .sic-msg-time-trailing {
   display: none;
 }
-.sic-msg[data-debug] .sic-msg-time-inline {
+.sic-msg[data-debug] .sic-msg-content .sic-msg-time-inline {
   display: inline;
   margin: 0 0.25em 0 0;
   color: var(--msg-time);

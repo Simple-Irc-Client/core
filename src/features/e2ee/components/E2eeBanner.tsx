@@ -4,16 +4,19 @@ import { Lock, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { ChannelCategory } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
 
-import { acceptIncomingOffer, acknowledgePlaintext, declineIncomingOffer, endSession, hasPinnedPeer, offerEncryption } from '../session';
+import { acknowledgePlaintext, declineIncomingOffer, hasPinnedPeer, offerEncryption } from '../session';
+import { acceptOfferAndAnnounce, endSessionAndAnnounce } from '../incoming';
 import { E2eeState, useE2eeStore, getSessionKey, type E2eeSession } from '../store/e2ee';
 import { useE2eePinsStore } from '../store/pins';
 
 /**
  * The prompt strip at the top of a private conversation.
  *
- * Mirrors `DisconnectedBanner` — sticky, `role="status"`, inline text actions —
- * so encryption state reads as one more thing the window can tell you rather
- * than a modal that interrupts.
+ * Mirrors `DisconnectedBanner` — `role="status"`, inline text actions — so
+ * encryption state reads as one more thing the window can tell you rather
+ * than a modal that interrupts. Both banners share one sticky wrapper in
+ * `Chat` rather than being sticky themselves, so that when both are shown
+ * they stack instead of overlapping at the same pinned position.
  *
  * Nothing is shown for the steady states: an active *verified* session is
  * represented by the lock in the header, not by a banner that never goes away.
@@ -70,7 +73,7 @@ const E2eeBanner = () => {
           icon: ShieldQuestion,
           text: t('e2ee.banner.incoming', { nick: peer }),
           actions: [
-            { label: t('e2ee.action.accept'), onClick: () => void acceptIncomingOffer(peer) },
+            { label: t('e2ee.action.accept'), onClick: () => void acceptOfferAndAnnounce(peer) },
             {
               label: t('e2ee.action.decline'),
               onClick: () => {
@@ -90,7 +93,7 @@ const E2eeBanner = () => {
             {
               label: t('e2ee.action.cancel'),
               onClick: () => {
-                endSession(peer);
+                endSessionAndAnnounce(peer);
                 acknowledgePlaintext(peer);
               },
             },
@@ -118,7 +121,7 @@ const E2eeBanner = () => {
             {
               label: t('e2ee.action.dismiss'),
               onClick: () => {
-                endSession(peer, false);
+                endSessionAndAnnounce(peer, false);
                 acknowledgePlaintext(peer);
               },
             },
@@ -135,7 +138,7 @@ const E2eeBanner = () => {
             {
               label: t('e2ee.action.dismiss'),
               onClick: () => {
-                endSession(peer, false);
+                endSessionAndAnnounce(peer, false);
                 acknowledgePlaintext(peer);
               },
             },
@@ -179,7 +182,7 @@ const E2eeBanner = () => {
       role="status"
       aria-live="polite"
       data-testid="e2ee-banner"
-      className={`sticky top-0 z-10 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-2.5 text-xs ${TONE_CLASSES[content.tone]}`}
+      className={`flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 px-4 py-2.5 text-xs ${TONE_CLASSES[content.tone]}`}
     >
       <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
       <span>{content.text}</span>

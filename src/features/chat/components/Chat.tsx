@@ -124,8 +124,10 @@ const Chat = () => {
         handleContextMenuUserClick(e, 'chat', currentChannelName);
       }
     }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
-      {!isConnected && <DisconnectedBanner />}
-      <E2eeBanner />
+      <div className="sticky top-0 z-10">
+        {!isConnected && <DisconnectedBanner />}
+        <E2eeBanner />
+      </div>
       {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
         {rows.map(({ message, showDateSeparator, currentDate, grouped }) => {

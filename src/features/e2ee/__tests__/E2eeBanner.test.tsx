@@ -13,9 +13,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const acceptIncomingOffer = vi.fn();
+const acceptOfferAndAnnounce = vi.fn();
+const endSessionAndAnnounce = vi.fn();
 const declineIncomingOffer = vi.fn();
-const endSession = vi.fn();
 const offerEncryption = vi.fn();
 const acknowledgePlaintext = vi.fn();
 
@@ -23,12 +23,15 @@ const acknowledgePlaintext = vi.fn();
 const peerIsPinned = { value: false };
 
 vi.mock('../session', () => ({
-  acceptIncomingOffer: (nick: string) => acceptIncomingOffer(nick),
   declineIncomingOffer: (nick: string) => declineIncomingOffer(nick),
-  endSession: (nick: string, notify?: boolean) => endSession(nick, notify),
   offerEncryption: (nick: string) => offerEncryption(nick),
   acknowledgePlaintext: (nick: string) => acknowledgePlaintext(nick),
   hasPinnedPeer: () => peerIsPinned.value,
+}));
+
+vi.mock('../incoming', () => ({
+  acceptOfferAndAnnounce: (nick: string) => acceptOfferAndAnnounce(nick),
+  endSessionAndAnnounce: (nick: string, notify?: boolean) => endSessionAndAnnounce(nick, notify),
 }));
 
 const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory, e2eeEnabled: true };
@@ -76,7 +79,7 @@ describe('E2eeBanner', () => {
     expect(screen.getByTestId('e2ee-banner')).toHaveTextContent('e2ee.banner.incoming:bob');
 
     await user.click(screen.getByRole('button', { name: 'e2ee.action.accept' }));
-    expect(acceptIncomingOffer).toHaveBeenCalledWith('bob');
+    expect(acceptOfferAndAnnounce).toHaveBeenCalledWith('bob');
 
     await user.click(screen.getByRole('button', { name: 'e2ee.action.decline' }));
     expect(declineIncomingOffer).toHaveBeenCalledWith('bob');
@@ -89,7 +92,7 @@ describe('E2eeBanner', () => {
     render(<E2eeBanner />);
     await user.click(screen.getByRole('button', { name: 'e2ee.action.cancel' }));
 
-    expect(endSession).toHaveBeenCalledWith('bob', undefined);
+    expect(endSessionAndAnnounce).toHaveBeenCalledWith('bob', undefined);
   });
 
   it('nags while an active session is unverified', () => {

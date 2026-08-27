@@ -12,9 +12,10 @@ interface E2eeIndicatorProps {
 /**
  * The small lock next to an encrypted message, mirroring `EchoedIndicator`.
  *
- * A failed decryption gets an open lock in the error colour rather than no
- * indicator at all: the user needs to see that something arrived and could not
- * be read, not silently miss it.
+ * A successfully encrypted/decrypted message gets a green lock; a failed
+ * decryption gets an open lock in the error colour rather than no indicator at
+ * all, so the user sees that something arrived and could not be read instead
+ * of silently missing it. Still resolving (`decrypting`) stays neutral.
  */
 const E2eeIndicator = ({ state }: E2eeIndicatorProps) => {
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ const E2eeIndicator = ({ state }: E2eeIndicatorProps) => {
         <TooltipTrigger asChild>
           <Icon
             className="sic-msg-e2ee h-3 w-3 inline-block ml-1"
-            style={{ color: failed ? MessageColor.error : MessageColor.time }}
+            style={{ color: failed ? MessageColor.error : state === 'ok' ? MessageColor.join : MessageColor.time }}
             aria-label={label}
           />
         </TooltipTrigger>

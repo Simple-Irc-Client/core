@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-const endSession = vi.fn();
+const endSessionAndAnnounce = vi.fn();
 const markVerified = vi.fn();
 const offerEncryption = vi.fn();
 const acknowledgePlaintext = vi.fn();
@@ -20,11 +20,14 @@ const acknowledgePlaintext = vi.fn();
 const peerIsPinned = { value: false };
 
 vi.mock('../session', () => ({
-  endSession: (nick: string, notify?: boolean) => endSession(nick, notify),
   markVerified: (nick: string, verified: boolean) => markVerified(nick, verified),
   offerEncryption: (nick: string) => offerEncryption(nick),
   acknowledgePlaintext: (nick: string) => acknowledgePlaintext(nick),
   hasPinnedPeer: () => peerIsPinned.value,
+}));
+
+vi.mock('../incoming', () => ({
+  endSessionAndAnnounce: (nick: string, notify?: boolean) => endSessionAndAnnounce(nick, notify),
 }));
 
 const settings = { e2eeEnabled: true };
@@ -129,7 +132,7 @@ describe('E2eeStatusButton', () => {
     await user.click(screen.getByTestId('e2ee-status-button'));
     await user.click(screen.getByTestId('e2ee-end-button'));
 
-    expect(endSession).toHaveBeenCalledWith('bob', undefined);
+    expect(endSessionAndAnnounce).toHaveBeenCalledWith('bob', undefined);
   });
 
   it('does not present a changed key as if it were an encrypted session', async () => {
@@ -183,7 +186,7 @@ describe('E2eeStatusButton', () => {
 
       // Otherwise the downgrade warning would appear the instant the user
       // turned it off themselves.
-      expect(endSession).toHaveBeenCalledWith('bob', undefined);
+      expect(endSessionAndAnnounce).toHaveBeenCalledWith('bob', undefined);
       expect(acknowledgePlaintext).toHaveBeenCalledWith('bob');
     });
 

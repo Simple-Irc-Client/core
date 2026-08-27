@@ -409,7 +409,7 @@
     "e2ee.action.dismiss": "Zamknij",
     "e2ee.action.retry": "Spróbuj ponownie",
     "e2ee.action.start": "Zaszyfruj tę rozmowę",
-    "e2ee.action.end": "Wyłącz",
+    "e2ee.action.end": "Wyłącz szyfrowanie",
     "e2ee.action.verify": "Oznacz jako zweryfikowane",
     "e2ee.action.unverify": "Oznacz jako niezweryfikowane",
     "e2ee.status.off": "Nieszyfrowane",
