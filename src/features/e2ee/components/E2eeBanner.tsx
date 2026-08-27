@@ -186,18 +186,24 @@ const E2eeBanner = () => {
     >
       <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
       <span>{content.text}</span>
-      {content.actions.map((action, index) => (
-        <span key={action.label} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-          {index > 0 && <span aria-hidden="true">|</span>}
-          <button
-            type="button"
-            onClick={action.onClick}
-            className="ml-1 underline hover:no-underline cursor-pointer"
-          >
-            {action.label}
-          </button>
-        </span>
-      ))}
+      {content.actions.length > 0 && (
+        // `w-full` inside the parent's `flex-wrap` row forces this onto its own
+        // line — the actions never crowd the message text on narrow windows.
+        <div className="w-full flex justify-center items-center gap-1.5">
+          {content.actions.map((action, index) => (
+            <span key={action.label} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+              {index > 0 && <span aria-hidden="true">|</span>}
+              <button
+                type="button"
+                onClick={action.onClick}
+                className="ml-1 underline hover:no-underline cursor-pointer"
+              >
+                {action.label}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
