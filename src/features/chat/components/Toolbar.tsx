@@ -636,8 +636,8 @@ const Toolbar = () => {
                 id="message-input"
                 autoFocus
                 value={message}
-                placeholder={`${t('main.toolbar.write')} ${currentChannelName}`}
-                aria-label={`${t('main.toolbar.write')} ${currentChannelName}`}
+                placeholder={`${t(currentChannelCategory === ChannelCategory.priv ? 'main.toolbar.writeDm' : 'main.toolbar.write')} ${currentChannelName}`}
+                aria-label={`${t(currentChannelCategory === ChannelCategory.priv ? 'main.toolbar.writeDm' : 'main.toolbar.write')} ${currentChannelName}`}
                 onChange={handleChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
