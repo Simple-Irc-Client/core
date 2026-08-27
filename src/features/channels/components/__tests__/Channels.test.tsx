@@ -573,106 +573,41 @@ describe('Channels', () => {
     });
   });
 
-  describe('Tap to reveal (touch)', () => {
-    it('should not show close button right after touch starts', () => {
+  describe('Tap reveals and navigates at once (touch)', () => {
+    it('should navigate and show the close button on a single tap, with no hover', () => {
       setupMocks({
         openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
       });
 
       render(<Channels />);
 
-      const channelContainer = getChannelContainer('#general');
-      fireEvent.touchStart(channelContainer);
-
-      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
-    });
-
-    it('should show close button on a single tap', () => {
-      setupMocks({
-        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
-      });
-
-      render(<Channels />);
-
-      const channelContainer = getChannelContainer('#general');
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-
-      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
-    });
-
-    it('should not reveal the close button when the finger moves (a scroll gesture)', () => {
-      setupMocks({
-        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
-      });
-
-      render(<Channels />);
-
-      const channelContainer = getChannelContainer('#general');
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchMove(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-
-      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
-    });
-
-    it('should not reveal the close button on touchCancel', () => {
-      setupMocks({
-        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
-      });
-
-      render(<Channels />);
-
-      const channelContainer = getChannelContainer('#general');
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchCancel(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-
-      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
-    });
-
-    it('should not navigate on the tap that reveals the close icon, so the reveal is not immediately dismissed', () => {
-      setupMocks({
-        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
-      });
-
-      render(<Channels />);
-
-      const channelContainer = getChannelContainer('#general');
       const channelButton = screen.getByRole('button', { name: '#general' });
-
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-      // Mobile browsers fire a click after touchend unless the gesture was consumed elsewhere.
+      // Mobile browsers fire a click on tap without any preceding hover/mouseenter.
       fireEvent.click(channelButton);
 
-      expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#general', ChannelCategory.channel);
       expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
 
-    it('should navigate normally on the next tap after a reveal, and hide the close button', () => {
+    it('should move the close button to the newly tapped channel', () => {
       setupMocks({
-        openChannelsShort: [createChannel({ name: '#general', category: ChannelCategory.channel })],
+        openChannelsShort: [
+          createChannel({ name: '#general', category: ChannelCategory.channel }),
+          createChannel({ name: '#other', category: ChannelCategory.channel }),
+        ],
       });
 
       render(<Channels />);
 
-      const channelContainer = getChannelContainer('#general');
-      const channelButton = screen.getByRole('button', { name: '#general' });
+      fireEvent.click(screen.getByRole('button', { name: '#general' }));
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
 
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-      fireEvent.click(channelButton); // swallowed — releases the reveal tap
-
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchEnd(channelContainer);
-      fireEvent.click(channelButton); // a fresh tap, close icon already showing
-
-      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#general', ChannelCategory.channel);
-      expect(screen.queryByRole('button', { name: 'main.channels.leave' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '#other' }));
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#other', ChannelCategory.channel);
+      expect(screen.getByRole('button', { name: 'main.channels.leave' })).toBeInTheDocument();
     });
 
-    it('should call handleRemoveChannel when the tap-revealed close button is tapped', () => {
+    it('should call handleRemoveChannel when the revealed close button is tapped', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
       vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
@@ -683,9 +618,7 @@ describe('Channels', () => {
 
       render(<Channels />);
 
-      const channelContainer = getChannelContainer('someUser');
-      fireEvent.touchStart(channelContainer);
-      fireEvent.touchEnd(channelContainer);
+      fireEvent.click(screen.getByRole('button', { name: 'someUser' }));
 
       const closeButton = screen.getByRole('button', { name: 'main.channels.leave' });
       fireEvent.click(closeButton);

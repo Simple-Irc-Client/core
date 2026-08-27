@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
 import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
@@ -66,12 +66,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Tap-to-reveal (touch equivalent of the desktop hover-to-reveal close icon):
-  // the first tap on a row reveals its close icon instead of navigating; a
-  // second tap (row already revealed) navigates like a normal click.
-  const touchMovedRef = useRef(false);
-  const tapRevealTriggeredRef = useRef(false);
-
   const openChannelNames = useMemo(() => openChannelsShort.map((ch) => ch.name), [openChannelsShort]);
 
   const groupedChannels = useMemo(() => {
@@ -106,31 +100,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     }
   };
 
-  const handleTouchStart = (): void => {
-    touchMovedRef.current = false;
-  };
-
-  // A finger moving (scrolling the list) is not a tap.
-  const handleTouchMove = (): void => {
-    touchMovedRef.current = true;
-  };
-
-  const handleTouchEnd = (channel: string): void => {
-    if (touchMovedRef.current) {
-      return;
-    }
-    if (showRemoveChannelIcon !== channel) {
-      tapRevealTriggeredRef.current = true;
-      setShowRemoveChannelIcon(channel);
-      navigator.vibrate?.(10);
-    }
-  };
-
-  // Treat a cancelled touch (e.g. an interrupting system gesture) as a non-tap.
-  const handleTouchCancel = (): void => {
-    touchMovedRef.current = true;
-  };
-
   const handleRemoveChannel = (channel: Channel): void => {
     // A DM is never on the server's side to begin with, and while disconnected
     // there is no PART to send or echo to wait for — either way the window is
@@ -160,14 +129,10 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleListItemClick = (channel: Channel): void => {
-    // The tap that reveals the close icon must not also navigate, or the
-    // reveal is unusable (you'd land on the channel the moment it appears).
-    if (tapRevealTriggeredRef.current) {
-      tapRevealTriggeredRef.current = false;
-      return;
-    }
-
-    setShowRemoveChannelIcon('');
+    // A tap has no hover state to reveal the close icon with, so the click
+    // that navigates also reveals it — one tap does both instead of the
+    // touch device needing a separate gesture the mouse doesn't.
+    setShowRemoveChannelIcon(channel.name);
     setCurrentChannelName(channel.name, channel.category);
     // Close drawer on mobile/tablet (below lg breakpoint)
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
@@ -286,12 +251,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                     onMouseLeave={() => {
                       handleHover(channel.name, false);
                     }}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={() => {
-                      handleTouchEnd(channel.name);
-                    }}
-                    onTouchCancel={handleTouchCancel}
                     onContextMenu={(e) => {
                       e.preventDefault();
                     }}
