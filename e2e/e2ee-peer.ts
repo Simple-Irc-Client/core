@@ -113,15 +113,6 @@ export class E2eePeer {
     return `SIC-E2EE ACCEPT 1 ${this.identity.publicKeyB64} ${this.ephemeral.publicKeyB64}`;
   }
 
-  /** SHA-256 fingerprint of a public key, formatted as the app displays it. */
-  static async fingerprint(publicKeyB64: string): Promise<string> {
-    const digest = await subtle.digest('SHA-256', fromBase64(publicKeyB64));
-    const hex = [...new Uint8Array(digest).slice(0, 8)]
-      .map((byte) => byte.toString(16).padStart(2, '0').toUpperCase())
-      .join('');
-    return (hex.match(/.{4}/g) ?? []).join(' ');
-  }
-
   /** Derive the session from the peer's keys. */
   async completeHandshake(role: Role, theirIdentityB64: string, theirEphemeralB64: string): Promise<void> {
     const isInitiator = role === 'initiator';

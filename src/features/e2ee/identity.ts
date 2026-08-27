@@ -20,7 +20,7 @@ import { get, set, del } from 'idb-keyval';
 
 import { getServer } from '@/features/settings/store/settings';
 
-import { generateIdentity, type Identity } from './crypto';
+import { fingerprintFromB64, generateIdentity, type Identity } from './crypto';
 
 const IDENTITY_STORAGE_PREFIX = 'sic-e2ee-identity';
 
@@ -59,7 +59,12 @@ const loadOrCreate = async (storageKey: string): Promise<Identity> => {
   try {
     const stored: unknown = await get(storageKey);
     if (isUsableIdentity(stored)) {
-      return stored;
+      // Recomputed rather than trusted as stored: a record written under an
+      // older fingerprint display format (e.g. before a hex-to-words change)
+      // would otherwise show stale-looking text forever, since nothing else
+      // ever touches an identity once it's persisted. Same reasoning as
+      // `checkPin` in `session.ts` for a pinned peer's cached fingerprint.
+      return { ...stored, fingerprint: await fingerprintFromB64(stored.publicKeyB64) };
     }
   } catch (error) {
     // Private browsing, blocked storage, corrupted record — fall through and

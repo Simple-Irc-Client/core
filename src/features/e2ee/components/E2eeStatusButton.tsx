@@ -109,13 +109,13 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <dl className="space-y-2 mb-3">
               <div>
                 <dt className="text-xs text-muted-foreground">{t('e2ee.panel.yourFingerprint')}</dt>
-                <dd className="font-mono text-xs break-all" data-testid="e2ee-my-fingerprint">
+                <dd className="text-xs wrap-break-word" data-testid="e2ee-my-fingerprint">
                   {session.myFingerprint}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">{t('e2ee.panel.theirFingerprint', { nick: channelName })}</dt>
-                <dd className="font-mono text-xs break-all" data-testid="e2ee-their-fingerprint">
+                <dd className="text-xs wrap-break-word" data-testid="e2ee-their-fingerprint">
                   {session.theirFingerprint}
                 </dd>
               </div>
@@ -163,11 +163,11 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <dl className="space-y-2 mb-3">
               <div>
                 <dt className="text-xs text-muted-foreground">{t('e2ee.panel.expectedFingerprint')}</dt>
-                <dd className="font-mono text-xs break-all">{session.expectedFingerprint}</dd>
+                <dd className="text-xs wrap-break-word">{session.expectedFingerprint}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">{t('e2ee.panel.receivedFingerprint')}</dt>
-                <dd className="font-mono text-xs break-all">{session.theirFingerprint}</dd>
+                <dd className="text-xs wrap-break-word">{session.theirFingerprint}</dd>
               </div>
             </dl>
             <Button variant="outline" className="w-full" onClick={() => { endSessionAndAnnounce(channelName, false); }}>

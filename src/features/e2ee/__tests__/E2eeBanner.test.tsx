@@ -96,19 +96,13 @@ describe('E2eeBanner', () => {
     expect(endSessionAndAnnounce).toHaveBeenCalledWith('bob', undefined);
   });
 
-  it('nags while an active session is unverified', () => {
+  it('shows nothing for an active session, verified or not', () => {
     setSessionState({ state: E2eeState.active, verified: false });
+    const { rerender } = render(<E2eeBanner />);
+    expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
 
-    render(<E2eeBanner />);
-
-    expect(screen.getByTestId('e2ee-banner')).toHaveTextContent('e2ee.banner.unverified:bob');
-  });
-
-  it('goes quiet once the session is verified', () => {
     setSessionState({ state: E2eeState.active, verified: true });
-
-    render(<E2eeBanner />);
-
+    rerender(<E2eeBanner />);
     expect(screen.queryByTestId('e2ee-banner')).not.toBeInTheDocument();
   });
 

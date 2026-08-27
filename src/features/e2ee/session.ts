@@ -195,14 +195,21 @@ const failSession = (nick: string, messageKey: string): void => {
  * Returns `null` when the key is acceptable (unknown peer, or an exact match),
  * and the pinned fingerprint when it disagrees — which the caller turns into a
  * blocking warning rather than a silent re-key.
+ *
+ * The fingerprint is recomputed from the pinned key's raw bytes rather than
+ * read from the pin's cached `fingerprint` field, so a pin written under an
+ * older display format (e.g. before a fingerprint-encoding change) never
+ * shows stale-looking text next to a freshly computed one. The mismatch check
+ * itself compares raw key bytes, never this display string, so recomputing it
+ * here changes nothing about what counts as a match.
  */
-const checkPin = (nick: string, identityKeyB64: string): { pinnedFingerprint: string } | null => {
+const checkPin = async (nick: string, identityKeyB64: string): Promise<{ pinnedFingerprint: string } | null> => {
   const pin = getPin(getNetwork(), peerKeyFor(nick));
   if (!pin || pin.identityKeyB64 === identityKeyB64) {
     return null;
   }
 
-  return { pinnedFingerprint: pin.fingerprint };
+  return { pinnedFingerprint: await fingerprintFromB64(pin.identityKeyB64) };
 };
 
 /**
@@ -244,7 +251,7 @@ const completeHandshake = async (
 
   const theirFingerprint = await fingerprintFromB64(theirIdentityKeyB64);
 
-  const mismatch = checkPin(nick, theirIdentityKeyB64);
+  const mismatch = await checkPin(nick, theirIdentityKeyB64);
   if (mismatch) {
     clearOfferTimer(key);
     secrets.delete(key);
@@ -405,7 +412,7 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
   const theirFingerprint = await fingerprintFromB64(frame.identityKeyB64);
   const identity = await getIdentity();
 
-  const mismatch = checkPin(nick, frame.identityKeyB64);
+  const mismatch = await checkPin(nick, frame.identityKeyB64);
   if (mismatch) {
     clearOfferTimer(key);
     secrets.delete(key);

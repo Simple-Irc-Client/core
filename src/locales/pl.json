@@ -402,7 +402,6 @@
     "main.channels.unreadCount": "{{count}} nieprzeczytanych wiadomości",
     "e2ee.banner.incoming": "{{nick}} chce zaszyfrować tę rozmowę.",
     "e2ee.banner.offered": "Czekam, aż {{nick}} zaakceptuje szyfrowanie…",
-    "e2ee.banner.unverified": "Zaszyfrowane, ale tożsamość {{nick}} nie jest zweryfikowana. Porównajcie odciski kluczy.",
     "e2ee.banner.fingerprintChanged": "Klucz szyfrowania {{nick}} się zmienił. Ktoś może przechwytywać Wasze wiadomości.",
     "e2ee.action.accept": "Szyfruj",
     "e2ee.action.decline": "Nie, dziękuję",

@@ -51,7 +51,7 @@ describe('e2ee identity', () => {
   it('generates and persists an identity on first use', async () => {
     const identity = await getIdentity();
 
-    expect(identity.fingerprint).toMatch(/^[0-9A-F]{4}( [0-9A-F]{4}){3}$/);
+    expect(identity.fingerprint).toMatch(/^[A-Za-z]+( [A-Za-z]+){15}$/);
     expect(store.has('sic-e2ee-identity:libera')).toBe(true);
   });
 
@@ -113,6 +113,22 @@ describe('e2ee identity', () => {
 
     expect(identity.privateKey).toBeInstanceOf(CryptoKey);
     expect(identity.publicKeyB64).not.toBe('still a string');
+  });
+
+  it('recomputes the fingerprint of a stored identity rather than trusting a stale cached value', async () => {
+    const fresh = await getIdentity();
+    const correctFingerprint = fresh.fingerprint;
+    clearIdentityCache();
+    // The mocked store (a plain Map) holds the same object `getIdentity` cached
+    // in memory, so mutating this field simulates a record written under an
+    // older display format without needing to fabricate a whole identity.
+    const stored = store.get('sic-e2ee-identity:libera') as { fingerprint: string };
+    stored.fingerprint = 'AAAA BBBB CCCC DDDD';
+
+    const reloaded = await getIdentity();
+
+    expect(reloaded.fingerprint).toBe(correctFingerprint);
+    expect(reloaded.fingerprint).not.toBe('AAAA BBBB CCCC DDDD');
   });
 
   it('resetIdentity produces a fresh key on next use', async () => {

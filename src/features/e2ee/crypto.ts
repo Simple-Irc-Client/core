@@ -18,6 +18,8 @@
 
 import { base64ToBytes, bytesToBase64, openBytes, sealBytes } from '@/network/encryption';
 
+import { NATO_HEX_WORDS } from './natoWordList';
+
 /** Protocol label — mixed into every derivation and used as AES-GCM additional data. */
 const PROTOCOL_LABEL = 'sic-e2ee-v1';
 
@@ -43,7 +45,7 @@ export interface KeyPairWithPublic {
 }
 
 export interface Identity extends KeyPairWithPublic {
-  /** Short, human-comparable digest of the public key, e.g. `4F2A 91BC E07D 22A1`. */
+  /** Short, human-comparable digest of the public key, e.g. `Zero One Two Three Four Five Six Seven Eight Nine Alpha Bravo Charlie Delta Echo Foxtrot`. */
   fingerprint: string;
 }
 
@@ -128,8 +130,19 @@ export const importPublicKey = async (publicKeyB64: string): Promise<CryptoKey> 
 };
 
 /**
+ * Encode raw bytes as a space-separated NATO phonetic alphabet phrase — two
+ * words per byte, one per hex nibble, so the fingerprint stays exactly as
+ * precise as the hex it replaces while being unambiguous to read aloud.
+ */
+const encodeSas = (bytes: Uint8Array): string =>
+  [...bytes].flatMap((byte) => [NATO_HEX_WORDS[byte >> 4], NATO_HEX_WORDS[byte & 0x0f]]).join(' ');
+
+/**
  * User-visible fingerprint of a public key: the first 8 bytes of its SHA-256,
- * hex, in space-separated groups of four characters.
+ * spelled out with the NATO phonetic alphabet, one word per hex nibble (e.g.
+ * `Zero One Two Three Four Five Six Seven Eight Nine Alpha Bravo Charlie
+ * Delta Echo Foxtrot`) — an internationally standard way to dictate an
+ * unambiguous string aloud, in place of reading raw hex characters.
  *
  * Truncating to 64 bits is deliberate — it has to be short enough that two
  * people will actually read it to each other. Second-preimage resistance is not
@@ -139,9 +152,8 @@ export const importPublicKey = async (publicKeyB64: string): Promise<CryptoKey> 
 export const fingerprintFromB64 = async (publicKeyB64: string): Promise<string> => {
   const digest = await crypto.subtle.digest('SHA-256', toArrayBuffer(base64ToBytes(publicKeyB64)));
   const bytes = new Uint8Array(digest).slice(0, FINGERPRINT_BYTES);
-  const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, '0').toUpperCase()).join('');
 
-  return (hex.match(/.{4}/g) ?? []).join(' ');
+  return encodeSas(bytes);
 };
 
 // ---------------------------------------------------------------------------

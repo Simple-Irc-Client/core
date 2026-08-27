@@ -52,7 +52,7 @@ The handshake produces:
 - **Forward Secrecy**: Ephemeral keys rotate per conversation; compromising a long-term identity key does not decrypt past sessions
 - **Authentication**: Long-term identity keys bind the session to specific peers
 - **TOFU Pinning**: First-seen identity keys are pinned; changed keys block the session and warn the user
-- **Fingerprint Verification**: Users can compare 64-bit fingerprints out-of-band to detect MITM at first contact
+- **Fingerprint Verification**: Users can compare 64-bit fingerprints (shown as NATO phonetic alphabet words) out-of-band to detect MITM at first contact
 - **No Silent Downgrade**: If encryption was previously established with a peer, dropping back to plaintext shows a warning
 
 ### Identity Management
@@ -60,7 +60,7 @@ The handshake produces:
 - Each **IRC network** has its own identity key pair
 - Identity keys are **non-extractable** CryptoKey objects stored in IndexedDB via structured clone
 - Private keys never exist as raw bytes in JavaScript, protecting against XSS
-- Fingerprints are displayed as space-separated 4-character groups (e.g., `4F2A 91BC E07D 22A1`)
+- Fingerprints are displayed as 16 NATO phonetic alphabet words, one per hex nibble (e.g., `Zero One Two Three Four Five Six Seven Eight Nine Alpha Bravo Charlie Delta Echo Foxtrot`) — internationally standard and unambiguous to read aloud
 
 ### Message Handling
 
@@ -79,7 +79,7 @@ The handshake produces:
 The encryption state is always visible:
 
 - **Lock icon** in conversation header shows encryption status
-- **Banners** appear for handshake prompts, verification warnings, and errors
+- **Banners** appear for handshake prompts, key-mismatch warnings, and errors — an unverified-but-encrypted session is the expected TOFU default and stays quiet, with verification discoverable in the lock popover instead of nagging
 - **Color coding**:
   - Green lock = Encrypted & verified
   - Yellow lock = Encrypted but unverified

@@ -19,6 +19,7 @@ import {
   type KeyPairWithPublic,
   type SessionKeys,
 } from '../crypto';
+import { NATO_HEX_WORDS } from '../natoWordList';
 
 /** One participant in a handshake: a long-term identity plus a fresh per-conversation ephemeral, same shape `session.ts` builds for real. */
 interface Party {
@@ -68,10 +69,14 @@ describe('e2ee crypto', () => {
   });
 
   describe('fingerprint', () => {
-    it('formats as four space-separated hex groups', async () => {
+    it('formats as sixteen NATO phonetic alphabet words, one per hex nibble', async () => {
       const identity = await generateIdentity();
+      const words = identity.fingerprint.split(' ');
 
-      expect(identity.fingerprint).toMatch(/^[0-9A-F]{4}( [0-9A-F]{4}){3}$/);
+      expect(words).toHaveLength(16);
+      for (const word of words) {
+        expect(NATO_HEX_WORDS).toContain(word);
+      }
     });
 
     it('is stable across an export/import round trip', async () => {

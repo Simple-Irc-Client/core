@@ -402,7 +402,6 @@
     "main.channels.unreadCount": "{{count}} unread messages",
     "e2ee.banner.incoming": "{{nick}} wants to encrypt this conversation.",
     "e2ee.banner.offered": "Waiting for {{nick}} to accept encryption…",
-    "e2ee.banner.unverified": "Encrypted, but {{nick}}'s identity is unverified. Compare fingerprints to be sure.",
     "e2ee.banner.fingerprintChanged": "{{nick}}'s encryption key has changed. This could mean someone is intercepting your messages.",
     "e2ee.action.accept": "Encrypt",
     "e2ee.action.decline": "No thanks",

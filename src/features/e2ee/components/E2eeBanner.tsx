@@ -18,8 +18,9 @@ import { useE2eePinsStore } from '../store/pins';
  * `Chat` rather than being sticky themselves, so that when both are shown
  * they stack instead of overlapping at the same pinned position.
  *
- * Nothing is shown for the steady states: an active *verified* session is
- * represented by the lock in the header, not by a banner that never goes away.
+ * Nothing is shown for the steady states: an active session — verified or
+ * not — is represented by the lock in the header, not by a banner that never
+ * goes away.
  *
  * Every dismissal here also records that the user accepts plaintext for this
  * conversation. Without that, closing one banner would immediately raise the
@@ -106,16 +107,10 @@ const E2eeBanner = () => {
         };
 
       case E2eeState.active:
-        // Once verified the header lock says everything; only nag while the
-        // fingerprints are still unchecked.
-        return session.verified
-          ? null
-          : {
-              tone: 'warning',
-              icon: Lock,
-              text: t('e2ee.banner.unverified', { nick: peer }),
-              actions: [],
-            };
+        // Unverified-but-encrypted is the expected default under TOFU, not a
+        // warning state — the header lock (yellow) and its popover are where
+        // verification is discoverable. See E2eeStatusButton.
+        return null;
 
       case E2eeState.fingerprintChanged:
         return {
