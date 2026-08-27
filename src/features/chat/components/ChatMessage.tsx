@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
-import { MessageCategory, type Message } from '@shared/types';
+import { ChannelCategory, MessageCategory, type Message } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import Avatar from '@shared/components/Avatar';
@@ -45,6 +45,7 @@ interface ChatMessageProps {
 const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessageProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
   const isDarkMode = useSettingsStore((s) => s.isDarkMode);
+  const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
 
   const nick = getNickFromMessage(message);
   const displayNick = getDisplayNickFromMessage(message);
@@ -53,6 +54,11 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
   const nickColor = !isDebug && rawNickColor && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : undefined;
 
   const isContent = contentCategories.has(message.category);
+  // Every non-echoed DM message is flagged `highlight` (see kernel.ts) so it
+  // still triggers notifications/unread badges — but that makes the visual
+  // tint meaningless there since every line in the window would get it. Kept
+  // for channels, where it actually distinguishes a mention from the rest.
+  const showHighlight = message.highlight && currentChannelCategory !== ChannelCategory.priv;
   // Debug output has fixed single-line styling, so the avatar/header slots are
   // never shown there — skip them entirely (also avoids avatar fetches)
   const showHeaderLayout = isContent && !isDebug;
@@ -89,7 +95,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       data-category={message.category}
       data-content={isContent || undefined}
       data-grouped={grouped || undefined}
-      data-highlight={message.highlight || undefined}
+      data-highlight={showHighlight || undefined}
       data-debug={isDebug || undefined}
       data-e2ee={message.e2ee}
     >

@@ -17,6 +17,7 @@ export const MessageColor = {
   info: 'var(--msg-info)',
   me: 'var(--msg-me)',
   error: 'var(--msg-error)',
+  e2ee: 'var(--msg-e2ee)',
 } as const;
 
 export type MessageColor = (typeof MessageColor)[keyof typeof MessageColor];

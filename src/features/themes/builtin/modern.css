@@ -46,8 +46,15 @@
 }
 
 .sic-msg[data-highlight] {
-  border-left: 2px solid var(--primary);
-  background-color: color-mix(in oklab, var(--primary) 5%, transparent);
+  border-left: 2px solid var(--msg-highlight);
+  background-color: color-mix(in oklab, var(--msg-highlight) 5%, transparent);
+}
+
+/* A verifiably encrypted message gets the same treatment, in its own colour —
+   distinct from --msg-highlight above, so the two signals never look like one. */
+.sic-msg[data-e2ee='ok'] {
+  border-left: 2px solid var(--msg-e2ee);
+  background-color: color-mix(in oklab, var(--msg-e2ee) 5%, transparent);
 }
 
 /* Avatar column; stays as an empty indent for system messages */

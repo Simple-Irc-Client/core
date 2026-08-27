@@ -178,6 +178,12 @@
   --msg-info: #666666;
   --msg-me: #800080;
   --msg-error: #ff0000;
+  /* Green, matching --msg-join — the DM/mention highlight moved off green
+     (see --msg-highlight) so this can own it without being confused for it. */
+  --msg-e2ee: #009300;
+  /* The mention/DM highlight tint — its own variable rather than --secondary
+     (that orange read too close to --msg-error's red once tinted). */
+  --msg-highlight: #f5a623;
   --background: oklch(0.99 0.005 125); /* Very light green-tinted white */
   --foreground: oklch(0.2 0.05 280); /* Dark purple #261A37 */
   --card: oklch(1 0 0);
@@ -227,6 +233,8 @@
   --msg-info: #55557a;
   --msg-me: #c47ea0;
   --msg-error: #b05555;
+  --msg-e2ee: #5a8a5a;
+  --msg-highlight: #cc9a3d;
   --background: oklch(0.13 0.015 280); /* Deep neutral dark */
   --foreground: oklch(0.92 0.01 264); /* Soft white */
   --card: oklch(0.17 0.015 280);

@@ -111,9 +111,7 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   }
 
   if (after === E2eeState.active) {
-    // Reuses the join color rather than adding a dedicated variable — both mean
-    // "something good just happened" and it's already themeable per-style.
-    addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }), MessageColor.join);
+    addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }), MessageColor.e2ee);
     return;
   }
   // Any move away from `active` ends the encrypted conversation, not just a
