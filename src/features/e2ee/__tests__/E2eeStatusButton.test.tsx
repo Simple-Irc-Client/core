@@ -113,6 +113,18 @@ describe('E2eeStatusButton', () => {
     expect(markVerified).toHaveBeenCalledWith('bob', true);
   });
 
+  it('returns focus to the message input once verified, not the trigger icon', async () => {
+    const user = userEvent.setup();
+    setSessionState({ state: E2eeState.active, verified: false });
+    document.body.innerHTML += '<input id="message-input" />';
+
+    render(<E2eeStatusButton channelName="bob" />);
+    await user.click(screen.getByTestId('e2ee-status-button'));
+    await user.click(screen.getByTestId('e2ee-verify-button'));
+
+    expect(document.getElementById('message-input')).toHaveFocus();
+  });
+
   it('closes the popover once marked verified', async () => {
     const user = userEvent.setup();
     setSessionState({ state: E2eeState.active, verified: false });

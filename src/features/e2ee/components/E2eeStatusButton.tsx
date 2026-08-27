@@ -90,7 +90,18 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
         </Tooltip>
       </TooltipProvider>
 
-      <PopoverContent className="w-80 text-sm" align="end">
+      <PopoverContent
+        className="w-80 text-sm"
+        align="end"
+        onCloseAutoFocus={(event) => {
+          // Radix's default is to return focus to the trigger icon. In a chat
+          // window the far more useful place to land is back in the compose
+          // box, so the user can keep typing without reaching for the mouse
+          // or tabbing past the icon.
+          event.preventDefault();
+          document.getElementById('message-input')?.focus();
+        }}
+      >
         <div className="font-semibold mb-2">{t('e2ee.panel.title', { nick: channelName })}</div>
 
         {isActive ? (
