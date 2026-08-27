@@ -30,7 +30,7 @@ vi.mock('../incoming', () => ({
   endSessionAndAnnounce: (nick: string, notify?: boolean) => endSessionAndAnnounce(nick, notify),
 }));
 
-const settings = { e2eeEnabled: true };
+const settings = { e2eeEnabled: true, isConnected: true };
 
 vi.mock('@features/settings/store/settings', () => ({
   getCaseMapping: () => 'ascii',
@@ -47,6 +47,7 @@ describe('E2eeStatusButton', () => {
     useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
     peerIsPinned.value = false;
     settings.e2eeEnabled = true;
+    settings.isConnected = true;
   });
 
   it('labels the button as not encrypted when there is no session', () => {
@@ -63,6 +64,17 @@ describe('E2eeStatusButton', () => {
     await user.click(screen.getByTestId('e2ee-start-button'));
 
     expect(offerEncryption).toHaveBeenCalledWith('bob');
+  });
+
+  it('offers no way to start encryption while disconnected', async () => {
+    const user = userEvent.setup();
+    settings.isConnected = false;
+
+    render(<E2eeStatusButton channelName="bob" />);
+    await user.click(screen.getByTestId('e2ee-status-button'));
+
+    expect(screen.queryByTestId('e2ee-start-button')).not.toBeInTheDocument();
+    expect(screen.getByText('main.chat.notConnected')).toBeInTheDocument();
   });
 
   it('distinguishes a verified session from an unverified one in the label', () => {

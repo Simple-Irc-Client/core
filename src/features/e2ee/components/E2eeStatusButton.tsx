@@ -51,6 +51,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
   const pinned = useE2eePinsStore(() => hasPinnedPeer(channelName));
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
+  const isConnected = useSettingsStore((state) => state.isConnected);
 
   const isActive = session?.state === E2eeState.active;
   const isAlarming = session?.state === E2eeState.fingerprintChanged;
@@ -167,7 +168,11 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
             <p className="text-xs text-muted-foreground mb-3">
               {isUnexpectedlyPlaintext ? t('e2ee.panel.plaintextAgainHint', { nick: channelName }) : t('e2ee.panel.offHint', { nick: channelName })}
             </p>
-            {e2eeEnabled ? (
+            {!e2eeEnabled ? (
+              <p className="text-xs text-muted-foreground">{t('e2ee.panel.disabledGloballyHint')}</p>
+            ) : !isConnected ? (
+              <p className="text-xs text-muted-foreground">{t('main.chat.notConnected')}</p>
+            ) : (
               <Button
                 variant="outline"
                 className="w-full"
@@ -176,8 +181,6 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
               >
                 {t('e2ee.action.start')}
               </Button>
-            ) : (
-              <p className="text-xs text-muted-foreground">{t('e2ee.panel.disabledGloballyHint')}</p>
             )}
           </>
         )}

@@ -50,6 +50,11 @@ const E2eeBanner = () => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
+  const isConnected = useSettingsStore((state) => state.isConnected);
+  // A fresh OFFER is a PRIVMSG; offering it with no connection would just
+  // sit there until the handshake times out and reports a failure that was
+  // never really a failure of the peer.
+  const canOffer = e2eeEnabled && isConnected;
 
   const sessionKey = getSessionKey(currentChannelName);
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[sessionKey]);
@@ -134,7 +139,7 @@ const E2eeBanner = () => {
           icon: ShieldAlert,
           text: session.errorMessage ?? t('e2ee.error.handshakeFailed'),
           actions: [
-            ...(e2eeEnabled ? [{ label: t('e2ee.action.retry'), onClick: () => void offerEncryption(peer) }] : []),
+            ...(canOffer ? [{ label: t('e2ee.action.retry'), onClick: () => void offerEncryption(peer) }] : []),
             {
               label: t('e2ee.action.dismiss'),
               onClick: () => {
@@ -163,7 +168,7 @@ const E2eeBanner = () => {
               icon: ShieldAlert,
               text: t('e2ee.banner.plaintextAgain', { nick: peer }),
               actions: [
-                ...(e2eeEnabled ? [{ label: t('e2ee.action.encrypt'), onClick: () => void offerEncryption(peer) }] : []),
+                ...(canOffer ? [{ label: t('e2ee.action.encrypt'), onClick: () => void offerEncryption(peer) }] : []),
                 { label: t('e2ee.action.dismiss'), onClick: () => { acknowledgePlaintext(peer); } },
               ],
             }

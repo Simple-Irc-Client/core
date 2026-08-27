@@ -34,7 +34,7 @@ vi.mock('../incoming', () => ({
   endSessionAndAnnounce: (nick: string, notify?: boolean) => endSessionAndAnnounce(nick, notify),
 }));
 
-const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory, e2eeEnabled: true };
+const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCategory.priv as ChannelCategory, e2eeEnabled: true, isConnected: true };
 
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: (selector: (state: typeof settings) => unknown) => selector(settings),
@@ -51,6 +51,7 @@ describe('E2eeBanner', () => {
     useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
     settings.currentChannelName = 'bob';
     settings.currentChannelCategory = ChannelCategory.priv;
+    settings.isConnected = true;
     peerIsPinned.value = false;
   });
 
@@ -133,6 +134,15 @@ describe('E2eeBanner', () => {
     expect(offerEncryption).toHaveBeenCalledWith('bob');
   });
 
+  it('offers no retry while disconnected', () => {
+    settings.isConnected = false;
+    setSessionState({ state: E2eeState.error, errorMessage: 'bob did not respond' });
+
+    render(<E2eeBanner />);
+
+    expect(screen.queryByRole('button', { name: 'e2ee.action.retry' })).not.toBeInTheDocument();
+  });
+
   it('does not nag after the peer declined', () => {
     setSessionState({ state: E2eeState.declined });
 
@@ -173,6 +183,17 @@ describe('E2eeBanner', () => {
       await user.click(screen.getByRole('button', { name: 'e2ee.action.encrypt' }));
 
       expect(offerEncryption).toHaveBeenCalledWith('bob');
+    });
+
+    it('offers no way to re-encrypt while disconnected', () => {
+      peerIsPinned.value = true;
+      settings.isConnected = false;
+
+      render(<E2eeBanner />);
+
+      expect(screen.queryByRole('button', { name: 'e2ee.action.encrypt' })).not.toBeInTheDocument();
+      // The rest of the banner still makes sense while disconnected.
+      expect(screen.getByRole('button', { name: 'e2ee.action.dismiss' })).toBeInTheDocument();
     });
 
     it('records the acknowledgement when dismissed', async () => {
