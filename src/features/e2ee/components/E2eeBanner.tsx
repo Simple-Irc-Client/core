@@ -164,7 +164,9 @@ const E2eeBanner = () => {
         // accusation: a peer who simply reinstalled looks identical from here.
         return pinned && !plaintextAcknowledged
           ? {
-              tone: 'warning',
+              // `danger`, not `warning`: unlike the unverified-but-still-encrypted
+              // state above, messages here are actually going out in the clear.
+              tone: 'danger',
               icon: ShieldAlert,
               text: t('e2ee.banner.plaintextAgain', { nick: peer }),
               actions: [

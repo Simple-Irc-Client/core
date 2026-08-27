@@ -172,7 +172,11 @@ describe('E2eeBanner', () => {
 
       render(<E2eeBanner />);
 
-      expect(screen.getByTestId('e2ee-banner')).toHaveTextContent('e2ee.banner.plaintextAgain:bob');
+      const banner = screen.getByTestId('e2ee-banner');
+      expect(banner).toHaveTextContent('e2ee.banner.plaintextAgain:bob');
+      // Messages are actually going out in the clear here, unlike the merely
+      // unverified-but-still-encrypted state, so it must not share that color.
+      expect(banner.className).toContain('red');
     });
 
     it('offers to encrypt again', async () => {
