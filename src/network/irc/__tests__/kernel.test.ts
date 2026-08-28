@@ -4599,6 +4599,22 @@ describe('kernel tests', () => {
       channelsFile.setRemoveChannel('OtherUser2');
     });
 
+    it('flips a DM-subscribed nick offline immediately on QUIT, without waiting for RPL_MONOFFLINE', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'setQuitUser').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
+      subscribeDmPresence('mero');
+      new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :mero!~mero@host' }).handle();
+      expect(isNickOnline('mero')).toBe(true);
+
+      const line = '@msgid=abc;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving';
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(isNickOnline('mero')).toBe(false);
+    });
+
     it('a NICK from someone with no open DM window and no friend entry does not touch MONITOR', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');

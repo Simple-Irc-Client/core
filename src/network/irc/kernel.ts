@@ -2804,6 +2804,11 @@ export class Kernel {
     // leaving a window looking encrypted. No RESET — there is nobody to tell.
     endSession(nick, false);
 
+    // QUIT is authoritative proof the nick is offline — don't wait on a
+    // possibly-delayed/dropped server MONITOR/WATCH push to update the DM
+    // presence dot. No-ops for nicks we aren't monitoring.
+    setMultipleMonitorOffline([nick]);
+
     setQuitUser(nick, message);
   };
 
