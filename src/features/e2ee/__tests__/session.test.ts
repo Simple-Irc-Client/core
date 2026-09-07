@@ -34,6 +34,9 @@ const idb = new Map<string, unknown>();
 /** Toggles the auto-accept setting for the clients created after it is set. */
 const autoOffer = { enabled: false };
 
+/** Toggles the global E2EE switch; read lazily, so it also affects existing clients. */
+const e2eeEnabled = { value: true };
+
 /** Accounts the users store reports, so account-anchored pinning can be exercised. */
 const accounts = new Map<string, string>();
 
@@ -52,7 +55,7 @@ const createClient = async (nick: string, network = `${nick}-net`): Promise<Clie
     getServer: (): { network: string } => ({ network }),
     getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => autoOffer.enabled,
-    getE2eeEnabled: (): boolean => true,
+    getE2eeEnabled: (): boolean => e2eeEnabled.value,
     getCurrentNick: (): string => nick,
     // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
     getLineLenLimit: (): number => 0,
@@ -166,6 +169,7 @@ describe('e2ee session', () => {
     idb.clear();
     accounts.clear();
     autoOffer.enabled = false;
+    e2eeEnabled.value = true;
     localStorage.clear();
   });
 
@@ -491,6 +495,118 @@ describe('e2ee session', () => {
       await alice.session.handleHandshakeFrame('bob', frame, 'privmsg');
 
       expect(alice.store.getSessionState('bob')).toBe(E2eeState.fingerprintChanged);
+    });
+  });
+
+  describe('resume after reconnect', () => {
+    it('re-offers to a peer we were encrypted with once they are seen online again', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+
+      // Connection drops: every session is torn down, nothing is sent.
+      alice.session.endAllSessions();
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.none);
+      expect(drain(alice)).toHaveLength(0);
+
+      // Reconnected, and MONITOR reports bob online again.
+      await alice.session.resumePendingEncryption('bob');
+
+      const lines = drain(alice);
+      expect(lines).toHaveLength(1);
+      expect(lines[0]?.verb).toBe('PRIVMSG');
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.offered);
+    });
+
+    it('drives the re-offer through to a working session with no user action', async () => {
+      autoOffer.enabled = true; // a pinned peer auto-accepts
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions();
+      bob.session.endAllSessions();
+
+      await alice.session.resumePendingEncryption('bob');
+      await deliver(alice, bob); // OFFER -> bob auto-accepts (pinned + autoOffer)
+      await deliver(bob, alice); // ACCEPT -> alice completes
+
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(bob.store.getSessionState('alice')).toBe(E2eeState.active);
+      expect(await sendAndReceive(alice, bob, 'back on')).toEqual({
+        kind: BodyKind.message,
+        text: 'back on',
+      });
+    });
+
+    it('re-offers only once per drop', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions();
+
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(1);
+
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(0);
+    });
+
+    it('does not re-offer to a peer there was never an active session with', async () => {
+      const alice = await createClient('alice');
+      await createClient('bob');
+
+      await alice.session.offerEncryption('bob'); // offered, never accepted
+      drain(alice);
+      alice.session.endAllSessions();
+
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(0);
+    });
+
+    it('does not re-offer when E2EE has been switched off globally', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions();
+
+      e2eeEnabled.value = false;
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(0);
+    });
+
+    it('does not re-offer after the user deliberately turned encryption off', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions(); // drop: bob captured as a resume candidate
+      alice.session.endSession('bob'); // user picks "Turn off" in the plaintext window
+      drain(alice);
+
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(0);
+    });
+
+    it('stands down if the peer re-offered first', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+      alice.session.endAllSessions();
+      bob.session.endAllSessions();
+
+      await bob.session.offerEncryption('alice');
+      await deliver(bob, alice);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.incoming);
+
+      await alice.session.resumePendingEncryption('bob');
+      expect(drain(alice)).toHaveLength(0);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.incoming);
     });
   });
 

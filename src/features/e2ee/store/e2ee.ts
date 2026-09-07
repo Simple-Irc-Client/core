@@ -141,6 +141,16 @@ export const getSessionState = (nick: string): E2eeState => getSession(nick)?.st
 
 export const isSessionActive = (nick: string): boolean => getSessionState(nick) === E2eeState.active;
 
+/**
+ * Display-case nicks of every conversation currently in the `active` state.
+ * Used at disconnect to remember who to transparently re-encrypt with once the
+ * connection (and the peer) come back — see `resumePendingEncryption`.
+ */
+export const getActiveSessionPeers = (): string[] =>
+  Object.values(useE2eeStore.getState().sessions)
+    .filter((session) => session.state === E2eeState.active)
+    .map((session) => session.peer);
+
 export const setSession = (nick: string, session: Omit<E2eeSession, 'peer'>): void => {
   useE2eeStore.getState().upsertSession(getSessionKey(nick), { ...session, peer: nick });
 };

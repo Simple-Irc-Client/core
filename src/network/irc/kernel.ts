@@ -122,7 +122,7 @@ import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { useChannelListStore, setAddChannelToList, setChannelListClear, setChannelListFinished, setAlisMode, getAlisMode, setListDeprecated, getListDeprecated } from '@features/channels/store/channelList';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { clearIncomingState, handleE2eeCtcp } from '@features/e2ee/incoming';
-import { endAllSessions, endSession, handlePeerOffline, handlePeerRename } from '@features/e2ee/session';
+import { endAllSessions, endSession, handlePeerOffline, handlePeerRename, resumePendingEncryption } from '@features/e2ee/session';
 import {
   addToChannelSettingsBanList,
   addToChannelSettingsExceptionList,
@@ -1786,6 +1786,11 @@ export class Kernel {
 
     if (nicks.length > 0) {
       setMultipleMonitorOnline(nicks, userStrings);
+      // A peer we were encrypted with before a reconnect is back — restore the
+      // encrypted conversation without making the user press "Encrypt again".
+      for (const nick of nicks) {
+        void resumePendingEncryption(nick);
+      }
     }
   };
 
@@ -5216,6 +5221,7 @@ export class Kernel {
     // User came online - use monitor store for consistency
     if (nick) {
       setMultipleMonitorOnline([nick]);
+      void resumePendingEncryption(nick);
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
@@ -5284,6 +5290,7 @@ export class Kernel {
     // User is currently online (when adding to watch list)
     if (nick) {
       setMultipleMonitorOnline([nick]);
+      void resumePendingEncryption(nick);
       setAddMessage({
         id: this.tags?.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),

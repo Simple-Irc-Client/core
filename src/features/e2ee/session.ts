@@ -81,6 +81,7 @@ import {
 } from './protocol';
 import {
   E2eeState,
+  getActiveSessionPeers,
   getSession,
   getSessionKey,
   getSessionState,
@@ -142,6 +143,16 @@ const offerTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const ownFrameIds = new Set<string>();
 
 const reassembler = createReassembler();
+
+/**
+ * Folded nicks of peers we held an `active` session with when the connection
+ * last dropped. `endAllSessions` fills this in just before wiping the sessions;
+ * once we reconnect and such a peer is seen online again, `resumePendingEncryption`
+ * drains their entry and silently re-offers — so the user isn't left pressing
+ * "Encrypt again" after every mobile disconnect. Never persisted: a fresh app
+ * start has nothing to resume.
+ */
+let resumeCandidates = new Set<string>();
 
 const getNetwork = (): string => {
   const network = getServer()?.network;
@@ -602,6 +613,10 @@ export const endSession = (nick: string, notifyPeer = true): void => {
 
   clearOfferTimer(key);
   secrets.delete(key);
+  // Ending a session on purpose (user "Turn off", a peer RESET, a rename)
+  // cancels any pending auto-resume for it: a later reconnect must not re-offer
+  // something that was deliberately stopped.
+  resumeCandidates.delete(key);
   reassembler.forget(nick);
   removeSession(nick);
 
@@ -612,6 +627,12 @@ export const endSession = (nick: string, notifyPeer = true): void => {
 
 /** Drop every session — on disconnect, or when switching servers. */
 export const endAllSessions = (): void => {
+  // Snapshot who we were actively encrypted with, so `resumePendingEncryption`
+  // can restore it once we reconnect. Taken before `clearSessions()` wipes the
+  // store. Only `active` counts — a half-finished handshake isn't a strong
+  // enough signal to silently re-drive.
+  resumeCandidates = new Set(getActiveSessionPeers().map((peer) => getSessionKey(peer)));
+
   for (const timer of offerTimers.values()) {
     clearTimeout(timer);
   }
@@ -620,6 +641,39 @@ export const endAllSessions = (): void => {
   ownFrameIds.clear();
   reassembler.clear();
   clearSessions();
+};
+
+/**
+ * A peer we were encrypted with before the connection dropped has been seen
+ * online again. Re-offer encryption transparently — no prompt, no "Encrypt
+ * again" click — as long as it still makes sense to:
+ *
+ *  - encryption is still enabled globally,
+ *  - their identity key is still pinned (the re-offer runs its own pin check as
+ *    the backstop: a substituted key blocks with `fingerprintChanged`, it is
+ *    never silently re-keyed),
+ *  - nothing has moved this conversation off `none` since the drop (the peer
+ *    beat us to it with their own OFFER, a key mismatch, a manual decline).
+ *
+ * One shot per drop: the candidate is drained whether or not the offer lands,
+ * so a peer flapping online/offline is not poked repeatedly. Another drop while
+ * `active` re-arms it.
+ */
+export const resumePendingEncryption = async (nick: string): Promise<void> => {
+  const key = getSessionKey(nick);
+  if (!resumeCandidates.has(key)) {
+    return;
+  }
+  resumeCandidates.delete(key);
+
+  if (!getE2eeEnabled() || !hasPinnedPeer(nick)) {
+    return;
+  }
+  if (getSessionState(nick) !== E2eeState.none) {
+    return;
+  }
+
+  await offerEncryption(nick);
 };
 
 /**
@@ -704,5 +758,6 @@ export const resetSessionModuleForTests = (): void => {
   secrets.clear();
   ownFrameIds.clear();
   reassembler.clear();
+  resumeCandidates = new Set();
   clearSessions();
 };
