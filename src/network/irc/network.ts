@@ -610,6 +610,104 @@ export const ircReconnect = async (): Promise<boolean> => {
 };
 
 /**
+ * Reconnect the moment the network looks like it came back, instead of waiting
+ * on the time-based inactivity watchdog.
+ *
+ * On mobile web the watchdog can't be relied on to notice a dropped link: while
+ * the tab is backgrounded the OS freezes its `setTimeout`, so after the screen
+ * unlocks the watchdog may be minutes behind — and if its
+ * `MAX_INACTIVITY_RECONNECT_RETRIES` fast retries were already spent it has
+ * given up for good, leaving the user to press "Reconnect" by hand after every
+ * blip. The browser's `online` event and the tab regaining visibility are the
+ * signals that actually fire in that situation, so this is what they drive.
+ *
+ *  - No server/nick configured (never connected, or signed out): nothing to do.
+ *  - An attempt already in flight: let it resolve rather than stacking another.
+ *  - Socket still up: it may be half-open after a Wi-Fi/cellular handoff, so
+ *    send a keepalive PING now — a PONG proves it healthy, continued silence
+ *    lets the watchdog time it out — rather than assuming it survived.
+ *  - Otherwise: clear any spent retry budget and pending backoff timer, then
+ *    reconnect immediately. A failed attempt still falls through to the normal
+ *    retry burst via the kernel's `handleReconnectFailure`.
+ */
+export const handleNetworkMaybeBack = (): void => {
+  if (getServer() === undefined || getCurrentNick() === '') {
+    return;
+  }
+
+  // A reconnect is already underway — an in-progress retry burst, or a previous
+  // call to this function whose `ircReconnect` hasn't resolved yet (paired
+  // `online` + `visibilitychange` events fire back to back). `isReconnecting`
+  // is set synchronously below, before the first `await`, so this also guards
+  // the second of two same-tick calls.
+  if (isReconnecting || isDirectConnecting()) {
+    return;
+  }
+
+  if (isDirectConnected()) {
+    ircSendRawMessage(`PING :${Date.now()}`);
+    return;
+  }
+
+  resetInactivityReconnectRetries();
+  isReconnecting = true;
+  setIsConnecting(true);
+  void ircReconnect()
+    .then((started) => {
+      if (!started) {
+        isReconnecting = false;
+        setIsConnecting(false);
+      }
+    })
+    .catch(() => {
+      isReconnecting = false;
+      setIsConnecting(false);
+    });
+};
+
+let reachabilityListenersBound = false;
+
+const onNetworkOnline = (): void => {
+  handleNetworkMaybeBack();
+};
+
+const onVisibilityChange = (): void => {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    handleNetworkMaybeBack();
+  }
+};
+
+/**
+ * Bind `handleNetworkMaybeBack` to the browser signals that mean connectivity
+ * may have returned — `online`, and the tab becoming visible again. Idempotent;
+ * `stopReachabilityWatch` unbinds. Called once from the app's long-lived
+ * `Network` component.
+ */
+export const startReachabilityWatch = (): void => {
+  if (reachabilityListenersBound || typeof window === 'undefined') {
+    return;
+  }
+  reachabilityListenersBound = true;
+  window.addEventListener('online', onNetworkOnline);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+  }
+};
+
+export const stopReachabilityWatch = (): void => {
+  if (!reachabilityListenersBound) {
+    return;
+  }
+  reachabilityListenersBound = false;
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('online', onNetworkOnline);
+  }
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  }
+};
+
+/**
  * Auto-authenticate using saved persistent password.
  * Used when the wizard is already completed and NickServ requests a password.
  */

@@ -695,6 +695,112 @@ describe('network', () => {
     });
   });
 
+  describe('reachability watch', () => {
+    const INACTIVITY_TIMEOUT_MS = 120 * 1000;
+    const PING_LINE = /^PING :\d+$/;
+
+    const withServerAndNick = (): void => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+    };
+
+    afterEach(() => {
+      network.stopReachabilityWatch();
+    });
+
+    it('reconnects when the browser fires `online` while disconnected', async () => {
+      withServerAndNick();
+      network.startReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockRestoreSaslCredentials).toHaveBeenCalled();
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
+    it('reconnects when the tab becomes visible again', async () => {
+      withServerAndNick();
+      network.startReachabilityWatch();
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
+    it('ignores visibilitychange while the tab is still hidden', async () => {
+      const visibilitySpy = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+      withServerAndNick();
+      network.startReachabilityWatch();
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+      visibilitySpy.mockRestore();
+    });
+
+    it('probes a still-connected socket with a PING instead of reconnecting', async () => {
+      withServerAndNick();
+      mockIsDirectConnected.mockReturnValue(true);
+      network.startReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(expect.stringMatching(PING_LINE));
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when no server is configured', async () => {
+      mockGetServer.mockReturnValue(undefined);
+      mockGetCurrentNick.mockReturnValue('');
+      network.startReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('stops responding to events after stopReachabilityWatch', async () => {
+      withServerAndNick();
+      network.startReachabilityWatch();
+      network.stopReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('clears a spent retry budget so a reconnect can proceed', async () => {
+      withServerAndNick();
+
+      // Exhaust the fast-retry burst via the inactivity path.
+      for (let i = 0; i < 3; i++) {
+        network.resetInactivityTimeout();
+        await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+        await vi.advanceTimersByTimeAsync(2000);
+      }
+      network.resetInactivityTimeout();
+      await vi.advanceTimersByTimeAsync(INACTIVITY_TIMEOUT_MS);
+      mockInitDirectWebSocket.mockClear();
+
+      network.handleNetworkMaybeBack();
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+  });
+
   describe('active keepalive', () => {
     const KEEPALIVE_INTERVAL_MS = 30 * 1000;
     const PING_LINE = /^PING :\d+$/;
