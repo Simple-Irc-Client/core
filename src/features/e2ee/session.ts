@@ -628,10 +628,19 @@ export const endSession = (nick: string, notifyPeer = true): void => {
 /** Drop every session — on disconnect, or when switching servers. */
 export const endAllSessions = (): void => {
   // Snapshot who we were actively encrypted with, so `resumePendingEncryption`
-  // can restore it once we reconnect. Taken before `clearSessions()` wipes the
-  // store. Only `active` counts — a half-finished handshake isn't a strong
-  // enough signal to silently re-drive.
-  resumeCandidates = new Set(getActiveSessionPeers().map((peer) => getSessionKey(peer)));
+  // can restore it once we reconnect. Only `active` counts — a half-finished
+  // handshake isn't a strong enough signal to silently re-drive.
+  //
+  // Guarded on there being something to snapshot: one disconnect tears sessions
+  // down more than once (the transport's close handler, then again from
+  // `ircReconnect`'s `notifyConnectionTornDown`), and every call after the first
+  // runs against an already-cleared store. Without the guard those later calls
+  // would overwrite the candidates the first call captured with an empty set,
+  // and nothing would be re-offered after the reconnect.
+  const activePeerKeys = getActiveSessionPeers().map((peer) => getSessionKey(peer));
+  if (activePeerKeys.length > 0) {
+    resumeCandidates = new Set(activePeerKeys);
+  }
 
   for (const timer of offerTimers.values()) {
     clearTimeout(timer);

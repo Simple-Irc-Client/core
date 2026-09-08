@@ -608,6 +608,24 @@ describe('e2ee session', () => {
       expect(drain(alice)).toHaveLength(0);
       expect(alice.store.getSessionState('bob')).toBe(E2eeState.incoming);
     });
+
+    it('keeps the candidates when endAllSessions runs again after the store is cleared', async () => {
+      const alice = await createClient('alice');
+      const bob = await createClient('bob');
+
+      await completeHandshake(alice, bob);
+
+      // One disconnect tears sessions down more than once: the close handler,
+      // then again from ircReconnect. The second pass has nothing active left
+      // to snapshot and must not wipe what the first pass captured.
+      alice.session.endAllSessions();
+      alice.session.endAllSessions();
+
+      await alice.session.resumePendingEncryption('bob');
+
+      expect(drain(alice)).toHaveLength(1);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.offered);
+    });
   });
 
   describe('pinning', () => {
