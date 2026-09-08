@@ -9,6 +9,7 @@ import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/s
 import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
+import { MessageColor } from '@/config/theme';
 import i18next from '@/app/i18n';
 import { initEncryption, decryptPersistent } from '@/network/encryption';
 import {
@@ -107,6 +108,9 @@ const scheduleReconnectAttempt = (): void => {
     }),
     time: new Date().toISOString(),
     category: MessageCategory.info,
+    // Same tone as kernel.connected / kernel.disconnected — these connection
+    // lifecycle lines should read as one set.
+    color: MessageColor.info,
   });
 
   reconnectTimeoutId = setTimeout(() => {
@@ -588,6 +592,7 @@ export const ircReconnect = async ({ announce = true }: { announce?: boolean } =
       message: i18next.t('kernel.reconnecting'),
       time: new Date().toISOString(),
       category: MessageCategory.info,
+      color: MessageColor.info,
     });
   }
 

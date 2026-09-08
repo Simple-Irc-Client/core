@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { Server } from '../servers';
+import { MessageColor } from '@/config/theme';
 
 // Mock config before importing network module
 vi.mock('@/config/config', () => ({
@@ -499,6 +500,7 @@ describe('network', () => {
         message: 'kernel.inactivityTimeoutReconnecting',
         time: expect.any(String),
         category: 'info',
+        color: MessageColor.info,
       });
     });
 
@@ -618,6 +620,7 @@ describe('network', () => {
         message: 'kernel.inactivityTimeoutReconnecting',
         time: expect.any(String),
         category: 'info',
+        color: MessageColor.info,
       });
     });
 
