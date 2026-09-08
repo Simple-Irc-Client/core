@@ -1221,6 +1221,50 @@ describe('network', () => {
       expect(mockRestoreSaslCredentials).toHaveBeenCalled();
     });
 
+    it('announces the reconnect by default (manual "Connect" affordances)', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockSetAddMessageToAllChannels.mockClear();
+
+      await network.ircReconnect();
+
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'kernel.reconnecting' }),
+      );
+    });
+
+    it('stays quiet with announce: false (inactivity path posts its own message)', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['irc.test.net:6667'],
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockSetAddMessageToAllChannels.mockClear();
+
+      await network.ircReconnect({ announce: false });
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'kernel.reconnecting' }),
+      );
+    });
+
+    it('does not announce when there is no server/nick to reconnect to', async () => {
+      mockGetServer.mockReturnValue(undefined);
+      mockGetCurrentNick.mockReturnValue('');
+      mockSetAddMessageToAllChannels.mockClear();
+
+      await network.ircReconnect();
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    });
+
     it('should disconnect existing connection before reconnecting', async () => {
       mockGetServer.mockReturnValue({
         default: 0,

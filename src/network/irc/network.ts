@@ -111,7 +111,8 @@ const scheduleReconnectAttempt = (): void => {
 
   reconnectTimeoutId = setTimeout(() => {
     reconnectTimeoutId = null;
-    void ircReconnect().then((success) => {
+    // announce: false — the attempt-counter message above already says so.
+    void ircReconnect({ announce: false }).then((success) => {
       if (!success) {
         // ircReconnect couldn't initiate (no server/nick) - retry or give up
         scheduleReconnectAttempt();
@@ -564,14 +565,30 @@ export const ircSendRawMessage = (data: string): void => {
 
 /**
  * Reconnect to IRC server preserving SASL credentials.
- * Used for automatic reconnection after inactivity timeout.
+ * Used for automatic reconnection (inactivity watchdog, network-back on mobile)
+ * and for the manual "Connect" affordances in the UI.
+ *
+ * Posts a "Reconnecting to server..." status line so the attempt is visible —
+ * without it the next thing the user sees is a mid-flow detail like the STS
+ * upgrade notice ("Server requires secure connection..."), which reads as an
+ * error rather than a step in coming back online. `announce: false` is for the
+ * inactivity path, which has already posted its own attempt-counter message.
  */
-export const ircReconnect = async (): Promise<boolean> => {
+export const ircReconnect = async ({ announce = true }: { announce?: boolean } = {}): Promise<boolean> => {
   const server = getServer();
   const nick = getCurrentNick();
 
   if (server === undefined || nick === '') {
     return false;
+  }
+
+  if (announce) {
+    setAddMessageToAllChannels({
+      id: uuidv4(),
+      message: i18next.t('kernel.reconnecting'),
+      time: new Date().toISOString(),
+      category: MessageCategory.info,
+    });
   }
 
   // Reset state without clearing saved credentials
@@ -650,20 +667,6 @@ export const handleNetworkMaybeBack = (): void => {
   }
 
   resetInactivityReconnectRetries();
-
-  // Announce the reconnect. Without this the next thing the user sees after
-  // "Disconnected from server" is a mid-flow detail like the STS upgrade
-  // notice ("Server requires secure connection..."), which reads as an error
-  // rather than a step in coming back online. The time-based watchdog path
-  // (`scheduleReconnectAttempt`) posts its own message; this covers the
-  // event-driven mobile path.
-  setAddMessageToAllChannels({
-    id: uuidv4(),
-    message: i18next.t('kernel.reconnecting'),
-    time: new Date().toISOString(),
-    category: MessageCategory.info,
-  });
-
   isReconnecting = true;
   setIsConnecting(true);
   void ircReconnect()
