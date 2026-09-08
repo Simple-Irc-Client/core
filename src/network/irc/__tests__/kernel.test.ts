@@ -69,22 +69,60 @@ describe('kernel tests', () => {
     expect(calls.indexOf('PASS sekret')).toBeLessThan(calls.indexOf('NICK TestNick'));
   });
 
-  it('does not force the view back to Status on a reconnect (only the first connect of the session may do that)', () => {
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
-    vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+  describe('view on connect', () => {
+    const stubConnect = () => {
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
+      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      return vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    };
 
-    // First connect this session — whatever it does is not what's under test.
-    new Kernel({ type: 'connect' }).handle();
-    mockSetCurrentChannelName.mockClear();
+    it('defaults the view to Status on a fresh connect (nothing else restored)', () => {
+      const mockSetCurrentChannelName = stubConnect();
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => STATUS_CHANNEL);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
 
-    // The socket dropped and reconnected (or an STS upgrade reconnected it) —
-    // this is the transport's 'connect' event firing again. It must not steal
-    // the view away from whatever channel/DM the user was looking at.
-    new Kernel({ type: 'connect' }).handle();
+      new Kernel({ type: 'connect' }).handle();
 
-    expect(mockSetCurrentChannelName).not.toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+    });
+
+    it('does not steal the view from a channel/DM the user is already reading', () => {
+      const mockSetCurrentChannelName = stubConnect();
+      // A restored persisted window (mobile: the webview reloaded in the
+      // background, so this "Connect" tap arrives as a fresh first connect) or
+      // a plain reconnect mid-conversation — either way the user is on a real
+      // window and must stay there.
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => 'Bfyhdgbfcgjbv');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === 'Bfyhdgbfcgjbv');
+
+      new Kernel({ type: 'connect' }).handle();
+
+      expect(mockSetCurrentChannelName).not.toHaveBeenCalled();
+    });
+
+    it('falls back to Status when the current window no longer exists', () => {
+      const mockSetCurrentChannelName = stubConnect();
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#gone');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+
+      new Kernel({ type: 'connect' }).handle();
+
+      expect(mockSetCurrentChannelName).toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+    });
+
+    it('does not force the view back to Status on a reconnect mid-conversation', () => {
+      const mockSetCurrentChannelName = stubConnect();
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === '#sic');
+
+      // First connect, then the socket drops and reconnects (or an STS upgrade
+      // reconnects it): the transport 'connect' event fires again.
+      new Kernel({ type: 'connect' }).handle();
+      new Kernel({ type: 'connect' }).handle();
+
+      expect(mockSetCurrentChannelName).not.toHaveBeenCalledWith(STATUS_CHANNEL, ChannelCategory.status);
+    });
   });
 
   it('test connected', () => {

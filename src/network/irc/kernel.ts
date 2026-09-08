@@ -400,17 +400,6 @@ onConnectionTornDown(() => {
   clearMonitorList();
 });
 
-// A fresh Kernel instance is constructed per event (see `Network.tsx`), so
-// this can't live on the class — it has to survive across the many `Kernel`
-// objects that come and go over one connection's lifetime, including a
-// reconnect. Tracks whether `handleConnect` has already fired once this app
-// session, so it can force the view to Status only for that first connect
-// (where there's nothing else to show yet) and leave it alone on every
-// reconnect afterwards — otherwise every reconnect yanked the user back to
-// Status mid-conversation, with unrelated messages landing there too (see
-// `onNotice`, which resolves its target from the current channel).
-let hasConnectedThisSession = false;
-
 export class Kernel {
   private tags: Record<string, string>;
   private sender: string;
@@ -498,10 +487,20 @@ export class Kernel {
       setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
     }
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-    if (!hasConnectedThisSession) {
+    // Point the view at Status on connect, but never steal it from a real
+    // window the user is already reading. That covers both a plain reconnect
+    // mid-conversation and a session that restored persisted windows — common
+    // on mobile, where the webview is reloaded in the background so every
+    // "Connect" tap arrives as a fresh first connect. (Without this guard,
+    // reconnects also dragged unrelated messages to Status via `onNotice`,
+    // which resolves its target from the current channel.) On a genuinely
+    // fresh session `currentChannelName` is still the default "Status", so
+    // this is a no-op there.
+    const current = getCurrentChannelName();
+    const viewingRealWindow = existChannel(current) && !isSameName(current, STATUS_CHANNEL);
+    if (!viewingRealWindow) {
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
-    hasConnectedThisSession = true;
 
     // Registration is owned by the kernel for both transports (WebSocket and
     // Tauri/network-rs), which are pure byte pipes. Opening the handshake here
