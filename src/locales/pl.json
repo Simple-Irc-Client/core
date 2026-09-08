@@ -86,6 +86,7 @@
     "main.chat.dateChanged": "{{date}}",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
+    "kernel.reconnecting": "Ponowne łączenie z serwerem...",
     "kernel.inactivityTimeout": "Utracono połączenie - brak aktywności z serwera przez 3 minuty",
     "kernel.inactivityTimeoutReconnecting": "Utracono połączenie - ponowne łączenie (próba {{attempt}}/{{max}})...",
     "kernel.inactivityTimeoutMaxRetries": "Utracono połączenie - osiągnięto maksymalną liczbę prób",

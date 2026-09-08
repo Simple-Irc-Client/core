@@ -22,8 +22,8 @@ describe('command tests', () => {
   });
 
   it('test quit command', () => {
-    expect(parseMessageToCommand('#channel', '/q reason1 reason2')).toStrictEqual('QUIT reason1 reason2');
-    expect(parseMessageToCommand('#channel', '/QUIT')).toStrictEqual('QUIT Simple Irc Client ( https://simpleircclient.com )');
+    expect(parseMessageToCommand('#channel', '/q reason1 reason2')).toStrictEqual('QUIT :reason1 reason2');
+    expect(parseMessageToCommand('#channel', '/QUIT')).toStrictEqual('QUIT :Simple Irc Client ( https://simpleircclient.com )');
   });
 
   it('test quote command', () => {

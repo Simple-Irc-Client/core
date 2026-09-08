@@ -724,6 +724,33 @@ describe('network', () => {
       expect(mockInitDirectWebSocket).toHaveBeenCalled();
     });
 
+    it('announces the reconnect so later mid-flow notices have context', async () => {
+      withServerAndNick();
+      mockSetAddMessageToAllChannels.mockClear();
+      network.startReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'kernel.reconnecting' }),
+      );
+    });
+
+    it('does not announce a reconnect when the socket is still up', async () => {
+      withServerAndNick();
+      mockIsDirectConnected.mockReturnValue(true);
+      mockSetAddMessageToAllChannels.mockClear();
+      network.startReachabilityWatch();
+
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'kernel.reconnecting' }),
+      );
+    });
+
     it('reconnects when the tab becomes visible again', async () => {
       withServerAndNick();
       network.startReachabilityWatch();

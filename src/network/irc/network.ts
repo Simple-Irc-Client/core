@@ -650,6 +650,20 @@ export const handleNetworkMaybeBack = (): void => {
   }
 
   resetInactivityReconnectRetries();
+
+  // Announce the reconnect. Without this the next thing the user sees after
+  // "Disconnected from server" is a mid-flow detail like the STS upgrade
+  // notice ("Server requires secure connection..."), which reads as an error
+  // rather than a step in coming back online. The time-based watchdog path
+  // (`scheduleReconnectAttempt`) posts its own message; this covers the
+  // event-driven mobile path.
+  setAddMessageToAllChannels({
+    id: uuidv4(),
+    message: i18next.t('kernel.reconnecting'),
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+  });
+
   isReconnecting = true;
   setIsConnecting(true);
   void ircReconnect()

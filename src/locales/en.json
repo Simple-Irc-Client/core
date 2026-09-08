@@ -86,6 +86,7 @@
     "main.chat.dateChanged": "{{date}}",
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
+    "kernel.reconnecting": "Reconnecting to server...",
     "kernel.inactivityTimeout": "Connection lost - no activity from server for 3 minutes",
     "kernel.inactivityTimeoutReconnecting": "Connection lost - reconnecting (attempt {{attempt}}/{{max}})...",
     "kernel.inactivityTimeoutMaxRetries": "Connection lost - maximum reconnection attempts reached",

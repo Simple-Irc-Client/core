@@ -130,7 +130,7 @@ const joinCommand = (line: string[]): string => {
 };
 
 const quitCommand = (line: string[]): string => {
-  return `QUIT ${line.length !== 0 ? line.join(' ') : defaultQuitMessage}`;
+  return `QUIT :${line.length !== 0 ? line.join(' ') : defaultQuitMessage}`;
 };
 
 const quoteCommand = (channel: string, line: string[]): string => {
