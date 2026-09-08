@@ -18,8 +18,11 @@ import { CTCP, ctcpBody, E2eePeer } from '../e2ee-peer';
  * reconnect project.
  */
 
-const APP_NICK = 'e2ee-recon-tester';
-const BOT_NICK = 'e2eereconbot';
+// Nicks are per-project: chromium-reconnect and firefox-reconnect run this file
+// concurrently against the one shared Ergo server, and identical nicks race to
+// 433 (the wizard then never reaches "Connected"). See e2e-testing-gotchas.
+let APP_NICK: string;
+let BOT_NICK: string;
 
 let bot: IrcClient;
 let page: Page;
@@ -74,7 +77,11 @@ const reconnectViaBanner = async (): Promise<void> => {
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 };
 
-test.beforeAll(async ({ browser }) => {
+test.beforeAll(async ({ browser }, testInfo) => {
+  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  APP_NICK = `e2ee-rec-${tag}-app`;
+  BOT_NICK = `e2ee-rec-${tag}-bot`;
+
   bot = await createIrcClient(BOT_NICK);
   botNick = bot.nick;
 

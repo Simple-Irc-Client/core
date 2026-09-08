@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
 
 /**
@@ -23,11 +23,18 @@ import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '..
 
 const CHANNEL = '#mobile-recon';
 
-/** Wizard through with no channels, then join CHANNEL and land on it. */
-const setUpOnChannel = async (page: Page, nick: string): Promise<void> => {
+/**
+ * Wizard through with no channels, then join CHANNEL and land on it.
+ *
+ * The nick is suffixed per project: chromium-reconnect and firefox-reconnect run
+ * this file concurrently against one shared Ergo server, and identical nicks
+ * race to 433. See e2e-testing-gotchas.
+ */
+const setUpOnChannel = async (page: Page, baseNick: string, testInfo: TestInfo): Promise<void> => {
+  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   await installWebSocketKillSwitch(page);
   await page.goto('/');
-  await connectViaWizard(page, nick, { channels: [] });
+  await connectViaWizard(page, `${baseNick}-${tag}`, { channels: [] });
 
   const input = page.locator('#message-input');
   await expect(input).toBeEnabled({ timeout: 10_000 });
@@ -44,8 +51,8 @@ const setUpOnChannel = async (page: Page, nick: string): Promise<void> => {
 test.describe('Mobile event-driven reconnect', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('reconnects on the browser `online` event without a manual Connect', async ({ page }) => {
-    await setUpOnChannel(page, 'mobile-recon-online');
+  test('reconnects on the browser `online` event without a manual Connect', async ({ page }, testInfo) => {
+    await setUpOnChannel(page, 'mob-rec-online', testInfo);
 
     await dropConnection(page);
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
@@ -65,8 +72,8 @@ test.describe('Mobile event-driven reconnect', () => {
     await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
   });
 
-  test('reconnects when the tab becomes visible again', async ({ page }) => {
-    await setUpOnChannel(page, 'mobile-recon-visible');
+  test('reconnects when the tab becomes visible again', async ({ page }, testInfo) => {
+    await setUpOnChannel(page, 'mob-rec-visible', testInfo);
 
     await dropConnection(page);
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
@@ -80,8 +87,8 @@ test.describe('Mobile event-driven reconnect', () => {
     await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
   });
 
-  test('a manual Connect from the disconnect banner also keeps the current view', async ({ page }) => {
-    await setUpOnChannel(page, 'mobile-recon-manual');
+  test('a manual Connect from the disconnect banner also keeps the current view', async ({ page }, testInfo) => {
+    await setUpOnChannel(page, 'mob-rec-manual', testInfo);
 
     await dropConnection(page);
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
