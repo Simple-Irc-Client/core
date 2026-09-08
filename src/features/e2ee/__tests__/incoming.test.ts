@@ -206,6 +206,19 @@ describe('e2ee incoming CTCP handling', () => {
       expect(addedMessages.some((message) => message.target === 'bob')).toBe(true);
       expect(unreadBumps).toContain('bob');
     });
+
+    it('flags handshake announcements as system notices so they are not attributed to a speaker', async () => {
+      const peer = await createPeer();
+      await peer.offerEncryption('me');
+      const offerBody = bodyOf(peer.drain()[0] ?? '');
+
+      handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: offerBody, source: 'privmsg' });
+      await until(() => getSessionState('bob') === E2eeState.incoming);
+
+      const notice = addedMessages.find((message) => message.target === 'bob' && message.category === 'info');
+      expect(notice?.system).toBe(true);
+      expect(notice?.nick).toBeUndefined();
+    });
   });
 
   describe('cipher frames', () => {

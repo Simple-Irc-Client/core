@@ -9,6 +9,7 @@
  *                               [data-content]   present on default/me/notice (user content)
  *                               [data-grouped]   consecutive message from the same nick
  *                               [data-highlight] message mentions your nick
+ *                               [data-system]    conversation-level notice (no speaker), e.g. an E2EE handshake outcome
  *   .sic-msg-gutter           avatar column (.sic-msg-avatar inside)
  *   .sic-msg-header           header row: .sic-msg-nick, bot icon, .sic-msg-time-header
  *   .sic-msg-line             the message line itself:
@@ -170,6 +171,28 @@
 .sic-msg[data-category='quit'] .sic-msg-body,
 .sic-msg[data-category='kick'] .sic-msg-body {
   font-style: italic;
+}
+
+/* Conversation-level system notices (e.g. E2EE handshake outcomes). These
+   belong to no speaker, so they drop the avatar indent, span the full width
+   and centre — a header-less line sitting in the speaker column reads as a
+   continuation of whoever spoke last (e.g. a NickServ notice). The top margin
+   breaks them away from the message block above. */
+.sic-msg[data-system] {
+  margin-top: 0.5rem;
+}
+
+.sic-msg[data-system] .sic-msg-gutter {
+  display: none;
+}
+
+.sic-msg[data-system] .sic-msg-time-inline {
+  display: none;
+}
+
+.sic-msg[data-system] .sic-msg-body {
+  text-align: center;
+  font-size: 0.8125rem;
 }
 
 .sic-msg:not([data-content]) .sic-msg-embeds {

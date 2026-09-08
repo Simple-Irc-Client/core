@@ -60,6 +60,13 @@ export interface Message {
    * IndexedDB — encrypted conversations are deliberately not written to disk.
    */
   e2ee?: 'decrypting' | 'ok' | 'failed';
+  /**
+   * A conversation-level system notice (e.g. an E2EE handshake outcome), not an
+   * utterance by any participant. Rendered detached from the speaker column so
+   * it can't be misread as the words of whoever spoke last — see the
+   * `.sic-msg[data-system]` rules in the builtin themes.
+   */
+  system?: boolean;
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

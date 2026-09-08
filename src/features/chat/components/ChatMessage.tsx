@@ -97,6 +97,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       data-grouped={grouped || undefined}
       data-highlight={showHighlight || undefined}
       data-debug={isDebug || undefined}
+      data-system={message.system || undefined}
       data-e2ee={message.e2ee}
     >
       <div className="sic-msg-gutter">

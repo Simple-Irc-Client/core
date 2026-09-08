@@ -95,6 +95,10 @@ const addInfoMessage = (window: string, text: string, color: MessageColor = Mess
     time: new Date().toISOString(),
     category: MessageCategory.info,
     color,
+    // Handshake outcomes are about the conversation, not something the peer
+    // said — flag them so the renderer detaches them from the speaker column
+    // (otherwise they group under whoever spoke last, e.g. a NickServ notice).
+    system: true,
   });
 };
 
