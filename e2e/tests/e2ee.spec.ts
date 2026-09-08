@@ -237,6 +237,36 @@ test.describe('End-to-end encryption', () => {
     expect(line).not.toContain('SICE ');
   });
 
+  test('handshake notices render detached, not attributed to whoever spoke last', async () => {
+    await openDmWithBot();
+
+    // Something from a real speaker lands in the window first...
+    bot.sendNotice(APP_NICK, 'plain-notice-before-offer');
+    await expect(page.getByTestId('chat-log').getByText('plain-notice-before-offer')).toBeVisible({ timeout: 20_000 });
+
+    // ...then an inbound E2EE offer lands right under it. Without the detach it
+    // groups under the previous author's header and reads as their message.
+    await page.waitForTimeout(1100); // inbound-offer throttle
+    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${peer.offerFrame()}${CTCP}`);
+
+    // Earlier tests in this file each left an offer notice in this same shared
+    // log, so match the most recent one.
+    const offerRow = page
+      .getByTestId('chat-log')
+      .locator('.sic-msg', { hasText: 'wants to start an encrypted conversation' })
+      .last();
+    await expect(offerRow).toBeVisible({ timeout: 20_000 });
+
+    // It is a standalone system notice: flagged detached, not "content", and
+    // carrying no nick of its own — so it cannot read as the bot's words.
+    await expect(offerRow).toHaveAttribute('data-system', 'true');
+    await expect(offerRow).not.toHaveAttribute('data-content');
+    await expect(offerRow.locator('.sic-msg-nick')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'No thanks' }).click();
+    await expect(page.getByTestId('e2ee-banner')).toBeHidden();
+  });
+
   test('a client that does not answer leaves the user informed, not stuck', async () => {
     // The app waits OFFER_TIMEOUT_MS (session.ts) before giving up on a
     // reply — 60s, deliberately generous so a slow link or a human taking a

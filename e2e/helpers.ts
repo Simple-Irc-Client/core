@@ -2,6 +2,59 @@ import { readFileSync } from 'node:fs';
 import { type Page } from '@playwright/test';
 import { PASSWORD_FILE } from './global-setup';
 
+/**
+ * Wrap `WebSocket` on the page so a test can force every live socket closed,
+ * simulating a connection drop (Wi-Fi/cellular handoff, server hiccup) without
+ * touching the page itself. Must be called before `page.goto`.
+ *
+ * Exposes `window.__closeAllWS()` — closes every OPEN/CONNECTING socket and
+ * returns `{ total, closed }`. Same technique the reconnect specs already use
+ * inline; shared here so the mobile-reconnect and e2ee-reconnect specs agree on
+ * it. Playwright's own `context.setOffline` is avoided on purpose: it doesn't
+ * reliably surface a `close` event to the app on every browser.
+ */
+export const installWebSocketKillSwitch = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    const OrigWS = globalThis.WebSocket;
+    const allSockets: WebSocket[] = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket = function (url: string, protocols?: string | string[]) {
+      const ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
+      allSockets.push(ws);
+      return ws;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket.prototype = OrigWS.prototype;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket.CONNECTING = OrigWS.CONNECTING;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket.OPEN = OrigWS.OPEN;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket.CLOSING = OrigWS.CLOSING;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).WebSocket.CLOSED = OrigWS.CLOSED;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).__closeAllWS = () => {
+      let closed = 0;
+      for (const ws of allSockets) {
+        if (ws.readyState === OrigWS.OPEN || ws.readyState === OrigWS.CONNECTING) {
+          ws.close();
+          closed++;
+        }
+      }
+      return { total: allSockets.length, closed };
+    };
+  });
+};
+
+/** Force every live WebSocket on the page closed (see `installWebSocketKillSwitch`). */
+export const dropConnection = async (page: Page): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await page.evaluate(() => (globalThis as any).__closeAllWS());
+};
+
 const ERGO_HOST = 'localhost';
 // Port 6697 is blocked by Chrome (ERR_UNSAFE_PORT); use 8097 instead
 const ERGO_WSS_PORT = '8097';
