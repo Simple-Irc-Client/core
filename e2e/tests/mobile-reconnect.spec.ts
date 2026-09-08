@@ -101,11 +101,11 @@ test.describe('Mobile event-driven reconnect', () => {
     await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
   });
 
-  test('a full page reload restores the view to the channel, not Status', async ({ page }, testInfo) => {
+  test('reconnecting after a page reload keeps the restored view, not Status', async ({ page }, testInfo) => {
     await setUpOnChannel(page, 'mob-rec-reload', testInfo);
 
     // Send a line so the window has content, and let the channels/settings
-    // stores flush (2s IndexedDB debounce) so the reload restores them.
+    // stores flush (2s IndexedDB debounce) before the reload.
     const input = page.locator('#message-input');
     await input.fill('anchor message before reload');
     await input.press('Enter');
@@ -113,15 +113,20 @@ test.describe('Mobile event-driven reconnect', () => {
     await page.waitForTimeout(2500);
 
     // A reload is a fresh JS session: persisted windows + currentChannelName are
-    // restored, then the app auto-connects. This is the exact shape of the bug —
-    // on mobile the webview is reloaded in the background, so every resume looks
-    // like a first connect. handleConnect must NOT force the view to Status when
-    // a real restored window is already showing.
+    // restored, and the app comes up disconnected. This is the exact shape of
+    // the bug — on mobile the webview is reloaded in the background, so the next
+    // "Connect" looks like a first connect.
     await page.reload();
+    await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 20_000 });
+    // The restored view is the channel, still, while disconnected.
+    await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
 
+    await page.getByRole('button', { name: 'Connect' }).click();
     await expect(page.getByText('Not connected to server').first()).not.toBeVisible({ timeout: 30_000 });
     await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
+    // handleConnect must NOT have forced the view to Status — a real restored
+    // window was already showing.
     await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
     await expect(page.getByTestId('chat-header-name')).not.toHaveText('Status');
     await expect(page.getByTestId('chat-log').getByText('anchor message before reload')).toBeVisible({ timeout: 10_000 });
