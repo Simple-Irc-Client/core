@@ -41,6 +41,17 @@ const SubmenuGuardContext = React.createContext<SubmenuGuard | null>(null)
 // pointer is provably still over the trigger or the open submenu, and use our
 // own mouseenter/mouseleave (boundary events, not a continuous stream) to
 // drive the actual close once the pointer really leaves.
+//
+// This is a known-fragile area upstream, not a one-off hypothesis: Radix's
+// Sub/SubTrigger/SubContent hover/grace-intent tracking has several open bugs
+// in radix-ui/primitives — #4036 (stale pointer-direction tracking closes a
+// collision-flipped submenu mid-click under React 19), #3082 (SubTrigger with
+// an ItemIndicator flickers), #3761 (multiple SubTriggers stay active /
+// SubContent needs an extra mouse move to close), #923 (nested menu needs a
+// mouse move to open after the previous close animation). None of them match
+// this exact symptom (a plain, non-flipped submenu silently closing ~1s after
+// opening), so it looks like a distinct case in the same subsystem rather
+// than a duplicate.
 const DropdownMenuSub = ({
   open: openProp,
   defaultOpen,
