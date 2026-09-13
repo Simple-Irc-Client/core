@@ -12,45 +12,166 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
-const DropdownMenuSub = DropdownMenuPrimitive.Sub
-
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+function composeRefs<T>(...refs: Array<React.Ref<T> | undefined>) {
+  return (node: T | null) => {
+    for (const ref of refs) {
+      if (typeof ref === "function") ref(node)
+      else if (ref) (ref as React.MutableRefObject<T | null>).current = node
+    }
+  }
+}
+
+type SubmenuGuard = {
+  registerTrigger: (el: HTMLElement | null) => void
+  registerContent: (el: HTMLElement | null) => void
+  cancelClose: () => void
+  scheduleClose: () => void
+}
+
+const SubmenuGuardContext = React.createContext<SubmenuGuard | null>(null)
+
+// On macOS (WKWebView), the OS can stop delivering the pointermove/pointerleave
+// sequence Radix's own hover-intent timer depends on: a submenu opens, then
+// silently closes on its own ~1s later even though the cursor never left it.
+// `:hover` is a live hit-test the browser maintains regardless of whether it
+// also dispatches the events Radix listens for, so it stays correct when that
+// event stream drops out — use it to veto a close Radix requests while the
+// pointer is provably still over the trigger or the open submenu, and use our
+// own mouseenter/mouseleave (boundary events, not a continuous stream) to
+// drive the actual close once the pointer really leaves.
+const DropdownMenuSub = ({
+  open: openProp,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Sub>) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false)
+  const open = openProp ?? uncontrolledOpen
+  const triggerRef = React.useRef<HTMLElement | null>(null)
+  const contentRef = React.useRef<HTMLElement | null>(null)
+  const closeTimerRef = React.useRef<number | undefined>(undefined)
+
+  const commit = React.useCallback(
+    (next: boolean) => {
+      setUncontrolledOpen(next)
+      onOpenChange?.(next)
+    },
+    [onOpenChange]
+  )
+
+  const cancelClose = React.useCallback(() => {
+    if (closeTimerRef.current !== undefined) {
+      window.clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = undefined
+    }
+  }, [])
+
+  const isPointerOverSubmenu = React.useCallback(
+    () =>
+      Boolean(triggerRef.current?.matches(":hover")) ||
+      Boolean(contentRef.current?.matches(":hover")),
+    []
+  )
+
+  const scheduleClose = React.useCallback(() => {
+    cancelClose()
+    closeTimerRef.current = window.setTimeout(() => {
+      if (!isPointerOverSubmenu()) commit(false)
+    }, 200)
+  }, [cancelClose, isPointerOverSubmenu, commit])
+
+  React.useEffect(() => () => cancelClose(), [cancelClose])
+
+  const guard = React.useMemo<SubmenuGuard>(
+    () => ({
+      registerTrigger: (el) => {
+        triggerRef.current = el
+      },
+      registerContent: (el) => {
+        contentRef.current = el
+      },
+      cancelClose,
+      scheduleClose,
+    }),
+    [cancelClose, scheduleClose]
+  )
+
+  return (
+    <SubmenuGuardContext.Provider value={guard}>
+      <DropdownMenuPrimitive.Sub
+        {...props}
+        open={open}
+        onOpenChange={(next) => {
+          if (!next && isPointerOverSubmenu()) return
+          cancelClose()
+          commit(next)
+        }}
+      />
+    </SubmenuGuardContext.Provider>
+  )
+}
 
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
     inset?: boolean
   }
->(({ className, inset, children, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubTrigger
-    ref={ref}
-    className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      inset && "pl-8",
-      className
-    )}
-    {...props}
-  >
-    {children}
-    <ChevronRight className="ml-auto" />
-  </DropdownMenuPrimitive.SubTrigger>
-))
+>(({ className, inset, children, onMouseEnter, onMouseLeave, ...props }, forwardedRef) => {
+  const guard = React.useContext(SubmenuGuardContext)
+
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      ref={composeRefs(forwardedRef, guard?.registerTrigger)}
+      className={cn(
+        "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        inset && "pl-8",
+        className
+      )}
+      onMouseEnter={(event) => {
+        guard?.cancelClose()
+        onMouseEnter?.(event)
+      }}
+      onMouseLeave={(event) => {
+        guard?.scheduleClose()
+        onMouseLeave?.(event)
+      }}
+      {...props}
+    >
+      {children}
+      <ChevronRight className="ml-auto" />
+    </DropdownMenuPrimitive.SubTrigger>
+  )
+})
 DropdownMenuSubTrigger.displayName =
   DropdownMenuPrimitive.SubTrigger.displayName
 
 const DropdownMenuSubContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, onMouseEnter, onMouseLeave, ...props }, forwardedRef) => {
+  const guard = React.useContext(SubmenuGuardContext)
+
+  return (
+    <DropdownMenuPrimitive.SubContent
+      ref={composeRefs(forwardedRef, guard?.registerContent)}
+      className={cn(
+        "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
+        className
+      )}
+      onMouseEnter={(event) => {
+        guard?.cancelClose()
+        onMouseEnter?.(event)
+      }}
+      onMouseLeave={(event) => {
+        guard?.scheduleClose()
+        onMouseLeave?.(event)
+      }}
+      {...props}
+    />
+  )
+})
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName
 
