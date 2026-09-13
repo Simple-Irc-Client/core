@@ -14,7 +14,7 @@ const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
-function composeRefs<T>(...refs: Array<React.Ref<T> | undefined>) {
+function composeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
   return (node: T | null) => {
     for (const ref of refs) {
       if (typeof ref === "function") ref(node)
@@ -23,7 +23,7 @@ function composeRefs<T>(...refs: Array<React.Ref<T> | undefined>) {
   }
 }
 
-type SubmenuGuard = {
+interface SubmenuGuard {
   registerTrigger: (el: HTMLElement | null) => void
   registerContent: (el: HTMLElement | null) => void
   cancelClose: () => void
