@@ -2867,7 +2867,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Ten nick jest zarejestrowany' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop ten nick jest zarejestrowany' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2897,7 +2897,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be To IRC Operator' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be to IRC Operator' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2912,7 +2912,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be To Network Service' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be to Network Service' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -2970,7 +2970,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be To Network Administrator' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* k4be to Network Administrator' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -3387,7 +3387,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toBeCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop Używa bezpiecznego połączenia' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop używa bezpiecznego połączenia' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
