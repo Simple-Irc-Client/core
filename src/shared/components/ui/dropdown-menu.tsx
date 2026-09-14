@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
+import * as Sentry from "@sentry/react"
 
 import { cn } from "@shared/lib/utils"
 
@@ -63,9 +64,32 @@ const DropdownMenuSub = ({
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const contentRef = React.useRef<HTMLElement | null>(null)
   const closeTimerRef = React.useRef<number | undefined>(undefined)
+  // Diagnostic only (see the captureMessage below): when this opened, so a
+  // too-fast close can be told apart from an ordinary one.
+  const openedAtRef = React.useRef<number | null>(null)
 
   const commit = React.useCallback(
-    (next: boolean) => {
+    (next: boolean, reason: string) => {
+      if (next) {
+        openedAtRef.current = Date.now()
+      } else if (openedAtRef.current !== null) {
+        const msOpen = Date.now() - openedAtRef.current
+        openedAtRef.current = null
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: `closed (${reason})`, level: "info", data: { msOpen } })
+        // A real close a couple of seconds into browsing the submenu is
+        // normal. One this soon after opening can only mean the "pointer is
+        // still over it" ground truth (:hover, or Radix's own hover-intent)
+        // was wrong while the item was visibly still highlighted — the exact
+        // symptom this file exists to prevent. Surfaces in Sentry (with the
+        // breadcrumb trail leading up to it) so a real occurrence in the
+        // field can be inspected without needing a debugger attached.
+        if (msOpen < 1000) {
+          Sentry.captureMessage("DropdownMenuSub closed suspiciously fast", {
+            level: "warning",
+            extra: { msOpen, reason },
+          })
+        }
+      }
       setUncontrolledOpen(next)
       onOpenChange?.(next)
     },
@@ -89,7 +113,11 @@ const DropdownMenuSub = ({
   const scheduleClose = React.useCallback(() => {
     cancelClose()
     closeTimerRef.current = window.setTimeout(() => {
-      if (!isPointerOverSubmenu()) commit(false)
+      if (isPointerOverSubmenu()) {
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: "hover timer fired — pointer still over, close skipped", level: "debug" })
+      } else {
+        commit(false, "hover-timer-expired")
+      }
     }, 200)
   }, [cancelClose, isPointerOverSubmenu, commit])
 
@@ -115,9 +143,12 @@ const DropdownMenuSub = ({
         {...props}
         open={open}
         onOpenChange={(next) => {
-          if (!next && isPointerOverSubmenu()) return
+          if (!next && isPointerOverSubmenu()) {
+            Sentry.addBreadcrumb({ category: "submenu-guard", message: "radix requested close — vetoed, pointer still over", level: "debug" })
+            return
+          }
           cancelClose()
-          commit(next)
+          commit(next, next ? "radix-open-request" : "radix-close-request")
         }}
       />
     </SubmenuGuardContext.Provider>
@@ -141,10 +172,12 @@ const DropdownMenuSubTrigger = React.forwardRef<
         className
       )}
       onMouseEnter={(event) => {
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: "trigger mouseenter", level: "debug" })
         guard?.cancelClose()
         onMouseEnter?.(event)
       }}
       onMouseLeave={(event) => {
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: "trigger mouseleave", level: "debug" })
         guard?.scheduleClose()
         onMouseLeave?.(event)
       }}
@@ -172,10 +205,12 @@ const DropdownMenuSubContent = React.forwardRef<
         className
       )}
       onMouseEnter={(event) => {
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: "content mouseenter", level: "debug" })
         guard?.cancelClose()
         onMouseEnter?.(event)
       }}
       onMouseLeave={(event) => {
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: "content mouseleave", level: "debug" })
         guard?.scheduleClose()
         onMouseLeave?.(event)
       }}
