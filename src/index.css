@@ -159,6 +159,12 @@
 }
 
 :root {
+  /* Tells the browser which native-UI variant to draw — scrollbars, form
+     controls (checkboxes, date pickers) — since the app toggles its own dark
+     mode via the `.dark` class rather than `prefers-color-scheme`, so the
+     browser has no other way to know a dark theme is active. Without this,
+     those native widgets stay light-styled even on a dark background. */
+  color-scheme: light;
   --radius: 0.625rem;
   /* Message colors - light mode */
   --msg-server-from: #000000;
@@ -218,6 +224,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   /* Message colors - dark mode */
   --msg-server-from: #b8b8d0;
   --msg-server-to: #7aaa7a;

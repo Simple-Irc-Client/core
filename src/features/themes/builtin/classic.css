@@ -76,6 +76,15 @@
   color: var(--msg-default);
 }
 
+/* .sic-msg-embeds sits below .sic-msg-line as its own block, so — unlike the
+   nick/body, which trail the timestamp inline — it doesn't inherit that
+   indent and starts flush under the timestamp instead of under the message.
+   Approximates the width of "HH:mm" plus its trailing margin; exact
+   alignment isn't possible from pure CSS since nick length varies. */
+.sic-msg-embeds {
+  margin-left: 3.25rem;
+}
+
 /* Emoji render larger than surrounding text so they stay recognizable.
    text-bottom keeps the surrounding text pinned to its normal baseline —
    the (taller) emoji grows upward instead of the whole line re-centering. */
@@ -91,6 +100,13 @@
 .sic-msg[data-category='quit'] .sic-msg-body,
 .sic-msg[data-category='kick'] .sic-msg-body {
   font-style: italic;
+}
+
+/* System messages (join/part/quit/kick/mode/notice-as-system/info/error): no
+   link previews — a kick/part reason can contain a URL, and a preview under
+   an italic membership line reads as noise, not content. Matches Modern. */
+.sic-msg:not([data-content]) .sic-msg-embeds {
+  display: none;
 }
 
 /* Conversation-level system notices (e.g. E2EE handshake outcomes): centred and
