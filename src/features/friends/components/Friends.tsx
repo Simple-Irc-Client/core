@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPlus, X } from 'lucide-react';
 import { setAddChannel } from '@features/channels/store/channels';
-import { isSameName, setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
+import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
 import { useMonitorStore } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { removeFriend } from '@features/friends/friends';
@@ -21,7 +21,6 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
   const { t } = useTranslation();
 
   const server = useSettingsStore((state) => state.server);
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const friendsByNetwork = useFriendsStore((state) => state.friendsByNetwork);
   const monitoredUsers = useMonitorStore((state) => state.monitoredUsers);
   const { setChannelsDrawerStatus } = useChannelsDrawer();
@@ -84,12 +83,8 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
               <TooltipTrigger asChild>
                 <button
                   aria-label={friend.nick}
-                  aria-current={isSameName(currentChannelName, friend.nick) ? 'page' : undefined}
                   onClick={() => handleFriendClick(friend.nick)}
-                  className={cn(
-                    `w-full flex items-center gap-2 pl-4 pr-10 py-2 text-left ${fontSizeClass} hover:bg-muted`,
-                    isSameName(currentChannelName, friend.nick) && 'bg-muted',
-                  )}
+                  className={`w-full flex items-center gap-2 pl-4 pr-10 py-2 text-left ${fontSizeClass} hover:bg-muted`}
                 >
                   <span className="min-w-7.5 flex items-center justify-center">
                     <Tooltip>
