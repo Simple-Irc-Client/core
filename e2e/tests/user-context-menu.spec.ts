@@ -9,10 +9,15 @@ test.beforeAll(async ({ browser }) => {
   alice = await createIrcClient('alice');
   await alice.join('#lobby');
   await alice.setTopic('#lobby', 'Context menu tests');
+  // The wizard's channel picker only lists channels that already exist on the
+  // server, so this needs a member before ctx-tester can join it below.
+  await alice.join('#invite-target');
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'ctx-tester', { channels: ['#lobby'] });
+  // The second channel gives the "Invite to Channel" submenu something to
+  // list, without requiring ctx-tester to hold any operator flag.
+  await connectViaWizard(sharedPage, 'ctx-tester', { channels: ['#lobby', '#invite-target'] });
   await sharedPage.getByRole('button', { name: '#lobby', exact: true }).click();
 
   const usersSidebar = sharedPage.getByTestId('users-sidebar');
@@ -78,5 +83,35 @@ test.describe('User context menu', () => {
     // Context menu should appear
     await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
     await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+  });
+
+  test('right-clicking inside an open submenu does not fall through to the native context menu', async () => {
+    // The previous test leaves its menu open — close it first so it doesn't
+    // cover the users sidebar and block the click below.
+    await sharedPage.keyboard.press('Escape');
+    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).not.toBeVisible({ timeout: 3_000 });
+
+    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+
+    // Open the menu and its "Invite to Channel" submenu.
+    await usersSidebar.getByRole('button', { name: /alice/ }).click();
+    const inviteTrigger = sharedPage.getByRole('menuitem', { name: 'Invite to Channel' });
+    await inviteTrigger.hover();
+    await expect(sharedPage.getByRole('menuitem', { name: '#invite-target' })).toBeVisible();
+
+    // Arm a one-shot listener before the click so we observe the *next*
+    // contextmenu event's defaultPrevented state once it has finished
+    // bubbling (a capturing-phase listener would fire before any ancestor
+    // gets a chance to call preventDefault, always reading false). A stray
+    // right-click landing back on the app's own (already open) menu must
+    // still be swallowed — it must never fall through to the native
+    // OS/WebView context menu.
+    const preventedPromise = sharedPage.evaluate(() => new Promise<boolean>((resolve) => {
+      document.addEventListener('contextmenu', (e) => resolve(e.defaultPrevented), { once: true });
+    }));
+    await inviteTrigger.click({ button: 'right' });
+    expect(await preventedPromise).toBe(true);
+
+    await sharedPage.keyboard.press('Escape');
   });
 });
