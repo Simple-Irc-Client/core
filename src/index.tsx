@@ -30,8 +30,26 @@ void checkForUpdates();
 // Request notification permission on mobile (no-op on web/desktop).
 void initMobileNotifications();
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+
+// TEMPORARY — see src/UiProbeSubmenuPage.tsx. Only true when the Tauri shell
+// was launched with UI_PROBE_TEST=1 (the dedicated CI workflow); never in a
+// normal build, so this never reaches real users. Remove alongside that file.
+const renderApp = async (): Promise<void> => {
+  if (isDesktop()) {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const probing = await invoke<boolean>('get_ui_probe_mode').catch(() => false);
+    if (probing) {
+      const { default: UiProbeSubmenuPage } = await import('./UiProbeSubmenuPage');
+      root.render(<UiProbeSubmenuPage />);
+      return;
+    }
+  }
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+};
+
+void renderApp();
