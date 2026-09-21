@@ -7,7 +7,25 @@ import { cn } from "@shared/lib/utils"
 
 const TooltipProvider = TooltipPrimitive.Provider
 
-const Tooltip = TooltipPrimitive.Root
+// Radix keeps a tooltip open for as long as the pointer rests on the trigger,
+// so a cursor parked on e.g. a channel after switching to it leaves the hint
+// hanging over the UI indefinitely. Close it after a while; Radix does not
+// re-open on a stationary pointer, only after it leaves and re-enters.
+const TOOLTIP_AUTO_CLOSE_MS = 10000
+
+type TooltipProps = Omit<TooltipPrimitive.TooltipProps, "open" | "defaultOpen" | "onOpenChange">
+
+function Tooltip(props: TooltipProps) {
+  const [open, setOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!open) return
+    const timer = setTimeout(() => setOpen(false), TOOLTIP_AUTO_CLOSE_MS)
+    return () => clearTimeout(timer)
+  }, [open])
+
+  return <TooltipPrimitive.Root {...props} open={open} onOpenChange={setOpen} />
+}
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
