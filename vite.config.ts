@@ -15,7 +15,9 @@ const gitRef = (() => {
 
 const pwa = VitePWA({
   registerType: "autoUpdate",
-  injectRegister: "script-defer",
+  // Registration lives in src/runtime/serviceWorker.ts: the injected script
+  // registers unconditionally, which throws inside Tauri (tauri://localhost).
+  injectRegister: false,
   workbox: {
     globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2}"],
     globIgnores: ["**/*.map"],
