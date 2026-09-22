@@ -567,6 +567,9 @@ export const ircSendRawMessage = (data: string): void => {
   sendDirectRaw(data);
 };
 
+// The `ircReconnect` currently running, if any (see its single-flight note).
+let reconnectInFlight: Promise<boolean> | null = null;
+
 /**
  * Reconnect to IRC server preserving SASL credentials.
  * Used for automatic reconnection (inactivity watchdog, network-back on mobile)
@@ -577,8 +580,28 @@ export const ircSendRawMessage = (data: string): void => {
  * upgrade notice ("Server requires secure connection..."), which reads as an
  * error rather than a step in coming back online. `announce: false` is for the
  * inactivity path, which has already posted its own attempt-counter message.
+ *
+ * Single-flight: a call made while another is still running joins it instead
+ * of starting a second one. The body tears the transport down, awaits
+ * credential decryption, then connects — two overlapping runs (a double click
+ * on "Connect", the banner plus the toolbar item, a click racing the
+ * network-back or watchdog paths) would each tear down and each connect, and
+ * the second connect lands while the first is still in progress. `isConnecting`
+ * is raised before the first `await` for the same reason: the "Connect"
+ * buttons are disabled off it, and they must be disabled for the whole
+ * attempt, not only after credentials have been decrypted.
  */
-export const ircReconnect = async ({ announce = true }: { announce?: boolean } = {}): Promise<boolean> => {
+export const ircReconnect = (options: { announce?: boolean } = {}): Promise<boolean> => {
+  if (reconnectInFlight !== null) {
+    return reconnectInFlight;
+  }
+  reconnectInFlight = runReconnect(options).finally(() => {
+    reconnectInFlight = null;
+  });
+  return reconnectInFlight;
+};
+
+const runReconnect = async ({ announce = true }: { announce?: boolean }): Promise<boolean> => {
   const server = getServer();
   const nick = getCurrentNick();
 
@@ -586,6 +609,17 @@ export const ircReconnect = async ({ announce = true }: { announce?: boolean } =
     return false;
   }
 
+  setIsConnecting(true);
+  try {
+    await reconnectAs(server, nick, announce);
+  } catch (err) {
+    setIsConnecting(false);
+    throw err;
+  }
+  return true;
+};
+
+const reconnectAs = async (server: Server, nick: string, announce: boolean): Promise<void> => {
   if (announce) {
     setAddMessageToAllChannels({
       id: uuidv4(),
@@ -625,10 +659,7 @@ export const ircReconnect = async ({ announce = true }: { announce?: boolean } =
     }
   }
 
-  // Reconnect
-  setIsConnecting(true);
   ircConnect(server, nick);
-  return true;
 };
 
 /**

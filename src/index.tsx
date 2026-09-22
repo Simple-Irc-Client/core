@@ -2,16 +2,12 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './app/App';
 import './index.css';
-import * as Sentry from '@sentry/react';
 import { checkForUpdates } from './runtime/desktop';
+import { initSentry } from './runtime/sentry';
 import { initServiceWorker } from './runtime/serviceWorker';
 import { initMobileNotifications } from './runtime/notifications';
 
-Sentry.init({
-  dsn: import.meta.env['VITE_SENTRY_DSN'],
-  integrations: [Sentry.browserTracingIntegration()],
-  tracesSampleRate: 0.2,
-});
+initSentry();
 
 console.log(`Simple IRC Client [${__GIT_REF__}]`);
 

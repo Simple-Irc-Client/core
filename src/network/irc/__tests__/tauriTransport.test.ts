@@ -185,4 +185,58 @@ describe('tauriTransport', () => {
     expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'close' });
     expect(transport.isTauriConnecting()).toBe(false);
   });
+
+  describe('disconnect while irc_connect is in flight', () => {
+    // The Rust command spawns the connection before it returns its id, so a
+    // disconnect that lands first must neither adopt the late id nor let that
+    // connection's events reach the kernel — and must close it on the Rust side.
+    let resolveConnect: (id: string) => void;
+
+    beforeEach(() => {
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'irc_connect') {
+          return new Promise<string>((resolve) => { resolveConnect = resolve; });
+        }
+        return Promise.resolve();
+      });
+    });
+
+    it('closes the late connection instead of adopting it', async () => {
+      transport.initTauriIrc(baseServer);
+      transport.disconnectTauriIrc();
+      resolveConnect('stale-conn');
+      await flush();
+
+      expect(mockInvoke).toHaveBeenCalledWith('irc_disconnect', { id: 'stale-conn' });
+
+      await transport.sendTauriRaw('PING :x');
+      expect(mockInvoke).not.toHaveBeenCalledWith('irc_send', expect.anything());
+    });
+
+    it('drops events from the superseded connection', async () => {
+      transport.initTauriIrc(baseServer);
+      const staleChannel = lastChannel;
+      transport.disconnectTauriIrc();
+
+      staleChannel?.emit({ type: 'socketConnected' });
+      staleChannel?.emit({ type: 'closed' });
+
+      expect(eventCallback).not.toHaveBeenCalled();
+      expect(transport.isTauriConnected()).toBe(false);
+    });
+
+    it('lets a new connection start and ignores the old one\'s events', async () => {
+      transport.initTauriIrc(baseServer);
+      const staleChannel = lastChannel;
+      transport.disconnectTauriIrc();
+
+      expect(() => transport.initTauriIrc(baseServer)).not.toThrow();
+      expect(transport.isTauriConnecting()).toBe(true);
+
+      // A late 'closed' from the first attempt must not reset the second.
+      staleChannel?.emit({ type: 'closed' });
+      expect(transport.isTauriConnecting()).toBe(true);
+      expect(eventCallback).not.toHaveBeenCalled();
+    });
+  });
 });

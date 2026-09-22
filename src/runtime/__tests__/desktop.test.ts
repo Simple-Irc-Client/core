@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 const tauriClipboardReadMock = vi.fn();
 const tauriClipboardWriteMock = vi.fn();
 const tauriOpenUrlMock = vi.fn();
+const tauriGetVersionMock = vi.fn();
 
 vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
   readText: () => tauriClipboardReadMock(),
@@ -13,16 +14,42 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
   openUrl: (url: string) => tauriOpenUrlMock(url),
 }));
 
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: () => tauriGetVersionMock(),
+}));
+
 describe('runtime/desktop', () => {
   beforeEach(() => {
     tauriClipboardReadMock.mockReset();
     tauriClipboardWriteMock.mockReset();
     tauriOpenUrlMock.mockReset();
+    tauriGetVersionMock.mockReset();
     delete (globalThis as Record<string, unknown>).__TAURI_INTERNALS__;
   });
 
   afterEach(() => {
     delete (globalThis as Record<string, unknown>).__TAURI_INTERNALS__;
+  });
+
+  it('getAppVersion returns null in the website without asking Tauri', async () => {
+    const { getAppVersion } = await import('../desktop');
+    await expect(getAppVersion()).resolves.toBeNull();
+    expect(tauriGetVersionMock).not.toHaveBeenCalled();
+  });
+
+  it('getAppVersion returns the Tauri app version', async () => {
+    (globalThis as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+    tauriGetVersionMock.mockResolvedValue('2.0.9');
+    const { getAppVersion } = await import('../desktop');
+    await expect(getAppVersion()).resolves.toBe('2.0.9');
+  });
+
+  it('getAppVersion returns null when the Tauri lookup fails', async () => {
+    (globalThis as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+    tauriGetVersionMock.mockRejectedValue(new Error('not allowed'));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { getAppVersion } = await import('../desktop');
+    await expect(getAppVersion()).resolves.toBeNull();
   });
 
   it('isDesktop is false when __TAURI_INTERNALS__ is absent', async () => {

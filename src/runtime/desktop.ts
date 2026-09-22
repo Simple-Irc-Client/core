@@ -11,6 +11,7 @@ import {
 } from '@tauri-apps/plugin-clipboard-manager';
 import { openUrl as tauriOpenUrl } from '@tauri-apps/plugin-opener';
 import { check as tauriCheckUpdate } from '@tauri-apps/plugin-updater';
+import { getVersion as tauriGetVersion } from '@tauri-apps/api/app';
 
 /**
  * True when the renderer is running inside a Tauri webview.
@@ -73,6 +74,23 @@ export const openExternal = async (url: string): Promise<void> => {
     return;
   }
   globalThis.open(url, '_blank', 'noopener,noreferrer');
+};
+
+/**
+ * The Tauri app's own version (`tauri.conf.json` `version`), or null in the
+ * website, which has no shell version of its own — or if the lookup fails,
+ * since this only feeds diagnostics and must never break startup.
+ */
+export const getAppVersion = async (): Promise<string | null> => {
+  if (!isDesktop()) {
+    return null;
+  }
+  try {
+    return await tauriGetVersion();
+  } catch (err) {
+    console.warn('[app] version lookup failed:', err);
+    return null;
+  }
 };
 
 /**

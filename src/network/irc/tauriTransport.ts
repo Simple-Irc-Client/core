@@ -15,6 +15,11 @@ type TauriIrcEvent =
   | { type: 'error'; message: string };
 
 let connectionId: string | null = null;
+// Bumped by every connect and disconnect. A connection attempt captures the
+// value it started under; once it no longer matches, the attempt has been
+// superseded — its late `irc_connect` result and its channel events must not
+// touch the current connection's state.
+let generation = 0;
 let isConnectingFlag = false;
 let isConnectedFlag = false;
 let eventCallback: ((eventName: string, data: unknown) => void) | null = null;
@@ -87,6 +92,7 @@ export const initTauriIrc = (server: Server): void => {
     throw new Error('Unable to connect - server host is empty');
   }
 
+  const attempt = ++generation;
   isConnectingFlag = true;
   isConnectedFlag = false;
 
@@ -100,7 +106,11 @@ export const initTauriIrc = (server: Server): void => {
       // old emit/listen pair had, where the registration burst and the
       // `connected` event could be emitted before `listen()` attached.
       const channel = new Channel<TauriIrcEvent>();
-      channel.onmessage = handleEvent;
+      channel.onmessage = (payload) => {
+        if (attempt === generation) {
+          handleEvent(payload);
+        }
+      };
       const id = await invoke<string>('irc_connect', {
         options: {
           host: parsed.host,
@@ -110,8 +120,20 @@ export const initTauriIrc = (server: Server): void => {
         },
         onEvent: channel,
       });
+      if (attempt !== generation) {
+        // Disconnected (or replaced) while `irc_connect` was in flight: the
+        // Rust side has already spawned this connection, so close it rather
+        // than adopting it or leaking it.
+        void invoke('irc_disconnect', { id }).catch(() => {
+          // already gone
+        });
+        return;
+      }
       connectionId = id;
     } catch (err) {
+      if (attempt !== generation) {
+        return;
+      }
       isConnectingFlag = false;
       isConnectedFlag = false;
       triggerEvent('sic-irc-event', { type: 'error', line: errorMessage(err) });
@@ -139,6 +161,7 @@ export const isTauriConnecting = (): boolean => isConnectingFlag;
 
 export const disconnectTauriIrc = (): void => {
   const id = connectionId;
+  generation++;
   cleanup();
   isConnectingFlag = false;
   isConnectedFlag = false;

@@ -1135,6 +1135,74 @@ describe('network', () => {
   });
 
   describe('ircReconnect', () => {
+    const reconnectServer = {
+      default: 0,
+      encoding: 'utf8',
+      network: 'TestNet',
+      servers: ['irc.test.net:6667'],
+    };
+
+    it('joins an in-flight reconnect instead of starting a second one', async () => {
+      // Regression: a second "Connect" click while the first was still
+      // decrypting credentials tore the transport down and connected again,
+      // and the second connect hit "Tauri IRC connection already in progress".
+      mockGetServer.mockReturnValue(reconnectServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+      let releaseRestore!: (value: boolean) => void;
+      mockRestoreSaslCredentials.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => { releaseRestore = resolve; }),
+      );
+
+      const first = network.ircReconnect();
+      const second = network.ircReconnect();
+
+      expect(second).toBe(first);
+      expect(mockDisconnectDirect).toHaveBeenCalledTimes(1);
+
+      releaseRestore(true);
+      await expect(first).resolves.toBe(true);
+      expect(mockInitDirectWebSocket).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows a new reconnect once the previous one has settled', async () => {
+      mockGetServer.mockReturnValue(reconnectServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+      await network.ircReconnect();
+
+      expect(mockInitDirectWebSocket).toHaveBeenCalledTimes(2);
+    });
+
+    it('marks the app connecting before awaiting credential restore', async () => {
+      // The "Connect" buttons are disabled off isConnecting; raising it only
+      // after the await left them clickable for the whole decrypt.
+      mockGetServer.mockReturnValue(reconnectServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+      let releaseRestore!: (value: boolean) => void;
+      mockRestoreSaslCredentials.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => { releaseRestore = resolve; }),
+      );
+
+      const pending = network.ircReconnect();
+      expect(mockSetIsConnecting).toHaveBeenCalledWith(true);
+
+      releaseRestore(true);
+      await pending;
+    });
+
+    it('clears the connecting state and rejects when the reconnect fails', async () => {
+      mockGetServer.mockReturnValue(reconnectServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockRejectedValueOnce(new Error('decrypt failed'));
+
+      await expect(network.ircReconnect()).rejects.toThrow('decrypt failed');
+      expect(mockSetIsConnecting).toHaveBeenLastCalledWith(false);
+
+      // And the single-flight slot is released for the next attempt.
+      await expect(network.ircReconnect()).resolves.toBe(true);
+    });
+
     it('should return false when server is undefined', async () => {
       mockGetServer.mockReturnValue(undefined);
       mockGetCurrentNick.mockReturnValue('testNick');
