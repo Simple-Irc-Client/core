@@ -53,6 +53,40 @@ export const DEFAULT_DARK_COLORS: MsgColorPalette = {
   error: '#b05555',
 };
 
+/**
+ * The IRC theme's palette — the website's design tokens (website/public/app.css),
+ * each at least WCAG AA (4.5:1) against the theme's background.
+ */
+export const IRC_LIGHT_COLORS: MsgColorPalette = {
+  time: '#6f6a60',
+  default: '#1c1b18',
+  body: '#1c1b18',
+  join: '#4a7309',
+  part: '#9a4a06',
+  quit: '#57534b',
+  kick: '#b42318',
+  mode: '#391dd8',
+  notice: '#391dd8',
+  info: '#6f6a60',
+  me: '#7c2d86',
+  error: '#b42318',
+};
+
+export const IRC_DARK_COLORS: MsgColorPalette = {
+  time: '#948f84',
+  default: '#ebe8e1',
+  body: '#ebe8e1',
+  join: '#9ccc4a',
+  part: '#e9a23b',
+  quit: '#b3aea3',
+  kick: '#f47c6f',
+  mode: '#a597ff',
+  notice: '#a597ff',
+  info: '#948f84',
+  me: '#d99ae0',
+  error: '#f47c6f',
+};
+
 const paletteToCss = (selector: string, palette: MsgColorPalette): string => {
   const lines = MSG_COLOR_KEYS.map((key) => `  --msg-${key}: ${palette[key]};`);
   return `${selector} {\n${lines.join('\n')}\n}`;

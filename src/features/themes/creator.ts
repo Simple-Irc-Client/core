@@ -1,5 +1,5 @@
-import { BUILTIN_LAYOUT_CSS, type BuiltinThemeId } from './builtinThemes';
-import { buildPaletteCss, DEFAULT_DARK_COLORS, DEFAULT_LIGHT_COLORS, MSG_COLOR_KEYS, type MsgColorPalette } from './palette';
+import { BUILTIN_LAYOUT_CSS, BUILTIN_PALETTES, isBuiltinTheme, type BuiltinThemeId } from './builtinThemes';
+import { buildPaletteCss, MSG_COLOR_KEYS, type MsgColorPalette } from './palette';
 
 // Convenience re-exports for Creator consumers (dialog, tests)
 export { DEFAULT_DARK_COLORS, DEFAULT_LIGHT_COLORS, MSG_COLOR_KEYS } from './palette';
@@ -32,10 +32,29 @@ export const defaultCreatorSettings = (base: BuiltinThemeId = 'modern'): ThemeCr
   showEmbeds: true,
   compact: false,
   colors: {
-    light: { ...DEFAULT_LIGHT_COLORS },
-    dark: { ...DEFAULT_DARK_COLORS },
+    light: { ...BUILTIN_PALETTES[base].light },
+    dark: { ...BUILTIN_PALETTES[base].dark },
   },
 });
+
+const samePalette = (a: MsgColorPalette, b: MsgColorPalette): boolean => MSG_COLOR_KEYS.every((key) => a[key] === b[key]);
+
+/**
+ * Switches the Creator's base layout. Colors the user left at the old base's
+ * shipped palette follow the new base (each builtin has its own palette);
+ * a palette the user customised is kept as is.
+ */
+export const changeCreatorBase = (settings: ThemeCreatorSettings, base: BuiltinThemeId): ThemeCreatorSettings => {
+  const previous = BUILTIN_PALETTES[settings.base];
+  const colorsUntouched = samePalette(settings.colors.light, previous.light) && samePalette(settings.colors.dark, previous.dark);
+  return {
+    ...settings,
+    base,
+    colors: colorsUntouched
+      ? { light: { ...BUILTIN_PALETTES[base].light }, dark: { ...BUILTIN_PALETTES[base].dark } }
+      : settings.colors,
+  };
+};
 
 const CREATOR_MARKER_PREFIX = '/* sic-creator:1 ';
 const CREATOR_MARKER_SUFFIX = ' */';
@@ -86,7 +105,8 @@ export const parseCreatorSettings = (css: string): ThemeCreatorSettings | null =
   try {
     const parsed = JSON.parse(match[1]) as Partial<ThemeCreatorSettings>;
     if (
-      (parsed.base !== 'classic' && parsed.base !== 'modern') ||
+      typeof parsed.base !== 'string' ||
+      !isBuiltinTheme(parsed.base) ||
       typeof parsed.showSeconds !== 'boolean' ||
       typeof parsed.showAvatars !== 'boolean' ||
       typeof parsed.showEmbeds !== 'boolean' ||

@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import ProfileSettings from '../ProfileSettings';
 import * as network from '@/network/irc/network';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { BUILTIN_LAYOUT_CSS } from '@features/themes/builtinThemes';
+import { IRC_DARK_COLORS, IRC_LIGHT_COLORS } from '@features/themes/palette';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -566,6 +568,33 @@ describe('ProfileSettings', () => {
       expect(created?.css).toContain('sic-creator:1');
       expect(created?.css).toContain('--msg-join: #123456;');
       expect(created?.css).toContain('padding-top: 0; padding-bottom: 0;');
+    });
+
+    it('should create a theme on the irc base with the irc palette and no avatar toggle', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ProfileSettings
+          open={true}
+          onOpenChange={mockOnOpenChange}
+          currentNick="testUser"
+        />
+      );
+
+      await user.click(screen.getByTestId('theme-new'));
+
+      fireEvent.change(screen.getByTestId('creator-theme-name'), { target: { value: 'IRC based' } });
+      await user.click(screen.getByTestId('creator-base-irc'));
+      expect(screen.getByTestId('creator-base-irc')).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByTestId('creator-show-avatars')).toBeDisabled();
+      // Untouched colors follow the base's own palette
+      expect(screen.getByTestId('creator-color-light-join')).toHaveValue(IRC_LIGHT_COLORS.join);
+      await user.click(screen.getByTestId('creator-save'));
+
+      const { theme, customThemes } = useSettingsStore.getState();
+      const created = customThemes[theme];
+      expect(created?.css).toContain(BUILTIN_LAYOUT_CSS.irc.trimEnd());
+      expect(created?.css).toContain(`--msg-join: ${IRC_DARK_COLORS.join};`);
     });
 
     it('should edit a builtin theme with the creator and save it as an override', async () => {

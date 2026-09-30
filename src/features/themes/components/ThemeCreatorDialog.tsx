@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { BUILTIN_THEMES, isBuiltinTheme, type BuiltinThemeId } from '../builtinThemes';
+import { BUILTIN_THEMES, BUILTIN_THEME_IDS, isBuiltinTheme, type BuiltinThemeId } from '../builtinThemes';
 import { resolveThemeCss } from '../themeSelectors';
 import {
   MSG_COLOR_KEYS,
+  changeCreatorBase,
   defaultCreatorSettings,
   generateThemeCss,
   parseCreatorSettings,
@@ -185,13 +186,13 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
               {t('profileSettings.themeCreatorLayout')}
             </Label>
             <div className="col-span-3 flex gap-2" role="group" aria-labelledby="creator-base-label">
-              {(['classic', 'modern'] as const).map((base) => (
+              {BUILTIN_THEME_IDS.map((base) => (
                 <Button
                   key={base}
                   type="button"
                   variant={settings.base === base ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => patch({ base })}
+                  onClick={() => setSettings((current) => changeCreatorBase(current, base))}
                   className={cn('flex-1', settings.base === base && 'pointer-events-none')}
                   data-testid={`creator-base-${base}`}
                   aria-pressed={settings.base === base}
@@ -219,7 +220,7 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
                 id="creator-show-avatars"
                 checked={settings.showAvatars}
                 onCheckedChange={(checked) => patch({ showAvatars: checked })}
-                disabled={settings.base === 'classic'}
+                disabled={settings.base !== 'modern'}
                 data-testid="creator-show-avatars"
               />
               <Label htmlFor="creator-show-avatars" className="font-normal">

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { BUILTIN_LAYOUT_CSS } from '../builtinThemes';
+import { BUILTIN_LAYOUT_CSS, BUILTIN_PALETTES, BUILTIN_THEME_IDS } from '../builtinThemes';
 import {
   DEFAULT_DARK_COLORS,
   DEFAULT_LIGHT_COLORS,
+  changeCreatorBase,
   defaultCreatorSettings,
   generateThemeCss,
   parseCreatorSettings,
@@ -10,7 +11,7 @@ import {
 
 describe('generateThemeCss', () => {
   it('should include the base layout CSS exactly once, with a single palette', () => {
-    for (const base of ['classic', 'modern'] as const) {
+    for (const base of BUILTIN_THEME_IDS) {
       const css = generateThemeCss(defaultCreatorSettings(base));
       expect(css).toContain(BUILTIN_LAYOUT_CSS[base].trimEnd());
       // The palette comes only from the Creator settings, not from the base
@@ -45,8 +46,8 @@ describe('generateThemeCss', () => {
     expect(css).toContain('padding-top: 0; padding-bottom: 0;');
   });
 
-  it('should not hide the gutter for the classic base (already hidden there)', () => {
-    const settings = defaultCreatorSettings('classic');
+  it.each(['classic', 'irc'] as const)('should not hide the gutter for the %s base (already hidden there)', (base) => {
+    const settings = defaultCreatorSettings(base);
     settings.showAvatars = false;
 
     const css = generateThemeCss(settings);
@@ -80,5 +81,63 @@ describe('parseCreatorSettings', () => {
     const settings = defaultCreatorSettings();
     expect(Object.keys(settings.colors.light)).toEqual(Object.keys(DEFAULT_LIGHT_COLORS));
     expect(Object.keys(settings.colors.dark)).toEqual(Object.keys(DEFAULT_DARK_COLORS));
+  });
+});
+
+describe('defaultCreatorSettings', () => {
+  it.each(BUILTIN_THEME_IDS)('should start the %s base from that theme\'s own palette', (base) => {
+    const settings = defaultCreatorSettings(base);
+    expect(settings.colors).toEqual(BUILTIN_PALETTES[base]);
+    // A copy — editing the Creator's colors must not mutate the shipped palette
+    expect(settings.colors.light).not.toBe(BUILTIN_PALETTES[base].light);
+    expect(settings.colors.dark).not.toBe(BUILTIN_PALETTES[base].dark);
+  });
+});
+
+describe('changeCreatorBase', () => {
+  it('should switch untouched colors to the new base palette', () => {
+    const next = changeCreatorBase(defaultCreatorSettings('modern'), 'irc');
+
+    expect(next.base).toBe('irc');
+    expect(next.colors).toEqual(BUILTIN_PALETTES.irc);
+  });
+
+  it('should keep colors the user customised', () => {
+    const settings = defaultCreatorSettings('modern');
+    settings.colors.dark.join = '#010203';
+
+    const next = changeCreatorBase(settings, 'irc');
+
+    expect(next.base).toBe('irc');
+    expect(next.colors).toBe(settings.colors);
+  });
+
+  it('should keep the other options', () => {
+    const settings = { ...defaultCreatorSettings('irc'), showSeconds: true, compact: true, showEmbeds: false };
+
+    const next = changeCreatorBase(settings, 'classic');
+
+    expect(next).toMatchObject({ base: 'classic', showSeconds: true, compact: true, showEmbeds: false });
+    expect(next.colors).toEqual(BUILTIN_PALETTES.classic);
+  });
+
+  it('should keep the palette when switching between bases that share it', () => {
+    const settings = defaultCreatorSettings('classic');
+
+    expect(changeCreatorBase(settings, 'modern').colors).toEqual(BUILTIN_PALETTES.modern);
+  });
+});
+
+describe('parseCreatorSettings with the irc base', () => {
+  it('should round-trip an irc-based theme', () => {
+    const settings = defaultCreatorSettings('irc');
+    settings.colors.light.me = '#123123';
+
+    expect(parseCreatorSettings(generateThemeCss(settings))).toEqual(settings);
+  });
+
+  it('should reject a base that is only an Object.prototype key', () => {
+    const settings = { ...defaultCreatorSettings('irc'), base: 'toString' };
+    expect(parseCreatorSettings(`/* sic-creator:1 ${JSON.stringify(settings)} */`)).toBeNull();
   });
 });

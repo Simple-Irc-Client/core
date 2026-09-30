@@ -1,0 +1,285 @@
+/*
+ * IRC theme — the look of simpleircclient.com: a warm paper / terminal palette,
+ * monospace everywhere, square corners and a one-line-per-message transcript.
+ *
+ * Every chat message renders the same HTML; the theme's CSS decides which parts
+ * are visible and how they are arranged:
+ *
+ *   .sic-msg                  message row; attributes:
+ *                               [data-category="default|join|part|quit|kick|mode|notice|info|me|error|motd"]
+ *                               [data-content]   present on default/me/notice (user content)
+ *                               [data-grouped]   consecutive message from the same nick
+ *                               [data-highlight] message mentions your nick
+ *                               [data-system]    conversation-level notice (no speaker), e.g. an E2EE handshake outcome
+ *   .sic-msg-gutter           avatar column (.sic-msg-avatar inside)
+ *   .sic-msg-header           header row: .sic-msg-nick, bot icon, .sic-msg-time-header
+ *   .sic-msg-line             the message line itself:
+ *     .sic-msg-time-inline    timestamp: "HH:mm" + .sic-msg-time-seconds ":ss"
+ *     .sic-msg-nick-inline    sender nick (bare text — add <> via ::before/::after)
+ *     .sic-msg-bot-inline     bot icon next to the inline nick
+ *     .sic-msg-e2ee           lock shown on end-to-end encrypted private messages
+ *     .sic-msg-body           the message text
+ *       .sic-emoji            wraps each emoji character/sequence inside the body
+ *     .sic-msg-time-trailing  timestamp at the end of the line
+ *   .sic-msg-embeds           link previews (YouTube, images, social)
+ *
+ * Colors: use the app palette variables (--msg-time, --msg-default, --msg-body,
+ * --msg-join, ..., --primary, --background). Prefix rules with `.dark` for
+ * dark-mode overrides, e.g. `.dark .sic-msg-body { color: #ccc; }`.
+ * You can also retheme the whole app by overriding variables on `:root` / `.dark`
+ * — this theme does exactly that below.
+ *
+ * Debug/Status channel output has fixed styling that themes do not override.
+ */
+
+/* ---------------------------------------------------------------------------
+ * App-wide look. Same design tokens as the website (website/public/app.css):
+ *   bg #fbfaf7 / #141311, surface #f2efe8 / #1e1d1a, fg #1c1b18 / #ebe8e1,
+ *   accent (orange) #b0520a / #f29a45, accent-2 (indigo) #391dd8 / #a597ff.
+ * Hover/selection states use inverse video (fg on bg swapped), like the
+ * website's primary button and a terminal's reverse attribute.
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --font-sans: ui-monospace, 'Cascadia Code', 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-mono: var(--font-sans);
+  /* The app's default weight scale is tuned down for Inter; monospace system
+     fonts ship the standard instances. */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  /* Near-square corners: 4px for large surfaces, 2px buttons, 0 for small bits */
+  --radius: 0.25rem;
+
+  --background: #fbfaf7;
+  --foreground: #1c1b18;
+  --card: #fbfaf7;
+  --card-foreground: #1c1b18;
+  --popover: #fbfaf7;
+  --popover-foreground: #1c1b18;
+  --primary: #b0520a;
+  --primary-foreground: #fbfaf7;
+  --secondary: #391dd8;
+  --secondary-foreground: #fbfaf7;
+  --muted: #f2efe8;
+  --muted-foreground: #57534b;
+  --accent: #1c1b18;
+  --accent-foreground: #fbfaf7;
+  --destructive: #b42318;
+  --border: #dedad0;
+  --input: #dedad0;
+  --ring: #391dd8;
+  --chart-1: #b0520a;
+  --chart-2: #391dd8;
+  --chart-3: #4a7309;
+  --chart-4: #b42318;
+  --chart-5: #9a4a06;
+  --sidebar: #f2efe8;
+  --sidebar-foreground: #1c1b18;
+  --sidebar-primary: #b0520a;
+  --sidebar-primary-foreground: #fbfaf7;
+  --sidebar-accent: #1c1b18;
+  --sidebar-accent-foreground: #fbfaf7;
+  --sidebar-border: #dedad0;
+  --sidebar-ring: #391dd8;
+
+  /* Message colors outside the Creator's palette (the palette itself is at the end) */
+  --msg-server-from: #1c1b18;
+  --msg-server-to: #4a7309;
+  --msg-e2ee: #4a7309;
+  --msg-highlight: #b0520a;
+}
+
+.dark {
+  --background: #141311;
+  --foreground: #ebe8e1;
+  --card: #141311;
+  --card-foreground: #ebe8e1;
+  --popover: #1e1d1a;
+  --popover-foreground: #ebe8e1;
+  --primary: #f29a45;
+  --primary-foreground: #141311;
+  --secondary: #a597ff;
+  --secondary-foreground: #141311;
+  --muted: #1e1d1a;
+  --muted-foreground: #b3aea3;
+  --accent: #ebe8e1;
+  --accent-foreground: #141311;
+  --destructive: #f47c6f;
+  --border: #34322d;
+  --input: #34322d;
+  --ring: #a597ff;
+  --chart-1: #f29a45;
+  --chart-2: #a597ff;
+  --chart-3: #9ccc4a;
+  --chart-4: #f47c6f;
+  --chart-5: #e9a23b;
+  --sidebar: #1e1d1a;
+  --sidebar-foreground: #ebe8e1;
+  --sidebar-primary: #f29a45;
+  --sidebar-primary-foreground: #141311;
+  --sidebar-accent: #ebe8e1;
+  --sidebar-accent-foreground: #141311;
+  --sidebar-border: #34322d;
+  --sidebar-ring: #a597ff;
+
+  --msg-server-from: #ebe8e1;
+  --msg-server-to: #9ccc4a;
+  --msg-e2ee: #9ccc4a;
+  --msg-highlight: #f29a45;
+}
+
+/* The app body tightens Inter's tracking; monospace needs its natural advance */
+body {
+  letter-spacing: 0;
+}
+
+::selection {
+  background-color: color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Chat transcript: one line per message, "HH:mm <nick> text"
+ * ------------------------------------------------------------------------- */
+
+.sic-msg {
+  display: block;
+  padding: 0.125rem 1rem;
+  line-height: 1.6;
+}
+
+/* Mentions: the website's code-block rule — an accent bar on a tinted line.
+   The bar takes its width out of the padding so the timestamp column stays
+   aligned with the lines around it. */
+.sic-msg[data-highlight] {
+  padding-left: calc(1rem - 2px);
+  border-left: 2px solid var(--msg-highlight);
+  background-color: color-mix(in oklab, var(--msg-highlight) 8%, transparent);
+}
+
+/* A verifiably encrypted message gets the same treatment, in its own colour —
+   distinct from --msg-highlight above, so the two signals never look like one. */
+.sic-msg[data-e2ee='ok'] {
+  padding-left: calc(1rem - 2px);
+  border-left: 2px solid var(--msg-e2ee);
+  background-color: color-mix(in oklab, var(--msg-e2ee) 6%, transparent);
+}
+
+/* Single-line layout: no avatar column, no header row */
+.sic-msg-gutter,
+.sic-msg-header,
+.sic-msg-time-trailing,
+.sic-msg-time-seconds {
+  display: none;
+}
+
+.sic-msg-time {
+  color: var(--msg-time);
+}
+
+.sic-msg-time-inline {
+  margin-right: 1ch;
+}
+
+.sic-msg-nick-inline {
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.sic-msg-nick-inline::before {
+  content: '<';
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--msg-time);
+}
+
+.sic-msg-nick-inline::after {
+  content: '>';
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--msg-time);
+}
+
+/* Actions read as "* nick waves" rather than "<nick> waves" */
+.sic-msg[data-category='me'] .sic-msg-nick-inline::before {
+  content: '* ';
+  color: inherit;
+}
+
+.sic-msg[data-category='me'] .sic-msg-nick-inline::after {
+  content: none;
+}
+
+.sic-msg-body {
+  margin-left: 1ch;
+  color: var(--msg-default);
+  overflow-wrap: anywhere;
+}
+
+/* Status lines (join/part/quit/kick/mode/info/error/motd) have no nick; mark
+   them the way terminal clients do, with a dim "-!-" in the nick slot. The
+   body drops its gap so the marker lines up with the "<" of a nick. */
+.sic-msg:not([data-content]):not([data-system]) .sic-msg-body {
+  margin-left: 0;
+}
+
+.sic-msg:not([data-content]):not([data-system]) .sic-msg-body::before {
+  content: '-!- ';
+  color: var(--msg-time);
+  font-style: normal;
+}
+
+/* The MOTD is ASCII art more often than not: keep its spacing */
+.sic-msg[data-category='motd'] .sic-msg-body {
+  white-space: pre-wrap;
+}
+
+/* Link previews sit below the line: indent them under the message text.
+   Approximates "HH:mm " — exact alignment would need the nick width. */
+.sic-msg-embeds {
+  margin-left: 6ch;
+}
+
+/* Emoji render larger than surrounding text so they stay recognizable.
+   text-bottom keeps the surrounding text pinned to its normal baseline —
+   the (taller) emoji grows upward instead of the whole line re-centering. */
+.sic-emoji {
+  display: inline-block;
+  font-size: 1.3em;
+  line-height: 1;
+  vertical-align: text-bottom;
+}
+
+/* System messages: no link previews — a kick/part reason can contain a URL,
+   and a preview under a membership line reads as noise, not content. */
+.sic-msg:not([data-content]) .sic-msg-embeds {
+  display: none;
+}
+
+/* Conversation-level system notices (e.g. E2EE handshake outcomes): centred and
+   set off from the line above so a header-less line doesn't read as a
+   continuation of whoever spoke last. */
+.sic-msg[data-system] {
+  margin-top: 0.375rem;
+  text-align: center;
+}
+
+.sic-msg[data-system] .sic-msg-time-inline {
+  display: none;
+}
+
+.sic-msg[data-system] .sic-msg-body {
+  margin-left: 0;
+  color: var(--msg-info);
+}
+
+/* End-to-end encryption indicator: inherits the timestamp colour by default,
+   with the failure state left in its inline error colour so an unreadable
+   message stays visually distinct from a successfully decrypted one. */
+.sic-msg-e2ee {
+  vertical-align: -0.125em;
+  opacity: 0.85;
+}
+
+.sic-msg[data-e2ee='failed'] .sic-msg-body {
+  font-style: italic;
+  opacity: 0.75;
+}

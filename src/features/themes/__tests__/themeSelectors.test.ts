@@ -58,9 +58,9 @@ describe('getThemeList', () => {
 
     const list = getThemeList(state, t);
 
-    expect(list.map((item) => item.id)).toEqual(['classic', 'modern', 'id-a', 'id-b']);
+    expect(list.map((item) => item.id)).toEqual(['classic', 'modern', 'irc', 'id-a', 'id-b']);
     expect(list[0]).toEqual({ id: 'classic', name: 'layoutClassic', builtin: true, overridden: false });
-    expect(list[2]).toEqual({ id: 'id-a', name: 'Aqua', builtin: false, overridden: false });
+    expect(list[3]).toEqual({ id: 'id-a', name: 'Aqua', builtin: false, overridden: false });
   });
 
   it('should mark overridden builtins', () => {

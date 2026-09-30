@@ -320,6 +320,7 @@
     "profileSettings.theme": "Theme",
     "profileSettings.layoutClassic": "Classic",
     "profileSettings.layoutModern": "Modern",
+    "profileSettings.layoutIrc": "IRC",
     "profileSettings.themeNew": "New theme",
     "profileSettings.themeEdit": "Edit",
     "profileSettings.themeEditCss": "Edit CSS",
