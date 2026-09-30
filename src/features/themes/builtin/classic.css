@@ -47,9 +47,11 @@
   background-color: color-mix(in oklab, var(--msg-e2ee) 5%, transparent);
 }
 
-/* Classic is a single-line layout: no avatar column, no header row */
+/* Classic is a single-line layout: no avatar column, no header row, and no
+   bot icon next to "<nick>" (it reads as an emoji; the user list marks bots) */
 .sic-msg-gutter,
 .sic-msg-header,
+.sic-msg-bot-inline,
 .sic-msg-time-trailing,
 .sic-msg-time-seconds {
   display: none;

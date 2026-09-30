@@ -46,6 +46,10 @@ describe('builtinThemes', () => {
     expect(BUILTIN_PALETTES.modern).toEqual({ light: DEFAULT_LIGHT_COLORS, dark: DEFAULT_DARK_COLORS });
   });
 
+  it.each(['classic', 'irc'] as const)('%s theme should hide the inline bot icon', (id) => {
+    expect(BUILTIN_LAYOUT_CSS[id]).toMatch(/\.sic-msg-bot-inline,[^{]*\{\s*display: none;/);
+  });
+
   describe('irc theme', () => {
     const layout = BUILTIN_LAYOUT_CSS.irc;
 

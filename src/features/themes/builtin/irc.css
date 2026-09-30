@@ -166,9 +166,11 @@ body {
   background-color: color-mix(in oklab, var(--msg-e2ee) 6%, transparent);
 }
 
-/* Single-line layout: no avatar column, no header row */
+/* Single-line layout: no avatar column, no header row, and no bot icon next
+   to "<nick>" (terminal clients don't draw one; the user list marks bots) */
 .sic-msg-gutter,
 .sic-msg-header,
+.sic-msg-bot-inline,
 .sic-msg-time-trailing,
 .sic-msg-time-seconds {
   display: none;
