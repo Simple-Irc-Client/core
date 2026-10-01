@@ -6,10 +6,11 @@ import { Input } from '@shared/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/components/ui/table';
 import type { ChannelList } from '@shared/types';
 import { hasIrcFormatting, stripIrcFormatting, parseIrcFormatting, renderFormattedSegments } from '@shared/lib/ircFormatting';
+import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 
-function renderTopic(topic: string): React.ReactNode {
+function renderTopic(topic: string, backgroundLuminance: number): React.ReactNode {
   if (!hasIrcFormatting(topic)) { return topic; }
-  return renderFormattedSegments(parseIrcFormatting(topic));
+  return renderFormattedSegments(parseIrcFormatting(topic), undefined, backgroundLuminance);
 }
 
 interface ChannelListTableProps {
@@ -40,6 +41,7 @@ const ChannelListTable = ({
 }: ChannelListTableProps) => {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
+  const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
   const labels = {
     searchPlaceholder: translations?.searchPlaceholder ?? t('channelListDialog.search.placeholder') ?? 'Search...',
@@ -134,7 +136,7 @@ const ChannelListTable = ({
                 >
                   <TableCell className="font-medium truncate">{channel.name}</TableCell>
                   <TableCell>{channel.users}</TableCell>
-                  <TableCell className="hidden sm:table-cell truncate">{renderTopic(channel.topic)}</TableCell>
+                  <TableCell className="hidden sm:table-cell truncate">{renderTopic(channel.topic, backgroundLuminance)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

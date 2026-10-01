@@ -13,7 +13,8 @@ import { useCurrentStore } from '@features/chat/store/current';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
 import { Crown, ShieldCheck, Shield, ShieldHalf, Mic, Moon, X, WifiOff, Bot } from 'lucide-react';
-import { cn, isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
+import { cn, isSafeCssColor, ensureReadableColor } from '@shared/lib/utils';
+import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
 
@@ -57,7 +58,7 @@ interface UserRowProps {
   userModes: UserMode[];
   hideAvatar: boolean;
   fontSizeClass: string;
-  isDarkMode: boolean;
+  backgroundLuminance: number;
 }
 
 /**
@@ -69,7 +70,7 @@ interface UserRowProps {
  * across that update (the store only replaces the ones it changed), so the
  * comparison holds and only the affected row re-renders.
  */
-const UserRow = memo(({ user, currentChannelName, userModes, hideAvatar, fontSizeClass, isDarkMode }: UserRowProps) => {
+const UserRow = memo(({ user, currentChannelName, userModes, hideAvatar, fontSizeClass, backgroundLuminance }: UserRowProps) => {
   const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();
 
@@ -108,7 +109,7 @@ const UserRow = memo(({ user, currentChannelName, userModes, hideAvatar, fontSiz
               <Moon className="h-4 w-4 text-yellow-500" />
             </span>
           )}
-          <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? ensureNickContrast(user.color, isDarkMode) : 'inherit' }}>
+          <span className={fontSizeClass} style={{ color: user.color && isSafeCssColor(user.color) ? ensureReadableColor(user.color, backgroundLuminance) : 'inherit' }}>
             {user.displayName || user.nick}
           </span>
         </div>
@@ -138,7 +139,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const userModes = useSettingsStore((state) => state.userModes);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const fontSize = useSettingsStore((state) => state.fontSize);
-  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
+  const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const users = useCurrentStore((state) => state.users);
   const fontSizeClass = fontSizeClasses[fontSize];
@@ -180,7 +181,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
                   userModes={userModes}
                   hideAvatar={hideAvatarsInUsersList}
                   fontSizeClass={fontSizeClass}
-                  isDarkMode={isDarkMode}
+                  backgroundLuminance={backgroundLuminance}
                 />
               ))}
             </div>

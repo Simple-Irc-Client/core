@@ -5,7 +5,9 @@ import {
   hasIrcFormatting,
   stripIrcFormatting,
   IRC_FORMAT,
+  getStyleFromFormatState,
 } from '../ircFormatting';
+import type { FormatState } from '../ircFormatting';
 
 describe('ircFormatting', () => {
   describe('hasIrcFormatting', () => {
@@ -399,5 +401,37 @@ describe('ircFormatting', () => {
         expect(result[0]!.style.background).toBe(null);
       });
     });
+  });
+});
+
+describe('getStyleFromFormatState contrast', () => {
+  const plain: FormatState = {
+    bold: false, italic: false, underline: false, strikethrough: false,
+    monospace: false, reverse: false, foreground: null, background: null,
+  };
+  const LIGHT_PAPER = 0.95;
+
+  it('should keep a sender color as-is when no background luminance is given', () => {
+    expect(getStyleFromFormatState({ ...plain, foreground: '#ffffff' }).color).toBe('#ffffff');
+  });
+
+  it('should adjust white text that would vanish on a light theme', () => {
+    const color = getStyleFromFormatState({ ...plain, foreground: '#ffffff' }, undefined, LIGHT_PAPER).color;
+    expect(color).not.toBe('#ffffff');
+    expect(color).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it('should keep a readable sender color unchanged', () => {
+    expect(getStyleFromFormatState({ ...plain, foreground: '#000000' }, undefined, LIGHT_PAPER).color).toBe('#000000');
+  });
+
+  it('should keep the sender color when they also set a background', () => {
+    const style = getStyleFromFormatState({ ...plain, foreground: '#ffffff', background: '#000000' }, undefined, LIGHT_PAPER);
+    expect(style.color).toBe('#ffffff');
+    expect(style.backgroundColor).toBe('#000000');
+  });
+
+  it('should not adjust the base color (theme-controlled)', () => {
+    expect(getStyleFromFormatState(plain, '#ffffff', LIGHT_PAPER).color).toBe('#ffffff');
   });
 });

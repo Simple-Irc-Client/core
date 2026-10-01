@@ -22,6 +22,14 @@
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
  *
+ * Around the messages:
+ *   .sic-date-separator       day-change row: .sic-date-separator-label (the date)
+ *                             between two .sic-date-separator-rule lines, and a
+ *                             hidden .sic-date-separator-time ("00:00" + seconds)
+ *                             for themes that print it like a transcript line
+ *   .sic-typing               "nick is typing..." line below the chat; stays
+ *                             mounted and empty (:empty) while nobody types
+ *
  * Colors: use the app palette variables (--msg-time, --msg-default, --msg-body,
  * --msg-join, ..., --primary, --background). Prefix rules with `.dark` for
  * dark-mode overrides, e.g. `.dark .sic-msg-body { color: #ccc; }`.

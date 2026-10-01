@@ -46,6 +46,15 @@ describe('builtinThemes', () => {
     expect(BUILTIN_PALETTES.modern).toEqual({ light: DEFAULT_LIGHT_COLORS, dark: DEFAULT_DARK_COLORS });
   });
 
+  it.each(BUILTIN_THEME_IDS)('%s theme should document the hooks around the messages', (id) => {
+    expect(BUILTIN_LAYOUT_CSS[id]).toContain('.sic-date-separator-label');
+    expect(BUILTIN_LAYOUT_CSS[id]).toContain('.sic-typing');
+  });
+
+  it.each(['classic', 'irc'] as const)('%s theme should align the typing line with the timestamps', (id) => {
+    expect(BUILTIN_LAYOUT_CSS[id]).toMatch(/\.sic-typing \{[^}]*padding-left: 1rem;/);
+  });
+
   it.each(['classic', 'irc'] as const)('%s theme should hide the inline bot icon', (id) => {
     expect(BUILTIN_LAYOUT_CSS[id]).toMatch(/\.sic-msg-bot-inline,[^{]*\{\s*display: none;/);
   });
@@ -70,6 +79,38 @@ describe('builtinThemes', () => {
 
     it('should use a single-line layout without avatars', () => {
       expect(layout).toMatch(/\.sic-msg-gutter,[^{]*\{\s*display: none;/);
+    });
+
+    it('should use the self-hosted monospace font first', () => {
+      expect(layout).toMatch(/--font-sans: 'JetBrains Mono Variable', /);
+    });
+
+    it('should print notices as -nick-', () => {
+      expect(layout).toMatch(/\[data-category='notice'\] \.sic-msg-nick-inline::before,[^{]*::after \{\s*content: '-';/);
+    });
+
+    it('should hang wrapped text and previews in the text column', () => {
+      expect(layout).toMatch(/\.sic-msg-line \{\s*display: contents;/);
+      expect(layout).toMatch(/\.sic-msg-body \{\s*grid-column: 3;/);
+      expect(layout).toMatch(/\.sic-msg-embeds \{\s*grid-column: 3;/);
+    });
+
+    it('should keep status-line markers out of Debug/Status output', () => {
+      // Every status-line rule must exclude [data-debug]: the fixed debug
+      // styling in index.css can't outrank this selector's specificity
+      const statusSelectors = layout.match(/\.sic-msg:not\(\[data-content\][^)]*\) \.sic-msg-body[^{]*\{/g) ?? [];
+      expect(statusSelectors.length).toBeGreaterThan(0);
+      for (const selector of statusSelectors) {
+        expect(selector).toContain('[data-debug]');
+      }
+    });
+
+    it('should restyle the date separator and typing line as status lines', () => {
+      expect(layout).toMatch(/\.sic-date-separator-rule \{\s*display: none;/);
+      // The label sits in the status-line column, after a visible time slot
+      expect(layout).toMatch(/\.sic-date-separator-time \{\s*display: inline;/);
+      expect(layout).toMatch(/\.sic-date-separator-label::before \{/);
+      expect(layout).toMatch(/\.sic-typing:not\(:empty\)::before \{\s*content: '-!- ';/);
     });
   });
 });

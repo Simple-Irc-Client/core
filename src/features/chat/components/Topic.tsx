@@ -17,6 +17,7 @@ import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, renderFormattedSegments } from '@/shared/lib/ircFormatting';
 import { getUserDisplayName } from '@shared/lib/displayName';
+import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 import ChannelEncryptionHint from '@features/e2ee/components/ChannelEncryptionHint';
@@ -65,6 +66,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 
   const topicTooltip = formatTopicTooltip(currentChannelName, t);
   const formattedSegments = parseIrcFormatting(topic);
+  const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
   return (
     <>
@@ -83,7 +85,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
                 />
               ) : (
                 <div data-testid="topic-display" className="min-h-8 w-full flex items-center px-3 text-sm truncate">
-                  {renderFormattedSegments(formattedSegments)}
+                  {renderFormattedSegments(formattedSegments, undefined, backgroundLuminance)}
                 </div>
               )}
             </div>

@@ -10,6 +10,7 @@ import {
 } from '@/shared/lib/ircFormatting';
 import type { FormattedSegment } from '@/shared/lib/ircFormatting';
 import { isSafeUrl } from '@shared/lib/utils';
+import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import { splitEmoji } from '@/shared/lib/emoji';
 
 interface MessageTextProps {
@@ -25,6 +26,7 @@ interface TextPart {
 
 const MessageText = ({ text, color }: MessageTextProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
+  const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
   const parts = useMemo((): TextPart[] => {
     const channelTypes = getChannelTypes();
@@ -124,7 +126,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
           }
 
           if (part.type === 'url') {
-            const content = part.segments ? renderFormattedSegments(part.segments, color) : part.value;
+            const content = part.segments ? renderFormattedSegments(part.segments, color, backgroundLuminance) : part.value;
             return (
               <span
                 key={key}
@@ -139,7 +141,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
 
           const [firstSegment] = part.segments ?? [];
           if (firstSegment) {
-            const style = getStyleFromFormatState(firstSegment.style, color);
+            const style = getStyleFromFormatState(firstSegment.style, color, backgroundLuminance);
             const hasStyle = Object.keys(style).length > 0;
             return <span key={key}>{renderWithEmoji(part.value, key, hasStyle ? style : undefined)}</span>;
           }

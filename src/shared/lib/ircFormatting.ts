@@ -1,5 +1,5 @@
 import React from 'react';
-import { isSafeCssColor } from './utils';
+import { ensureReadableColor, isSafeCssColor } from './utils';
 
 // IRC formatting control characters
 export const IRC_FORMAT = {
@@ -273,7 +273,13 @@ export function stripIrcFormatting(text: string): string {
   return result;
 }
 
-export function getStyleFromFormatState(state: FormatState, baseColor?: string): React.CSSProperties {
+/**
+ * @param backgroundLuminance relative luminance of the surface the text sits on;
+ *   when given, a sender-chosen foreground color with no background of its own
+ *   is adjusted to stay readable there (white text on a light theme, black on a
+ *   dark one). A color pair the sender set (fg + bg) is their contrast to keep.
+ */
+export function getStyleFromFormatState(state: FormatState, baseColor?: string, backgroundLuminance?: number): React.CSSProperties {
   const style: React.CSSProperties = {};
 
   if (state.bold) { style.fontWeight = 'bold'; }
@@ -291,7 +297,8 @@ export function getStyleFromFormatState(state: FormatState, baseColor?: string):
   let bg = state.background;
   if (state.reverse) { [fg, bg] = [bg, fg]; }
   if (fg && isSafeCssColor(fg)) {
-    style.color = fg;
+    const hasOwnBackground = !!bg && isSafeCssColor(bg);
+    style.color = backgroundLuminance === undefined || hasOwnBackground ? fg : ensureReadableColor(fg, backgroundLuminance);
   } else if (baseColor) {
     style.color = baseColor;
   }
@@ -302,13 +309,14 @@ export function getStyleFromFormatState(state: FormatState, baseColor?: string):
 
 export function renderFormattedSegments(
   segments: FormattedSegment[],
-  baseColor?: string
+  baseColor?: string,
+  backgroundLuminance?: number,
 ): React.ReactNode[] {
   let offset = 0;
   return segments.map((segment) => {
     const key = `${offset}-${segment.text.length}`;
     offset += segment.text.length;
-    const style = getStyleFromFormatState(segment.style, baseColor);
+    const style = getStyleFromFormatState(segment.style, baseColor, backgroundLuminance);
     const hasStyle = Object.keys(style).length > 0;
     return React.createElement('span', { key, style: hasStyle ? style : undefined }, segment.text);
   });

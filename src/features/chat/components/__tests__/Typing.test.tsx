@@ -49,6 +49,8 @@ describe('Typing', () => {
 
       expect(container.querySelector('.text-xs')).toBeInTheDocument();
       expect(container.textContent).toBe('');
+      // Themes style the idle line through `.sic-typing:empty`, so it must have no children at all
+      expect(container.querySelector('.sic-typing')?.childNodes).toHaveLength(0);
     });
 
     it('should render single user typing', () => {

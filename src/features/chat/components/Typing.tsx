@@ -10,7 +10,9 @@ const Typing = () => {
   const filteredTyping = typing.filter((nick) => nick.trim().length > 0);
 
   return (
-    <div className="text-xs h-7 pl-[68px] pr-4 truncate text-gray-500" role="status" aria-live="polite">
+    // The utility classes are the default (Modern) look; `sic-typing` lets a
+    // theme restyle it — theme CSS is unlayered, so it beats Tailwind's layer.
+    <div className="sic-typing text-xs h-7 pl-[68px] pr-4 truncate text-gray-500" role="status" aria-live="polite">
       {isConnected && filteredTyping.length !== 0 && t('main.user-typing', { nicks: filteredTyping.join(', ') })}
     </div>
   );

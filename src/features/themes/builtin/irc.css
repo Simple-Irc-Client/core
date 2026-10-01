@@ -23,6 +23,14 @@
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
  *
+ * Around the messages:
+ *   .sic-date-separator       day-change row: .sic-date-separator-label (the date)
+ *                             between two .sic-date-separator-rule lines, and a
+ *                             hidden .sic-date-separator-time ("00:00" + seconds)
+ *                             for themes that print it like a transcript line
+ *   .sic-typing               "nick is typing..." line below the chat; stays
+ *                             mounted and empty (:empty) while nobody types
+ *
  * Colors: use the app palette variables (--msg-time, --msg-default, --msg-body,
  * --msg-join, ..., --primary, --background). Prefix rules with `.dark` for
  * dark-mode overrides, e.g. `.dark .sic-msg-body { color: #ccc; }`.
@@ -41,7 +49,9 @@
  * ------------------------------------------------------------------------- */
 
 :root {
-  --font-sans: ui-monospace, 'Cascadia Code', 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  /* Self-hosted (see index.css), so every OS renders the same face; the
+     website's system stack follows in case the font can't load. */
+  --font-sans: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', 'JetBrains Mono', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --font-mono: var(--font-sans);
   /* The app's default weight scale is tuned down for Inter; monospace system
      fonts ship the standard instances. */
@@ -141,12 +151,29 @@ body {
 
 /* ---------------------------------------------------------------------------
  * Chat transcript: one line per message, "HH:mm <nick> text"
+ *
+ * Each message is a three-column grid — timestamp | nick | text — with the
+ * line's own wrapper dissolved (display: contents), so wrapped text and link
+ * previews hang under the start of the text instead of under the timestamp.
+ * Like irssi, "<nick>" sits right after the timestamp at its natural width,
+ * so where the text starts depends on that line's nick.
  * ------------------------------------------------------------------------- */
 
 .sic-msg {
   display: block;
   padding: 0.125rem 1rem;
   line-height: 1.6;
+}
+
+.sic-msg-content {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  column-gap: 1ch;
+  align-items: baseline;
+}
+
+.sic-msg-line {
+  display: contents;
 }
 
 /* Mentions: the website's code-block rule — an accent bar on a tinted line.
@@ -181,10 +208,11 @@ body {
 }
 
 .sic-msg-time-inline {
-  margin-right: 1ch;
+  grid-column: 1;
 }
 
 .sic-msg-nick-inline {
+  grid-column: 2;
   font-weight: var(--font-weight-bold, 700);
 }
 
@@ -210,21 +238,46 @@ body {
   content: none;
 }
 
+/* Notices read as "-nick- text", the way every terminal client prints them */
+.sic-msg[data-category='notice'] .sic-msg-nick-inline::before,
+.sic-msg[data-category='notice'] .sic-msg-nick-inline::after {
+  content: '-';
+}
+
+/* The chat log sets `word-break: break-all`; wrap at spaces instead, and only
+   break inside a word that can't fit on a line by itself (a long URL) */
 .sic-msg-body {
-  margin-left: 1ch;
+  grid-column: 3;
   color: var(--msg-default);
+  word-break: normal;
   overflow-wrap: anywhere;
 }
 
 /* Status lines (join/part/quit/kick/mode/info/error/motd) have no nick; mark
-   them the way terminal clients do, with a dim "-!-" in the nick slot. The
-   body drops its gap so the marker lines up with the "<" of a nick. */
-.sic-msg:not([data-content]):not([data-system]) .sic-msg-body {
-  margin-left: 0;
+   them the way irssi does, "HH:mm -!- text", with the dim marker right after
+   the timestamp. The body spans the nick and text columns, and a hanging
+   indent of the marker's width ("-!- ", 4ch of monospace) keeps wrapped lines
+   under the text, not the marker.
+   Debug/Status output is excluded: its fixed styling can't outrank these.
+   The day-change line (further down) is laid out as one of these. */
+.sic-msg:not([data-content], [data-system], [data-debug]) .sic-msg-body,
+.sic-date-separator-label {
+  grid-column: 2 / -1;
+  padding-left: 4ch;
+  text-indent: -4ch;
 }
 
-.sic-msg:not([data-content]):not([data-system]) .sic-msg-body::before {
-  content: '-!- ';
+/* text-indent is inherited, and an inline-block descendant (an emoji) would
+   apply it to its own first line */
+.sic-msg:not([data-content], [data-system], [data-debug]) .sic-msg-body *,
+.sic-date-separator-label * {
+  text-indent: 0;
+}
+
+.sic-msg:not([data-content], [data-system], [data-debug]) .sic-msg-body::before,
+.sic-date-separator-label::before {
+  content: '-!-';
+  margin-right: 1ch;
   color: var(--msg-time);
   font-style: normal;
 }
@@ -234,10 +287,15 @@ body {
   white-space: pre-wrap;
 }
 
-/* Link previews sit below the line: indent them under the message text.
-   Approximates "HH:mm " — exact alignment would need the nick width. */
+/* Link previews sit in the text column, under the message they belong to.
+   Square, outlined thumbnails instead of the default rounded ones. */
 .sic-msg-embeds {
-  margin-left: 6ch;
+  grid-column: 3;
+}
+
+.sic-msg-embeds :is(img, iframe) {
+  border-radius: 0;
+  border: 1px solid var(--border);
 }
 
 /* Emoji render larger than surrounding text so they stay recognizable.
@@ -256,9 +314,9 @@ body {
   display: none;
 }
 
-/* Conversation-level system notices (e.g. E2EE handshake outcomes): centred and
-   set off from the line above so a header-less line doesn't read as a
-   continuation of whoever spoke last. */
+/* Conversation-level system notices (e.g. E2EE handshake outcomes): centred
+   across the whole row and set off from the line above so a header-less line
+   doesn't read as a continuation of whoever spoke last. */
 .sic-msg[data-system] {
   margin-top: 0.375rem;
   text-align: center;
@@ -269,7 +327,7 @@ body {
 }
 
 .sic-msg[data-system] .sic-msg-body {
-  margin-left: 0;
+  grid-column: 1 / -1;
   color: var(--msg-info);
 }
 
@@ -284,4 +342,48 @@ body {
 .sic-msg[data-e2ee='failed'] .sic-msg-body {
   font-style: italic;
   opacity: 0.75;
+}
+
+/* ---------------------------------------------------------------------------
+ * Around the transcript: day changes and the typing line, as status lines
+ * ------------------------------------------------------------------------- */
+
+/* "00:00 -!- 9 September 2026" on the same grid as a message row, so the
+   timestamp, the marker and the date line up with the status lines around it
+   (the label shares the status-line rules above). The utility classes it
+   carries for the default look (flex, gap, small text) are overridden here. */
+.sic-date-separator {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 0 1ch;
+  align-items: baseline;
+  padding: 0.125rem 1rem;
+  line-height: 1.6;
+}
+
+.sic-date-separator-rule {
+  display: none;
+}
+
+.sic-date-separator-time {
+  display: inline;
+  grid-column: 1;
+  color: var(--msg-time);
+}
+
+.sic-date-separator-label {
+  font-size: inherit;
+  line-height: inherit;
+  white-space: normal;
+  color: var(--msg-time);
+}
+
+.sic-typing {
+  padding-left: 1rem;
+  color: var(--msg-time);
+}
+
+/* The element stays mounted (and empty) while nobody is typing */
+.sic-typing:not(:empty)::before {
+  content: '-!- ';
 }

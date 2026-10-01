@@ -133,7 +133,7 @@ const Chat = () => {
         {rows.map(({ message, showDateSeparator, currentDate, grouped }) => {
           return (
             <div key={`message-${message.id}`}>
-              {showDateSeparator && <DateSeparator date={currentDate} />}
+              {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
               <ChatMessage message={message} grouped={grouped} isDebug={isDebug} fontSizeClass={fontSizeClass} />
             </div>
           );

@@ -58,25 +58,61 @@ function parseHexColor(hex: string): [number, number, number] | null {
   return [r, g, b];
 }
 
-function parseCssColorToRgb(color: string): [number, number, number] | null {
-  const rgbMatch = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/.exec(color);
-  if (rgbMatch) { return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])]; }
-  if (color.startsWith('#')) { return parseHexColor(color); }
-  // For named colors, use a temporary element
+let colorCanvasContext: CanvasRenderingContext2D | null | undefined;
+
+/**
+ * Resolves a CSS color through a 1×1 canvas, which understands every color
+ * syntax the engine does (oklch(), lab(), color(display-p3 ...)) and hands
+ * back sRGB bytes — the computed-style route below keeps those spaces as-is.
+ */
+function resolveColorViaCanvas(color: string): [number, number, number] | null {
+  if (colorCanvasContext === undefined) {
+    const canvas = typeof document === 'undefined' ? null : document.createElement('canvas');
+    canvas?.setAttribute('width', '1');
+    canvas?.setAttribute('height', '1');
+    colorCanvasContext = canvas?.getContext('2d', { willReadFrequently: true }) ?? null;
+  }
+  const ctx = colorCanvasContext;
+  if (!ctx) { return null; }
+  ctx.fillStyle = color; // callers pass a color the engine already accepted
+  ctx.clearRect(0, 0, 1, 1);
+  ctx.fillRect(0, 0, 1, 1);
+  const [r = 0, g = 0, b = 0, a = 0] = ctx.getImageData(0, 0, 1, 1).data;
+  return a === 0 ? null : [r, g, b];
+}
+
+const RGB_FUNCTION_RE = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+)\s*)?\)$/;
+
+/**
+ * Parses any CSS color into opaque sRGB channels; null when it can't be
+ * resolved or is fully transparent (e.g. an unset `background-color`).
+ */
+export function cssColorToRgb(color: string): [number, number, number] | null {
+  const value = color.trim();
+  if (value.startsWith('#')) { return parseHexColor(value); }
+  const rgbMatch = RGB_FUNCTION_RE.exec(value);
+  if (rgbMatch) {
+    if (rgbMatch[4] !== undefined && Number(rgbMatch[4]) === 0) { return null; }
+    return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
+  }
+  if (value === '' || value === 'transparent') { return null; }
+  // Named/hsl()/hwb() colors normalize to rgb() through computed style
   if (typeof document !== 'undefined') {
     const el = document.createElement('span');
-    el.style.color = color;
+    el.style.color = value;
+    if (el.style.color === '') { return null; } // not a color at all
     document.body.appendChild(el);
     const computed = getComputedStyle(el).color;
-    document.body.removeChild(el);
-    const m = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/.exec(computed);
+    el.remove();
+    const m = RGB_FUNCTION_RE.exec(computed);
     if (m) { return [Number(m[1]), Number(m[2]), Number(m[3])]; }
   }
-  return null;
+  // Modern color spaces (oklch(), lab(), ...) stay unconverted in computed style
+  return resolveColorViaCanvas(value);
 }
 
 /** Relative luminance per WCAG 2.0 */
-function relativeLuminance(r: number, g: number, b: number): number {
+export function relativeLuminance(r: number, g: number, b: number): number {
   const linearize = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   return 0.2126 * linearize(r / 255) + 0.7152 * linearize(g / 255) + 0.0722 * linearize(b / 255);
 }
@@ -113,46 +149,52 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
+const contrastRatio = (a: number, b: number): number => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+const toHex = ([r, g, b]: [number, number, number]): string =>
+  `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+
+/** Fallback background luminances when the theme's real background can't be measured. */
+export const LIGHT_BACKGROUND_LUMINANCE = 0.95;
+export const DARK_BACKGROUND_LUMINANCE = 0.05;
+
 const MIN_CONTRAST_RATIO = 3.0;
+const READABLE_COLOR_CACHE_LIMIT = 500;
+const readableColorCache = new Map<string, string>();
 
 /**
- * Adjusts a nick color to ensure readable contrast against the theme background.
- * Returns the adjusted color as a hex string, or the original if already readable.
+ * Adjusts a foreground color (nick color, mIRC text color) so it stays readable
+ * on a background of the given relative luminance, keeping its hue. Returns the
+ * original string when it is already readable or can't be parsed.
  */
-export function ensureNickContrast(color: string, isDark: boolean): string {
-  const rgb = parseCssColorToRgb(color);
+export function ensureReadableColor(color: string, backgroundLuminance: number): string {
+  const cacheKey = `${color}|${backgroundLuminance.toFixed(3)}`;
+  const cached = readableColorCache.get(cacheKey);
+  if (cached !== undefined) { return cached; }
+
+  const result = computeReadableColor(color, backgroundLuminance);
+  // Message colors are sender-controlled (\x04 hex), so bound the cache
+  if (readableColorCache.size >= READABLE_COLOR_CACHE_LIMIT) { readableColorCache.clear(); }
+  readableColorCache.set(cacheKey, result);
+  return result;
+}
+
+function computeReadableColor(color: string, backgroundLuminance: number): string {
+  const rgb = cssColorToRgb(color);
   if (!rgb) { return color; }
+  if (contrastRatio(backgroundLuminance, relativeLuminance(...rgb)) >= MIN_CONTRAST_RATIO) { return color; }
 
-  const bgLuminance = isDark ? 0.05 : 0.95; // approximate dark/light background luminance
-  const colorLuminance = relativeLuminance(...rgb);
-
-  const lighter = Math.max(bgLuminance, colorLuminance);
-  const darker = Math.min(bgLuminance, colorLuminance);
-  const ratio = (lighter + 0.05) / (darker + 0.05);
-
-  if (ratio >= MIN_CONTRAST_RATIO) { return color; }
-
-  // Adjust lightness to meet contrast ratio
+  // Move lightness toward whichever end (black or white) can contrast more
+  // with this background — a mid-grey theme background may need either.
+  const darken = contrastRatio(backgroundLuminance, 0) >= contrastRatio(backgroundLuminance, 1);
   const [h, s, l] = rgbToHsl(...rgb);
-  let newL = l;
-  const step = isDark ? 0.05 : -0.05;
-  for (let i = 0; i < 20; i++) {
-    newL = Math.max(0, Math.min(1, newL + step));
-    const [nr, ng, nb] = hslToRgb(h, s, newL);
-    const newLum = relativeLuminance(nr, ng, nb);
-    const newLighter = Math.max(bgLuminance, newLum);
-    const newDarker = Math.min(bgLuminance, newLum);
-    const newRatio = (newLighter + 0.05) / (newDarker + 0.05);
-    if (newRatio >= MIN_CONTRAST_RATIO) {
-      const toHex = (v: number) => v.toString(16).padStart(2, '0');
-      return `#${toHex(nr)}${toHex(ng)}${toHex(nb)}`;
-    }
+  let adjusted = rgb;
+  for (let newL = l; darken ? newL > 0 : newL < 1;) {
+    newL = Math.max(0, Math.min(1, newL + (darken ? -0.05 : 0.05)));
+    adjusted = hslToRgb(h, s, newL);
+    if (contrastRatio(backgroundLuminance, relativeLuminance(...adjusted)) >= MIN_CONTRAST_RATIO) { break; }
   }
-
-  // Fallback: return a readable default
-  const [fr, fg, fb] = hslToRgb(h, s, newL);
-  const toHex = (v: number) => v.toString(16).padStart(2, '0');
-  return `#${toHex(fr)}${toHex(fg)}${toHex(fb)}`;
+  return toHex(adjusted);
 }
 
 // IRC nick validation: RFC 2812 allows letters, digits, and special chars - [ ] \ ` ^ { } |

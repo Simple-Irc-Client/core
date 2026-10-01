@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSafeUrl, isSafeImageUrl, isSafeCssColor, redactSensitiveIrc, ensureNickContrast } from '../utils';
+import { isSafeUrl, isSafeImageUrl, isSafeCssColor, redactSensitiveIrc, ensureReadableColor, cssColorToRgb, DARK_BACKGROUND_LUMINANCE, LIGHT_BACKGROUND_LUMINANCE } from '../utils';
 
 describe('redactSensitiveIrc', () => {
   it('should redact AUTHENTICATE payloads', () => {
@@ -242,64 +242,64 @@ describe('CSS Color Validation', () => {
   });
 });
 
-describe('ensureNickContrast', () => {
+describe('ensureReadableColor', () => {
   describe('dark mode - lightens dark colors', () => {
     it('should lighten black on dark background', () => {
-      const result = ensureNickContrast('#000000', true);
+      const result = ensureReadableColor('#000000', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#000000');
       // Result should be a lighter color (higher hex values)
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should lighten very dark colors', () => {
-      const result = ensureNickContrast('#1a1a1a', true);
+      const result = ensureReadableColor('#1a1a1a', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#1a1a1a');
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should lighten dark blue', () => {
-      const result = ensureNickContrast('#000080', true);
+      const result = ensureReadableColor('#000080', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#000080');
     });
 
     it('should lighten dark red', () => {
-      const result = ensureNickContrast('#330000', true);
+      const result = ensureReadableColor('#330000', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#330000');
     });
 
     it('should not change already bright colors on dark background', () => {
-      expect(ensureNickContrast('#ffffff', true)).toBe('#ffffff');
-      expect(ensureNickContrast('#00ff00', true)).toBe('#00ff00');
-      expect(ensureNickContrast('#ffff00', true)).toBe('#ffff00');
+      expect(ensureReadableColor('#ffffff', DARK_BACKGROUND_LUMINANCE)).toBe('#ffffff');
+      expect(ensureReadableColor('#00ff00', DARK_BACKGROUND_LUMINANCE)).toBe('#00ff00');
+      expect(ensureReadableColor('#ffff00', DARK_BACKGROUND_LUMINANCE)).toBe('#ffff00');
     });
   });
 
   describe('light mode - darkens light colors', () => {
     it('should darken white on light background', () => {
-      const result = ensureNickContrast('#ffffff', false);
+      const result = ensureReadableColor('#ffffff', LIGHT_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#ffffff');
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should darken very light colors', () => {
-      const result = ensureNickContrast('#e0e0e0', false);
+      const result = ensureReadableColor('#e0e0e0', LIGHT_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#e0e0e0');
     });
 
     it('should darken light yellow', () => {
-      const result = ensureNickContrast('#ffff99', false);
+      const result = ensureReadableColor('#ffff99', LIGHT_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#ffff99');
     });
 
     it('should not change already dark colors on light background', () => {
-      expect(ensureNickContrast('#000000', false)).toBe('#000000');
-      expect(ensureNickContrast('#333333', false)).toBe('#333333');
+      expect(ensureReadableColor('#000000', LIGHT_BACKGROUND_LUMINANCE)).toBe('#000000');
+      expect(ensureReadableColor('#333333', LIGHT_BACKGROUND_LUMINANCE)).toBe('#333333');
     });
   });
 
   describe('preserves hue', () => {
     it('should keep red hue when lightening', () => {
-      const result = ensureNickContrast('#330000', true);
+      const result = ensureReadableColor('#330000', DARK_BACKGROUND_LUMINANCE);
       // Parse result to verify red channel dominates
       const r = Number.parseInt(result.slice(1, 3), 16);
       const g = Number.parseInt(result.slice(3, 5), 16);
@@ -309,7 +309,7 @@ describe('ensureNickContrast', () => {
     });
 
     it('should keep blue hue when lightening', () => {
-      const result = ensureNickContrast('#000033', true);
+      const result = ensureReadableColor('#000033', DARK_BACKGROUND_LUMINANCE);
       const r = Number.parseInt(result.slice(1, 3), 16);
       const g = Number.parseInt(result.slice(3, 5), 16);
       const b = Number.parseInt(result.slice(5, 7), 16);
@@ -320,26 +320,26 @@ describe('ensureNickContrast', () => {
 
   describe('handles different color formats', () => {
     it('should handle 3-digit hex', () => {
-      const result = ensureNickContrast('#000', true);
+      const result = ensureReadableColor('#000', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('#000');
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should handle rgb() format', () => {
-      const result = ensureNickContrast('rgb(0, 0, 0)', true);
+      const result = ensureReadableColor('rgb(0, 0, 0)', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('rgb(0, 0, 0)');
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should handle rgba() format', () => {
-      const result = ensureNickContrast('rgba(0, 0, 0, 1)', true);
+      const result = ensureReadableColor('rgba(0, 0, 0, 1)', DARK_BACKGROUND_LUMINANCE);
       expect(result).not.toBe('rgba(0, 0, 0, 1)');
       expect(result).toMatch(/^#[0-9a-f]{6}$/);
     });
 
     it('should handle named CSS colors', () => {
       // Named colors get resolved via DOM, so they should be processed
-      const result = ensureNickContrast('red', false);
+      const result = ensureReadableColor('red', LIGHT_BACKGROUND_LUMINANCE);
       // Red should have enough contrast on light background
       expect(result).toBe('red');
     });
@@ -348,11 +348,69 @@ describe('ensureNickContrast', () => {
   describe('mid-range colors pass through', () => {
     it('should not adjust medium-brightness colors on dark background', () => {
       // Medium bright colors should have enough contrast on dark bg
-      expect(ensureNickContrast('#6e9ecf', true)).toBe('#6e9ecf');
+      expect(ensureReadableColor('#6e9ecf', DARK_BACKGROUND_LUMINANCE)).toBe('#6e9ecf');
     });
 
     it('should not adjust medium colors on light background', () => {
-      expect(ensureNickContrast('#555555', false)).toBe('#555555');
+      expect(ensureReadableColor('#555555', LIGHT_BACKGROUND_LUMINANCE)).toBe('#555555');
     });
+  });
+  describe('measured theme backgrounds', () => {
+    const luminanceOf = (hex: string): number => {
+      const [r, g, b] = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16) / 255);
+      const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * lin(r ?? 0) + 0.7152 * lin(g ?? 0) + 0.0722 * lin(b ?? 0);
+    };
+    const ratio = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+    it('should darken white text on the IRC theme paper background', () => {
+      const bg = luminanceOf('#fbfaf7');
+      const result = ensureReadableColor('#ffffff', bg);
+      expect(ratio(luminanceOf(result), bg)).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should lighten black text on the IRC theme dark background', () => {
+      const bg = luminanceOf('#141311');
+      const result = ensureReadableColor('#000000', bg);
+      expect(ratio(luminanceOf(result), bg)).toBeGreaterThanOrEqual(3);
+    });
+
+    it('should pick the direction that can reach contrast on a mid-grey background', () => {
+      // #666 contrasts more with white (5.7:1) than black (3.7:1), so a grey
+      // that is too close to it must be lightened, not darkened toward black
+      const bg = luminanceOf('#666666');
+      const result = ensureReadableColor('#999999', bg);
+      expect(ratio(luminanceOf(result), bg)).toBeGreaterThanOrEqual(3);
+      expect(luminanceOf(result)).toBeGreaterThan(bg);
+    });
+
+    it('should return the same answer for the same color and background (cached)', () => {
+      expect(ensureReadableColor('#eeeeee', 0.9)).toBe(ensureReadableColor('#eeeeee', 0.9));
+    });
+
+    it('should return unparseable colors unchanged', () => {
+      expect(ensureReadableColor('not-a-color', DARK_BACKGROUND_LUMINANCE)).toBe('not-a-color');
+    });
+  });
+});
+
+describe('cssColorToRgb', () => {
+  it('should parse hex and rgb()', () => {
+    expect(cssColorToRgb('#fbfaf7')).toEqual([251, 250, 247]);
+    expect(cssColorToRgb('#fff')).toEqual([255, 255, 255]);
+    expect(cssColorToRgb('rgb(20, 19, 17)')).toEqual([20, 19, 17]);
+    expect(cssColorToRgb(' rgba(1, 2, 3, 0.5) ')).toEqual([1, 2, 3]);
+  });
+
+  it('should treat a fully transparent color as no color', () => {
+    // An unset background computes to rgba(0, 0, 0, 0)
+    expect(cssColorToRgb('rgba(0, 0, 0, 0)')).toBeNull();
+    expect(cssColorToRgb('transparent')).toBeNull();
+    expect(cssColorToRgb('')).toBeNull();
+  });
+
+  it('should return null for malformed input', () => {
+    expect(cssColorToRgb('#12')).toBeNull();
+    expect(cssColorToRgb('definitely not a color')).toBeNull();
   });
 });

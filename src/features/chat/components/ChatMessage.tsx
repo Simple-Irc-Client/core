@@ -14,7 +14,8 @@ import EchoedIndicator from './EchoedIndicator';
 import E2eeIndicator from '@features/e2ee/components/E2eeIndicator';
 import NickHighlightedMessage from './NickHighlightedMessage';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
-import { isSafeCssColor, ensureNickContrast } from '@shared/lib/utils';
+import { isSafeCssColor, ensureReadableColor } from '@shared/lib/utils';
+import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
@@ -44,14 +45,14 @@ interface ChatMessageProps {
  */
 const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessageProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
-  const isDarkMode = useSettingsStore((s) => s.isDarkMode);
+  const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
   const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
 
   const nick = getNickFromMessage(message);
   const displayNick = getDisplayNickFromMessage(message);
   const avatar = message.nick !== undefined && typeof message.nick !== 'string' ? message.nick.avatar : undefined;
   const rawNickColor = message.nick !== undefined && typeof message.nick !== 'string' ? message.nick.color : undefined;
-  const nickColor = !isDebug && rawNickColor && isSafeCssColor(rawNickColor) ? ensureNickContrast(rawNickColor, isDarkMode) : undefined;
+  const nickColor = !isDebug && rawNickColor && isSafeCssColor(rawNickColor) ? ensureReadableColor(rawNickColor, backgroundLuminance) : undefined;
 
   const isContent = contentCategories.has(message.category);
   // Every non-echoed DM message is flagged `highlight` (see kernel.ts) so it
