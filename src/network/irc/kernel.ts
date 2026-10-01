@@ -1114,7 +1114,6 @@ export class Kernel {
     }
 
     const isError = isErrorNumeric(this.command);
-    console.log(`unknown irc event (PROBE-TMP numeric): ${this.eventLine}`);
 
     setAddMessage({
       id: this.tags.msgid ?? uuidv4(),
