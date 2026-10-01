@@ -85,6 +85,10 @@ describe('builtinThemes', () => {
       expect(layout).toMatch(/--font-sans: 'JetBrains Mono Variable', /);
     });
 
+    it('should turn off the font\'s coding ligatures, so "-->" stays three characters', () => {
+      expect(layout).toMatch(/body \{[^}]*font-variant-ligatures: none;/);
+    });
+
     it('should print notices as -nick-', () => {
       expect(layout).toMatch(/\[data-category='notice'\] \.sic-msg-nick-inline::before,[^{]*::after \{\s*content: '-';/);
     });
@@ -102,6 +106,14 @@ describe('builtinThemes', () => {
       expect(statusSelectors.length).toBeGreaterThan(0);
       for (const selector of statusSelectors) {
         expect(selector).toContain('[data-debug]');
+      }
+    });
+
+    it('should mark joins and parts with weechat ASCII arrows instead of -!-', () => {
+      expect(layout).toMatch(/\[data-category='join'\]:not\(\[data-debug\]\) \.sic-msg-body::before \{\s*content: '-->';/);
+      const leave = /\.sic-msg:is\(([^)]*)\):not\(\[data-debug\]\) \.sic-msg-body::before \{\s*content: '<--';/.exec(layout);
+      for (const category of ['part', 'quit', 'kick']) {
+        expect(leave?.[1]).toContain(`[data-category='${category}']`);
       }
     });
 

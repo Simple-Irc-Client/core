@@ -140,9 +140,13 @@
   --msg-highlight: #f29a45;
 }
 
-/* The app body tightens Inter's tracking; monospace needs its natural advance */
+/* The app body tightens Inter's tracking; monospace needs its natural advance.
+   JetBrains Mono ships coding ligatures (contextual alternates) that would
+   draw "-->" as one long arrow and "!=" as "≠"; a terminal shows each
+   character in its own cell. */
 body {
   letter-spacing: 0;
+  font-variant-ligatures: none;
 }
 
 ::selection {
@@ -280,6 +284,19 @@ body {
   margin-right: 1ch;
   color: var(--msg-time);
   font-style: normal;
+}
+
+/* Membership changes get weechat's ASCII arrows instead of "-!-" (replacing
+   the default → / ← from index.css), in the line's own join/part colour.
+   Three characters like "-!-", so the text stays in the same column. */
+.sic-msg[data-category='join']:not([data-debug]) .sic-msg-body::before {
+  content: '-->';
+  color: inherit;
+}
+
+.sic-msg:is([data-category='part'], [data-category='quit'], [data-category='kick']):not([data-debug]) .sic-msg-body::before {
+  content: '<--';
+  color: inherit;
 }
 
 /* The MOTD is ASCII art more often than not: keep its spacing */

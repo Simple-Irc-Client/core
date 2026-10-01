@@ -110,7 +110,22 @@
    typeface — so it renders identically on every OS instead of falling back to
    whatever ui-monospace resolves to (SF Mono, Consolas, Liberation Mono...).
    Declared globally but only downloaded once something uses the family.
-   Same `format('woff2')` hint as Inter above, for WebKitGTK. */
+   Same `format('woff2')` hint as Inter above, for WebKitGTK.
+   The Fontsource subsets below omit arrows and box drawing, which then fell
+   back to another font with different metrics and sat off the line. The
+   symbols file is cut from the upstream variable font (JetBrains/JetBrainsMono
+   v2.304) to cover them — arrows, and the box/block glyphs ASCII-art MOTDs
+   are built from:
+     pyftsubset 'JetBrainsMono[wght].ttf' --unicodes='U+2190-21FF,U+2500-25FF'
+       --flavor=woff2 --layout-features='*' */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url('/fonts/jetbrains-mono-symbols-wght-normal.woff2') format('woff2');
+  unicode-range: U+2190-21FF, U+2500-25FF;
+}
 @font-face {
   font-family: 'JetBrains Mono Variable';
   font-style: normal;
@@ -346,6 +361,17 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
+}
+
+/* Membership changes (join/part/quit/kick) are marked with an arrow drawn
+   here rather than written into the message text, so a theme can swap it
+   (the IRC theme prints weechat's "-->" / "<--"). :where() keeps these at the
+   lowest specificity: any theme rule on `.sic-msg-body::before` wins. */
+:where(.sic-msg[data-category='join']) .sic-msg-body::before {
+  content: '→ ';
+}
+:where(.sic-msg[data-category='part'], .sic-msg[data-category='quit'], .sic-msg[data-category='kick']) .sic-msg-body::before {
+  content: '← ';
 }
 
 /* Fixed styling for chat messages in the debug/Status channels.
