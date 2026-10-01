@@ -9,26 +9,18 @@ export function isSafeUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     
-    // Block dangerous protocols
     const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'about:', 'file:'];
     if (dangerousProtocols.includes(parsed.protocol.toLowerCase())) {
       return false;
     }
     
-    // Only allow http and https
     return parsed.protocol === 'https:' || parsed.protocol === 'http:';
   } catch {
     return false;
   }
 }
 
-/**
- * Stricter check for URLs loaded as sub-resources (e.g. <img> avatars and
- * inline images). Unlike isSafeUrl (which permits http for navigation/links),
- * this requires https — http sources are blocked as mixed content in the
- * secure desktop webview — and rejects private/internal hosts so untrusted
- * URLs can't probe the local network.
- */
+// For <img> sources: https only (mixed content in the desktop webview), no private hosts (network probing)
 export function isSafeImageUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
@@ -60,11 +52,7 @@ function parseHexColor(hex: string): [number, number, number] | null {
 
 let colorCanvasContext: CanvasRenderingContext2D | null | undefined;
 
-/**
- * Resolves a CSS color through a 1×1 canvas, which understands every color
- * syntax the engine does (oklch(), lab(), color(display-p3 ...)) and hands
- * back sRGB bytes — the computed-style route below keeps those spaces as-is.
- */
+// Canvas converts any color syntax (oklch(), lab(), ...) to sRGB; computed style keeps those as-is
 function resolveColorViaCanvas(color: string): [number, number, number] | null {
   if (colorCanvasContext === undefined) {
     const canvas = typeof document === 'undefined' ? null : document.createElement('canvas');
@@ -83,10 +71,7 @@ function resolveColorViaCanvas(color: string): [number, number, number] | null {
 
 const RGB_FUNCTION_RE = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+)\s*)?\)$/;
 
-/**
- * Parses any CSS color into opaque sRGB channels; null when it can't be
- * resolved or is fully transparent (e.g. an unset `background-color`).
- */
+/** Null when unresolvable or fully transparent (e.g. an unset `background-color`). */
 export function cssColorToRgb(color: string): [number, number, number] | null {
   const value = color.trim();
   if (value.startsWith('#')) { return parseHexColor(value); }
@@ -96,7 +81,6 @@ export function cssColorToRgb(color: string): [number, number, number] | null {
     return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
   }
   if (value === '' || value === 'transparent') { return null; }
-  // Named/hsl()/hwb() colors normalize to rgb() through computed style
   if (typeof document !== 'undefined') {
     const el = document.createElement('span');
     el.style.color = value;
@@ -107,11 +91,9 @@ export function cssColorToRgb(color: string): [number, number, number] | null {
     const m = RGB_FUNCTION_RE.exec(computed);
     if (m) { return [Number(m[1]), Number(m[2]), Number(m[3])]; }
   }
-  // Modern color spaces (oklch(), lab(), ...) stay unconverted in computed style
   return resolveColorViaCanvas(value);
 }
 
-/** Relative luminance per WCAG 2.0 */
 export function relativeLuminance(r: number, g: number, b: number): number {
   const linearize = (c: number) => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   return 0.2126 * linearize(r / 255) + 0.7152 * linearize(g / 255) + 0.0722 * linearize(b / 255);
@@ -154,7 +136,6 @@ const contrastRatio = (a: number, b: number): number => (Math.max(a, b) + 0.05) 
 const toHex = ([r, g, b]: [number, number, number]): string =>
   `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 
-/** Fallback background luminances when the theme's real background can't be measured. */
 export const LIGHT_BACKGROUND_LUMINANCE = 0.95;
 export const DARK_BACKGROUND_LUMINANCE = 0.05;
 
@@ -162,11 +143,7 @@ const MIN_CONTRAST_RATIO = 3.0;
 const READABLE_COLOR_CACHE_LIMIT = 500;
 const readableColorCache = new Map<string, string>();
 
-/**
- * Adjusts a foreground color (nick color, mIRC text color) so it stays readable
- * on a background of the given relative luminance, keeping its hue. Returns the
- * original string when it is already readable or can't be parsed.
- */
+/** Shifts lightness (keeping hue) until the color reaches 3:1 contrast on the given background. */
 export function ensureReadableColor(color: string, backgroundLuminance: number): string {
   const cacheKey = `${color}|${backgroundLuminance.toFixed(3)}`;
   const cached = readableColorCache.get(cacheKey);
@@ -184,8 +161,7 @@ function computeReadableColor(color: string, backgroundLuminance: number): strin
   if (!rgb) { return color; }
   if (contrastRatio(backgroundLuminance, relativeLuminance(...rgb)) >= MIN_CONTRAST_RATIO) { return color; }
 
-  // Move lightness toward whichever end (black or white) can contrast more
-  // with this background — a mid-grey theme background may need either.
+  // A mid-grey background may need either direction
   const darken = contrastRatio(backgroundLuminance, 0) >= contrastRatio(backgroundLuminance, 1);
   const [h, s, l] = rgbToHsl(...rgb);
   let adjusted = rgb;
@@ -197,7 +173,7 @@ function computeReadableColor(color: string, backgroundLuminance: number): strin
   return toHex(adjusted);
 }
 
-// IRC nick validation: RFC 2812 allows letters, digits, and special chars - [ ] \ ` ^ { } |
+// RFC 2812 nick characters
 const VALID_NICK_RE = /^[a-zA-Z\d\-_[\]\\`^{}|]+$/;
 const DEFAULT_MAX_NICK_LENGTH = 50;
 
@@ -208,15 +184,12 @@ export function isValidNick(nick: string, maxLength: number = DEFAULT_MAX_NICK_L
 export function isPrivateHost(host: string): boolean {
   const lower = host.toLowerCase();
 
-  // Localhost variants
   if (lower === 'localhost' || lower === '127.0.0.1' || lower === '::1' || lower === '[::1]') {
     return true;
   }
 
-  // IPv6 in brackets
   const ip = (lower.startsWith('[') && lower.endsWith(']')) ? lower.slice(1, -1) : lower;
 
-  // IPv4 private ranges
   const ipv4Match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
   if (ipv4Match) {
     const [, a = 0, b = 0] = ipv4Match.map(Number);
@@ -228,12 +201,10 @@ export function isPrivateHost(host: string): boolean {
     if (a === 0) return true;                            // 0.0.0.0/8
   }
 
-  // IPv6 private
   if (ip.startsWith('fc') || ip.startsWith('fd')) return true;  // ULA
   if (ip.startsWith('fe80')) return true;                        // link-local
   if (ip === '::') return true;                                  // unspecified
 
-  // IPv4-mapped IPv6
   const v4MappedMatch = /^::(?:ffff:)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(ip);
   if (v4MappedMatch && v4MappedMatch[1]) {
     return isPrivateHost(v4MappedMatch[1]);
@@ -245,16 +216,14 @@ export function isPrivateHost(host: string): boolean {
   return false;
 }
 
-/** Redact sensitive IRC messages (credentials, passwords) for safe debug logging */
+// Lines whose credentials are redacted from debug logs
 const SENSITIVE_IRC_PATTERNS = /^(AUTHENTICATE |PASS |:.* PRIVMSG\s+NickServ\s+:IDENTIFY )/i;
 export function redactSensitiveIrc(line: string): string {
   if (SENSITIVE_IRC_PATTERNS.test(line)) {
     const spaceIdx = line.indexOf(' ');
     if (spaceIdx === -1) { return line; }
-    // For ":sender PRIVMSG NickServ :IDENTIFY ...", keep up to "IDENTIFY"
     const identifyMatch = line.match(/^(:.* PRIVMSG\s+NickServ\s+:IDENTIFY)\s/i);
     if (identifyMatch) { return `${identifyMatch[1]} ***`; }
-    // For "AUTHENTICATE <payload>" or "PASS <password>"
     return `${line.substring(0, spaceIdx)} ***`;
   }
   return line;

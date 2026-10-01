@@ -7,10 +7,7 @@ import { cn } from "@shared/lib/utils"
 
 const TooltipProvider = TooltipPrimitive.Provider
 
-// Radix keeps a tooltip open for as long as the pointer rests on the trigger,
-// so a cursor parked on e.g. a channel after switching to it leaves the hint
-// hanging over the UI indefinitely. Close it after a while; Radix does not
-// re-open on a stationary pointer, only after it leaves and re-enters.
+// Radix keeps a tooltip open while the pointer rests on the trigger, e.g. a just-clicked channel
 const TOOLTIP_AUTO_CLOSE_MS = 10000
 
 type TooltipProps = Omit<TooltipPrimitive.TooltipProps, "open" | "defaultOpen" | "onOpenChange">

@@ -10,22 +10,8 @@ import { E2eeState, useE2eeStore, getSessionKey, type E2eeSession } from '../sto
 import { useE2eePinsStore } from '../store/pins';
 
 /**
- * The prompt strip at the top of a private conversation.
- *
- * Mirrors `DisconnectedBanner` — `role="status"`, inline text actions — so
- * encryption state reads as one more thing the window can tell you rather
- * than a modal that interrupts. Both banners share one sticky wrapper in
- * `Chat` rather than being sticky themselves, so that when both are shown
- * they stack instead of overlapping at the same pinned position.
- *
- * Nothing is shown for the steady states: an active session — verified or
- * not — is represented by the lock in the header, not by a banner that never
- * goes away.
- *
- * Every dismissal here also records that the user accepts plaintext for this
- * conversation. Without that, closing one banner would immediately raise the
- * "you have encrypted with this person before" one, and the user would be
- * playing whack-a-mole with warnings about a decision they just made.
+ * Not sticky itself: Chat's shared sticky wrapper stacks it with DisconnectedBanner. Every dismissal also
+ * acknowledges plaintext, or closing one banner would immediately raise the "encrypted before" one.
  */
 
 interface BannerAction {
@@ -52,19 +38,14 @@ const E2eeBanner = () => {
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
   const isConnected = useSettingsStore((state) => state.isConnected);
-  // A fresh OFFER is a PRIVMSG; offering it with no connection would just
-  // sit there until the handshake times out and reports a failure that was
-  // never really a failure of the peer.
   const canOffer = e2eeEnabled && isConnected;
 
   const sessionKey = getSessionKey(currentChannelName);
   const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[sessionKey]);
   const plaintextAcknowledged = useE2eeStore((state) => state.plaintextAcknowledged[sessionKey] === true);
-  // Subscribed rather than read once: a pin is written the moment a handshake
-  // completes, and this banner has to stop showing when that happens.
+  // Subscribed: the pin appears the moment a handshake completes
   const pinned = useE2eePinsStore(() => hasPinnedPeer(currentChannelName));
 
-  // Encryption is one-to-one only, so this never appears on a channel window.
   if (currentChannelCategory !== ChannelCategory.priv) {
     return null;
   }
@@ -107,9 +88,7 @@ const E2eeBanner = () => {
         };
 
       case E2eeState.active:
-        // Unverified-but-encrypted is the expected default under TOFU, not a
-        // warning state — the header lock (yellow) and its popover are where
-        // verification is discoverable. See E2eeStatusButton.
+        // Unverified is the TOFU default; the header lock handles verification
         return null;
 
       case E2eeState.fingerprintChanged:
@@ -145,22 +124,15 @@ const E2eeBanner = () => {
           ],
         };
 
-      // `declined` shows nothing: the peer refused and the info line already
-      // said so, so a standing banner would just nag.
+      // The info line already said so
       case E2eeState.declined:
         return null;
 
       default:
-        // No session at all. Silence is right for someone we have never
-        // encrypted with — but not for someone we have. Encryption here is
-        // opt-in and best-effort, so anyone able to drop OFFER frames or inject
-        // a RESET can put the conversation back in the clear; pinning that peer
-        // earlier is what lets us notice. Deliberately not phrased as an
-        // accusation: a peer who simply reinstalled looks identical from here.
+        // Warn only for a previously pinned peer (a downgrade is possible); not an accusation, they may have reinstalled
         return pinned && !plaintextAcknowledged
           ? {
-              // `danger`, not `warning`: unlike the unverified-but-still-encrypted
-              // state above, messages here are actually going out in the clear.
+              // Messages really go out in the clear here
               tone: 'danger',
               icon: ShieldAlert,
               text: t('e2ee.banner.plaintextAgain', { nick: peer }),
@@ -189,8 +161,6 @@ const E2eeBanner = () => {
       <Icon className="h-3 w-3 shrink-0" aria-hidden="true" />
       <span>{content.text}</span>
       {content.actions.length > 0 && (
-        // `w-full` inside the parent's `flex-wrap` row forces this onto its own
-        // line — the actions never crowd the message text on narrow windows.
         <div className="w-full flex justify-center items-center gap-1.5">
           {content.actions.map((action, index) => (
             <span key={action.label} className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">

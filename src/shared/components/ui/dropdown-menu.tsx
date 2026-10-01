@@ -33,26 +33,10 @@ interface SubmenuGuard {
 
 const SubmenuGuardContext = React.createContext<SubmenuGuard | null>(null)
 
-// On macOS (WKWebView), the OS can stop delivering the pointermove/pointerleave
-// sequence Radix's own hover-intent timer depends on: a submenu opens, then
-// silently closes on its own ~1s later even though the cursor never left it.
-// `:hover` is a live hit-test the browser maintains regardless of whether it
-// also dispatches the events Radix listens for, so it stays correct when that
-// event stream drops out — use it to veto a close Radix requests while the
-// pointer is provably still over the trigger or the open submenu, and use our
-// own mouseenter/mouseleave (boundary events, not a continuous stream) to
-// drive the actual close once the pointer really leaves.
-//
-// This is a known-fragile area upstream, not a one-off hypothesis: Radix's
-// Sub/SubTrigger/SubContent hover/grace-intent tracking has several open bugs
-// in radix-ui/primitives — #4036 (stale pointer-direction tracking closes a
-// collision-flipped submenu mid-click under React 19), #3082 (SubTrigger with
-// an ItemIndicator flickers), #3761 (multiple SubTriggers stay active /
-// SubContent needs an extra mouse move to close), #923 (nested menu needs a
-// mouse move to open after the previous close animation). None of them match
-// this exact symptom (a plain, non-flipped submenu silently closing ~1s after
-// opening), so it looks like a distinct case in the same subsystem rather
-// than a duplicate.
+// macOS WKWebView can stop delivering the pointer events Radix's hover intent needs, closing a submenu
+// ~1s after it opens. `:hover` stays correct, so it vetoes Radix's close while the pointer is still over
+// the trigger/submenu; our mouseenter/mouseleave drive the real close. (Related upstream: radix-ui/primitives
+// #4036, #3082, #3761, #923.)
 const DropdownMenuSub = ({
   open: openProp,
   defaultOpen,
@@ -64,8 +48,7 @@ const DropdownMenuSub = ({
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const contentRef = React.useRef<HTMLElement | null>(null)
   const closeTimerRef = React.useRef<number | undefined>(undefined)
-  // Diagnostic only (see the captureMessage below): when this opened, so a
-  // too-fast close can be told apart from an ordinary one.
+  // Diagnostic only, for the captureMessage below
   const openedAtRef = React.useRef<number | null>(null)
 
   const commit = React.useCallback(
@@ -76,13 +59,7 @@ const DropdownMenuSub = ({
         const msOpen = Date.now() - openedAtRef.current
         openedAtRef.current = null
         Sentry.addBreadcrumb({ category: "submenu-guard", message: `closed (${reason})`, level: "info", data: { msOpen } })
-        // A real close a couple of seconds into browsing the submenu is
-        // normal. One this soon after opening can only mean the "pointer is
-        // still over it" ground truth (:hover, or Radix's own hover-intent)
-        // was wrong while the item was visibly still highlighted — the exact
-        // symptom this file exists to prevent. Surfaces in Sentry (with the
-        // breadcrumb trail leading up to it) so a real occurrence in the
-        // field can be inspected without needing a debugger attached.
+        // A close this soon is the bug above slipping through; report it to Sentry
         if (msOpen < 1000) {
           Sentry.captureMessage("DropdownMenuSub closed suspiciously fast", {
             level: "warning",

@@ -6,16 +6,12 @@ export interface SocialEmbedInfo {
   originalUrl: string;
 }
 
-// Match https://x.com/USER/status/ID or https://twitter.com/USER/status/ID
-// Optional www. or mobile. prefix
 const TWITTER_REGEX =
   /https:\/\/(?:www\.|mobile\.)?(?:x\.com|twitter\.com)\/[a-zA-Z0-9_]+\/status\/(\d+)/g;
 
-// Match various Facebook post URL patterns
 const FACEBOOK_REGEX =
   /https:\/\/(?:www\.)?facebook\.com\/(?:[a-zA-Z0-9.]+\/posts\/\d+|photo\/?\?fbid=\d+[^\s]*|permalink\.php\?story_fbid=\d+[^\s]*|watch\/?\?v=\d+[^\s]*|reel\/\d+)/g;
 
-// Match fb.watch short URLs
 const FB_WATCH_REGEX = /https:\/\/fb\.watch\/[a-zA-Z0-9_-]+\/?/g;
 
 const NUMERIC_ID_REGEX = /^\d+$/;
@@ -50,7 +46,6 @@ function extractFacebookEmbeds(text: string): SocialEmbedInfo[] {
     if (seen.has(url)) { return; }
     if (!isSafeUrl(url)) { return; }
 
-    // Verify the hostname is actually facebook.com or fb.watch
     try {
       const parsed = new URL(url);
       const host = parsed.hostname.toLowerCase();
@@ -78,9 +73,7 @@ function extractFacebookEmbeds(text: string): SocialEmbedInfo[] {
   return results;
 }
 
-// Match https://bsky.app/profile/HANDLE/post/RKEY
-// Handle can be a domain (user.bsky.social) or a DID (did:plc:xxx)
-// RKEY is an alphanumeric record key
+// HANDLE is a domain (user.bsky.social) or a DID (did:plc:xxx)
 const BLUESKY_REGEX =
   /https:\/\/bsky\.app\/profile\/([a-zA-Z0-9._:%-]+)\/post\/([a-zA-Z0-9_-]+)/g;
 

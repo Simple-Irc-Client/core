@@ -1,10 +1,4 @@
-/**
- * IRCv3 MONITOR Store
- * https://ircv3.net/specs/extensions/monitor.html
- *
- * MONITOR allows clients to track the online status of other users
- * without the overhead of ISON polling.
- */
+// https://ircv3.net/specs/extensions/monitor.html
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
@@ -12,31 +6,23 @@ import { devtools } from 'zustand/middleware';
 export interface MonitoredUser {
   nick: string;
   online: boolean;
-  /** Full user string when online (nick!user@host) */
+  /** nick!user@host, when online */
   userString?: string;
-  /** Last time status changed */
   lastUpdate: number;
 }
 
 interface MonitorStore {
-  /** Users being monitored */
   monitoredUsers: Map<string, MonitoredUser>;
 
-  /** Add nick to monitor list */
   addMonitoredNick: (nick: string) => void;
-  /** Add multiple nicks to monitor list (existing entries keep their status) */
+  /** Existing entries keep their status */
   addMonitoredNicks: (nicks: string[]) => void;
-  /** Remove nick from monitor list */
   removeMonitoredNick: (nick: string) => void;
-  /** Move a monitored nick's entry to a new key, preserving its known status (e.g. after NICK) */
+  /** Keeps the known status, e.g. after NICK */
   renameMonitoredNick: (oldNick: string, newNick: string) => void;
-  /** Set online status of a monitored nick */
   setOnlineStatus: (nick: string, online: boolean, userString?: string) => void;
-  /** Set multiple nicks online at once */
   setMultipleOnline: (nicks: string[], userStrings?: string[]) => void;
-  /** Set multiple nicks offline at once */
   setMultipleOffline: (nicks: string[]) => void;
-  /** Clear all monitored users */
   clearAll: () => void;
 }
 
@@ -108,7 +94,6 @@ export const useMonitorStore = create<MonitorStore>()(
             lastUpdate: Date.now(),
           });
         } else {
-          // Add if not exists
           newMap.set(nick.toLowerCase(), {
             nick,
             online,
@@ -170,7 +155,6 @@ export const useMonitorStore = create<MonitorStore>()(
   })),
 );
 
-// Helper functions for external use
 
 export const addMonitoredNick = (nick: string): void => {
   useMonitorStore.getState().addMonitoredNick(nick);

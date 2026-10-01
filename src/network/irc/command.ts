@@ -148,14 +148,7 @@ const quoteCommand = (channel: string, line: string[]): string => {
   return raw;
 };
 
-/**
- * `/e2ee [on|off|status|verify]` — drive end-to-end encryption for the current
- * private conversation.
- *
- * Returns an empty string in every branch: this command talks to the session
- * module and prints its own feedback rather than producing a line for the
- * server. `parseMessageToCommand`'s callers already skip empty payloads.
- */
+/** `/e2ee [on|off|status|verify]`. Always returns '': it prints its own feedback and sends nothing raw. */
 const e2eeCommand = (channel: string, line: string[]): string => {
   const time = new Date().toISOString();
   const print = (message: string): void => {
@@ -186,7 +179,6 @@ const e2eeCommand = (channel: string, line: string[]): string => {
     case 'off':
     case 'stop':
       endSession(channel);
-      // Turning it off deliberately should not then warn about the result.
       acknowledgePlaintext(channel);
       print(i18next.t('e2ee.command.stopped', { nick: channel }));
       break;
@@ -263,7 +255,6 @@ const kickCommand = (channel: string, line: string[]): string | undefined => {
 };
 
 const partCommand = (channel: string, line: string[]): string => {
-  // If first arg is a channel name, part from that channel instead of the current one
   const firstArg = line[0];
   if (firstArg !== undefined && isChannel(firstArg)) {
     line.shift();
@@ -337,7 +328,6 @@ const allCommand = (line: string[]): string | undefined => {
   return channels.map((channel) => `PRIVMSG ${channel} :${message}`).join('\n');
 };
 
-// Services commands - shortcuts for common IRC services
 const servicesCommand = (service: string, line: string[]): string => {
   const command = line.join(' ');
   if (command.length === 0) {
@@ -346,7 +336,6 @@ const servicesCommand = (service: string, line: string[]): string => {
   return `PRIVMSG ${service} :${command}`;
 };
 
-// Send NOTICE message
 const noticeCommand = (line: string[]): string | undefined => {
   const target = line.shift();
   const message = line.join(' ');
@@ -356,7 +345,6 @@ const noticeCommand = (line: string[]): string | undefined => {
   return `NOTICE ${target} :${message}`;
 };
 
-// Change nickname
 const nickCommand = (line: string[]): string | undefined => {
   const newNick = line.shift();
   if (!newNick) {
@@ -365,12 +353,10 @@ const nickCommand = (line: string[]): string | undefined => {
   return `NICK ${newNick}`;
 };
 
-// View/set modes
 const modeCommand = (line: string[]): string => {
   return `MODE ${line.join(' ')}`;
 };
 
-// Historical user lookup
 const whowasCommand = (line: string[]): string | undefined => {
   const nick = line.shift();
   if (!nick) {
@@ -379,13 +365,11 @@ const whowasCommand = (line: string[]): string | undefined => {
   return `WHOWAS ${nick}`;
 };
 
-// List channel users
 const namesCommand = (line: string[]): string => {
   const channel = line.shift();
   return channel ? `NAMES ${channel}` : 'NAMES';
 };
 
-// Request entry to invite-only channel
 const knockCommand = (line: string[]): string | undefined => {
   const channel = line.shift();
   if (!channel) {
@@ -395,7 +379,6 @@ const knockCommand = (line: string[]): string | undefined => {
   return message.length > 0 ? `KNOCK ${channel} :${message}` : `KNOCK ${channel}`;
 };
 
-// WATCH command for friend list
 const watchCommand = (line: string[]): string => {
   const action = line.join(' ');
   if (action.length === 0) {
@@ -404,7 +387,6 @@ const watchCommand = (line: string[]): string => {
   return `WATCH ${action}`;
 };
 
-// Quick mode change commands
 const quickModeCommand = (channel: string, line: string[], mode: string): string | undefined => {
   const nick = line.shift();
   if (!nick) {

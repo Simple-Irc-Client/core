@@ -38,14 +38,11 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
   const setIsInviteListLoading = useChannelSettingsStore((state) => state.setIsInviteListLoading);
 
   useEffect(() => {
-    // Set channel name and fetch initial data
     setChannelName(channelName);
     setIsLoading(true);
 
-    // Query current channel modes
     ircSendRawMessage(`MODE ${channelName}`);
 
-    // Query lists
     setBanList([]);
     setExceptionList([]);
     setInviteList([]);
@@ -57,7 +54,6 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
     ircSendRawMessage(`MODE ${channelName} e`);
     ircSendRawMessage(`MODE ${channelName} I`);
 
-    // Fetch channel metadata (display-name, avatar, etc.)
     if (isSupportedOption('metadata-display-name') || isSupportedOption('metadata-avatar')) {
       ircRequestMetadataList(channelName);
     }
@@ -98,7 +94,6 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
 const ChannelSettings = ({ open, onOpenChange, channelName }: ChannelSettingsProps) => {
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Clear store when dialog closes
       clearChannelSettingsStore();
     }
     onOpenChange(newOpen);

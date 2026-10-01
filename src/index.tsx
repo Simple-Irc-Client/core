@@ -11,13 +11,10 @@ initSentry();
 
 console.log(`Simple IRC Client [${__GIT_REF__}]`);
 
-// Registers the service worker on the website, removes it in Tauri builds.
 void initServiceWorker();
 
-// Fire-and-forget update check on desktop builds. No-op in the website.
 void checkForUpdates();
 
-// Request notification permission on mobile (no-op on web/desktop).
 void initMobileNotifications();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

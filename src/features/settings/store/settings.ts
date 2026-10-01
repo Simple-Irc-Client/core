@@ -192,8 +192,7 @@ export const useSettingsStore = create<SettingsStore>()(
     setNick: (newNick: string): void => {
       set((state) => ({
         nick: newNick,
-        // Clear metadata from the previous nick — new metadata will arrive
-        // via METADATA messages for the new nick
+        // Metadata for the new nick arrives via METADATA
         ...(newNick !== state.nick
           ? {
               currentUserAvatar: undefined,
@@ -243,8 +242,7 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setBuiltinThemeCss: (id: BuiltinThemeId, css: string): void => {
       set((state) => {
-        // Storing the shipped default would freeze the theme at this version;
-        // dropping the override instead lets future default improvements through
+        // Storing the shipped default would freeze the theme at this version
         if (css === BUILTIN_THEMES[id].css) {
           return { builtinThemeOverrides: Object.fromEntries(Object.entries(state.builtinThemeOverrides).filter(([key]) => key !== id)) };
         }
@@ -408,8 +406,6 @@ export const useSettingsStore = create<SettingsStore>()(
         delete state.savedChannels;
       }
       if (version < 4) {
-        // v4 widens `theme` from 'modern' | 'classic' to arbitrary theme ids;
-        // the old values are already valid builtin ids
         if (typeof state.theme !== 'string' || !isBuiltinTheme(state.theme)) {
           state.theme = DEFAULT_THEME_ID;
         }
@@ -465,8 +461,7 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
 
   useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
   useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
-  // Switching channels must paint immediately, and this also settles any
-  // roster sync a burst had queued for the channel we are leaving
+  // Paint the new channel immediately rather than after a queued roster sync
   flushCurrentUsers();
   useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
 };
@@ -556,10 +551,7 @@ export const getCaseMapping = (): CaseMapping => {
   return useSettingsStore.getState().caseMapping;
 };
 
-/**
- * Whether two channel names (or nicks) identify the same thing on this server.
- * Always use this instead of `===` when comparing IRC names.
- */
+/** Always use this instead of `===` when comparing IRC names. */
 export const isSameName = (a: string, b: string): boolean => {
   return namesEqual(a, b, getCaseMapping());
 };
@@ -653,7 +645,7 @@ export const setLineLenLimit = (limit: number): void => {
   useSettingsStore.getState().setLineLenLimit(limit);
 };
 
-/** The server's advertised max line length (ISUPPORT `LINELEN`), or `0` if it never sent one. */
+/** ISUPPORT `LINELEN`, or `0` if the server never sent one. */
 export const getLineLenLimit = (): number => {
   return useSettingsStore.getState().lineLenLimit;
 };
@@ -789,7 +781,7 @@ export const setWizardHintDismissed = (): void => {
 };
 
 export const disconnectOnly = (): void => {
-  // Disconnect from the network and clear all stores, but stay in the main view
+  // Stays in the main view
   ircDisconnect();
   setChannelsClearAll();
   setUsersClearAll();
@@ -799,43 +791,32 @@ export const disconnectOnly = (): void => {
 };
 
 export const resetAndGoToStart = (clearNick = false): void => {
-  // Disconnect from the network
   ircDisconnect();
 
-  // Clear all stores
   setChannelsClearAll();
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
   clearMonitorList();
 
-  // Reset settings store to initial state (this also sets wizardStep to 'nick')
   resetWizardState();
 
-  // Ending a live session may have left `nick` holding a server-forced rename
-  // (e.g. a NickServ identify-timeout enforcement, see kernel.ts `onNick`) rather
-  // than the nick the user actually wants to use going forward. Clear it so the
-  // wizard doesn't silently carry that forced nick into the next connection
-  // attempt and fail to match it against a saved password. Callers that abort a
-  // connection attempt before it ever went live (e.g. WizardLoading's "Go back")
-  // pass clearNick=false to keep the just-typed nick prefilled.
+  // `nick` may hold a server-forced rename (NickServ enforcement) that mustn't carry into the next attempt
   if (clearNick) {
     useSettingsStore.setState({ nick: '' });
   }
 };
 
 export const changeServer = (): void => {
-  // Disconnect from the network
   ircDisconnect();
 
-  // Clear all stores
   setChannelsClearAll();
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
   clearMonitorList();
 
-  // Reset wizard state and clear connection-specific data (passwords preserved per server)
+  // Passwords are preserved per server
   resetWizardState();
   useSettingsStore.setState({
     nick: '',

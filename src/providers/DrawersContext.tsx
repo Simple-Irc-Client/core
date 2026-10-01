@@ -28,7 +28,6 @@ export const useDrawers = (): DrawersContextProps => {
   return context;
 };
 
-// Backwards-compatible hooks
 export const useChannelsDrawer = () => {
   const { isChannelsDrawerOpen, toggleChannelsDrawer } = useDrawers();
   return {

@@ -1,10 +1,4 @@
-/**
- * Runtime adapter for desktop-only platform APIs.
- *
- * In Tauri builds, dispatches to Tauri plugin commands. In browser builds
- * (website), falls through to standard web APIs so the same source compiles
- * to both targets without conditional bundling.
- */
+// Tauri plugin calls in Tauri builds, web APIs on the website, from the same source
 import {
   readText as tauriReadText,
   writeText as tauriWriteText,
@@ -13,12 +7,7 @@ import { openUrl as tauriOpenUrl } from '@tauri-apps/plugin-opener';
 import { check as tauriCheckUpdate } from '@tauri-apps/plugin-updater';
 import { getVersion as tauriGetVersion } from '@tauri-apps/api/app';
 
-/**
- * True when the renderer is running inside a Tauri webview.
- *
- * Tauri injects `__TAURI_INTERNALS__` on `window` before any user JS runs,
- * so the check is synchronous and safe at module top-level.
- */
+/** Any Tauri webview, mobile included. Safe at module top level: injected before user JS. */
 export const isDesktop = (): boolean => {
   return (
     typeof globalThis !== 'undefined' &&
@@ -26,16 +15,7 @@ export const isDesktop = (): boolean => {
   );
 };
 
-/**
- * True when running inside a Tauri webview on a mobile OS (Android/iOS).
- *
- * `isDesktop()` (really "is a Tauri webview") is true on mobile too, since
- * Tauri injects the same internals on every platform. Use `isMobile()` to gate
- * desktop-only platform features that have no mobile counterpart — chiefly the
- * updater, which ships through the app store on mobile rather than
- * `tauri-plugin-updater`. UA detection is dependency-free and reliable in the
- * Tauri Android/iOS webview.
- */
+/** Tauri on Android/iOS; gates desktop-only features like the updater. */
 export const isMobile = (): boolean => {
   if (!isDesktop()) {
     return false;
@@ -60,14 +40,7 @@ export const clipboard = {
   },
 };
 
-/**
- * Open `url` in the OS default browser. In a regular browser context this
- * just calls `window.open` with `_blank`. In Tauri the webview can't follow
- * links to a separate process — the opener plugin shells out instead.
- *
- * Pre-validate URLs upstream (e.g. with `isSafeUrl`); the Tauri capability
- * already restricts the allowed URL schemes, but defence in depth doesn't hurt.
- */
+/** Validate upstream (e.g. isSafeUrl). */
 export const openExternal = async (url: string): Promise<void> => {
   if (isDesktop()) {
     await tauriOpenUrl(url);
@@ -76,11 +49,7 @@ export const openExternal = async (url: string): Promise<void> => {
   globalThis.open(url, '_blank', 'noopener,noreferrer');
 };
 
-/**
- * The Tauri app's own version (`tauri.conf.json` `version`), or null in the
- * website, which has no shell version of its own — or if the lookup fails,
- * since this only feeds diagnostics and must never break startup.
- */
+/** Null on the website or on failure: diagnostics only, must never break startup. */
 export const getAppVersion = async (): Promise<string | null> => {
   if (!isDesktop()) {
     return null;
@@ -93,17 +62,9 @@ export const getAppVersion = async (): Promise<string | null> => {
   }
 };
 
-/**
- * Check the configured update endpoint and, if a newer version is available,
- * prompt the user and install it. Match update-electron-app's UX (a confirm
- * dialog with version) without pulling in tauri-plugin-dialog.
- *
- * No-op outside Tauri. Failures are logged and swallowed — a missing endpoint
- * or network blip should never crash the app or block startup.
- */
+/** Failures are logged and swallowed: must never block startup. */
 export const checkForUpdates = async (): Promise<void> => {
-  // Desktop only: mobile builds don't register tauri-plugin-updater (updates
-  // ship via the app store / APK), so calling it would reject.
+  // Mobile updates ship via the app store; the updater plugin isn't registered there
   if (!isDesktop() || isMobile()) {
     return;
   }
@@ -118,9 +79,6 @@ export const checkForUpdates = async (): Promise<void> => {
     if (!ok) {
       return;
     }
-    // Tauri's updater handles the relaunch dance itself: on Windows the
-    // installer takes over, on macOS/Linux the app exits and the new
-    // bundle is in place on next launch.
     await update.downloadAndInstall();
   } catch (err) {
     console.warn('[updater] check failed:', err);

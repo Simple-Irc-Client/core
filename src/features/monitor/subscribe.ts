@@ -1,19 +1,11 @@
-/**
- * Shared IRCv3 MONITOR / WATCH subscription helpers.
- *
- * Anything that wants to track a nick's online status (friends, DM presence)
- * goes through here so they all respect the same server-advertised limit and
- * chunk nicks onto the wire the same way.
- */
+// Shared by friends and DM presence, so both respect the server's limit
 
 import { getMonitorLimit, getWatchLimit } from '@features/settings/store/settings';
 import { ircMonitorAdd, ircMonitorRemove, ircWatchAdd, ircWatchRemove } from '@/network/irc/network';
 
-// Budget for the nick portion of one MONITOR/WATCH command, keeping the full
-// line comfortably below the 512-byte IRC limit.
+// Nick bytes per command, well below the 512-byte line limit
 const MAX_NICKS_BYTES = 400;
 
-/** Split nicks into chunks that fit a single command line. */
 export const chunkNicks = (nicks: string[], perNickOverhead: number): string[][] => {
   const chunks: string[][] = [];
   let current: string[] = [];

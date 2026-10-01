@@ -6,9 +6,6 @@ import { clipboard, isDesktop } from '@/runtime/desktop';
 const readClipboard = (): Promise<string> => clipboard.readText();
 const writeClipboard = (text: string): Promise<void> => clipboard.writeText(text);
 
-// Whether the clipboard currently holds pasteable text. Used to decide if the
-// context menu's Paste item should be enabled, so we never offer Paste (and
-// then show a misleading "use Ctrl+V" hint) when there is nothing to paste.
 const clipboardHasContent = async (): Promise<boolean> => {
   if (isDesktop()) {
     try {
@@ -25,19 +22,14 @@ const clipboardHasContent = async (): Promise<boolean> => {
       return false;
     }
   }
-  // Firefox: probing the system clipboard triggers an intrusive permission
-  // popup, so we can't know whether it has content. Keep Paste enabled —
-  // clicking it pastes from the internal buffer or shows the Ctrl+V hint.
+  // Firefox: probing the clipboard pops a permission prompt, so Paste stays enabled
   return true;
 };
 
-// Internal clipboard buffer — stores text from our own copy/cut operations
-// so Firefox can paste without calling readText() (which triggers a popup).
+// Our own copy/cut text, so Firefox can paste without readText()'s permission popup
 let internalClipboard: string | null = null;
 
-// Detect whether the browser supports clipboard-read permission (Chrome does,
-// Firefox doesn't). Resolved once at module load so paste decisions are synchronous.
-// Skipped in desktop runtime — the clipboard plugin handles permissions itself.
+// Resolved at load so paste decisions are synchronous; desktop's clipboard plugin handles permissions itself
 let canQueryClipboard = false;
 if (!isDesktop()) {
   navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
@@ -99,8 +91,7 @@ export const GlobalInputContextMenu = () => {
   const [allSelected, setAllSelected] = useState(false);
   const [canPaste, setCanPaste] = useState(true);
   const targetRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
-  // Snapshot of the input's selection captured on right-click mousedown,
-  // before macOS auto-selects the input contents (Electron #46493).
+  // Taken before macOS auto-selects the input on right-click (Electron #46493)
   const savedSelectionRef = useRef<{
     el: HTMLInputElement | HTMLTextAreaElement;
     start: number;
@@ -164,16 +155,11 @@ export const GlobalInputContextMenu = () => {
       event.preventDefault();
       targetRef.current = target;
 
-      // Prefer the pre-right-click snapshot (set by handleMouseDown) so the
-      // menu's enabled state reflects what the user actually selected, not
-      // what macOS auto-selected on right-click.
       const { start, end } = resolveSelection(target);
       setHasSelection(start !== end);
       setHasContent(target.value.length > 0);
       setAllSelected(start === 0 && end === target.value.length && target.value.length > 0);
 
-      // Resolve clipboard state before opening so the Paste item reflects
-      // whether there is anything to paste — open only once we know.
       const position = { x: event.clientX, y: event.clientY };
       void clipboardHasContent().then((hasText) => {
         setCanPaste(hasText);
@@ -181,9 +167,6 @@ export const GlobalInputContextMenu = () => {
       });
     };
 
-    // Capture the input's selection on right-click mousedown — fires before
-    // macOS AppKit auto-selects the input contents on right-click, which
-    // would otherwise make the menu actions operate on the wrong range.
     const handleMouseDown = (event: MouseEvent): void => {
       if (event.button !== 2) { return; }
       const target = event.target;
@@ -195,9 +178,7 @@ export const GlobalInputContextMenu = () => {
       };
     };
 
-    // Clear internal clipboard buffer when the user switches away from the app.
-    // If they copy text externally and come back, the stale buffer must not
-    // shadow the system clipboard — show the keyboard-shortcut hint instead.
+    // Text copied in another app must not be shadowed by a stale internal buffer
     const handleWindowBlur = () => { internalClipboard = null; };
 
     document.addEventListener('mousedown', handleMouseDown, true);
@@ -260,19 +241,14 @@ export const GlobalInputContextMenu = () => {
       const { start, end } = resolveSelection(input);
       input.focus();
       input.setSelectionRange(start, end);
-      // execCommand('insertText') is the same primitive Chromium uses for
-      // native paste: it inserts at the current selection, fires the input
-      // event React's controlled inputs listen for, and preserves undo.
-      // It survives the focus bounce through the React menu portal that
-      // breaks setNativeValue on macOS.
+      // Native-paste primitive: fires React's input event, keeps undo, survives the portal focus bounce on macOS
       const exec = (document as Document & { execCommand?: (cmd: string, ui: boolean, value: string) => boolean }).execCommand;
       if (typeof exec === 'function') {
         try {
           if (exec.call(document, 'insertText', false, clipText)) { return; }
         } catch { /* fall through to setNativeValue */ }
       }
-      // Fallback for environments where execCommand is missing (jsdom) or
-      // returns false (Firefox returns false on plain <input>/<textarea>).
+      // execCommand is missing in jsdom and returns false in Firefox
       const newValue = input.value.substring(0, start) + clipText + input.value.substring(end);
       setNativeValue(input, newValue);
       const cursorPos = start + clipText.length;
@@ -287,9 +263,7 @@ export const GlobalInputContextMenu = () => {
       // Chrome — readText() works with granted permission, no popup
       navigator.clipboard.readText().then(doPaste).catch(showHint);
     } else {
-      // Firefox — readText() triggers an intrusive browser permission popup.
-      // Use the internal buffer (populated by our own copy/cut) instead.
-      // For text copied in external apps, only Ctrl+V works.
+      // Firefox: internal buffer only; text copied elsewhere needs Ctrl+V
       if (internalClipboard !== null) {
         doPaste(internalClipboard);
       } else {

@@ -4,12 +4,6 @@ import { LockOpen } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 
-/**
- * Header hint for regular channels: an open padlock explaining that,
- * unlike private conversations, channel messages are never end-to-end
- * encrypted — there is no peer to hold a key exchange with, so this is
- * informational only and has no popover or action attached.
- */
 const ChannelEncryptionHint = () => {
   const { t } = useTranslation();
   const tooltip = t('e2ee.status.channelNotEncrypted');

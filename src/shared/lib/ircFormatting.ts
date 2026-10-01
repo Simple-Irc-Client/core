@@ -164,9 +164,7 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
         flushSegment();
         i++; // Skip the color control character
 
-        // Parse foreground color (1-2 digits)
         let fgStr = '';
-        // Read up to 2 digits for foreground
         if (i < text.length && /\d/.test(text[i] as string)) {
           fgStr += text[i];
           i++;
@@ -180,11 +178,9 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
           const fg = Number.parseInt(fgStr, 10);
           currentState.foreground = getColorFromCode(fg);
 
-          // Check for background color
           if (i < text.length && text[i] === ',') {
             i++; // Skip comma
             let bgStr = '';
-            // Read up to 2 digits for background
             if (i < text.length && /\d/.test(text[i] as string)) {
               bgStr += text[i];
               i++;
@@ -210,12 +206,10 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
         flushSegment();
         i++; // Skip the hex color control character
 
-        // Parse 6 hex digits for foreground
         if (i + 6 <= text.length && /^[0-9A-Fa-f]{6}$/.test(text.slice(i, i + 6))) {
           currentState.foreground = '#' + text.slice(i, i + 6);
           i += 6;
 
-          // Check for background hex color
           if (i < text.length && text[i] === ',') {
             i++; // Skip comma
             if (i + 6 <= text.length && /^[0-9A-Fa-f]{6}$/.test(text.slice(i, i + 6))) {
@@ -244,18 +238,14 @@ export function hasIrcFormatting(text: string): boolean {
 }
 
 export function stripIrcFormatting(text: string): string {
-  // Remove all formatting codes
   let result = text;
 
-  // Remove color codes with their arguments
   // eslint-disable-next-line no-control-regex
   result = result.replace(/\x03(\d{1,2}(,\d{1,2})?)?/g, '');
 
-  // Remove hex color codes with their arguments
   // eslint-disable-next-line no-control-regex
   result = result.replace(/\x04([0-9A-Fa-f]{6}(,[0-9A-Fa-f]{6})?)?/g, '');
 
-  // Remove all other format control characters
   const simpleFormatChars = [
     IRC_FORMAT.BOLD,
     IRC_FORMAT.ITALIC,
@@ -273,12 +263,7 @@ export function stripIrcFormatting(text: string): string {
   return result;
 }
 
-/**
- * @param backgroundLuminance relative luminance of the surface the text sits on;
- *   when given, a sender-chosen foreground color with no background of its own
- *   is adjusted to stay readable there (white text on a light theme, black on a
- *   dark one). A color pair the sender set (fg + bg) is their contrast to keep.
- */
+/** With `backgroundLuminance`, a sender's foreground without its own background is kept readable. */
 export function getStyleFromFormatState(state: FormatState, baseColor?: string, backgroundLuminance?: number): React.CSSProperties {
   const style: React.CSSProperties = {};
 

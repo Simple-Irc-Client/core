@@ -30,13 +30,7 @@ interface ChannelsProps {
   width?: number;
 }
 
-/**
- * Keep the lag badge's width bounded no matter how large the reading gets —
- * a stalled connection, a suspended background tab, or a clock jump can all
- * produce a value far past anything a live round-trip would show, and an
- * unbounded digit string would blow out the sidebar's fixed width (worst on
- * the narrow mobile drawer).
- */
+// Bounded width: a stalled connection or clock jump can produce huge readings
 const formatLagMs = (ms: number): string => {
   if (ms < 1000) {
     return `${ms}ms`;
@@ -84,7 +78,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         groups.push({ category: cat, label: labelKeys[cat], channels });
       }
     }
-    // Always include the "Channels" group so the join button is accessible
     if (!groups.some((g) => g.category === ChannelCategory.channel)) {
       const insertIdx = groups.findIndex((g) => g.category === ChannelCategory.priv);
       groups.splice(insertIdx === -1 ? groups.length : insertIdx, 0, { category: ChannelCategory.channel, label: labelKeys[ChannelCategory.channel], channels: [] });
@@ -101,23 +94,18 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleRemoveChannel = (channel: Channel): void => {
-    // A DM is never on the server's side to begin with, and while disconnected
-    // there is no PART to send or echo to wait for — either way the window is
-    // only ever local state, so it comes off the list immediately.
+    // Only local state: no PART to wait for
     if (channel.category === ChannelCategory.priv || !isConnected) {
       if (channel.category === ChannelCategory.priv) {
         unsubscribeDmPresence(channel.name);
       }
       setRemoveChannel(channel.name);
 
-      // Don't leave the main view pointing at the removed window
       if (isSameName(getCurrentChannelName(), channel.name)) {
         setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
       }
     } else {
-      // Connected: leave for real. The row itself is removed once the server
-      // echoes the PART back (kernel's onPart), not here — a PART that never
-      // arrives should leave the channel showing, not silently disappear.
+      // The row is removed when the server echoes the PART (kernel's onPart)
       ircPartChannel(channel.name);
     }
   };
@@ -129,12 +117,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   };
 
   const handleListItemClick = (channel: Channel): void => {
-    // A tap has no hover state to reveal the close icon with, so the click
-    // that navigates also reveals it — one tap does both instead of the
-    // touch device needing a separate gesture the mouse doesn't.
+    // Touch has no hover to reveal the close icon
     setShowRemoveChannelIcon(channel.name);
     setCurrentChannelName(channel.name, channel.category);
-    // Close drawer on mobile/tablet (below lg breakpoint)
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
       setChannelsDrawerStatus();
     }
@@ -303,8 +288,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                               variant="default"
                               className={cn(
                                 'h-5 min-w-5 flex items-center justify-center text-xs',
-                                // Same amber as the in-message highlight tint — a mention
-                                // is "pay attention", not the alarm red destructive implies.
                                 channel.hasMention && 'bg-[var(--msg-highlight)] text-white hover:bg-[var(--msg-highlight)] border-transparent',
                               )}
                               aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}

@@ -1,10 +1,3 @@
-/**
- * STS Policy Store
- *
- * Persists STS policies to localStorage so they survive browser restarts.
- * Per IRCv3 spec, clients must remember STS policies for the duration specified.
- */
-
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { STSPolicy } from '../sts';
@@ -12,7 +5,6 @@ import type { STSPolicy } from '../sts';
 interface STSStore {
   policies: Record<string, STSPolicy>; // Keyed by lowercase hostname
 
-  // Actions
   setPolicy: (host: string, policy: STSPolicy) => void;
   getPolicy: (host: string) => STSPolicy | undefined;
   removePolicy: (host: string) => void;
@@ -21,9 +13,7 @@ interface STSStore {
   clearAllPolicies: () => void;
 }
 
-// STS policies are now session-only (not persisted to localStorage)
-// This prevents connection issues on startup when saved STS policies
-// may be stale or the server configuration has changed
+// Session-only: persisted policies went stale and broke connecting on startup
 export const useSTSStore = create<STSStore>()(
   devtools(
     (set, get) => ({
@@ -58,7 +48,6 @@ export const useSTSStore = create<STSStore>()(
             const now = Date.now();
             const validPolicies: Record<string, STSPolicy> = {};
             for (const [host, policy] of Object.entries(state.policies)) {
-              // expiresAt=0 means indefinite (never expires)
               if (policy.expiresAt === 0 || policy.expiresAt > now) {
                 validPolicies[host] = policy;
               }
@@ -72,7 +61,6 @@ export const useSTSStore = create<STSStore>()(
       hasValidPolicy: (host: string) => {
         const policy = get().policies[host.toLowerCase()];
         if (!policy) { return false; }
-        // expiresAt=0 means indefinite (always valid)
         return policy.expiresAt === 0 || policy.expiresAt > Date.now();
       },
 
@@ -82,36 +70,17 @@ export const useSTSStore = create<STSStore>()(
   )
 );
 
-// ============================================================================
-// Exported helper functions for non-React contexts
-// ============================================================================
-
-/**
- * Get STS policy for a host
- */
 export const getSTSPolicy = (host: string): STSPolicy | undefined =>
   useSTSStore.getState().getPolicy(host);
 
-/**
- * Set STS policy for a host
- */
 export const setSTSPolicy = (host: string, policy: STSPolicy): void =>
   useSTSStore.getState().setPolicy(host, policy);
 
-/**
- * Check if a valid STS policy exists for a host
- */
 export const hasValidSTSPolicy = (host: string): boolean =>
   useSTSStore.getState().hasValidPolicy(host);
 
-/**
- * Remove expired STS policies
- */
 export const removeExpiredSTSPolicies = (): void =>
   useSTSStore.getState().removeExpiredPolicies();
 
-/**
- * Remove STS policy for a host
- */
 export const removeSTSPolicy = (host: string): void =>
   useSTSStore.getState().removePolicy(host);

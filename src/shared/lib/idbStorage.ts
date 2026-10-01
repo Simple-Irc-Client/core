@@ -38,38 +38,19 @@ const idbStorage: StateStorage = {
     try {
       await del(name);
     } catch {
-      // Silently fail
+      // Same as setItem
     }
   },
 };
 
-/**
- * Server-scoped IndexedDB persistence that defers *serialization*, not just the
- * write.
- *
- * `persist` calls its storage after every single store mutation, and zustand's
- * own `createJSONStorage` runs `JSON.stringify` right there — so with the write
- * debounced but the encoding not, every incoming message, typing indicator and
- * unread bump re-encoded the entire backlog of every open channel only for that
- * string to be thrown away by the next mutation. At 20 open channels that was
- * ~2 ms of blocked main thread per message.
- *
- * Taking `PersistStorage` instead of `StateStorage` means we are handed the
- * state object rather than a string, so the encoding can wait for the timer too
- * and only the snapshot that actually gets written is ever encoded. Holding the
- * object across the debounce window is safe because the stores it serves update
- * immutably — the captured graph is a snapshot, not a live view.
- */
+// Debounces JSON serialization too, not just the write (createJSONStorage re-encoded everything per mutation).
+// Holding the state object is safe because the stores update immutably
 export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: () => void } => {
   let pendingWrite: ReturnType<typeof setTimeout> | null = null;
   let pendingValue: StorageValue<S> | null = null;
   let pendingKey: string | null = null;
 
-  /**
-   * Deliberately fire-and-forget: the write also has to run while the page is
-   * being torn down, where there is nothing left to await into. `idbStorage`
-   * swallows its own failures, so the promise never rejects.
-   */
+  // Fire-and-forget: it also runs during page teardown, and idbStorage never rejects
   const flush = (): void => {
     if (pendingWrite !== null) {
       clearTimeout(pendingWrite);
@@ -97,18 +78,7 @@ export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: (
     void idbStorage.setItem(key, encoded);
   };
 
-  /**
-   * Without this, closing or navigating away within the debounce window drops
-   * whatever arrived in the last couple of seconds — exactly the messages the
-   * user just read.
-   *
-   * `visibilitychange` to hidden is the last event a page is reliably given:
-   * a tab that gets closed, discarded under memory pressure, or backgrounded on
-   * mobile may never see `unload`, and `beforeunload` is skipped there too.
-   * `pagehide` covers navigating away within the same tab, including into the
-   * back/forward cache. Both can fire for one teardown, but a flush with an
-   * empty queue is a no-op, so the duplicate costs nothing.
-   */
+  // Flush pending writes on hide/pagehide: closed or discarded tabs may never get `unload`
   const onVisibilityChange = (): void => {
     if (document.visibilityState === 'hidden') {
       flush();
@@ -124,11 +94,7 @@ export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: (
   }
 
   return {
-    /**
-     * Detach from the page. The app holds a single storage for its whole
-     * lifetime and never needs this, but a listener with no way off the page is
-     * a leak waiting to happen — and tests need to not inherit each other's.
-     */
+    /** Only needed by tests; the app keeps one storage for its lifetime. */
     dispose: (): void => {
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', onVisibilityChange);

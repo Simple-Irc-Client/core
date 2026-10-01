@@ -14,7 +14,6 @@ const resources = Object.fromEntries(
 
 const validCodes = new Set(languages.map(({ code }) => code));
 
-// Read persisted language from localStorage (zustand persist key)
 const getPersistedLanguage = (): string | undefined => {
   try {
     const raw = localStorage.getItem('sic-settings');

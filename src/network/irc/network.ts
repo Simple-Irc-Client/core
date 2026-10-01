@@ -26,19 +26,11 @@ import { clearAllBatches, clearPendingLabels } from './batch';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
 
-// Inactivity watchdog: if no inbound data arrives within this window, treat the
-// connection as dead and reconnect. Safe to keep tight (~4 keepalive cycles)
-// precisely because of the active keepalive below — on a healthy link the
-// server's PONG to our PING is inbound traffic every ~30s, so reaching this
-// limit means several missed pings = genuinely dead.
+// No inbound data for this long = dead. Tight is safe: the keepalive's PONG arrives every ~30s
 const INACTIVITY_TIMEOUT_MS = 120 * 1000;
 let inactivityTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-// Active keepalive: core sends a client->server PING on this interval so
-// liveness no longer depends on the server's own (configurable) ping cadence.
-// It lives here, transport-agnostic, so it covers both the WebSocket and Tauri
-// transports (network-rs is a pure pipe and speaks no IRC). The server's PONG
-// is inbound traffic that resets the watchdog above.
+// Our own PING, so liveness doesn't depend on the server's ping cadence (covers both transports)
 const KEEPALIVE_INTERVAL_MS = 30 * 1000;
 let keepaliveTimerId: ReturnType<typeof setInterval> | null = null;
 
@@ -51,15 +43,13 @@ const stopKeepalive = (): void => {
 
 const startKeepalive = (): void => {
   stopKeepalive();
-  // Fire one immediately so the lag indicator has a reading right after
-  // connect instead of waiting a full interval for the first PONG.
+  // Immediately, so the lag indicator has a reading right after connect
   ircSendRawMessage(`PING :${Date.now()}`);
   keepaliveTimerId = setInterval(() => {
     ircSendRawMessage(`PING :${Date.now()}`);
   }, KEEPALIVE_INTERVAL_MS);
 };
 
-// Reconnection retry tracking
 const MAX_INACTIVITY_RECONNECT_RETRIES = 3;
 let inactivityReconnectRetries = 0;
 let isReconnecting = false;
@@ -80,13 +70,9 @@ export const resetInactivityReconnectRetries = (): void => {
   cancelReconnect();
 };
 
-/**
- * Schedule a reconnection attempt. Posts a status message and queues ircReconnect
- * after a brief delay. If max retries are exhausted, shows an error instead.
- */
 const scheduleReconnectAttempt = (): void => {
   if (inactivityReconnectRetries >= MAX_INACTIVITY_RECONNECT_RETRIES) {
-    // Max retries reached - clear saved credentials and stop
+    // Retries exhausted
     isReconnecting = false;
     clearSavedCredentials();
     setAddMessageToAllChannels({
@@ -108,35 +94,28 @@ const scheduleReconnectAttempt = (): void => {
     }),
     time: new Date().toISOString(),
     category: MessageCategory.info,
-    // Same tone as kernel.connected / kernel.disconnected — these connection
-    // lifecycle lines should read as one set.
     color: MessageColor.info,
   });
 
   reconnectTimeoutId = setTimeout(() => {
     reconnectTimeoutId = null;
-    // announce: false — the attempt-counter message above already says so.
+    // The attempt-counter message above already announces it
     void ircReconnect({ announce: false }).then((success) => {
       if (!success) {
-        // ircReconnect couldn't initiate (no server/nick) - retry or give up
+        // No server/nick to reconnect with
         scheduleReconnectAttempt();
       }
     }).catch(() => {
-      // ircReconnect threw (e.g., invalid server config) - retry or give up
+      // e.g. invalid server config
       scheduleReconnectAttempt();
     });
   }, 2000);
 };
 
-/**
- * Called by the kernel when a WebSocket close event occurs during a reconnection cycle.
- * This means the reconnection attempt's WebSocket failed to connect.
- * Schedules another retry if retries remain.
- */
+/** The kernel saw a close during a reconnect cycle: that attempt failed. */
 export const handleReconnectFailure = (): void => {
   if (!isReconnecting) { return; }
 
-  // If a reconnect is already scheduled (timeout pending), don't double-schedule
   if (reconnectTimeoutId !== null) { return; }
 
   setIsConnecting(false);
@@ -144,14 +123,11 @@ export const handleReconnectFailure = (): void => {
 };
 
 const handleInactivityTimeout = async (): Promise<void> => {
-  // Save credentials before disconnect (encrypted)
   await saveSaslCredentialsForReconnect();
 
-  // Stop pinging a connection we're tearing down (restarted on the next 001).
   stopKeepalive();
 
-  // Disconnect silently (disconnectDirect removes event handlers so no
-  // stale 'close' event reaches the kernel during reconnection)
+  // Silently: no stale 'close' reaches the kernel mid-reconnect
   disconnectDirect();
   notifyConnectionTornDown();
   setIsConnecting(false);
@@ -178,7 +154,6 @@ const clearInactivityTimeout = (): void => {
   }
 };
 
-// Event handler management
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const triggerEvent = (eventName: string, data: any) => {
   const handlers = eventHandlers[eventName] || [];
@@ -204,24 +179,8 @@ export const off = (eventName: string, callback: (data: any) => void): void => {
   }
 };
 
-/**
- * Listeners notified whenever the underlying connection goes away — on every
- * path that can end it: the natural "server hung up" case (`kernel.ts`'s
- * `handleDisconnected`, driven by the transport's own close event) and the
- * three places *this module* deliberately tears the connection down
- * (`ircDisconnect`, `ircReconnect`, `handleInactivityTimeout`).
- *
- * Those three call `disconnectDirect()`, which removes the transport's event
- * handlers before closing specifically so a stale close event doesn't reach
- * the kernel mid-reconnect and flash a "Disconnected" message the user never
- * needed to see. That's the right call for the UI, but it also means nothing
- * downstream heard the connection end — which matters for state that is only
- * valid for one connection, such as e2ee sessions (see kernel.ts, which
- * registers cleanup here rather than in `handleDisconnected` so it isn't
- * only run on the natural-close path). A plain listener list, rather than
- * folding this into the full `'sic-irc-event'` pipeline above, keeps it from
- * ever re-triggering that UI flow.
- */
+// Notified on every teardown, including the self-initiated ones (ircDisconnect, ircReconnect, inactivity)
+// whose disconnectDirect() hides the close event from the kernel. For per-connection state like E2EE sessions
 const connectionTornDownListeners: (() => void)[] = [];
 
 export const onConnectionTornDown = (listener: () => void): void => {
@@ -243,18 +202,15 @@ export const isWebSocketConnecting = (): boolean => {
 };
 
 export const ircDisconnect = (): void => {
-  // Clear inactivity timeout and cancel any pending reconnection
   clearInactivityTimeout();
   stopKeepalive();
   cancelReconnect();
 
-  // Reset IRCv3 state
   resetCapabilityState();
   resetSaslState();
   clearSaslCredentials();
   resetSTSSessionState();
 
-  // Disconnect direct WebSocket (server/backend handles QUIT)
   disconnectDirect();
   notifyConnectionTornDown();
 };
@@ -265,16 +221,13 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
-  // The kernel builds the registration burst (NICK/USER) from the store at
-  // 'connect' time, so make sure the requested nick is the current nick before
-  // the transport comes up. Callers (wizard) already do this; doing it here too
-  // keeps ircConnect self-contained.
+  // The kernel reads NICK/USER from the store at connect time
   setNick(nick);
 
   const host = singleServer.host;
   const useTLS = singleServer.tls ?? false;
 
-  // Check if this is a direct WebSocket connection (e.g., Ergo Chat)
+  // e.g. Ergo
   if (currentServer.connectionType === 'websocket') {
     setDirectEventCallback(triggerEvent);
     setDirectEncryption(false); // No encryption for direct WebSocket to IRC servers
@@ -283,13 +236,11 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     return;
   }
 
-  // Gateway mode: use direct IRC protocol with gateway proxy
   if (isGatewayMode()) {
     setDirectEventCallback(triggerEvent);
     setDirectEncryption(false); // No encryption for gateway mode
     setCurrentConnectionInfo(host, useTLS);
 
-    // Construct gateway WebSocket URL with query parameters
     const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const params = new URLSearchParams({
       host: singleServer.host,
@@ -309,10 +260,8 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     return;
   }
 
-  // Local backend mode: use direct IRC protocol with encryption
   setDirectEventCallback(triggerEvent);
 
-  // Check for existing STS policy (only if not already using TLS)
   let effectiveTLS = useTLS;
   let effectivePort = singleServer.port;
   if (!useTLS && hasValidSTSPolicy(host)) {
@@ -326,7 +275,6 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
 
   setCurrentConnectionInfo(host, effectiveTLS);
 
-  // Initialize encryption for local backend
   if (encryptionKey) {
     initEncryption(encryptionKey).then(() => {
       setDirectEncryption(true);
@@ -357,10 +305,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   }
 };
 
-/**
- * Connect to IRC server with TLS enabled.
- * Used for STS upgrades and when connecting to servers with known STS policies.
- */
+/** For STS upgrades and servers with a known STS policy. */
 export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: number): void => {
   const singleServer = parseServer(currentServer);
   if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
@@ -379,19 +324,12 @@ export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: nu
   ircConnect(tlsServer, nick);
 };
 
-/**
- * Store credentials for SASL authentication during CAP negotiation.
- */
 export const ircSetSaslCredentials = (account: string, password: string): void => {
   setSaslCredentials(account, password);
 };
 
-/**
- * Send password to authenticate with NickServ (fallback when SASL is not available).
- * Also stores credentials for potential reconnection.
- */
+/** NickServ fallback when SASL isn't available. */
 export const ircSendPassword = (password: string): void => {
-  // Store credentials for potential reconnect (use current nick as account)
   const account = getCurrentNick();
   if (account) {
     setSaslCredentials(account, password);
@@ -399,12 +337,7 @@ export const ircSendPassword = (password: string): void => {
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${password}`);
 };
 
-/**
- * Authenticate using either SASL (if available) or NickServ fallback.
- * Also stores credentials for potential reconnection.
- */
 export const ircAuthenticate = (account: string, password: string): void => {
-  // Store credentials for potential reconnect
   setSaslCredentials(account, password);
   if (isCapabilityEnabled('sasl')) {
     if (import.meta.env.DEV) { console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ'); }
@@ -444,10 +377,7 @@ export const ircRequestMetadataList = (nick: string): void => {
   ircSendRawMessage(`METADATA ${nick} LIST`);
 };
 
-/**
- * Request chat history for a target (channel or user)
- * https://ircv3.net/specs/extensions/chathistory
- */
+// https://ircv3.net/specs/extensions/chathistory
 export const ircRequestChatHistory = (
   target: string,
   subcommand: 'LATEST' | 'BEFORE' | 'AFTER' | 'AROUND' = 'LATEST',
@@ -461,9 +391,6 @@ export const ircRequestChatHistory = (
   }
 };
 
-/**
- * Request chat history between two timestamps
- */
 export const ircRequestChatHistoryBetween = (
   target: string,
   startTime: string,
@@ -473,9 +400,6 @@ export const ircRequestChatHistoryBetween = (
   ircSendRawMessage(`CHATHISTORY BETWEEN ${target} timestamp=${startTime} timestamp=${endTime} ${limit}`);
 };
 
-/**
- * Request available chat history targets
- */
 export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): void => {
   if (timestamp) {
     ircSendRawMessage(`CHATHISTORY TARGETS timestamp=${timestamp} ${limit}`);
@@ -484,67 +408,41 @@ export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): vo
   }
 };
 
-/**
- * Add nicks to the MONITOR list
- * https://ircv3.net/specs/extensions/monitor.html
- */
+// https://ircv3.net/specs/extensions/monitor.html
 export const ircMonitorAdd = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
   ircSendRawMessage(`MONITOR + ${nicks.join(',')}`);
 };
 
-/**
- * Remove nicks from the MONITOR list
- */
 export const ircMonitorRemove = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
   ircSendRawMessage(`MONITOR - ${nicks.join(',')}`);
 };
 
-/**
- * Clear the entire MONITOR list
- */
 export const ircMonitorClear = (): void => {
   ircSendRawMessage('MONITOR C');
 };
 
-/**
- * Request the current MONITOR list
- */
 export const ircMonitorList = (): void => {
   ircSendRawMessage('MONITOR L');
 };
 
-/**
- * Request status of all monitored nicks
- */
 export const ircMonitorStatus = (): void => {
   ircSendRawMessage('MONITOR S');
 };
 
-/**
- * Add nicks to the WATCH list (pre-IRCv3 fallback for servers without MONITOR)
- */
+/** Pre-IRCv3 fallback for servers without MONITOR. */
 export const ircWatchAdd = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
   ircSendRawMessage(`WATCH ${nicks.map((nick) => `+${nick}`).join(' ')}`);
 };
 
-/**
- * Remove nicks from the WATCH list
- */
 export const ircWatchRemove = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
   ircSendRawMessage(`WATCH ${nicks.map((nick) => `-${nick}`).join(' ')}`);
 };
 
-// IRC protocol max message length: 512 bytes including \r\n, when the server
-// hasn't told us it accepts something else (ISUPPORT `LINELEN`, see
-// `getLineLenLimit`). E2EE's own chunk sizing (`e2ee/protocol.ts`'s
-// `chunkCharsFor`) is derived from the same server value specifically so its
-// frames never exceed what this function will actually send unmodified — if
-// the two ever disagreed, a chunk would get truncated here and fail GCM
-// authentication on the other end with no visible error.
+// 512 incl. \r\n unless ISUPPORT LINELEN says otherwise. E2EE chunking derives from the same value, or chunks would be truncated
 const DEFAULT_MAX_IRC_MESSAGE_LENGTH = 510;
 
 const getMaxIrcMessageLength = (): number => getLineLenLimit() || DEFAULT_MAX_IRC_MESSAGE_LENGTH;
@@ -555,11 +453,7 @@ export const ircSendRawMessage = (data: string): void => {
   }
   const maxLength = getMaxIrcMessageLength();
   if (data.length > maxLength) {
-    // Truncating is what the protocol forces on us, but doing it silently has
-    // hidden real data loss in the past — an over-long line just arrived cut in
-    // half with no trace. Callers that must not be truncated (E2EE frames, where
-    // a cut line fails authentication and the message is lost outright) split
-    // their payload up front; this warning is how we find the ones that don't.
+    // Silent truncation hid data loss before; callers that can't be truncated must split up front
     console.warn(`IRC message exceeds ${maxLength} chars and will be truncated:`, `${data.slice(0, 80)}…`);
     sendDirectRaw(data.slice(0, maxLength));
     return;
@@ -567,29 +461,11 @@ export const ircSendRawMessage = (data: string): void => {
   sendDirectRaw(data);
 };
 
-// The `ircReconnect` currently running, if any (see its single-flight note).
 let reconnectInFlight: Promise<boolean> | null = null;
 
 /**
- * Reconnect to IRC server preserving SASL credentials.
- * Used for automatic reconnection (inactivity watchdog, network-back on mobile)
- * and for the manual "Connect" affordances in the UI.
- *
- * Posts a "Reconnecting to server..." status line so the attempt is visible —
- * without it the next thing the user sees is a mid-flow detail like the STS
- * upgrade notice ("Server requires secure connection..."), which reads as an
- * error rather than a step in coming back online. `announce: false` is for the
- * inactivity path, which has already posted its own attempt-counter message.
- *
- * Single-flight: a call made while another is still running joins it instead
- * of starting a second one. The body tears the transport down, awaits
- * credential decryption, then connects — two overlapping runs (a double click
- * on "Connect", the banner plus the toolbar item, a click racing the
- * network-back or watchdog paths) would each tear down and each connect, and
- * the second connect lands while the first is still in progress. `isConnecting`
- * is raised before the first `await` for the same reason: the "Connect"
- * buttons are disabled off it, and they must be disabled for the whole
- * attempt, not only after credentials have been decrypted.
+ * Preserves SASL credentials. Single-flight: overlapping calls (double click, watchdog racing network-back)
+ * join the running one. `isConnecting` is raised before the first await so Connect buttons stay disabled.
  */
 export const ircReconnect = (options: { announce?: boolean } = {}): Promise<boolean> => {
   if (reconnectInFlight !== null) {
@@ -630,22 +506,20 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
     });
   }
 
-  // Reset state without clearing saved credentials
+  // Keeps saved credentials
   clearInactivityTimeout();
   stopKeepalive();
   resetCapabilityState();
   resetSaslState();
-  // Note: clearSaslCredentials() NOT called - credentials restored below
   resetSTSSessionState();
   clearAllBatches();
   clearPendingLabels();
   disconnectDirect();
   notifyConnectionTornDown();
 
-  // Restore saved credentials for SASL re-authentication (decrypted)
   const restored = await restoreSaslCredentials();
 
-  // If no in-memory credentials were restored, try loading from persistent storage
+  // Fall back to persistent storage
   if (!restored) {
     const encryptedPassword = getEncryptedPassword();
     const passwordNick = getPasswordNick();
@@ -654,7 +528,7 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
         const password = await decryptPersistent(encryptedPassword);
         setSaslCredentials(nick, password);
       } catch {
-        // Decryption failed - continue without credentials
+        // Continue without credentials
       }
     }
   }
@@ -662,41 +536,18 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
   ircConnect(server, nick);
 };
 
-/**
- * Reconnect the moment the network looks like it came back, instead of waiting
- * on the time-based inactivity watchdog.
- *
- * On mobile web the watchdog can't be relied on to notice a dropped link: while
- * the tab is backgrounded the OS freezes its `setTimeout`, so after the screen
- * unlocks the watchdog may be minutes behind — and if its
- * `MAX_INACTIVITY_RECONNECT_RETRIES` fast retries were already spent it has
- * given up for good, leaving the user to press "Reconnect" by hand after every
- * blip. The browser's `online` event and the tab regaining visibility are the
- * signals that actually fire in that situation, so this is what they drive.
- *
- *  - No server/nick configured (never connected, or signed out): nothing to do.
- *  - An attempt already in flight: let it resolve rather than stacking another.
- *  - Socket still up: it may be half-open after a Wi-Fi/cellular handoff, so
- *    send a keepalive PING now — a PONG proves it healthy, continued silence
- *    lets the watchdog time it out — rather than assuming it survived.
- *  - Otherwise: clear any spent retry budget and pending backoff timer, then
- *    reconnect immediately. A failed attempt still falls through to the normal
- *    retry burst via the kernel's `handleReconnectFailure`.
- */
+// On `online`/tab-visible: mobile freezes the watchdog's timers in the background, so it can't be relied on
 export const handleNetworkMaybeBack = (): void => {
   if (getServer() === undefined || getCurrentNick() === '') {
     return;
   }
 
-  // A reconnect is already underway — an in-progress retry burst, or a previous
-  // call to this function whose `ircReconnect` hasn't resolved yet (paired
-  // `online` + `visibilitychange` events fire back to back). `isReconnecting`
-  // is set synchronously below, before the first `await`, so this also guards
-  // the second of two same-tick calls.
+  // Also guards back-to-back `online` + `visibilitychange`: isReconnecting is set synchronously below
   if (isReconnecting || isDirectConnecting()) {
     return;
   }
 
+  // Possibly half-open after a network handoff: a PONG proves it, silence lets the watchdog time out
   if (isDirectConnected()) {
     ircSendRawMessage(`PING :${Date.now()}`);
     return;
@@ -730,12 +581,6 @@ const onVisibilityChange = (): void => {
   }
 };
 
-/**
- * Bind `handleNetworkMaybeBack` to the browser signals that mean connectivity
- * may have returned — `online`, and the tab becoming visible again. Idempotent;
- * `stopReachabilityWatch` unbinds. Called once from the app's long-lived
- * `Network` component.
- */
 export const startReachabilityWatch = (): void => {
   if (reachabilityListenersBound || typeof window === 'undefined') {
     return;
@@ -760,10 +605,7 @@ export const stopReachabilityWatch = (): void => {
   }
 };
 
-/**
- * Auto-authenticate using saved persistent password.
- * Used when the wizard is already completed and NickServ requests a password.
- */
+/** With the saved password, when NickServ asks after the wizard is done. */
 export const ircAutoAuthenticate = async (): Promise<boolean> => {
   const nick = getCurrentNick();
   const encryptedPassword = getEncryptedPassword();
@@ -782,5 +624,4 @@ export const ircAutoAuthenticate = async (): Promise<boolean> => {
   }
 };
 
-// Re-export for backward compatibility with tests and other modules
 export { resetInactivityTimeout, clearInactivityTimeout, startKeepalive, stopKeepalive, clearSavedCredentials, cancelReconnect };

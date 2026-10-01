@@ -23,7 +23,6 @@ const getModeIcons = (flags: string[], userModes: UserMode[]) => {
 
   const icons: React.ReactNode[] = [];
 
-  // Iterate through all modes in priority order and collect matching icons
   for (const mode of userModes) {
     if (flags.includes(mode.flag)) {
       switch (mode.symbol) {
@@ -61,15 +60,7 @@ interface UserRowProps {
   backgroundLuminance: number;
 }
 
-/**
- * One entry of the user list.
- *
- * Anything that touches the roster — a join, a part, an away change, a mode —
- * replaces the `users` array, which would otherwise re-render every row of a
- * channel that can hold thousands. The `User` objects keep their identity
- * across that update (the store only replaces the ones it changed), so the
- * comparison holds and only the affected row re-renders.
- */
+// Roster updates replace `users` but keep unchanged User identities, so memo re-renders only the affected row
 const UserRow = memo(({ user, currentChannelName, userModes, hideAvatar, fontSizeClass, backgroundLuminance }: UserRowProps) => {
   const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();

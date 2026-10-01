@@ -1,9 +1,4 @@
-/**
- * Matches a single emoji "cluster": one base emoji, optionally followed by a
- * skin-tone modifier or chained with ZWJ into a combined emoji (e.g. family,
- * profession sequences), plus flags (regional indicator pairs) and keycaps
- * (digit/#/* + combining enclosing keycap).
- */
+// One emoji cluster: base + skin tone / ZWJ sequences, flag pairs, keycaps
 const EMOJI_PATTERN =
   '(?:\\p{Regional_Indicator}{2}' +
   '|[0-9#*]\\uFE0F?\\u20E3' +
@@ -17,7 +12,6 @@ export interface TextRun {
   isEmoji: boolean;
 }
 
-/** Splits text into alternating plain-text and emoji runs, in order. */
 export function splitEmoji(text: string): TextRun[] {
   if (!text) { return []; }
 

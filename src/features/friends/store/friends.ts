@@ -1,24 +1,16 @@
-/**
- * Friends List Store (persisted)
- *
- * Holds the user's friend nicks, keyed per IRC network (same key as
- * serverPasswords: Server.network). This is the durable list; runtime
- * online/offline status lives in the monitor store and is re-derived by
- * re-subscribing (MONITOR/WATCH) after every registration.
- */
+// Persisted per network; online status lives in the monitor store
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
 interface FriendsStore {
-  /** Friend nicks per network, in insertion order, display case preserved */
+  /** Insertion order, display case */
   friendsByNetwork: Record<string, string[]>;
 
-  /** Add nick to a network's friends list (case-insensitive dedupe) */
+  /** Case-insensitive dedupe */
   addFriend: (network: string, nick: string) => void;
-  /** Remove nick from a network's friends list */
   removeFriend: (network: string, nick: string) => void;
-  /** Rename a friend in place (e.g. after observing their NICK change), preserving list order */
+  /** Keeps list order */
   renameFriend: (network: string, oldNick: string, newNick: string) => void;
 }
 
@@ -78,8 +70,6 @@ export const useFriendsStore = create<FriendsStore>()(
     ),
   ),
 );
-
-// Helper functions for external use
 
 export const getFriendsForNetwork = (network: string): string[] => {
   return useFriendsStore.getState().friendsByNetwork[network] ?? [];

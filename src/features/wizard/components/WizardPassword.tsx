@@ -11,7 +11,6 @@ import { encryptPersistent, decryptPersistent } from '@/network/encryption';
 
 const WizardPassword = () => {
   const { t } = useTranslation();
-  // Capture the nick at mount time using lazy initializer
   const [initialNick] = useState(() => getCurrentNick());
   const [password, setPassword] = useState('');
 
@@ -26,13 +25,12 @@ const WizardPassword = () => {
   const hasSavedPassword = !!(encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, initialNick));
   const [rememberPassword, setRememberPassword] = useState(hasSavedPassword);
 
-  // Pre-fill from saved encrypted password
   useEffect(() => {
     if (encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, initialNick)) {
       decryptPersistent(encryptedPassword).then((decrypted) => {
         setPassword(decrypted);
       }).catch(() => {
-        // Decryption failed (e.g. key changed) - ignore
+        // e.g. the key changed
       });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -62,14 +60,12 @@ const WizardPassword = () => {
     if (nickMatches) {
       ircSendPassword(password);
       if (rememberPassword) {
-        // Save encrypted password for future sessions
         encryptPersistent(password).then((encrypted) => {
           setEncryptedPassword(encrypted, nick);
         }).catch(() => {
-          // Encryption failed - password won't be saved, but that's ok
+          // The password just won't be saved
         });
       } else {
-        // Clear any previously saved password
         setEncryptedPassword(undefined, undefined);
       }
     }

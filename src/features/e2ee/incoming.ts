@@ -1,17 +1,6 @@
 /**
- * SIC-E2EE v1 — the receive path, called from `Kernel.handleCtcp`.
- *
- * This lives outside `kernel.ts` to keep an already very large file from
- * growing another state machine, but the ordering rule it implements is a
- * kernel concern and worth spelling out:
- *
- * `onPrivMsg` is synchronous while WebCrypto is not. Decrypting first and
- * calling `setAddMessage` in the `.then()` would let two messages that arrive
- * back to back render in whichever order their decryptions happened to settle.
- * So a placeholder is appended synchronously, in arrival order, and patched in
- * place once the plaintext is ready. That also gives failures somewhere natural
- * to land, and it works unchanged for `draft/chathistory` replay — which is why
- * the hook has to sit here in the CTCP handler rather than in `handleRaw`.
+ * SIC-E2EE v1 receive path, called from Kernel.handleCtcp. A placeholder is appended synchronously in
+ * arrival order and patched once WebCrypto resolves, so concurrent decryptions can't reorder messages.
  */
 
 import i18next from 'i18next';
@@ -38,43 +27,18 @@ import { createThrottle } from './rateLimit';
 import { acceptCipherChunk, acceptIncomingOffer, decryptSealed, endSession, handleHandshakeFrame, sendReset } from './session';
 import { E2eeState, getSessionKey, getSessionState } from './store/e2ee';
 
-/**
- * One inbound OFFER per peer per second.
- *
- * Generous enough that no legitimate pattern is affected — a handshake is one
- * offer, and glare or a retry after the offer timeout are both far slower than
- * this — while stopping a peer from spending our CPU at whatever rate the
- * server permits.
- */
+/** One inbound OFFER per peer per second: no legitimate pattern is faster. */
 const offers = createThrottle(1_000);
 
-/**
- * A peer talking to us with keys we no longer have would otherwise produce one
- * error line and one RESET per frame.
- */
+/** Otherwise a peer with stale keys yields an error line and a RESET per frame. */
 const resetReplies = createThrottle(10_000);
 
-/**
- * Decide whether to act on an inbound OFFER.
- *
- * Called from the synchronous entry point, before any key import or keypair
- * generation, so a refused frame costs a map lookup and nothing else.
- */
+/** Checked before any crypto, so a refused frame costs only a map lookup. */
 const allowOffer = (nick: string): boolean => offers.allow(getSessionKey(nick));
 
-/** The window an inbound direct message belongs in: ours is named after the sender. */
 const resolveWindow = (nick: string, target: string): string => (isSameName(target, getCurrentNick()) ? nick : target);
 
-/**
- * Build the local id for a decrypted message.
- *
- * The server's `msgid` cannot be used as-is. This id is what the placeholder is
- * inserted under and what `setUpdateMessage` later patches by, so a server that
- * reused a msgid it had already given to a *plaintext* message would have the
- * decrypted text overwrite that unrelated message's body. Namespacing keeps the
- * server's value — so a frame delivered twice in one session still dedupes —
- * while making it impossible to collide with an id from outside this path.
- */
+/** Namespaced msgid: still dedupes, but can't patch a plaintext message that reused the same msgid. */
 const localMessageId = (msgid?: string): string =>
   msgid !== undefined && msgid.length > 0 ? `e2ee:${msgid}` : `e2ee:${uuidv4()}`;
 
@@ -85,7 +49,6 @@ const ensureWindow = (window: string): void => {
   }
 };
 
-/** Add a system line to a private window — used for handshake outcomes. */
 const addInfoMessage = (window: string, text: string, color: MessageColor = MessageColor.info): void => {
   ensureWindow(window);
   setAddMessage({
@@ -95,20 +58,11 @@ const addInfoMessage = (window: string, text: string, color: MessageColor = Mess
     time: new Date().toISOString(),
     category: MessageCategory.info,
     color,
-    // Handshake outcomes are about the conversation, not something the peer
-    // said — flag them so the renderer detaches them from the speaker column
-    // (otherwise they group under whoever spoke last, e.g. a NickServ notice).
     system: true,
   });
 };
 
-/**
- * Announce a handshake result once the frame has been processed.
- *
- * Comparing state before and after keeps this in one place instead of scattering
- * `setAddMessage` calls through the state machine, which has no business knowing
- * about chat windows.
- */
+/** Diffs state before/after, so the state machine never needs to know about chat windows. */
 const announceStateChange = (nick: string, before: E2eeState, after: E2eeState): void => {
   if (before === after) {
     return;
@@ -118,9 +72,7 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
     addInfoMessage(nick, i18next.t('e2ee.info.started', { nick }), MessageColor.e2ee);
     return;
   }
-  // Any move away from `active` ends the encrypted conversation, not just a
-  // teardown: a fresh OFFER from the peer replaces the session outright, and
-  // the user needs to know the padlock they had is gone.
+  // Any move away from `active` (e.g. a fresh OFFER) ends it
   if (before === E2eeState.active) {
     addInfoMessage(nick, i18next.t('e2ee.info.ended', { nick }), MessageColor.error);
     return;
@@ -129,13 +81,8 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
     addInfoMessage(nick, i18next.t('e2ee.info.declined', { nick }));
     return;
   }
-  // An inbound OFFER may be the very first thing we hear from this peer — the
-  // window this creates is exactly like an incoming plain message, so it needs
-  // the same "you weren't looking at this" treatment or the request is invisible
-  // until the peer happens to send a plaintext line too.
+  // Needs unread treatment like a plain message, or the request stays invisible
   if (after === E2eeState.incoming) {
-    // Same blue as the top banner's "info" tone — this is a decision to make,
-    // not a good/bad outcome like the started/ended lines above.
     addInfoMessage(nick, i18next.t('e2ee.info.incomingOffer', { nick }), MessageColor.notice);
     if (!isSameName(nick, getCurrentChannelName())) {
       setIncreaseUnreadMessages(nick);
@@ -144,30 +91,14 @@ const announceStateChange = (nick: string, before: E2eeState, after: E2eeState):
   }
 };
 
-/**
- * Accept an inbound OFFER from the UI and announce the result.
- *
- * `session.ts`'s `acceptIncomingOffer` only drives the state machine — it has
- * no business knowing about chat windows (see `announceStateChange`) — so a
- * click on the banner's Accept button has to go through here instead of
- * calling it directly, or the accepting side never gets the "now encrypted"
- * line that the initiator gets via `handleHandshake` below.
- */
+/** UI must use this, not acceptIncomingOffer directly, or the accepting side never gets the "now encrypted" line. */
 export const acceptOfferAndAnnounce = async (nick: string): Promise<void> => {
   const before = getSessionState(nick);
   await acceptIncomingOffer(nick);
   announceStateChange(nick, before, getSessionState(nick));
 };
 
-/**
- * End a session from the UI and announce the result.
- *
- * Same gap as above but for the "Wyłącz szyfrowanie"/cancel/dismiss buttons:
- * `session.ts`'s `endSession` only drives the state machine, so ending an
- * *active* session locally needs to go through here or the person who turned
- * it off never sees the "encryption ended" line — only the peer does, via the
- * RESET notice arriving through `handleHandshake`.
- */
+/** Likewise for ending: endSession alone gives the local user no "encryption ended" line. */
 export const endSessionAndAnnounce = (nick: string, notifyPeer = true): void => {
   const before = getSessionState(nick);
   endSession(nick, notifyPeer);
@@ -177,34 +108,20 @@ export const endSessionAndAnnounce = (nick: string, notifyPeer = true): void => 
 const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'notice'): void => {
   const before = getSessionState(nick);
 
-  // The real source has to be passed through. Deriving it from the frame type
-  // instead would make `handleHandshakeFrame`'s verb check unfalsifiable — it
-  // would only ever see the verb the frame claims to be, so a peer could drive
-  // the state machine with an OFFER sent as a NOTICE, or a RESET as a PRIVMSG.
+  // The real source, not one derived from the frame type, or the verb check would be unfalsifiable
   void handleHandshakeFrame(nick, frame, source).then(() => {
     announceStateChange(nick, before, getSessionState(nick));
   });
 };
 
-/** Everything `renderDecrypted` needs to place and later patch one incoming message. */
 interface CipherContext {
-  /** Who sent it. */
   nick: string;
-  /** Which chat window it belongs in — see `resolveWindow`. */
   window: string;
-  /** The placeholder's id, so the eventual plaintext (or failure) can patch the same row — see `localMessageId`. */
   messageId: string;
-  /** ISO timestamp to display, taken from the server's `time` tag when present. */
+  /** From the server's `time` tag when present. */
   time: string;
 }
 
-/**
- * Insert the placeholder, then patch it with the plaintext.
- *
- * The message id comes from the server's `msgid` tag where there is one, so the
- * dedupe in `setAddMessage` still works when chathistory replays a message we
- * already have.
- */
 const renderDecrypted = (context: CipherContext, sealed: string): void => {
   const { nick, window, messageId, time } = context;
   const currentChannelName = getCurrentChannelName();
@@ -241,70 +158,46 @@ const renderDecrypted = (context: CipherContext, sealed: string): void => {
       void notifyHighlight({ nick, target: window, message: text, isDirect: true });
     },
     (error: unknown) => {
-      // A frame that fails authentication is not shown as text under any
-      // circumstances — that would be presenting attacker-controlled bytes as a
-      // message from a peer the lock icon says is verified.
+      // Never show unauthenticated bytes as a message from a verified peer
       console.warn('E2EE: could not decrypt message:', error);
       setUpdateMessage(window, messageId, { message: i18next.t('e2ee.message.failed'), e2ee: 'failed' });
     },
   );
 };
 
-/**
- * Feed one `SICE` chunk to the reassembler (`acceptCipherChunk`) and react
- * once it says the message is whole. Most chunks just get buffered and
- * produce no visible effect yet — see the `'incomplete'` case below.
- */
 const handleCipher = (nick: string, window: string, frame: Extract<E2eeFrame, { type: 'cipher' }>, messageId: string, time: string): void => {
   const result = acceptCipherChunk(nick, frame);
 
   switch (result.status) {
     case 'complete':
-      // Every chunk has arrived — decrypt and render it.
       renderDecrypted({ nick, window, messageId, time }, result.sealed);
       return;
     case 'noSession':
-      // We have no session key for this peer (never handshook, or it ended
-      // since). Tell them so they know to stop, and tell our own user rather
-      // than silently dropping their message.
+      // Tell both the peer and our user rather than silently dropping it
       if (resetReplies.allow(getSessionKey(nick))) {
         sendReset(nick);
         addInfoMessage(window, i18next.t('e2ee.info.unreadable', { nick }));
       }
       return;
     case 'echo':
-      // Our own message, bounced back to us by `echo-message` — already
-      // rendered locally when we sent it, so there is nothing to do here.
       return;
     case 'incomplete':
-      // Buffered; waiting on the rest of this message's chunks.
       return;
   }
 };
 
 export interface E2eeCtcpContext {
-  /** Sender nick. */
   nick: string;
-  /** CTCP target: our nick for an inbound DM, or a channel. */
   target: string;
-  /** CTCP body with the `\x01` delimiters already stripped. */
+  /** Without the `\x01` delimiters. */
   ctcpContent: string;
-  /** Which command carried it — the protocol distinguishes the two. */
+  /** The protocol distinguishes the two. */
   source: 'privmsg' | 'notice';
-  /** Server `msgid` tag, when present. */
   msgid?: string;
-  /** Server `time` tag, when present. */
   time?: string;
 }
 
-/**
- * Handle a CTCP that might be an E2EE frame.
- *
- * Returns `true` when the frame was ours and has been dealt with, so the caller
- * stops. Returns `false` for anything else, including well-formed frames aimed
- * at a channel — encryption here is strictly one-to-one, and a "SICE" sent to a
- * channel is not something this protocol produces.
- */
+/** True when handled. Channel-targeted frames are never ours: encryption is strictly one-to-one. */
 export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
   const frame = parseCtcpFrame(context.ctcpContent);
   if (frame === null) {
@@ -314,14 +207,11 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
   const { nick, target, source } = context;
   const window = resolveWindow(nick, target);
 
-  // Only ever act on a one-to-one conversation.
   if (!isSameName(target, getCurrentNick())) {
     return false;
   }
 
-  // Refused before any crypto runs: an OFFER is the only inbound frame that
-  // costs real work regardless of whether it is wanted. ACCEPT is self-limiting
-  // (it does nothing unless we are waiting for one) and the rest are trivial.
+  // Only OFFER costs real work unsolicited; ACCEPT is self-limiting
   if (frame.type === 'offer' && !allowOffer(nick)) {
     return true;
   }
@@ -339,7 +229,7 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
   return true;
 };
 
-/** Drop throttle bookkeeping — called alongside `endAllSessions` on disconnect. */
+/** Alongside endAllSessions on disconnect. */
 export const clearIncomingState = (): void => {
   offers.clear();
   resetReplies.clear();

@@ -43,29 +43,12 @@ export interface Message {
   time: string;
   category: MessageCategory;
   color?: MessageColor;
-  /**
-   * IRCv3 echo-message: true when this message was confirmed by the server
-   */
+  /** IRCv3 echo-message: true when this message was confirmed by the server */
   echoed?: boolean;
-  /**
-   * Whether this message mentions the current user's nick
-   */
   highlight?: boolean;
-  /**
-   * End-to-end encryption state of a private message.
-   *
-   * `decrypting` is the placeholder inserted synchronously on arrival so the
-   * message keeps its position while WebCrypto works; it is patched to `ok` or
-   * `failed` a tick later. Any value here also keeps the message out of
-   * IndexedDB — encrypted conversations are deliberately not written to disk.
-   */
+  /** `decrypting` holds the message's position while WebCrypto works; any value keeps it out of IndexedDB */
   e2ee?: 'decrypting' | 'ok' | 'failed';
-  /**
-   * A conversation-level system notice (e.g. an E2EE handshake outcome), not an
-   * utterance by any participant. Rendered detached from the speaker column so
-   * it can't be misread as the words of whoever spoke last — see the
-   * `.sic-msg[data-system]` rules in the builtin themes.
-   */
+  /** Conversation-level notice (e.g. E2EE handshake outcome) with no speaker */
   system?: boolean;
 }
 
@@ -84,17 +67,11 @@ export interface Channel {
   name: string;
   category: ChannelCategory;
   unReadMessages: number;
-  /**
-   * IRCv3 - Channel's avatar URL from metadata
-   */
+  /** IRCv3 - Channel's avatar URL from metadata */
   avatar?: string;
-  /**
-   * IRCv3 - Channel's display name from METADATA
-   */
+  /** IRCv3 - Channel's display name from METADATA */
   displayName?: string;
-  /**
-   * Whether any unread message in the channel mentions the user's nick
-   */
+  /** Whether any unread message in the channel mentions the user's nick */
   hasMention?: boolean;
 }
 
@@ -110,49 +87,27 @@ export interface User {
   nick: string;
   ident: string;
   hostname: string;
-  /**
-   * IRCv3 - User's avatar URL from metadata
-   */
+  /** IRCv3 - User's avatar URL from metadata */
   avatar?: string;
-  /**
-   * IRCv3 - User's color preference from metadata
-   */
+  /** IRCv3 - User's color preference from metadata */
   color?: string;
-  /**
-   * IRCv3 - User's account name (from account-notify/account-tag)
-   */
+  /** IRCv3 - User's account name (from account-notify/account-tag) */
   account?: string;
-  /**
-   * IRCv3 - User's real name (from extended-join/SETNAME)
-   */
+  /** IRCv3 - User's real name (from extended-join/SETNAME) */
   realname?: string;
-  /**
-   * IRCv3 - Whether the user is away (from away-notify)
-   */
+  /** IRCv3 - Whether the user is away (from away-notify) */
   away?: boolean;
-  /**
-   * IRCv3 - User's away reason (from away-notify)
-   */
+  /** IRCv3 - User's away reason (from away-notify) */
   awayReason?: string;
-  /**
-   * IRCv3 - User's display name from METADATA
-   */
+  /** IRCv3 - User's display name from METADATA */
   displayName?: string;
-  /**
-   * IRCv3 - User's status text from METADATA
-   */
+  /** IRCv3 - User's status text from METADATA */
   status?: string;
-  /**
-   * IRCv3 - User's homepage URL from METADATA
-   */
+  /** IRCv3 - User's homepage URL from METADATA */
   homepage?: string;
-  /**
-   * IRCv3 - Whether the user is a bot (from METADATA, draft/bot tag, WHOIS 335, or user mode +B)
-   */
+  /** IRCv3 - Whether the user is a bot (from METADATA, draft/bot tag, WHOIS 335, or user mode +B) */
   bot?: boolean;
-  /**
-   * Global flags - like Away
-   */
+  /** Global flags, e.g. away */
   flags: string[];
   channels: UserChannel[];
 }

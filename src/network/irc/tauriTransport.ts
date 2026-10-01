@@ -1,9 +1,4 @@
-/**
- * Tauri IRC transport. Mirrors the public surface of `directWebSocket.ts`
- * so `transport.ts` can swap them at runtime without the kernel knowing
- * which one is in play. Routes raw IRC lines through the `irc_*` Tauri
- * commands and listens on the per-connection event channel.
- */
+// Same surface as directWebSocket.ts, so transport.ts can swap them at runtime
 import { invoke, Channel } from '@tauri-apps/api/core';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
@@ -15,10 +10,7 @@ type TauriIrcEvent =
   | { type: 'error'; message: string };
 
 let connectionId: string | null = null;
-// Bumped by every connect and disconnect. A connection attempt captures the
-// value it started under; once it no longer matches, the attempt has been
-// superseded — its late `irc_connect` result and its channel events must not
-// touch the current connection's state.
+// Bumped on connect/disconnect so a superseded attempt's late results are ignored
 let generation = 0;
 let isConnectingFlag = false;
 let isConnectedFlag = false;
@@ -29,8 +21,6 @@ const triggerEvent = (eventName: string, data: unknown): void => {
 };
 
 const cleanup = (): void => {
-  // The Rust driver stops sending on its channel once the connection ends,
-  // so there is no subscription to tear down — just forget the id.
   connectionId = null;
 };
 
@@ -39,19 +29,14 @@ const handleEvent = (payload: TauriIrcEvent): void => {
     case 'socketConnected':
       isConnectingFlag = false;
       isConnectedFlag = true;
-      // Routed through the same 'sic-irc-event' channel the kernel listens on
-      // (like 'raw'/'close'), so the kernel's handleConnect runs and sends the
-      // registration burst. A bare 'connect' event name has no subscriber.
+      // The kernel registers on this; a bare 'connect' event name has no subscriber
       triggerEvent('sic-irc-event', { type: 'connect' });
       break;
     case 'raw':
-      // The driver only emits inbound lines now (no outbound echo), so forward
-      // every one straight to the kernel.
       triggerEvent('sic-irc-event', { type: 'raw', line: payload.line });
       break;
     case 'error':
-      // Surface the reason to the kernel (status window) rather than dropping
-      // it. A fatal error is followed by 'closed'.
+      // A fatal error is followed by 'closed'
       triggerEvent('sic-irc-event', { type: 'error', line: payload.message });
       break;
     case 'closed':
@@ -78,7 +63,6 @@ export const initTauriIrc = (server: Server): void => {
   if (isConnectingFlag) {
     throw new Error('Tauri IRC connection already in progress');
   }
-  // Tear down any prior connection silently before starting a new one.
   if (connectionId !== null) {
     const oldId = connectionId;
     cleanup();
@@ -101,10 +85,7 @@ export const initTauriIrc = (server: Server): void => {
 
   void (async () => {
     try {
-      // Create the channel BEFORE invoking so the event sink exists before
-      // the Rust driver produces its first event. This closes the race the
-      // old emit/listen pair had, where the registration burst and the
-      // `connected` event could be emitted before `listen()` attached.
+      // Created before invoking, so no event can arrive before the sink exists
       const channel = new Channel<TauriIrcEvent>();
       channel.onmessage = (payload) => {
         if (attempt === generation) {
@@ -121,9 +102,7 @@ export const initTauriIrc = (server: Server): void => {
         onEvent: channel,
       });
       if (attempt !== generation) {
-        // Disconnected (or replaced) while `irc_connect` was in flight: the
-        // Rust side has already spawned this connection, so close it rather
-        // than adopting it or leaking it.
+        // Superseded while in flight: close the spawned connection rather than leak it
         void invoke('irc_disconnect', { id }).catch(() => {
           // already gone
         });

@@ -9,13 +9,7 @@ import { foldName, type CaseMapping } from '@shared/lib/caseMapping';
 
 const MAX_USERS = 50_000;
 
-/**
- * Nick -> user index, rebuilt whenever the store hands back a different `users`
- * array (zustand replaces it on every mutation) or the server changes its
- * CASEMAPPING. Looking a nick up by scanning and casefolding every user made
- * populating a busy channel quadratic: RPL_NAMREPLY asks "do we know this
- * nick?" once per nick, against a list that is growing by one each time.
- */
+// Nick -> user index, rebuilt when `users` or CASEMAPPING changes; a linear scan made NAMES quadratic
 let indexedUsers: User[] | null = null;
 let indexedMapping: CaseMapping | null = null;
 let nickIndex = new Map<string, User>();
@@ -28,7 +22,6 @@ const getNickIndex = (): Map<string, User> => {
     nickIndex = new Map<string, User>();
     for (const user of users) {
       const key = foldName(user.nick, mapping);
-      // First wins, matching the `find()` this replaced
       if (!nickIndex.has(key)) {
         nickIndex.set(key, user);
       }
@@ -40,35 +33,18 @@ const getNickIndex = (): Map<string, User> => {
   return nickIndex;
 };
 
-/** Resolved once instead of per comparison — `localeCompare` reparses its options on every call */
+// `localeCompare` reparses its options on every call
 const nickCollator = new Intl.Collator();
 
 let currentUsersSyncScheduled = false;
 
-/**
- * Recompute the visible user list now.
- *
- * Reads the current channel at call time rather than taking it as an argument,
- * so a sync scheduled before a channel switch still produces the right list.
- */
+// Reads the current channel at call time, so a sync scheduled before a channel switch stays correct
 export const flushCurrentUsers = (): void => {
   currentUsersSyncScheduled = false;
   useCurrentStore.getState().setUpdateUsers(getUsersFromChannelSortedByMode(getCurrentChannelName()));
 };
 
-/**
- * Queue a recompute of the visible user list for the end of the current tick.
- *
- * The visible list is derived by filtering every known user and sorting the
- * survivors, and every roster event used to redo that immediately — and
- * re-render the sidebar with it. A join/part flood on a 2000-user channel cost
- * ~1.5 ms per user that way, all of it thrown away by the next event.
- *
- * One WebSocket frame is split into lines and handled in a synchronous loop, so
- * a burst produces one recompute at the end of it instead of one per line. A
- * microtask lands before the browser paints, so nothing stale is ever shown,
- * and it needs no cooperation from the transports.
- */
+// Microtask-batched: a burst of roster lines from one frame recomputes once, still before paint
 const scheduleCurrentUsersSync = (): void => {
   if (currentUsersSyncScheduled) {
     return;
@@ -83,12 +59,11 @@ const scheduleCurrentUsersSync = (): void => {
   });
 };
 
-/** Buffer for metadata that arrives before JOIN (e.g. after QUIT+reconnect), keyed by folded nick */
+/** Metadata that arrives before JOIN (e.g. after QUIT+reconnect), keyed by folded nick */
 export const pendingMetadata = new Map<string, Partial<User>>();
 
 const metadataKey = (nick: string): string => foldName(nick, getCaseMapping());
 
-/** One entry of a parsed RPL_NAMREPLY roster */
 export interface NamesUser {
   nick: string;
   ident: string;
@@ -101,7 +76,6 @@ interface UsersStore {
   users: User[];
 
   setAddUser: (newUser: User) => void;
-  /** A whole RPL_NAMREPLY roster applied in one update — see `setNamesUsers` */
   setNamesUsers: (channelName: string, entries: NamesUser[]) => void;
   setRemoveUser: (nick: string, channelName: string) => void;
   setQuitUser: (nick: string) => void;
@@ -161,7 +135,6 @@ export const useUsersStore = create<UsersStore>()(
             if (users.length >= MAX_USERS) {
               continue;
             }
-            // Metadata that arrived before we knew the nick
             const buffered = pendingMetadata.get(key);
             if (buffered !== undefined) {
               pendingMetadata.delete(key);
@@ -237,7 +210,6 @@ export const useUsersStore = create<UsersStore>()(
           }
           const existingChannel = user.channels.find((c) => isSameName(c.name, channel));
           if (existingChannel) {
-            // Update flags if provided (e.g. from NAMES response after JOIN)
             if (flags && flags.length > 0) {
               return {
                 ...user,
@@ -387,7 +359,6 @@ export const setAddUser = (newUser: User): void => {
     }
   } else {
     if (useUsersStore.getState().users.length >= MAX_USERS) { return; }
-    // Apply any buffered metadata that arrived before JOIN
     const buffered = pendingMetadata.get(metadataKey(newUser.nick));
     if (buffered) {
       useUsersStore.getState().setAddUser({ ...newUser, ...buffered });
@@ -400,13 +371,7 @@ export const setAddUser = (newUser: User): void => {
   syncCurrentChannelUsers(newUser.nick);
 };
 
-/**
- * Apply a whole RPL_NAMREPLY roster at once.
- *
- * Adding the nicks one by one copied the entire user array and re-sorted (and
- * re-rendered) the visible user list once per nick, so joining a busy channel
- * cost O(n²) — over a second of blocked main thread at 2000 users.
- */
+// One update per roster: adding nicks one by one was O(n²) on busy channels
 export const setNamesUsers = (channelName: string, entries: NamesUser[]): void => {
   if (entries.length === 0) {
     return;
@@ -425,28 +390,13 @@ export const setNamesUsers = (channelName: string, entries: NamesUser[]): void =
   }
 };
 
-/**
- * A roster still being streamed, keyed by folded channel name so the closing
- * RPL_ENDOFNAMES finds it whatever casing the server echoes back.
- */
+// Keyed by folded name so RPL_ENDOFNAMES finds it whatever casing the server echoes
 const namesBuffer = new Map<string, { channelName: string; entries: NamesUser[] }>();
 
-/**
- * A server that never closes the roster must not strand it. Flushing early
- * costs one extra pass over the user list, which is far cheaper than never
- * showing the users at all.
- */
+// Flush early so a server that never sends RPL_ENDOFNAMES can't strand the roster
 const MAX_BUFFERED_NAMES = 1000;
 
-/**
- * Collect one RPL_NAMREPLY line.
- *
- * A roster arrives ~15 nicks at a time and is terminated by RPL_ENDOFNAMES.
- * Applying each line on its own re-indexes and re-copies the whole user list
- * per line, which stays quadratic across a big channel — 20 000 users cost
- * ~4.7 s that way. Holding the lines until the roster ends turns it into a
- * single pass.
- */
+// Lines are held until RPL_ENDOFNAMES; applying each one was quadratic on big channels
 export const bufferNamesUsers = (channelName: string, entries: NamesUser[]): void => {
   if (entries.length === 0) {
     return;
@@ -468,7 +418,7 @@ export const bufferNamesUsers = (channelName: string, entries: NamesUser[]): voi
   }
 };
 
-/** Apply a collected roster — RPL_ENDOFNAMES, or the safety valve above */
+/** On RPL_ENDOFNAMES, or the safety valve above */
 export const flushNamesUsers = (channelName: string): void => {
   const key = foldName(channelName, getCaseMapping());
   const buffered = namesBuffer.get(key);
@@ -582,9 +532,7 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
     return getPrivParticipants(channelName);
   }
 
-  // The permission and the lowercased nick are read once per user rather than
-  // twice per comparison — the comparator runs O(n log n) times, and each
-  // `find()` walked the user's channel list casefolding names as it went
+  // Sort keys computed once per user, not per comparison
   const entries: { user: User; permission: number; sortKey: string }[] = [];
 
   for (const user of useUsersStore.getState().users) {
@@ -621,7 +569,6 @@ const syncCurrentChannelUsers = (nick: string): void => {
   }
 };
 
-/** Buffer metadata for a user not yet in the store (arrives before JOIN) */
 const bufferMetadata = (nick: string, data: Partial<User>): void => {
   const key = metadataKey(nick);
   const existing = pendingMetadata.get(key) ?? {};

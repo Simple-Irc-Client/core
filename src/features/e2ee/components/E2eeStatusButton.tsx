@@ -13,38 +13,22 @@ import { useE2eePinsStore } from '../store/pins';
 import { useSettingsStore } from '@features/settings/store/settings';
 
 interface E2eeStatusButtonProps {
-  /** The peer nick — private windows are named after them. */
+  /** The peer nick */
   channelName: string;
 }
 
 type StatusKind = 'fingerprintChanged' | 'verified' | 'unverified' | 'plaintextAgain' | 'off';
 
-/**
- * Icon, color, and tooltip for each status, kept in one place rather than as
- * three parallel branches that all have to be edited in lockstep to add or
- * change a status — the same shape `E2eeBanner`'s `TONE_CLASSES` uses.
- */
 const STATUS_DISPLAY: Record<StatusKind, { Icon: typeof Lock; iconClass: string; tooltipKey: string }> = {
   fingerprintChanged: { Icon: ShieldAlert, iconClass: 'text-red-600 dark:text-red-400', tooltipKey: 'e2ee.status.fingerprintChanged' },
   verified: { Icon: Lock, iconClass: 'text-green-600 dark:text-green-400', tooltipKey: 'e2ee.status.verified' },
   unverified: { Icon: Lock, iconClass: 'text-yellow-600 dark:text-yellow-400', tooltipKey: 'e2ee.status.unverified' },
-  // An open padlock means something different for a peer we have encrypted
-  // with before, so it does not get the same neutral grey as a stranger's.
+  // Not neutral grey: we've encrypted with this peer before
   plaintextAgain: { Icon: LockOpen, iconClass: 'text-yellow-600 dark:text-yellow-400', tooltipKey: 'e2ee.status.plaintextAgain' },
   off: { Icon: LockOpen, iconClass: 'text-muted-foreground', tooltipKey: 'e2ee.status.off' },
 };
 
-/**
- * The lock in the conversation header: current state at a glance, and the
- * fingerprint pair behind a click.
- *
- * The fingerprints are the whole reason this popover exists. TOFU pinning
- * catches a key that changes later, but an attacker present at the very first
- * handshake is only caught by two people comparing these strings somewhere the
- * IRC network cannot reach — so the panel states plainly that an unverified
- * session is unverified, rather than showing a reassuring padlock and leaving it
- * there.
- */
+/** Fingerprints catch what TOFU can't (an attacker at first contact), so unverified is stated plainly. */
 const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -94,10 +78,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
         className="w-80 text-sm"
         align="end"
         onCloseAutoFocus={(event) => {
-          // Radix's default is to return focus to the trigger icon. In a chat
-          // window the far more useful place to land is back in the compose
-          // box, so the user can keep typing without reaching for the mouse
-          // or tabbing past the icon.
+          // Back to the compose box rather than the trigger icon
           event.preventDefault();
           document.getElementById('message-input')?.focus();
         }}
@@ -133,9 +114,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
                 onClick={() => {
                   const nowVerified = !session.verified;
                   markVerified(channelName, nowVerified);
-                  // Marking verified is the end of the flow this popover exists
-                  // for — close it. Unverifying stays open since it's a step
-                  // toward re-checking fingerprints, not a conclusion.
+                  // Unverifying stays open: it's a step toward re-checking
                   if (nowVerified) {
                     setOpen(false);
                   }
@@ -149,7 +128,7 @@ const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
                 data-testid="e2ee-end-button"
                 onClick={() => {
                   endSessionAndAnnounce(channelName);
-                  // Chosen, not lost — warning about it would be nagging.
+                  // Chosen, so no warning
                   acknowledgePlaintext(channelName);
                 }}
               >

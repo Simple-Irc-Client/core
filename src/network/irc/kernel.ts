@@ -382,18 +382,7 @@ const RPL_ENDOFHELP = '706';
 // const ERR_NOPRIVS = '723';
 const RPL_SASLMECHS = '908';
 
-// Session keys and MONITOR/WATCH online status are both per-connection (see
-// `handleDisconnected` below), but `disconnectDirect` deliberately hides the
-// transport's own close event from this module whenever *we* initiate the
-// teardown — a manual disconnect, a reconnect, or the inactivity watchdog —
-// precisely so a stale "Disconnected" message doesn't flash mid-reconnect.
-// That means those three paths never reached `handleDisconnected`, so e2ee
-// sessions survived a reconnect the peer's own client had already torn its
-// half of down, and friends/DM presence dots kept showing the last status we
-// heard before the connection dropped. Registering here, once, covers
-// exactly those three paths (`network.ts`'s `onConnectionTornDown` doc
-// comment has the full list) without touching the natural-close path, which
-// already clears both correctly inside `handleDisconnected` itself.
+// Self-initiated teardowns never reach handleDisconnected, so per-connection state is cleared here too
 onConnectionTornDown(() => {
   endAllSessions();
   clearIncomingState();
@@ -419,7 +408,6 @@ export class Kernel {
     this.eventLine = event?.line !== undefined ? event?.line.trim() : '';
   }
 
-  /** Strip leading ':' from an IRC trailing parameter, if present */
   private stripColon(value: string): string {
     return value.startsWith(':') ? value.substring(1) : value;
   }
@@ -468,9 +456,7 @@ export class Kernel {
     }
   }
 
-  // Transport-level error (e.g. TLS failure, connect refused). Surfaces the
-  // reason in the status window instead of letting it vanish — a fatal error is
-  // followed by 'close', which shows the generic "Disconnected".
+  // Transport errors (TLS failure, refused): 'close' that follows only says "Disconnected"
   private readonly handleError = (): void => {
     const message = this.eventLine || i18next.t('kernel.connectionError', { defaultValue: 'Connection error' });
     setAddMessage({
@@ -487,27 +473,14 @@ export class Kernel {
       setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
     }
     setAddChannel(STATUS_CHANNEL, ChannelCategory.status);
-    // Point the view at Status on connect, but never steal it from a real
-    // window the user is already reading. That covers both a plain reconnect
-    // mid-conversation and a session that restored persisted windows — common
-    // on mobile, where the webview is reloaded in the background so every
-    // "Connect" tap arrives as a fresh first connect. (Without this guard,
-    // reconnects also dragged unrelated messages to Status via `onNotice`,
-    // which resolves its target from the current channel.) On a genuinely
-    // fresh session `currentChannelName` is still the default "Status", so
-    // this is a no-op there.
+    // Show Status on connect, but never steal the view from a window the user is reading (reconnects, restored windows)
     const current = getCurrentChannelName();
     const viewingRealWindow = existChannel(current) && !isSameName(current, STATUS_CHANNEL);
     if (!viewingRealWindow) {
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
 
-    // Registration is owned by the kernel for both transports (WebSocket and
-    // Tauri/network-rs), which are pure byte pipes. Opening the handshake here
-    // — exactly once, in one place — is what prevents the double CAP
-    // negotiation that previously desynced the server ("Registration
-    // Timeout"). The kernel's CAP/SASL state machine takes over from the
-    // server's CAP LS reply and finishes with CAP END.
+    // Registration starts only here for both transports; a second CAP negotiation caused "Registration Timeout"
     const nick = getCurrentNick();
     const serverPassword = getServer()?.serverPassword;
 
@@ -524,28 +497,22 @@ export class Kernel {
     setIsConnected(true);
     setConnectedTime(Math.floor(Date.now() / 1000));
 
-    // Friends are re-subscribed at end of MOTD; arm the guard for this
-    // (re)connection so that happens exactly once.
+    // Friends re-subscribe once, at end of MOTD
     resetFriendsSubscription();
     resetDmPresenceSubscription();
 
-    // Start the active keepalive now that we're registered. Idempotent, so a
-    // reconnect's fresh 001 safely replaces any prior timer.
     startKeepalive();
 
-    // Reset reconnection state on successful connection
     resetInactivityReconnectRetries();
     clearSavedCredentials();
 
-    // Clear any pending STS upgrade now that we're connected
     clearPendingSTSUpgrade();
     resetSTSRetries();
 
-    // Check if NickServ authentication is needed (SASL not used/failed but credentials available)
+    // NickServ fallback when SASL wasn't used or failed
     const nickServCredentials = getNickServFallbackCredentials();
     if (nickServCredentials) {
       ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
-      // Clear plaintext credentials from memory now that they've been sent
       clearSaslCredentials();
     }
 
@@ -557,7 +524,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // Auto-rejoin channels on reconnect (skip when wizard is open - wizard handles channel selection)
+    // The wizard handles channel selection itself
     if (getIsWizardCompleted()) {
       const channels = getChannelsToAutoJoin();
       if (channels.length > 0) {
@@ -567,20 +534,15 @@ export class Kernel {
   };
 
   private readonly handleDisconnected = (): void => {
-    // Connection is going away — stop pinging it. (Re)started on the next 001.
     stopKeepalive();
 
-    // Check if this is part of an STS upgrade - if so, trigger reconnection with TLS
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
-      // Delegate to handleSocketClose which handles STS reconnection
       this.handleSocketClose();
       return;
     }
 
-    // If a reconnection cycle is in progress, this close event means the
-    // reconnect WebSocket failed to connect. Delegate to network.ts to
-    // schedule another retry instead of showing "Disconnected".
+    // A failed reconnect attempt: network.ts schedules the next retry
     if (getIsReconnecting()) {
       handleReconnectFailure();
       return;
@@ -591,18 +553,13 @@ export class Kernel {
     setLagMs(undefined);
     clearAllTyping();
 
-    // Session keys are per-connection. Keeping them across a reconnect would
-    // leave windows badged as encrypted while the peer has already forgotten
-    // the session, so every message would fail to decrypt.
+    // Session keys are per-connection; the peer forgets them too
     endAllSessions();
     clearIncomingState();
 
-    // The server's MONITOR/WATCH list dies with the socket. Keeping the old
-    // online/offline flags would leave friends/DM presence dots showing
-    // whatever we last heard, which is no longer something we can vouch for.
+    // MONITOR/WATCH dies with the socket, so stale presence can't be vouched for
     clearMonitorList();
 
-    // Reset STS retries on WebSocket disconnect
     resetSTSRetries();
 
     setAddMessageToAllChannels({
@@ -614,16 +571,10 @@ export class Kernel {
     });
   };
 
-  /**
-   * Handle IRC socket close event from backend.
-   * This is triggered when the IRC connection closes (not the WebSocket).
-   * Used for STS upgrade reconnection.
-   */
+  /** IRC socket close (not the WebSocket); drives the STS upgrade reconnect. */
   private readonly handleSocketClose = (): void => {
-    // Check for pending STS upgrade
     const stsUpgrade = getPendingSTSUpgrade();
     if (stsUpgrade) {
-      // Check if we've exhausted retries
       if (hasExhaustedSTSRetries()) {
         clearPendingSTSUpgrade();
         resetSTSRetries();
@@ -639,17 +590,13 @@ export class Kernel {
       }
 
       incrementSTSRetries();
-      // Don't clear pending upgrade here - handleDisconnected needs it to avoid showing "Disconnected"
-      // It will be cleared in handleConnected on successful TLS connection
+      // Kept pending so handleDisconnected doesn't show "Disconnected"; cleared on the TLS 001
 
-      // Get server and nick for reconnection
       const server = getServer();
       const nick = getCurrentNick();
 
       if (server && nick) {
-        // Keep connecting state visible during STS upgrade
         setIsConnecting(true);
-        // Brief delay before reconnect with TLS, restoring SASL credentials first
         setTimeout(async () => {
           await restoreSaslCredentials();
           ircConnectWithTLS(server, nick, stsUpgrade.port);
@@ -677,12 +624,9 @@ export class Kernel {
       });
     }
 
-    // Check if this message belongs to an active batch
-    // BATCH commands themselves should not be buffered
     if (command !== 'BATCH') {
       const batchId = getMessageBatchId({ tags, sender, command, line: [...line] });
       if (batchId) {
-        // Buffer this message for later processing when batch ends
         addToBatch(batchId, { tags, sender, command, line: [...line] });
         return;
       }
@@ -919,7 +863,6 @@ export class Kernel {
         this.onRaw766();
         break;
 
-      // SASL authentication responses
       case RPL_LOGGEDIN:
         this.onRaw900();
         break;
@@ -945,7 +888,6 @@ export class Kernel {
         this.onRaw907();
         break;
 
-      // MONITOR responses
       case RPL_MONONLINE:
         this.onRaw730();
         break;
@@ -962,7 +904,6 @@ export class Kernel {
         this.onRaw734();
         break;
 
-      // Server info and admin
       case RPL_BOUNCE:
         this.onRaw010();
         break;
@@ -994,7 +935,6 @@ export class Kernel {
         this.onRaw259();
         break;
 
-      // WHOIS additional replies
       case RPL_WHOWASUSER:
         this.onRaw314();
         break;
@@ -1020,7 +960,6 @@ export class Kernel {
         this.onRaw379();
         break;
 
-      // Channel info
       case RPL_CHANNEL_URL:
         this.onRaw328();
         break;
@@ -1058,7 +997,6 @@ export class Kernel {
         this.onRaw391();
         break;
 
-      // Error responses
       case ERR_NOSUCHNICK:
         this.onRaw401();
         break;
@@ -1156,7 +1094,6 @@ export class Kernel {
         this.onRaw502();
         break;
 
-      // Help system
       case ERR_HELPNOTFOUND:
         this.onRaw524();
         break;
@@ -1170,7 +1107,6 @@ export class Kernel {
         this.onRaw706();
         break;
 
-      // Quiet list
       case RPL_QUIETLIST:
         this.onRaw728();
         break;
@@ -1178,17 +1114,14 @@ export class Kernel {
         this.onRaw729();
         break;
 
-      // Additional SASL
       case RPL_SASLMECHS:
         this.onRaw908();
         break;
 
-      // User modes
       case RPL_UMODEIS:
         this.onRaw221();
         break;
 
-      // WATCH responses (friend list)
       case RPL_REAWAY:
         this.onRaw597();
         break;
@@ -1235,7 +1168,7 @@ export class Kernel {
     }
   };
 
-  // IRCv3 account-notify: User logs in or out of their account
+  // IRCv3 account-notify
   // :nick!user@host ACCOUNT accountname
   // :nick!user@host ACCOUNT *  (logged out)
   private readonly onAccount = (): void => {
@@ -1243,14 +1176,13 @@ export class Kernel {
     const account = this.line[0];
 
     if (!account || account === '*') {
-      // User logged out
       setUserAccount(nick, null);
     } else {
       setUserAccount(nick, account);
     }
   };
 
-  // IRCv3 away-notify: User away status changes
+  // IRCv3 away-notify
   // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
   // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
   private readonly onAway = (): void => {
@@ -1258,10 +1190,8 @@ export class Kernel {
     const reason = this.trailingOptional();
 
     if (reason) {
-      // User is away
       setUserAway(nick, true, reason);
     } else {
-      // User is back (no reason = not away)
       setUserAway(nick, false);
     }
   };
@@ -1276,17 +1206,14 @@ export class Kernel {
     if (!reference) { return; }
 
     if (reference.startsWith('+')) {
-      // Start batch
       const id = reference.substring(1);
       const type = this.line.shift() ?? '';
       const params = [...this.line];
 
-      // Get the label tag for labeled-response correlation
       const label = this.tags?.label;
 
       startBatch(id, type, params, label);
     } else if (reference.startsWith('-')) {
-      // End batch
       const id = reference.substring(1);
       const batch = endBatch(id);
 
@@ -1296,7 +1223,6 @@ export class Kernel {
     }
   };
 
-  /** Process a completed batch based on its type */
   private readonly processBatch = (batch: BatchState): void => {
     switch (batch.type) {
       case BATCH_TYPES.CHATHISTORY:
@@ -1307,61 +1233,51 @@ export class Kernel {
         break;
       case BATCH_TYPES.NETJOIN:
       case BATCH_TYPES.NETSPLIT:
-        // Process each message individually (they're JOIN/QUIT messages)
         for (const message of batch.messages) {
           this.processBufferedMessage(message);
         }
         break;
       default:
-        // Unknown batch type - process messages individually
+        // Unknown batch type
         for (const message of batch.messages) {
           this.processBufferedMessage(message);
         }
     }
   };
 
-  /** Process chathistory batch - insert messages at beginning of channel */
+  /** Inserts at the beginning of the channel */
   private readonly processChatHistoryBatch = (batch: BatchState): void => {
     const target = batch.params[0];
     if (!target) { return; }
 
-    // Process each message in the batch
-    // Messages in chathistory are in chronological order (oldest first)
-    // Skip TAGMSG — typing indicators from history are stale
+    // Skip TAGMSG: typing indicators from history are stale
     for (const message of batch.messages) {
       if (message.command === 'TAGMSG') { continue; }
       this.processBufferedMessage(message);
     }
   };
 
-  /** Process labeled-response batch */
   private readonly processLabeledResponseBatch = (batch: BatchState): void => {
     if (batch.referenceTag) {
       resolveLabeledResponse(batch.referenceTag, batch);
     }
 
-    // Also process the messages normally
     for (const message of batch.messages) {
       this.processBufferedMessage(message);
     }
   };
 
-  /** Process a buffered message from a batch */
   private readonly processBufferedMessage = (message: ParsedIrcRawMessage): void => {
-    // Re-process the message through the normal handler
-    // Store current state
     const prevTags = this.tags;
     const prevSender = this.sender;
     const prevCommand = this.command;
     const prevLine = this.line;
 
-    // Set up for processing
     this.tags = message.tags;
     this.sender = message.sender;
     this.command = message.command;
     this.line = [...message.line];
 
-    // Process based on command
     switch (message.command) {
       case 'ACCOUNT':
         this.onAccount();
@@ -1410,14 +1326,13 @@ export class Kernel {
         break;
     }
 
-    // Restore state
     this.tags = prevTags;
     this.sender = prevSender;
     this.command = prevCommand;
     this.line = prevLine;
   };
 
-  // IRCv3 chghost: User's username or hostname changed
+  // IRCv3 chghost
   // :nick!user@host CHGHOST newuser newhost
   private readonly onChghost = (): void => {
     const { nick } = parseNick(this.sender, getUserModes());
@@ -1427,7 +1342,6 @@ export class Kernel {
     if (newIdent && newHostname) {
       setUserHost(nick, newIdent, newHostname);
 
-      // Display message in shared channels
       const channels = getUserChannels(nick);
       for (const channelName of channels) {
         setAddMessage({
@@ -1457,7 +1371,6 @@ export class Kernel {
     switch (subcommand) {
       case 'LS':
       case 'LIST': {
-        // Check if this is a multiline response (has '*' before the cap list)
         const isMultiline = this.line?.[0] === '*';
         if (isMultiline) {
           this.line.shift();
@@ -1466,28 +1379,24 @@ export class Kernel {
           setAwaitingMoreCaps(false);
         }
 
-        // Parse capabilities
         const capString = this.line.join(' ');
         const caps = parseCapabilityList(capString);
         addAvailableCapabilities(caps);
 
-        // Check for STS capability - must upgrade to TLS if present and not already secure
+        // STS on a plaintext connection: must upgrade to TLS
         if (caps['sts'] && !isCurrentConnectionSecure()) {
           const parsed = parseSTSValue(caps['sts']);
           const host = getCurrentConnectionHost();
           if (parsed && host) {
-            // Store the STS policy
             const policy = createSTSPolicy(host, parsed);
             setSTSPolicy(host, policy);
 
-            // Queue upgrade - disconnect and reconnect with TLS
             setPendingSTSUpgrade({
               host,
               port: parsed.port,
               reason: 'sts_upgrade',
             });
 
-            // Notify user
             setAddMessageToAllChannels({
               id: uuidv4(),
               message: i18next.t('kernel.stsUpgrade', { port: parsed.port }),
@@ -1496,18 +1405,14 @@ export class Kernel {
               color: MessageColor.info,
             });
 
-            // Save SASL credentials before disconnect so they survive the STS upgrade
             void saveSaslCredentialsForReconnect();
 
-            // Disconnect and reconnect with TLS
-            // disconnectDirect removes event handlers so onclose won't fire;
-            // trigger the STS reconnection directly.
+            // disconnectDirect removes the close handler, so trigger the STS reconnect directly
             ircDisconnect();
             this.handleSocketClose();
             return;
           }
         } else if (caps['sts'] && isCurrentConnectionSecure()) {
-          // Already on TLS, just update the policy duration
           const parsed = parseSTSValue(caps['sts']);
           const host = getCurrentConnectionHost();
           if (parsed && host) {
@@ -1516,7 +1421,6 @@ export class Kernel {
           }
         }
 
-        // If this is the last line, request capabilities
         if (!isMultiline) {
           this.requestCapabilities();
         }
@@ -1524,54 +1428,46 @@ export class Kernel {
       }
 
       case 'ACK': {
-        // Server acknowledged our capability request
         const capString = this.line.join(' ');
         const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
         const ackCaps = cleanString.split(' ').filter((c) => c.length > 0);
 
         markCapabilitiesAcknowledged(ackCaps);
 
-        // Mark capabilities as supported options for backward compatibility
         for (const cap of ackCaps) {
           setSupportedOption(cap);
         }
 
-        // Handle special capabilities
         if (isCapabilityEnabled('draft/metadata-2') || isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
           ircRequestMetadata();
           setSupportedOption('metadata');
         }
 
-        // If SASL is acknowledged and we have credentials, start authentication
         if (isCapabilityEnabled('sasl') && getSaslAccount() && getSaslPassword()) {
           this.startSaslAuthentication();
         } else {
-          // No SASL or no credentials, end CAP negotiation
           this.endCapNegotiation();
         }
         break;
       }
 
       case 'NAK': {
-        // Server rejected our capability request
         const capString = this.line.join(' ');
         const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
         const nakCaps = cleanString.split(' ').filter((c) => c.length > 0);
 
         if (import.meta.env.DEV) { console.warn('CAP NAK - capabilities rejected:', nakCaps); }
 
-        // End negotiation even if some caps were rejected
         this.endCapNegotiation();
         break;
       }
 
       case 'NEW': {
-        // Server advertises new capabilities (cap-notify)
+        // cap-notify
         const capString = this.line.join(' ');
         const caps = parseCapabilityList(capString);
         addAvailableCapabilities(caps);
 
-        // Request new capabilities if we want them
         const toRequest = getCapabilitiesToRequest();
         if (toRequest.length > 0) {
           ircSendRawMessage(`CAP REQ :${toRequest.join(' ')}`);
@@ -1581,7 +1477,7 @@ export class Kernel {
       }
 
       case 'DEL': {
-        // Server removes capabilities (cap-notify)
+        // cap-notify
         const capString = this.line.join(' ');
         const cleanString = capString.startsWith(':') ? capString.substring(1) : capString;
         const delCaps = cleanString.split(' ').filter((c) => c.length > 0);
@@ -1592,7 +1488,6 @@ export class Kernel {
     }
   };
 
-  /** Request desired capabilities from server */
   private readonly requestCapabilities = (): void => {
     const toRequest = getCapabilitiesToRequest();
 
@@ -1600,19 +1495,15 @@ export class Kernel {
       ircSendRawMessage(`CAP REQ :${toRequest.join(' ')}`);
       markCapabilitiesRequested(toRequest);
     } else {
-      // No capabilities to request, end negotiation
       this.endCapNegotiation();
     }
   };
 
-  /** Start SASL authentication */
   private readonly startSaslAuthentication = (): void => {
     setSaslState('requested');
-    // Request PLAIN mechanism (most widely supported)
     ircSendRawMessage('AUTHENTICATE PLAIN');
   };
 
-  /** End CAP negotiation and continue with registration */
   private readonly endCapNegotiation = (): void => {
     endCapNegotiation();
     ircSendRawMessage('CAP END');
@@ -1624,7 +1515,6 @@ export class Kernel {
     const challenge = this.line[0] ?? '+';
 
     if (getSaslState() !== 'requested' && getSaslState() !== 'authenticating') {
-      // Not expecting authentication
       return;
     }
 
@@ -1633,14 +1523,12 @@ export class Kernel {
     const responses = handleSaslChallenge(challenge, 'PLAIN');
 
     if (responses === null) {
-      // Abort authentication
       ircSendRawMessage('AUTHENTICATE *');
       setSaslState('failed');
       this.endCapNegotiation();
       return;
     }
 
-    // Send response(s)
     for (const response of responses) {
       ircSendRawMessage(`AUTHENTICATE ${response}`);
     }
@@ -1693,7 +1581,7 @@ export class Kernel {
 
   // :server 903 <nick> :SASL authentication successful
   private readonly onRaw903 = (): void => {
-    // Save encrypted credentials for reconnection before setSaslState clears plaintext
+    // Before setSaslState clears the plaintext
     void saveSaslCredentialsForReconnect();
     setSaslState('success');
 
@@ -1759,7 +1647,6 @@ export class Kernel {
 
   // :server 907 <nick> :You have already authenticated using SASL
   private readonly onRaw907 = (): void => {
-    // Already authenticated, just continue
     setSaslState('success');
     this.endCapNegotiation();
   };
@@ -1767,7 +1654,6 @@ export class Kernel {
   // MONITOR responses
   // :server 730 <nick> :nick1!user@host,nick2!user@host
   private readonly onRaw730 = (): void => {
-    // RPL_MONONLINE - users are online
     const userList = this.line.slice(1).join(' ').replace(/^:/, '');
     if (!userList) { return; }
 
@@ -1785,8 +1671,7 @@ export class Kernel {
 
     if (nicks.length > 0) {
       setMultipleMonitorOnline(nicks, userStrings);
-      // A peer we were encrypted with before a reconnect is back — restore the
-      // encrypted conversation without making the user press "Encrypt again".
+      // Re-offer E2EE to peers we were encrypted with before a reconnect
       for (const nick of nicks) {
         void resumePendingEncryption(nick);
       }
@@ -1795,7 +1680,6 @@ export class Kernel {
 
   // :server 731 <nick> :nick1,nick2,nick3
   private readonly onRaw731 = (): void => {
-    // RPL_MONOFFLINE - users are offline
     const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
     if (!nickList) { return; }
 
@@ -1808,7 +1692,6 @@ export class Kernel {
 
   // :server 732 <nick> :nick1,nick2,nick3
   private readonly onRaw732 = (): void => {
-    // RPL_MONLIST - list of monitored nicks
     const nickList = this.line.slice(1).join(' ').replace(/^:/, '');
     if (!nickList) { return; }
 
@@ -1821,13 +1704,11 @@ export class Kernel {
 
   // :server 733 <nick> :End of MONITOR list
   private readonly onRaw733 = (): void => {
-    // RPL_ENDOFMONLIST - end of monitor list
-    // Nothing to do, just marks end of list
+    // Nothing to do
   };
 
   // :server 734 <nick> <limit> <nicks> :Monitor list is full
   private readonly onRaw734 = (): void => {
-    // ERR_MONLISTFULL - cannot add more nicks to monitor
     const limit = this.line[1];
     const nicks = this.line[2];
 
@@ -1846,7 +1727,7 @@ export class Kernel {
   private readonly onError = (): void => {
     const message = this.trailing();
 
-    // Skip showing error during STS upgrade (server sends ERROR when we disconnect)
+    // The server sends ERROR when we disconnect for the STS upgrade
     if (getPendingSTSUpgrade()) {
       return;
     }
@@ -1903,13 +1784,10 @@ export class Kernel {
       channel = channel.substring(1);
     }
 
-    // Check before setAddMessage (which auto-creates the channel) so we can
-    // distinguish a fresh join from a rejoin during reconnect.
+    // Before setAddMessage auto-creates it: tells a fresh join from a reconnect rejoin
     const channelExisted = existChannel(channel);
 
-    // The server is authoritative for a channel's casing. Adopt it before the
-    // join message lands, otherwise a window restored as #religie and the
-    // server's #Religie would keep drifting apart in the UI.
+    // The server's casing is authoritative
     const openedAs = getChannel(channel)?.name;
     if (openedAs !== undefined && openedAs !== channel) {
       setRenameChannel(openedAs, channel);
@@ -1925,7 +1803,6 @@ export class Kernel {
       color: MessageColor.join,
     });
 
-    // Add all users (including current user) to track channel-specific modes
     setAddUser({
       nick,
       ident,
@@ -1935,7 +1812,6 @@ export class Kernel {
     });
 
     if (isSameName(nick, getCurrentNick())) {
-      // Only switch to the channel if it's a new join (not a rejoin during reconnect)
       if (!channelExisted) {
         setCurrentChannelName(channel, ChannelCategory.channel);
       }
@@ -1943,11 +1819,9 @@ export class Kernel {
       if (isSupportedOption('WHOX')) {
         ircSendRawMessage(`WHO ${channel} %chtsunfra,152`);
       }
-      // Request channel history if chathistory capability is enabled
       if (isCapabilityEnabled('draft/chathistory')) {
         ircRequestChatHistory(channel, 'LATEST', undefined, 50);
       }
-      // Request channel metadata (display-name, avatar) if metadata capability is enabled
       if (isCapabilityEnabled('draft/metadata-2') || isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
         ircRequestMetadataList(channel);
       }
@@ -2013,7 +1887,6 @@ export class Kernel {
   };
 
   private applyMetadata(nickOrChannel: string, item: string | undefined, value: string | undefined): void {
-    // Normalize: undefined and empty string both mean "cleared"
     const normalizedValue = (value === undefined || value === '') ? undefined : value;
 
     if (isChannel(nickOrChannel)) {
@@ -2078,7 +1951,6 @@ export class Kernel {
     const item = this.line.shift()?.toLowerCase();
     this.line.shift(); // flags
 
-    // Handle trailing parameter (value may contain spaces)
     let value = this.line.shift();
     if (value?.startsWith(':')) {
       value = value.substring(1) + (this.line.length > 0 ? ' ' + this.line.join(' ') : '');
@@ -2145,14 +2017,13 @@ export class Kernel {
         let message = '';
         const translate = `kernel.mode.channel.${plusMinus === '+' ? 'plus' : 'minus'}.${flag}`;
 
-        // Update channel settings store if this channel's settings dialog is open
         const settingsChannel = useChannelSettingsStore.getState().channelName;
         const isSettingsOpen = settingsChannel === channel;
 
         switch (`${plusMinus}${type ?? ''}`) {
           case '+A':
           case '-A': {
-            // List modes (ban, exception, invite) - always have a param
+            // List modes (ban, exception, invite) always have a param
             const param = this.line?.[flagParameterIndex];
             flagParameterIndex++;
             message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
@@ -2283,12 +2154,11 @@ export class Kernel {
         }
         const message = i18next.t(translate, { user, setBy: nick, defaultValue: defaultMessage });
 
-        // Track current user's +r flag (registered status)
         if (flag === 'r' && isSameName(user, getCurrentNick())) {
           setCurrentUserFlag('r', plusMinus === '+');
         }
 
-        // All user mode changes go to Status to avoid noise in active channels
+        // To Status, to avoid noise in channels
         setAddMessage({
           id: uuidv4(),
           message,
@@ -2320,15 +2190,10 @@ export class Kernel {
     const channels = getUserChannels(oldNick);
     setRenameUser(oldNick, newNick);
 
-    // An encrypted session does not follow a nick change: the keys would still
-    // work, but a NICK we observe is no proof the same person is behind it, and
-    // silently moving a lock-badged window is not ours to decide.
+    // E2EE doesn't follow a nick change: a NICK is no proof it's the same person
     handlePeerRename(oldNick, newNick);
 
-    // Unlike E2EE sessions, presence tracking has no such trust question —
-    // MONITOR/WATCH is keyed by nick string regardless, so following the
-    // rename (and the DM window / friend entry along with it) just keeps
-    // that existing subscription pointed at the right string.
+    // Presence has no trust question: MONITOR/WATCH is keyed by nick string anyway
     handlePresenceNickChange(oldNick, newNick);
 
     for (const channel of channels) {
@@ -2369,14 +2234,13 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, getUserModes());
 
-    // Mark user as bot if draft/bot or bot tag is present
     if ('draft/bot' in this.tags || 'bot' in this.tags) {
       setUserBot(nick, true);
     }
 
     if (isSameName(nick, 'NickServ') && isSameName(target, getCurrentNick()) && passwordRequired.test(message)) {
       setIsPasswordRequired(true);
-      // If wizard is already completed and we have a saved password for this nick, auto-authenticate
+      // Auto-identify with the saved password for this nick
       if (getIsWizardCompleted() && getEncryptedPassword() && isSameName(getPasswordNick() ?? '', getCurrentNick())) {
         void ircAutoAuthenticate();
       } else {
@@ -2405,7 +2269,7 @@ export class Kernel {
     }
 
     // Parse Alis NOTICE responses when in alisMode
-    // Alis sender format is "Alis@hub.uk" (no !user part), so parseNick returns "Alis@hub.uk"
+    // Alis sends as "Alis@hub.uk" (no !user part)
     if (/^alis[@!]/i.test(nick) && getAlisMode()) {
       // Format: "#channel                    \x02 42\x02: topic"
       // eslint-disable-next-line no-control-regex
@@ -2528,18 +2392,14 @@ export class Kernel {
 
   // @msgid=MIikH9lopbKqOQpz8ADjfP;time=2023-03-20T23:07:21.701Z :chmurka.pirc.pl PONG chmurka.pirc.pl :1679353641686
   private readonly onPong = (): void => {
-    // The keepalive PING (network.ts) sends `PING :<Date.now()>`, which the
-    // server echoes back verbatim as the trailing param here — round-tripping
-    // it gives us lag without a separate request/response id to track.
+    // The keepalive sends `PING :<Date.now()>`, echoed back here: that's the lag
     const token = this.line[this.line.length - 1];
     if (token === undefined) {
       return;
     }
     const sentAt = Number.parseInt(this.stripColon(token), 10);
     if (!Number.isNaN(sentAt)) {
-      // A backwards system clock adjustment between send and receive would
-      // otherwise show as negative lag, which is meaningless as a network
-      // measurement.
+      // A backwards clock adjustment would show negative lag
       setLagMs(Math.max(0, Date.now() - sentAt));
     }
   };
@@ -2561,7 +2421,6 @@ export class Kernel {
       return;
     }
 
-    // Mark user as bot if draft/bot or bot tag is present
     if ('draft/bot' in this.tags || 'bot' in this.tags) {
       setUserBot(nick, true);
     }
@@ -2571,23 +2430,19 @@ export class Kernel {
       return;
     }
 
-    // IRCv3 echo-message: When this is our own message echoed back by the server
-    // We use the server-provided msgid and timestamp for accurate message ordering
+    // IRCv3 echo-message: the server's msgid and time give accurate ordering
     const isEchoMessage = isSameName(nick, myNick) && isCapabilityEnabled('echo-message');
 
-    // Common IRC services - don't create query windows for echoed messages to these
     const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
     const isServiceTarget = IRC_SERVICES.includes(target.toLowerCase());
 
-    // Skip echoed messages to IRC services (they may contain passwords)
+    // Echoed messages to services may contain passwords
     if (isEchoMessage && isServiceTarget) {
       return;
     }
 
     // A direct message is either addressed to us, or is our own echoed message to a non-channel target
     const isDirectMessage = isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target));
-    // For a message addressed to us the window is named after the sender,
-    // otherwise (channel or our own echoed direct message) after the target
     const messageTarget = isSameName(target, myNick) ? nick : target;
 
     if (!existChannel(messageTarget)) {
@@ -2597,12 +2452,10 @@ export class Kernel {
       }
     }
 
-    // Don't increase unread count for our own echoed messages
     if (messageTarget !== currentChannelName && !isEchoMessage) {
       setIncreaseUnreadMessages(messageTarget);
     }
 
-    // Clear typing indicator (but not for our own echoed messages)
     if (isSameName(messageTarget, currentChannelName) && !isEchoMessage) {
       setTyping(messageTarget, nick, 'done');
     }
@@ -2631,7 +2484,6 @@ export class Kernel {
       void notifyHighlight({ nick, target: messageTarget, message, isDirect: isDirectMessage });
     }
 
-    // Check if user is away and message mentions their nick (not for echoed messages)
     if (!isEchoMessage) {
       const userFlags = getCurrentUserFlags();
       const isAway = userFlags.includes('away');
@@ -2650,18 +2502,14 @@ export class Kernel {
     }
   };
 
-  // Handle CTCP (Client-To-Client Protocol) messages
-  // CTCP messages are wrapped in \x01 characters: \x01COMMAND params\x01
+  // CTCP: \x01COMMAND params\x01
   private readonly handleCtcp = (nick: string, target: string, message: string): void => {
     const myNick = getCurrentNick();
     const currentChannelName = getCurrentChannelName();
 
-    // Remove \x01 (CTCP delimiter) characters and parse CTCP command
     const ctcpContent = message.split('\x01').join('');
 
-    // End-to-end encryption frames are handled before the standard CTCP switch
-    // and deliberately produce no Status-window notices — otherwise every
-    // encrypted message would log a "CTCP request received"/"response sent" pair.
+    // E2EE frames skip the CTCP notices, or every encrypted message would log a pair
     if (
       handleE2eeCtcp({
         nick,
@@ -2692,7 +2540,7 @@ export class Kernel {
         ctcpResponse = new Date().toString();
         break;
       case 'PING': {
-        // Sanitize: strip control chars, cap length to prevent reflection abuse
+        // Prevents reflection abuse
         // eslint-disable-next-line no-control-regex
         ctcpResponse = ctcpParams.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 32);
         break;
@@ -2704,12 +2552,10 @@ export class Kernel {
         ctcpResponse = clientSourceUrl;
         break;
       case 'CLIENTINFO':
-        // SIC-E2EE is advertised so another client can tell we speak it without
-        // having to send a speculative offer.
+        // Advertised so peers can detect E2EE support without a speculative offer
         ctcpResponse = 'ACTION VERSION TIME PING USERINFO SOURCE CLIENTINFO SIC-E2EE';
         break;
       default:
-        // Unknown CTCP, ignore silently
         return;
     }
 
@@ -2717,7 +2563,7 @@ export class Kernel {
 
     const command = ctcpCommand.toUpperCase();
 
-    // Show CTCP request received notification (in Status to avoid noise in active channels)
+    // In Status, to avoid noise in channels
     setAddMessage({
       id: uuidv4(),
       message: i18next.t('kernel.ctcpRequest', { nick, command }),
@@ -2727,7 +2573,6 @@ export class Kernel {
       color: MessageColor.notice,
     });
 
-    // Show CTCP response sent notification
     setAddMessage({
       id: uuidv4(),
       message: i18next.t('kernel.ctcpResponse', { nick, command, response: ctcpResponse }),
@@ -2738,12 +2583,10 @@ export class Kernel {
     });
   };
 
-  // Send CTCP reply via NOTICE
   private readonly ctcpReply = (target: string, command: string, response: string): void => {
     ircSendRawMessage(`NOTICE ${target} :\x01${command} ${response}\x01`);
   };
 
-  // Handle CTCP ACTION (/me command)
   private readonly handleCtcpAction = (
     nick: string,
     target: string,
@@ -2804,19 +2647,16 @@ export class Kernel {
       color: MessageColor.quit,
     };
 
-    // The peer is gone, so their session keys are dead; drop ours rather than
-    // leaving a window looking encrypted. No RESET — there is nobody to tell.
+    // Peer is gone: drop the session without a RESET (nobody to tell)
     endSession(nick, false);
 
-    // QUIT is authoritative proof the nick is offline — don't wait on a
-    // possibly-delayed/dropped server MONITOR/WATCH push to update the DM
-    // presence dot. No-ops for nicks we aren't monitoring.
+    // QUIT is proof enough; don't wait for MONITOR/WATCH
     setMultipleMonitorOffline([nick]);
 
     setQuitUser(nick, message);
   };
 
-  // IRCv3 setname: User changed their real name
+  // IRCv3 setname
   // :nick!user@host SETNAME :New Real Name
   private readonly onSetname = (): void => {
     const { nick } = parseNick(this.sender, getUserModes());
@@ -2825,7 +2665,6 @@ export class Kernel {
     if (realname) {
       setUserRealname(nick, realname);
 
-      // Display message in shared channels
       const channels = getUserChannels(nick);
       for (const channelName of channels) {
         setAddMessage({
@@ -2853,7 +2692,7 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, serverUserModes);
 
-    // Ignore our own typing notifications echoed back by the server (echo-message)
+    // Our own, echoed back
     if (isSameName(nick, getCurrentNick())) {
       return;
     }
@@ -2863,12 +2702,10 @@ export class Kernel {
       return;
     }
 
-    // For private messages, target is our nick but the channel is stored under the sender's nick
     const isPrivMessage = isSameName(target, getCurrentNick());
     const channel = isPrivMessage ? nick : target;
 
-    // For private messages, create the PRIV channel if it doesn't exist
-    // This allows typing to work even before the first message is received
+    // So typing shows before the first message
     if (isPrivMessage && !existChannel(channel)) {
       setAddChannel(channel, ChannelCategory.priv);
       subscribeDmPresence(channel);
@@ -2904,10 +2741,7 @@ export class Kernel {
 
   // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
   private readonly onRaw001 = (): void => {
-    // RPL_WELCOME is the canonical "you are now registered" signal. The kernel
-    // owns the connected/registered transition here (it used to ride on a
-    // transport-level 'connected' event); transports are pure byte pipes that
-    // never inspect 001.
+    // RPL_WELCOME marks registration; transports never inspect it
     this.handleConnected();
 
     const myNick = this.line.shift();
@@ -3027,9 +2861,7 @@ export class Kernel {
               setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
               break;
             case 'LINELEN':
-              // Not every server sends this; e2ee's message chunking
-              // (protocol.ts's `chunkCharsFor`) falls back to a conservative
-              // default line length when it's 0.
+              // 0 = not sent; E2EE chunking then uses a conservative default
               setLineLenLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
               break;
             case 'NETWORK':
@@ -3351,7 +3183,7 @@ export class Kernel {
 
   // :chmurka.pirc.pl 318 sic-test Noop :End of /WHOIS list.
   private readonly onRaw318 = (): void => {
-    //
+    // Nothing to do
   };
 
   // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
@@ -3423,8 +3255,7 @@ export class Kernel {
   private readonly onRaw323 = (): void => {
     if (getAlisMode()) { return; }
 
-    // LIST was deprecated but still returned enough channels — use them
-    // If too few results, fall back to Alis
+    // Deprecated LIST with too few results: fall back to Alis
     if (getListDeprecated() && useChannelListStore.getState().channels.length < 10) {
       setChannelListClear();
       setAlisMode(true);
@@ -3516,7 +3347,6 @@ export class Kernel {
       entries.push({ nick, ident, hostname, flags, maxPermission: calculateMaxPermission(flags, serverPrefixes) });
     }
 
-    // Held until RPL_ENDOFNAMES so the whole roster lands in one store update
     bufferNamesUsers(channel, entries);
   };
 
@@ -3580,7 +3410,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // End of registration burst: 005 limits are known, subscribe friends.
+    // 005 limits are known by now
     subscribeFriendsOnRegistration();
     subscribeDmPresenceOnRegistration();
   };
@@ -3663,10 +3493,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // The server says we are not on it, so an open window for it is a leftover
-    // (a stale persisted entry, or one we already parted). Without this, the
-    // PART that the remove button sends is answered with 442 and the window
-    // stays put no matter how often the user clicks it.
+    // A leftover window (stale or already parted) would otherwise never close: its PART gets 442
     const isTrackedMember = getUserChannels(getCurrentNick()).some((name) => isSameName(name, channel));
     if (existChannel(channel) && !isTrackedMember) {
       setRemoveChannel(channel);
@@ -3813,15 +3640,12 @@ export class Kernel {
 
   // :chmurka.pirc.pl 762 SIC-test :end of metadata
   private readonly onRaw762 = (): void => {
-    //
+    // Nothing to do
   };
 
   // :insomnia.pirc.pl 766 SIC-test SIC-test Avatar :no matching key
   // :ergo.test 766 * probebot display-name :Key deleted
-  //
-  // Sent both as the answer to a GET for an unset key and — with draft/metadata-2 — as the
-  // notification subscribers get when a key is *deleted*. Either way the key now has no value,
-  // so clear it locally; without this a cleared display-name/avatar keeps showing the old value.
+  // Also the draft/metadata-2 deletion notice: either way the key is now unset
   private readonly onRaw766 = (): void => {
     this.line.shift(); // my nick
     const nickOrChannel = this.line.shift();
@@ -3859,13 +3683,11 @@ export class Kernel {
       return;
     }
 
-    // Check if this is for the channel settings dialog
     const settingsChannel = useChannelSettingsStore.getState().channelName;
     if (settingsChannel !== channel) {
       return;
     }
 
-    // Parse modes string like "+ntl" with params like "50"
     const modes: Record<string, string | boolean> = {};
     const serverChannelModes = getChannelModes();
 
@@ -3878,14 +3700,12 @@ export class Kernel {
       const type = channelModeType(flag, serverChannelModes, getUserModes());
 
       if (type === 'B' || type === 'C') {
-        // Modes that take a parameter
         const param = this.line[paramIndex];
         if (param !== undefined) {
           modes[flag] = param;
           paramIndex++;
         }
       } else if (type === 'D') {
-        // Simple flag modes
         modes[flag] = true;
       }
     }
@@ -3969,9 +3789,7 @@ export class Kernel {
     setChannelSettingsIsBanListLoading(false);
   };
 
-  // ============================================
-  // Additional IRC numerics from modern spec
-  // ============================================
+  // Numerics from the modern spec
 
   // :server 010 * <hostname> <port> :Server redirect
   private readonly onRaw010 = (): void => {
@@ -4052,7 +3870,6 @@ export class Kernel {
     });
   };
 
-  // RPL_UMODEIS (221) - User modes reply
   // :server 221 yournick +iwx
   private readonly onRaw221 = (): void => {
     this.line.shift(); // my nick
@@ -4181,7 +3998,6 @@ export class Kernel {
     });
   };
 
-  // Helper to format seconds into human readable duration
   private readonly formatDuration = (seconds: number): string => {
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
@@ -4355,7 +4171,6 @@ export class Kernel {
       }
     }
 
-    // Update or add user
     if (getHasUser(nick)) {
       setUserHost(nick, ident ?? '', hostname ?? '');
       if (realname) { setUserRealname(nick, realname); }
@@ -4539,7 +4354,6 @@ export class Kernel {
     });
   };
 
-  // Error numerics
   // :server 401 mynick target :No such nick/channel
   private readonly onRaw401 = (): void => {
     const currentChannelName = getCurrentChannelName();
@@ -4552,8 +4366,7 @@ export class Kernel {
     }
 
     if (target) {
-      // The target of a pending encryption offer just turned out not to
-      // exist — fail it now instead of waiting out the full offer timeout.
+      // Fail a pending E2EE offer now rather than after its timeout
       handlePeerOffline(target);
     }
 
@@ -4750,7 +4563,7 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    // No MOTD is still end of the registration burst: subscribe friends.
+    // No MOTD still ends the registration burst
     subscribeFriendsOnRegistration();
     subscribeDmPresenceOnRegistration();
   };
@@ -5161,7 +4974,7 @@ export class Kernel {
     });
   };
 
-  // WATCH responses (597-609) - Friend list notifications
+  // WATCH responses (597-609)
   // :server 597 yournick nick ident host timestamp :is now away
   private readonly onRaw597 = (): void => {
     this.line.shift(); // my nick
@@ -5430,12 +5243,6 @@ export class Kernel {
 
     if (channel === undefined || mask === undefined) {
       return;
-    }
-
-    // For channel settings quiet list (if supported)
-    const settingsChannel = useChannelSettingsStore.getState().channelName;
-    if (settingsChannel === channel) {
-      // Could add to a quiet list in channel settings if implemented
     }
 
     setAddMessage({

@@ -10,7 +10,6 @@ export const Network = () => {
 
   useEffect(() => {
     const onIrcEvent = (data: IrcEvent): void => {
-      // messages from server
       try {
         new Kernel(data).handle();
       } catch (err) {
@@ -26,10 +25,6 @@ export const Network = () => {
 
     on('sic-irc-event', onIrcEvent);
 
-    // Reconnect as soon as the network looks reachable again (tab foregrounded
-    // on mobile, or the browser's `online` event) rather than waiting out the
-    // time-based inactivity watchdog, whose timers are frozen while the tab is
-    // backgrounded and which gives up entirely after a few failed retries.
     startReachabilityWatch();
 
     return () => {
@@ -38,7 +33,7 @@ export const Network = () => {
     };
   }, []);
 
-  // send LIST request after 20 seconds
+  // Servers refuse LIST in the first seconds after connecting
   useEffect(() => {
     if (isConnected() && listRequestRemainingSeconds > -1) {
       const listRequestTimeout = setTimeout(

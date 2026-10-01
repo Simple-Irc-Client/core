@@ -3,7 +3,6 @@ export const DEBUG_CHANNEL = 'Debug';
 
 export const defaultQuitMessage = 'Simple Irc Client ( https://simpleircclient.com )';
 
-// CTCP response configuration
 export const clientVersion = 'Simple IRC Client';
 export const clientSourceUrl = 'https://simpleircclient.com';
 
@@ -11,18 +10,14 @@ export const localBackendPort = 8667;
 export const localBackendHost = 'localhost';
 export const localBackendPath = 'webirc';
 
-// Gateway configuration (for web client connecting to public gateway)
-// When gatewayHost is set, the client will connect to the gateway instead of localhost
-// and encryption will be disabled (gateway doesn't use encryption)
+// When set, connects to the public gateway instead of localhost, without transport encryption
 export const gatewayHost = import.meta.env.VITE_GATEWAY_HOST || '';
 export const gatewayPort = Number(import.meta.env.VITE_GATEWAY_PORT) || 8667;
 export const gatewayPath = import.meta.env.VITE_GATEWAY_PATH || '/webirc';
 
-// Check if we're in gateway mode (connecting to public gateway)
 export const isGatewayMode = (): boolean => gatewayHost !== '';
 
-// AES-256-GCM encryption key (must match backend)
-// Encryption is disabled in gateway mode
+// AES-256-GCM, must match the backend; unused in gateway mode
 export const encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
 
 export const defaultIRCPort = 6667;

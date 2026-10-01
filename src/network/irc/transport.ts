@@ -1,10 +1,4 @@
-/**
- * Runtime-aware IRC transport. Re-exports the same names that
- * `directWebSocket.ts` does, but each one routes to either the WebSocket
- * implementation (browser) or the Tauri implementation (desktop).
- *
- * Network kernel imports from this file so it remains transport-agnostic.
- */
+// Routes each directWebSocket.ts export to the WebSocket or Tauri implementation at runtime
 import { isDesktop } from '@/runtime/desktop';
 import { type Server } from './servers';
 import {

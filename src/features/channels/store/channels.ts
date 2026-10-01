@@ -52,16 +52,7 @@ const syncCurrentAfterHydration = (): void => {
   }
 };
 
-/**
- * Before channel names were compared case-insensitively, a window opened as
- * `#religie` and the server's canonical `#Religie` were persisted as two
- * separate channels — one collecting the chat, the other only the broadcast
- * system messages, and neither removable in one go.
- *
- * Folding with `ascii` rather than the server's actual CASEMAPPING is
- * deliberate: names equal under `ascii` are equal under every mapping, so the
- * merge can never join two channels the server considers distinct.
- */
+// Merges legacy case-duplicate channels (#religie / #Religie). Folds with `ascii`, which is safe under every CASEMAPPING
 const mergeCaseDuplicates = <T extends { name?: unknown }>(
   channels: unknown,
   merge: (existing: T, duplicate: T) => T,
@@ -93,19 +84,7 @@ const mergeMessages = (existing: Message[], duplicate: Message[]): Message[] => 
     .slice(-maxMessages);
 };
 
-/**
- * Drop what must never reach IndexedDB from a channel before it is persisted.
- *
- * Typing lists are merely transient. End-to-end encrypted messages are a
- * deliberate exclusion: session keys are ephemeral by design, so writing the
- * decrypted text to disk would leave plaintext behind that outlives the
- * conversation's forward secrecy — the one thing an encrypted DM is supposed to
- * prevent. Encrypted history therefore lives only as long as the tab does.
- *
- * The identity comparison at the end matters for performance: `partialize` runs
- * on every store mutation, and returning the original object when nothing needs
- * stripping keeps the common case allocation-free.
- */
+// E2EE messages never reach disk (plaintext would outlive forward secrecy). Returns the same object when nothing is stripped
 const stripUnpersisted = (channel: ChannelExtended): ChannelExtended => {
   const hasTyping = channel.typing.length > 0;
   const hasEncrypted = channel.messages.some((message) => message.e2ee !== undefined);
@@ -130,8 +109,6 @@ export const migrateChannels = (persisted: unknown, version: number): ChannelsSt
       openChannels: mergeCaseDuplicates<ChannelExtended>(state?.openChannels, (existing, duplicate) => ({
         ...existing,
         messages: mergeMessages(existing.messages ?? [], duplicate.messages ?? []),
-        // An empty topic means we never received one for that window, so the
-        // other one's topic (and who set it) is the better information
         ...(existing.topic ? {} : { topic: duplicate.topic, topicSetBy: duplicate.topicSetBy, topicSetTime: duplicate.topicSetTime }),
         unReadMessages: (existing.unReadMessages ?? 0) + (duplicate.unReadMessages ?? 0),
         hasMention: existing.hasMention === true || duplicate.hasMention === true,
@@ -189,8 +166,6 @@ export const useChannelsStore = create<ChannelsStore>()(
         openChannels: updateChannelInBothLists(state.openChannels, from, (ch) => ({
           ...ch,
           name: to,
-          // Messages carry the window they belong to; leaving the old casing
-          // behind would strand them if anything ever re-routes by target
           messages: ch.messages.map((message) => (isSameName(message.target, from) ? { ...message, target: to } : message)),
         })),
       }));
@@ -224,7 +199,7 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          // Dedup: skip if message with same id already exists (e.g. chathistory overlapping with real-time)
+          // chathistory can overlap with real-time messages
           if (channel.messages.some((m) => m.id === newMessage.id)) {
             return channel;
           }
@@ -338,9 +313,6 @@ export const useChannelsStore = create<ChannelsStore>()(
         version: 3,
         migrate: migrateChannels,
         storage: createServerScopedStorage<ChannelsStore>(),
-        // Runs on every mutation, so channels are only copied when they actually
-        // carry something to strip: a transient typing list, or end-to-end
-        // encrypted messages.
         partialize: (state) => ({
           openChannels: state.openChannels.map((ch) => stripUnpersisted(ch)),
           openChannelsShortList: state.openChannelsShortList,
@@ -379,17 +351,7 @@ export const existChannel = (channelName: string): boolean => {
   return getChannel(channelName) !== undefined;
 };
 
-/**
- * Rename an already-open channel/window in place — either the server
- * adopting a different casing for the same channel (JOIN echoes the
- * canonical casing back, which may differ from what the user typed or what
- * was restored from storage), or a DM window following its peer's NICK
- * change. Either way `from` is the window's identity *before* the rename, so
- * that's what the current-view check must match against — `to` would only
- * work by coincidence for the case-normalization path (where `from` and `to`
- * are case-insensitively the same name) and silently fail to follow a real
- * identity change like a nick rename.
- */
+// For server-canonical casing and DM nick changes; the current-view check must match `from`, not `to`
 export const setRenameChannel = (from: string, to: string): void => {
   if (from === to || !existChannel(from)) {
     return;
@@ -412,7 +374,6 @@ export const getChannelsToAutoJoin = (): string[] => {
   return channels.length > 0 ? channels : lastChannelsToAutoJoin;
 };
 
-/** Nicks of every currently open direct-message window (plain or E2EE, same category). */
 export const getOpenDmNicks = (): string[] => {
   return useChannelsStore.getState().openChannelsShortList
     .filter((ch) => ch.category === ChannelCategory.priv)
@@ -468,13 +429,7 @@ export const setAddMessage = (newMessage: Message): void => {
   }
 };
 
-/**
- * Patch a message that is already in the list, leaving its position untouched.
- *
- * Used by the E2EE receive path: the kernel inserts a placeholder synchronously
- * so arrival order is preserved, then replaces the body once the asynchronous
- * decryption resolves.
- */
+// Fills in an E2EE placeholder once decryption resolves, keeping arrival order
 export const setUpdateMessage = (channelName: string, messageId: string, patch: Partial<Message>): void => {
   useChannelsStore.getState().setUpdateMessage(channelName, messageId, patch);
 
@@ -512,8 +467,7 @@ export const getCategory = (channelName: string): ChannelCategory | undefined =>
   return getChannel(channelName)?.category ?? undefined;
 };
 
-// Typing indicators go stale without a 'done' if the sender's client dies mid-typing;
-// the typing spec mandates expiring 'active' after 6s and 'paused' after 30s of silence
+// Per the typing spec, in case the sender's client dies before sending 'done'
 const TYPING_EXPIRY_MS: Partial<Record<UserTypingStatus, number>> = {
   active: 6_000,
   paused: 30_000,
@@ -524,7 +478,6 @@ const typingExpiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
 // Folded so a timer armed for #Religie is found again when the 'done' arrives for #religie
 const typingExpiryKey = (channelName: string, nick: string): string => {
   const mapping = getCaseMapping();
-  // U+0000 cannot occur in a channel name or nick, so it separates the two halves unambiguously
   return `${foldName(channelName, mapping)}\u0000${foldName(nick, mapping)}`;
 };
 

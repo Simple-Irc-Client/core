@@ -11,10 +11,7 @@ export const DrawersProvider: FC<PropsWithChildren> = ({ children }) => {
     anyDrawerOpenRef.current = isChannelsOpen || isUsersOpen;
   }, [isChannelsOpen, isUsersOpen]);
 
-  // Clear browser history so the Android hardware back button / back-swipe
-  // doesn't navigate to the website (simpleircclient.com). When a drawer is
-  // open, back closes it first (expected mobile behavior); either way we
-  // re-arm the history entry so navigation away is always intercepted.
+  // Android back must not leave the app; with a drawer open it closes the drawer
   useEffect(() => {
     history.replaceState(null, '');
     history.pushState(null, '');

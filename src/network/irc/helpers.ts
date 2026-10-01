@@ -2,16 +2,7 @@ import { defaultIRCPort, defaultMaxPermission } from '@/config/config';
 import { type Server } from './servers';
 import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, type ChannelMode } from '@shared/types';
 
-/**
- * Parse server string into SingleServer object
- * Supports formats:
- * - "host" (uses default port 6667, no TLS)
- * - "host:port" (no TLS)
- * - "+host" (TLS on default TLS port 6697)
- * - "+host:port" (TLS on specified port)
- * @param currentServer
- * @returns
- */
+/** "host", "host:port", "+host" or "+host:port" ("+" = TLS; default ports 6667 / 6697). */
 export const parseServer = (currentServer?: Server): SingleServer | undefined => {
   if (currentServer === undefined || currentServer?.servers?.length === 0) {
     return undefined;
@@ -23,7 +14,6 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
     return undefined;
   }
 
-  // Check for TLS prefix (+)
   let tls = currentServer.tls ?? false;
   let serverString = firstServer;
   if (serverString.startsWith('+')) {
@@ -41,12 +31,7 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
   return { host: serverHost, port: Number.parseInt(serverPort || `${defaultIRCPort}`, 10), tls };
 };
 
-/**
- * Unescape an IRCv3 tag value per the message-tags spec.
- * https://ircv3.net/specs/extensions/message-tags.html
- *
- * Escape sequences: \: → ; | \s → space | \\ → \ | \r → CR | \n → LF
- */
+/** https://ircv3.net/specs/extensions/message-tags.html: \: → ; | \s → space | \\ → \ | \r → CR | \n → LF */
 export const unescapeTagValue = (value: string): string => {
   let result = '';
   for (let i = 0; i < value.length; i++) {
@@ -68,11 +53,6 @@ export const unescapeTagValue = (value: string): string => {
   return result;
 };
 
-/**
- *
- * @param message
- * @returns
- */
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   const line: string[] = message?.trim()?.split(' ') ?? [];
 
@@ -106,17 +86,10 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   return { tags, sender, command, line };
 };
 
-// Control characters (0x00-0x1F, 0x7F) that should never appear in nicks
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/g;
 const MAX_NICK_PARSE_LENGTH = 100;
 
-/**
- * Parse nick and return ident, hostname and user modes
- * @param fullNick
- * @param userModes
- * @returns
- */
 export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
   const flags: string[] = [];
   let nick = fullNick.substring(fullNick.startsWith(':') ? 1 : 0, fullNick.lastIndexOf('!') !== -1 ? fullNick.lastIndexOf('!') : fullNick.length);
@@ -128,7 +101,6 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
     }
   }
 
-  // Sanitize: strip control characters and truncate
   nick = nick.replace(CONTROL_CHAR_RE, '').slice(0, MAX_NICK_PARSE_LENGTH);
   if (nick.length === 0) {
     nick = '*';
@@ -144,12 +116,6 @@ export const parseNick = (fullNick: string, userModes: UserMode[]): Nick => {
   return { nick, ident, hostname, flags };
 };
 
-/**
- * Parse channel name and return channel name without permissions
- * @param fullNick
- * @param userModes
- * @returns
- */
 export const parseChannel = (channel: string, userModes: UserMode[]): string => {
   for (const userMode of userModes) {
     if (channel.startsWith(userMode.symbol)) {
@@ -160,13 +126,7 @@ export const parseChannel = (channel: string, userModes: UserMode[]): string => 
   return channel;
 };
 
-/**
- * That func is returning maximum int number based on user flags
- * Based on that int number we'll be sorting users and user with higher mode (int) will be first on users list
- * @param flags
- * @param serverModes
- * @returns
- */
+/** Sort key for the user list: the user's highest mode wins. */
 export const calculateMaxPermission = (flags: string[], serverModes: UserMode[]): number => {
   let maxPermission = defaultMaxPermission;
   flags.forEach((flag: string) => {
@@ -182,16 +142,7 @@ export const calculateMaxPermission = (flags: string[], serverModes: UserMode[])
   return maxPermission;
 };
 
-/**
- * That function parse line modes from IRC server "(yqaohv)!~&@%+" and returns it as array:
- * [
- *   ["flag": "q", symbol: "~"],
- *   ["flag": "a", symbol: "&"],
- *   ["flag": "o", symbol: "@"],
- * ]
- * @param userPrefixes
- * @returns
- */
+/** "(qao)~&@" → [{ flag: 'q', symbol: '~' }, ...] */
 export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => {
   const result: UserMode[] = [];
 
@@ -219,34 +170,8 @@ export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => 
 };
 
 /**
- * CHANMODES=A,B,C,D
-
-   The CHANMODES parameter is used to indicate the channel modes
-   available and the arguments they take.  There are four categories of
-   modes, defined as follows:
-   -  Type A: Modes that add or remove an address to or from a list.
-      These modes MUST always have a parameter when sent from the server
-      to a client.  A client MAY issue the mode without an argument to
-      obtain the current contents of the list.
-
-   -  Type B: Modes that change a setting on a channel.  These modes
-      MUST always have a parameter.
-
-   -  Type C: Modes that change a setting on a channel.  These modes
-      MUST have a parameter when being set, and MUST NOT have a
-      parameter when being unset.
-
-   -  Type D: Modes that change a setting on a channel.  These modes
-      MUST NOT have a parameter.
-
-   To allow for future extensions, a server MAY send additional types,
-   delimeted by the comma character (',').  The behaviour of any
-   additional types is undefined.
-
-   Example: beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ
-
- * @param modes 
- * @returns 
+ * CHANMODES=A,B,C,D (e.g. beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ). A: list modes; B: always a param;
+ * C: param only when set; D: never a param.
  */
 export const parseChannelModes = (modes: string | undefined): ChannelMode => {
   const result: ChannelMode = {

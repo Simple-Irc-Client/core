@@ -11,26 +11,22 @@ export type ActiveTab = 'modes' | 'lists';
 export type ActiveListType = 'b' | 'e' | 'I';
 
 export interface ChannelSettingsStore {
-  // Dialog state
   isLoading: boolean;
   activeTab: ActiveTab;
   activeListType: ActiveListType;
 
-  // Channel data
   channelName: string;
   channelModes: Record<string, string | boolean>; // e.g., {n: true, t: true, l: '50', k: 'secret'}
 
-  // List data (Type A modes)
+  // Type A modes
   banList: ListEntry[];
   exceptionList: ListEntry[];
   inviteList: ListEntry[];
 
-  // Loading states for lists
   isBanListLoading: boolean;
   isExceptionListLoading: boolean;
   isInviteListLoading: boolean;
 
-  // Actions
   setIsLoading: (loading: boolean) => void;
   setActiveTab: (tab: ActiveTab) => void;
   setActiveListType: (type: ActiveListType) => void;
@@ -166,7 +162,6 @@ export const useChannelSettingsStore = create<ChannelSettingsStore>()(
   })),
 );
 
-// Helper functions for external access
 export const setChannelSettingsChannelName = (name: string): void => {
   useChannelSettingsStore.getState().setChannelName(name);
 };

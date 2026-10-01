@@ -23,12 +23,7 @@ function App() {
   }, [isDarkMode]);
 
   return (
-    // Suppresses the native OS context menu app-wide, including inside our own
-    // DropdownMenu content. Radix portals its (sub)menu content to
-    // document.body, but React bubbles synthetic events along the component
-    // tree, not the DOM tree — so this handler must wrap ContextMenu itself,
-    // not just MainLayout, or right-clicking within an open menu/submenu
-    // (e.g. a submenu trigger) falls through to the native menu.
+    // Must wrap ContextMenu too: React bubbles through the component tree, not Radix's portal DOM
     <div onContextMenu={handleNoContextMenu}>
       <DrawersProvider>
         <ContextMenuProvider>

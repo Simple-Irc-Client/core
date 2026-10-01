@@ -8,12 +8,7 @@ interface DmPresenceDotProps {
   className?: string;
 }
 
-/**
- * Online/offline indicator for a DM peer (plain or E2EE — same window),
- * fed by features/dmPresence (IRCv3 MONITOR/WATCH) via the shared
- * features/monitor store. Renders nothing until a status is actually known,
- * so a peer we haven't heard back about yet doesn't flash as "offline".
- */
+/** Renders nothing until a status is known, so an unknown peer doesn't flash "offline". */
 const DmPresenceDot = ({ nick, className }: DmPresenceDotProps) => {
   const { t } = useTranslation();
   const status = useMonitorStore((state) => state.monitoredUsers.get(nick.toLowerCase()));

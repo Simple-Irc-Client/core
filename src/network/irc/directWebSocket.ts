@@ -2,51 +2,31 @@ import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { encryptString, decryptString, isEncryptionAvailable } from '@/network/encryption';
 
-// Direct WebSocket connection to IRC server (bypassing backend)
 let directSocket: WebSocket | null = null;
 let isDirectConnectingFlag = false;
 
-// Encryption mode for local backend connections
 let useEncryption = false;
 
-// Sequential message processing queue (prevents out-of-order decryption)
+// Sequential, so async decryption can't reorder lines
 let messageQueue: string[] = [];
 let isProcessingQueue = false;
 
-// Event callback for IRC events (set by network.ts)
 let eventCallback: ((eventName: string, data: unknown) => void) | null = null;
 
-/**
- * Enable or disable encryption for WebSocket messages.
- * Used for local backend connections that require encryption.
- */
 export const setDirectEncryption = (enabled: boolean): void => {
   useEncryption = enabled;
 };
 
-/**
- * Set the event callback for IRC events.
- * This is called by network.ts to route events to the kernel.
- */
 export const setDirectEventCallback = (callback: (eventName: string, data: unknown) => void): void => {
   eventCallback = callback;
 };
 
-/**
- * Trigger an event through the callback (if set)
- */
 const triggerDirectEvent = (eventName: string, data: unknown): void => {
   if (eventCallback) {
     eventCallback(eventName, data);
   }
 };
 
-/**
- * Process queued WebSocket messages sequentially to preserve IRC message ordering.
- * When encryption is enabled, decryption is async and concurrent onmessage handlers
- * could complete out of order, causing protocol issues (e.g. END_OF_LIST before all
- * LIST entries are processed).
- */
 const processMessageQueue = async (): Promise<void> => {
   if (isProcessingQueue) { return; }
   isProcessingQueue = true;
@@ -72,13 +52,8 @@ const processMessageQueue = async (): Promise<void> => {
   isProcessingQueue = false;
 };
 
-/**
- * Initialize a direct WebSocket connection to an IRC server.
- * This bypasses the backend and connects directly from the browser.
- */
 export const initDirectWebSocket = (server: Server): void => {
-  // Close existing connection if any (remove handlers to prevent stale
-  // onclose from nulling the new socket reference)
+  // Handlers removed first so a stale onclose can't null the new socket
   if (directSocket) {
     directSocket.onclose = null;
     directSocket.onerror = null;
@@ -100,12 +75,10 @@ export const initDirectWebSocket = (server: Server): void => {
     throw new Error('Unable to connect - server host is empty');
   }
 
-  // Determine WebSocket URL
   let wsUrl: string;
   if (server.websocketUrl) {
     wsUrl = server.websocketUrl;
   } else {
-    // Construct WebSocket URL from server info
     const protocol = server.tls ? 'wss:' : 'ws:';
     const port = parsedServer.port ?? (server.tls ? 443 : 80);
     wsUrl = `${protocol}//${parsedServer.host}:${port}`;
@@ -122,12 +95,7 @@ export const initDirectWebSocket = (server: Server): void => {
       console.log('Direct WebSocket connected');
     }
 
-    // Pure transport: registration (CAP LS / PASS / NICK / USER) is owned by
-    // the kernel, which sends it when it sees this connect event. Routed
-    // through the 'sic-irc-event' channel the kernel listens on (like
-    // 'raw'/'close') so handleConnect actually runs — a bare 'connect' event
-    // name has no subscriber. Keeps the WebSocket and Tauri transports
-    // identical byte pipes.
+    // The kernel registers on this; a bare 'connect' event name has no subscriber
     triggerDirectEvent('sic-irc-event', { type: 'connect' });
   };
 
@@ -141,8 +109,7 @@ export const initDirectWebSocket = (server: Server): void => {
     if (import.meta.env.DEV) {
       console.error('Direct WebSocket error:', error);
     }
-    // Browser WebSocket error events carry no useful detail; surface a generic
-    // reason to the kernel (status window). A close event follows.
+    // Browser WebSocket errors carry no detail; a close event follows
     triggerDirectEvent('sic-irc-event', { type: 'error', line: 'WebSocket connection error' });
   };
 
@@ -156,21 +123,11 @@ export const initDirectWebSocket = (server: Server): void => {
   };
 };
 
-/**
- * Handle an incoming IRC message line.
- * Sends it to the kernel as a raw event (kernel handles parsing). The kernel
- * detects RPL_WELCOME (001) itself and owns the connected/registered state, so
- * this transport stays a pure pipe.
- */
 const handleIrcMessage = (line: string): void => {
   triggerDirectEvent('sic-irc-event', { type: 'raw', line });
 };
 
-/**
- * Send a raw IRC command over the direct WebSocket.
- * No \n is needed at the end (WebSocket messages are discrete).
- * If encryption is enabled, the message will be encrypted before sending.
- */
+/** No trailing \n: WebSocket messages are discrete. */
 export const sendDirectRaw = async (data: string): Promise<void> => {
   if (!directSocket || directSocket.readyState !== WebSocket.OPEN) {
     if (import.meta.env.DEV) {
@@ -187,28 +144,17 @@ export const sendDirectRaw = async (data: string): Promise<void> => {
   }
 };
 
-/**
- * Check if direct WebSocket is connected.
- */
 export const isDirectConnected = (): boolean => {
   return directSocket !== null && directSocket.readyState === WebSocket.OPEN;
 };
 
-/**
- * Check if direct WebSocket is connecting.
- */
 export const isDirectConnecting = (): boolean => {
   return isDirectConnectingFlag || (directSocket !== null && directSocket.readyState === WebSocket.CONNECTING);
 };
 
-/**
- * Disconnect the direct WebSocket connection.
- * Just closes the WebSocket - the server/backend handles QUIT.
- */
 export const disconnectDirect = (): void => {
   if (directSocket) {
-    // Remove event handlers before closing to prevent stale close/error events
-    // from firing asynchronously (e.g., during reconnection cycles)
+    // No stale close/error events mid-reconnect
     directSocket.onclose = null;
     directSocket.onerror = null;
     directSocket.onmessage = null;

@@ -23,7 +23,6 @@ import { offerEncryption } from '@features/e2ee/session';
 import { isSafeUrl } from '@shared/lib/utils';
 import { clipboard, openExternal } from '@/runtime/desktop';
 
-// Helper to determine what mode hierarchy level a flag represents
 const getModeLevel = (flag: string): number => {
   const hierarchy: Record<string, number> = {
     'q': 5, // Owner
@@ -35,20 +34,17 @@ const getModeLevel = (flag: string): number => {
   return hierarchy[flag] ?? 0;
 };
 
-// Helper to determine what actions current user can perform
 const getOperatorPermissions = (currentUserModes: string[], targetUserModes: string[]) => {
   const currentLevel = Math.max(...currentUserModes.map(getModeLevel), 0);
   const targetLevel = Math.max(...targetUserModes.map(getModeLevel), 0);
 
   const canPromote = (toFlag: string): boolean => {
     const toLevel = getModeLevel(toFlag);
-    // Can promote to levels below current user's level
     return currentLevel > toLevel && !targetUserModes.includes(toFlag);
   };
 
   const canDemote = (fromFlag: string): boolean => {
     const fromLevel = getModeLevel(fromFlag);
-    // Can demote from levels below current user's level
     return currentLevel > fromLevel && targetUserModes.includes(fromFlag);
   };
 
@@ -70,7 +66,6 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
   };
 };
 
-// Helper to calculate context menu position clamped within viewport bounds
 export const getMenuPosition = (
   source: HTMLElement | { x: number; y: number },
   menuWidth = 200,
@@ -125,10 +120,7 @@ const PositionedMenuContent = ({
           : undefined
       }
       onPointerDownOutside={(event) => {
-        // The element that opened this menu (e.g. a nick row bound to both
-        // onClick and onContextMenu) can still be mid-gesture when Radix's
-        // dismiss layer mounts — a right-click's trailing mouseup/click on
-        // that same element must not be mistaken for a dismiss.
+        // The opening right-click's trailing mouseup/click must not count as a dismiss
         const target = event.detail.originalEvent.target;
         if (anchorElement && target instanceof Node && anchorElement.contains(target)) {
           event.preventDefault();
@@ -171,14 +163,10 @@ export const ContextMenu = () => {
       setAddChannel(contextMenuItem, ChannelCategory.priv);
       subscribeDmPresence(contextMenuItem);
       setCurrentChannelName(contextMenuItem, ChannelCategory.priv);
-      // Opening a conversation is the natural moment to offer, and only when the
-      // user asked for that: a peer who isn't running SIC never answers, which
-      // costs one silently-ignored CTCP and nothing else.
       if (getAutoOfferEncryption()) {
         void offerEncryption(contextMenuItem);
       }
-      // Started from the users drawer on mobile/tablet: close it so the new
-      // conversation is visible instead of staying hidden behind it.
+      // Otherwise the new conversation stays hidden behind the drawer
       if (isUsersDrawerOpen && globalThis.matchMedia?.('(max-width: 1023px)').matches) {
         setUsersDrawerStatus();
       }
@@ -257,10 +245,8 @@ export const ContextMenu = () => {
 
     const channelName = getCurrentChannelName();
 
-    // Get channels the current user is in (excluding privs, status, debug)
     const userChannels = openChannels.filter((ch) => ch.category === ChannelCategory.channel).filter((channel) => channel.name !== channelName);
 
-    // Check global user registration and feature availability
     const currentNick = getCurrentNick();
     const isCurrentUser = contextMenuItem === currentNick;
     const currentUserFlags = getCurrentUserFlags();
@@ -272,11 +258,8 @@ export const ContextMenu = () => {
     const canAddFriend = !isCurrentUser && !isFriendAlready && isRegistered && (watchLimit > 0 || monitorLimit > 0);
     const canIgnore = !isCurrentUser && isRegistered && silenceLimit > 0;
 
-    // Check channel-specific operator permissions
     const channelCategory = getCurrentChannelCategory();
     const isInChannel = channelCategory === ChannelCategory.channel;
-    // Already looking at this exact DM window — offering to open it or start
-    // encrypting from here would just duplicate what the banner/header already do
     const isAlreadyInThisDm = channelCategory === ChannelCategory.priv && isSameName(channelName, contextMenuItem);
     const currentUserChannelModes = isInChannel ? getCurrentUserChannelModes(channelName) : [];
     const targetUser = getUser(contextMenuItem);
@@ -350,7 +333,6 @@ export const ContextMenu = () => {
                   {t('contextmenu.user.operator.title')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  {/* Promotion options */}
                   {(permissions.canPromoteToVoice || permissions.canPromoteToHalfOp || permissions.canPromoteToOp || permissions.canPromoteToAdmin || permissions.canPromoteToOwner) && (
                     <>
                       {permissions.canPromoteToVoice && (
@@ -387,7 +369,6 @@ export const ContextMenu = () => {
                     </>
                   )}
 
-                  {/* Demotion options */}
                   {(permissions.canDemoteFromVoice || permissions.canDemoteFromHalfOp || permissions.canDemoteFromOp || permissions.canDemoteFromAdmin || permissions.canDemoteFromOwner) && (
                     <>
                       {permissions.canDemoteFromOwner && (
@@ -424,7 +405,6 @@ export const ContextMenu = () => {
                     </>
                   )}
 
-                  {/* Kick/Ban options */}
                   {permissions.canKick && !isCurrentUser && (
                     <DropdownMenuItem onClick={handleKick}>
                       <UserMinus className="mr-2 h-4 w-4" aria-hidden="true" />

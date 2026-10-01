@@ -23,7 +23,6 @@ const WizardLoading = () => {
   const [lastServerMessage, setLastServerMessage] = useState('');
   const [messageKey, setMessageKey] = useState(0);
 
-  // Track latest raw IRC message from the server for debugging
   useEffect(() => {
     const handleIrcEvent = (data: { type: string; line?: string }): void => {
       if (data?.type === 'close') {
@@ -31,14 +30,12 @@ const WizardLoading = () => {
         return;
       }
       if (data?.type === 'raw' && data.line) {
-        // Redact sensitive info (passwords, SASL tokens) then extract trailing text
         const safe = redactSensitiveIrc(data.line);
         const colonIndex = safe.indexOf(' :');
         const display = colonIndex !== -1 ? safe.substring(colonIndex + 2) : safe;
         setLastServerMessage(display.length > 120 ? display.substring(0, 120) + '...' : display);
         setMessageKey((k) => k + 1);
 
-        // Gradually increase progress while connecting (value 1→2 range)
         const current = getWizardProgress();
         if (current.value >= 1 && current.value < 2) {
           const remaining = 2 - current.value;
@@ -110,8 +107,7 @@ const WizardLoading = () => {
       };
     }
 
-    // Read current value via getter to avoid dependency
-    // Skip showing "Disconnected" if there's a pending STS upgrade (reconnecting with TLS)
+    // Not during an STS upgrade (reconnecting with TLS)
     if (!isConnecting && !isConnected && getWizardProgress().value !== 0 && !getPendingSTSUpgrade()) {
       setWizardProgress(0, t('wizard.loading.disconnected'));
     }

@@ -14,7 +14,6 @@ const parseServerParam = (serverParam: string): ParsedServer => {
   let tls: boolean | undefined;
   let connectionType: ConnectionType | undefined;
 
-  // Check for protocol prefix
   if (host.startsWith('ircs://')) {
     host = host.slice(7);
     tls = true;
@@ -33,15 +32,13 @@ const parseServerParam = (serverParam: string): ParsedServer => {
     connectionType = 'websocket';
   }
 
-  // Remove trailing slash if present
   if (host.endsWith('/')) {
     host = host.slice(0, -1);
   }
 
-  // Check for server:port format (skip for bracketed IPv6 without port, e.g. [::1])
+  // Bracketed IPv6 without a port (e.g. [::1]) has no server:port split
   const hasBracketedIpv6 = host.startsWith('[');
   if (hasBracketedIpv6 && host.includes(']:')) {
-    // [::1]:6667 format
     const bracketEnd = host.indexOf(']:');
     const possiblePort = host.slice(bracketEnd + 2);
     const port = Number.parseInt(possiblePort, 10);
@@ -62,9 +59,6 @@ const parseServerParam = (serverParam: string): ParsedServer => {
   return { host, port: undefined, tls, connectionType };
 };
 
-/**
- * Check if the server URL param matches a known IRC network
- */
 export const isKnownServerParam = (): boolean => {
   const serverParam = getServerParam();
   if (!serverParam) {
@@ -88,11 +82,10 @@ export const resolveServerFromParams = (): Server | undefined => {
   const matched = servers.find((s) => s.network.toLowerCase() === host.toLowerCase());
 
   if (matched) {
-    // Use matched server, but allow overriding TLS if specified
     return tlsParam !== undefined ? { ...matched, tls: tlsParam } : matched;
   }
 
-  // Custom server — block private/internal addresses to prevent SSRF via gateway
+  // Prevents SSRF via the gateway
   if (isPrivateHost(host)) {
     return undefined;
   }

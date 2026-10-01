@@ -43,7 +43,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const isAvatarSupported = supportedOptions?.includes('metadata-avatar') ?? false;
   const isDisplayNameSupported = supportedOptions?.includes('metadata-display-name') ?? false;
 
-  // Derive initial values from channelModes
   const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
   const initialKey = useMemo(() => (channelModes.k !== undefined ? String(channelModes.k) : ''), [channelModes.k]);
   const initialRawModes = useMemo(() => {
@@ -51,7 +50,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     return flags ? `+${flags}` : '';
   }, [channelModes]);
 
-  // Use derived values when local state is empty (not being edited)
   const displayLimit = limit || initialLimit;
   const displayKey = key || initialKey;
   const displayRawModes = rawModes || initialRawModes;
@@ -113,7 +111,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     const trimmed = rawModes.trim();
     if (!trimmed) { return; }
 
-    // Parse the desired flags from the input (e.g. "+nrtBCN" -> Set{n,r,t,B,C,N})
     const desiredFlags = new Set<string>();
     let adding = true;
     for (const ch of trimmed) {
@@ -122,10 +119,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
       if (adding) { desiredFlags.add(ch); }
     }
 
-    // Get all current flags from channel modes
     const currentFlags = new Set(Object.keys(channelModes));
 
-    // Compute flags to add and remove
     const toAdd = [...desiredFlags].filter((f) => !currentFlags.has(f)).join('');
     const toRemove = [...currentFlags].filter((f) => !desiredFlags.has(f)).join('');
 
@@ -137,10 +132,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     }
   };
 
-  // Flags that have dedicated UI controls
   const DEDICATED_FLAGS = useMemo(() => new Set(['l', 'k']), []);
 
-  // Parameterized modes currently set on the channel (excluding dedicated ones)
   const parameterizedModes = useMemo(() =>
     Object.entries(channelModes)
       .filter(([flag, value]) => typeof value === 'string' && !DEDICATED_FLAGS.has(flag))
@@ -162,7 +155,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     );
   };
 
-  // Get available Type D flags from server config
   const availableFlags = serverChannelModes.D || [];
 
   if (isLoading) {
@@ -176,7 +168,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
 
   return (
     <div className="space-y-6 py-4">
-      {/* Channel Flags Section */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium">{t('channelSettings.modes.flags')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -196,11 +187,9 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
         </div>
       </div>
 
-      {/* Channel Settings Section */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium">{t('channelSettings.modes.settings')}</h3>
 
-        {/* User Limit */}
         {availableFlags.includes('l') || serverChannelModes.C?.includes('l') ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="limit" className="w-24 shrink-0">
@@ -227,7 +216,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           </div>
         ) : null}
 
-        {/* Channel Key */}
         {serverChannelModes.B?.includes('k') ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="key" className="w-24 shrink-0">
@@ -254,7 +242,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           </div>
         ) : null}
 
-        {/* Parameterized Modes */}
         {parameterizedModes.map(({ flag, value }) => (
           <div key={flag} className="flex items-center gap-2">
             <Label htmlFor={`param-mode-${flag}`} className="w-24 shrink-0">
@@ -280,7 +267,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           </div>
         ))}
 
-        {/* Channel Avatar (IRCv3 metadata) */}
         {isAvatarSupported ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="avatar" className="w-24 shrink-0">
@@ -307,7 +293,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           </div>
         ) : null}
 
-        {/* Channel Display Name (IRCv3 metadata) */}
         {isDisplayNameSupported ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="displayName" className="w-24 shrink-0">
@@ -335,7 +320,6 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
         ) : null}
       </div>
 
-      {/* Raw Modes Section */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium">{t('channelSettings.modes.rawModes')}</h3>
         <p className="text-xs text-muted-foreground">{t('channelSettings.modes.rawModesDescription')}</p>

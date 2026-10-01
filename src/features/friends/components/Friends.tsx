@@ -44,7 +44,6 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
   const handleFriendClick = (nick: string): void => {
     setAddChannel(nick, ChannelCategory.priv);
     setCurrentChannelName(nick, ChannelCategory.priv);
-    // Close drawer on mobile/tablet (below lg breakpoint)
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
       setChannelsDrawerStatus();
     }

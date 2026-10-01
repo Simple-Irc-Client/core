@@ -1,38 +1,20 @@
-/**
- * AES-GCM nonce length in bytes. 96 bits is the size the GCM spec optimises for.
- *
- * A "nonce" (here also called an IV, initialization vector) is a value that
- * must never repeat under the same key — GCM needs a fresh one per message so
- * that encrypting the same text twice doesn't produce the same ciphertext
- * twice. `sealBytes` below generates one at random for every call.
- */
+// AES-GCM nonce: 96 bits, random per call, must never repeat under one key
 const IV_LENGTH = 12;
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
-/** WebCrypto wants a plain `ArrayBuffer`; a `Uint8Array` view (e.g. from `TextEncoder.encode`) isn't guaranteed to be one. */
+// A Uint8Array view isn't guaranteed to be a plain ArrayBuffer, which WebCrypto wants
 const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
   const copy = new Uint8Array(bytes.length);
   copy.set(bytes);
   return copy.buffer;
 };
 
-/**
- * Encrypt with AES-GCM and pack the result as base64 of `IV ‖ ciphertext ‖ tag`.
- *
- * Shared by every encrypt/decrypt pair in this file, and by `e2ee/crypto.ts`'s
- * `seal`/`open` — same AEAD framing, same nonce handling, one place to get it
- * right. `additionalData` is authenticated but not encrypted; e2ee passes its
- * protocol label there so a ciphertext from a different protocol version
- * can't be replayed as one of its frames, while this file's own callers have
- * no need for it.
- */
+/** base64(IV ‖ ciphertext ‖ tag). E2EE passes its protocol label as `additionalData` to block cross-version replay. */
 export async function sealBytes(key: CryptoKey, plaintext: string, additionalData?: Uint8Array): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-  // WebCrypto treats an explicit `additionalData: undefined` as present-but-invalid
-  // (throws "Not a BufferSource") rather than as absent, so the key must be
-  // omitted entirely when there's no AAD instead of set to undefined.
+  // `additionalData: undefined` throws "Not a BufferSource"; the key must be omitted
   const algorithm: AesGcmParams = additionalData
     ? { name: 'AES-GCM', iv, additionalData: toArrayBuffer(additionalData) }
     : { name: 'AES-GCM', iv };
@@ -45,12 +27,7 @@ export async function sealBytes(key: CryptoKey, plaintext: string, additionalDat
   return bytesToBase64(combined);
 }
 
-/**
- * Decrypt a payload `sealBytes` produced. Rejects on a wrong key, a tampered
- * byte, a truncated frame, or a mismatched `additionalData` — GCM
- * authentication makes all of those indistinguishable failures, which is the
- * behaviour callers want: never return plaintext that hasn't been verified.
- */
+/** Rejects on any authentication failure; never returns unverified plaintext. */
 export async function openBytes(key: CryptoKey, sealedB64: string, additionalData?: Uint8Array): Promise<string> {
   const combined = base64ToBytes(sealedB64);
   if (combined.length <= IV_LENGTH) {
@@ -67,29 +44,19 @@ export async function openBytes(key: CryptoKey, sealedB64: string, additionalDat
 
 let cryptoKey: CryptoKey | null = null;
 
-/**
- * Check if encryption is available (key has been initialized)
- */
 export function isEncryptionAvailable(): boolean {
   return cryptoKey !== null;
 }
 
-/**
- * Initialize encryption with a random session key.
- * Used when backend encryption key isn't configured but encryption is needed.
- */
+/** When no backend key is configured. */
 export async function initSessionEncryption(): Promise<void> {
   if (cryptoKey !== null) return; // Already initialized
 
-  // Generate random 256-bit key for session
   const rawKey = crypto.getRandomValues(new Uint8Array(32));
   const base64Key = bytesToBase64(rawKey);
   await initEncryption(base64Key);
 }
 
-/**
- * Convert base64 to Uint8Array (browser-compatible)
- */
 export function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -99,9 +66,6 @@ export function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
-/**
- * Convert Uint8Array to base64 (browser-compatible)
- */
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';
   for (const byte of bytes) {
@@ -110,10 +74,7 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/**
- * Initialize encryption with a base64-encoded key
- * Key should be 32 bytes (256 bits) encoded as base64
- */
+/** 32-byte key, base64. */
 export async function initEncryption(base64Key: string): Promise<void> {
   const keyData = base64ToBytes(base64Key);
   cryptoKey = await crypto.subtle.importKey(
@@ -125,9 +86,6 @@ export async function initEncryption(base64Key: string): Promise<void> {
   );
 }
 
-/**
- * Encrypt a message object to base64 string
- */
 export async function encryptMessage(data: unknown): Promise<string> {
   if (!cryptoKey) {
     throw new Error('Encryption not initialized');
@@ -136,9 +94,6 @@ export async function encryptMessage(data: unknown): Promise<string> {
   return sealBytes(cryptoKey, JSON.stringify(data));
 }
 
-/**
- * Decrypt a base64 string back to message object
- */
 export async function decryptMessage(encryptedBase64: string): Promise<unknown> {
   if (!cryptoKey) {
     throw new Error('Encryption not initialized');
@@ -147,9 +102,6 @@ export async function decryptMessage(encryptedBase64: string): Promise<unknown> 
   return JSON.parse(await openBytes(cryptoKey, encryptedBase64));
 }
 
-/**
- * Encrypt a raw string to base64 (no JSON wrapping)
- */
 export async function encryptString(data: string): Promise<string> {
   if (!cryptoKey) {
     throw new Error('Encryption not initialized');
@@ -158,9 +110,6 @@ export async function encryptString(data: string): Promise<string> {
   return sealBytes(cryptoKey, data);
 }
 
-/**
- * Decrypt a base64 string back to raw string (no JSON parsing)
- */
 export async function decryptString(encryptedBase64: string): Promise<string> {
   if (!cryptoKey) {
     throw new Error('Encryption not initialized');
@@ -174,10 +123,7 @@ export async function decryptString(encryptedBase64: string): Promise<string> {
 const PERSISTENT_KEY_STORAGE = 'sic-ek';
 let persistentKey: CryptoKey | null = null;
 
-/**
- * Load or generate a persistent encryption key from localStorage.
- * The key is stored as a base64 string in localStorage['sic-ek'].
- */
+/** Key in localStorage['sic-ek']. */
 export async function initPersistentEncryption(): Promise<void> {
   if (persistentKey !== null) { return; }
 
@@ -198,9 +144,6 @@ export async function initPersistentEncryption(): Promise<void> {
   );
 }
 
-/**
- * Encrypt a string using the persistent key
- */
 export async function encryptPersistent(data: string): Promise<string> {
   if (!persistentKey) {
     await initPersistentEncryption();
@@ -214,9 +157,6 @@ export async function encryptPersistent(data: string): Promise<string> {
   return sealBytes(key, data);
 }
 
-/**
- * Decrypt a string using the persistent key
- */
 export async function decryptPersistent(encryptedBase64: string): Promise<string> {
   if (!persistentKey) {
     await initPersistentEncryption();

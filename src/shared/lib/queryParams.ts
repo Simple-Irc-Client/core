@@ -33,8 +33,7 @@ export const getBackgroundParam = (): string | undefined => {
 export const getChannelParam = (): string[] | undefined => {
   let channelParam = getParams().get('channel');
 
-  // Fallback: if URL has `channel=` followed by `#channel`, the browser treats `#channel` as fragment
-  // e.g., `?channel=#general` → search="?channel=", hash="#general"
+  // `?channel=#general` puts the channel in the URL fragment
   if (!channelParam && globalThis.location.hash && globalThis.location.search.includes('channel=')) {
     channelParam = globalThis.location.hash;
   }
@@ -43,7 +42,6 @@ export const getChannelParam = (): string[] | undefined => {
     return undefined;
   }
 
-  // Split by comma and filter out empty strings
   const channels = channelParam.split(',').map((c) => c.trim()).filter((c) => c.length > 0);
   return channels.length > 0 ? channels : undefined;
 };

@@ -1,16 +1,4 @@
-/**
- * IRCv3 STS (Strict Transport Security)
- * https://ircv3.net/specs/extensions/sts
- *
- * When a server advertises the STS capability, clients should:
- * 1. Disconnect from the insecure connection
- * 2. Reconnect with TLS on the specified port
- * 3. Store the policy for future connections
- */
-
-// ============================================================================
-// Types
-// ============================================================================
+// https://ircv3.net/specs/extensions/sts
 
 export interface STSPolicy {
   host: string; // Server hostname (normalized to lowercase)
@@ -32,17 +20,7 @@ export interface ParsedSTS {
   preload: boolean;
 }
 
-// ============================================================================
-// STS Value Parsing
-// ============================================================================
-
-/**
- * Parse STS capability value
- * Format: port=6697,duration=300,preload
- *
- * @param value - The STS capability value string
- * @returns Parsed STS object or null if invalid
- */
+/** e.g. `port=6697,duration=300,preload`; null if invalid. */
 export const parseSTSValue = (value: string): ParsedSTS | null => {
   if (!value) { return null; }
 
@@ -56,12 +34,12 @@ export const parseSTSValue = (value: string): ParsedSTS | null => {
         params[key] = val;
       }
     } else if (param) {
-      // Boolean flags like 'preload'
+      // e.g. 'preload'
       params[param] = 'true';
     }
   }
 
-  // port and duration are required per spec
+  // Required by the spec
   if (!params.port || !params.duration) {
     return null;
   }
@@ -80,98 +58,56 @@ export const parseSTSValue = (value: string): ParsedSTS | null => {
   };
 };
 
-/**
- * Create an STS policy from parsed values
- *
- * @param host - The server hostname
- * @param parsed - The parsed STS values
- * @returns An STS policy object
- */
 export const createSTSPolicy = (host: string, parsed: ParsedSTS): STSPolicy => ({
   host: host.toLowerCase(),
   port: parsed.port,
   duration: parsed.duration,
-  // duration=0 means persist indefinitely (expiresAt=0 signals this)
+  // duration=0 persists indefinitely
   expiresAt: parsed.duration === 0 ? 0 : Date.now() + parsed.duration * 1000,
   preload: parsed.preload,
 });
 
-// ============================================================================
-// Session State (module-level, not persisted)
-// ============================================================================
+// Session state, not persisted
 
-// Pending STS upgrade request
 let pendingSTSUpgrade: STSUpgradeRequest | null = null;
 
-// Current connection info for STS detection
 let currentConnectionHost: string | null = null;
 let currentConnectionTLS = false;
 
-// STS upgrade retry tracking
 let stsUpgradeRetries = 0;
 const MAX_STS_RETRIES = 3;
 
-/**
- * Set a pending STS upgrade request
- */
 export const setPendingSTSUpgrade = (upgrade: STSUpgradeRequest | null): void => {
   pendingSTSUpgrade = upgrade;
 };
 
-/**
- * Get the pending STS upgrade request
- */
 export const getPendingSTSUpgrade = (): STSUpgradeRequest | null => pendingSTSUpgrade;
 
-/**
- * Clear the pending STS upgrade request
- */
 export const clearPendingSTSUpgrade = (): void => {
   pendingSTSUpgrade = null;
 };
 
-/**
- * Set current connection info for STS detection
- */
 export const setCurrentConnectionInfo = (host: string | null, tls: boolean): void => {
   currentConnectionHost = host?.toLowerCase() ?? null;
   currentConnectionTLS = tls;
 };
 
-/**
- * Check if current connection is secure (TLS)
- */
 export const isCurrentConnectionSecure = (): boolean => currentConnectionTLS;
 
-/**
- * Get current connection host
- */
 export const getCurrentConnectionHost = (): string | null => currentConnectionHost;
 
-/**
- * Increment STS upgrade retry counter
- */
 export const incrementSTSRetries = (): void => {
   stsUpgradeRetries++;
 };
 
-/**
- * Reset STS upgrade retry counter
- */
 export const resetSTSRetries = (): void => {
   stsUpgradeRetries = 0;
 };
 
-/**
- * Check if STS upgrade retries are exhausted
- */
 export const hasExhaustedSTSRetries = (): boolean => stsUpgradeRetries >= MAX_STS_RETRIES;
 
-/**
- * Reset all STS session state (call on disconnect)
- */
 export const resetSTSSessionState = (): void => {
-  // Don't clear pending upgrade - it's needed for reconnection
+  // The pending upgrade is needed for the reconnect
   currentConnectionHost = null;
   currentConnectionTLS = false;
 };

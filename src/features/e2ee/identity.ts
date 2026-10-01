@@ -1,19 +1,6 @@
 /**
- * SIC-E2EE v1 — long-term identity key storage.
- *
- * The identity key pair lives in IndexedDB as a live `CryptoKey` object rather
- * than as exported bytes. `idb-keyval` uses structured clone, which handles
- * `CryptoKey` natively, so a non-extractable private key can be persisted and
- * read back without ever existing as a byte array in JavaScript. That is a
- * meaningful step up from the `localStorage['sic-ek']` approach used by
- * `initPersistentEncryption` in `network/encryption.ts`, where the raw key sits
- * in a string any injected script could read.
- *
- * Identities are scoped per network. A single global identity would give the
- * user one stable fingerprint everywhere, which is convenient — but it would
- * also let anyone who sees the fingerprint on two networks link those two nicks
- * to the same person. IRC users routinely keep separate identities per network
- * on purpose, and silently undoing that would be a privacy regression.
+ * Stored in IndexedDB as a live CryptoKey (structured clone), so the non-extractable private key never exists
+ * as bytes in JS. Per network, so one fingerprint can't link a user's nicks across networks.
  */
 
 import { get, set, del } from 'idb-keyval';
@@ -24,10 +11,9 @@ import { fingerprintFromB64, generateIdentity, type Identity } from './crypto';
 
 const IDENTITY_STORAGE_PREFIX = 'sic-e2ee-identity';
 
-/** Cache per network key so repeated handshakes don't hit IndexedDB. */
 const cache = new Map<string, Identity>();
 
-/** In-flight loads, so concurrent handshakes can't race two identities into existence. */
+/** So concurrent handshakes can't race two identities into existence. */
 const pending = new Map<string, Promise<Identity>>();
 
 const getNetworkKey = (): string => {
@@ -36,11 +22,7 @@ const getNetworkKey = (): string => {
   return `${IDENTITY_STORAGE_PREFIX}:${network && network.length > 0 ? network : 'default'}`;
 };
 
-/**
- * A stored identity is only usable if the private key survived the round trip.
- * A browser that dropped structured-clone support for `CryptoKey`, or a partly
- * written record, would otherwise blow up much later inside `deriveBits`.
- */
+/** Otherwise a dropped or partial key would only fail much later, inside deriveBits. */
 const isUsableIdentity = (value: unknown): value is Identity => {
   if (value === null || typeof value !== 'object') {
     return false;
@@ -59,17 +41,11 @@ const loadOrCreate = async (storageKey: string): Promise<Identity> => {
   try {
     const stored: unknown = await get(storageKey);
     if (isUsableIdentity(stored)) {
-      // Recomputed rather than trusted as stored: a record written under an
-      // older fingerprint display format (e.g. before a hex-to-words change)
-      // would otherwise show stale-looking text forever, since nothing else
-      // ever touches an identity once it's persisted. Same reasoning as
-      // `checkPin` in `session.ts` for a pinned peer's cached fingerprint.
+      // Recomputed so an older display format never sticks
       return { ...stored, fingerprint: await fingerprintFromB64(stored.publicKeyB64) };
     }
   } catch (error) {
-    // Private browsing, blocked storage, corrupted record — fall through and
-    // generate a fresh identity. Encryption still works for this session; the
-    // only cost is that peers see a new fingerprint.
+    // Still works; peers just see a new fingerprint
     console.warn('E2EE: could not read stored identity, generating a new one:', error);
   }
 
@@ -84,10 +60,6 @@ const loadOrCreate = async (storageKey: string): Promise<Identity> => {
   return identity;
 };
 
-/**
- * Get this network's identity, creating and persisting one on first use.
- * Concurrent callers share a single generation.
- */
 export const getIdentity = async (): Promise<Identity> => {
   const storageKey = getNetworkKey();
 
@@ -115,12 +87,7 @@ export const getIdentity = async (): Promise<Identity> => {
   return load;
 };
 
-/**
- * Discard this network's identity and generate a fresh one on next use.
- *
- * Every peer who pinned the old key will see a fingerprint-changed warning, so
- * this is only reachable from an explicit user action.
- */
+/** Every pinning peer will see a fingerprint-changed warning: explicit user action only. */
 export const resetIdentity = async (): Promise<void> => {
   const storageKey = getNetworkKey();
   cache.delete(storageKey);

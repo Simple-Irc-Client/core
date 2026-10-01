@@ -1,31 +1,13 @@
 /**
- * SIC-E2EE v1 — a bounded per-peer throttle for inbound handshake traffic.
- *
- * Two things need it, and both were unbounded:
- *
- *  - Inbound OFFERs. Each costs two EC key imports, a hash, and — once past the
- *    pin check — a P-256 keypair and a store update that re-renders every
- *    subscribed component.
- *  - RESET replies. We answer an unreadable frame with a NOTICE; without a
- *    ceiling, a peer sending junk has us emitting one per frame.
- *
- * Deliberately per-key only, with no global ceiling. A global budget would need
- * a second tier to stop a flood of strangers exhausting it and locking out the
- * peer you actually want to encrypt with — a throttle usable to *force*
- * plaintext is worse than none. Keying on the peer alone avoids that entirely:
- * a key that is not being flooded is never refused, so nobody can be starved by
- * someone else's traffic.
- *
- * The trade is that N attacker nicks cost N times as much. That is acceptable
- * here: IRC servers already rate-limit how fast a client can send, and N nicks
- * means N connections, which clone limits cap. This is hardening, not a hole.
+ * Per-peer only, no global ceiling: a global budget could be exhausted by strangers to force plaintext with
+ * the peer you want. N attacker nicks cost N times as much, which server rate and clone limits cap.
  */
 
 export interface Throttle {
-  /** Whether the action is permitted now. Records it when it is. */
+  /** Records the action when allowed. */
   allow: (key: string, now?: number) => boolean;
   clear: () => void;
-  /** Tracked keys. Exposed so tests can assert the bound holds. */
+  /** For tests. */
   readonly size: number;
 }
 
@@ -38,18 +20,7 @@ export const createThrottle = (cooldownMs: number, maxKeys = 256): Throttle => {
 
   return {
     allow(key, now = Date.now()) {
-      // Pruning first means "still present" is exactly "still in cooldown",
-      // which keeps the check below a single lookup and bounds the table by
-      // traffic rate rather than by however many peers have ever appeared.
-      //
-      // A `Map` iterates in insertion order, and an entry is only ever
-      // (re-)inserted once its previous one — if any — has already expired
-      // and been pruned (see the `has` check below), so insertion order here
-      // is also chronological order by `at`. That means the moment we reach
-      // an entry that has not yet expired, every entry after it is even
-      // younger and cannot have expired either — this is reachable from every
-      // inbound OFFER, including from peers we have no session with, so
-      // stopping there instead of scanning the rest matters.
+      // Insertion order is chronological, so pruning stops at the first unexpired entry
       for (const [tracked, at] of lastAllowed) {
         if (now - at < cooldownMs) {
           break;
@@ -62,8 +33,7 @@ export const createThrottle = (cooldownMs: number, maxKeys = 256): Throttle => {
       }
 
       if (lastAllowed.size >= maxKeys) {
-        // Evict rather than refuse. A full table is itself a sign of a flood,
-        // and refusing would let that flood block a peer who has done nothing.
+        // Evict rather than refuse, or a flood could block an innocent peer
         let oldestKey: string | undefined;
         let oldestAt = Number.POSITIVE_INFINITY;
         for (const [tracked, at] of lastAllowed) {

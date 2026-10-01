@@ -1,20 +1,6 @@
 /**
- * SIC-E2EE v1 — trust-on-first-use pins (persisted).
- *
- * The first time we complete a handshake with someone, their long-term identity
- * key is recorded here. Every later handshake is checked against it, and a key
- * that has changed blocks the session instead of silently re-keying. This is
- * exactly the `known_hosts` model: it cannot detect an attacker who was already
- * in the middle at first contact, but it makes every *later* substitution
- * visible, and the fingerprint shown in the UI is what closes the remaining gap
- * for users who compare it out of band.
- *
- * Pins are keyed per network (same key as `serverPasswords` and the friends
- * list) and, within a network, by services account where one is known.
- * Preferring the account matters: nicks on IRC are transient — someone else can
- * hold `bob` next week — while a registered account is a durable identity. Nick
- * is the fallback for unregistered peers, and is marked as the weaker key so the
- * UI can say so.
+ * Trust-on-first-use pins, like known_hosts. Per network, then by services account (durable) or nick (weaker,
+ * reusable by someone else).
  */
 
 import { create } from 'zustand';
@@ -24,13 +10,10 @@ import { foldName } from '@shared/lib/caseMapping';
 import { getCaseMapping } from '@/features/settings/store/settings';
 
 export interface E2eePin {
-  /** Base64 SPKI of the peer's long-term identity key. */
+  /** Base64 SPKI */
   identityKeyB64: string;
-  /** Cached fingerprint of `identityKeyB64`, so the UI needn't re-hash. */
   fingerprint: string;
-  /** ISO timestamp of first contact. */
   firstSeen: string;
-  /** True once the user confirmed the fingerprint through another channel. */
   verified: boolean;
 }
 
@@ -104,26 +87,11 @@ export const useE2eePinsStore = create<PinsStore>()(
   ),
 );
 
-/**
- * Build the per-network identifier for a peer.
- *
- * The `account:`/`nick:` prefixes keep the two namespaces from colliding, and
- * let callers tell at a glance whether a pin is anchored to something durable.
- *
- * The nick fallback folds with the server's actual negotiated casemapping —
- * the same one `store/e2ee.ts`'s `getSessionKey` uses — rather than assuming
- * a default. Folding differently between the two would mean a pin and the
- * session it is supposed to guard could disagree on whether two nicks are the
- * same peer (rfc1459 folds `{}|^` together with `[]\~`; plain ascii does not),
- * silently breaking the pin lookup for exactly the servers that differ.
- */
+/** Folds nicks with the server's casemapping, like getSessionKey, so a pin and its session agree on identity. */
 export const getPeerKey = (nick: string, account?: string): string =>
   account && account.length > 0 ? `account:${account.toLowerCase()}` : `nick:${foldName(nick, getCaseMapping())}`;
 
-/** True when this pin is anchored to a registered account rather than a reusable nick. */
 export const isAccountPeerKey = (peerKey: string): boolean => peerKey.startsWith('account:');
-
-// Helper functions for external use
 
 export const getPin = (network: string, peerKey: string): E2eePin | undefined =>
   useE2eePinsStore.getState().pinsByNetwork[network]?.[peerKey];

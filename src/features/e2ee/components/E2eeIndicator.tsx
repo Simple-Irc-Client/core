@@ -9,17 +9,7 @@ interface E2eeIndicatorProps {
   state: NonNullable<Message['e2ee']>;
 }
 
-/**
- * The small lock next to an encrypted message, mirroring `EchoedIndicator`.
- *
- * A successfully encrypted/decrypted message gets a green lock (`--msg-e2ee`,
- * matching the message's own border/background — see the `[data-e2ee='ok']`
- * rule in the theme CSS). The DM/mention highlight moved to `--secondary` so
- * this can own green without the two signals looking like one. A failed
- * decryption gets an open lock in the error colour rather than no indicator at
- * all, so the user sees that something arrived and could not be read instead
- * of silently missing it. Still resolving (`decrypting`) stays neutral.
- */
+/** A failed decryption still gets an (open, error-coloured) lock, so it isn't silently missed. */
 const E2eeIndicator = ({ state }: E2eeIndicatorProps) => {
   const { t } = useTranslation();
 

@@ -27,14 +27,7 @@ export const ContextMenuContext = createContext<ContextMenuContextProps>({
   },
 });
 
-/**
- * The handlers alone, on a context whose value never changes.
- *
- * The full context value changes every time the menu opens, moves or closes,
- * which re-renders every consumer — including all ~300 rendered chat messages,
- * each of which only ever needed to open the menu. Consumers that touch no menu
- * state should subscribe here so `memo` can hold.
- */
+/** A never-changing context, so consumers like chat messages aren't re-rendered on every menu change. */
 export type ContextMenuActions = Pick<ContextMenuContextProps, 'handleContextMenuUserClick' | 'handleContextMenuClose'>;
 
 export const ContextMenuActionsContext = createContext<ContextMenuActions>({

@@ -40,7 +40,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
       default:
         return [];
     }
-    // Sort by setTime descending (latest first)
     return [...list].sort((a, b) => b.setTime - a.setTime);
   };
 
@@ -86,7 +85,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
 
   return (
     <div className="space-y-4 py-4">
-      {/* List Type Tabs */}
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -120,7 +118,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
         </Button>
       </div>
 
-      {/* List Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-8" role="status">
           <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
@@ -128,7 +125,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
         </div>
       ) : (
         <div className="border rounded-md">
-          {/* Header */}
           <div className="grid grid-cols-[1fr_40px] sm:grid-cols-[1fr_100px_100px_40px] gap-2 p-2 border-b bg-muted text-sm font-medium">
             <div>{t('channelSettings.lists.mask')}</div>
             <div className="hidden sm:block">{t('channelSettings.lists.setBy')}</div>
@@ -136,7 +132,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
             <div></div>
           </div>
 
-          {/* List Items */}
           <div className="max-h-48 overflow-y-auto">
             {activeList.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
@@ -178,7 +173,6 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
         </div>
       )}
 
-      {/* Add New Entry */}
       <div className="flex items-center gap-2">
         <Input
           type="text"
