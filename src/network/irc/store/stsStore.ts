@@ -34,7 +34,6 @@ export const useSTSStore = create<STSStore>()(
         set(
           (state) => {
             const key = host.toLowerCase();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { [key]: _removed, ...newPolicies } = state.policies;
             return { policies: newPolicies };
           },

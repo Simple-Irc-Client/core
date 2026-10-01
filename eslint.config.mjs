@@ -13,6 +13,11 @@ export default defineConfig(
   tseslint.configs.stylistic,
   eslintConfigPrettier,
   {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
+  {
     files: ['**/__tests__/**/*.ts', '**/__tests__/**/*.tsx', '**/*.test.ts', '**/*.test.tsx'],
     rules: {
       '@typescript-eslint/no-empty-function': 'off',

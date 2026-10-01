@@ -2,21 +2,20 @@
 
 [![Build Status](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml/badge.svg)](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml)
 
-This is a web-based IRC client application developed using React that connects directly to IRC servers using WebSocket.
+A React IRC client that connects to IRC servers directly over WebSocket.
 
 ## Features
 
-- **Direct Connection** - Connect to IRC servers directly via WebSocket without a backend service
-- **Modern UI** - Clean, responsive interface built with Tailwind CSS and shadcn/ui
-- **Dark Mode** - Beautiful dark theme with OKLCH color space
-- **Internationalization** - Multi-language support with i18next
-- **Channel Management** - Easy channel navigation and management
-- **User Interaction** - Private messages, WHOIS, and context menus
-- **End-to-End Encryption (E2EE)** - Secure private conversations with SIC-E2EE v1 protocol
+- Direct WebSocket connection, no backend required
+- Responsive UI (Tailwind CSS, shadcn/ui), light and dark mode
+- Built-in themes (classic, modern, irc) and custom CSS themes
+- English and Polish translations (i18next)
+- IRCv3: SASL, STS, chathistory, typing, metadata, MONITOR and more
+- End-to-end encrypted private messages (SIC-E2EE v1, described below)
 
 ## End-to-End Encryption (E2EE)
 
-SIC-E2EE v1 provides encrypted private messaging directly between clients without any server-side infrastructure. The encryption is built on web standards (WebCrypto) and works in modern browsers.
+SIC-E2EE v1 encrypts private messages between clients without any server-side support. It uses WebCrypto only, with no third-party crypto library.
 
 ### Protocol Overview
 
@@ -49,7 +48,7 @@ The handshake produces:
 
 ### Security Properties
 
-- **Forward Secrecy**: Ephemeral keys rotate per conversation; compromising a long-term identity key does not decrypt past sessions
+- **Forward Secrecy**: Per handshake, not per message (no ratchet); compromising a long-term identity key does not decrypt past sessions
 - **Authentication**: Long-term identity keys bind the session to specific peers
 - **TOFU Pinning**: First-seen identity keys are pinned; changed keys block the session and warn the user
 - **Fingerprint Verification**: Users can compare 64-bit fingerprints (shown as NATO phonetic alphabet words) out-of-band to detect MITM at first contact
@@ -59,20 +58,21 @@ The handshake produces:
 
 - Each **IRC network** has its own identity key pair
 - Identity keys are **non-extractable** CryptoKey objects stored in IndexedDB via structured clone
-- Private keys never exist as raw bytes in JavaScript, protecting against XSS
+- Private keys are never exposed as raw bytes to JavaScript, so they cannot be exported or copied out
 - Fingerprints are displayed as 16 NATO phonetic alphabet words, one per hex nibble (e.g., `Zero One Two Three Four Five Six Seven Eight Nine Alpha Bravo Charlie Delta Echo Foxtrot`) — internationally standard and unambiguous to read aloud
 
 ### Message Handling
 
-- **Chunking**: Large messages split into multiple IRC lines (max 320 base64 chars per frame, max 16 frames)
-- **Reassembly**: Out-of-order chunks are buffered and reassembled with a 30-second TTL
+- **Chunking**: Large messages split into multiple IRC lines (frame size follows the server's LINELEN, 320 base64 chars by default; max 16 frames)
+- **Reassembly**: Out-of-order chunks are buffered and reassembled within 120 seconds of the first chunk
 - **Message Types**: Regular messages (`m`) and actions/CTCP ACTION (`a`) are preserved through encryption
 - **No Plaintext Leak**: Even `/me` actions are encrypted, not sent as cleartext ACTION
 
 ### Rate Limiting
 
-- Inbound OFFER frames throttled to **1 per peer per second** to prevent handshake flooding
-- Limits the cost of concurrent handshakes and prevents memory exhaustion attacks
+- Inbound OFFER frames throttled to **1 per peer per second**
+- RESET replies throttled to 1 per peer per 10 seconds
+- Tracked peers and pending frames are capped, so memory use stays bounded
 
 ### User Experience
 

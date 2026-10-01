@@ -18,8 +18,7 @@ export const ContextMenuContext = createContext<ContextMenuContextProps>({
   contextMenuCategory: undefined,
   contextMenuItem: undefined,
   contextMenuPosition: null,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handleContextMenuUserClick: function (_event: React.MouseEvent<HTMLElement>, _category: ContextMenuCategory, _item: string): void {
+  handleContextMenuUserClick: function (): void {
     throw new Error('Function not implemented.');
   },
   handleContextMenuClose: function (): void {
@@ -31,8 +30,7 @@ export const ContextMenuContext = createContext<ContextMenuContextProps>({
 export type ContextMenuActions = Pick<ContextMenuContextProps, 'handleContextMenuUserClick' | 'handleContextMenuClose'>;
 
 export const ContextMenuActionsContext = createContext<ContextMenuActions>({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  handleContextMenuUserClick: function (_event: React.MouseEvent<HTMLElement>, _category: ContextMenuCategory, _item: string): void {
+  handleContextMenuUserClick: function (): void {
     throw new Error('Function not implemented.');
   },
   handleContextMenuClose: function (): void {
