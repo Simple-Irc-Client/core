@@ -14,7 +14,8 @@ import * as saslFile from '../sasl';
 import * as stsStoreFile from '../store/stsStore';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL, clientVersion } from '../../../config/config';
-import { ChannelCategory } from '@shared/types';
+import { ChannelCategory, MessageCategory } from '@shared/types';
+import { MessageColor } from '@/config/theme';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { resetFriendsSubscription } from '@features/friends/friends';
 import { resetDmPresenceSubscription, subscribeDmPresence } from '@features/dmPresence/dmPresence';
@@ -2694,6 +2695,44 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 005 bare WHOX token enables WHOX', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':ergo.test 005 probe TOPICLEN=390 UTF8ONLY WHOX draft/CHATHISTORY=100 :are supported by this server';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).toHaveBeenCalledWith('WHOX');
+    expect(mockSetSupportedOption).toHaveBeenCalledTimes(1);
+  });
+
+  it('test raw 005 list limits without a value mean no limit', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetMonitorLimit = vi.spyOn(settingsFile, 'setMonitorLimit').mockImplementation(() => {});
+    const mockSetWatchLimit = vi.spyOn(settingsFile, 'setWatchLimit').mockImplementation(() => {});
+    const mockSetSilenceLimit = vi.spyOn(settingsFile, 'setSilenceLimit').mockImplementation(() => {});
+
+    const line = ':server 005 nick MONITOR WATCH SILENCE=15 :are supported by this server';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetMonitorLimit).toHaveBeenCalledWith(Number.POSITIVE_INFINITY);
+    expect(mockSetWatchLimit).toHaveBeenCalledWith(Number.POSITIVE_INFINITY);
+    expect(mockSetSilenceLimit).toHaveBeenCalledWith(15);
+  });
+
+  it('test raw 005 ignores words of the trailing text', () => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+
+    const line = ':server 005 nick SAFELIST :WHOX NAMESX are supported by this server';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetSupportedOption).not.toHaveBeenCalled();
+  });
+
   it('test raw 250', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
@@ -3969,6 +4008,96 @@ describe('kernel tests', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: expect.stringContaining('server.irc.net') }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('test raw 315 - end of WHO is not shown', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+    const line = ':ergo.test 315 probe1 #probe :End of WHO list';
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
+  });
+
+  describe('unhandled numerics', () => {
+    it('shows an unhandled error numeric in the current window', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+      const line = ':server 438 mynick newnick :Nick change too fast. Please wait 30 seconds.';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          target: '#current-channel',
+          message: 'newnick: Nick change too fast. Please wait 30 seconds.',
+          category: MessageCategory.error,
+          color: MessageColor.error,
+        }),
+      );
+      expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('treats documented error numerics outside 400-599 as errors', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+      const line = ':server 696 mynick #chan l abc :Invalid limit mode parameter';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ target: '#current-channel', message: '#chan l abc: Invalid limit mode parameter', category: MessageCategory.error }),
+      );
+    });
+
+    it('shows an unhandled informational numeric in Status', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+      const line = ':server 302 mynick :alice=+alice@host.example';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ target: STATUS_CHANNEL, message: 'alice=+alice@host.example', category: MessageCategory.info }),
+      );
+    });
+
+    it('shows parameters when there is no trailing text', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+      const line = ':server 008 mynick +cFkn';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '+cFkn' }));
+    });
+
+    it('shows nothing for a numeric with no content', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':server 999 mynick' }).handle();
+      new Kernel({ type: 'raw', line: ':server 999' }).handle();
+      new Kernel({ type: 'raw', line: ':server 999 mynick :' }).handle();
+
+      // Debug echoes only
+      expect(mockSetAddMessage).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not treat non-numeric commands as numerics', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':server FOOBAR mynick :text' }).handle();
+      new Kernel({ type: 'raw', line: ':server 4321 mynick :text' }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('test raw 401 - no such nick/channel', () => {

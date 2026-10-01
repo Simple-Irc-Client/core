@@ -166,6 +166,7 @@ const RPL_WHOISSERVER = '312';
 const RPL_WHOISOPERATOR = '313';
 const RPL_WHOWASUSER = '314';
 const RPL_WHOISIDLE = '317';
+const RPL_ENDOFWHO = '315';
 const RPL_ENDOFWHOIS = '318';
 const RPL_WHOISCHANNELS = '319';
 const RPL_WHOISSPECIAL = '320';
@@ -292,6 +293,18 @@ const RPL_HELPSTART = '704';
 const RPL_HELPTXT = '705';
 const RPL_ENDOFHELP = '706';
 const RPL_SASLMECHS = '908';
+
+// Error replies outside the 400–599 range: STARTTLS, mode params, oper privs, MLOCK, metadata, knock, Unreal
+const OUT_OF_RANGE_ERROR_NUMERICS = new Set(['691', '696', '712', '713', '714', '723', '742', '764', '765', '767', '768', '769', '972', '974']);
+
+const isErrorNumeric = (numeric: string): boolean => {
+  const value = Number.parseInt(numeric, 10);
+  return (value >= 400 && value <= 599) || OUT_OF_RANGE_ERROR_NUMERICS.has(numeric);
+};
+
+/** ISUPPORT list limits (MONITOR, WATCH, SILENCE): a token without a value means no limit. */
+const parseIsupportLimit = (value: string | undefined): number =>
+  value ? Number.parseInt(value, 10) : Number.POSITIVE_INFINITY;
 
 // Self-initiated teardowns never reach handleDisconnected, so per-connection state is cleared here too
 onConnectionTornDown(() => {
@@ -883,6 +896,9 @@ export class Kernel {
       case RPL_VERSION:
         this.onRaw351();
         break;
+      case RPL_ENDOFWHO:
+        // Ends the WHOX query sent on join; nothing to show
+        break;
       case RPL_WHOSPCRPL:
         this.onRaw354();
         break;
@@ -1074,9 +1090,40 @@ export class Kernel {
         break;
 
       default:
+        if (/^\d{3}$/.test(command)) {
+          this.onUnhandledNumeric();
+          break;
+        }
         if (import.meta.env.DEV) { console.log(`unknown irc event: ${JSON.stringify(event)}`); }
         break;
     }
+  };
+
+  // Shown rather than dropped; errors go to the window the user is looking at
+  // :server 438 mynick newnick :Nick change too fast. Please wait 30 seconds.
+  private readonly onUnhandledNumeric = (): void => {
+    this.line.shift(); // my nick
+
+    const trailingIndex = this.line.findIndex((token) => token.startsWith(':'));
+    const params = trailingIndex === -1 ? this.line : this.line.slice(0, trailingIndex);
+    const text = trailingIndex === -1 ? '' : this.stripColon(this.line.slice(trailingIndex).join(' '));
+    const message = [params.join(' '), text].filter((part) => part !== '').join(': ');
+
+    if (message === '') {
+      return;
+    }
+
+    const isError = isErrorNumeric(this.command);
+    console.log(`unknown irc event (PROBE-TMP numeric): ${this.eventLine}`);
+
+    setAddMessage({
+      id: this.tags.msgid ?? uuidv4(),
+      message,
+      target: isError ? getCurrentChannelName() : STATUS_CHANNEL,
+      time: this.tags.time ?? new Date().toISOString(),
+      category: isError ? MessageCategory.error : MessageCategory.info,
+      color: isError ? MessageColor.error : MessageColor.info,
+    });
   };
 
   // IRCv3 account-notify
@@ -2737,54 +2784,51 @@ export class Kernel {
       color: MessageColor.info,
     });
 
-    for (let singleLine of this.line) {
-      singleLine = singleLine.replace(':are supported by this server', '');
-      const parameters = singleLine.split(' ');
-      for (const parameter of parameters) {
-        if (parameter.includes('=')) {
-          const [key, value] = parameter.split('=');
-          switch (key) {
-            case 'CHANTYPES':
-              setChannelTypes(value !== undefined ? value.split('') : defaultChannelTypes);
-              break;
-            case 'CASEMAPPING':
-              setCaseMapping(parseCaseMapping(value));
-              break;
-            case 'PREFIX':
-              setUserModes(parseUserModes(value));
-              break;
-            case 'WHOX':
-              setSupportedOption('WHOX');
-              break;
-            case 'CHANMODES':
-              setChannelModes(parseChannelModes(value));
-              break;
-            case 'WATCH':
-              setWatchLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
-              break;
-            case 'MONITOR':
-              setMonitorLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
-              break;
-            case 'SILENCE':
-              setSilenceLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
-              break;
-            case 'NICKLEN':
-              setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
-              break;
-            case 'LINELEN':
-              // 0 = not sent; E2EE chunking then uses a conservative default
-              setLineLenLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
-              break;
-            case 'NETWORK':
-              if (value !== undefined) { setNetworkName(value); }
-              break;
-          }
-        }
+    for (const parameter of this.line) {
+      if (parameter.startsWith(':')) {
+        break; // ":are supported by this server"
+      }
 
-        if (parameter === 'NAMESX') {
+      const [key, value] = parameter.split('=');
+      switch (key) {
+        case 'CHANTYPES':
+          setChannelTypes(value !== undefined ? value.split('') : defaultChannelTypes);
+          break;
+        case 'CASEMAPPING':
+          setCaseMapping(parseCaseMapping(value));
+          break;
+        case 'PREFIX':
+          setUserModes(parseUserModes(value));
+          break;
+        case 'WHOX':
+          setSupportedOption('WHOX');
+          break;
+        case 'NAMESX':
           setSupportedOption('NAMESX');
           ircSendNamesXProto();
-        }
+          break;
+        case 'CHANMODES':
+          setChannelModes(parseChannelModes(value));
+          break;
+        case 'WATCH':
+          setWatchLimit(parseIsupportLimit(value));
+          break;
+        case 'MONITOR':
+          setMonitorLimit(parseIsupportLimit(value));
+          break;
+        case 'SILENCE':
+          setSilenceLimit(parseIsupportLimit(value));
+          break;
+        case 'NICKLEN':
+          setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);
+          break;
+        case 'LINELEN':
+          // 0 = not sent; E2EE chunking then uses a conservative default
+          setLineLenLimit(value !== undefined ? Number.parseInt(value, 10) : 0);
+          break;
+        case 'NETWORK':
+          if (value !== undefined) { setNetworkName(value); }
+          break;
       }
     }
   };
