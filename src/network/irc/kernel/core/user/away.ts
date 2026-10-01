@@ -2,7 +2,8 @@ import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
+import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { getCurrentChannelName, getUserModes, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUserAway } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
@@ -37,13 +38,10 @@ export const onRaw301 = (ctx: IrcContext): void => {
     reason = reason.substring(1);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

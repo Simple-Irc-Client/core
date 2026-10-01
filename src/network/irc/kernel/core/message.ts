@@ -4,6 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { notifyHighlight } from '@/runtime/notifications';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
@@ -401,13 +402,10 @@ export const onRaw401 = (ctx: IrcContext): void => {
     handlePeerOffline(target);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${target}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -421,13 +419,10 @@ export const onRaw404 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.404.cannot-send-to-channel', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: channel ?? STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -437,13 +432,10 @@ export const onRaw411 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -457,13 +449,10 @@ export const onRaw412 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.412.no-text-to-send', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

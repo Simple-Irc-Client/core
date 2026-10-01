@@ -1,14 +1,12 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { MessageCategory } from '@shared/types';
 import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_WHOISCERTFP = '276';
 const RPL_WHOISREGNICK = '307';
@@ -35,13 +33,10 @@ export const onRaw276 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.276', { user, message }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -57,13 +52,10 @@ export const onRaw307 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.307.is-identified-for-this-nick');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.307', { user, message }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -75,13 +67,10 @@ export const onRaw311 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const host = ctx.line.join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.311', { user, host }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -99,13 +88,10 @@ export const onRaw312 = (ctx: IrcContext): void => {
     description = description.substring(1);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -125,13 +111,10 @@ export const onRaw313 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.313.is-a-network-service');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.313', { user, message }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -152,13 +135,10 @@ export const onRaw319 = (ctx: IrcContext): void => {
     .map((channel) => parseChannel(channel, serverUserModes))
     .join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.319', { user, channels }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -175,13 +155,10 @@ export const onRaw320 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.320.a-network-administrator');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.320', { user, message }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -196,13 +173,10 @@ export const onRaw335 = (ctx: IrcContext): void => {
     setUserBot(user, true);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.335', { user }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -219,13 +193,10 @@ export const onRaw671 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.671.is-using-a-secure-connection');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.671', { user, message }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -240,13 +211,10 @@ export const onRaw317 = (ctx: IrcContext): void => {
   const idleFormatted = formatDuration(idleSeconds);
   const signonDate = signonTime > 0 ? format(new Date(signonTime * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }) : '';
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -277,13 +245,10 @@ export const onRaw330 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.330.is-logged-in-as', { defaultValue: 'is logged in as' });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.330', { user, account, message, defaultValue: `${user} ${message} ${account}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -295,13 +260,10 @@ export const onRaw338 = (ctx: IrcContext): void => {
   const actualUserHost = ctx.line.shift();
   const actualIP = ctx.line.shift();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.338', { user, actualUserHost, actualIP, defaultValue: `${user} ${actualUserHost} ${actualIP}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -313,13 +275,10 @@ export const onRaw344 = (ctx: IrcContext): void => {
   const country = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.344', { user, country, message, defaultValue: `${user} ${message} ${country}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -330,13 +289,10 @@ export const onRaw378 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.378', { user, message, defaultValue: `* ${user} ${message}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -347,13 +303,10 @@ export const onRaw379 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.379', { user, message, defaultValue: `* ${user} ${message}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

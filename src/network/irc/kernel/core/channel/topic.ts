@@ -1,11 +1,10 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage, setTopic, setTopicSetBy } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
+import { setTopic, setTopicSetBy } from '@features/channels/store/channels';
 import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_TOPIC = '332';
 const RPL_TOPICWHOTIME = '333';
@@ -23,13 +22,10 @@ export const onTopic = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t(`kernel.topic`, { nick, topic }),
     target: channel,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 
   setTopic(channel, topic);

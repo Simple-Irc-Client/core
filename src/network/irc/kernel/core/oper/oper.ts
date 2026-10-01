@@ -1,7 +1,8 @@
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
+import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,13 +34,10 @@ export const onRaw481 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

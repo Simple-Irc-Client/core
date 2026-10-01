@@ -1,13 +1,11 @@
 import { defaultChannelTypes, STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { parseChannelModes, parseUserModes } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addReply } from '@/network/irc/kernel/replies';
 import { ircSendNamesXProto } from '@/network/irc/network';
-import { setAddMessage } from '@features/channels/store/channels';
 import { setCaseMapping, setChannelModes, setChannelTypes, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_ISUPPORT = '005';
 
@@ -22,13 +20,10 @@ const parseIsupportLimit = (value: string | undefined): number =>
 export const onRaw005 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: ctx.line.join(' '),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 
   for (const parameter of ctx.line) {

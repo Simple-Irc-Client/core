@@ -1,10 +1,8 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const ERR_NOSUCHSERVER = '402';
 const ERR_INPUTTOOLONG = '417';
@@ -18,13 +16,10 @@ export const onRaw402 = (ctx: IrcContext): void => {
   const server = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${server}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -34,13 +29,10 @@ export const onRaw417 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -55,13 +47,10 @@ export const onRaw421 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.421.unknown-command', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${command}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -76,13 +65,10 @@ export const onRaw461 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.461.not-enough-parameters', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${command}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

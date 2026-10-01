@@ -4,6 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addReply } from '@/network/irc/kernel/replies';
 import { ircRequestChatHistory, ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, isSupportedOption, setCurrentChannelName } from '@features/settings/store/settings';
@@ -102,13 +103,10 @@ export const onRaw473 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.473.cannot-join-channel-i');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel} :${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -133,13 +131,10 @@ export const onRaw474 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.474.cannot-join-channel-b');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel} :${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -164,13 +159,10 @@ export const onRaw477 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.477.you-need-a-registered-nick-to-join-that-channel');
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel} :${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -181,13 +173,10 @@ export const onRaw328 = (ctx: IrcContext): void => {
   const url = ctx.trailing();
 
   if (channel) {
-    setAddMessage({
-      id: ctx.tags.msgid ?? uuidv4(),
+    addReply(ctx, {
       message: i18next.t('kernel.328', { channel, url, defaultValue: `Channel URL: ${url}` }),
       target: channel,
-      time: ctx.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
-      color: MessageColor.info,
     });
   }
 };
@@ -203,13 +192,10 @@ export const onRaw403 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.403.no-such-channel', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -224,13 +210,10 @@ export const onRaw405 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.405.too-many-channels', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -241,13 +224,10 @@ export const onRaw448 = (ctx: IrcContext): void => {
   const channel = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -262,13 +242,10 @@ export const onRaw471 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.471.channel-full', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -283,13 +260,10 @@ export const onRaw475 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.475.bad-channel-key', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 
@@ -300,13 +274,10 @@ export const onRaw476 = (ctx: IrcContext): void => {
   const channel = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

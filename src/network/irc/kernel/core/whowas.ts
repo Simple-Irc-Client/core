@@ -1,10 +1,8 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_WHOWASUSER = '314';
 const RPL_ENDOFWHOWAS = '369';
@@ -17,13 +15,10 @@ export const onRaw314 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const host = ctx.line.join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.314', { user, host, defaultValue: `${user} was ${host}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -34,13 +29,10 @@ export const onRaw369 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `* ${nick} ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -51,13 +43,10 @@ export const onRaw406 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${nick}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

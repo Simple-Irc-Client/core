@@ -1,11 +1,9 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_INVITING = '341';
 const ERR_USERONCHANNEL = '443';
@@ -24,13 +22,10 @@ export const onInvite = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.invite', { nick, channel }),
     target: getCurrentChannelName(),
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -41,13 +36,10 @@ export const onRaw341 = (ctx: IrcContext): void => {
   const invitedUser = ctx.line.shift();
   const channel = ctx.line.shift();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.341', { user: invitedUser, channel, defaultValue: `Inviting ${invitedUser} to ${channel}` }),
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -63,13 +55,10 @@ export const onRaw443 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.443.already-on-channel', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${nick} ${channel}: ${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

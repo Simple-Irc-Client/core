@@ -1,13 +1,11 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addReply } from '@/network/irc/kernel/replies';
 import { finishCapNegotiation } from '@/network/irc/kernel/ircv3/cap';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getSaslState, handleSaslChallenge, saveSaslCredentialsForReconnect, setAuthenticatedAccount, setSaslState } from '@/network/irc/sasl';
-import { setAddMessage } from '@features/channels/store/channels';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_LOGGEDIN = '900';
 const RPL_LOGGEDOUT = '901';
@@ -49,13 +47,10 @@ export const onRaw900 = (ctx: IrcContext): void => {
   const account = ctx.line[2] ?? null;
   setAuthenticatedAccount(account);
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.loggedIn', { account }),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -63,13 +58,10 @@ export const onRaw900 = (ctx: IrcContext): void => {
 export const onRaw901 = (ctx: IrcContext): void => {
   setAuthenticatedAccount(null);
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.loggedOut'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -77,13 +69,10 @@ export const onRaw901 = (ctx: IrcContext): void => {
 export const onRaw902 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.nickLocked'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   finishCapNegotiation();
@@ -95,13 +84,10 @@ export const onRaw903 = (ctx: IrcContext): void => {
   void saveSaslCredentialsForReconnect();
   setSaslState('success');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.success'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 
   finishCapNegotiation();
@@ -111,13 +97,10 @@ export const onRaw903 = (ctx: IrcContext): void => {
 export const onRaw904 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.failed'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   finishCapNegotiation();
@@ -127,13 +110,10 @@ export const onRaw904 = (ctx: IrcContext): void => {
 export const onRaw905 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.tooLong'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   finishCapNegotiation();
@@ -143,13 +123,10 @@ export const onRaw905 = (ctx: IrcContext): void => {
 export const onRaw906 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.sasl.aborted'),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 
   finishCapNegotiation();
@@ -166,13 +143,10 @@ export const onRaw908 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const mechanisms = ctx.line.shift();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

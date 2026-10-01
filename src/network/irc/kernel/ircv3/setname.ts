@@ -1,12 +1,10 @@
 import i18next from '@/app/i18n';
-import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getUserModes } from '@features/settings/store/settings';
 import { getUserChannels, setUserRealname } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 // IRCv3 setname
 // :nick!user@host SETNAME :New Real Name
@@ -19,13 +17,10 @@ export const onSetname = (ctx: IrcContext): void => {
 
     const channels = getUserChannels(nick);
     for (const channelName of channels) {
-      setAddMessage({
-        id: ctx.tags.msgid ?? uuidv4(),
+      addReply(ctx, {
         message: i18next.t('kernel.setname', { nick, realname }),
         target: channelName,
-        time: ctx.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
-        color: MessageColor.info,
       });
     }
   }

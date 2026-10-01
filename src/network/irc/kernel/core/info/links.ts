@@ -1,9 +1,7 @@
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_LINKS = '364';
 const RPL_ENDOFLINKS = '365';
@@ -15,13 +13,10 @@ export const onRaw364 = (ctx: IrcContext): void => {
   const server = ctx.line.shift();
   const info = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${mask} ${server} ${info}`,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -31,13 +26,10 @@ export const onRaw365 = (ctx: IrcContext): void => {
   const mask = ctx.line.shift();
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${mask} ${message}`,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

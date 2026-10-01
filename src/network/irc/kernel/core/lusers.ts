@@ -1,9 +1,7 @@
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_STATSCONN = '250';
 const RPL_LUSERCLIENT = '251';
@@ -20,13 +18,10 @@ export const onRaw250 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -36,13 +31,10 @@ export const onRaw251 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -52,13 +44,10 @@ export const onRaw252 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -68,13 +57,10 @@ export const onRaw253 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -84,13 +70,10 @@ export const onRaw254 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -100,13 +83,10 @@ export const onRaw255 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -118,13 +98,10 @@ export const onRaw265 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 
@@ -136,13 +113,10 @@ export const onRaw266 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 };
 

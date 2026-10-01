@@ -3,7 +3,8 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
+import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
 import { getCurrentChannelName, getCurrentNick, getIsWizardCompleted, getNickLenLimit, getUserModes, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
@@ -44,13 +45,10 @@ export const onNick = (ctx: IrcContext): void => {
   handlePresenceNickChange(oldNick, newNick);
 
   for (const channel of channels) {
-    setAddMessage({
-      id: ctx.tags.msgid ?? uuidv4(),
+    addReply(ctx, {
       message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
       target: channel,
-      time: ctx.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
-      color: MessageColor.info,
     });
   }
 
@@ -77,13 +75,10 @@ export const onRaw432 = (ctx: IrcContext): void => {
     message = message.substring(1);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${nick} :${message}`,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   if (!getIsWizardCompleted()) {
@@ -96,13 +91,10 @@ export const onRaw431 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   if (!getIsWizardCompleted()) {
@@ -120,13 +112,10 @@ export const onRaw433 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.433.nickname-in-use', { defaultValue: message });
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: `${nick}: ${message}`,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 
   if (!getIsWizardCompleted()) {
@@ -155,13 +144,10 @@ export const onRaw447 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: currentChannelName,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

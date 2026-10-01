@@ -1,12 +1,10 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { resumePendingEncryption } from '@features/e2ee/session';
 import { addMonitoredNick, setMultipleMonitorOffline, setMultipleMonitorOnline } from '@features/monitor/store/monitor';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_MONONLINE = '730';
 const RPL_MONOFFLINE = '731';
@@ -75,13 +73,10 @@ export const onRaw734 = (ctx: IrcContext): void => {
   const limit = ctx.line[1];
   const nicks = ctx.line[2];
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message: i18next.t('kernel.monitor.listFull', { limit, nicks }),
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.error,
-    color: MessageColor.error,
   });
 };
 

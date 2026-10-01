@@ -1,10 +1,8 @@
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 // Error replies outside the 400–599 range: STARTTLS, mode params, oper privs, MLOCK, metadata, knock, Unreal
 const OUT_OF_RANGE_ERROR_NUMERICS = new Set(['691', '696', '712', '713', '714', '723', '742', '764', '765', '767', '768', '769', '972', '974']);
@@ -30,12 +28,9 @@ export const onUnhandledNumeric = (ctx: IrcContext): void => {
 
   const isError = isErrorNumeric(ctx.command);
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: isError ? getCurrentChannelName() : STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: isError ? MessageCategory.error : MessageCategory.info,
-    color: isError ? MessageColor.error : MessageColor.info,
   });
 };

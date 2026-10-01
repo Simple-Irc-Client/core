@@ -1,11 +1,9 @@
 import { STATUS_CHANNEL } from '@/config/config';
-import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { setAddMessage } from '@features/channels/store/channels';
+import { addReply } from '@/network/irc/kernel/replies';
 import { subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
 import { subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { MessageCategory } from '@shared/types';
-import { v4 as uuidv4 } from 'uuid';
 
 const RPL_MOTD = '372';
 const RPL_MOTDSTART = '375';
@@ -18,13 +16,10 @@ export const onRaw372 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
-    color: MessageColor.info,
   });
 };
 
@@ -34,13 +29,10 @@ export const onRaw375 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
-    color: MessageColor.info,
   });
 };
 
@@ -50,13 +42,10 @@ export const onRaw376 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.motd,
-    color: MessageColor.info,
   });
 
   // 005 limits are known by now
@@ -69,13 +58,10 @@ export const onRaw422 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
+  addReply(ctx, {
     message,
     target: STATUS_CHANNEL,
-    time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.info,
-    color: MessageColor.info,
   });
 
   // No MOTD still ends the registration burst
