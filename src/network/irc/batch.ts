@@ -85,7 +85,7 @@ export const getBatch = (id: string): BatchState | undefined => {
 };
 
 export const getMessageBatchId = (message: ParsedIrcRawMessage): string | undefined => {
-  const batchId = message.tags?.batch;
+  const batchId = message.tags.batch;
   if (batchId && activeBatches.has(batchId)) {
     return batchId;
   }

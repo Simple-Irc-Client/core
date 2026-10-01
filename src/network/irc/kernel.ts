@@ -316,7 +316,7 @@ export class Kernel {
     this.line = [];
 
     this.event = event;
-    this.eventLine = event?.line !== undefined ? event?.line.trim() : '';
+    this.eventLine = event.line !== undefined ? event.line.trim() : '';
   }
 
   private stripColon(value: string): string {
@@ -347,7 +347,7 @@ export class Kernel {
   };
 
   handle(): void {
-    switch (this.event?.type) {
+    switch (this.event.type) {
       case 'connect':
         this.handleConnect();
         break;
@@ -358,12 +358,12 @@ export class Kernel {
         this.handleError();
         break;
       case 'raw':
-        if (this.event?.line !== undefined) {
+        if (this.event.line !== undefined) {
           this.handleRaw(this.event.line);
         }
         break;
       default:
-        if (import.meta.env.DEV) { console.log(`unhandled kernel event: ${this.event?.type ?? ''} ${this.event?.line ?? ''}`); }
+        if (import.meta.env.DEV) { console.log(`unhandled kernel event: ${this.event.type} ${this.event.line ?? ''}`); }
     }
   }
 
@@ -1121,7 +1121,7 @@ export class Kernel {
       const type = this.line.shift() ?? '';
       const params = [...this.line];
 
-      const label = this.tags?.label;
+      const label = this.tags.label;
 
       startBatch(id, type, params, label);
     } else if (reference.startsWith('-')) {
@@ -1256,10 +1256,10 @@ export class Kernel {
       const channels = getUserChannels(nick);
       for (const channelName of channels) {
         setAddMessage({
-          id: this.tags?.msgid ?? uuidv4(),
+          id: this.tags.msgid ?? uuidv4(),
           message: i18next.t('kernel.chghost', { nick, ident: newIdent, hostname: newHostname }),
           target: channelName,
-          time: this.tags?.time ?? new Date().toISOString(),
+          time: this.tags.time ?? new Date().toISOString(),
           category: MessageCategory.info,
           color: MessageColor.info,
         });
@@ -1282,7 +1282,7 @@ export class Kernel {
     switch (subcommand) {
       case 'LS':
       case 'LIST': {
-        const isMultiline = this.line?.[0] === '*';
+        const isMultiline = this.line[0] === '*';
         if (isMultiline) {
           this.line.shift();
           setAwaitingMoreCaps(true);
@@ -1451,10 +1451,10 @@ export class Kernel {
     setAuthenticatedAccount(account);
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.loggedIn', { account }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -1465,10 +1465,10 @@ export class Kernel {
     setAuthenticatedAccount(null);
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.loggedOut'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -1479,10 +1479,10 @@ export class Kernel {
     setSaslState('failed');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.nickLocked'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -1497,10 +1497,10 @@ export class Kernel {
     setSaslState('success');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.success'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -1513,10 +1513,10 @@ export class Kernel {
     setSaslState('failed');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.failed'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -1529,10 +1529,10 @@ export class Kernel {
     setSaslState('failed');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.tooLong'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -1545,10 +1545,10 @@ export class Kernel {
     setSaslState('failed');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.sasl.aborted'),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -1624,10 +1624,10 @@ export class Kernel {
     const nicks = this.line[2];
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.monitor.listFull', { limit, nicks }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -1644,7 +1644,7 @@ export class Kernel {
     }
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       time: new Date().toISOString(),
       category: MessageCategory.error,
@@ -1671,10 +1671,10 @@ export class Kernel {
     const { nick } = parseNick(this.sender, getUserModes());
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.invite', { nick, channel }),
       target: getCurrentChannelName(),
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -1705,11 +1705,11 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.join', { nick }),
       nick: getUser(nick) ?? nick,
       target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.join,
       color: MessageColor.join,
     });
@@ -1745,7 +1745,7 @@ export class Kernel {
 
     const channel = this.line.shift();
     const kicked = this.line.shift();
-    const reason = this.trailing() ?? '';
+    const reason = this.trailing();
 
     if (kicked === undefined) {
       this.logParseError(this.onKick, 'kicked');
@@ -1760,11 +1760,11 @@ export class Kernel {
     const { nick } = parseNick(this.sender, getUserModes());
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t(`kernel.kick${isSameName(kicked, currentNick) ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
       nick: getUser(nick) ?? nick,
       target: isSameName(kicked, currentNick) ? STATUS_CHANNEL : channel,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.kick,
       color: MessageColor.kick,
     });
@@ -1786,12 +1786,12 @@ export class Kernel {
 
     const { nick } = parseNick(this.sender, getUserModes());
 
-    const reason = this.trailing() ?? '';
+    const reason = this.trailing();
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.kill', { nick, reason: reason.length !== 0 ? `(${reason})` : '' }),
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -1935,12 +1935,12 @@ export class Kernel {
           case '+A':
           case '-A': {
             // List modes (ban, exception, invite) always have a param
-            const param = this.line?.[flagParameterIndex];
+            const param = this.line[flagParameterIndex];
             flagParameterIndex++;
             message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
             if (isSettingsOpen && param) {
               if (plusMinus === '+') {
-                const entry = { mask: param, setBy: nick ?? '', setTime: Math.floor(Date.now() / 1000) };
+                const entry = { mask: param, setBy: nick, setTime: Math.floor(Date.now() / 1000) };
                 if (flag === 'b') { addToChannelSettingsBanList(entry); }
                 else if (flag === 'e') { addToChannelSettingsExceptionList(entry); }
                 else if (flag === 'I') { addToChannelSettingsInviteList(entry); }
@@ -1956,7 +1956,7 @@ export class Kernel {
           case '-B':
           case '+C': {
             // with params
-            const param = this.line?.[flagParameterIndex];
+            const param = this.line[flagParameterIndex];
             flagParameterIndex++;
             message = i18next.t(translate, { channel, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.unknown-params', { channel, setBy: nick, mode, param }) });
             if (isSettingsOpen) {
@@ -1980,7 +1980,7 @@ export class Kernel {
           case '+U':
           case '-U': {
             // user flag
-            const user = this.line?.[flagParameterIndex];
+            const user = this.line[flagParameterIndex];
             if (user !== undefined) {
               flagParameterIndex++;
               message = i18next.t(translate, { user, setBy: nick, defaultValue: i18next.t('kernel.mode.channel.user', { user, setBy: nick, mode }) });
@@ -1998,7 +1998,7 @@ export class Kernel {
           id: uuidv4(),
           message,
           target: userOrChannel,
-          time: this.tags?.time ?? new Date().toISOString(),
+          time: this.tags.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
         });
@@ -2074,7 +2074,7 @@ export class Kernel {
           id: uuidv4(),
           message,
           target: STATUS_CHANNEL,
-          time: this.tags?.time ?? new Date().toISOString(),
+          time: this.tags.time ?? new Date().toISOString(),
           category: MessageCategory.mode,
           color: MessageColor.mode,
         });
@@ -2109,10 +2109,10 @@ export class Kernel {
 
     for (const channel of channels) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
         target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -2214,7 +2214,7 @@ export class Kernel {
 
       // E2EE handshake replies (ACCEPT/DECLINE/RESET) arrive as CTCP replies by
       // convention; they drive the session, not the Status window.
-      if (handleE2eeCtcp({ nick, target, ctcpContent, source: 'notice', msgid: this.tags?.msgid, time: this.tags?.time })) {
+      if (handleE2eeCtcp({ nick, target, ctcpContent, source: 'notice', msgid: this.tags.msgid, time: this.tags.time })) {
         return;
       }
 
@@ -2223,10 +2223,10 @@ export class Kernel {
       const ctcpResponse = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
 
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.ctcpReply', { nick, command: ctcpCommand.toUpperCase(), response: ctcpResponse }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.notice,
         color: MessageColor.notice,
       });
@@ -2249,19 +2249,19 @@ export class Kernel {
     const newMessage = {
       message,
       nick: nick.length !== 0 ? nick : undefined,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.notice,
       color: MessageColor.notice,
     };
 
-    setAddMessage({ ...newMessage, target: noticeTarget, id: this.tags?.msgid ?? uuidv4() });
+    setAddMessage({ ...newMessage, target: noticeTarget, id: this.tags.msgid ?? uuidv4() });
   };
 
   // @account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał
   // :mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat
   private readonly onPart = (): void => {
     let channel = this.line.shift();
-    const reason = this.trailing() ?? '';
+    const reason = this.trailing();
 
     if (channel === undefined) {
       this.logParseError(this.onPart, 'channel');
@@ -2275,11 +2275,11 @@ export class Kernel {
     const { nick } = parseNick(this.sender, getUserModes());
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
       nick: getUser(nick) ?? nick,
       target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.part,
       color: MessageColor.part,
     });
@@ -2371,8 +2371,8 @@ export class Kernel {
       setTyping(messageTarget, nick, 'done');
     }
 
-    const messageId = this.tags?.msgid ?? uuidv4();
-    const messageTime = this.tags?.time ?? new Date().toISOString();
+    const messageId = this.tags.msgid ?? uuidv4();
+    const messageTime = this.tags.time ?? new Date().toISOString();
     const highlight = !isEchoMessage && (isDirectMessage || message.toLowerCase().includes(myNick.toLowerCase()));
 
     setAddMessage({
@@ -2427,8 +2427,8 @@ export class Kernel {
         target,
         ctcpContent,
         source: 'privmsg',
-        msgid: this.tags?.msgid,
-        time: this.tags?.time,
+        msgid: this.tags.msgid,
+        time: this.tags.time,
       })
     ) {
       return;
@@ -2524,11 +2524,11 @@ export class Kernel {
     const highlight = !isEchoMessage && (isDirectMessage || action.toLowerCase().includes(myNick.toLowerCase()));
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: action,
       nick: getUser(nick) ?? nick,
       target: messageTarget,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.me,
       color: MessageColor.me,
       highlight,
@@ -2545,15 +2545,15 @@ export class Kernel {
 
   // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
   private readonly onQuit = (): void => {
-    const reason = this.trailing() ?? '';
+    const reason = this.trailing();
 
     const { nick } = parseNick(this.sender, getUserModes());
 
     const message = {
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.quit', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
       nick: getUser(nick) ?? nick,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.quit,
       color: MessageColor.quit,
     };
@@ -2579,10 +2579,10 @@ export class Kernel {
       const channels = getUserChannels(nick);
       for (const channelName of channels) {
         setAddMessage({
-          id: this.tags?.msgid ?? uuidv4(),
+          id: this.tags.msgid ?? uuidv4(),
           message: i18next.t('kernel.setname', { nick, realname }),
           target: channelName,
-          time: this.tags?.time ?? new Date().toISOString(),
+          time: this.tags.time ?? new Date().toISOString(),
           category: MessageCategory.info,
           color: MessageColor.info,
         });
@@ -2608,7 +2608,7 @@ export class Kernel {
       return;
     }
 
-    const status = this.tags?.['+typing'] ?? this.tags?.['+draft/typing'];
+    const status = this.tags['+typing'] ?? this.tags['+draft/typing'];
     if (status === undefined) {
       return;
     }
@@ -2639,10 +2639,10 @@ export class Kernel {
     const { nick } = parseNick(this.sender, getUserModes());
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t(`kernel.topic`, { nick, topic }),
       target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2664,10 +2664,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2682,10 +2682,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2698,10 +2698,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2712,10 +2712,10 @@ export class Kernel {
     this.line.shift(); // my nick
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: this.line.join(' '),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2729,10 +2729,10 @@ export class Kernel {
     this.line.shift(); // my nick
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: this.line.join(' '),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2796,10 +2796,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2812,10 +2812,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2828,10 +2828,10 @@ export class Kernel {
     const message = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2844,10 +2844,10 @@ export class Kernel {
     const message = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2860,10 +2860,10 @@ export class Kernel {
     const message = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2876,10 +2876,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2894,10 +2894,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2912,10 +2912,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2930,10 +2930,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.276', { user, message }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2951,10 +2951,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2970,9 +2970,9 @@ export class Kernel {
     }
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -2991,9 +2991,9 @@ export class Kernel {
     }
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3015,10 +3015,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.307', { user, message }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3033,10 +3033,10 @@ export class Kernel {
     const host = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.311', { user, host }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3057,10 +3057,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3083,10 +3083,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.313', { user, message }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3110,10 +3110,10 @@ export class Kernel {
       .join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.319', { user, channels }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3133,10 +3133,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.320', { user, message }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3223,10 +3223,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.335', { user }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3281,10 +3281,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.motd,
       color: MessageColor.info,
     });
@@ -3297,10 +3297,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.motd,
       color: MessageColor.info,
     });
@@ -3313,10 +3313,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.motd,
       color: MessageColor.info,
     });
@@ -3333,10 +3333,10 @@ export class Kernel {
     const message = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3361,10 +3361,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick} :${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -3396,10 +3396,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel} :${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3437,10 +3437,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel} :${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3468,10 +3468,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel} :${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3499,10 +3499,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel} :${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3522,10 +3522,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.671', { user, message }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3710,10 +3710,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.010', { hostname, port, message, defaultValue: `Server redirect: ${hostname}:${port} ${message}` }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3725,10 +3725,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3741,10 +3741,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${uniqueId} ${message}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3756,10 +3756,10 @@ export class Kernel {
     const message = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3772,10 +3772,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${statsType} ${message}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3787,10 +3787,10 @@ export class Kernel {
     const modes = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.221', { modes, defaultValue: `Your user modes: ${modes}` }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3802,10 +3802,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3817,10 +3817,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3832,10 +3832,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3847,10 +3847,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3862,10 +3862,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3879,10 +3879,10 @@ export class Kernel {
     const host = this.line.join(' ');
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.314', { user, host, defaultValue: `${user} was ${host}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3900,10 +3900,10 @@ export class Kernel {
     const signonDate = signonTime > 0 ? format(new Date(signonTime * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }) : '';
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3932,10 +3932,10 @@ export class Kernel {
 
     if (channel) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.328', { channel, url, defaultValue: `Channel URL: ${url}` }),
         target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -3951,10 +3951,10 @@ export class Kernel {
     if (channel && timestamp > 0) {
       const createdDate = format(new Date(timestamp * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() });
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.329', { channel, created: createdDate, defaultValue: `Channel created: ${createdDate}` }),
         target: channel,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -3974,10 +3974,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.330', { user, account, message, defaultValue: `${user} ${message} ${account}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -3992,10 +3992,10 @@ export class Kernel {
     const actualIP = this.line.shift();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.338', { user, actualUserHost, actualIP, defaultValue: `${user} ${actualUserHost} ${actualIP}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4009,10 +4009,10 @@ export class Kernel {
     const channel = this.line.shift();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.341', { user: invitedUser, channel, defaultValue: `Inviting ${invitedUser} to ${channel}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4027,10 +4027,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.344', { user, country, message, defaultValue: `${user} ${message} ${country}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4044,10 +4044,10 @@ export class Kernel {
     const comments = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${server} ${version} ${comments}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4109,10 +4109,10 @@ export class Kernel {
     const info = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${mask} ${server} ${info}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4125,10 +4125,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${mask} ${message}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4142,10 +4142,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `* ${nick} ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4157,10 +4157,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4172,10 +4172,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4189,10 +4189,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.378', { user, message, defaultValue: `* ${user} ${message}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4206,10 +4206,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.379', { user, message, defaultValue: `* ${user} ${message}` }),
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4225,9 +4225,9 @@ export class Kernel {
     }
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4240,10 +4240,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${configFile} ${message}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4256,10 +4256,10 @@ export class Kernel {
     const timeString = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.391', { server, time: timeString, defaultValue: `${server}: ${timeString}` }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4282,10 +4282,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${target}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4299,10 +4299,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${server}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4320,10 +4320,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4340,10 +4340,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: channel ?? STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4361,10 +4361,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4378,10 +4378,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4394,10 +4394,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4414,10 +4414,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4430,10 +4430,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4451,10 +4451,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${command}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4466,10 +4466,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4485,10 +4485,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4509,10 +4509,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick}: ${message}`,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4529,9 +4529,9 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick}: ${message}`,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4550,10 +4550,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick} ${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4572,10 +4572,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${nick} ${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -4588,10 +4588,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4605,10 +4605,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4620,10 +4620,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4641,10 +4641,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${command}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4656,10 +4656,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4675,10 +4675,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4694,9 +4694,9 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessageToAllChannels({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4718,10 +4718,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4735,10 +4735,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${modeChar}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4756,10 +4756,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4773,10 +4773,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4791,10 +4791,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel} ${mask}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4807,10 +4807,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4827,10 +4827,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${channel}: ${message}`,
       target: channel ?? STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4843,10 +4843,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4859,10 +4859,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4876,10 +4876,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `${topic}: ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.error,
       color: MessageColor.error,
     });
@@ -4893,10 +4893,10 @@ export class Kernel {
     // User is now away again (after returning)
     if (nick) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4910,10 +4910,10 @@ export class Kernel {
     // User went away
     if (nick) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4927,10 +4927,10 @@ export class Kernel {
     // User is back from away
     if (nick) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchback', { nick, defaultValue: `${nick} is no longer away` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4946,10 +4946,10 @@ export class Kernel {
       setMultipleMonitorOnline([nick]);
       void resumePendingEncryption(nick);
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4964,10 +4964,10 @@ export class Kernel {
     if (nick) {
       setMultipleMonitorOffline([nick]);
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4981,10 +4981,10 @@ export class Kernel {
     // Stopped watching nick
     if (nick) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchremoved', { nick, defaultValue: `Stopped watching ${nick}` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -4997,10 +4997,10 @@ export class Kernel {
     const message = this.trailing();
     // Watch statistics
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5015,10 +5015,10 @@ export class Kernel {
       setMultipleMonitorOnline([nick]);
       void resumePendingEncryption(nick);
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -5033,10 +5033,10 @@ export class Kernel {
     if (nick) {
       setMultipleMonitorOffline([nick]);
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -5049,10 +5049,10 @@ export class Kernel {
     const nicks = this.trailing();
     // Watch list entries
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.watchlist', { nicks, defaultValue: `Watch list: ${nicks}` }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5067,10 +5067,10 @@ export class Kernel {
   private readonly onRaw608 = (): void => {
     this.line.shift(); // my nick
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.watchcleared', { defaultValue: 'Watch list cleared' }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5083,10 +5083,10 @@ export class Kernel {
     // User is currently away (when adding to watch list)
     if (nick) {
       setAddMessage({
-        id: this.tags?.msgid ?? uuidv4(),
+        id: this.tags.msgid ?? uuidv4(),
         message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
         target: STATUS_CHANNEL,
-        time: this.tags?.time ?? new Date().toISOString(),
+        time: this.tags.time ?? new Date().toISOString(),
         category: MessageCategory.info,
         color: MessageColor.info,
       });
@@ -5101,10 +5101,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `[${topic}] ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5118,10 +5118,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5135,10 +5135,10 @@ export class Kernel {
     const message = this.trailing();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: `[${topic}] ${message}`,
       target: currentChannelName,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5157,10 +5157,10 @@ export class Kernel {
     }
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.728', { channel, mask, setBy, defaultValue: `${channel} quiet: ${mask} (set by ${setBy})` }),
       target: channel,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });
@@ -5180,10 +5180,10 @@ export class Kernel {
     const mechanisms = this.line.shift();
 
     setAddMessage({
-      id: this.tags?.msgid ?? uuidv4(),
+      id: this.tags.msgid ?? uuidv4(),
       message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
       target: STATUS_CHANNEL,
-      time: this.tags?.time ?? new Date().toISOString(),
+      time: this.tags.time ?? new Date().toISOString(),
       category: MessageCategory.info,
       color: MessageColor.info,
     });

@@ -80,8 +80,7 @@ export const initDirectWebSocket = (server: Server): void => {
     wsUrl = server.websocketUrl;
   } else {
     const protocol = server.tls ? 'wss:' : 'ws:';
-    const port = parsedServer.port ?? (server.tls ? 443 : 80);
-    wsUrl = `${protocol}//${parsedServer.host}:${port}`;
+    wsUrl = `${protocol}//${parsedServer.host}:${parsedServer.port}`;
   }
 
   if (import.meta.env.DEV) {

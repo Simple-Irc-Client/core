@@ -81,7 +81,6 @@ export const initTauriIrc = (server: Server): void => {
   isConnectedFlag = false;
 
   const tls = server.tls ?? false;
-  const port = parsed.port ?? (tls ? 6697 : 6667);
 
   void (async () => {
     try {
@@ -95,7 +94,7 @@ export const initTauriIrc = (server: Server): void => {
       const id = await invoke<string>('irc_connect', {
         options: {
           host: parsed.host,
-          port,
+          port: parsed.port,
           tls,
           encoding: server.encoding ?? 'utf8',
         },

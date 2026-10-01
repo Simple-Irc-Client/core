@@ -147,7 +147,7 @@ export const ContextMenu = () => {
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
         <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={80}>
-          <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
+          <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleJoin}>
             <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -272,7 +272,7 @@ export const ContextMenu = () => {
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
         <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={300}>
-          <DropdownMenuLabel>{contextMenuItem ?? ''}</DropdownMenuLabel>
+          <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {userHomepage && (
             <DropdownMenuItem onClick={handleVisitHomepage} title={userHomepage}>

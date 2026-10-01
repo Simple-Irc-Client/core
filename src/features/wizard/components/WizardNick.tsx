@@ -60,7 +60,7 @@ const WizardNick = () => {
           <Input
             id="nick"
             required
-            aria-label={t('wizard.nick.nick') ?? ''}
+            aria-label={t('wizard.nick.nick')}
             autoComplete="nick"
             autoFocus
             onChange={(event) => {

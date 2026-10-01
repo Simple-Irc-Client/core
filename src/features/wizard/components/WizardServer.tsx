@@ -30,8 +30,8 @@ const WizardServer = () => {
   const [formServer, setFormServer] = useState<Server | undefined>(savedKnownServer);
   const [open, setOpen] = useState(false);
   const [isCustom, setIsCustom] = useState(savedIsCustom);
-  const [customHost, setCustomHost] = useState(savedIsCustom ? savedServer?.servers[0]?.replace(/:\d+$/, '') ?? '' : '');
-  const [customPort, setCustomPort] = useState(savedIsCustom ? savedServer?.servers[0]?.match(/:(\d+)$/)?.[1] ?? '6667' : '6667');
+  const [customHost, setCustomHost] = useState(savedIsCustom ? savedServer.servers[0]?.replace(/:\d+$/, '') ?? '' : '');
+  const [customPort, setCustomPort] = useState(savedIsCustom ? savedServer.servers[0]?.match(/:(\d+)$/)?.[1] ?? '6667' : '6667');
   const [connectionType, setConnectionType] = useState<ConnectionType>(savedServer?.connectionType ?? 'backend');
   const [serverPassword, setServerPassword] = useState(savedServer?.serverPassword ?? '');
 
@@ -122,7 +122,7 @@ const WizardServer = () => {
             </PopoverTrigger>
             <PopoverContent className="w-75 p-0">
               <Command>
-                <CommandInput placeholder={t('wizard.server.server') ?? ''} />
+                <CommandInput placeholder={t('wizard.server.server')} />
                 <CommandList>
                   <CommandEmpty>{t('wizard.server.message.no.options')}</CommandEmpty>
                   <CommandGroup heading={t('wizard.server.popular')}>
@@ -153,7 +153,7 @@ const WizardServer = () => {
           <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.custom')}</p>
           <div className="flex gap-2">
             <Input
-              placeholder={t('wizard.server.host') ?? 'irc.example.com'}
+              placeholder={t('wizard.server.host')}
               aria-label={t('wizard.server.host')}
               value={customHost}
               onChange={(e) => {
@@ -166,7 +166,7 @@ const WizardServer = () => {
               }}
               className={cn('flex-1', customHost && 'bg-white')}
             />
-            <Input placeholder={t('wizard.server.port') ?? '6667'} aria-label={t('wizard.server.port')} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className={cn('w-20', customPort && 'bg-white')} />
+            <Input placeholder={t('wizard.server.port')} aria-label={t('wizard.server.port')} value={customPort} onChange={(e) => setCustomPort(e.target.value)} className={cn('w-20', customPort && 'bg-white')} />
           </div>
         </div>
 
@@ -187,7 +187,7 @@ const WizardServer = () => {
               <p className="text-sm text-muted-foreground mb-2">{t('wizard.server.password')}</p>
               <Input
                 type="password"
-                placeholder={t('wizard.server.password.placeholder') ?? ''}
+                placeholder={t('wizard.server.password.placeholder')}
                 aria-label={t('wizard.server.password')}
                 value={serverPassword}
                 onChange={(e) => setServerPassword(e.target.value)}

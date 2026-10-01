@@ -40,8 +40,8 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const [displayName, setDisplayName] = useState('');
   const [paramEdits, setParamEdits] = useState<Record<string, string>>({});
 
-  const isAvatarSupported = supportedOptions?.includes('metadata-avatar') ?? false;
-  const isDisplayNameSupported = supportedOptions?.includes('metadata-display-name') ?? false;
+  const isAvatarSupported = supportedOptions.includes('metadata-avatar');
+  const isDisplayNameSupported = supportedOptions.includes('metadata-display-name');
 
   const initialLimit = useMemo(() => (channelModes.l !== undefined ? String(channelModes.l) : ''), [channelModes.l]);
   const initialKey = useMemo(() => (channelModes.k !== undefined ? String(channelModes.k) : ''), [channelModes.k]);
@@ -155,7 +155,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     );
   };
 
-  const availableFlags = serverChannelModes.D || [];
+  const availableFlags = serverChannelModes.D;
 
   if (isLoading) {
     return (
@@ -190,7 +190,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
       <div className="space-y-4">
         <h3 className="text-sm font-medium">{t('channelSettings.modes.settings')}</h3>
 
-        {availableFlags.includes('l') || serverChannelModes.C?.includes('l') ? (
+        {availableFlags.includes('l') || serverChannelModes.C.includes('l') ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="limit" className="w-24 shrink-0">
               {t('channelSettings.modes.userLimit')}
@@ -216,7 +216,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
           </div>
         ) : null}
 
-        {serverChannelModes.B?.includes('k') ? (
+        {serverChannelModes.B.includes('k') ? (
           <div className="flex items-center gap-2">
             <Label htmlFor="key" className="w-24 shrink-0">
               {t('channelSettings.modes.channelKey')}

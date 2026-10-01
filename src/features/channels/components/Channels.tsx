@@ -55,7 +55,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
-  const channelsList = useMemo(() => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []), [isChannelListLoadingFinished]);
+  const channelsList = useMemo(() => (isChannelListLoadingFinished ? getChannelListSortedByUsers() : []), [isChannelListLoadingFinished]);
 
   const [showRemoveChannelIcon, setShowRemoveChannelIcon] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);

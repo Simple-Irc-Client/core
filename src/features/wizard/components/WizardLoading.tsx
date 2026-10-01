@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { Progress } from '@shared/components/ui/progress';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
@@ -25,11 +25,11 @@ const WizardLoading = () => {
 
   useEffect(() => {
     const handleIrcEvent = (data: { type: string; line?: string }): void => {
-      if (data?.type === 'close') {
+      if (data.type === 'close') {
         setIsConnecting(false);
         return;
       }
-      if (data?.type === 'raw' && data.line) {
+      if (data.type === 'raw' && data.line) {
         const safe = redactSensitiveIrc(data.line);
         const colonIndex = safe.indexOf(' :');
         const display = colonIndex !== -1 ? safe.substring(colonIndex + 2) : safe;
@@ -71,21 +71,25 @@ const WizardLoading = () => {
 
   const showTimeoutUI = isTimedOut && isConnecting;
 
+  const setProgress = useEffectEvent((value: number, labelKey: string) => {
+    setWizardProgress(value, t(labelKey));
+  });
+
   useEffect(() => {
     if (isConnecting) {
       if (getPendingSTSUpgrade()) {
-        setWizardProgress(4 / 3, t('wizard.loading.connectingSecure'));
+        setProgress(4 / 3, 'wizard.loading.connectingSecure');
       } else {
-        setWizardProgress(1, t('wizard.loading.connecting'));
+        setProgress(1, 'wizard.loading.connecting');
       }
       return undefined;
     }
 
     if (isConnected) {
-      setWizardProgress(2, t('wizard.loading.connected'));
+      setProgress(2, 'wizard.loading.connected');
 
       const timeout2 = setTimeout(() => {
-        setWizardProgress(3, t('wizard.loading.isPasswordRequired'));
+        setProgress(3, 'wizard.loading.isPasswordRequired');
       }, 2_000); // 2 sec
 
       const timeout5 = setTimeout(() => {
@@ -108,11 +112,10 @@ const WizardLoading = () => {
     }
 
     // Not during an STS upgrade (reconnecting with TLS)
-    if (!isConnecting && !isConnected && getWizardProgress().value !== 0 && !getPendingSTSUpgrade()) {
-      setWizardProgress(0, t('wizard.loading.disconnected'));
+    if (getWizardProgress().value !== 0 && !getPendingSTSUpgrade()) {
+      setProgress(0, 'wizard.loading.disconnected');
     }
     return undefined;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnecting, isConnected]);
 
   const handleGoBack = (): void => {

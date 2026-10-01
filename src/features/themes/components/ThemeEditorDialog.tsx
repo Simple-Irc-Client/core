@@ -55,7 +55,7 @@ const ThemeEditorDialog = ({ open, onOpenChange, mode, themeId, draft }: ThemeEd
   useThemePreview(css, mode === 'create' || themeId === activeTheme);
 
   const handleReset = (): void => {
-    if (isBuiltin && themeId !== undefined && isBuiltinTheme(themeId)) {
+    if (isBuiltin) {
       setCss(BUILTIN_THEMES[themeId].css);
     }
   };

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { ContextMenu, getMenuPosition } from '../ContextMenu';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as DrawersContext from '@/providers/DrawersContext';
 import * as settings from '@features/settings/store/settings';
 import * as users from '@features/users/store/users';
 import * as channels from '@features/channels/store/channels';
@@ -22,6 +23,10 @@ describe('ContextMenu', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
+      isUsersDrawerOpen: false,
+      setUsersDrawerStatus: vi.fn(),
+    });
   });
 
   const createContextMenuMock = (overrides = {}) => ({

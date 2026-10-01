@@ -15,7 +15,7 @@ const WizardChannelList = () => {
   const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getChannelsToAutoJoin());
 
   const channelList = useMemo(
-    () => (isChannelListLoadingFinished ? (getChannelListSortedByUsers() ?? []) : []),
+    () => (isChannelListLoadingFinished ? getChannelListSortedByUsers() : []),
     [isChannelListLoadingFinished]
   );
 
@@ -33,7 +33,7 @@ const WizardChannelList = () => {
   };
 
   const translations = {
-    searchPlaceholder: t('wizard.channels.toolbar.search.placeholder') ?? 'Search',
+    searchPlaceholder: t('wizard.channels.toolbar.search.placeholder'),
     loading: t('wizard.channels.loading'),
     noResults: t('wizard.channels.toolbar.search.no.results'),
     columnName: t('wizard.channels.column.name'),

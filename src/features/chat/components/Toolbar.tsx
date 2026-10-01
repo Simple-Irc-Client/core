@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, isSameName, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
@@ -183,32 +183,33 @@ const Toolbar = () => {
     }, AUTO_AWAY_TIMEOUT);
   };
 
+  const startInactivityTimer = useEffectEvent(resetInactivityTimer);
+
   useEffect(() => {
-    resetInactivityTimer();
+    startInactivityTimer();
 
     return () => {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const switchDraft = useEffectEvent((previousChannel: string, nextChannel: string) => {
+    setDraft(previousChannel, message);
+    setMessage(getDraft(nextChannel));
+
+    historyIndex.current = -1;
+    currentInputBeforeHistory.current = '';
+  });
 
   useEffect(() => {
     const previousChannel = previousChannelRef.current;
 
     if (previousChannel !== currentChannelName) {
-      setDraft(previousChannel, message);
-
-      const draft = getDraft(currentChannelName);
-      setMessage(draft);
-
-      historyIndex.current = -1;
-      currentInputBeforeHistory.current = '';
-
+      switchDraft(previousChannel, currentChannelName);
       previousChannelRef.current = currentChannelName;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChannelName]);
 
   const handleEmojiClick = (emojiData: EmojiClickData): void => {
@@ -417,7 +418,7 @@ const Toolbar = () => {
       case 'Tab': {
         event.preventDefault();
         const word = autocompleteMessage.current.split(' ').pop()?.toLowerCase();
-        if (word !== undefined && word?.length !== 0) {
+        if (word !== undefined && word.length !== 0) {
           if (word.startsWith('/')) {
             const done = autocompleteCommands(word, commands);
             if (done) {

@@ -44,7 +44,7 @@ const ChannelListTable = ({
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
   const labels = {
-    searchPlaceholder: translations?.searchPlaceholder ?? t('channelListDialog.search.placeholder') ?? 'Search...',
+    searchPlaceholder: translations?.searchPlaceholder ?? t('channelListDialog.search.placeholder'),
     loading: translations?.loading ?? t('channelListDialog.loading'),
     noResults: translations?.noResults ?? t('channelListDialog.noResults'),
     columnName: translations?.columnName ?? t('channelListDialog.column.name'),
@@ -60,13 +60,13 @@ const ChannelListTable = ({
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return availableChannelList.filter(
-        (channel) => channel.name.toLowerCase().includes(query) || stripIrcFormatting(channel.topic ?? '').toLowerCase().includes(query)
+        (channel) => channel.name.toLowerCase().includes(query) || stripIrcFormatting(channel.topic).toLowerCase().includes(query)
       );
     }
 
     // Hide single-user channels when the list is large
     if (availableChannelList.length > 500) {
-      return availableChannelList.filter((channel) => (channel.users ?? 0) >= 2);
+      return availableChannelList.filter((channel) => channel.users >= 2);
     }
 
     return availableChannelList;

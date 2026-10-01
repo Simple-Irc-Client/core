@@ -95,6 +95,7 @@ vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: vi.fn((selector) =>
     selector({
       channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+      supportedOptions: [],
       userModes: [],
       nick: 'testuser',
     })

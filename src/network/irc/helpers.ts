@@ -4,7 +4,7 @@ import { type UserMode, type Nick, type ParsedIrcRawMessage, type SingleServer, 
 
 /** "host", "host:port", "+host" or "+host:port" ("+" = TLS; default ports 6667 / 6697). */
 export const parseServer = (currentServer?: Server): SingleServer | undefined => {
-  if (currentServer === undefined || currentServer?.servers?.length === 0) {
+  if (currentServer === undefined || currentServer.servers?.length === 0) {
     return undefined;
   }
 
@@ -54,12 +54,12 @@ export const unescapeTagValue = (value: string): string => {
 };
 
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
-  const line: string[] = message?.trim()?.split(' ') ?? [];
+  const line: string[] = message.trim().split(' ');
 
   // @msgid=rPQvwimgWqGnqVcuVONIFJ;time=2023-02-01T23:08:26.026Z
   // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z
   const tags: Record<string, string> = {};
-  if ((line?.[0] ?? '').startsWith('@')) {
+  if ((line[0] ?? '').startsWith('@')) {
     const tagsList = line.shift()?.substring(1).split(';') ?? [];
     for (const tag of tagsList) {
       if (!tag.includes('=')) {
@@ -74,9 +74,9 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
 
   // NickServ!NickServ@serwisy.pirc.pl
   let sender = '';
-  if ((line?.[0] ?? '').startsWith(':')) {
+  if ((line[0] ?? '').startsWith(':')) {
     sender = line.shift() ?? '';
-    if (sender?.startsWith(':')) {
+    if (sender.startsWith(':')) {
       sender = sender.substring(1);
     }
   }
@@ -150,14 +150,14 @@ export const parseUserModes = (userPrefixes: string | undefined): UserMode[] => 
     return result;
   }
 
-  if (userPrefixes?.startsWith('(')) {
+  if (userPrefixes.startsWith('(')) {
     userPrefixes = userPrefixes.substring(1);
   }
 
   const [modes, symbols] = userPrefixes.split(')');
-  if (modes !== undefined && symbols !== undefined && modes?.length === symbols?.length) {
+  if (modes !== undefined && symbols !== undefined && modes.length === symbols.length) {
     for (let i = 0; i < modes.length; i++) {
-      if (modes?.[i] !== undefined && symbols?.[i] !== undefined) {
+      if (modes[i] !== undefined && symbols[i] !== undefined) {
         result.push({
           flag: modes[i] ?? '',
           symbol: symbols[i] ?? '',

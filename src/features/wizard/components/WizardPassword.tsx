@@ -26,14 +26,23 @@ const WizardPassword = () => {
   const [rememberPassword, setRememberPassword] = useState(hasSavedPassword);
 
   useEffect(() => {
-    if (encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, initialNick)) {
-      decryptPersistent(encryptedPassword).then((decrypted) => {
-        setPassword(decrypted);
-      }).catch(() => {
-        // e.g. the key changed
-      });
+    if (!encryptedPassword || !hasSavedPassword) {
+      return undefined;
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    let cancelled = false;
+    decryptPersistent(encryptedPassword).then((decrypted) => {
+      if (!cancelled) {
+        setPassword(decrypted);
+      }
+    }).catch(() => {
+      // e.g. the key changed
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [encryptedPassword, hasSavedPassword]);
 
   const nickMatches = isSameName(initialNick, nick);
 

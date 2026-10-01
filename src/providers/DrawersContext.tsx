@@ -7,16 +7,7 @@ export interface DrawersContextProps {
   toggleUsersDrawer: () => void;
 }
 
-export const DrawersContext = createContext<DrawersContextProps>({
-  isChannelsDrawerOpen: false,
-  isUsersDrawerOpen: false,
-  toggleChannelsDrawer: function (): void {
-    throw new Error('Function not implemented.');
-  },
-  toggleUsersDrawer: function (): void {
-    throw new Error('Function not implemented.');
-  },
-});
+export const DrawersContext = createContext<DrawersContextProps | null>(null);
 
 export const useDrawers = (): DrawersContextProps => {
   const context = useContext(DrawersContext);

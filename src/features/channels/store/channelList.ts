@@ -102,8 +102,8 @@ export const getChannelListSortedByAZ = (): ChannelList[] => {
 
 export const getChannelListSortedByUsers = (): ChannelList[] => {
   return [...useChannelListStore.getState().channels].sort((a: ChannelList, b: ChannelList) => {
-    const A = a.users ?? 0;
-    const B = b.users ?? 0;
+    const A = a.users;
+    const B = b.users;
     return A < B ? 1 : A > B ? -1 : 0;
   });
 };

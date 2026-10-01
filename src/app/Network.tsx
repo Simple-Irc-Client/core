@@ -15,8 +15,8 @@ export const Network = () => {
       } catch (err) {
         Sentry.captureException(err, {
           extra: {
-            eventType: data?.type,
-            eventLine: data?.line ? redactSensitiveIrc(data.line) : undefined,
+            eventType: data.type,
+            eventLine: data.line ? redactSensitiveIrc(data.line) : undefined,
           },
         });
         console.warn(err);

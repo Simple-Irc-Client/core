@@ -540,7 +540,7 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
     if (channel === undefined) {
       continue;
     }
-    entries.push({ user, permission: channel.maxPermission ?? -1, sortKey: user.nick.toLowerCase() });
+    entries.push({ user, permission: channel.maxPermission, sortKey: user.nick.toLowerCase() });
   }
 
   entries.sort((a, b) => (a.permission === b.permission ? nickCollator.compare(a.sortKey, b.sortKey) : b.permission - a.permission));

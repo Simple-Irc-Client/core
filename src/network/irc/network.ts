@@ -217,7 +217,7 @@ export const ircDisconnect = (): void => {
 
 export const ircConnect = (currentServer: Server, nick: string): void => {
   const singleServer = parseServer(currentServer);
-  if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
+  if (singleServer == null || singleServer.host === undefined || singleServer.host === '') {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
@@ -246,7 +246,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       host: singleServer.host,
       port: String(singleServer.port),
       tls: String(useTLS),
-      encoding: currentServer?.encoding ?? 'utf8',
+      encoding: currentServer.encoding ?? 'utf8',
     });
     const gatewayWebSocketUrl = `${protocol}//${gatewayHost}:${gatewayPort}${gatewayPath}?${params.toString()}`;
 
@@ -291,7 +291,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       host,
       port: String(effectivePort),
       tls: String(effectiveTLS),
-      encoding: currentServer?.encoding ?? 'utf8',
+      encoding: currentServer.encoding ?? 'utf8',
     });
     const backendWebSocketUrl = `ws://${localBackendHost}:${localBackendPort}/${localBackendPath}?${params.toString()}`;
 
@@ -308,7 +308,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
 /** For STS upgrades and servers with a known STS policy. */
 export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: number): void => {
   const singleServer = parseServer(currentServer);
-  if (singleServer == null || singleServer?.host === undefined || singleServer?.host === '') {
+  if (singleServer == null || singleServer.host === undefined || singleServer.host === '') {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
 
