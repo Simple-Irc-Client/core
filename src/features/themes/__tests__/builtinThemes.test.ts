@@ -117,12 +117,11 @@ describe('builtinThemes', () => {
       }
     });
 
-    it('should restyle the date separator and typing line as status lines', () => {
+    it('should restyle the date separator as a status line', () => {
       expect(layout).toMatch(/\.sic-date-separator-rule \{\s*display: none;/);
       // The label sits in the status-line column, after a visible time slot
       expect(layout).toMatch(/\.sic-date-separator-time \{\s*display: inline;/);
       expect(layout).toMatch(/\.sic-date-separator-label::before \{/);
-      expect(layout).toMatch(/\.sic-typing:not\(:empty\)::before \{\s*content: '-!- ';/);
     });
   });
 });

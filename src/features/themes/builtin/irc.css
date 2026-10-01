@@ -362,7 +362,7 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
- * Around the transcript: day changes and the typing line, as status lines
+ * Around the transcript: day changes (as status lines) and the typing line
  * ------------------------------------------------------------------------- */
 
 /* "00:00 -!- 9 September 2026" on the same grid as a message row, so the
@@ -398,9 +398,4 @@ body {
 .sic-typing {
   padding-left: 1rem;
   color: var(--msg-time);
-}
-
-/* The element stays mounted (and empty) while nobody is typing */
-.sic-typing:not(:empty)::before {
-  content: '-!- ';
 }
