@@ -161,7 +161,7 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('profileSettings.themeCreatorTitle')}</DialogTitle>
           <DialogDescription>{t('profileSettings.themeCreatorDescription')}</DialogDescription>

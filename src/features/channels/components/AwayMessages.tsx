@@ -28,7 +28,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-h-[80dvh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{t('currentUser.awayMessages')}</DialogTitle>
           <DialogDescription>{t('currentUser.awayMessagesDescription')}</DialogDescription>

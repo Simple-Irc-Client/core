@@ -7,16 +7,23 @@ test.describe('Responsive layout', () => {
 
   let bot: IrcClient;
   let sharedPage: Page;
+  // Per-project nicks/channel: chromium and firefox run this file concurrently
+  // against the same ergo server.
+  let botNick: string;
+  let channel: string;
 
-  test.beforeAll(async ({ browser }) => {
-    bot = await createIrcClient('mobilebot');
-    await bot.join('#responsive');
+  test.beforeAll(async ({ browser }, testInfo) => {
+    const suffix = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    botNick = `mobilebot-${suffix}`;
+    channel = `#responsive-${suffix}`;
+    bot = await createIrcClient(botNick);
+    await bot.join(channel);
 
     sharedPage = await browser.newPage();
     // Start at a small mobile viewport
     await sharedPage.setViewportSize({ width: 375, height: 667 });
     await sharedPage.goto('/');
-    await connectViaWizard(sharedPage, 'mobile-tester', { channels: ['#responsive'] });
+    await connectViaWizard(sharedPage, `mobile-tester-${suffix}`, { channels: [channel] });
   });
 
   test.afterAll(async () => {
@@ -47,13 +54,13 @@ test.describe('Responsive layout', () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
     await expect(channelNav).toBeVisible({ timeout: 5_000 });
 
-    // #responsive should be in the channel list
-    await expect(channelNav.getByRole('button', { name: '#responsive', exact: true })).toBeVisible();
+    // The test channel should be in the channel list
+    await expect(channelNav.getByRole('button', { name: channel, exact: true })).toBeVisible();
   });
 
   test('clicking a channel closes the drawer', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
-    await channelNav.getByRole('button', { name: '#responsive', exact: true }).click();
+    await channelNav.getByRole('button', { name: channel, exact: true }).click();
 
     // Drawer should close automatically on mobile
     await expect(channelNav).not.toBeVisible({ timeout: 5_000 });
@@ -74,7 +81,7 @@ test.describe('Responsive layout', () => {
     await expect(usersSidebar).toBeVisible({ timeout: 5_000 });
 
     // Bot should be visible in users list
-    await expect(usersSidebar.getByText('mobilebot')).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByText(botNick, { exact: true })).toBeVisible({ timeout: 10_000 });
   });
 
   test('close button hides the users drawer', async () => {
@@ -120,12 +127,12 @@ test.describe('Responsive layout', () => {
   test('chat messages are visible and scrollable on mobile', async () => {
     // Ensure we're on the channel
     await sharedPage.getByRole('button', { name: /toggle channels/i }).click();
-    await sharedPage.getByRole('button', { name: '#responsive', exact: true }).click();
+    await sharedPage.getByRole('button', { name: channel, exact: true }).click();
     await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // Send messages and verify they're visible
-    bot.sendMessage('#responsive', 'Mobile message 1');
-    bot.sendMessage('#responsive', 'Mobile message 2');
+    bot.sendMessage(channel, 'Mobile message 1');
+    bot.sendMessage(channel, 'Mobile message 2');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Mobile message 2')).toBeVisible({ timeout: 10_000 });
@@ -142,6 +149,40 @@ test.describe('Responsive layout', () => {
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello from mobile!')).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('profile settings dialog fits the viewport and scrolls on mobile', async () => {
+    await sharedPage.locator('[data-avatar-button]').click();
+    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+
+    const dialog = sharedPage.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // Wait for the open animation (zoom/slide) to settle before measuring
+    await expect(dialog).not.toHaveAttribute('data-state', 'closed');
+    await sharedPage.waitForFunction(() =>
+      document.querySelector('[role="dialog"]')?.getAnimations().length === 0,
+    );
+
+    const viewport = sharedPage.viewportSize();
+    const box = await dialog.boundingBox();
+    if (!viewport || !box) { throw new Error('dialog or viewport has no measurable size'); }
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+
+    // Content is taller than a phone screen, so the dialog itself must scroll
+    const isScrollable = await dialog.evaluate((el) => el.scrollHeight > el.clientHeight);
+    expect(isScrollable).toBe(true);
+
+    // Both the first and the last control must be reachable
+    await expect(sharedPage.getByLabel('Nickname')).toBeInViewport();
+    const languageSelect = sharedPage.getByTestId('language-select');
+    await languageSelect.scrollIntoViewIfNeeded();
+    await expect(languageSelect).toBeInViewport({ ratio: 1 });
+
+    await sharedPage.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
   });
 
   // --- Tablet viewport ---

@@ -117,7 +117,7 @@ const ChannelListDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] max-w-4xl max-h-[90dvh] overflow-y-auto p-4 sm:p-6"
+        className="w-[calc(100%-2rem)] max-w-4xl p-4 sm:p-6"
         onAnimationEnd={handleContentAnimationEnd}
       >
         <DialogHeader>

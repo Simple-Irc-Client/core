@@ -106,7 +106,7 @@ const ChannelSettings = ({ open, onOpenChange, channelName }: ChannelSettingsPro
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         {open && <ChannelSettingsContent channelName={channelName} />}
       </DialogContent>
     </Dialog>
