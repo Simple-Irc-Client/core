@@ -5,7 +5,6 @@ export interface CustomTheme {
   css: string;
 }
 
-/** The theme-related slice of the settings store. */
 export interface ThemeSlice {
   theme: string;
   customThemes: Record<string, CustomTheme>;

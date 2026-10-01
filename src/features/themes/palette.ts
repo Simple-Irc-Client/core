@@ -1,8 +1,4 @@
-/**
- * The message-color palette: single source of truth for the `--msg-*` values
- * shipped with the builtin themes and shown in the Theme Creator's pickers.
- * Keep in sync with the fallback values on :root / .dark in src/index.css.
- */
+// Keep in sync with the --msg-* fallbacks on :root / .dark in src/index.css
 
 export const MSG_COLOR_KEYS = [
   'time',
@@ -53,10 +49,7 @@ export const DEFAULT_DARK_COLORS: MsgColorPalette = {
   error: '#b05555',
 };
 
-/**
- * The IRC theme's palette — the website's design tokens (website/public/app.css),
- * each at least WCAG AA (4.5:1) against the theme's background.
- */
+/** The website's tokens (website/public/app.css), each WCAG AA against the theme background. */
 export const IRC_LIGHT_COLORS: MsgColorPalette = {
   time: '#6f6a60',
   default: '#1c1b18',
@@ -92,7 +85,6 @@ const paletteToCss = (selector: string, palette: MsgColorPalette): string => {
   return `${selector} {\n${lines.join('\n')}\n}`;
 };
 
-/** The two palette blocks (light on :root, dark on .dark) appended to theme CSS. */
 export const buildPaletteCss = (light: MsgColorPalette, dark: MsgColorPalette): string =>
   [
     '/* Message colors — light mode */',

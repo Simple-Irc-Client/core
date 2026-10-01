@@ -28,11 +28,6 @@ const Chat = () => {
 
   const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
 
-  /**
-   * Grouping and date separators are decided by comparing each message with the
-   * one before it, so the whole list is walked once here instead of re-deriving
-   * the previous message's day and nick inside every row.
-   */
   const rows = useMemo(() => {
     const result: { message: Message; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
     let prevDayStart: number | null = null;
@@ -44,7 +39,6 @@ const Chat = () => {
       const showDateSeparator = prevDayStart !== null && dayStart !== prevDayStart;
       const isContent = contentCategories.has(message.category);
       const nick = getNickFromMessage(message) ?? '';
-      // A separator breaks the run, so the message after it starts a fresh group
       const lastNick = showDateSeparator ? '' : prevNick;
 
       result.push({ message, currentDate, showDateSeparator, grouped: !isDebug && isContent && lastNick === nick });

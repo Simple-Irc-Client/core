@@ -1,17 +1,10 @@
 import { BUILTIN_LAYOUT_CSS, BUILTIN_PALETTES, isBuiltinTheme, type BuiltinThemeId } from './builtinThemes';
 import { buildPaletteCss, MSG_COLOR_KEYS, type MsgColorPalette } from './palette';
 
-// Convenience re-exports for Creator consumers (dialog, tests)
 export { DEFAULT_DARK_COLORS, DEFAULT_LIGHT_COLORS, MSG_COLOR_KEYS } from './palette';
 export type { MsgColorKey, MsgColorPalette } from './palette';
 
-/**
- * The Theme Creator is a no-CSS-required way to build a theme: it turns a
- * structured settings object into a full theme stylesheet (base layout +
- * message-color palette + a few layout toggles). The settings are embedded in
- * the generated CSS as a marker comment so the Creator can re-open a theme it
- * generated and restore the controls.
- */
+// Settings are embedded in the generated CSS as a marker comment so the Creator can re-open its themes
 
 export interface ThemeCreatorSettings {
   base: BuiltinThemeId;
@@ -39,11 +32,7 @@ export const defaultCreatorSettings = (base: BuiltinThemeId = 'modern'): ThemeCr
 
 const samePalette = (a: MsgColorPalette, b: MsgColorPalette): boolean => MSG_COLOR_KEYS.every((key) => a[key] === b[key]);
 
-/**
- * Switches the Creator's base layout. Colors the user left at the old base's
- * shipped palette follow the new base (each builtin has its own palette);
- * a palette the user customised is kept as is.
- */
+/** Untouched colors follow the new base's palette; a customised palette is kept. */
 export const changeCreatorBase = (settings: ThemeCreatorSettings, base: BuiltinThemeId): ThemeCreatorSettings => {
   const previous = BUILTIN_PALETTES[settings.base];
   const colorsUntouched = samePalette(settings.colors.light, previous.light) && samePalette(settings.colors.dark, previous.dark);
@@ -95,10 +84,7 @@ export const generateThemeCss = (settings: ThemeCreatorSettings): string => {
 const isPalette = (value: unknown): value is MsgColorPalette =>
   typeof value === 'object' && value !== null && MSG_COLOR_KEYS.every((key) => typeof (value as Record<string, unknown>)[key] === 'string');
 
-/**
- * Extracts Creator settings from CSS previously produced by generateThemeCss.
- * Returns null for hand-written CSS (no marker) or an unreadable marker.
- */
+/** Returns null for hand-written CSS or an unreadable marker. */
 export const parseCreatorSettings = (css: string): ThemeCreatorSettings | null => {
   const match = CREATOR_MARKER_RE.exec(css);
   if (!match?.[1]) { return null; }

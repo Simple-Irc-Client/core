@@ -5,11 +5,7 @@ import { watchThemeBackground } from '../themeBackground';
 
 export const THEME_STYLE_ID = 'sic-theme';
 
-/**
- * Injects the active theme's CSS into <head>. The <style> tag is re-appended on
- * every change so it always sits after the Vite-injected app stylesheet and wins
- * ties at equal specificity (e.g. `:root { --msg-time: ... }` overrides).
- */
+// Re-appended on every change so it stays after the app stylesheet and wins specificity ties
 const ThemeStyleInjector = () => {
   const css = useSettingsStore(getActiveThemeCss);
 
@@ -23,7 +19,6 @@ const ThemeStyleInjector = () => {
     el.textContent = css;
   }, [css]);
 
-  // Publishes the background luminance the theme paints (see themeBackground.ts)
   useEffect(() => watchThemeBackground(), []);
 
   return null;

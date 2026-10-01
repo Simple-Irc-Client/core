@@ -34,14 +34,8 @@ interface ChatMessageProps {
 }
 
 /**
- * The single chat message renderer. It emits a superset DOM with stable
- * `sic-*` class names and data attributes; the active theme's CSS decides
- * which parts are visible and how they are laid out (see the builtin theme
- * files under @features/themes/builtin for the contract).
- *
- * Trade-off: parts a theme hides are still rendered (e.g. avatars under the
- * classic theme may fetch images even though they are not shown) — the DOM
- * must stay identical across themes so switching is pure CSS.
+ * Renders the same `sic-*` DOM for every theme; theme CSS hides/arranges parts (contract in
+ * themes/builtin/*.css). Hidden parts still render so switching themes is pure CSS.
  */
 const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessageProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
@@ -55,13 +49,9 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
   const nickColor = !isDebug && rawNickColor && isSafeCssColor(rawNickColor) ? ensureReadableColor(rawNickColor, backgroundLuminance) : undefined;
 
   const isContent = contentCategories.has(message.category);
-  // Every non-echoed DM message is flagged `highlight` (see kernel.ts) so it
-  // still triggers notifications/unread badges — but that makes the visual
-  // tint meaningless there since every line in the window would get it. Kept
-  // for channels, where it actually distinguishes a mention from the rest.
+  // Every DM message is flagged `highlight` for notifications, so the tint only means something in channels
   const showHighlight = message.highlight && currentChannelCategory !== ChannelCategory.priv;
-  // Debug output has fixed single-line styling, so the avatar/header slots are
-  // never shown there — skip them entirely (also avoids avatar fetches)
+  // Debug output never shows avatar/header; skipping them also avoids avatar fetches
   const showHeaderLayout = isContent && !isDebug;
   const isItalic = italicCategories.has(message.category);
   const isBot = isBotMessage(message);
@@ -80,12 +70,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       {format(time, 'HH:mm', { locale })}
       <span className="sic-msg-time-seconds">{format(time, ':ss', { locale })}</span>
       {withEcho && message.echoed && <EchoedIndicator />}
-      {/*
-        Rendered in every time slot, not just the header one: Classic hides the
-        header and shows the inline time, so gating this on `withEcho` the way
-        the echo tick does would leave Classic users with no lock at all. Themes
-        hide the slots they don't use, so exactly one is ever visible.
-      */}
+      {/* In every slot (unlike the echo tick): single-line themes only show the inline time */}
       {message.e2ee && <E2eeIndicator state={message.e2ee} />}
     </span>
   );
@@ -165,10 +150,5 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
   );
 };
 
-/**
- * Every new line in a channel replaces the `messages` array, so without this the
- * whole visible backlog (up to `maxMessages`) re-runs its date formatting and
- * its URL/image/embed scans on each incoming message. The `Message` objects
- * themselves keep their identity across that update, so the comparison holds.
- */
+// Each new line replaces the `messages` array but keeps Message identities, so memo spares the backlog a re-render
 export default memo(ChatMessage);

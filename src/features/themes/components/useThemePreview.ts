@@ -2,11 +2,7 @@ import { useEffect } from 'react';
 
 export const PREVIEW_STYLE_ID = 'sic-theme-preview';
 
-/**
- * Live preview for theme editing: debounce-writes the draft CSS into a second
- * <style> appended after the active theme's tag (so it wins while typing) and
- * removes it when the editing dialog unmounts.
- */
+// A second <style> after the active theme's, so the draft wins while typing
 export const useThemePreview = (css: string, enabled: boolean): void => {
   useEffect(() => {
     if (!enabled) { return; }
@@ -22,7 +18,6 @@ export const useThemePreview = (css: string, enabled: boolean): void => {
     return () => clearTimeout(handle);
   }, [css, enabled]);
 
-  // Remove the preview on close/cancel, whatever the outcome
   useEffect(() => () => {
     document.getElementById(PREVIEW_STYLE_ID)?.remove();
   }, []);

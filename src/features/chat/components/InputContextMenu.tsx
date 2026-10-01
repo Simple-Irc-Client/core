@@ -45,9 +45,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   useEffect(() => {
     if (contextMenuPosition === null) { return; }
 
-    // Focus the menu container (not an item) on open, so no item appears
-    // pre-selected/highlighted — matching native context menus. Arrow keys
-    // move focus into the items from here.
+    // Focus the container, not an item, so nothing looks pre-selected (like native menus)
     requestAnimationFrame(() => menuRef.current?.focus());
 
     const handleClickOutside = (e: MouseEvent): void => {
@@ -75,8 +73,6 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
     action();
   };
 
-  // Keydown while the menu container itself is focused (before focus has
-  // entered any item): arrow/Home/End move into the first or last enabled item.
   const handleMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.target !== e.currentTarget) { return; }
     const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);

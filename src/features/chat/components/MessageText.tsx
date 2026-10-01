@@ -31,18 +31,15 @@ const MessageText = ({ text, color }: MessageTextProps) => {
   const parts = useMemo((): TextPart[] => {
     const channelTypes = getChannelTypes();
 
-    // Build regex pattern for channel names (e.g., #channel, &channel)
-    // Channel names start with channel type prefix and continue until space or end
     const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)).join('');
     const channelPattern = channelTypesEscaped.length > 0 ? new RegExp(String.raw`^[${channelTypesEscaped}][^\s,]+$`) : null;
 
-    // Parse IRC formatting on the full text first to preserve state across words
+    // Parsed on the full text so formatting state carries across words
     const segments = hasIrcFormatting(text) ? parseIrcFormatting(text) : null;
 
     const isUrl = (word: string): boolean => /^https?:\/\/\S+/.test(word) && isSafeUrl(word);
 
     if (!segments) {
-      // No formatting — split by words for channel/URL detection
       const result: TextPart[] = [];
       const words = text.split(/(\s+)/);
       for (const word of words) {
@@ -57,7 +54,6 @@ const MessageText = ({ text, color }: MessageTextProps) => {
       return result;
     }
 
-    // With formatting — split each segment's text by words for channel/URL detection
     const result: TextPart[] = [];
     for (const segment of segments) {
       const words = segment.text.split(/(\s+)/);
@@ -75,7 +71,6 @@ const MessageText = ({ text, color }: MessageTextProps) => {
     return result;
   }, [text]);
 
-  /** Renders a text run with any emoji inside it wrapped for larger display (see .sic-emoji in the builtin themes). */
   const renderWithEmoji = (runText: string, key: string, style?: React.CSSProperties): React.ReactNode => {
     const runs = splitEmoji(runText);
     const hasEmoji = runs.some((run) => run.isEmoji);

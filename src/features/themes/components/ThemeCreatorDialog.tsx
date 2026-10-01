@@ -34,11 +34,7 @@ interface ThemeCreatorDialogProps {
   mode: 'edit' | 'create';
   /** Theme being edited; required in 'edit' mode. */
   themeId?: string;
-  /**
-   * Switch to the CSS editor. Receives the unsaved Creator draft when the
-   * controls were changed, or undefined when pristine (the editor then shows
-   * the theme's stored CSS).
-   */
+  /** Gets the unsaved draft only if the controls were changed. */
   onEditCss: (draft?: { name: string; css: string }) => void;
 }
 
@@ -57,12 +53,6 @@ const colorLabelKeys: Record<MsgColorKey, string> = {
   error: 'profileSettings.themeCreatorColorError',
 };
 
-/**
- * No-CSS-required theme editing: structured controls (base layout, toggles,
- * message colors for light and dark mode) that generate the theme's CSS via
- * generateThemeCss. Settings round-trip through a marker comment in the CSS,
- * so Creator-made themes re-open with their controls restored.
- */
 const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: ThemeCreatorDialogProps) => {
   const { t } = useTranslation();
   const activeTheme = useSettingsStore((s) => s.theme);
@@ -80,8 +70,6 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
     return useSettingsStore.getState().customThemes[themeId]?.name ?? '';
   });
 
-  // Restore Creator settings from the theme's CSS marker; hand-written CSS
-  // (or a builtin's shipped CSS) starts from defaults on the matching base
   const [initialSettings, wasHandEdited] = useMemo((): [ThemeCreatorSettings, boolean] => {
     const state = useSettingsStore.getState();
     const sourceId = mode === 'create' ? state.theme : (themeId ?? state.theme);
@@ -89,8 +77,6 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
     const parsed = parseCreatorSettings(css);
     if (parsed) { return [parsed, false]; }
     const base: BuiltinThemeId = isBuiltinTheme(sourceId) ? sourceId : 'modern';
-    // A builtin's shipped CSS is not "hand-edited" — only warn when replacing
-    // CSS someone actually wrote (an override or a custom theme)
     const isShippedDefault = isBuiltinTheme(sourceId) && css === BUILTIN_THEMES[sourceId].css;
     return [defaultCreatorSettings(base), mode === 'edit' && !isShippedDefault];
   }, [mode, themeId]);
@@ -116,8 +102,7 @@ const ThemeCreatorDialog = ({ open, onOpenChange, mode, themeId, onEditCss }: Th
   };
 
   const handleEditCss = (): void => {
-    // Carry the draft only when the user changed something here — a pristine
-    // Creator must not clobber hand-written CSS with generated defaults
+    // A pristine Creator must not clobber hand-written CSS with generated defaults
     const isDirty = settings !== initialSettings;
     onEditCss(isDirty ? { name, css: generatedCss } : undefined);
   };

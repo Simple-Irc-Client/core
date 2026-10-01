@@ -39,11 +39,7 @@ import type { FontFormatting } from '@features/settings/store/settings';
 
 // eslint-disable-next-line no-control-regex
 const ACTION_BODY = /^\x01ACTION (.*)\x01$/;
-// Case-insensitive: IRC command verbs are, by protocol, case-insensitive
-// (a server treats `privmsg` identically to `PRIVMSG`), and unlike our own
-// generated commands — always uppercase — a hand-typed `/quote`/`/raw` can
-// use any case. Matching only the uppercase form would let a lowercase-typed
-// raw command slip past this gate as plaintext.
+// Case-insensitive so a hand-typed lowercase `/quote privmsg` can't slip past the E2EE gate as plaintext
 const PRIVMSG_OR_NOTICE = /^(PRIVMSG|NOTICE) (\S+) :([\s\S]*)$/i;
 
 export type OutgoingCommandGate =
@@ -51,26 +47,9 @@ export type OutgoingCommandGate =
   | { verdict: 'block'; target: string };
 
 /**
- * Decide what a slash command's raw wire output must do when it addresses a
- * peer we have an active encrypted session with.
- *
- * This reads the line that is actually about to hit the wire — `PRIVMSG
- * <target> :body` or `NOTICE <target> :body` — rather than trying to guess
- * from the command name, so it catches every command that can produce one of
- * those two verbs (today: `/msg`, `/me`, `/notice`, and `/quote`/`/raw` typed
- * by hand) without needing a per-command allowlist that a new command could
- * fall through unnoticed. `target` is the line's *own* target — not
- * necessarily the window the user is currently looking at, e.g. `/msg other`
- * typed from an encrypted window — so callers must send to `target`, not to
- * whatever channel is currently open.
- *
- * A PRIVMSG is content we can encrypt (message or `/me` action). A NOTICE has
- * no encrypted representation in the wire protocol (`BodyKind` only carries
- * message/action), so it is blocked outright rather than sent as plaintext
- * out of a window the user is being told is encrypted — the same
- * never-silently-downgrade rule `session.ts` applies to handshake failures.
- * Anything whose target has no active session, or that isn't a single-line
- * PRIVMSG/NOTICE, is left alone.
+ * Gates a command's wire line (not its name, so every command producing PRIVMSG/NOTICE is covered)
+ * addressed to a peer with an active E2EE session: PRIVMSG is encrypted, NOTICE is blocked since it
+ * has no encrypted form. Callers must send to the returned `target`, not the open window.
  */
 export const gateOutgoingCommand = (payload: string): OutgoingCommandGate | null => {
   if (payload.includes('\n')) {
@@ -137,7 +116,6 @@ const Toolbar = () => {
 
   const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  // Apply IRC formatting codes to message based on current settings
   const applyFormatting = (text: string, formatting: FontFormatting): string => {
     let prefix = '';
     let suffix = '';
@@ -155,7 +133,6 @@ const Toolbar = () => {
       suffix = IRC_FORMAT.UNDERLINE + suffix;
     }
     if (formatting.colorCode !== null) {
-      // Use two-digit format for color codes
       const colorStr = formatting.colorCode.toString().padStart(2, '0');
       prefix += IRC_FORMAT.COLOR + colorStr;
       suffix = IRC_FORMAT.COLOR + suffix;
@@ -188,22 +165,17 @@ const Toolbar = () => {
     [allUsers, currentChannelName]
   );
 
-  // Reset inactivity timer - called when user sends a message
   const resetInactivityTimer = (): void => {
-    // Clear existing timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
     }
 
-    // Don't start timer if already manually away (not auto-away)
     if (isAway && !isAutoAway) {
       return;
     }
 
-    // Start new timer
     inactivityTimerRef.current = setTimeout(() => {
       const state = useSettingsStore.getState();
-      // Only set away if connected and not already away
       if (state.isConnected && !state.currentUserFlags.includes('away')) {
         ircSendRawMessage(`AWAY :${t('currentUser.autoAway')}`);
         state.setIsAutoAway(true);
@@ -211,7 +183,6 @@ const Toolbar = () => {
     }, AUTO_AWAY_TIMEOUT);
   };
 
-  // Initialize and cleanup the inactivity timer
   useEffect(() => {
     resetInactivityTimer();
 
@@ -223,23 +194,18 @@ const Toolbar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save draft when switching channels and restore draft for new channel
   useEffect(() => {
     const previousChannel = previousChannelRef.current;
 
     if (previousChannel !== currentChannelName) {
-      // Save current message as draft for the previous channel
       setDraft(previousChannel, message);
 
-      // Restore draft for the new channel
       const draft = getDraft(currentChannelName);
       setMessage(draft);
 
-      // Reset history navigation when switching channels
       historyIndex.current = -1;
       currentInputBeforeHistory.current = '';
 
-      // Update ref to current channel
       previousChannelRef.current = currentChannelName;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -258,9 +224,7 @@ const Toolbar = () => {
       return;
     }
 
-    // Typing notifications are sent in the clear and would leak when the user
-    // is composing and how long they hesitated — metadata the ciphertext does
-    // not cover. In an encrypted conversation they are simply not sent.
+    // Typing notifications are plaintext metadata, so encrypted conversations don't send them
     if (isSessionActive(currentChannelName)) {
       return;
     }
@@ -274,13 +238,7 @@ const Toolbar = () => {
     }
   };
 
-  /**
-   * Encrypt and send, rendering the message locally straight away.
-   *
-   * A failure here never falls back to plaintext — silently downgrading a
-   * conversation the user believes is encrypted is the one outcome worth
-   * avoiding above all others. It shows an error in the window instead.
-   */
+  /** Encrypts and sends; on failure shows an error and never falls back to plaintext. */
   const sendEncryptedMessage = (target: string, body: string, senderNick: string, kind: BodyKind): void => {
     const localId = uuidv4();
     const isAction = kind === BodyKind.action;
@@ -302,28 +260,23 @@ const Toolbar = () => {
     });
   };
 
-  /** Everything that happens after a message goes out, whichever path sent it. */
   const finishSend = (): void => {
     if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName) && !isSessionActive(currentChannelName)) {
       typingStatus.current = 'done';
       ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
     }
 
-    // Add message to history (max 10 items)
     messageHistory.current = [message, ...messageHistory.current].slice(0, 10);
     historyIndex.current = -1;
     currentInputBeforeHistory.current = '';
 
-    // If auto-away is active and connected, turn it off
     if (isAutoAway && isConnected) {
       ircSendRawMessage('AWAY');
       useSettingsStore.getState().setIsAutoAway(false);
     }
 
-    // Reset the inactivity timer
     resetInactivityTimer();
 
-    // Clear draft for current channel since message was sent
     setDraft(currentChannelName, '');
 
     setMessage('');
@@ -338,11 +291,8 @@ const Toolbar = () => {
 
     let payload = '';
     if (message.startsWith('/')) {
-      // Commands are sent without formatting
       payload = parseMessageToCommand(currentChannelName, message);
 
-      // A command whose whole output is a message to a peer we have an active
-      // session with has to take the encrypted path too — see gateOutgoingCommand.
       const gated = gateOutgoingCommand(payload);
       if (gated?.verdict === 'encrypt') {
         sendEncryptedMessage(gated.target, gated.body, getCurrentNick(), gated.kind);
@@ -364,28 +314,22 @@ const Toolbar = () => {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
         const nick = getCurrentNick();
 
-        // Check if any formatting is applied
         const hasFormatting =
           fontFormatting.bold ||
           fontFormatting.italic ||
           fontFormatting.underline ||
           fontFormatting.colorCode !== null;
 
-        // Apply formatting to the message for sending
         const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
 
         if (isSessionActive(currentChannelName)) {
-          // The encrypted path always renders locally, even under echo-message:
-          // the echoed copy is a SICE frame we drop by frame id, because
-          // decrypting our own outgoing traffic just to display it would be
-          // work with no benefit.
+          // Rendered locally even with echo-message: the echoed SICE frame is dropped by frame id
           sendEncryptedMessage(currentChannelName, formattedMessage, nick, BodyKind.message);
           finishSend();
           return;
         }
 
-        // Only add message locally if echo-message capability is NOT enabled
-        // When echo-message is enabled, the server will echo the message back and we'll add it then
+        // With echo-message the server echoes it back and it's added then
         if (!isCapabilityEnabled('echo-message')) {
           setAddMessage({
             id: uuidv4(),
@@ -475,7 +419,6 @@ const Toolbar = () => {
         const word = autocompleteMessage.current.split(' ').pop()?.toLowerCase();
         if (word !== undefined && word?.length !== 0) {
           if (word.startsWith('/')) {
-            // autocomplete commands
             const done = autocompleteCommands(word, commands);
             if (done) {
               return;
@@ -483,7 +426,6 @@ const Toolbar = () => {
             autocompleteIndex.current = -1; // clear index if its last complete
             autocompleteCommands(word, commands);
           } else if (word.startsWith('#')) {
-            // autocomplete channel name
             const done = autocompleteChannels(word, channels);
             if (done) {
               return;
@@ -491,7 +433,6 @@ const Toolbar = () => {
             autocompleteIndex.current = -1; // clear index if its last complete
             autocompleteChannels(word, channels);
           } else {
-            // autocomplete users
             const done = autocompleteUsers(word, users);
             if (done) {
               return;
@@ -508,11 +449,9 @@ const Toolbar = () => {
         if (messageHistory.current.length === 0) {
           return;
         }
-        // Save current input when starting to browse history
         if (historyIndex.current === -1) {
           currentInputBeforeHistory.current = message;
         }
-        // Move up in history (older messages)
         if (historyIndex.current < messageHistory.current.length - 1) {
           historyIndex.current += 1;
           const historyMessage = messageHistory.current[historyIndex.current];
@@ -528,10 +467,8 @@ const Toolbar = () => {
         if (historyIndex.current === -1) {
           return;
         }
-        // Move down in history (newer messages)
         historyIndex.current -= 1;
         if (historyIndex.current === -1) {
-          // Restore original input
           setMessage(currentInputBeforeHistory.current);
         } else {
           const historyMessage = messageHistory.current[historyIndex.current];

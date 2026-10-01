@@ -24,7 +24,6 @@ interface ThemeEditorDialogProps {
   mode: 'edit' | 'create';
   /** Theme being edited; required in 'edit' mode. */
   themeId?: string;
-  /** Unsaved draft carried over from the Theme Creator (name + generated CSS). */
   draft?: { name: string; css: string };
 }
 
@@ -49,12 +48,10 @@ const ThemeEditorDialog = ({ open, onOpenChange, mode, themeId, draft }: ThemeEd
   const [css, setCss] = useState(() => {
     if (draft) { return draft.css; }
     const state = useSettingsStore.getState();
-    // A new theme starts from the CSS of the currently active theme
     return resolveThemeCss(state, mode === 'create' ? state.theme : (themeId ?? state.theme));
   });
 
-  // Only preview when the edited theme is the one currently shown (a new
-  // theme previews too — it becomes active on save)
+  // A new theme previews too: it becomes active on save
   useThemePreview(css, mode === 'create' || themeId === activeTheme);
 
   const handleReset = (): void => {
