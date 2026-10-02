@@ -16,8 +16,8 @@ interface Reply {
   category: keyof typeof colors;
 }
 
-/** A server reply; id and time come from the server's tags when it sent them. */
-export const addReply = (ctx: IrcContext, { message, target, category }: Reply): void => {
+/** Shows a server reply in the `target` window; id and time come from the server's tags when it sent them. */
+export const showReply = (ctx: IrcContext, { message, target, category }: Reply): void => {
   setAddMessage({
     id: ctx.tags.msgid ?? uuidv4(),
     message,

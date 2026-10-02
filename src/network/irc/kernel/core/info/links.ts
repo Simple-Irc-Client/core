@@ -1,6 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_LINKS = '364';
@@ -13,7 +13,7 @@ export const onRaw364 = (ctx: IrcContext): void => {
   const server = ctx.line.shift();
   const info = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${mask} ${server} ${info}`,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -26,7 +26,7 @@ export const onRaw365 = (ctx: IrcContext): void => {
   const mask = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${mask} ${message}`,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

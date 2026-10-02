@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { existChannel, setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, getUserChannels, setRemoveUser } from '@features/users/store/users';
@@ -71,7 +71,7 @@ export const onRaw442 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.442.youre-not-on-that-channel');
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${channel} :${message}`,
     target: currentChannelName,
     category: MessageCategory.info,

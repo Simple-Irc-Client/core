@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { channelModeType, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
 import { getChannelModes, getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
@@ -361,7 +361,7 @@ export const onRaw221 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const modes = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.221', { modes, defaultValue: `Your user modes: ${modes}` }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -376,7 +376,7 @@ export const onRaw329 = (ctx: IrcContext): void => {
 
   if (channel && timestamp > 0) {
     const createdDate = format(new Date(timestamp * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() });
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.329', { channel, created: createdDate, defaultValue: `Channel created: ${createdDate}` }),
       target: channel,
       category: MessageCategory.info,
@@ -391,7 +391,7 @@ export const onRaw472 = (ctx: IrcContext): void => {
   const modeChar = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${modeChar}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -406,7 +406,7 @@ export const onRaw478 = (ctx: IrcContext): void => {
   const mask = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${channel} ${mask}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -423,7 +423,7 @@ export const onRaw482 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.482.not-channel-operator', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${channel}: ${message}`,
     target: channel ?? STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -436,7 +436,7 @@ export const onRaw501 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -449,7 +449,7 @@ export const onRaw502 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -464,7 +464,7 @@ export const onModeRefused = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const target = ctx.line[0];
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: ctx.paramsWithText(),
     target: target !== undefined && isChannel(target) ? target : getCurrentChannelName(),
     category: MessageCategory.error,

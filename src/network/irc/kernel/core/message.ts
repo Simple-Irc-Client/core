@@ -4,7 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { notifyHighlight } from '@/runtime/notifications';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
@@ -404,7 +404,7 @@ export const onRaw401 = (ctx: IrcContext): void => {
     handlePeerOffline(target);
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${target}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -421,7 +421,7 @@ export const onRaw404 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.404.cannot-send-to-channel', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${channel}: ${message}`,
     target: channel ?? STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -434,7 +434,7 @@ export const onRaw411 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -451,7 +451,7 @@ export const onRaw412 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.412.no-text-to-send', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -466,7 +466,7 @@ export const onPrivateMessageRefused = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${nick}: ${message}`,
     target: nick !== undefined && existChannel(nick) ? nick : getCurrentChannelName(),
     category: MessageCategory.error,

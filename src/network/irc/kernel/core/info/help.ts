@@ -1,5 +1,5 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -15,7 +15,7 @@ export const onRaw524 = (ctx: IrcContext): void => {
   const topic = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${topic}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -29,7 +29,7 @@ export const onRaw704 = (ctx: IrcContext): void => {
   const topic = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `[${topic}] ${message}`,
     target: currentChannelName,
     category: MessageCategory.info,
@@ -43,7 +43,7 @@ export const onRaw705 = (ctx: IrcContext): void => {
   ctx.line.shift(); // topic
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.info,
@@ -57,7 +57,7 @@ export const onRaw706 = (ctx: IrcContext): void => {
   const topic = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `[${topic}] ${message}`,
     target: currentChannelName,
     category: MessageCategory.info,

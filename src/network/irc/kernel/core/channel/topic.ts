@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { setTopic, setTopicSetBy } from '@features/channels/store/channels';
 import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
@@ -23,7 +23,7 @@ export const onTopic = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t(`kernel.topic`, { nick, topic }),
     target: channel,
     category: MessageCategory.info,

@@ -1,6 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -25,7 +25,7 @@ export const onUnhandledNumeric = (ctx: IrcContext): void => {
 
   const isError = isErrorNumeric(ctx.command);
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: isError ? getCurrentChannelName() : STATUS_CHANNEL,
     category: isError ? MessageCategory.error : MessageCategory.info,

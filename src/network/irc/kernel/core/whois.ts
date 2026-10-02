@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
@@ -34,7 +34,7 @@ export const onRaw276 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.276', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -53,7 +53,7 @@ export const onRaw307 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.307.is-identified-for-this-nick');
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.307', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -68,7 +68,7 @@ export const onRaw311 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const host = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.311', { user, host }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -89,7 +89,7 @@ export const onRaw312 = (ctx: IrcContext): void => {
     description = description.substring(1);
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -112,7 +112,7 @@ export const onRaw313 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.313.is-a-network-service');
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.313', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -136,7 +136,7 @@ export const onRaw319 = (ctx: IrcContext): void => {
     .map((channel) => parseChannel(channel, serverUserModes))
     .join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.319', { user, channels }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -151,7 +151,7 @@ export const onRaw310 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.310', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -171,7 +171,7 @@ export const onRaw320 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.320.a-network-administrator');
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.320', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -189,7 +189,7 @@ export const onRaw335 = (ctx: IrcContext): void => {
     setUserBot(user, true);
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.335', { user }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -209,7 +209,7 @@ export const onRaw671 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.671.is-using-a-secure-connection');
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.671', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -227,7 +227,7 @@ export const onRaw317 = (ctx: IrcContext): void => {
   const idleFormatted = formatDuration(idleSeconds);
   const signonDate = signonTime > 0 ? format(new Date(signonTime * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }) : '';
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -261,7 +261,7 @@ export const onRaw330 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.330.is-logged-in-as', { defaultValue: 'is logged in as' });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.330', { user, account, message, defaultValue: `${user} ${message} ${account}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -276,7 +276,7 @@ export const onRaw338 = (ctx: IrcContext): void => {
   const actualUserHost = ctx.line.shift();
   const actualIP = ctx.line.shift();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.338', { user, actualUserHost, actualIP, defaultValue: `${user} ${actualUserHost} ${actualIP}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -291,7 +291,7 @@ export const onRaw344 = (ctx: IrcContext): void => {
   const country = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.344', { user, country, message, defaultValue: `${user} ${message} ${country}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -305,7 +305,7 @@ export const onRaw378 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.378', { user, message, defaultValue: `* ${user} ${message}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -319,7 +319,7 @@ export const onRaw379 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.379', { user, message, defaultValue: `* ${user} ${message}` }),
     target: currentChannelName,
     category: MessageCategory.info,

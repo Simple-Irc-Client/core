@@ -4,7 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { ircRequestChatHistory, ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, isSupportedOption, setCurrentChannelName } from '@features/settings/store/settings';
@@ -84,13 +84,13 @@ export const onJoin = (ctx: IrcContext): void => {
 };
 
 /** `:server <numeric> mynick #channel :text`; the server's standard text is translated */
-const addJoinError = (ctx: IrcContext, translation?: { text: string; key: string }): void => {
+const showJoinError = (ctx: IrcContext, translation?: { text: string; key: string }): void => {
   const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const channel = ctx.line.shift();
 
   if (channel === undefined) {
-    ctx.logParseError(addJoinError, 'channel');
+    ctx.logParseError(showJoinError, 'channel');
     return;
   }
 
@@ -99,7 +99,7 @@ const addJoinError = (ctx: IrcContext, translation?: { text: string; key: string
     message = i18next.t(translation.key, { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${channel}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -108,17 +108,17 @@ const addJoinError = (ctx: IrcContext, translation?: { text: string; key: string
 
 // :chommik.pirc.pl 473 sic-test #sic :Cannot join channel (+i)
 export const onRaw473 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'Cannot join channel (+i)', key: 'kernel.473.cannot-join-channel-i' });
+  showJoinError(ctx, { text: 'Cannot join channel (+i)', key: 'kernel.473.cannot-join-channel-i' });
 };
 
 // :saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)
 export const onRaw474 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'Cannot join channel (+b)', key: 'kernel.474.cannot-join-channel-b' });
+  showJoinError(ctx, { text: 'Cannot join channel (+b)', key: 'kernel.474.cannot-join-channel-b' });
 };
 
 // :insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.
 export const onRaw477 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'You need a registered nick to join that channel.', key: 'kernel.477.you-need-a-registered-nick-to-join-that-channel' });
+  showJoinError(ctx, { text: 'You need a registered nick to join that channel.', key: 'kernel.477.you-need-a-registered-nick-to-join-that-channel' });
 };
 
 // :server 328 mynick #channel :https://channel-url.com
@@ -128,7 +128,7 @@ export const onRaw328 = (ctx: IrcContext): void => {
   const url = ctx.trailing();
 
   if (channel) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.328', { channel, url, defaultValue: `Channel URL: ${url}` }),
       target: channel,
       category: MessageCategory.info,
@@ -138,32 +138,32 @@ export const onRaw328 = (ctx: IrcContext): void => {
 
 // :server 403 mynick #channel :No such channel
 export const onRaw403 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'No such channel', key: 'kernel.403.no-such-channel' });
+  showJoinError(ctx, { text: 'No such channel', key: 'kernel.403.no-such-channel' });
 };
 
 // :server 405 mynick #channel :You have joined too many channels
 export const onRaw405 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'You have joined too many channels', key: 'kernel.405.too-many-channels' });
+  showJoinError(ctx, { text: 'You have joined too many channels', key: 'kernel.405.too-many-channels' });
 };
 
 // :server 448 mynick channel :Cannot join channel: invalid name
 export const onRaw448 = (ctx: IrcContext): void => {
-  addJoinError(ctx);
+  showJoinError(ctx);
 };
 
 // :server 471 mynick #channel :Cannot join channel (+l)
 export const onRaw471 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'Cannot join channel (+l)', key: 'kernel.471.channel-full' });
+  showJoinError(ctx, { text: 'Cannot join channel (+l)', key: 'kernel.471.channel-full' });
 };
 
 // :server 475 mynick #channel :Cannot join channel (+k)
 export const onRaw475 = (ctx: IrcContext): void => {
-  addJoinError(ctx, { text: 'Cannot join channel (+k)', key: 'kernel.475.bad-channel-key' });
+  showJoinError(ctx, { text: 'Cannot join channel (+k)', key: 'kernel.475.bad-channel-key' });
 };
 
 // :server 476 mynick #channel :Bad Channel Mask
 export const onRaw476 = (ctx: IrcContext): void => {
-  addJoinError(ctx);
+  showJoinError(ctx);
 };
 
 // The JOIN for the target channel follows
@@ -174,7 +174,7 @@ export const onRaw470 = (ctx: IrcContext): void => {
   const to = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${from} → ${to}: ${message}`,
     target: getCurrentChannelName(),
     category: MessageCategory.info,

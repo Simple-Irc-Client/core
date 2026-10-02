@@ -1,5 +1,5 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -12,7 +12,7 @@ const RPL_USERIP = '340';
 export const onUserhostReply = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: ctx.trailing(),
     target: getCurrentChannelName(),
     category: MessageCategory.info,

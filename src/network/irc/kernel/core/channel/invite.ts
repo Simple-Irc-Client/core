@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -24,7 +24,7 @@ export const onInvite = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.invite', { nick, channel }),
     target: getCurrentChannelName(),
     category: MessageCategory.info,
@@ -38,7 +38,7 @@ export const onRaw341 = (ctx: IrcContext): void => {
   const invitedUser = ctx.line.shift();
   const channel = ctx.line.shift();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.341', { user: invitedUser, channel, defaultValue: `Inviting ${invitedUser} to ${channel}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -57,7 +57,7 @@ export const onRaw443 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.443.already-on-channel', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${nick} ${channel}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.info,
@@ -70,7 +70,7 @@ export const onRaw443 = (ctx: IrcContext): void => {
 export const onInviteListReply = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: ctx.paramsWithText(),
     target: getCurrentChannelName(),
     category: MessageCategory.info,

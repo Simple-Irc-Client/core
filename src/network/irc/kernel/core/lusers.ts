@@ -1,6 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_STATSCONN = '250';
@@ -18,7 +18,7 @@ export const onRaw250 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -31,7 +31,7 @@ export const onRaw251 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -44,7 +44,7 @@ export const onRaw252 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -57,7 +57,7 @@ export const onRaw253 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -70,7 +70,7 @@ export const onRaw254 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -83,7 +83,7 @@ export const onRaw255 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -98,7 +98,7 @@ export const onRaw265 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -113,7 +113,7 @@ export const onRaw266 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

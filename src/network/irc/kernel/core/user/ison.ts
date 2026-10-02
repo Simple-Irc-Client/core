@@ -1,6 +1,6 @@
 import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -12,7 +12,7 @@ export const onRaw303 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const nicks = ctx.trailing().trim();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: nicks === '' ? i18next.t('kernel.303.none') : i18next.t('kernel.303', { nicks }),
     target: getCurrentChannelName(),
     category: MessageCategory.info,

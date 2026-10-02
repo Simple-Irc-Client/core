@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { resumePendingEncryption } from '@features/e2ee/session';
 import { setMultipleMonitorOffline, setMultipleMonitorOnline } from '@features/monitor/store/monitor';
 import { MessageCategory } from '@shared/types';
@@ -27,7 +27,7 @@ export const onRaw597 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   // User is now away again (after returning)
   if (nick) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -41,7 +41,7 @@ export const onRaw598 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   // User went away
   if (nick) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -55,7 +55,7 @@ export const onRaw599 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   // User is back from away
   if (nick) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchback', { nick, defaultValue: `${nick} is no longer away` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -71,7 +71,7 @@ export const onRaw600 = (ctx: IrcContext): void => {
   if (nick) {
     setMultipleMonitorOnline([nick]);
     void resumePendingEncryption(nick);
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -86,7 +86,7 @@ export const onRaw601 = (ctx: IrcContext): void => {
   // User went offline
   if (nick) {
     setMultipleMonitorOffline([nick]);
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -100,7 +100,7 @@ export const onRaw602 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   // Stopped watching nick
   if (nick) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchremoved', { nick, defaultValue: `Stopped watching ${nick}` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -113,7 +113,7 @@ export const onRaw603 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
   // Watch statistics
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -128,7 +128,7 @@ export const onRaw604 = (ctx: IrcContext): void => {
   if (nick) {
     setMultipleMonitorOnline([nick]);
     void resumePendingEncryption(nick);
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchonline', { nick, defaultValue: `${nick} is now online` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -143,7 +143,7 @@ export const onRaw605 = (ctx: IrcContext): void => {
   // User is currently offline (when adding to watch list)
   if (nick) {
     setMultipleMonitorOffline([nick]);
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,
@@ -156,7 +156,7 @@ export const onRaw606 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const nicks = ctx.trailing();
   // Watch list entries
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.watchlist', { nicks, defaultValue: `Watch list: ${nicks}` }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -171,7 +171,7 @@ export const onRaw607 = (): void => {
 // :server 608 yournick :Watch list cleared
 export const onRaw608 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.watchcleared', { defaultValue: 'Watch list cleared' }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -184,7 +184,7 @@ export const onRaw609 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   // User is currently away (when adding to watch list)
   if (nick) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.watchaway', { nick, defaultValue: `${nick} is now away` }),
       target: STATUS_CHANNEL,
       category: MessageCategory.info,

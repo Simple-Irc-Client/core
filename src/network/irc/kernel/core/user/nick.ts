@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
@@ -46,7 +46,7 @@ export const onNick = (ctx: IrcContext): void => {
   handlePresenceNickChange(oldNick, newNick);
 
   for (const channel of channels) {
-    addReply(ctx, {
+    showReply(ctx, {
       message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
       target: channel,
       category: MessageCategory.info,
@@ -76,7 +76,7 @@ export const onRaw432 = (ctx: IrcContext): void => {
     message = message.substring(1);
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${nick} :${message}`,
     target: currentChannelName,
     category: MessageCategory.error,
@@ -92,7 +92,7 @@ export const onRaw431 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -104,8 +104,8 @@ export const onRaw431 = (ctx: IrcContext): void => {
 };
 
 /** The nick can't be used; during registration the wizard shows it, as the connection can't proceed. */
-const addNickUnavailable = (ctx: IrcContext, message: string): void => {
-  addReply(ctx, {
+const showNickUnavailable = (ctx: IrcContext, message: string): void => {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -126,7 +126,7 @@ export const onRaw433 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.433.nickname-in-use', { defaultValue: message });
   }
 
-  addNickUnavailable(ctx, `${nick}: ${message}`);
+  showNickUnavailable(ctx, `${nick}: ${message}`);
 };
 
 // :server 437 * nick :Nick/channel is temporarily unavailable
@@ -137,7 +137,7 @@ export const onRaw437 = (ctx: IrcContext): void => {
   const message = `${target}: ${ctx.trailing()}`;
 
   if (target !== undefined && isChannel(target)) {
-    addReply(ctx, {
+    showReply(ctx, {
       message,
       target: getCurrentChannelName(),
       category: MessageCategory.error,
@@ -145,7 +145,7 @@ export const onRaw437 = (ctx: IrcContext): void => {
     return;
   }
 
-  addNickUnavailable(ctx, message);
+  showNickUnavailable(ctx, message);
 };
 
 // :server 436 mynick nick :Nickname collision KILL
@@ -169,7 +169,7 @@ export const onRaw447 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: currentChannelName,
     category: MessageCategory.error,

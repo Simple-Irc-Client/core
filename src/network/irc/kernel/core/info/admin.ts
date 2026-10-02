@@ -1,6 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_ADMINME = '256';
@@ -13,7 +13,7 @@ export const onRaw256 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -25,7 +25,7 @@ export const onRaw257 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -37,7 +37,7 @@ export const onRaw258 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -49,7 +49,7 @@ export const onRaw259 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

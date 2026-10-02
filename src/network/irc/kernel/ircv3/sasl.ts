@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { finishCapNegotiation } from '@/network/irc/kernel/ircv3/cap';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getSaslState, handleSaslChallenge, saveSaslCredentialsForReconnect, setAuthenticatedAccount, setSaslState } from '@/network/irc/sasl';
@@ -47,7 +47,7 @@ export const onRaw900 = (ctx: IrcContext): void => {
   const account = ctx.line[2] ?? null;
   setAuthenticatedAccount(account);
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.loggedIn', { account }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -58,7 +58,7 @@ export const onRaw900 = (ctx: IrcContext): void => {
 export const onRaw901 = (ctx: IrcContext): void => {
   setAuthenticatedAccount(null);
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.loggedOut'),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -69,7 +69,7 @@ export const onRaw901 = (ctx: IrcContext): void => {
 export const onRaw902 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.nickLocked'),
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -84,7 +84,7 @@ export const onRaw903 = (ctx: IrcContext): void => {
   void saveSaslCredentialsForReconnect();
   setSaslState('success');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.success'),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -97,7 +97,7 @@ export const onRaw903 = (ctx: IrcContext): void => {
 export const onRaw904 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.failed'),
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -110,7 +110,7 @@ export const onRaw904 = (ctx: IrcContext): void => {
 export const onRaw905 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.tooLong'),
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -123,7 +123,7 @@ export const onRaw905 = (ctx: IrcContext): void => {
 export const onRaw906 = (ctx: IrcContext): void => {
   setSaslState('failed');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.sasl.aborted'),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -143,7 +143,7 @@ export const onRaw908 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const mechanisms = ctx.line.shift();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.908', { mechanisms, defaultValue: `Available SASL mechanisms: ${mechanisms}` }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

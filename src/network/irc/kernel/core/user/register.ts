@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { handleConnected } from '@/network/irc/kernel/connection';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendList } from '@/network/irc/network';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { getCurrentNick, getIsWizardCompleted, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
@@ -36,7 +36,7 @@ export const onRaw001 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -51,7 +51,7 @@ export const onRaw002 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -64,7 +64,7 @@ export const onRaw003 = (ctx: IrcContext): void => {
 
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -75,7 +75,7 @@ export const onRaw003 = (ctx: IrcContext): void => {
 export const onRaw004 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: ctx.line.join(' '),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -88,7 +88,7 @@ export const onRaw396 = (ctx: IrcContext): void => {
 
   const message = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -102,7 +102,7 @@ export const onRaw010 = (ctx: IrcContext): void => {
   const port = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.010', { hostname, port, message, defaultValue: `Server redirect: ${hostname}:${port} ${message}` }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -114,7 +114,7 @@ export const onRaw020 = (ctx: IrcContext): void => {
   ctx.line.shift(); // asterisk
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -127,7 +127,7 @@ export const onRaw042 = (ctx: IrcContext): void => {
   const uniqueId = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${uniqueId} ${message}`,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
@@ -139,7 +139,7 @@ export const onRaw451 = (ctx: IrcContext): void => {
   ctx.line.shift(); // asterisk
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -151,7 +151,7 @@ export const onRaw462 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.error,
@@ -167,7 +167,7 @@ export const onRaw464 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.464.password-incorrect', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message,
     target: STATUS_CHANNEL,
     category: MessageCategory.error,

@@ -1,7 +1,7 @@
 import { defaultChannelTypes, STATUS_CHANNEL } from '@/config/config';
 import { parseChannelModes, parseUserModes } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendNamesXProto } from '@/network/irc/network';
 import { setCaseMapping, setChannelModes, setChannelTypes, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
@@ -20,7 +20,7 @@ const parseIsupportLimit = (value: string | undefined): number =>
 export const onRaw005 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: ctx.line.join(' '),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

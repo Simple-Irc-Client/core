@@ -1,6 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_VERSION = '351';
@@ -12,7 +12,7 @@ export const onRaw351 = (ctx: IrcContext): void => {
   const server = ctx.line.shift();
   const comments = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${server} ${version} ${comments}`,
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

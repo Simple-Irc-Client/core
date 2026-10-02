@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setRemoveUser } from '@features/users/store/users';
@@ -65,7 +65,7 @@ export const onRaw441 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.441.not-on-channel', { defaultValue: message });
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${nick} ${channel}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,

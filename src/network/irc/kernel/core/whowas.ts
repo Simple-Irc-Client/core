@@ -1,6 +1,6 @@
 import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -15,7 +15,7 @@ export const onRaw314 = (ctx: IrcContext): void => {
   const user = ctx.line.shift();
   const host = ctx.line.join(' ');
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.314', { user, host, defaultValue: `${user} was ${host}` }),
     target: currentChannelName,
     category: MessageCategory.info,
@@ -29,7 +29,7 @@ export const onRaw369 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `* ${nick} ${message}`,
     target: currentChannelName,
     category: MessageCategory.info,
@@ -43,7 +43,7 @@ export const onRaw406 = (ctx: IrcContext): void => {
   const nick = ctx.line.shift();
   const message = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: `${nick}: ${message}`,
     target: currentChannelName,
     category: MessageCategory.error,

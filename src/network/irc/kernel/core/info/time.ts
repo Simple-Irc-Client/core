@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_TIME = '391';
@@ -12,7 +12,7 @@ export const onRaw391 = (ctx: IrcContext): void => {
   const server = ctx.line.shift();
   const timeString = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.391', { server, time: timeString, defaultValue: `${server}: ${timeString}` }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,

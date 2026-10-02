@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { getUserModes } from '@features/settings/store/settings';
 import { getUserChannels, setUserHost } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
@@ -18,7 +18,7 @@ export const onChghost = (ctx: IrcContext): void => {
 
     const channels = getUserChannels(nick);
     for (const channelName of channels) {
-      addReply(ctx, {
+      showReply(ctx, {
         message: i18next.t('kernel.chghost', { nick, ident: newIdent, hostname: newHostname }),
         target: channelName,
         category: MessageCategory.info,

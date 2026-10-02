@@ -1,7 +1,7 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { resumePendingEncryption } from '@features/e2ee/session';
 import { addMonitoredNick, setMultipleMonitorOffline, setMultipleMonitorOnline } from '@features/monitor/store/monitor';
 import { MessageCategory } from '@shared/types';
@@ -73,7 +73,7 @@ export const onRaw734 = (ctx: IrcContext): void => {
   const limit = ctx.line[1];
   const nicks = ctx.line[2];
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.monitor.listFull', { limit, nicks }),
     target: STATUS_CHANNEL,
     category: MessageCategory.error,

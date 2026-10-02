@@ -2,7 +2,7 @@ import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { getCurrentChannelName, getUserModes, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUserAway } from '@features/users/store/users';
@@ -38,7 +38,7 @@ export const onRaw301 = (ctx: IrcContext): void => {
     reason = reason.substring(1);
   }
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
     target: currentChannelName,
     category: MessageCategory.info,

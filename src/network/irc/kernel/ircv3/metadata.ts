@@ -1,6 +1,6 @@
 import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { addReply } from '@/network/irc/kernel/replies';
+import { showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setChannelAvatar, setChannelDisplayName } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, isSameName, setCurrentUserAvatar, setCurrentUserColor, setCurrentUserDisplayName, setCurrentUserHomepage, setCurrentUserStatus, setSupportedOption } from '@features/settings/store/settings';
 import { setUserAvatar, setUserBot, setUserColor, setUserDisplayName, setUserHomepage, setUserStatus } from '@features/users/store/users';
@@ -153,7 +153,7 @@ export const onRaw760 = (ctx: IrcContext): void => {
   ctx.line.shift(); // visibility
   const value = ctx.trailing();
 
-  addReply(ctx, {
+  showReply(ctx, {
     message: i18next.t('kernel.760', { user, key, value }),
     target: getCurrentChannelName(),
     category: MessageCategory.info,
