@@ -2,6 +2,7 @@ import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
@@ -28,6 +29,7 @@ export const handleError = (eventLine: string): void => {
 };
 
 export const handleConnect = (): void => {
+  clearChannelWhoRequests();
   if (import.meta.env.DEV) {
     setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
   }
