@@ -114,6 +114,17 @@ test.describe('Scroll behavior', () => {
     await expect(chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).first()).toBeVisible({ timeout: 15_000 });
     await expect(chatLog.getByRole('img', { name: 'Image thumbnail' }).first()).toBeVisible({ timeout: 15_000 });
 
+    // Previews are visible before their images finish loading; the ResizeObserver scrolls
+    // on the frame after each load, so wait for every image and one more layout
+    await chatLog.evaluate(async (el) => {
+      const pending = [...el.querySelectorAll('img')].filter((img) => !img.complete);
+      await Promise.all(pending.map((img) => new Promise((resolve) => {
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      })));
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
+
     // After all async content has loaded, we should still be at the bottom
     // This is the key assertion: the ResizeObserver should keep us scrolled down
     // even though images loaded after the join message was already rendered
