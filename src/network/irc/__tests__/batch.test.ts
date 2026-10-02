@@ -1,14 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   startBatch,
   endBatch,
   addToBatch,
-  isBatchActive,
   getBatch,
   getMessageBatchId,
-  onBatchComplete,
   clearAllBatches,
-  getActiveBatchIds,
   BATCH_TYPES,
 } from '../batch';
 import { type ParsedIrcRawMessage } from '@shared/types';
@@ -22,7 +19,6 @@ describe('batch', () => {
     it('should start a new batch', () => {
       startBatch('batch1', 'chathistory', ['#channel']);
 
-      expect(isBatchActive('batch1')).toBe(true);
       const batch = getBatch('batch1');
       expect(batch).toBeDefined();
       expect(batch?.type).toBe('chathistory');
@@ -54,23 +50,12 @@ describe('batch', () => {
 
       expect(batch).toBeDefined();
       expect(batch?.messages).toHaveLength(1);
-      expect(isBatchActive('batch1')).toBe(false);
+      expect(getBatch('batch1')).toBeUndefined();
     });
 
     it('should return undefined for non-existent batch', () => {
       const batch = endBatch('nonexistent');
       expect(batch).toBeUndefined();
-    });
-
-    it('should call registered callback', () => {
-      const callback = vi.fn();
-      startBatch('batch1', 'chathistory', []);
-      onBatchComplete('batch1', callback);
-
-      endBatch('batch1');
-
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(expect.objectContaining({ id: 'batch1' }));
     });
   });
 
@@ -141,23 +126,6 @@ describe('batch', () => {
     });
   });
 
-  describe('getActiveBatchIds', () => {
-    it('should return all active batch ids', () => {
-      startBatch('batch1', 'chathistory', []);
-      startBatch('batch2', 'netsplit', []);
-
-      const ids = getActiveBatchIds();
-
-      expect(ids).toContain('batch1');
-      expect(ids).toContain('batch2');
-      expect(ids).toHaveLength(2);
-    });
-
-    it('should return empty array when no batches', () => {
-      expect(getActiveBatchIds()).toEqual([]);
-    });
-  });
-
   describe('clearAllBatches', () => {
     it('should clear all active batches', () => {
       startBatch('batch1', 'chathistory', []);
@@ -165,9 +133,8 @@ describe('batch', () => {
 
       clearAllBatches();
 
-      expect(getActiveBatchIds()).toEqual([]);
-      expect(isBatchActive('batch1')).toBe(false);
-      expect(isBatchActive('batch2')).toBe(false);
+      expect(getBatch('batch1')).toBeUndefined();
+      expect(getBatch('batch2')).toBeUndefined();
     });
   });
 
@@ -212,7 +179,8 @@ describe('batch', () => {
         startBatch(`batch${i}`, 'chathistory', []);
       }
 
-      expect(getActiveBatchIds().length).toBe(100);
+      const started = Array.from({ length: 110 }, (_, i) => getBatch(`batch${i}`)).filter((batch) => batch !== undefined);
+      expect(started).toHaveLength(100);
     });
   });
 
@@ -222,7 +190,6 @@ describe('batch', () => {
       expect(BATCH_TYPES.LABELED_RESPONSE).toBe('labeled-response');
       expect(BATCH_TYPES.NETJOIN).toBe('netjoin');
       expect(BATCH_TYPES.NETSPLIT).toBe('netsplit');
-      expect(BATCH_TYPES.MULTILINE).toBe('draft/multiline');
     });
   });
 });

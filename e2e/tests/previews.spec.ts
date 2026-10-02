@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, serveImagePreviews } from '../helpers';
 
 test.describe('Previews', () => {
   test.describe.configure({ mode: 'serial' });
@@ -13,6 +13,7 @@ test.describe('Previews', () => {
     await bot.join('#previews');
 
     sharedPage = await browser.newPage();
+    await serveImagePreviews(sharedPage);
     await sharedPage.goto('/');
     await connectViaWizard(sharedPage, 'preview-tester', { channels: ['#previews'] });
     await sharedPage.getByRole('button', { name: '#previews', exact: true }).click();

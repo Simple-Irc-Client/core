@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, serveImagePreviews } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -11,6 +11,7 @@ test.beforeAll(async ({ browser }) => {
   await bot.join('#scroll-other');
 
   sharedPage = await browser.newPage();
+  await serveImagePreviews(sharedPage);
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, 'scroll-tester', { channels: ['#scroll-test', '#scroll-other'] });
   await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();

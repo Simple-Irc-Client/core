@@ -19,7 +19,6 @@ export const BATCH_TYPES = {
   LABELED_RESPONSE: 'labeled-response',
   NETJOIN: 'netjoin',
   NETSPLIT: 'netsplit',
-  MULTILINE: 'draft/multiline',
 } as const;
 
 const MAX_BATCH_MESSAGES = 10_000;
@@ -27,9 +26,6 @@ const MAX_ACTIVE_BATCHES = 100;
 const BATCH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 const activeBatches = new Map<string, BatchState>();
-
-type BatchCallback = (batch: BatchState) => void;
-const batchCallbacks = new Map<string, BatchCallback>();
 
 export const startBatch = (id: string, type: string, params: string[], request?: LabeledRequest): void => {
   const now = Date.now();
@@ -53,15 +49,7 @@ export const startBatch = (id: string, type: string, params: string[], request?:
 
 export const endBatch = (id: string): BatchState | undefined => {
   const batch = activeBatches.get(id);
-  if (batch) {
-    activeBatches.delete(id);
-
-    const callback = batchCallbacks.get(id);
-    if (callback) {
-      callback(batch);
-      batchCallbacks.delete(id);
-    }
-  }
+  activeBatches.delete(id);
   return batch;
 };
 
@@ -77,10 +65,6 @@ export const addToBatch = (batchId: string, message: ParsedIrcRawMessage): boole
   return true;
 };
 
-export const isBatchActive = (id: string): boolean => {
-  return activeBatches.has(id);
-};
-
 export const getBatch = (id: string): BatchState | undefined => {
   return activeBatches.get(id);
 };
@@ -93,15 +77,6 @@ export const getMessageBatchId = (message: ParsedIrcRawMessage): string | undefi
   return undefined;
 };
 
-export const onBatchComplete = (id: string, callback: BatchCallback): void => {
-  batchCallbacks.set(id, callback);
-};
-
 export const clearAllBatches = (): void => {
   activeBatches.clear();
-  batchCallbacks.clear();
-};
-
-export const getActiveBatchIds = (): string[] => {
-  return Array.from(activeBatches.keys());
 };

@@ -3,6 +3,9 @@ import { type LabeledRequest } from '@/network/irc/labels';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 import { type ParsedIrcRawMessage } from '@shared/types';
 
+export const joinParamsAndText = (params: string[], text: string): string =>
+  [params.join(' '), text].filter((part) => part !== '').join(': ');
+
 /** One parsed IRC line; handlers consume `line` as they read parameters. */
 export class IrcContext {
   tags: Record<string, string>;
@@ -35,12 +38,19 @@ export class IrcContext {
     return this.line.length > 0 ? this.trailing() : undefined;
   }
 
+  /** Remaining middle parameters and the trailing text, split apart */
+  paramsAndText(): { params: string[]; text: string } {
+    const trailingIndex = this.line.findIndex((token) => token.startsWith(':'));
+    return {
+      params: trailingIndex === -1 ? this.line : this.line.slice(0, trailingIndex),
+      text: trailingIndex === -1 ? '' : this.stripColon(this.line.slice(trailingIndex).join(' ')),
+    };
+  }
+
   /** Remaining middle parameters and trailing text as `params: text`, either part omitted when empty */
   paramsWithText(): string {
-    const trailingIndex = this.line.findIndex((token) => token.startsWith(':'));
-    const params = trailingIndex === -1 ? this.line : this.line.slice(0, trailingIndex);
-    const text = trailingIndex === -1 ? '' : this.stripColon(this.line.slice(trailingIndex).join(' '));
-    return [params.join(' '), text].filter((part) => part !== '').join(': ');
+    const { params, text } = this.paramsAndText();
+    return joinParamsAndText(params, text);
   }
 
   logParseError(handler: (...args: never[]) => unknown, variable: string): void {
