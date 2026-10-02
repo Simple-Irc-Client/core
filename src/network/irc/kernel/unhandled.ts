@@ -17,10 +17,7 @@ const isErrorNumeric = (numeric: string): boolean => {
 export const onUnhandledNumeric = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  const trailingIndex = ctx.line.findIndex((token) => token.startsWith(':'));
-  const params = trailingIndex === -1 ? ctx.line : ctx.line.slice(0, trailingIndex);
-  const text = trailingIndex === -1 ? '' : ctx.stripColon(ctx.line.slice(trailingIndex).join(' '));
-  const message = [params.join(' '), text].filter((part) => part !== '').join(': ');
+  const message = ctx.paramsWithText();
 
   if (message === '') {
     return;

@@ -22,11 +22,16 @@ const RPL_EXCEPTLIST = '348';
 const RPL_ENDOFEXCEPTLIST = '349';
 const RPL_BANLIST = '367';
 const RPL_ENDOFBANLIST = '368';
+const ERR_KEYSET = '467';
 const ERR_UNKNOWNMODE = '472';
 const ERR_BANLISTFULL = '478';
 const ERR_CHANOPRIVSNEEDED = '482';
+const ERR_CHANOWNPRIVNEEDED = '499';
 const ERR_UMODEUNKNOWNFLAG = '501';
 const ERR_USERSDONTMATCH = '502';
+const ERR_INVALIDKEY = '525';
+const ERR_INVALIDMODEPARAM = '696';
+const ERR_MLOCKRESTRICTED = '742';
 
 // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
 // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
@@ -451,6 +456,21 @@ export const onRaw502 = (ctx: IrcContext): void => {
   });
 };
 
+// In the channel's window, as with 482; a user mode target falls back to the current window
+// :server 467 mynick #channel :Channel key already set
+// :server 696 mynick #channel l abc :Invalid limit mode parameter
+// :server 742 mynick #channel t nt :MODE cannot be set due to channel having an active MLOCK restriction policy
+export const onModeRefused = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const target = ctx.line[0];
+
+  addReply(ctx, {
+    message: ctx.paramsWithText(),
+    target: target !== undefined && isChannel(target) ? target : getCurrentChannelName(),
+    category: MessageCategory.error,
+  });
+};
+
 export const handlers: IrcHandlers = {
   MODE: onMode,
   [RPL_CHANNELMODEIS]: onRaw324,
@@ -467,4 +487,9 @@ export const handlers: IrcHandlers = {
   [ERR_UMODEUNKNOWNFLAG]: onRaw501,
   [ERR_USERSDONTMATCH]: onRaw502,
   [RPL_UMODEIS]: onRaw221,
+  [ERR_KEYSET]: onModeRefused,
+  [ERR_CHANOWNPRIVNEEDED]: onModeRefused,
+  [ERR_INVALIDKEY]: onModeRefused,
+  [ERR_INVALIDMODEPARAM]: onModeRefused,
+  [ERR_MLOCKRESTRICTED]: onModeRefused,
 };

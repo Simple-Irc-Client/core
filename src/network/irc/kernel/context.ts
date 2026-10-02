@@ -32,6 +32,14 @@ export class IrcContext {
     return this.line.length > 0 ? this.trailing() : undefined;
   }
 
+  /** Remaining middle parameters and trailing text as `params: text`, either part omitted when empty */
+  paramsWithText(): string {
+    const trailingIndex = this.line.findIndex((token) => token.startsWith(':'));
+    const params = trailingIndex === -1 ? this.line : this.line.slice(0, trailingIndex);
+    const text = trailingIndex === -1 ? '' : this.stripColon(this.line.slice(trailingIndex).join(' '));
+    return [params.join(' '), text].filter((part) => part !== '').join(': ');
+  }
+
   logParseError(handler: (...args: never[]) => unknown, variable: string): void {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${handler.name}`);
     Sentry.captureException(error, {

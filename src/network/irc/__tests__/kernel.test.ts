@@ -4046,13 +4046,13 @@ describe('kernel tests', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
-      const line = ':server 696 mynick #chan l abc :Invalid limit mode parameter';
+      const line = ':server 723 mynick kill :Insufficient oper privileges.';
 
       new Kernel({ type: 'raw', line }).handle();
 
       expect(mockSetAddMessage).toHaveBeenNthCalledWith(
         2,
-        expect.objectContaining({ target: '#current-channel', message: '#chan l abc: Invalid limit mode parameter', category: MessageCategory.error }),
+        expect.objectContaining({ target: '#current-channel', message: 'kill: Insufficient oper privileges.', category: MessageCategory.error }),
       );
     });
 

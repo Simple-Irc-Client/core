@@ -22,6 +22,8 @@ const ERR_NOSUCHNICK = '401';
 const ERR_CANNOTSENDTOCHAN = '404';
 const ERR_NORECIPIENT = '411';
 const ERR_NOTEXTTOSEND = '412';
+const ERR_NONONREG = '486';
+const ERR_CANTSENDTOUSER = '531';
 
 // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
 // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
@@ -456,6 +458,21 @@ export const onRaw412 = (ctx: IrcContext): void => {
   });
 };
 
+// In the DM window with that user when it is open, where the message was typed
+// :server 486 mynick nick :You must log in with services to message this user
+// :server 531 mynick nick :You are not permitted to send private messages to this user
+export const onPrivateMessageRefused = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const nick = ctx.line.shift();
+  const message = ctx.trailing();
+
+  addReply(ctx, {
+    message: `${nick}: ${message}`,
+    target: nick !== undefined && existChannel(nick) ? nick : getCurrentChannelName(),
+    category: MessageCategory.error,
+  });
+};
+
 export const handlers: IrcHandlers = {
   NOTICE: onNotice,
   PRIVMSG: onPrivMsg,
@@ -463,4 +480,6 @@ export const handlers: IrcHandlers = {
   [ERR_CANNOTSENDTOCHAN]: onRaw404,
   [ERR_NORECIPIENT]: onRaw411,
   [ERR_NOTEXTTOSEND]: onRaw412,
+  [ERR_NONONREG]: onPrivateMessageRefused,
+  [ERR_CANTSENDTOUSER]: onPrivateMessageRefused,
 };

@@ -1,9 +1,13 @@
+import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addReply } from '@/network/irc/kernel/replies';
 import { isChannel, setChannelAvatar, setChannelDisplayName } from '@features/channels/store/channels';
-import { getCurrentNick, isSameName, setCurrentUserAvatar, setCurrentUserColor, setCurrentUserDisplayName, setCurrentUserHomepage, setCurrentUserStatus, setSupportedOption } from '@features/settings/store/settings';
+import { getCurrentChannelName, getCurrentNick, isSameName, setCurrentUserAvatar, setCurrentUserColor, setCurrentUserDisplayName, setCurrentUserHomepage, setCurrentUserStatus, setSupportedOption } from '@features/settings/store/settings';
 import { setUserAvatar, setUserBot, setUserColor, setUserDisplayName, setUserHomepage, setUserStatus } from '@features/users/store/users';
 import { isSafeCssColor, isSafeImageUrl, isSafeUrl } from '@shared/lib/utils';
+import { MessageCategory } from '@shared/types';
 
+const RPL_WHOISKEYVALUE = '760';
 const RPL_KEYVALUE = '761';
 const RPL_METADATAEND = '762';
 const ERR_NOMATCHINGKEY = '766';
@@ -140,7 +144,24 @@ export const onRaw770 = (ctx: IrcContext): void => {
   }
 };
 
+// A metadata line in WHOIS output
+// :ergo.test 760 mynick nick display-name * :Whois Display
+export const onRaw760 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const user = ctx.line.shift();
+  const key = ctx.line.shift();
+  ctx.line.shift(); // visibility
+  const value = ctx.trailing();
+
+  addReply(ctx, {
+    message: i18next.t('kernel.760', { user, key, value }),
+    target: getCurrentChannelName(),
+    category: MessageCategory.info,
+  });
+};
+
 export const handlers: IrcHandlers = {
+  [RPL_WHOISKEYVALUE]: onRaw760,
   METADATA: onMetadata,
   [RPL_KEYVALUE]: onRaw761,
   [RPL_METADATAEND]: onRaw762,

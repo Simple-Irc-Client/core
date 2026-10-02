@@ -6,6 +6,7 @@ import { setTopic, setTopicSetBy } from '@features/channels/store/channels';
 import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
+const RPL_NOTOPIC = '331';
 const RPL_TOPIC = '332';
 const RPL_TOPICWHOTIME = '333';
 
@@ -29,6 +30,19 @@ export const onTopic = (ctx: IrcContext): void => {
   });
 
   setTopic(channel, topic);
+};
+
+// :server 331 mynick #channel :No topic is set
+export const onRaw331 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const channel = ctx.line.shift();
+
+  if (channel === undefined) {
+    ctx.logParseError(onRaw331, 'channel');
+    return;
+  }
+
+  setTopic(channel, '');
 };
 
 // :chmurka.pirc.pl 332 SIC-test #sic :Prace nad Simple Irc Client trwają
@@ -67,6 +81,7 @@ export const onRaw333 = (ctx: IrcContext): void => {
 
 export const handlers: IrcHandlers = {
   TOPIC: onTopic,
+  [RPL_NOTOPIC]: onRaw331,
   [RPL_TOPIC]: onRaw332,
   [RPL_TOPICWHOTIME]: onRaw333,
 };

@@ -1,12 +1,12 @@
 import { calculateMaxPermission } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { getUserModes } from '@features/settings/store/settings';
-import { getHasUser, setAddUser, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
+import { getHasUser, setAddUser, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
 
 const RPL_ENDOFWHO = '315';
 const RPL_WHOSPCRPL = '354';
 
-// :server 354 mynick querytype channel user host server nick flags hopcount :realname (WHOX reply)
+// :server 354 mynick 152 #channel ident host server nick flags account :realname (reply to WHO %chtsunfra,152)
 export const onRaw354 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   ctx.line.shift(); // queryType
@@ -16,7 +16,7 @@ export const onRaw354 = (ctx: IrcContext): void => {
   ctx.line.shift(); // server
   const nick = ctx.line.shift();
   const flags = ctx.line.shift() ?? '';
-  ctx.line.shift(); // hopcount
+  const account = ctx.line.shift();
   const realname = ctx.trailing();
 
   if (!nick || !channel) { return; }
@@ -37,8 +37,6 @@ export const onRaw354 = (ctx: IrcContext): void => {
 
   if (getHasUser(nick)) {
     setUserHost(nick, ident ?? '', hostname ?? '');
-    if (realname) { setUserRealname(nick, realname); }
-    if (isAway) { setUserAway(nick, true); }
   } else {
     setAddUser({
       nick,
@@ -52,6 +50,11 @@ export const onRaw354 = (ctx: IrcContext): void => {
       }],
     });
   }
+
+  if (realname) { setUserRealname(nick, realname); }
+  if (isAway) { setUserAway(nick, true); }
+  // "0" = not logged in
+  if (account !== undefined) { setUserAccount(nick, account === '0' ? null : account); }
 };
 
 export const onRaw315 = (): void => {

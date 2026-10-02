@@ -16,6 +16,7 @@ const RPL_CHANNEL_URL = '328';
 const ERR_NOSUCHCHANNEL = '403';
 const ERR_TOOMANYCHANNELS = '405';
 const ERR_FORBIDDENCHANNEL = '448';
+const ERR_LINKCHANNEL = '470';
 const ERR_CHANNELISFULL = '471';
 const ERR_INVITEONLYCHAN = '473';
 const ERR_BANNEDFROMCHAN = '474';
@@ -281,6 +282,21 @@ export const onRaw476 = (ctx: IrcContext): void => {
   });
 };
 
+// The JOIN for the target channel follows
+// :server 470 mynick #from #to :Forwarding to another channel
+export const onRaw470 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const from = ctx.line.shift();
+  const to = ctx.line.shift();
+  const message = ctx.trailing();
+
+  addReply(ctx, {
+    message: `${from} → ${to}: ${message}`,
+    target: getCurrentChannelName(),
+    category: MessageCategory.info,
+  });
+};
+
 export const handlers: IrcHandlers = {
   JOIN: onJoin,
   [ERR_INVITEONLYCHAN]: onRaw473,
@@ -290,6 +306,7 @@ export const handlers: IrcHandlers = {
   [ERR_NOSUCHCHANNEL]: onRaw403,
   [ERR_TOOMANYCHANNELS]: onRaw405,
   [ERR_FORBIDDENCHANNEL]: onRaw448,
+  [ERR_LINKCHANNEL]: onRaw470,
   [ERR_CHANNELISFULL]: onRaw471,
   [ERR_BADCHANNELKEY]: onRaw475,
   [ERR_BADCHANMASK]: onRaw476,

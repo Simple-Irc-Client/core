@@ -23,11 +23,13 @@ import { handlers as coreOperOper } from '@/network/irc/kernel/core/oper/oper';
 import { handlers as coreOperRehash } from '@/network/irc/kernel/core/oper/rehash';
 import { handlers as coreStats } from '@/network/irc/kernel/core/stats';
 import { handlers as coreUserAway } from '@/network/irc/kernel/core/user/away';
+import { handlers as coreUserIson } from '@/network/irc/kernel/core/user/ison';
 import { handlers as coreUserNick } from '@/network/irc/kernel/core/user/nick';
 import { handlers as coreUserPart } from '@/network/irc/kernel/core/user/part';
 import { handlers as coreUserPing } from '@/network/irc/kernel/core/user/ping';
 import { handlers as coreUserQuit } from '@/network/irc/kernel/core/user/quit';
 import { handlers as coreUserRegister } from '@/network/irc/kernel/core/user/register';
+import { handlers as coreUserUserhost } from '@/network/irc/kernel/core/user/userhost';
 import { handlers as coreWho } from '@/network/irc/kernel/core/who';
 import { handlers as coreWhois } from '@/network/irc/kernel/core/whois';
 import { handlers as coreWhowas } from '@/network/irc/kernel/core/whowas';
@@ -82,11 +84,13 @@ export const ircHandlers = mergeHandlers(
   coreOperRehash,
   coreStats,
   coreUserAway,
+  coreUserIson,
   coreUserNick,
   coreUserPart,
   coreUserPing,
   coreUserQuit,
   coreUserRegister,
+  coreUserUserhost,
   coreWho,
   coreWhois,
   coreWhowas,

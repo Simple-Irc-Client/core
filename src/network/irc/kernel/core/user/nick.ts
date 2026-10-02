@@ -4,7 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { addReply } from '@/network/irc/kernel/replies';
-import { setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
 import { getCurrentChannelName, getCurrentNick, getIsWizardCompleted, getNickLenLimit, getUserModes, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
@@ -17,6 +17,7 @@ const ERR_NONICKNAMEGIVEN = '431';
 const ERR_ERRONEUSNICKNAME = '432';
 const ERR_NICKNAMEINUSE = '433';
 const ERR_NICKCOLLISION = '436';
+const ERR_UNAVAILRESOURCE = '437';
 const ERR_NONICKCHANGE = '447';
 
 // @msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :Merovingian NICK :Niezident36707
@@ -102,6 +103,19 @@ export const onRaw431 = (ctx: IrcContext): void => {
   }
 };
 
+/** The nick can't be used; during registration the wizard shows it, as the connection can't proceed. */
+const addNickUnavailable = (ctx: IrcContext, message: string): void => {
+  addReply(ctx, {
+    message,
+    target: STATUS_CHANNEL,
+    category: MessageCategory.error,
+  });
+
+  if (!getIsWizardCompleted()) {
+    setWizardProgress(0, i18next.t('wizard.loading.error', { message }));
+  }
+};
+
 // :server 433 * nick :Nickname is already in use
 export const onRaw433 = (ctx: IrcContext): void => {
   ctx.line.shift(); // asterisk
@@ -112,15 +126,26 @@ export const onRaw433 = (ctx: IrcContext): void => {
     message = i18next.t('kernel.433.nickname-in-use', { defaultValue: message });
   }
 
-  addReply(ctx, {
-    message: `${nick}: ${message}`,
-    target: STATUS_CHANNEL,
-    category: MessageCategory.error,
-  });
+  addNickUnavailable(ctx, `${nick}: ${message}`);
+};
 
-  if (!getIsWizardCompleted()) {
-    setWizardProgress(0, i18next.t('wizard.loading.error', { message: `${nick}: ${message}` }));
+// :server 437 * nick :Nick/channel is temporarily unavailable
+// :server 437 mynick #channel :Nick/channel is temporarily unavailable
+export const onRaw437 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick or asterisk
+  const target = ctx.line.shift();
+  const message = `${target}: ${ctx.trailing()}`;
+
+  if (target !== undefined && isChannel(target)) {
+    addReply(ctx, {
+      message,
+      target: getCurrentChannelName(),
+      category: MessageCategory.error,
+    });
+    return;
   }
+
+  addNickUnavailable(ctx, message);
 };
 
 // :server 436 mynick nick :Nickname collision KILL
@@ -157,5 +182,6 @@ export const handlers: IrcHandlers = {
   [ERR_NONICKNAMEGIVEN]: onRaw431,
   [ERR_NICKNAMEINUSE]: onRaw433,
   [ERR_NICKCOLLISION]: onRaw436,
+  [ERR_UNAVAILRESOURCE]: onRaw437,
   [ERR_NONICKCHANGE]: onRaw447,
 };

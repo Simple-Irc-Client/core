@@ -5,6 +5,8 @@ import { addReply } from '@/network/irc/kernel/replies';
 import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
+const RPL_INVITELIST = '336';
+const RPL_ENDOFINVITELIST = '337';
 const RPL_INVITING = '341';
 const ERR_USERONCHANNEL = '443';
 
@@ -62,8 +64,23 @@ export const onRaw443 = (ctx: IrcContext): void => {
   });
 };
 
+// Reply to /invite without arguments: channels we are invited to
+// :server 336 mynick #channel
+// :server 337 mynick :End of INVITE list
+export const onInviteListReply = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+
+  addReply(ctx, {
+    message: ctx.paramsWithText(),
+    target: getCurrentChannelName(),
+    category: MessageCategory.info,
+  });
+};
+
 export const handlers: IrcHandlers = {
   INVITE: onInvite,
   [RPL_INVITING]: onRaw341,
   [ERR_USERONCHANNEL]: onRaw443,
+  [RPL_INVITELIST]: onInviteListReply,
+  [RPL_ENDOFINVITELIST]: onInviteListReply,
 };

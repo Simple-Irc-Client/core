@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 
 const RPL_WHOISCERTFP = '276';
 const RPL_WHOISREGNICK = '307';
+const RPL_WHOISHELPOP = '310';
 const RPL_WHOISUSER = '311';
 const RPL_WHOISSERVER = '312';
 const RPL_WHOISOPERATOR = '313';
@@ -137,6 +138,21 @@ export const onRaw319 = (ctx: IrcContext): void => {
 
   addReply(ctx, {
     message: i18next.t('kernel.319', { user, channels }),
+    target: currentChannelName,
+    category: MessageCategory.info,
+  });
+};
+
+// :server 310 mynick nick :is available for help
+export const onRaw310 = (ctx: IrcContext): void => {
+  const currentChannelName = getCurrentChannelName();
+
+  ctx.line.shift(); // my nick
+  const user = ctx.line.shift();
+  const message = ctx.trailing();
+
+  addReply(ctx, {
+    message: i18next.t('kernel.310', { user, message }),
     target: currentChannelName,
     category: MessageCategory.info,
   });
@@ -318,6 +334,7 @@ export const handlers: IrcHandlers = {
   [RPL_WHOISOPERATOR]: onRaw313,
   [RPL_ENDOFWHOIS]: onRaw318,
   [RPL_WHOISCHANNELS]: onRaw319,
+  [RPL_WHOISHELPOP]: onRaw310,
   [RPL_WHOISSPECIAL]: onRaw320,
   [RPL_WHOISBOT]: onRaw335,
   [RPL_WHOISSECURE]: onRaw671,
