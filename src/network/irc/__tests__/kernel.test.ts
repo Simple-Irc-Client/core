@@ -3381,7 +3381,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#sic :Nie możesz dołączyć do kanału (Kanał tylko dla zaproszonych)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#sic: Nie możesz dołączyć do kanału (Kanał tylko dla zaproszonych)', category: MessageCategory.error }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -3396,7 +3396,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#bog :Nie możesz dołączyć do kanału (Masz bana)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#bog: Nie możesz dołączyć do kanału (Masz bana)', category: MessageCategory.error }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -3411,7 +3411,7 @@ describe('kernel tests', () => {
     expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#knajpa :Wymagany jest zarejestrowany nick aby dołączyć do tego kanału' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#knajpa: Wymagany jest zarejestrowany nick aby dołączyć do tego kanału', category: MessageCategory.error }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 

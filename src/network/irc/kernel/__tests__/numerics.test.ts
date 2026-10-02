@@ -158,6 +158,21 @@ describe('dedicated numeric handlers', () => {
     expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: '#from → #to: Forwarding to another channel', category: MessageCategory.info });
   });
 
+  describe('join errors', () => {
+    it.each(['403', '405', '448', '471', '473', '474', '475', '476', '477'])('%s shows as an error in the current window', (numeric) => {
+      handle(`:server ${numeric} mynick #chan :Server text`);
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: '#chan: Server text', category: MessageCategory.error });
+    });
+
+    it('ignores a reply without a channel', () => {
+      handle(':server 473 mynick');
+
+      // Debug echo only
+      expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('channel mode refusals', () => {
     it.each([
       [':server 467 mynick #chan :Channel key already set', '#chan: Channel key already set'],
