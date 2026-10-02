@@ -46,7 +46,7 @@ vi.mock('@shared/components/ui/tabs', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
   ircRequestMetadataList: vi.fn(),
 }));
 
@@ -162,25 +162,25 @@ describe('ChannelSettings', () => {
     it('should query channel modes when dialog opens', () => {
       render(<ChannelSettings {...defaultProps} />);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test', { window: '#test' });
     });
 
     it('should query ban list when dialog opens', () => {
       render(<ChannelSettings {...defaultProps} />);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test b');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test b', { window: '#test' });
     });
 
     it('should query exception list when dialog opens', () => {
       render(<ChannelSettings {...defaultProps} />);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test e');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test e', { window: '#test' });
     });
 
     it('should query invite list when dialog opens', () => {
       render(<ChannelSettings {...defaultProps} />);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test I');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test I', { window: '#test' });
     });
 
     it('should clear lists before fetching', () => {
@@ -252,8 +252,8 @@ describe('ChannelSettings', () => {
 
       rerender(<ChannelSettings {...defaultProps} open={true} />);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test');
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test b');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test', { window: '#test' });
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test b', { window: '#test' });
       expect(mockSetBanList).toHaveBeenCalledWith([]);
       expect(mockSetExceptionList).toHaveBeenCalledWith([]);
       expect(mockSetInviteList).toHaveBeenCalledWith([]);

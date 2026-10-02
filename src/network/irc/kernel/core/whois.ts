@@ -1,8 +1,8 @@
 import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { MessageCategory } from '@shared/types';
@@ -28,23 +28,19 @@ const RPL_WHOISSECURE = '671';
 
 // :chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76
 export const onRaw276 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.276', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 307 sic-test Noop :is identified for this nick
 export const onRaw307 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   let message = ctx.trailing();
@@ -55,30 +51,26 @@ export const onRaw307 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.307', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*
 export const onRaw311 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const host = ctx.line.join(' ');
 
   showReply(ctx, {
     message: i18next.t('kernel.311', { user, host }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!
 export const onRaw312 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
 
@@ -91,15 +83,13 @@ export const onRaw312 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator
 export const onRaw313 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
 
@@ -114,7 +104,7 @@ export const onRaw313 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.313', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
@@ -126,7 +116,6 @@ export const onRaw318 = (): void => {
 
 // :chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic
 export const onRaw319 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   const serverUserModes = getUserModes();
 
   ctx.line.shift(); // my nick
@@ -138,30 +127,26 @@ export const onRaw319 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.319', { user, channels }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 310 mynick nick :is available for help
 export const onRaw310 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.310', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 320 sic-test k4be :a Network Administrator
 export const onRaw320 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
 
@@ -173,15 +158,13 @@ export const onRaw320 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.320', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl
 export const onRaw335 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
 
@@ -191,15 +174,13 @@ export const onRaw335 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.335', { user }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
 export const onRaw671 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
 
@@ -211,14 +192,13 @@ export const onRaw671 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.671', { user, message }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 317 mynick user idle signon :seconds idle, signon time
 export const onRaw317 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const idleSeconds = Number(ctx.line.shift() ?? '0');
@@ -229,7 +209,7 @@ export const onRaw317 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
@@ -251,7 +231,6 @@ export const formatDuration = (seconds: number): string => {
 
 // :server 330 mynick user account :is logged in as
 export const onRaw330 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const account = ctx.line.shift();
@@ -263,14 +242,13 @@ export const onRaw330 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.330', { user, account, message, defaultValue: `${user} ${message} ${account}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 338 mynick user actualuser@actualhost actualIP :Actual user@host, Actual IP
 export const onRaw338 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const actualUserHost = ctx.line.shift();
@@ -278,14 +256,13 @@ export const onRaw338 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.338', { user, actualUserHost, actualIP, defaultValue: `${user} ${actualUserHost} ${actualIP}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 344 mynick user country :is connecting from Country
 export const onRaw344 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const country = ctx.line.shift();
@@ -293,35 +270,33 @@ export const onRaw344 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.344', { user, country, message, defaultValue: `${user} ${message} ${country}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 378 mynick nick :is connecting from *@host IP
 export const onRaw378 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.378', { user, message, defaultValue: `* ${user} ${message}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 379 mynick nick :is using modes +iwx
 export const onRaw379 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.379', { user, message, defaultValue: `* ${user} ${message}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

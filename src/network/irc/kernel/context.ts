@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { type LabeledRequest } from '@/network/irc/labels';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 import { type ParsedIrcRawMessage } from '@shared/types';
 
@@ -9,6 +10,8 @@ export class IrcContext {
   command: string;
   line: string[];
   readonly eventLine: string;
+  /** The labeled command this message answers, when the server supports labeled-response */
+  request?: LabeledRequest;
 
   constructor(message: ParsedIrcRawMessage, eventLine: string) {
     this.eventLine = eventLine;

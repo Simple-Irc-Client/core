@@ -10,7 +10,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
 }));
 
 let mockChannelModes: Record<string, string | boolean> = { n: true, t: true };
@@ -117,7 +117,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('mode-switch-i'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +i');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +i', { window: '#test' });
     });
 
     it('should send MODE -flag command when disabling a mode', () => {
@@ -125,7 +125,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('mode-switch-n'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -n');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -n', { window: '#test' });
     });
   });
 
@@ -137,7 +137,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '50' } });
       fireEvent.click(screen.getByTestId('limit-set'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +l 50');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +l 50', { window: '#test' });
     });
 
     it('should send MODE -l command when clearing limit', () => {
@@ -145,7 +145,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('limit-clear'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -l');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -l', { window: '#test' });
     });
 
     it('should set limit when pressing Enter', () => {
@@ -155,7 +155,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '100' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +l 100');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +l 100', { window: '#test' });
     });
   });
 
@@ -167,7 +167,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: 'secretkey' } });
       fireEvent.click(screen.getByTestId('key-set'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +k secretkey');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +k secretkey', { window: '#test' });
     });
 
     it('should send MODE -k command when clearing key', () => {
@@ -175,7 +175,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('key-clear'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -k *');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -k *', { window: '#test' });
     });
 
     it('should set key when pressing Enter', () => {
@@ -185,7 +185,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: 'mykey' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +k mykey');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +k mykey', { window: '#test' });
     });
   });
 
@@ -206,7 +206,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nrtBCN' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -R');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -R', { window: '#test' });
     });
 
     it('should send only added flags when a flag is added', () => {
@@ -216,7 +216,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nts' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +s', { window: '#test' });
     });
 
     it('should send both added and removed flags in one command', () => {
@@ -226,7 +226,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nim' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +im-t');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +im-t', { window: '#test' });
     });
 
     it('should not send anything when flags are unchanged', () => {
@@ -236,7 +236,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nt' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should handle removing parameterized flags', () => {
@@ -247,7 +247,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+ntf' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -H');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -H', { window: '#test' });
     });
 
     it('should apply raw modes when pressing Enter', () => {
@@ -257,7 +257,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nts' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +s');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +s', { window: '#test' });
     });
 
     it('should not send anything when input is empty', () => {
@@ -267,7 +267,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '   ' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should handle removing multiple flags at once', () => {
@@ -278,7 +278,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '+nrt' } });
       fireEvent.click(screen.getByTestId('raw-modes-apply'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -BCNR');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -BCNR', { window: '#test' });
     });
   });
 
@@ -323,7 +323,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '[5j#R3]:8' } });
       fireEvent.click(screen.getByTestId('param-mode-f-set'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +f [5j#R3]:8');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +f [5j#R3]:8', { window: '#test' });
     });
 
     it('should send MODE -flag when clearing', () => {
@@ -332,7 +332,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('param-mode-H-clear'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -H');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -H', { window: '#test' });
     });
 
     it('should set parameterized mode when pressing Enter', () => {
@@ -343,7 +343,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: '[5j]:3' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +f [5j]:3');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +f [5j]:3', { window: '#test' });
     });
 
     it('should show +flag as label', () => {
@@ -386,7 +386,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: 'My Channel Name' } });
       fireEvent.click(screen.getByTestId('displayName-set'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name :My Channel Name');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('METADATA #test SET display-name :My Channel Name', { window: '#test' });
     });
 
     it('should send METADATA SET display-name without value when clearing', () => {
@@ -394,7 +394,7 @@ describe('ModesTab', () => {
 
       fireEvent.click(screen.getByTestId('displayName-clear'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('METADATA #test SET display-name', { window: '#test' });
     });
 
     it('should set display name when pressing Enter', () => {
@@ -404,7 +404,7 @@ describe('ModesTab', () => {
       fireEvent.change(input, { target: { value: 'Test Display Name' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA #test SET display-name :Test Display Name');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('METADATA #test SET display-name :Test Display Name', { window: '#test' });
     });
 
     it('should display translated display name label', () => {
@@ -550,7 +550,7 @@ describe('ModesTab', () => {
       // Click set without entering a value — limit is empty string
       fireEvent.click(screen.getByTestId('limit-set'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should not send command when setting key with empty value', () => {
@@ -572,7 +572,7 @@ describe('ModesTab', () => {
       // Click set without entering a value — key is empty string
       fireEvent.click(screen.getByTestId('key-set'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should not render avatar input when metadata-avatar is not supported', () => {

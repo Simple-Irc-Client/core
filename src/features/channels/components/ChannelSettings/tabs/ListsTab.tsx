@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { X, Loader2 } from 'lucide-react';
 import { useChannelSettingsStore, type ActiveListType, type ListEntry } from '@features/channels/store/channelSettings';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendCommand } from '@/network/irc/network';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
@@ -58,13 +58,13 @@ const ListsTab = ({ channelName }: ListsTabProps) => {
 
   const handleAddEntry = () => {
     if (newEntry.trim()) {
-      ircSendRawMessage(`MODE ${channelName} +${activeListType} ${newEntry.trim()}`);
+      ircSendCommand(`MODE ${channelName} +${activeListType} ${newEntry.trim()}`, { window: channelName });
       setNewEntry('');
     }
   };
 
   const handleRemoveEntry = (mask: string) => {
-    ircSendRawMessage(`MODE ${channelName} -${activeListType} ${mask}`);
+    ircSendCommand(`MODE ${channelName} -${activeListType} ${mask}`, { window: channelName });
   };
 
   const handleListTypeChange = (type: ActiveListType) => {

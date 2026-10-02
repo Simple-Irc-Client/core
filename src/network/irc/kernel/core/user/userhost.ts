@@ -1,6 +1,5 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { getCurrentChannelName } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const RPL_USERHOST = '302';
@@ -14,7 +13,7 @@ export const onUserhostReply = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: ctx.trailing(),
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

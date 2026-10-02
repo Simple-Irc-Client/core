@@ -1,8 +1,8 @@
 import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { getCurrentChannelName, getUserModes } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
 const RPL_INVITELIST = '336';
@@ -26,28 +26,26 @@ export const onInvite = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.invite', { nick, channel }),
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 341 mynick invitedUser #channel
 export const onRaw341 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const invitedUser = ctx.line.shift();
   const channel = ctx.line.shift();
 
   showReply(ctx, {
     message: i18next.t('kernel.341', { user: invitedUser, channel, defaultValue: `Inviting ${invitedUser} to ${channel}` }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
 
 // :server 443 mynick nick #channel :is already on channel
 export const onRaw443 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const nick = ctx.line.shift();
   const channel = ctx.line.shift();
@@ -59,7 +57,7 @@ export const onRaw443 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${nick} ${channel}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
@@ -72,7 +70,7 @@ export const onInviteListReply = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: ctx.paramsWithText(),
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

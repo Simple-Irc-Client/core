@@ -1,4 +1,5 @@
-import { BATCH_TYPES, type BatchState, endBatch, resolveLabeledResponse, startBatch } from '@/network/irc/batch';
+import { BATCH_TYPES, type BatchState, endBatch, startBatch } from '@/network/irc/batch';
+import { takeLabel } from '@/network/irc/labels';
 import { IrcContext, type IrcHandler, type IrcHandlers } from '@/network/irc/kernel/context';
 import { onJoin } from '@/network/irc/kernel/core/channel/join';
 import { onKick } from '@/network/irc/kernel/core/channel/kick';
@@ -32,7 +33,7 @@ export const onBatch = (ctx: IrcContext): void => {
 
     const label = ctx.tags.label;
 
-    startBatch(id, type, params, label);
+    startBatch(id, type, params, label !== undefined ? takeLabel(label) : undefined);
   } else if (reference.startsWith('-')) {
     const id = reference.substring(1);
     const batch = endBatch(id);
@@ -49,7 +50,7 @@ export const processBatch = (ctx: IrcContext, batch: BatchState): void => {
       processChatHistoryBatch(ctx, batch);
       break;
     case BATCH_TYPES.LABELED_RESPONSE:
-      processLabeledResponseBatch(ctx, batch);
+      // Its messages were handled as they arrived
       break;
     case BATCH_TYPES.NETJOIN:
     case BATCH_TYPES.NETSPLIT:
@@ -73,16 +74,6 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   // Skip TAGMSG: typing indicators from history are stale
   for (const message of batch.messages) {
     if (message.command === 'TAGMSG') { continue; }
-    processBufferedMessage(ctx, message);
-  }
-};
-
-export const processLabeledResponseBatch = (ctx: IrcContext, batch: BatchState): void => {
-  if (batch.referenceTag) {
-    resolveLabeledResponse(batch.referenceTag, batch);
-  }
-
-  for (const message of batch.messages) {
     processBufferedMessage(ctx, message);
   }
 };

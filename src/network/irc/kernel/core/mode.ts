@@ -3,10 +3,10 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { channelModeType, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
-import { getChannelModes, getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
+import { getChannelModes, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUpdateUserFlag, setUserBot } from '@features/users/store/users';
 import { getDateFnsLocale } from '@shared/lib/dateLocale';
 import { MessageCategory } from '@shared/types';
@@ -386,21 +386,19 @@ export const onRaw329 = (ctx: IrcContext): void => {
 
 // :server 472 mynick char :is unknown mode char to me
 export const onRaw472 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const modeChar = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: `${modeChar}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 478 mynick #channel mask :Channel ban list is full
 export const onRaw478 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const channel = ctx.line.shift();
   const mask = ctx.line.shift();
@@ -408,7 +406,7 @@ export const onRaw478 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${channel} ${mask}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
@@ -432,26 +430,24 @@ export const onRaw482 = (ctx: IrcContext): void => {
 
 // :server 501 mynick :Unknown MODE flag
 export const onRaw501 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 502 mynick :Cannot change mode for other users
 export const onRaw502 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
@@ -466,7 +462,7 @@ export const onModeRefused = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: ctx.paramsWithText(),
-    target: target !== undefined && isChannel(target) ? target : getCurrentChannelName(),
+    target: target !== undefined && isChannel(target) ? target : replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

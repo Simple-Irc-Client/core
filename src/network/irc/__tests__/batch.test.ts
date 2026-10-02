@@ -9,10 +9,6 @@ import {
   onBatchComplete,
   clearAllBatches,
   getActiveBatchIds,
-  generateLabel,
-  registerLabeledResponse,
-  resolveLabeledResponse,
-  clearPendingLabels,
   BATCH_TYPES,
 } from '../batch';
 import { type ParsedIrcRawMessage } from '@shared/types';
@@ -20,7 +16,6 @@ import { type ParsedIrcRawMessage } from '@shared/types';
 describe('batch', () => {
   beforeEach(() => {
     clearAllBatches();
-    clearPendingLabels();
   });
 
   describe('startBatch', () => {
@@ -35,11 +30,11 @@ describe('batch', () => {
       expect(batch?.messages).toEqual([]);
     });
 
-    it('should store reference tag', () => {
-      startBatch('batch2', 'labeled-response', [], 'L123');
+    it('should store the labeled request it answers', () => {
+      startBatch('batch2', 'labeled-response', [], { window: '#chan' });
 
       const batch = getBatch('batch2');
-      expect(batch?.referenceTag).toBe('L123');
+      expect(batch?.request).toEqual({ window: '#chan' });
     });
   });
 
@@ -173,55 +168,6 @@ describe('batch', () => {
       expect(getActiveBatchIds()).toEqual([]);
       expect(isBatchActive('batch1')).toBe(false);
       expect(isBatchActive('batch2')).toBe(false);
-    });
-  });
-
-  describe('generateLabel', () => {
-    it('should generate unique labels', () => {
-      const label1 = generateLabel();
-      const label2 = generateLabel();
-      const label3 = generateLabel();
-
-      expect(label1).not.toBe(label2);
-      expect(label2).not.toBe(label3);
-      expect(label1.startsWith('L')).toBe(true);
-    });
-  });
-
-  describe('labeled response', () => {
-    it('should resolve when batch completes', async () => {
-      const label = 'L123';
-      const promise = registerLabeledResponse(label, 5000);
-
-      startBatch('batch1', 'labeled-response', [], label);
-
-      // Resolve the labeled response
-      resolveLabeledResponse(label, {
-        id: 'batch1',
-        type: 'labeled-response',
-        params: [],
-        messages: [],
-        startTime: Date.now(),
-        referenceTag: label,
-      });
-
-      const result = await promise;
-      expect(result.id).toBe('batch1');
-    });
-
-    it('should timeout if not resolved', async () => {
-      const promise = registerLabeledResponse('L999', 50); // 50ms timeout
-
-      await expect(promise).rejects.toThrow('timeout');
-    });
-
-    it('should clear pending labels on disconnect', async () => {
-      const promise = registerLabeledResponse('L456', 5000);
-
-      clearPendingLabels();
-
-      // Promise should reject with disconnect error
-      await expect(promise).rejects.toThrow('Disconnected');
     });
   });
 

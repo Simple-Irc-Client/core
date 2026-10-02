@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setRemoveUser } from '@features/users/store/users';
@@ -55,7 +55,6 @@ export const onKick = (ctx: IrcContext): void => {
 
 // :server 441 mynick nick #channel :They aren't on that channel
 export const onRaw441 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const nick = ctx.line.shift();
   const channel = ctx.line.shift();
@@ -67,7 +66,7 @@ export const onRaw441 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${nick} ${channel}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

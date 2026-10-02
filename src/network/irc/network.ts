@@ -6,7 +6,7 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
+import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
@@ -21,7 +21,8 @@ import {
   setDirectEventCallback,
   setDirectEncryption,
 } from './transport';
-import { clearAllBatches, clearPendingLabels } from './batch';
+import { clearAllBatches } from './batch';
+import { clearLabels, createLabel, type LabeledRequest } from './labels';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
@@ -451,7 +452,9 @@ export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {
     return;
   }
-  const maxLength = getMaxIrcMessageLength();
+  // Tags have their own budget (message-tags); the line length limit applies to the rest
+  const tagsLength = data.startsWith('@') ? data.indexOf(' ') + 1 : 0;
+  const maxLength = tagsLength + getMaxIrcMessageLength();
   if (data.length > maxLength) {
     // Silent truncation hid data loss before; callers that can't be truncated must split up front
     console.warn(`IRC message exceeds ${maxLength} chars and will be truncated:`, `${data.slice(0, 80)}…`);
@@ -460,6 +463,24 @@ export const ircSendRawMessage = (data: string): void => {
   }
   sendDirectRaw(data);
 };
+
+/**
+ * Sends a command whose replies belong to `request`: with labeled-response the server tags them with its label.
+ * Returns whether it was labeled; without the capability the replies can't be told apart.
+ */
+export const ircSendCommand = (data: string, request: LabeledRequest): boolean => {
+  if (data.length === 0 || !isCapabilityEnabled('labeled-response') || !isCapabilityEnabled('batch')) {
+    ircSendRawMessage(data);
+    return false;
+  }
+
+  const label = createLabel(request);
+  ircSendRawMessage(data.startsWith('@') ? `@label=${label};${data.slice(1)}` : `@label=${label} ${data}`);
+  return true;
+};
+
+/** A command the user issued from the window they are looking at; its replies go back there. */
+export const ircSendUserCommand = (data: string): boolean => ircSendCommand(data, { window: getCurrentChannelName() });
 
 let reconnectInFlight: Promise<boolean> | null = null;
 
@@ -513,7 +534,7 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
   resetSaslState();
   resetSTSSessionState();
   clearAllBatches();
-  clearPendingLabels();
+  clearLabels();
   disconnectDirect();
   notifyConnectionTornDown();
 

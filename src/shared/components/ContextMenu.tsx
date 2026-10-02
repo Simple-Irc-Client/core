@@ -13,7 +13,7 @@ import { useUsersDrawer } from '@/providers/DrawersContext';
 import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
 import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendUserCommand } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
@@ -140,7 +140,7 @@ export const ContextMenu = () => {
 
   if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {
     const handleJoin = (): void => {
-      ircSendRawMessage(`JOIN ${contextMenuItem}`);
+      ircSendUserCommand(`JOIN ${contextMenuItem}`);
       handleContextMenuClose();
     };
 
@@ -174,7 +174,7 @@ export const ContextMenu = () => {
     };
 
     const handleWhois = (): void => {
-      ircSendRawMessage(`WHOIS ${contextMenuItem}`);
+      ircSendUserCommand(`WHOIS ${contextMenuItem}`);
       handleContextMenuClose();
     };
 
@@ -200,14 +200,14 @@ export const ContextMenu = () => {
       const user = getUser(contextMenuItem);
       if (user !== undefined) {
         const hostmask = `${user.nick}!${user.ident}@${user.hostname}`;
-        ircSendRawMessage(`SILENCE +${hostmask}`);
+        ircSendUserCommand(`SILENCE +${hostmask}`);
       }
       handleContextMenuClose();
     };
 
     const handleKick = (): void => {
       const channelName = getCurrentChannelName();
-      ircSendRawMessage(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
+      ircSendUserCommand(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
       handleContextMenuClose();
     };
 
@@ -216,7 +216,7 @@ export const ContextMenu = () => {
       const user = getUser(contextMenuItem);
       if (user !== undefined) {
         const hostmask = `*!*@${user.hostname}`;
-        ircSendRawMessage(`MODE ${channelName} +b ${hostmask}`);
+        ircSendUserCommand(`MODE ${channelName} +b ${hostmask}`);
       }
       handleContextMenuClose();
     };
@@ -226,20 +226,20 @@ export const ContextMenu = () => {
       const user = getUser(contextMenuItem);
       if (user !== undefined) {
         const hostmask = `*!*@${user.hostname}`;
-        ircSendRawMessage(`MODE ${channelName} +b ${hostmask}`);
-        ircSendRawMessage(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
+        ircSendUserCommand(`MODE ${channelName} +b ${hostmask}`);
+        ircSendUserCommand(`KICK ${channelName} ${contextMenuItem} :${t('kernel.kick.defaultReason')}`);
       }
       handleContextMenuClose();
     };
 
     const handleModeChange = (mode: string, add: boolean): void => {
       const channelName = getCurrentChannelName();
-      ircSendRawMessage(`MODE ${channelName} ${add ? '+' : '-'}${mode} ${contextMenuItem}`);
+      ircSendUserCommand(`MODE ${channelName} ${add ? '+' : '-'}${mode} ${contextMenuItem}`);
       handleContextMenuClose();
     };
 
     const handleInvite = (channelName: string): void => {
-      ircSendRawMessage(`INVITE ${contextMenuItem} ${channelName}`);
+      ircSendUserCommand(`INVITE ${contextMenuItem} ${channelName}`);
       handleContextMenuClose();
     };
 

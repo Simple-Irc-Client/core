@@ -4,6 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
+import { clearLabels } from '@/network/irc/labels';
 import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
 import { clearAllTyping, existChannel, getChannelsToAutoJoin, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
@@ -30,6 +31,7 @@ export const handleError = (eventLine: string): void => {
 
 export const handleConnect = (): void => {
   clearChannelWhoRequests();
+  clearLabels();
   if (import.meta.env.DEV) {
     setAddChannel(DEBUG_CHANNEL, ChannelCategory.debug);
   }

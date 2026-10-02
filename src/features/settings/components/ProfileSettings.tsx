@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/app/i18n';
 import { languages } from '@/config/languages';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendUserCommand } from '@/network/irc/network';
 import { useSettingsStore } from '@features/settings/store/settings';
 import {
   Dialog,
@@ -80,7 +80,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
 
   const handleNickChange = (): void => {
     if (newNick.trim().length > 0) {
-      ircSendRawMessage(`NICK ${newNick.trim()}`);
+      ircSendUserCommand(`NICK ${newNick.trim()}`);
       onOpenChange(false);
     }
   };
@@ -89,9 +89,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
     const trimmedAvatar = newAvatar.trim();
     if (trimmedAvatar.length > 0) {
       if (!isSafeImageUrl(trimmedAvatar)) { return; }
-      ircSendRawMessage(`METADATA * SET avatar ${trimmedAvatar}`);
+      ircSendUserCommand(`METADATA * SET avatar ${trimmedAvatar}`);
     } else {
-      ircSendRawMessage('METADATA * SET avatar');
+      ircSendUserCommand('METADATA * SET avatar');
     }
     onOpenChange(false);
   };
@@ -99,9 +99,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleDisplayNameChange = (): void => {
     const trimmedDisplayName = newDisplayName.trim();
     if (trimmedDisplayName.length > 0) {
-      ircSendRawMessage(`METADATA * SET display-name :${trimmedDisplayName}`);
+      ircSendUserCommand(`METADATA * SET display-name :${trimmedDisplayName}`);
     } else {
-      ircSendRawMessage('METADATA * SET display-name');
+      ircSendUserCommand('METADATA * SET display-name');
     }
     onOpenChange(false);
   };
@@ -109,9 +109,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleStatusChange = (): void => {
     const trimmedStatus = newStatus.trim();
     if (trimmedStatus.length > 0) {
-      ircSendRawMessage(`METADATA * SET status :${trimmedStatus}`);
+      ircSendUserCommand(`METADATA * SET status :${trimmedStatus}`);
     } else {
-      ircSendRawMessage('METADATA * SET status');
+      ircSendUserCommand('METADATA * SET status');
     }
     onOpenChange(false);
   };
@@ -120,9 +120,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
     const trimmedHomepage = newHomepage.trim();
     if (trimmedHomepage.length > 0) {
       if (!isSafeUrl(trimmedHomepage)) { return; }
-      ircSendRawMessage(`METADATA * SET homepage ${trimmedHomepage}`);
+      ircSendUserCommand(`METADATA * SET homepage ${trimmedHomepage}`);
     } else {
-      ircSendRawMessage('METADATA * SET homepage');
+      ircSendUserCommand('METADATA * SET homepage');
     }
     onOpenChange(false);
   };
@@ -130,9 +130,9 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
   const handleColorChange = (): void => {
     const trimmedColor = newColor.trim();
     if (trimmedColor.length > 0) {
-      ircSendRawMessage(`METADATA * SET color ${trimmedColor}`);
+      ircSendUserCommand(`METADATA * SET color ${trimmedColor}`);
     } else {
-      ircSendRawMessage('METADATA * SET color');
+      ircSendUserCommand('METADATA * SET color');
     }
     onOpenChange(false);
   };

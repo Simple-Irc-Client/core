@@ -638,8 +638,8 @@ describe('ContextMenu', () => {
       expect(container.innerHTML).toBe('');
     });
 
-    it('should call ircSendRawMessage with JOIN command when Join is clicked', () => {
-      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+    it('should send JOIN when Join is clicked', () => {
+      const mockIrcSendUserCommand = vi.spyOn(network, 'ircSendUserCommand').mockImplementation(() => false);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createChannelContextMenuMock({ contextMenuItem: '#mychannel' })
       );
@@ -649,7 +649,7 @@ describe('ContextMenu', () => {
       expect(joinButton).not.toBeNull();
       if (joinButton) fireEvent.click(joinButton);
 
-      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('JOIN #mychannel');
+      expect(mockIrcSendUserCommand).toHaveBeenCalledWith('JOIN #mychannel');
       expect(mockHandleContextMenuClose).toHaveBeenCalled();
     });
 
@@ -1042,7 +1042,7 @@ describe('ContextMenu', () => {
     });
 
     it('should send KICK command with correct channel and nick', () => {
-      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      const mockIrcSendUserCommand = vi.spyOn(network, 'ircSendUserCommand').mockImplementation(() => false);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'targetUser' })
       );
@@ -1073,11 +1073,11 @@ describe('ContextMenu', () => {
         .find(el => el.textContent?.includes('contextmenu.user.operator.kick'));
       if (kickButton) fireEvent.click(kickButton);
 
-      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('KICK #ops targetUser :kernel.kick.defaultReason');
+      expect(mockIrcSendUserCommand).toHaveBeenCalledWith('KICK #ops targetUser :kernel.kick.defaultReason');
     });
 
     it('should send BAN command with host-based mask', () => {
-      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      const mockIrcSendUserCommand = vi.spyOn(network, 'ircSendUserCommand').mockImplementation(() => false);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'targetUser' })
       );
@@ -1107,11 +1107,11 @@ describe('ContextMenu', () => {
         .find(el => el.textContent?.includes('contextmenu.user.operator.ban'));
       if (banButton) fireEvent.click(banButton);
 
-      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #ops +b *!*@bad.host.com');
+      expect(mockIrcSendUserCommand).toHaveBeenCalledWith('MODE #ops +b *!*@bad.host.com');
     });
 
     it('should not send BAN command when getUser returns undefined', () => {
-      const mockIrcSendRawMessage = vi.spyOn(network, 'ircSendRawMessage').mockImplementation(() => {});
+      const mockIrcSendUserCommand = vi.spyOn(network, 'ircSendUserCommand').mockImplementation(() => false);
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'departedUser' })
       );
@@ -1136,7 +1136,7 @@ describe('ContextMenu', () => {
       if (banButton) fireEvent.click(banButton);
 
       // Ban should NOT send MODE since user is undefined (no hostname to create mask)
-      expect(mockIrcSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('MODE'));
+      expect(mockIrcSendUserCommand).not.toHaveBeenCalledWith(expect.stringContaining('MODE'));
     });
   });
 

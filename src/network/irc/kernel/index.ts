@@ -1,11 +1,12 @@
 import { DEBUG_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
-import { addToBatch, getMessageBatchId } from '@/network/irc/batch';
+import { addToBatch, BATCH_TYPES, getBatch, getMessageBatchId } from '@/network/irc/batch';
 import { parseIrcRawMessage } from '@/network/irc/helpers';
 import { IrcContext } from '@/network/irc/kernel/context';
 import { handleConnect, handleDisconnected, handleError } from '@/network/irc/kernel/connection';
 import { ircHandlers } from '@/network/irc/kernel/registry';
 import { onUnhandledNumeric } from '@/network/irc/kernel/unhandled';
+import { takeLabel } from '@/network/irc/labels';
 import { onConnectionTornDown, resetInactivityTimeout } from '@/network/irc/network';
 import { setAddMessage } from '@features/channels/store/channels';
 import { clearIncomingState } from '@features/e2ee/incoming';
@@ -75,9 +76,15 @@ export class Kernel {
     const { tags, sender, command, line } = ctx;
     if (command !== 'BATCH') {
       const batchId = getMessageBatchId({ tags, sender, command, line: [...line] });
-      if (batchId) {
+      const batch = batchId !== undefined ? getBatch(batchId) : undefined;
+      if (batch?.type === BATCH_TYPES.LABELED_RESPONSE) {
+        // Replies to one command, grouped only to carry its label: handled as they arrive
+        ctx.request = batch.request;
+      } else if (batchId !== undefined) {
         addToBatch(batchId, { tags, sender, command, line: [...line] });
         return;
+      } else if (tags.label !== undefined) {
+        ctx.request = takeLabel(tags.label);
       }
     }
 

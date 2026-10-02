@@ -1,9 +1,8 @@
 import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,13 +29,12 @@ export const onRaw381 = (ctx: IrcContext): void => {
 
 // :server 481 mynick :Permission Denied- You're not an IRC operator
 export const onRaw481 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

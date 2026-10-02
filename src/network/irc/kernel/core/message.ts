@@ -4,7 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { notifyHighlight } from '@/runtime/notifications';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
@@ -390,7 +390,6 @@ export const handleCtcpAction = (
 
 // :server 401 mynick target :No such nick/channel
 export const onRaw401 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const target = ctx.line.shift();
   let message = ctx.trailing();
@@ -406,7 +405,7 @@ export const onRaw401 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${target}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
@@ -430,20 +429,18 @@ export const onRaw404 = (ctx: IrcContext): void => {
 
 // :server 411 mynick :No recipient given
 export const onRaw411 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 412 mynick :No text to send
 export const onRaw412 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   let message = ctx.trailing();
 
@@ -453,7 +450,7 @@ export const onRaw412 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
@@ -468,7 +465,7 @@ export const onPrivateMessageRefused = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${nick}: ${message}`,
-    target: nick !== undefined && existChannel(nick) ? nick : getCurrentChannelName(),
+    target: nick !== undefined && existChannel(nick) ? nick : replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

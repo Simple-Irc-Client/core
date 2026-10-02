@@ -90,6 +90,7 @@ vi.mock('@features/settings/store/settings', () => ({
   getEncryptedPassword: () => mockGetEncryptedPassword(),
   getPasswordNick: () => mockGetPasswordNick(),
   getLineLenLimit: () => mockGetLineLenLimit(),
+  getCurrentChannelName: () => '#current',
 }));
 
 // Mock channels store
@@ -472,6 +473,86 @@ describe('network', () => {
       network.ircSendRawMessage(message);
 
       expect(mockSendDirectRaw).toHaveBeenCalledWith(message);
+    });
+
+    it('should not count message tags toward the line length limit', () => {
+      const tagged = '@label=L1;+typing=active PRIVMSG #test :' + 'A'.repeat(495);
+
+      network.ircSendRawMessage(tagged);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(tagged);
+    });
+
+    it('should keep the tags when truncating a tagged message', () => {
+      const tags = '@label=L1 ';
+      const longMessage = tags + 'PRIVMSG #test :' + 'A'.repeat(600);
+
+      network.ircSendRawMessage(longMessage);
+
+      const sentMessage = mockSendDirectRaw.mock.calls[0]?.[0] as string;
+      expect(sentMessage).toBe(longMessage.slice(0, tags.length + 510));
+    });
+  });
+
+  describe('ircSendCommand', () => {
+    const enableCapabilities = async (...enabled: string[]): Promise<void> => {
+      const capabilities = await import('../capabilities');
+      vi.mocked(capabilities.isCapabilityEnabled).mockImplementation((cap) => enabled.includes(cap));
+    };
+
+    it('should label the command when labeled-response and batch are enabled', async () => {
+      await enableCapabilities('labeled-response', 'batch');
+      const { takeLabel } = await import('../labels');
+
+      const labeled = network.ircSendCommand('WHOIS bob', { window: '#chan' });
+
+      expect(labeled).toBe(true);
+      const sent = mockSendDirectRaw.mock.calls[0]?.[0] as string;
+      const label = /^@label=(\S+) WHOIS bob$/.exec(sent)?.[1];
+      expect(label).toBeDefined();
+      expect(takeLabel(label ?? '')).toEqual({ window: '#chan' });
+    });
+
+    it('should merge the label into existing tags', async () => {
+      await enableCapabilities('labeled-response', 'batch');
+
+      network.ircSendCommand('@+typing=done TAGMSG #chan', { window: '#chan' });
+
+      expect(mockSendDirectRaw).toHaveBeenCalledWith(expect.stringMatching(/^@label=\S+;\+typing=done TAGMSG #chan$/));
+    });
+
+    it('should send the command unlabeled without labeled-response', async () => {
+      await enableCapabilities('batch');
+
+      const labeled = network.ircSendCommand('WHOIS bob', { window: '#chan' });
+
+      expect(labeled).toBe(false);
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('WHOIS bob');
+    });
+
+    it('should send the command unlabeled without batch, which labeled-response depends on', async () => {
+      await enableCapabilities('labeled-response');
+
+      expect(network.ircSendCommand('WHOIS bob', { window: '#chan' })).toBe(false);
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('WHOIS bob');
+    });
+
+    it('should label a user command with the window being looked at', async () => {
+      await enableCapabilities('labeled-response', 'batch');
+      const { takeLabel } = await import('../labels');
+
+      network.ircSendUserCommand('NICK newnick');
+
+      const sent = mockSendDirectRaw.mock.calls[0]?.[0] as string;
+      const label = /^@label=(\S+) NICK newnick$/.exec(sent)?.[1];
+      expect(takeLabel(label ?? '')).toEqual({ window: '#current' });
+    });
+
+    it('should not send or label an empty command', async () => {
+      await enableCapabilities('labeled-response', 'batch');
+
+      expect(network.ircSendCommand('', { window: '#chan' })).toBe(false);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
     });
   });
 

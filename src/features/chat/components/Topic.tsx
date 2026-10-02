@@ -7,7 +7,7 @@ import { isSameName, useSettingsStore } from '@features/settings/store/settings'
 import { useUsersStore } from '@features/users/store/users';
 import { getCurrentNick } from '@features/settings/store/settings';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendCommand } from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -54,7 +54,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 
   const handleSaveTopic = () => {
     if (editedTopic !== topic) {
-      ircSendRawMessage(`TOPIC ${currentChannelName} :${editedTopic}`);
+      ircSendCommand(`TOPIC ${currentChannelName} :${editedTopic}`, { window: currentChannelName });
     }
   };
 

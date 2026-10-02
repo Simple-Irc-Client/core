@@ -22,6 +22,7 @@ describe('kernel core/channel/join', () => {
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
     const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
@@ -37,9 +38,9 @@ describe('kernel core/channel/join', () => {
 
     expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 
-    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #channel1');
-    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(2, 'WHO #channel1 %chtsunfra,152');
-    expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(2);
+    expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #channel1');
+    expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(1);
+    expect(mockIrcSendCommand).toHaveBeenCalledWith('WHO #channel1 %chtsunfra,152', { automatic: true });
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#channel1', message: 'SIC-test dołączył do kanału' }));
@@ -53,6 +54,7 @@ describe('kernel core/channel/join', () => {
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
     const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP JOIN :#chat';
@@ -68,9 +70,9 @@ describe('kernel core/channel/join', () => {
 
     expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 
-    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #chat');
-    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(2, 'WHO #chat %chtsunfra,152');
-    expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(2);
+    expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #chat');
+    expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(1);
+    expect(mockIrcSendCommand).toHaveBeenCalledWith('WHO #chat %chtsunfra,152', { automatic: true });
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#chat', message: 'mero-test dołączył do kanału' }));
@@ -135,6 +137,7 @@ describe('kernel core/channel/join', () => {
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
     const mockIrcRequestChatHistory = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
     const mockIsCapabilityEnabled = vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/chathistory');
@@ -147,7 +150,7 @@ describe('kernel core/channel/join', () => {
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#mychannel', ChannelCategory.channel);
 
     expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #mychannel');
-    expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(2, 'WHO #mychannel %chtsunfra,152');
+    expect(mockIrcSendCommand).toHaveBeenCalledWith('WHO #mychannel %chtsunfra,152', { automatic: true });
 
     // Verify chathistory request is made when capability is enabled
     expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('draft/chathistory');

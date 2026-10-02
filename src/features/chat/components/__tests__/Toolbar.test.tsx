@@ -21,6 +21,7 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
   ircReconnect: vi.fn(),
 }));
 
@@ -149,7 +150,7 @@ describe('Toolbar', () => {
       expect(form).not.toBeNull();
       fireEvent.submit(form as HTMLFormElement);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :Hello world');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :Hello world', { window: '#test' });
     });
 
     it('should clear input after submission', () => {
@@ -171,7 +172,7 @@ describe('Toolbar', () => {
       const form = input.closest('form');
       fireEvent.submit(form as HTMLFormElement);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('PRIVMSG'));
+      expect(network.ircSendCommand).not.toHaveBeenCalledWith(expect.stringContaining('PRIVMSG'), expect.anything());
     });
   });
 
@@ -433,7 +434,7 @@ describe('Toolbar', () => {
       const form = input.closest('form');
       fireEvent.submit(form as HTMLFormElement);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :😀');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :😀', { window: '#test' });
     });
   });
 
@@ -1814,7 +1815,7 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       // PRIVMSG should still be sent to server
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :Hello world');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :Hello world', { window: '#test' });
     });
 
     it('should check specifically for echo-message capability', () => {
@@ -1843,7 +1844,7 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       // Whitespace-only messages are not blocked — only truly empty strings are
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('PRIVMSG #test :   ');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :   ', { window: '#test' });
     });
 
     it('should route messages starting with / as commands, not PRIVMSG', () => {
@@ -1856,10 +1857,8 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       // Should send raw command (lowercase, as typed), not PRIVMSG
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('join #newchannel');
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(
-        expect.stringContaining('PRIVMSG')
-      );
+      expect(network.ircSendCommand).toHaveBeenCalledWith('join #newchannel', { window: '#test' });
+      expect(network.ircSendCommand).not.toHaveBeenCalledWith(expect.stringContaining('PRIVMSG'), expect.anything());
     });
 
     it('should save draft on channel switch and restore on return', () => {

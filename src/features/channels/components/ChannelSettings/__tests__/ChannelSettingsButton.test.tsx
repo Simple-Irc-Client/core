@@ -33,7 +33,7 @@ vi.mock('@shared/components/ui/tabs', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
   ircRequestMetadataList: vi.fn(),
 }));
 

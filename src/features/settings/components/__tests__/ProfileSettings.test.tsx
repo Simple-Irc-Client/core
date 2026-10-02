@@ -20,7 +20,7 @@ vi.mock('@/app/i18n', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendUserCommand: vi.fn(),
   ircConnect: vi.fn(),
 }));
 
@@ -119,7 +119,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNickname');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('NICK newNickname');
     });
 
     it('should not send NICK command when nickname is empty', async () => {
@@ -138,7 +138,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
+      expect(network.ircSendUserCommand).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
     });
 
     it('should not send NICK command when nickname is only whitespace', async () => {
@@ -158,7 +158,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
+      expect(network.ircSendUserCommand).not.toHaveBeenCalledWith(expect.stringContaining('NICK'));
     });
 
     it('should trim whitespace from nickname', async () => {
@@ -178,7 +178,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeNick');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNick');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('NICK newNick');
     });
 
     it('should call onOpenChange(false) after changing nickname', async () => {
@@ -215,7 +215,7 @@ describe('ProfileSettings', () => {
       await user.clear(nickInput);
       await user.type(nickInput, 'newNickname{Enter}');
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK newNickname');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('NICK newNickname');
     });
   });
 
@@ -1028,7 +1028,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeAvatar');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendUserCommand).not.toHaveBeenCalled();
     });
 
     it('should not send METADATA when avatar URL is unsafe (data:)', async () => {
@@ -1045,7 +1045,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeAvatar');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendUserCommand).not.toHaveBeenCalled();
     });
 
     it('should send METADATA when avatar URL is safe (https)', async () => {
@@ -1062,7 +1062,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeAvatar');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith(
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith(
         'METADATA * SET avatar https://example.com/avatar.png',
       );
     });
@@ -1084,7 +1084,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeAvatar');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET avatar');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET avatar');
     });
 
     it('should not close dialog when avatar URL is unsafe', async () => {
@@ -1172,7 +1172,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeDisplayName');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name :New Display Name');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET display-name :New Display Name');
     });
 
     it('should send METADATA SET display-name without value to clear display name', async () => {
@@ -1196,7 +1196,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeDisplayName');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET display-name');
     });
 
     it('should close dialog after changing display name', async () => {
@@ -1235,7 +1235,7 @@ describe('ProfileSettings', () => {
       const displayNameInput = document.querySelector('#displayName') as HTMLInputElement;
       await user.type(displayNameInput, 'New Name{Enter}');
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET display-name :New Name');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET display-name :New Name');
     });
 
     it('should display translated display name label', () => {
@@ -1320,7 +1320,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeStatus');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :On vacation');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET status :On vacation');
     });
 
     it('should send METADATA SET status without value to clear status', async () => {
@@ -1344,7 +1344,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeStatus');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET status');
     });
 
     it('should close dialog after changing status', async () => {
@@ -1383,7 +1383,7 @@ describe('ProfileSettings', () => {
       const statusInput = document.querySelector('#status') as HTMLInputElement;
       await user.type(statusInput, 'New Status{Enter}');
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET status :New Status');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET status :New Status');
     });
   });
 
@@ -1454,7 +1454,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeHomepage');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage https://mywebsite.com');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET homepage https://mywebsite.com');
     });
 
     it('should send METADATA SET homepage without value to clear homepage', async () => {
@@ -1478,7 +1478,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeHomepage');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET homepage');
     });
 
     it('should close dialog after changing homepage', async () => {
@@ -1517,7 +1517,7 @@ describe('ProfileSettings', () => {
       const homepageInput = document.querySelector('#homepage') as HTMLInputElement;
       await user.type(homepageInput, 'https://example.com{Enter}');
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET homepage https://example.com');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET homepage https://example.com');
     });
 
     it('should display translated homepage labels', () => {
@@ -1549,7 +1549,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeHomepage');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendUserCommand).not.toHaveBeenCalled();
     });
 
     it('should not send METADATA when homepage URL is unsafe (data:)', async () => {
@@ -1566,7 +1566,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeHomepage');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendUserCommand).not.toHaveBeenCalled();
     });
 
     it('should not close dialog when homepage URL is unsafe', async () => {
@@ -1655,7 +1655,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeColor');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET color #00ff00');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET color #00ff00');
     });
 
     it('should close dialog after changing color', async () => {
@@ -1726,7 +1726,7 @@ describe('ProfileSettings', () => {
 
       // NICK command is still sent because the component doesn't check same nick
       // But the server will ignore it. The component only guards against empty.
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('NICK testUser');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('NICK testUser');
     });
 
     it('should send METADATA SET color with value when color input has a value', async () => {
@@ -1746,7 +1746,7 @@ describe('ProfileSettings', () => {
       const changeButton = screen.getByText('profileSettings.changeColor');
       await user.click(changeButton);
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('METADATA * SET color #00ff00');
+      expect(network.ircSendUserCommand).toHaveBeenCalledWith('METADATA * SET color #00ff00');
     });
 
     it('should hide all metadata fields when no options are supported', () => {
@@ -1777,7 +1777,7 @@ describe('ProfileSettings', () => {
       await user.click(changeButton);
 
       // handleNickChange checks newNick.trim().length > 0
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendUserCommand).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,5 +1,6 @@
 // https://ircv3.net/specs/extensions/batch.html
 
+import { type LabeledRequest } from '@/network/irc/labels';
 import { type ParsedIrcRawMessage } from '@shared/types';
 
 export interface BatchState {
@@ -9,8 +10,8 @@ export interface BatchState {
   params: string[];
   messages: ParsedIrcRawMessage[];
   startTime: number;
-  /** For labeled-response */
-  referenceTag?: string;
+  /** For labeled-response: the command this batch answers */
+  request?: LabeledRequest;
 }
 
 export const BATCH_TYPES = {
@@ -30,7 +31,7 @@ const activeBatches = new Map<string, BatchState>();
 type BatchCallback = (batch: BatchState) => void;
 const batchCallbacks = new Map<string, BatchCallback>();
 
-export const startBatch = (id: string, type: string, params: string[], referenceTag?: string): void => {
+export const startBatch = (id: string, type: string, params: string[], request?: LabeledRequest): void => {
   const now = Date.now();
   for (const [batchId, batch] of activeBatches) {
     if (now - batch.startTime > BATCH_TIMEOUT_MS) {
@@ -46,7 +47,7 @@ export const startBatch = (id: string, type: string, params: string[], reference
     params,
     messages: [],
     startTime: now,
-    referenceTag,
+    request,
   });
 };
 
@@ -103,47 +104,4 @@ export const clearAllBatches = (): void => {
 
 export const getActiveBatchIds = (): string[] => {
   return Array.from(activeBatches.keys());
-};
-
-let labelCounter = 0;
-
-interface PendingLabel {
-  resolve: (batch: BatchState) => void;
-  reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
-}
-
-const pendingLabels = new Map<string, PendingLabel>();
-
-export const generateLabel = (): string => {
-  return `L${++labelCounter}`;
-};
-
-export const registerLabeledResponse = (label: string, timeoutMs = 30000): Promise<BatchState> => {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      pendingLabels.delete(label);
-      reject(new Error(`Labeled response timeout for ${label}`));
-    }, timeoutMs);
-
-    pendingLabels.set(label, { resolve, reject, timeout });
-  });
-};
-
-export const resolveLabeledResponse = (label: string, batch: BatchState): void => {
-  const pending = pendingLabels.get(label);
-  if (pending) {
-    clearTimeout(pending.timeout);
-    pending.resolve(batch);
-    pendingLabels.delete(label);
-  }
-};
-
-export const clearPendingLabels = (): void => {
-  for (const [, pending] of pendingLabels) {
-    clearTimeout(pending.timeout);
-    pending.reject(new Error('Disconnected'));
-  }
-  pendingLabels.clear();
-  labelCounter = 0;
 };

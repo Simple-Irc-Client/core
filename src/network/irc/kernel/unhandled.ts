@@ -1,7 +1,6 @@
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { getCurrentChannelName } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 // Error replies outside the 400–599 range: STARTTLS, mode params, oper privs, MLOCK, metadata, knock, Unreal
@@ -27,7 +26,7 @@ export const onUnhandledNumeric = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message,
-    target: isError ? getCurrentChannelName() : STATUS_CHANNEL,
+    target: isError ? replyWindow(ctx) : STATUS_CHANNEL,
     category: isError ? MessageCategory.error : MessageCategory.info,
   });
 };

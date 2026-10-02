@@ -1,6 +1,7 @@
 import { MessageColor } from '@/config/theme';
 import { type IrcContext } from '@/network/irc/kernel/context';
 import { setAddMessage } from '@features/channels/store/channels';
+import { getCurrentChannelName } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,6 +16,9 @@ interface Reply {
   target: string;
   category: keyof typeof colors;
 }
+
+/** Where a reply to a command belongs: the window it was sent from, when labeled-response tells; otherwise the current one. */
+export const replyWindow = (ctx: IrcContext): string => ctx.request?.window ?? getCurrentChannelName();
 
 /** Shows a server reply in the `target` window; id and time come from the server's tags when it sent them. */
 export const showReply = (ctx: IrcContext, { message, target, category }: Reply): void => {

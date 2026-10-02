@@ -1,7 +1,6 @@
 import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { getCurrentChannelName } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { MessageCategory } from '@shared/types';
 
 const ERR_NOSUCHSERVER = '402';
@@ -11,34 +10,31 @@ const ERR_NEEDMOREPARAMS = '461';
 
 // :server 402 mynick server :No such server
 export const onRaw402 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const server = ctx.line.shift();
   const message = ctx.trailing();
 
   showReply(ctx, {
     message: `${server}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 417 mynick :Input line was too long
 export const onRaw417 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 421 mynick COMMAND :Unknown command
 export const onRaw421 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const command = ctx.line.shift();
   let message = ctx.trailing();
@@ -49,14 +45,13 @@ export const onRaw421 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${command}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
 
 // :server 461 mynick COMMAND :Not enough parameters
 export const onRaw461 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const command = ctx.line.shift();
   let message = ctx.trailing();
@@ -67,7 +62,7 @@ export const onRaw461 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${command}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

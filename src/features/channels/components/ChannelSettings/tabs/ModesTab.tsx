@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { useChannelsStore } from '@features/channels/store/channels';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { ircSendRawMessage } from '@/network/irc/network';
+import { ircSendCommand } from '@/network/irc/network';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
@@ -58,52 +58,52 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
 
   const handleFlagToggle = (flag: string, enabled: boolean) => {
     const mode = enabled ? `+${flag}` : `-${flag}`;
-    ircSendRawMessage(`MODE ${channelName} ${mode}`);
+    ircSendCommand(`MODE ${channelName} ${mode}`, { window: channelName });
   };
 
   const handleSetLimit = () => {
     if (limit.trim()) {
-      ircSendRawMessage(`MODE ${channelName} +l ${limit.trim()}`);
+      ircSendCommand(`MODE ${channelName} +l ${limit.trim()}`, { window: channelName });
     }
   };
 
   const handleClearLimit = () => {
-    ircSendRawMessage(`MODE ${channelName} -l`);
+    ircSendCommand(`MODE ${channelName} -l`, { window: channelName });
     setLimit('');
   };
 
   const handleSetKey = () => {
     if (key.trim()) {
-      ircSendRawMessage(`MODE ${channelName} +k ${key.trim()}`);
+      ircSendCommand(`MODE ${channelName} +k ${key.trim()}`, { window: channelName });
     }
   };
 
   const handleClearKey = () => {
-    ircSendRawMessage(`MODE ${channelName} -k *`);
+    ircSendCommand(`MODE ${channelName} -k *`, { window: channelName });
     setKey('');
   };
 
   const handleSetAvatar = () => {
     const trimmedAvatar = avatar.trim();
     if (trimmedAvatar.length > 0) {
-      ircSendRawMessage(`METADATA ${channelName} SET avatar ${trimmedAvatar}`);
+      ircSendCommand(`METADATA ${channelName} SET avatar ${trimmedAvatar}`, { window: channelName });
     }
   };
 
   const handleClearAvatar = () => {
-    ircSendRawMessage(`METADATA ${channelName} SET avatar`);
+    ircSendCommand(`METADATA ${channelName} SET avatar`, { window: channelName });
     setAvatar('');
   };
 
   const handleSetDisplayName = () => {
     const trimmedDisplayName = displayName.trim();
     if (trimmedDisplayName.length > 0) {
-      ircSendRawMessage(`METADATA ${channelName} SET display-name :${trimmedDisplayName}`);
+      ircSendCommand(`METADATA ${channelName} SET display-name :${trimmedDisplayName}`, { window: channelName });
     }
   };
 
   const handleClearDisplayName = () => {
-    ircSendRawMessage(`METADATA ${channelName} SET display-name`);
+    ircSendCommand(`METADATA ${channelName} SET display-name`, { window: channelName });
     setDisplayName('');
   };
 
@@ -128,7 +128,7 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
     const removePart = toRemove ? '-' + toRemove : '';
     const modeString = addPart + removePart;
     if (modeString) {
-      ircSendRawMessage(`MODE ${channelName} ${modeString}`);
+      ircSendCommand(`MODE ${channelName} ${modeString}`, { window: channelName });
     }
   };
 
@@ -144,12 +144,12 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const handleSetParamMode = (flag: string) => {
     const value = paramEdits[flag]?.trim();
     if (value) {
-      ircSendRawMessage(`MODE ${channelName} +${flag} ${value}`);
+      ircSendCommand(`MODE ${channelName} +${flag} ${value}`, { window: channelName });
     }
   };
 
   const handleClearParamMode = (flag: string) => {
-    ircSendRawMessage(`MODE ${channelName} -${flag}`);
+    ircSendCommand(`MODE ${channelName} -${flag}`, { window: channelName });
     setParamEdits((prev) =>
       Object.fromEntries(Object.entries(prev).filter(([key]) => key !== flag)),
     );

@@ -9,7 +9,7 @@ import {
 } from '@shared/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
 import { useChannelSettingsStore, clearChannelSettingsStore, type ActiveTab } from '@features/channels/store/channelSettings';
-import { ircSendRawMessage, ircRequestMetadataList } from '@/network/irc/network';
+import { ircRequestMetadataList, ircSendCommand } from '@/network/irc/network';
 import { isSupportedOption } from '@features/settings/store/settings';
 import ModesTab from './tabs/ModesTab';
 import ListsTab from './tabs/ListsTab';
@@ -41,7 +41,7 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
     setChannelName(channelName);
     setIsLoading(true);
 
-    ircSendRawMessage(`MODE ${channelName}`);
+    ircSendCommand(`MODE ${channelName}`, { window: channelName });
 
     setBanList([]);
     setExceptionList([]);
@@ -50,9 +50,9 @@ const ChannelSettingsContent = ({ channelName }: ChannelSettingsContentProps) =>
     setIsExceptionListLoading(true);
     setIsInviteListLoading(true);
 
-    ircSendRawMessage(`MODE ${channelName} b`);
-    ircSendRawMessage(`MODE ${channelName} e`);
-    ircSendRawMessage(`MODE ${channelName} I`);
+    ircSendCommand(`MODE ${channelName} b`, { window: channelName });
+    ircSendCommand(`MODE ${channelName} e`, { window: channelName });
+    ircSendCommand(`MODE ${channelName} I`, { window: channelName });
 
     if (isSupportedOption('metadata-display-name') || isSupportedOption('metadata-avatar')) {
       ircRequestMetadataList(channelName);

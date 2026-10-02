@@ -2,9 +2,9 @@ import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getCurrentChannelName, getUserModes, setCurrentUserFlag } from '@features/settings/store/settings';
+import { getUserModes, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUserAway } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -29,8 +29,6 @@ export const onAway = (ctx: IrcContext): void => {
 
 // :chmurka.pirc.pl 301 sic-test Noop :gone
 export const onRaw301 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
   let reason = ctx.line.join(' ');
@@ -40,7 +38,7 @@ export const onRaw301 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

@@ -1,8 +1,8 @@
 import { calculateMaxPermission } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
-import { ircSendRawMessage } from '@/network/irc/network';
-import { getCaseMapping, getCurrentChannelName, getUserModes, isSupportedOption } from '@features/settings/store/settings';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { ircSendCommand } from '@/network/irc/network';
+import { getCaseMapping, getUserModes, isSupportedOption } from '@features/settings/store/settings';
 import { getHasUser, setAddUser, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
 import { foldName } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
@@ -14,15 +14,24 @@ const RPL_WHOSPCRPL = '354';
 /** Tags the WHOX replies to our own query, so a WHOX typed by the user is not mistaken for it */
 const WHOX_QUERY_TYPE = '152';
 
-/** Channels with a WHO we sent ourselves (folded); their replies update users instead of being shown. */
+/** Without labeled-response: channels with a WHO we sent ourselves (folded) */
 const ownWhoRequests = new Set<string>();
 
-const isOwnWhoRequest = (channel: string): boolean => ownWhoRequests.has(foldName(channel, getCaseMapping()));
+/** Our own WHO: its replies update users instead of being shown */
+const isOwnWhoReply = (ctx: IrcContext, channel: string): boolean => {
+  if (ctx.request !== undefined) {
+    return ctx.request.automatic === true;
+  }
+  return ownWhoRequests.has(foldName(channel, getCaseMapping()));
+};
 
 /** Fetches host, realname, away status (and account, with WHOX) of everyone in a channel we joined. */
 export const requestChannelWho = (channel: string): void => {
-  ownWhoRequests.add(foldName(channel, getCaseMapping()));
-  ircSendRawMessage(isSupportedOption('WHOX') ? `WHO ${channel} %chtsunfra,${WHOX_QUERY_TYPE}` : `WHO ${channel}`);
+  const command = isSupportedOption('WHOX') ? `WHO ${channel} %chtsunfra,${WHOX_QUERY_TYPE}` : `WHO ${channel}`;
+  const labeled = ircSendCommand(command, { automatic: true });
+  if (!labeled) {
+    ownWhoRequests.add(foldName(channel, getCaseMapping()));
+  }
 };
 
 /** Replies to requests from a previous connection never arrive. */
@@ -81,7 +90,7 @@ const applyWhoReply = ({ channel, nick, ident, hostname, flags, realname, accoun
 const showWhoLine = (ctx: IrcContext): void => {
   showReply(ctx, {
     message: ctx.paramsWithText(),
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };
@@ -91,7 +100,7 @@ export const onRaw352 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const channel = ctx.line[0];
 
-  if (channel === undefined || !isOwnWhoRequest(channel)) {
+  if (channel === undefined || !isOwnWhoReply(ctx, channel)) {
     showWhoLine(ctx);
     return;
   }
@@ -116,7 +125,8 @@ export const onRaw352 = (ctx: IrcContext): void => {
 export const onRaw354 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  if (ctx.line[0] !== WHOX_QUERY_TYPE) {
+  // A labeled reply answers the user's own WHOX even if it reused our query type
+  if (ctx.line[0] !== WHOX_QUERY_TYPE || (ctx.request !== undefined && ctx.request.automatic !== true)) {
     showWhoLine(ctx);
     return;
   }
@@ -141,7 +151,7 @@ export const onRaw315 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const target = ctx.line[0];
 
-  if (target !== undefined && isOwnWhoRequest(target)) {
+  if (target !== undefined && isOwnWhoReply(ctx, target)) {
     ownWhoRequests.delete(foldName(target, getCaseMapping()));
     return;
   }

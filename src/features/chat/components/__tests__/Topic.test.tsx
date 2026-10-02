@@ -32,7 +32,7 @@ vi.mock('@shared/components/ui/tooltip', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
 }));
 
 vi.mock('@features/channels/store/channels', () => ({
@@ -247,7 +247,7 @@ describe('Topic', () => {
       expect(buttons).toHaveLength(5); // Menu + Save + Settings + Encryption hint + Users
       fireEvent.click(buttons[1] as HTMLElement); // Save button is second
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('TOPIC #mychannel :New Topic', { window: '#mychannel' });
     });
 
     it('should send TOPIC command when Enter is pressed', () => {
@@ -259,7 +259,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :New Topic');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('TOPIC #mychannel :New Topic', { window: '#mychannel' });
     });
 
     it('should not show input when user cannot edit (no keypress possible)', () => {
@@ -269,7 +269,7 @@ describe('Topic', () => {
 
       // No input is rendered when user cannot edit
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should not send TOPIC command when topic is unchanged', () => {
@@ -280,7 +280,7 @@ describe('Topic', () => {
       const input = screen.getByRole('textbox');
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should not send TOPIC command on other key presses', () => {
@@ -292,7 +292,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: 'New Topic' } });
       fireEvent.keyDown(input, { key: 'Escape' });
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
   });
 
@@ -609,7 +609,7 @@ describe('Topic', () => {
       fireEvent.change(input, { target: { value: '' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('TOPIC #mychannel :');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('TOPIC #mychannel :', { window: '#mychannel' });
     });
 
     it('should hide save button when topic is edited back to original', () => {

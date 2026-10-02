@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } 
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, isSameName, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
-import { ircSendRawMessage, ircReconnect } from '@/network/irc/network';
+import { ircSendCommand, ircSendRawMessage, ircReconnect } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
@@ -346,7 +346,7 @@ const Toolbar = () => {
         payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
       }
     }
-    ircSendRawMessage(payload);
+    ircSendCommand(payload, { window: currentChannelName });
 
     finishSend();
   };

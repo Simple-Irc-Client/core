@@ -38,20 +38,20 @@ describe('kernel core/who', () => {
 
     it('asks for WHOX fields when the server supports WHOX', () => {
       vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation((option) => option === 'WHOX');
-      const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      const mockSend = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
 
       requestChannelWho('#chan');
 
-      expect(mockSend).toHaveBeenCalledWith('WHO #chan %chtsunfra,152');
+      expect(mockSend).toHaveBeenCalledWith('WHO #chan %chtsunfra,152', { automatic: true });
     });
 
     it('sends a plain WHO when the server lacks WHOX', () => {
       vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
-      const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      const mockSend = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
 
       requestChannelWho('#chan');
 
-      expect(mockSend).toHaveBeenCalledWith('WHO #chan');
+      expect(mockSend).toHaveBeenCalledWith('WHO #chan', { automatic: true });
     });
 
     it('updates users from 352 replies without showing them', () => {

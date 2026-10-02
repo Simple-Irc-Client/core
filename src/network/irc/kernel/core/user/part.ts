@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { existChannel, setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, getUserChannels, setRemoveUser } from '@features/users/store/users';
@@ -52,8 +52,6 @@ export const onPart = (ctx: IrcContext): void => {
 
 // :chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel
 export const onRaw442 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // my nick
   const channel = ctx.line.shift();
 
@@ -73,7 +71,7 @@ export const onRaw442 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${channel} :${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 
@@ -82,7 +80,7 @@ export const onRaw442 = (ctx: IrcContext): void => {
   if (existChannel(channel) && !isTrackedMember) {
     setRemoveChannel(channel);
 
-    if (isSameName(currentChannelName, channel)) {
+    if (isSameName(getCurrentChannelName(), channel)) {
       setCurrentChannelName(STATUS_CHANNEL, ChannelCategory.status);
     }
   }

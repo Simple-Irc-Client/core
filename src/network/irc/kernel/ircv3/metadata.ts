@@ -1,8 +1,8 @@
 import i18next from '@/app/i18n';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setChannelAvatar, setChannelDisplayName } from '@features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, isSameName, setCurrentUserAvatar, setCurrentUserColor, setCurrentUserDisplayName, setCurrentUserHomepage, setCurrentUserStatus, setSupportedOption } from '@features/settings/store/settings';
+import { getCurrentNick, isSameName, setCurrentUserAvatar, setCurrentUserColor, setCurrentUserDisplayName, setCurrentUserHomepage, setCurrentUserStatus, setSupportedOption } from '@features/settings/store/settings';
 import { setUserAvatar, setUserBot, setUserColor, setUserDisplayName, setUserHomepage, setUserStatus } from '@features/users/store/users';
 import { isSafeCssColor, isSafeImageUrl, isSafeUrl } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
@@ -155,7 +155,7 @@ export const onRaw760 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: i18next.t('kernel.760', { user, key, value }),
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

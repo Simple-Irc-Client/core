@@ -5,10 +5,10 @@ import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { requestChannelWho } from '@/network/irc/kernel/core/who';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircRequestChatHistory, ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
+import { getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setAddUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -84,7 +84,6 @@ export const onJoin = (ctx: IrcContext): void => {
 
 /** `:server <numeric> mynick #channel :text`; the server's standard text is translated */
 const showJoinError = (ctx: IrcContext, translation?: { text: string; key: string }): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const channel = ctx.line.shift();
 
@@ -100,7 +99,7 @@ const showJoinError = (ctx: IrcContext, translation?: { text: string; key: strin
 
   showReply(ctx, {
     message: `${channel}: ${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };
@@ -175,7 +174,7 @@ export const onRaw470 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${from} → ${to}: ${message}`,
-    target: getCurrentChannelName(),
+    target: replyWindow(ctx),
     category: MessageCategory.info,
   });
 };

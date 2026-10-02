@@ -39,6 +39,7 @@ import { handlers as ircv3Account } from '@/network/irc/kernel/ircv3/account';
 import { handlers as ircv3Batch } from '@/network/irc/kernel/ircv3/batch';
 import { handlers as ircv3Cap } from '@/network/irc/kernel/ircv3/cap';
 import { handlers as ircv3Chghost } from '@/network/irc/kernel/ircv3/chghost';
+import { handlers as ircv3Labeledresponse } from '@/network/irc/kernel/ircv3/labeledresponse';
 import { handlers as ircv3Metadata } from '@/network/irc/kernel/ircv3/metadata';
 import { handlers as ircv3Monitor } from '@/network/irc/kernel/ircv3/monitor';
 import { handlers as ircv3Sasl } from '@/network/irc/kernel/ircv3/sasl';
@@ -100,6 +101,7 @@ export const ircHandlers = mergeHandlers(
   ircv3Batch,
   ircv3Cap,
   ircv3Chghost,
+  ircv3Labeledresponse,
   ircv3Metadata,
   ircv3Monitor,
   ircv3Sasl,

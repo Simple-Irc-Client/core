@@ -3,11 +3,11 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { showReply } from '@/network/irc/kernel/replies';
+import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
-import { getCurrentChannelName, getCurrentNick, getIsWizardCompleted, getNickLenLimit, getUserModes, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
+import { getCurrentNick, getIsWizardCompleted, getNickLenLimit, getUserModes, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
 import { getUserChannels, setRenameUser } from '@features/users/store/users';
 import { isValidNick } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
@@ -61,8 +61,6 @@ export const onNick = (ctx: IrcContext): void => {
 // :insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user
 // :irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname
 export const onRaw432 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
-
   ctx.line.shift(); // asterisk
   const nick = ctx.line.shift();
 
@@ -78,7 +76,7 @@ export const onRaw432 = (ctx: IrcContext): void => {
 
   showReply(ctx, {
     message: `${nick} :${message}`,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 
@@ -139,7 +137,7 @@ export const onRaw437 = (ctx: IrcContext): void => {
   if (target !== undefined && isChannel(target)) {
     showReply(ctx, {
       message,
-      target: getCurrentChannelName(),
+      target: replyWindow(ctx),
       category: MessageCategory.error,
     });
     return;
@@ -165,13 +163,12 @@ export const onRaw436 = (ctx: IrcContext): void => {
 
 // :server 447 mynick :Cannot change nickname while on #channel (+N)
 export const onRaw447 = (ctx: IrcContext): void => {
-  const currentChannelName = getCurrentChannelName();
   ctx.line.shift(); // my nick
   const message = ctx.trailing();
 
   showReply(ctx, {
     message,
-    target: currentChannelName,
+    target: replyWindow(ctx),
     category: MessageCategory.error,
   });
 };

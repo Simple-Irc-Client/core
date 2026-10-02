@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@/network/irc/network', () => ({
-  ircSendRawMessage: vi.fn(),
+  ircSendCommand: vi.fn(),
 }));
 
 vi.mock('@/shared/lib/dateLocale', async () => {
@@ -145,7 +145,7 @@ describe('ListsTab', () => {
       fireEvent.change(input, { target: { value: '*!*@newban.host' } });
       fireEvent.click(screen.getByTestId('add-entry'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +b *!*@newban.host');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +b *!*@newban.host', { window: '#test' });
     });
 
     it('should add entry when pressing Enter', () => {
@@ -155,7 +155,7 @@ describe('ListsTab', () => {
       fireEvent.change(input, { target: { value: '*!*@enterban.host' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test +b *!*@enterban.host');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test +b *!*@enterban.host', { window: '#test' });
     });
 
     it('should clear input after adding entry', () => {
@@ -173,7 +173,7 @@ describe('ListsTab', () => {
 
       fireEvent.click(screen.getByTestId('add-entry'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
   });
 
@@ -184,7 +184,7 @@ describe('ListsTab', () => {
       // List is sorted by setTime descending, so troll!*@* (newer) is first
       fireEvent.click(screen.getByTestId('remove-entry-0'));
 
-      expect(network.ircSendRawMessage).toHaveBeenCalledWith('MODE #test -b troll!*@*');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('MODE #test -b troll!*@*', { window: '#test' });
     });
 
     it('should render remove buttons for each entry', () => {
@@ -242,7 +242,7 @@ describe('ListsTab', () => {
       fireEvent.change(input, { target: { value: '   ' } });
       fireEvent.click(screen.getByTestId('add-entry'));
 
-      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
     });
 
     it('should format setTime 0 as dash', () => {
