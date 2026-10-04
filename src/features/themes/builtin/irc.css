@@ -310,6 +310,36 @@ body {
   grid-column: 3;
 }
 
+/* On a narrow screen, hanging text under each line's own nick leaves a long
+   nick only a sliver of width and staggers the lines. There the text runs on
+   after "<nick>" and wraps to one shared column, the nick column ("HH:mm " is
+   6ch of monospace). */
+.sic-msg {
+  container-type: inline-size;
+}
+
+@container (max-width: 32rem) {
+  .sic-msg[data-content] .sic-msg-line {
+    display: block;
+    grid-column: 1 / -1;
+    padding-left: 6ch;
+    text-indent: -6ch;
+  }
+
+  .sic-msg[data-content] .sic-msg-line * {
+    text-indent: 0;
+  }
+
+  .sic-msg[data-content] :is(.sic-msg-time-inline, .sic-msg-nick-inline) {
+    margin-right: 1ch;
+  }
+
+  .sic-msg[data-content] .sic-msg-embeds {
+    grid-column: 1 / -1;
+    padding-left: 6ch;
+  }
+}
+
 .sic-msg-embeds :is(img, iframe) {
   border-radius: 0;
   border: 1px solid var(--border);

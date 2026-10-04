@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import { ContextMenu, getMenuPosition } from '../ContextMenu';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
@@ -870,6 +870,34 @@ describe('ContextMenu', () => {
       render(<ContextMenu />);
       const menuContent = document.body.querySelector('[role="menu"]');
       expect(menuContent).toHaveStyle({ position: 'fixed', left: '300px', top: '450px' });
+    });
+  });
+
+  describe('Positioning by rendered size', () => {
+    beforeEach(() => {
+      Object.defineProperty(globalThis, 'innerWidth', { value: 400, writable: true });
+      Object.defineProperty(globalThis, 'innerHeight', { value: 800, writable: true });
+      vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(250);
+      vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(500);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should open above the anchor when the rendered menu does not fit below', () => {
+      const anchor = document.createElement('div');
+      anchor.getBoundingClientRect = () => ({
+        top: 560, bottom: 600, left: 200, right: 400, width: 200, height: 40, x: 200, y: 560,
+        toJSON: () => {},
+      });
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuAnchorElement: anchor })
+      );
+
+      render(<ContextMenu />);
+      const menuContent = document.body.querySelector('[role="menu"]');
+      expect(menuContent).toHaveStyle({ position: 'fixed', left: '150px', top: '60px', maxHeight: '800px' });
     });
   });
 

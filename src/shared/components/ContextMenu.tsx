@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,8 +69,8 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
 
 export const getMenuPosition = (
   source: HTMLElement | { x: number; y: number },
-  menuWidth = 200,
-  menuHeight = 200,
+  menuWidth: number,
+  menuHeight: number,
 ): { left: number; top: number } => {
   const viewportWidth = globalThis.innerWidth;
   const viewportHeight = globalThis.innerHeight;
@@ -97,25 +98,47 @@ export const getMenuPosition = (
 const PositionedMenuContent = ({
   source,
   anchorElement,
-  menuWidth,
-  menuHeight,
   children,
 }: {
   source: HTMLElement | { x: number; y: number } | null;
   anchorElement: HTMLElement | null;
-  menuWidth?: number;
-  menuHeight?: number;
   children: React.ReactNode;
 }) => {
-  const position = source ? getMenuPosition(source, menuWidth, menuHeight) : null;
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const observerRef = useRef<ResizeObserver | null>(null);
+
+  // Item count, font and theme decide the menu size, so position from the rendered box
+  const contentRef = useCallback((el: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!el) {
+      return;
+    }
+    const measure = (): void => {
+      setSize((prev) =>
+        prev.width === el.offsetWidth && prev.height === el.offsetHeight
+          ? prev
+          : { width: el.offsetWidth, height: el.offsetHeight },
+      );
+    };
+    measure();
+    if (typeof ResizeObserver !== 'undefined') {
+      observerRef.current = new ResizeObserver(measure);
+      observerRef.current.observe(el);
+    }
+  }, []);
+
+  const position = source ? getMenuPosition(source, size.width, size.height) : null;
   return (
     <DropdownMenuContent
+      ref={contentRef}
       style={
         position
           ? {
               position: 'fixed',
               left: `${position.left}px`,
               top: `${position.top}px`,
+              maxHeight: `${globalThis.innerHeight}px`,
             }
           : undefined
       }
@@ -146,7 +169,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={80}>
+        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement}>
           <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleJoin}>
@@ -271,7 +294,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement} menuHeight={300}>
+        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement}>
           <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {userHomepage && (
@@ -448,7 +471,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement} menuWidth={340}>
+        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
           <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleOpenUrl}>
@@ -492,7 +515,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement} menuWidth={280}>
+        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCopy}>

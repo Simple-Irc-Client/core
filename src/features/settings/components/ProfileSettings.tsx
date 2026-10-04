@@ -143,8 +143,8 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
         <DialogTitle>{t('profileSettings.title')}</DialogTitle>
         <DialogDescription>{t('profileSettings.description')}</DialogDescription>
       </DialogHeader>
-      <div className="grid gap-4 py-4">
-        <div className="grid grid-cols-4 items-center gap-4">
+      <div className="grid grid-cols-[minmax(min-content,1fr)_repeat(3,minmax(0,1fr))] gap-4 py-4">
+        <div className="col-span-full grid grid-cols-subgrid items-center">
           <Label htmlFor="nick" className="text-right">
             {t('profileSettings.nick')}
           </Label>
@@ -165,7 +165,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </Button>
         </div>
         {isAvatarSupported && (
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="col-span-full grid grid-cols-subgrid items-center">
             <Label htmlFor="avatar" className="text-right">
               {t('profileSettings.avatar')}
             </Label>
@@ -188,7 +188,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         {isColorSupported && (
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="col-span-full grid grid-cols-subgrid items-center">
             <Label htmlFor="color" className="text-right">
               {t('profileSettings.nickColor')}
             </Label>
@@ -211,7 +211,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         {isDisplayNameSupported && (
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="col-span-full grid grid-cols-subgrid items-center">
             <Label htmlFor="displayName" className="text-right">
               {t('profileSettings.displayName')}
             </Label>
@@ -234,7 +234,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         {isStatusSupported && (
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="col-span-full grid grid-cols-subgrid items-center">
             <Label htmlFor="status" className="text-right">
               {t('profileSettings.status')}
             </Label>
@@ -257,7 +257,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </div>
         )}
         {isHomepageSupported && (
-          <div className="grid grid-cols-4 items-center gap-4">
+          <div className="col-span-full grid grid-cols-subgrid items-center">
             <Label htmlFor="homepage" className="text-right">
               {t('profileSettings.homepage')}
             </Label>
@@ -279,7 +279,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             </Button>
           </div>
         )}
-        <div className="grid grid-cols-4 items-center gap-4">
+        <div className="col-span-full grid grid-cols-subgrid items-center">
           <Label id="theme-label" className="text-right">
             {t('profileSettings.theme')}
           </Label>
@@ -350,7 +350,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             onEditCss={(draft) => setThemeDialog({ kind: 'editor', mode: themeDialog.mode, draft })}
           />
         )}
-        <div className="flex items-center gap-4">
+        <div className="col-span-full flex items-center gap-4">
           <Switch
             id="hide-avatars"
             checked={hideAvatarsInUsersList}
@@ -361,7 +361,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             {t('profileSettings.hideAvatars')}
           </Label>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="col-span-full flex items-center gap-4">
           <Switch
             id="hide-typing"
             checked={hideTypingIndicator}
@@ -372,7 +372,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             {t('profileSettings.hideTyping')}
           </Label>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="col-span-full flex items-center gap-4">
           <Switch
             id="e2ee-enabled"
             checked={e2eeEnabled}
@@ -384,7 +384,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           </Label>
         </div>
         {e2eeEnabled && (
-          <div className="flex items-center gap-4">
+          <div className="col-span-full flex items-center gap-4">
             <Switch
               id="auto-offer-encryption"
               checked={autoOfferEncryption}
@@ -396,7 +396,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             </Label>
           </div>
         )}
-        <div className="grid grid-cols-4 items-center gap-4">
+        <div className="col-span-full grid grid-cols-subgrid items-center">
           <Label id="font-size-label" className="text-right">
             {t('profileSettings.fontSize')}
           </Label>
@@ -436,7 +436,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-4 items-center gap-4">
+        <div className="col-span-full grid grid-cols-subgrid items-center">
           <Label className="text-right">
             {t('profileSettings.language')}
           </Label>
