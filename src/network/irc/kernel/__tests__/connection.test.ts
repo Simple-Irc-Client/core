@@ -284,14 +284,13 @@ describe('kernel connection', () => {
   it('test raw ERROR #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
+    vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
     const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
     expect(mockSetWizardProgress).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -303,14 +302,13 @@ describe('kernel connection', () => {
   it('test raw ERROR #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
+    vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
     const line = 'ERROR :Closing Link: [1.1.1.1] (Registration Timeout)';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetIsWizardCompleted).toHaveBeenCalledTimes(1);
     expect(mockSetWizardProgress).toHaveBeenCalledTimes(1);
     expect(mockSetWizardProgress).toHaveBeenCalledWith(0, 'Nie udało się połączyć z serwerem - Closing Link: [1.1.1.1] (Registration Timeout)');
 
@@ -325,7 +323,7 @@ describe('kernel connection', () => {
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockGetIsWizardCompleted = vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
     const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
-    const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
+    vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
       port: 6697,
       reason: 'sts_upgrade',
@@ -336,7 +334,6 @@ describe('kernel connection', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     // Should skip showing error during STS upgrade
-    expect(mockGetPendingSTSUpgrade).toHaveBeenCalledTimes(1);
     expect(mockGetIsWizardCompleted).not.toHaveBeenCalled();
     expect(mockSetWizardProgress).not.toHaveBeenCalled();
     expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();

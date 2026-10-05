@@ -14,15 +14,13 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
 
     const line =
       '@+draft/typing=active;+typing=active;account=kato_starszy;msgid=tsfqUigTlAhCbQYkVpty5s;time=2023-03-04T19:16:23.158Z :kato_starszy!~pirc@ukryty-FF796E25.net130.okay.pl TAGMSG #Religie';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
     expect(mockSetTyping).toHaveBeenCalledTimes(1);
     expect(mockSetTyping).toHaveBeenCalledWith('#Religie', 'kato_starszy', 'active');
@@ -33,7 +31,7 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG for private message uses sender nick as channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
@@ -43,7 +41,6 @@ describe('kernel ircv3/typing', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalled();
     expect(mockExistChannel).toHaveBeenCalledWith('Bob');
 

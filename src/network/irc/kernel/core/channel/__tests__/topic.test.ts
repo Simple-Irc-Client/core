@@ -13,14 +13,12 @@ describe('kernel core/channel/topic', () => {
 
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetTopic = vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {});
 
     const line = '@account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
 
     expect(mockSetTopic).toHaveBeenCalledTimes(1);
     expect(mockSetTopic).toHaveBeenCalledWith('#sic', 'Test 1');

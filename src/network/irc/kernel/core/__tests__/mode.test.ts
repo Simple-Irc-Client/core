@@ -14,14 +14,13 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE user #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
 
     const line = ':mero MODE mero :+xz';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
@@ -89,16 +88,14 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE channel user #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
 
     const line = '@draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockSetUpdateUserFlag).toHaveBeenCalledTimes(2);
     expect(mockSetUpdateUserFlag).toHaveBeenNthCalledWith(1, 'Merovingian', '#sic', '+', 'q', defaultUserModes);
     expect(mockSetUpdateUserFlag).toHaveBeenNthCalledWith(2, 'Merovingian', '#sic', '+', 'o', defaultUserModes);

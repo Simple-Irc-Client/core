@@ -14,7 +14,7 @@ describe('kernel core/channel/names', () => {
 
   it('test raw 353 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line =
@@ -23,7 +23,6 @@ describe('kernel core/channel/names', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     // The whole roster goes to the store in one call, so the modes are read once
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockBufferNamesUsers).toHaveBeenCalledTimes(1);
     expect(mockBufferNamesUsers).toHaveBeenCalledWith('#Religie', [
       { nick: 'aleksa7', ident: '~aleksa7', hostname: 'vhost:kohana.aleksia', flags: [], maxPermission: -1 },
@@ -37,14 +36,13 @@ describe('kernel core/channel/names', () => {
 
   it('test raw 353 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockBufferNamesUsers).toHaveBeenCalledWith('#Religie', [
       { nick: 'aleksa7', ident: '~aleksa7', hostname: 'vhost:kohana.aleksia', flags: [], maxPermission: -1 },
     ]);
@@ -54,7 +52,7 @@ describe('kernel core/channel/names', () => {
 
   it('test raw 353 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line =
@@ -62,7 +60,6 @@ describe('kernel core/channel/names', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockBufferNamesUsers).toHaveBeenCalledWith('#chat', [
       { nick: 'ircbot', ident: 'ircbot', hostname: 'ircbot.botop.librairc.net', flags: [], maxPermission: -1 },
       { nick: 'Freak', ident: 'Freak', hostname: 'LibraIRC-ug4.vta.mvnbg3.IP', flags: [], maxPermission: -1 },

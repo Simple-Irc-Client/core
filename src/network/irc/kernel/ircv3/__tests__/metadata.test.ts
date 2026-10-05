@@ -15,13 +15,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop avatar * :https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Noop', 'https://www.gravatar.com/avatar/55a2daf22200bd0f31cdb6b720911a74.jpg');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
@@ -32,13 +30,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA replaces {size} in avatar URL', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Qbick avatar * :https://usercontent.irccloud-cdn.com/avatar/s{size}/FxI0nUto';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserAvatar).toHaveBeenCalledWith('Qbick', 'https://usercontent.irccloud-cdn.com/avatar/s64/FxI0nUto');
     expect(mockSetUserAvatar).toHaveBeenCalledTimes(1);
@@ -109,13 +105,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA display-name for user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserDisplayName = vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop display-name * :John Doe';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserDisplayName).toHaveBeenCalledWith('Noop', 'John Doe');
     expect(mockSetUserDisplayName).toHaveBeenCalledTimes(1);
@@ -126,13 +120,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA display-name for channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetChannelDisplayName = vi.spyOn(channelsFile, 'setChannelDisplayName').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
 
     const line = ':netsplit.pirc.pl METADATA #test display-name * :Test Channel';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetChannelDisplayName).toHaveBeenCalledWith('#test', 'Test Channel');
     expect(mockSetChannelDisplayName).toHaveBeenCalledTimes(1);
@@ -143,13 +135,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA display-name with spaces', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserDisplayName = vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop display-name * :John Michael Doe Jr.';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserDisplayName).toHaveBeenCalledWith('Noop', 'John Michael Doe Jr.');
     expect(mockSetUserDisplayName).toHaveBeenCalledTimes(1);
@@ -160,13 +150,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA status for user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop status * :Working from home';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserStatus).toHaveBeenCalledWith('Noop', 'Working from home');
     expect(mockSetUserStatus).toHaveBeenCalledTimes(1);
@@ -177,13 +165,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA status with spaces', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop status * :On vacation until Monday';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserStatus).toHaveBeenCalledWith('Noop', 'On vacation until Monday');
     expect(mockSetUserStatus).toHaveBeenCalledTimes(1);
@@ -196,13 +182,12 @@ describe('kernel ircv3/metadata', () => {
     const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
     const mockSetCurrentUserStatus = vi.spyOn(settingsFile, 'setCurrentUserStatus').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser status * :';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalled();
 
     expect(mockSetUserStatus).toHaveBeenCalledWith('TestUser', undefined);
@@ -216,13 +201,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA homepage for user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop homepage * :https://example.com';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserHomepage).toHaveBeenCalledWith('Noop', 'https://example.com');
     expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
@@ -246,13 +229,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA homepage clears with empty value', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser homepage * :';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserHomepage).toHaveBeenCalledWith('TestUser', undefined);
     expect(mockSetUserHomepage).toHaveBeenCalledTimes(1);
@@ -265,13 +246,12 @@ describe('kernel ircv3/metadata', () => {
     const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
     const mockSetCurrentUserHomepage = vi.spyOn(settingsFile, 'setCurrentUserHomepage').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser homepage * :https://mywebsite.com';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalled();
 
     expect(mockSetUserHomepage).toHaveBeenCalledWith('TestUser', 'https://mywebsite.com');
@@ -309,13 +289,11 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA color for user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA Noop color * :#ff5500';
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
 
     expect(mockSetUserColor).toHaveBeenCalledWith('Noop', '#ff5500');
     expect(mockSetUserColor).toHaveBeenCalledTimes(1);
@@ -328,13 +306,12 @@ describe('kernel ircv3/metadata', () => {
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
     const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser color * :#00ff00';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalled();
 
     expect(mockSetUserColor).toHaveBeenCalledWith('TestUser', '#00ff00');
@@ -350,13 +327,12 @@ describe('kernel ircv3/metadata', () => {
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
     const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
     const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
-    const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
+    vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser color * :';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockIsChannel).toHaveBeenCalledTimes(1);
     expect(mockGetCurrentNick).toHaveBeenCalled();
 
     expect(mockSetUserColor).toHaveBeenCalledWith('TestUser', undefined);

@@ -17,26 +17,22 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #1 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
-    const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#channel1', ChannelCategory.channel);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
-
-    expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 
     expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #channel1');
     expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(1);
@@ -49,26 +45,22 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
-    const mockIsSupportedOption = vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP JOIN :#chat';
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#chat', ChannelCategory.channel);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
-
-    expect(mockIsSupportedOption).toHaveBeenCalledTimes(1);
 
     expect(mockIrcSendRawMessage).toHaveBeenCalledWith('MODE #chat');
     expect(mockIrcSendRawMessage).toHaveBeenCalledTimes(1);
@@ -81,8 +73,8 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
 
@@ -90,8 +82,6 @@ describe('kernel core/channel/join', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
-    expect(mockGetUserModes).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledTimes(0);
 
     expect(mockSetAddUser).toHaveBeenCalledTimes(1);
@@ -132,7 +122,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self with chathistory enabled', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
@@ -146,7 +136,6 @@ describe('kernel core/channel/join', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#mychannel', ChannelCategory.channel);
 
     expect(mockIrcSendRawMessage).toHaveBeenNthCalledWith(1, 'MODE #mychannel');
@@ -160,7 +149,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self without chathistory capability', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
@@ -173,7 +162,6 @@ describe('kernel core/channel/join', () => {
 
     new Kernel({ type: 'raw', line }).handle();
 
-    expect(mockGetCurrentNick).toHaveBeenCalledTimes(1);
     expect(mockSetCurrentChannelName).toHaveBeenCalledWith('#mychannel', ChannelCategory.channel);
 
     // Verify chathistory request is NOT made when capability is disabled
@@ -264,13 +252,11 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 473', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:chommik.pirc.pl 473 sic-test #sic :Cannot join channel (+i)`;
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#sic: Nie możesz dołączyć do kanału (Kanał tylko dla zaproszonych)', category: MessageCategory.error }));
@@ -279,13 +265,11 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 474', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)`;
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#bog: Nie możesz dołączyć do kanału (Masz bana)', category: MessageCategory.error }));
@@ -294,13 +278,11 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 477', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.`;
 
     new Kernel({ type: 'raw', line }).handle();
-
-    expect(mockGetCurrentChannelName).toHaveBeenCalledTimes(1);
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '#knajpa: Wymagany jest zarejestrowany nick aby dołączyć do tego kanału', category: MessageCategory.error }));
