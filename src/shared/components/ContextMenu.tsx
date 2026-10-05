@@ -159,7 +159,7 @@ export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem, contextMenuPosition } = useContextMenu();
   const openChannels = useChannelsStore((state) => state.openChannelsShortList);
-  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
+  const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();
 
   if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {
     const handleJoin = (): void => {
@@ -191,7 +191,7 @@ export const ContextMenu = () => {
       }
       // Otherwise the new conversation stays hidden behind the drawer
       if (isUsersDrawerOpen && globalThis.matchMedia?.('(max-width: 1023px)').matches) {
-        setUsersDrawerStatus();
+        toggleUsersDrawer();
       }
       handleContextMenuClose();
     };

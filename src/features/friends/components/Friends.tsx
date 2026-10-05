@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { UserPlus, X } from 'lucide-react';
 import { setAddChannel } from '@features/channels/store/channels';
 import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
-import { useMonitorStore } from '@features/monitor/store/monitor';
+import { monitorKey, useMonitorStore } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { removeFriend } from '@features/friends/friends';
 import { ChannelCategory } from '@shared/types';
@@ -23,7 +23,7 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
   const server = useSettingsStore((state) => state.server);
   const friendsByNetwork = useFriendsStore((state) => state.friendsByNetwork);
   const monitoredUsers = useMonitorStore((state) => state.monitoredUsers);
-  const { setChannelsDrawerStatus } = useChannelsDrawer();
+  const { toggleChannelsDrawer } = useChannelsDrawer();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [hoveredFriend, setHoveredFriend] = useState('');
@@ -33,7 +33,7 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
   const friends = useMemo(() => {
     const nicks = network !== undefined ? (friendsByNetwork[network] ?? []) : [];
     return nicks
-      .map((nick) => ({ nick, online: monitoredUsers.get(nick.toLowerCase())?.online ?? false }))
+      .map((nick) => ({ nick, online: monitoredUsers.get(monitorKey(nick))?.online ?? false }))
       .sort((a, b) => (a.online === b.online ? a.nick.localeCompare(b.nick) : (a.online ? -1 : 1)));
   }, [network, friendsByNetwork, monitoredUsers]);
 
@@ -45,7 +45,7 @@ const Friends = ({ fontSizeClass }: FriendsProps) => {
     setAddChannel(nick, ChannelCategory.priv);
     setCurrentChannelName(nick, ChannelCategory.priv);
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
-      setChannelsDrawerStatus();
+      toggleChannelsDrawer();
     }
   };
 

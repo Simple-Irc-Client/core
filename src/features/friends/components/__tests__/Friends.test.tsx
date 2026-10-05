@@ -63,7 +63,7 @@ describe('Friends', () => {
     vi.spyOn(channelsStore, 'setAddChannel').mockImplementation(mockSetAddChannel);
     vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen: false,
-      setChannelsDrawerStatus: vi.fn(),
+      toggleChannelsDrawer: vi.fn(),
     });
   });
 

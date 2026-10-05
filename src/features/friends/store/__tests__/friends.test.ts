@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setCaseMapping } from '@features/settings/store/settings';
 import { getFriendsForNetwork, isFriendOnNetwork, useFriendsStore } from '../friends';
 
 describe('friends store', () => {
@@ -95,6 +96,27 @@ describe('friends store', () => {
       useFriendsStore.getState().renameFriend('unknown', 'Alice', 'Alicia');
 
       expect(useFriendsStore.getState().friendsByNetwork).toEqual({});
+    });
+  });
+
+  describe('CASEMAPPING', () => {
+    afterEach(() => {
+      setCaseMapping('rfc1459');
+    });
+
+    it('dedupes [] and {} under rfc1459', () => {
+      setCaseMapping('rfc1459');
+      useFriendsStore.getState().addFriend('pirc.pl', 'nick[a]');
+      useFriendsStore.getState().addFriend('pirc.pl', 'nick{a}');
+
+      expect(getFriendsForNetwork('pirc.pl')).toEqual(['nick[a]']);
+    });
+
+    it('keeps [] and {} distinct under ascii', () => {
+      setCaseMapping('ascii');
+      useFriendsStore.getState().addFriend('pirc.pl', 'nick[a]');
+
+      expect(isFriendOnNetwork('pirc.pl', 'nick{a}')).toBe(false);
     });
   });
 });

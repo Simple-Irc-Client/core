@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { setCaseMapping } from '@features/settings/store/settings';
 import {
   addMonitoredNick,
   removeMonitoredNick,
@@ -307,6 +308,34 @@ describe('monitor store', () => {
       const updatedUsers = getMonitoredUsers();
 
       expect(updatedUsers[0]?.lastUpdate).toBeGreaterThan(initialTime);
+    });
+  });
+
+  describe('CASEMAPPING', () => {
+    afterEach(() => {
+      setCaseMapping('rfc1459');
+    });
+
+    it('treats [] and {} as the same nick under rfc1459', () => {
+      setCaseMapping('rfc1459');
+      addMonitoredNick('nick[a]');
+      setMultipleMonitorOnline(['NICK{A}']);
+
+      expect(getMonitoredUsers()).toHaveLength(1);
+      expect(isNickOnline('nick[a]')).toBe(true);
+    });
+
+    it('keeps [] and {} distinct under ascii', () => {
+      setCaseMapping('ascii');
+      addMonitoredNick('nick[a]');
+
+      expect(isNickMonitored('nick{a}')).toBe(false);
+    });
+
+    it('does not fold non-ASCII letters the server considers distinct', () => {
+      addMonitoredNick('Łukasz');
+
+      expect(isNickMonitored('łukasz')).toBe(false);
     });
   });
 });

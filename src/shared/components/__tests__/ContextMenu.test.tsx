@@ -25,7 +25,7 @@ describe('ContextMenu', () => {
     vi.clearAllMocks();
     vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
       isUsersDrawerOpen: false,
-      setUsersDrawerStatus: vi.fn(),
+      toggleUsersDrawer: vi.fn(),
     });
   });
 

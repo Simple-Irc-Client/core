@@ -98,7 +98,7 @@ describe('Users', () => {
 
     vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
       isUsersDrawerOpen,
-      setUsersDrawerStatus: mockSetUsersDrawerStatus,
+      toggleUsersDrawer: mockSetUsersDrawerStatus,
     });
   };
 
@@ -887,7 +887,7 @@ describe('Users', () => {
       expect(buttons).toHaveLength(1); // Only the user button
     });
 
-    it('should call setUsersDrawerStatus when close button is clicked', () => {
+    it('should call toggleUsersDrawer when close button is clicked', () => {
       setupMocks({
         users: [createUser({ nick: 'testUser' })],
         isUsersDrawerOpen: true,

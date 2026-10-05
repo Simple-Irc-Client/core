@@ -2,12 +2,13 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { isSameName } from '@features/settings/store/settings';
 
 interface FriendsStore {
   /** Insertion order, display case */
   friendsByNetwork: Record<string, string[]>;
 
-  /** Case-insensitive dedupe */
+  /** Dedupes per the server's CASEMAPPING */
   addFriend: (network: string, nick: string) => void;
   removeFriend: (network: string, nick: string) => void;
   /** Keeps list order */
@@ -23,7 +24,7 @@ export const useFriendsStore = create<FriendsStore>()(
         addFriend: (network: string, nick: string): void => {
           set((state) => {
             const friends = state.friendsByNetwork[network] ?? [];
-            if (friends.some((friend) => friend.toLowerCase() === nick.toLowerCase())) {
+            if (friends.some((friend) => isSameName(friend, nick))) {
               return state;
             }
             return { friendsByNetwork: { ...state.friendsByNetwork, [network]: [...friends, nick] } };
@@ -36,7 +37,7 @@ export const useFriendsStore = create<FriendsStore>()(
             if (friends === undefined) {
               return state;
             }
-            const remaining = friends.filter((friend) => friend.toLowerCase() !== nick.toLowerCase());
+            const remaining = friends.filter((friend) => !isSameName(friend, nick));
             if (remaining.length === friends.length) {
               return state;
             }
@@ -53,7 +54,7 @@ export const useFriendsStore = create<FriendsStore>()(
             if (friends === undefined) {
               return state;
             }
-            const index = friends.findIndex((friend) => friend.toLowerCase() === oldNick.toLowerCase());
+            const index = friends.findIndex((friend) => isSameName(friend, oldNick));
             if (index === -1) {
               return state;
             }
@@ -76,5 +77,5 @@ export const getFriendsForNetwork = (network: string): string[] => {
 };
 
 export const isFriendOnNetwork = (network: string, nick: string): boolean => {
-  return getFriendsForNetwork(network).some((friend) => friend.toLowerCase() === nick.toLowerCase());
+  return getFriendsForNetwork(network).some((friend) => isSameName(friend, nick));
 };

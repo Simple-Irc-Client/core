@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import type { Server } from '../servers';
 import { MessageColor } from '@/config/theme';
+import { namesEqual } from '@shared/lib/caseMapping';
 
 // Mock config before importing network module
 vi.mock('@/config/config', () => ({
@@ -91,6 +92,7 @@ vi.mock('@features/settings/store/settings', () => ({
   getPasswordNick: () => mockGetPasswordNick(),
   getLineLenLimit: () => mockGetLineLenLimit(),
   getCurrentChannelName: () => '#current',
+  isSameName: (a: string, b: string) => namesEqual(a, b),
 }));
 
 // Mock channels store
@@ -1245,6 +1247,18 @@ describe('network', () => {
       expect(mockInitDirectWebSocket).toHaveBeenCalledTimes(1);
     });
 
+    it('falls back to the saved password when the nick differs only in case', async () => {
+      mockGetServer.mockReturnValue(reconnectServer);
+      mockGetCurrentNick.mockReturnValue('testnick');
+      mockRestoreSaslCredentials.mockResolvedValueOnce(false);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('TestNick');
+
+      await network.ircReconnect();
+
+      expect(mockSetSaslCredentials).toHaveBeenCalledWith('testnick', 'myPassword');
+    });
+
     it('allows a new reconnect once the previous one has settled', async () => {
       mockGetServer.mockReturnValue(reconnectServer);
       mockGetCurrentNick.mockReturnValue('testNick');
@@ -1554,6 +1568,17 @@ describe('network', () => {
 
       expect(result).toBe(false);
       expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
+    it('matches the saved password nick case-insensitively', async () => {
+      mockGetCurrentNick.mockReturnValue('testnick');
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('TestNick');
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(true);
+      expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY myPassword');
     });
 
     it('should return false on decryption failure', async () => {

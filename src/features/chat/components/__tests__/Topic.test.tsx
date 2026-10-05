@@ -64,12 +64,12 @@ describe('Topic', () => {
 
     vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen,
-      setChannelsDrawerStatus: mockSetChannelsDrawerStatus,
+      toggleChannelsDrawer: mockSetChannelsDrawerStatus,
     });
 
     vi.spyOn(DrawersContext, 'useUsersDrawer').mockReturnValue({
       isUsersDrawerOpen,
-      setUsersDrawerStatus: vi.fn(),
+      toggleUsersDrawer: vi.fn(),
     });
 
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
@@ -297,7 +297,7 @@ describe('Topic', () => {
   });
 
   describe('Menu button', () => {
-    it('should call setChannelsDrawerStatus when menu button is clicked', () => {
+    it('should call toggleChannelsDrawer when menu button is clicked', () => {
       setupMocks();
 
       render(<Topic />);

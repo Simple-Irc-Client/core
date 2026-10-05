@@ -51,7 +51,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
 
-  const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
+  const { isChannelsDrawerOpen, toggleChannelsDrawer } = useChannelsDrawer();
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
 
@@ -121,7 +121,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     setShowRemoveChannelIcon(channel.name);
     setCurrentChannelName(channel.name, channel.category);
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
-      setChannelsDrawerStatus();
+      toggleChannelsDrawer();
     }
   };
 
@@ -189,7 +189,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               </TooltipProvider>
             )}
             {isChannelsDrawerOpen && (
-              <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-8 w-8 p-0 lg:hidden flex-shrink-0" aria-label={t('main.channels.closeDrawer')}>
+              <Button variant="ghost" onClick={toggleChannelsDrawer} className="h-8 w-8 p-0 lg:hidden flex-shrink-0" aria-label={t('main.channels.closeDrawer')}>
                 <X className="h-4 w-4" />
               </Button>
             )}

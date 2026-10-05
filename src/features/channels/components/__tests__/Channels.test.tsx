@@ -86,7 +86,7 @@ describe('Channels', () => {
 
     vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen,
-      setChannelsDrawerStatus: vi.fn(),
+      toggleChannelsDrawer: vi.fn(),
     });
 
     vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
@@ -744,7 +744,7 @@ describe('Channels', () => {
       expect(closeButtons).toHaveLength(0);
     });
 
-    it('should call setChannelsDrawerStatus when close button is clicked', () => {
+    it('should call toggleChannelsDrawer when close button is clicked', () => {
       const mockSetChannelsDrawerStatus = vi.fn();
       const channels = [createChannel({ name: '#test', category: ChannelCategory.channel })];
 
@@ -762,7 +762,7 @@ describe('Channels', () => {
 
       vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
         isChannelsDrawerOpen: true,
-        setChannelsDrawerStatus: mockSetChannelsDrawerStatus,
+        toggleChannelsDrawer: mockSetChannelsDrawerStatus,
       });
 
       vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>

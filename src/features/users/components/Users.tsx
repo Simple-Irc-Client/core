@@ -123,7 +123,7 @@ interface UsersProps {
 const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const { t } = useTranslation();
 
-  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
+  const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();
 
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
@@ -152,7 +152,7 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
             <div className="flex items-center justify-between px-4 h-12 border-b border-border">
               <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
               {isUsersDrawerOpen && (
-                <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
+                <Button variant="ghost" onClick={toggleUsersDrawer} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
                   <X className="h-4 w-4" />
                 </Button>
               )}

@@ -108,8 +108,8 @@ const Topic = () => {
   const currentChannelName = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
 
-  const { isChannelsDrawerOpen, setChannelsDrawerStatus } = useChannelsDrawer();
-  const { isUsersDrawerOpen, setUsersDrawerStatus } = useUsersDrawer();
+  const { isChannelsDrawerOpen, toggleChannelsDrawer } = useChannelsDrawer();
+  const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();
 
   const isDebugChannel = [DEBUG_CHANNEL, STATUS_CHANNEL].includes(currentChannelName);
   const showUsersToggle = currentChannelCategory === 'channel' || currentChannelCategory === 'priv';
@@ -118,7 +118,7 @@ const Topic = () => {
   return (
     <div className="flex min-h-12 min-w-0 items-center border-b border-border pt-safe pl-safe-4 pr-safe-4">
       {!isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setChannelsDrawerStatus} className="h-10 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
+        <Button variant="ghost" onClick={toggleChannelsDrawer} className="h-10 lg:hidden shrink-0 mr-2" aria-label={t('main.topic.toggleChannels')}>
           <Menu className="h-4 w-4" />
         </Button>
       )}
@@ -135,7 +135,7 @@ const Topic = () => {
       {currentChannelCategory === 'priv' && !isAnyDrawerOpen && <E2eeStatusButton channelName={currentChannelName} />}
       {currentChannelCategory === 'channel' && !isAnyDrawerOpen && <ChannelEncryptionHint />}
       {showUsersToggle && !isAnyDrawerOpen && (
-        <Button variant="ghost" onClick={setUsersDrawerStatus} className="h-10 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
+        <Button variant="ghost" onClick={toggleUsersDrawer} className="h-10 lg:hidden shrink-0 ml-2" aria-label={t('main.topic.toggleUsers')}>
           <Users className="h-4 w-4" />
         </Button>
       )}

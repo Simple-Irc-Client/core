@@ -207,7 +207,7 @@ describe('kernel core/user/register', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'A.A.A.IP :is now your displayed host' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'A.A.A.IP is now your displayed host' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 

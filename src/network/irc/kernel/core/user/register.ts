@@ -86,7 +86,7 @@ export const onRaw004 = (ctx: IrcContext): void => {
 export const onRaw396 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  const message = ctx.line.join(' ');
+  const message = ctx.paramsAndTextAsLine();
 
   showReply(ctx, {
     message,

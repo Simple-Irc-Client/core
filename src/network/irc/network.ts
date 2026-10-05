@@ -6,7 +6,7 @@ import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCrede
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit } from '@features/settings/store/settings';
+import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit, isSameName } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
@@ -544,7 +544,7 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
   if (!restored) {
     const encryptedPassword = getEncryptedPassword();
     const passwordNick = getPasswordNick();
-    if (encryptedPassword && passwordNick === nick) {
+    if (encryptedPassword && passwordNick !== undefined && isSameName(passwordNick, nick)) {
       try {
         const password = await decryptPersistent(encryptedPassword);
         setSaslCredentials(nick, password);
@@ -632,7 +632,7 @@ export const ircAutoAuthenticate = async (): Promise<boolean> => {
   const encryptedPassword = getEncryptedPassword();
   const passwordNick = getPasswordNick();
 
-  if (!encryptedPassword || passwordNick !== nick) {
+  if (!encryptedPassword || passwordNick === undefined || !isSameName(passwordNick, nick)) {
     return false;
   }
 

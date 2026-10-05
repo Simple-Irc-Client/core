@@ -53,6 +53,12 @@ export class IrcContext {
     return joinParamsAndText(params, text);
   }
 
+  /** Remaining middle parameters and trailing text as one space-separated line, without the ':' marker */
+  paramsAndTextAsLine(): string {
+    const { params, text } = this.paramsAndText();
+    return [...params, text].filter((part) => part !== '').join(' ');
+  }
+
   logParseError(handler: (...args: never[]) => unknown, variable: string): void {
     const error = new Error(`Kernel error - cannot parse ${variable} at ${handler.name}`);
     Sentry.captureException(error, {

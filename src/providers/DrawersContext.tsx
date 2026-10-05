@@ -23,7 +23,7 @@ export const useChannelsDrawer = () => {
   const { isChannelsDrawerOpen, toggleChannelsDrawer } = useDrawers();
   return {
     isChannelsDrawerOpen,
-    setChannelsDrawerStatus: toggleChannelsDrawer,
+    toggleChannelsDrawer,
   };
 };
 
@@ -31,6 +31,6 @@ export const useUsersDrawer = () => {
   const { isUsersDrawerOpen, toggleUsersDrawer } = useDrawers();
   return {
     isUsersDrawerOpen,
-    setUsersDrawerStatus: toggleUsersDrawer,
+    toggleUsersDrawer,
   };
 };

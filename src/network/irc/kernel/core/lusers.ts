@@ -42,7 +42,7 @@ export const onRaw251 = (ctx: IrcContext): void => {
 export const onRaw252 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  const message = ctx.line.join(' ');
+  const message = ctx.paramsAndTextAsLine();
 
   showReply(ctx, {
     message,
@@ -55,7 +55,7 @@ export const onRaw252 = (ctx: IrcContext): void => {
 export const onRaw253 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  const message = ctx.line.join(' ');
+  const message = ctx.paramsAndTextAsLine();
 
   showReply(ctx, {
     message,
@@ -68,7 +68,7 @@ export const onRaw253 = (ctx: IrcContext): void => {
 export const onRaw254 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
-  const message = ctx.line.join(' ');
+  const message = ctx.paramsAndTextAsLine();
 
   showReply(ctx, {
     message,

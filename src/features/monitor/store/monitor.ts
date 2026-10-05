@@ -2,6 +2,8 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { getCaseMapping } from '@features/settings/store/settings';
+import { foldName } from '@shared/lib/caseMapping';
 
 export interface MonitoredUser {
   nick: string;
@@ -26,6 +28,9 @@ interface MonitorStore {
   clearAll: () => void;
 }
 
+/** Map key for a nick, folded per the server's CASEMAPPING */
+export const monitorKey = (nick: string): string => foldName(nick, getCaseMapping());
+
 export const useMonitorStore = create<MonitorStore>()(
   devtools((set) => ({
     monitoredUsers: new Map(),
@@ -33,8 +38,8 @@ export const useMonitorStore = create<MonitorStore>()(
     addMonitoredNick: (nick: string): void => {
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
-        if (!newMap.has(nick.toLowerCase())) {
-          newMap.set(nick.toLowerCase(), {
+        if (!newMap.has(monitorKey(nick))) {
+          newMap.set(monitorKey(nick), {
             nick,
             online: false,
             lastUpdate: Date.now(),
@@ -48,8 +53,8 @@ export const useMonitorStore = create<MonitorStore>()(
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
         for (const nick of nicks) {
-          if (!newMap.has(nick.toLowerCase())) {
-            newMap.set(nick.toLowerCase(), {
+          if (!newMap.has(monitorKey(nick))) {
+            newMap.set(monitorKey(nick), {
               nick,
               online: false,
               lastUpdate: Date.now(),
@@ -63,21 +68,21 @@ export const useMonitorStore = create<MonitorStore>()(
     removeMonitoredNick: (nick: string): void => {
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
-        newMap.delete(nick.toLowerCase());
+        newMap.delete(monitorKey(nick));
         return { monitoredUsers: newMap };
       });
     },
 
     renameMonitoredNick: (oldNick: string, newNick: string): void => {
       set((state) => {
-        const oldKey = oldNick.toLowerCase();
+        const oldKey = monitorKey(oldNick);
         const existing = state.monitoredUsers.get(oldKey);
         if (!existing) {
           return state;
         }
         const newMap = new Map(state.monitoredUsers);
         newMap.delete(oldKey);
-        newMap.set(newNick.toLowerCase(), { ...existing, nick: newNick, lastUpdate: Date.now() });
+        newMap.set(monitorKey(newNick), { ...existing, nick: newNick, lastUpdate: Date.now() });
         return { monitoredUsers: newMap };
       });
     },
@@ -85,16 +90,16 @@ export const useMonitorStore = create<MonitorStore>()(
     setOnlineStatus: (nick: string, online: boolean, userString?: string): void => {
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
-        const existing = newMap.get(nick.toLowerCase());
+        const existing = newMap.get(monitorKey(nick));
         if (existing) {
-          newMap.set(nick.toLowerCase(), {
+          newMap.set(monitorKey(nick), {
             ...existing,
             online,
             userString: online ? userString : undefined,
             lastUpdate: Date.now(),
           });
         } else {
-          newMap.set(nick.toLowerCase(), {
+          newMap.set(monitorKey(nick), {
             nick,
             online,
             userString: online ? userString : undefined,
@@ -110,16 +115,16 @@ export const useMonitorStore = create<MonitorStore>()(
         const newMap = new Map(state.monitoredUsers);
         nicks.forEach((nick, index) => {
           const userString = userStrings?.[index];
-          const existing = newMap.get(nick.toLowerCase());
+          const existing = newMap.get(monitorKey(nick));
           if (existing) {
-            newMap.set(nick.toLowerCase(), {
+            newMap.set(monitorKey(nick), {
               ...existing,
               online: true,
               userString,
               lastUpdate: Date.now(),
             });
           } else {
-            newMap.set(nick.toLowerCase(), {
+            newMap.set(monitorKey(nick), {
               nick,
               online: true,
               userString,
@@ -135,9 +140,9 @@ export const useMonitorStore = create<MonitorStore>()(
       set((state) => {
         const newMap = new Map(state.monitoredUsers);
         nicks.forEach((nick) => {
-          const existing = newMap.get(nick.toLowerCase());
+          const existing = newMap.get(monitorKey(nick));
           if (existing) {
-            newMap.set(nick.toLowerCase(), {
+            newMap.set(monitorKey(nick), {
               ...existing,
               online: false,
               userString: undefined,
@@ -201,11 +206,11 @@ export const getOfflineMonitoredUsers = (): MonitoredUser[] => {
 };
 
 export const isNickMonitored = (nick: string): boolean => {
-  return useMonitorStore.getState().monitoredUsers.has(nick.toLowerCase());
+  return useMonitorStore.getState().monitoredUsers.has(monitorKey(nick));
 };
 
 export const isNickOnline = (nick: string): boolean => {
-  return useMonitorStore.getState().monitoredUsers.get(nick.toLowerCase())?.online ?? false;
+  return useMonitorStore.getState().monitoredUsers.get(monitorKey(nick))?.online ?? false;
 };
 
 export const clearMonitorList = (): void => {

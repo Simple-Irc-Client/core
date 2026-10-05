@@ -42,7 +42,7 @@ describe('kernel core/lusers', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '27 :operator(s) online' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '27 operator(s) online' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -54,7 +54,7 @@ describe('kernel core/lusers', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '-14 :unknown connection(s)' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '-14 unknown connection(s)' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -66,7 +66,7 @@ describe('kernel core/lusers', () => {
     new Kernel({ type: 'raw', line }).handle();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '185 :channels formed' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: '185 channels formed' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 

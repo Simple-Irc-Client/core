@@ -21,7 +21,7 @@ export const onRaw005 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
   showReply(ctx, {
-    message: ctx.line.join(' '),
+    message: ctx.paramsAndTextAsLine(),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
   });
