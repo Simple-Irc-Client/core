@@ -31,6 +31,12 @@ export interface FontFormatting {
 
 export type FontSize = 'small' | 'medium' | 'large';
 
+export const fontSizeClasses: Record<FontSize, string> = {
+  small: 'text-xs',
+  medium: 'text-sm',
+  large: 'text-base',
+};
+
 export interface SettingsStore {
   isConnecting: boolean;
   isConnected: boolean;
@@ -126,43 +132,48 @@ export interface SettingsStore {
   resetWizardState: () => void;
 }
 
+/** Per-connection state: the initial values, and what resetWizardState restores on disconnect */
+const sessionDefaults = () => ({
+  isConnecting: false,
+  isConnected: false,
+  isWizardCompleted: false,
+  wizardStep: 'nick',
+  isPasswordRequired: undefined,
+  connectedTime: 0,
+  currentChannelName: 'Status',
+  currentChannelCategory: ChannelCategory.status,
+  userModes: [],
+  channelModes: { A: [], B: [], C: [], D: [] },
+  listRequestRemainingSeconds: -1,
+  channelTypes: [],
+  caseMapping: DEFAULT_CASE_MAPPING,
+  supportedOptions: [],
+  wizardProgress: { value: 0, label: '' },
+  currentUserFlags: [],
+  isAutoAway: false,
+  watchLimit: 0,
+  monitorLimit: 0,
+  silenceLimit: 0,
+  nickLenLimit: 50,
+  lineLenLimit: 0,
+  networkName: undefined,
+  lagMs: undefined,
+  currentUserAvatar: undefined,
+  currentUserDisplayName: undefined,
+  currentUserStatus: undefined,
+  currentUserHomepage: undefined,
+  currentUserColor: undefined,
+}) satisfies Partial<SettingsStore>;
+
 export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist((set) => ({
-    isConnecting: false,
-    isConnected: false,
-    isWizardCompleted: false,
-    wizardStep: 'nick',
+    ...sessionDefaults(),
     nick: '',
     server: undefined,
-    isPasswordRequired: undefined,
-    connectedTime: 0,
-    currentChannelName: 'Status',
-    currentChannelCategory: ChannelCategory.status,
     theme: DEFAULT_THEME_ID,
     customThemes: {},
     builtinThemeOverrides: {},
-    userModes: [],
-    channelModes: { A: [], B: [], C: [], D: [] },
-    listRequestRemainingSeconds: -1,
-    channelTypes: [],
-    caseMapping: DEFAULT_CASE_MAPPING,
-    supportedOptions: [],
-    wizardProgress: { value: 0, label: '' },
-    currentUserFlags: [],
-    isAutoAway: false,
-    watchLimit: 0,
-    monitorLimit: 0,
-    silenceLimit: 0,
-    nickLenLimit: 50,
-    lineLenLimit: 0,
-    networkName: undefined,
-    lagMs: undefined,
-    currentUserAvatar: undefined,
-    currentUserDisplayName: undefined,
-    currentUserStatus: undefined,
-    currentUserHomepage: undefined,
-    currentUserColor: undefined,
     fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
     isDarkMode: false,
     hideAvatarsInUsersList: false,
@@ -360,37 +371,7 @@ export const useSettingsStore = create<SettingsStore>()(
       set(() => ({ isWizardHintDismissed: true }));
     },
     resetWizardState: (): void => {
-      set(() => ({
-        isConnecting: false,
-        isConnected: false,
-        isWizardCompleted: false,
-        wizardStep: 'nick',
-        isPasswordRequired: undefined,
-        connectedTime: 0,
-        currentChannelName: 'Status',
-        currentChannelCategory: ChannelCategory.status,
-        userModes: [],
-        channelModes: { A: [], B: [], C: [], D: [] },
-        listRequestRemainingSeconds: -1,
-        channelTypes: [],
-        caseMapping: DEFAULT_CASE_MAPPING,
-        supportedOptions: [],
-        wizardProgress: { value: 0, label: '' },
-        currentUserFlags: [],
-        isAutoAway: false,
-        watchLimit: 0,
-        monitorLimit: 0,
-        silenceLimit: 0,
-        nickLenLimit: 50,
-        lineLenLimit: 0,
-    networkName: undefined,
-        lagMs: undefined,
-        currentUserAvatar: undefined,
-        currentUserDisplayName: undefined,
-        currentUserStatus: undefined,
-        currentUserHomepage: undefined,
-        currentUserColor: undefined,
-      }));
+      set(sessionDefaults());
     },
   }),
   {

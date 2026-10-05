@@ -1,11 +1,5 @@
-import { isSameName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { isSameName, useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { ChannelCategory, type User, type UserMode } from '@shared/types';
-
-const fontSizeClasses: Record<FontSize, string> = {
-  small: 'text-xs',
-  medium: 'text-sm',
-  large: 'text-base',
-};
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usersWidth as defaultUsersWidth } from '@/config/theme';

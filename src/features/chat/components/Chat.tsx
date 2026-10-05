@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { useSettingsStore, type FontSize } from '@features/settings/store/settings';
-
-const fontSizeClasses: Record<FontSize, string> = {
-  small: 'text-xs',
-  medium: 'text-sm',
-  large: 'text-base',
-};
+import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { startOfDay } from 'date-fns';
 import type { Message } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';

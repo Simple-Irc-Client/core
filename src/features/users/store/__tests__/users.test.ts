@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { DEFAULT_CASE_MAPPING, foldName, namesEqual } from '@shared/lib/caseMapping';
 import {
   useUsersStore,
@@ -16,6 +16,7 @@ import {
   setQuitUser as setQuitUserExport,
   setNamesUsers as setNamesUsersExport,
   setRemoveUser as setRemoveUserExport,
+  setRenameUser as setRenameUserExport,
   flushCurrentUsers,
   setUsersClearAll,
   getUserChannels,
@@ -27,6 +28,7 @@ import {
 } from '../users';
 import { type User, type UserChannel, type ChannelExtended, ChannelCategory, MessageCategory } from '@shared/types';
 import { getChannel, setAddMessage } from '@features/channels/store/channels';
+import { getCurrentChannelName } from '@features/settings/store/settings';
 
 const createUser = (nick: string, channels: UserChannel[]): User => ({
   nick,
@@ -1147,6 +1149,38 @@ describe('users store', () => {
       setQuitUserExport('Bob', { id: '1', message: 'Bob quit', nick: 'Bob', time: '', category: MessageCategory.info });
 
       expect(vi.mocked(setAddMessage)).toHaveBeenCalledWith(expect.objectContaining({ target: 'Bob', message: 'Bob quit' }));
+    });
+
+    describe('while the DM window is open', () => {
+      beforeEach(() => {
+        mockPrivChannel('Bob');
+        vi.mocked(getCurrentChannelName).mockReturnValue('Bob');
+      });
+
+      afterEach(() => {
+        vi.mocked(getCurrentChannelName).mockReturnValue('#test');
+      });
+
+      it('should refresh the participant list when the peer quits', async () => {
+        setQuitUserExport('Bob', { id: '1', message: 'Bob quit', nick: 'Bob', time: '', category: MessageCategory.info });
+        await Promise.resolve();
+
+        expect(mockSetUpdateUsers).toHaveBeenCalledTimes(1);
+      });
+
+      it('should refresh the participant list when we change our own nick', async () => {
+        setRenameUserExport('TestUser', 'TestUser2');
+        await Promise.resolve();
+
+        expect(mockSetUpdateUsers).toHaveBeenCalledTimes(1);
+      });
+
+      it('should stay quiet when an unrelated user changes nick', async () => {
+        setRenameUserExport('Alice', 'Alice2');
+        await Promise.resolve();
+
+        expect(mockSetUpdateUsers).not.toHaveBeenCalled();
+      });
     });
   });
 

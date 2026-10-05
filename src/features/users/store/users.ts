@@ -379,13 +379,8 @@ export const setNamesUsers = (channelName: string, entries: NamesUser[]): void =
 
   useUsersStore.getState().setNamesUsers(channelName, entries);
 
-  const currentChannelName = getCurrentChannelName();
-  const myNick = getCurrentNick();
   // A roster can also name the peer of an open DM window, whose participant list is derived from the same users
-  const touchesCurrentPriv = isPrivChannel(currentChannelName)
-    && entries.some((entry) => isSameName(entry.nick, currentChannelName) || isSameName(entry.nick, myNick));
-
-  if (isSameName(currentChannelName, channelName) || touchesCurrentPriv) {
+  if (affectsCurrentView([channelName], entries.map((entry) => entry.nick))) {
     scheduleCurrentUsersSync();
   }
 };
@@ -452,7 +447,6 @@ export const setRemoveUser = (nick: string, channelName: string): void => {
 
 export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): void => {
   const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {
     setAddMessage({ ...message, target: channel.name });
@@ -467,7 +461,7 @@ export const setQuitUser = (nick: string, message: Omit<Message, 'target'>): voi
 
   useUsersStore.getState().setQuitUser(nick);
 
-  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || (isPrivChannel(currentChannelName) && isSameName(nick, currentChannelName))) {
+  if (affectsCurrentView(channels.map((channel) => channel.name), [nick])) {
     scheduleCurrentUsersSync();
   }
 };
@@ -481,10 +475,7 @@ export const setRenameUser = (from: string, to: string): void => {
     clearTyping(channel.name, from);
   }
 
-  const currentChannelName = getCurrentChannelName();
-  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(from, currentChannelName) || isSameName(to, currentChannelName));
-
-  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
+  if (affectsCurrentView(channels.map((channel) => channel.name), [from, to])) {
     scheduleCurrentUsersSync();
   }
 };
@@ -511,6 +502,19 @@ export const setJoinUser = (nick: string, channelName: string, flags?: string[],
 
 const isPrivChannel = (channelName: string): boolean => {
   return getChannel(channelName)?.category === ChannelCategory.priv;
+};
+
+/** Whether changes to these users show in the open window: a channel they're on, or a DM they take part in (the peer or us) */
+const affectsCurrentView = (channelNames: string[], nicks: string[]): boolean => {
+  const currentChannelName = getCurrentChannelName();
+  if (channelNames.some((name) => isSameName(name, currentChannelName))) {
+    return true;
+  }
+  if (!isPrivChannel(currentChannelName)) {
+    return false;
+  }
+  const myNick = getCurrentNick();
+  return nicks.some((nick) => isSameName(nick, currentChannelName) || isSameName(nick, myNick));
 };
 
 const createStubUser = (nick: string): User => {
@@ -551,10 +555,8 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
 
 const syncCurrentChannelUsers = (nick: string): void => {
   const channels = getUser(nick)?.channels ?? [];
-  const currentChannelName = getCurrentChannelName();
-  const isCurrentPrivParticipant = isPrivChannel(currentChannelName) && (isSameName(nick, currentChannelName) || isSameName(nick, getCurrentNick()));
 
-  if (channels.some((channel) => isSameName(channel.name, currentChannelName)) || isCurrentPrivParticipant) {
+  if (affectsCurrentView(channels.map((channel) => channel.name), [nick])) {
     scheduleCurrentUsersSync();
   }
 };

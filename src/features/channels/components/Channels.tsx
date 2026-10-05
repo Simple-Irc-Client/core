@@ -1,15 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
-import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, type FontSize } from '@features/settings/store/settings';
+import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
 import { serverIcons } from '@/network/irc/servers';
-
-const fontSizeClasses: Record<FontSize, string> = {
-  small: 'text-xs',
-  medium: 'text-sm',
-  large: 'text-base',
-};
 import { useTranslation } from 'react-i18next';
 import { setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';

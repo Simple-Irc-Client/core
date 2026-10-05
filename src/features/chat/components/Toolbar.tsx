@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, isSameName, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
-import { ChannelCategory, type ChannelList, MessageCategory, type User } from '@shared/types';
+import { ChannelCategory, MessageCategory, type User } from '@shared/types';
 import { ircSendCommand, ircSendRawMessage, ircReconnect } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
@@ -359,46 +359,15 @@ const Toolbar = () => {
     }
   };
 
-  const autocompleteCommands = (word: string, commands: string[]): boolean => {
-    for (const [index, command] of commands.entries()) {
-      if (command.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
+  /** Replaces the last word with the next name after the previous match that starts with it */
+  const autocompleteFrom = (word: string, names: string[]): boolean => {
+    for (const [index, name] of names.entries()) {
+      if (name.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
         autocompleteIndex.current = index;
 
         const newMessage = autocompleteMessage.current.split(' ');
         newMessage.pop();
-        newMessage.push(command);
-        setMessage(newMessage.join(' ') + ' ');
-
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const autocompleteChannels = (word: string, channels: ChannelList[]): boolean => {
-    for (const [index, channel] of channels.entries()) {
-      if (channel.name.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
-        autocompleteIndex.current = index;
-
-        const newMessage = autocompleteMessage.current.split(' ');
-        newMessage.pop();
-        newMessage.push(channel.name);
-        setMessage(newMessage.join(' ') + ' ');
-
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const autocompleteUsers = (word: string, users: User[]): boolean => {
-    for (const [index, user] of users.entries()) {
-      if (user.nick.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
-        autocompleteIndex.current = index;
-
-        const newMessage = autocompleteMessage.current.split(' ');
-        newMessage.pop();
-        newMessage.push(user.nick);
+        newMessage.push(name);
         setMessage(newMessage.join(' ') + ' ');
 
         return true;
@@ -413,27 +382,19 @@ const Toolbar = () => {
         event.preventDefault();
         const word = autocompleteMessage.current.split(' ').pop()?.toLowerCase();
         if (word !== undefined && word.length !== 0) {
+          let names: string[];
           if (word.startsWith('/')) {
-            const done = autocompleteCommands(word, commands);
-            if (done) {
-              return;
-            }
-            autocompleteIndex.current = -1; // clear index if its last complete
-            autocompleteCommands(word, commands);
+            names = commands;
           } else if (word.startsWith('#')) {
-            const done = autocompleteChannels(word, channels);
-            if (done) {
-              return;
-            }
-            autocompleteIndex.current = -1; // clear index if its last complete
-            autocompleteChannels(word, channels);
+            names = channels.map((channel) => channel.name);
           } else {
-            const done = autocompleteUsers(word, users);
-            if (done) {
-              return;
-            }
-            autocompleteIndex.current = -1; // clear index if its last complete
-            autocompleteUsers(word, users);
+            names = users.map((user) => user.nick);
+          }
+
+          if (!autocompleteFrom(word, names)) {
+            // Past the last match: wrap around to the first
+            autocompleteIndex.current = -1;
+            autocompleteFrom(word, names);
           }
         }
         break;
