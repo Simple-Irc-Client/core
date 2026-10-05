@@ -434,7 +434,8 @@ export const flushNamesUsers = (channelName: string): void => {
 
 export const setRemoveUser = (nick: string, channelName: string): void => {
   if (isSameName(nick, getCurrentNick())) {
-    const usersFromChannel = getUsersFromChannelSortedByAZ(channelName);
+    // We left: drop everyone from that channel's roster
+    const usersFromChannel = useUsersStore.getState().users.filter((user) => user.channels.some((channel) => isSameName(channel.name, channelName)));
     for (const userFromChannel of usersFromChannel) {
       useUsersStore.getState().setRemoveUser(userFromChannel.nick, channelName);
       clearTyping(channelName, userFromChannel.nick);
@@ -546,17 +547,6 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
   entries.sort((a, b) => (a.permission === b.permission ? nickCollator.compare(a.sortKey, b.sortKey) : b.permission - a.permission));
 
   return entries.map((entry) => entry.user);
-};
-
-export const getUsersFromChannelSortedByAZ = (channelName: string): User[] => {
-  return useUsersStore
-    .getState()
-    .users.filter((user: User) => user.channels.some((channel) => isSameName(channel.name, channelName)))
-    .sort((a: User, b: User) => {
-      const A = a.nick.toLowerCase();
-      const B = b.nick.toLowerCase();
-      return A < B ? -1 : A > B ? 1 : 0;
-    });
 };
 
 const syncCurrentChannelUsers = (nick: string): void => {

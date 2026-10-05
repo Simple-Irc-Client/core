@@ -75,9 +75,7 @@ function getColorFromCode(code: number): string | null {
   if (code >= 16 && code <= 98) {
     return IRC_EXTENDED_COLORS[code] ?? null;
   }
-  if (code === 99) {
-    return null; // Default/transparent
-  }
+  // 99 is "default/transparent"; anything else out of range has no color
   return null;
 }
 

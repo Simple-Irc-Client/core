@@ -53,8 +53,6 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return e2eeCommand(channel, line);
     case 'whereis':
       return whoisCommand(line);
-    case 'who':
-      return originalLine;
     // Services commands
     case 'ns':
       return servicesCommand('NickServ', line);
@@ -87,7 +85,7 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     switch (command) {
       case 'ban':
       case 'b':
-        return banCommand(channel, line) ?? originalLine;
+        return banCommand(channel, line);
       case 'cycle':
       case 'hop':
         return cycleCommand(channel, line);
@@ -277,7 +275,7 @@ const topicCommand = (channel: string, line: string[]): string => {
   return `TOPIC ${channel} :${topic}`;
 };
 
-const banCommand = (channel: string, line: string[]): string | undefined => {
+const banCommand = (channel: string, line: string[]): string => {
   const mask = line.shift();
 
   if (mask === undefined) {

@@ -36,8 +36,6 @@ const resetReplies = createThrottle(10_000);
 /** Checked before any crypto, so a refused frame costs only a map lookup. */
 const allowOffer = (nick: string): boolean => offers.allow(getSessionKey(nick));
 
-const resolveWindow = (nick: string, target: string): string => (isSameName(target, getCurrentNick()) ? nick : target);
-
 /** Namespaced msgid: still dedupes, but can't patch a plaintext message that reused the same msgid. */
 const localMessageId = (msgid?: string): string =>
   msgid !== undefined && msgid.length > 0 ? `e2ee:${msgid}` : `e2ee:${uuidv4()}`;
@@ -116,14 +114,15 @@ const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'no
 
 interface CipherContext {
   nick: string;
-  window: string;
   messageId: string;
   /** From the server's `time` tag when present. */
   time: string;
 }
 
 const renderDecrypted = (context: CipherContext, sealed: string): void => {
-  const { nick, window, messageId, time } = context;
+  const { nick, messageId, time } = context;
+  // A DM's window is named after the peer
+  const window = nick;
   const currentChannelName = getCurrentChannelName();
 
   ensureWindow(window);
@@ -165,18 +164,18 @@ const renderDecrypted = (context: CipherContext, sealed: string): void => {
   );
 };
 
-const handleCipher = (nick: string, window: string, frame: Extract<E2eeFrame, { type: 'cipher' }>, messageId: string, time: string): void => {
+const handleCipher = (nick: string, frame: Extract<E2eeFrame, { type: 'cipher' }>, messageId: string, time: string): void => {
   const result = acceptCipherChunk(nick, frame);
 
   switch (result.status) {
     case 'complete':
-      renderDecrypted({ nick, window, messageId, time }, result.sealed);
+      renderDecrypted({ nick, messageId, time }, result.sealed);
       return;
     case 'noSession':
       // Tell both the peer and our user rather than silently dropping it
       if (resetReplies.allow(getSessionKey(nick))) {
         sendReset(nick);
-        addInfoMessage(window, i18next.t('e2ee.info.unreadable', { nick }));
+        addInfoMessage(nick, i18next.t('e2ee.info.unreadable', { nick }));
       }
       return;
     case 'echo':
@@ -205,7 +204,6 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
   }
 
   const { nick, target, source } = context;
-  const window = resolveWindow(nick, target);
 
   if (!isSameName(target, getCurrentNick())) {
     return false;
@@ -220,7 +218,7 @@ export const handleE2eeCtcp = (context: E2eeCtcpContext): boolean => {
     if (source !== 'privmsg') {
       return false;
     }
-    handleCipher(nick, window, frame, localMessageId(context.msgid), context.time ?? new Date().toISOString());
+    handleCipher(nick, frame, localMessageId(context.msgid), context.time ?? new Date().toISOString());
     return true;
   }
 

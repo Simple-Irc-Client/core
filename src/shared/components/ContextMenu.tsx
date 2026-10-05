@@ -37,7 +37,6 @@ const getModeLevel = (flag: string): number => {
 
 const getOperatorPermissions = (currentUserModes: string[], targetUserModes: string[]) => {
   const currentLevel = Math.max(...currentUserModes.map(getModeLevel), 0);
-  const targetLevel = Math.max(...targetUserModes.map(getModeLevel), 0);
 
   const canPromote = (toFlag: string): boolean => {
     const toLevel = getModeLevel(toFlag);
@@ -51,7 +50,6 @@ const getOperatorPermissions = (currentUserModes: string[], targetUserModes: str
 
   return {
     currentLevel,
-    targetLevel,
     canKick: currentLevel >= 2, // h or higher can kick
     canBan: currentLevel >= 3,  // o or higher can ban
     canPromoteToVoice: canPromote('v'),

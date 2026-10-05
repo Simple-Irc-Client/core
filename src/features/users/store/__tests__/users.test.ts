@@ -15,13 +15,13 @@ import {
   setUserRealname as setUserRealnameExport,
   setQuitUser as setQuitUserExport,
   setNamesUsers as setNamesUsersExport,
+  setRemoveUser as setRemoveUserExport,
   flushCurrentUsers,
   setUsersClearAll,
   getUserChannels,
   getUser,
   getHasUser,
   getUsersFromChannelSortedByMode,
-  getUsersFromChannelSortedByAZ,
   getCurrentUserChannelModes,
   pendingMetadata,
 } from '../users';
@@ -149,6 +149,25 @@ describe('users store', () => {
       useUsersStore.getState().setRemoveUser('User1', '#channel1');
 
       expect(getUser('User1')).toBeUndefined();
+      expect(getUser('User2')).toBeDefined();
+    });
+
+    it('drops the whole channel roster when we leave it ourselves', () => {
+      useUsersStore.getState().setAddUser(createUser('TestUser', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+      ]));
+      useUsersStore.getState().setAddUser(createUser('User1', [
+        { name: '#channel1', flags: [], maxPermission: -1 },
+        { name: '#channel2', flags: [], maxPermission: -1 },
+      ]));
+      useUsersStore.getState().setAddUser(createUser('User2', [
+        { name: '#channel2', flags: [], maxPermission: -1 },
+      ]));
+
+      setRemoveUserExport('testuser', '#CHANNEL1');
+
+      expect(getUser('TestUser')).toBeUndefined();
+      expect(getUser('User1')?.channels.map((channel) => channel.name)).toEqual(['#channel2']);
       expect(getUser('User2')).toBeDefined();
     });
   });
@@ -664,44 +683,6 @@ describe('users store', () => {
     it('should return empty array for non-existent channel', () => {
       const users = getUsersFromChannelSortedByMode('#nonexistent');
       expect(users).toEqual([]);
-    });
-  });
-
-  describe('getUsersFromChannelSortedByAZ', () => {
-    it('should return users sorted alphabetically', () => {
-      useUsersStore.getState().setAddUser(createUser('Zack', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-      useUsersStore.getState().setAddUser(createUser('Alice', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-      useUsersStore.getState().setAddUser(createUser('Bob', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-
-      const users = getUsersFromChannelSortedByAZ('#channel1');
-
-      expect(users[0]?.nick).toBe('Alice');
-      expect(users[1]?.nick).toBe('Bob');
-      expect(users[2]?.nick).toBe('Zack');
-    });
-
-    it('should be case insensitive', () => {
-      useUsersStore.getState().setAddUser(createUser('alice', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-      useUsersStore.getState().setAddUser(createUser('BOB', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-      useUsersStore.getState().setAddUser(createUser('Carol', [
-        { name: '#channel1', flags: [], maxPermission: -1 },
-      ]));
-
-      const users = getUsersFromChannelSortedByAZ('#channel1');
-
-      expect(users[0]?.nick).toBe('alice');
-      expect(users[1]?.nick).toBe('BOB');
-      expect(users[2]?.nick).toBe('Carol');
     });
   });
 

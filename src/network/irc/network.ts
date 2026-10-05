@@ -270,7 +270,6 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     if (policy) {
       effectiveTLS = true;
       effectivePort = policy.port;
-      setCurrentConnectionInfo(host, true);
     }
   }
 
@@ -323,10 +322,6 @@ export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: nu
   }
 
   ircConnect(tlsServer, nick);
-};
-
-export const ircSetSaslCredentials = (account: string, password: string): void => {
-  setSaslCredentials(account, password);
 };
 
 /** NickServ fallback when SASL isn't available. */
@@ -392,23 +387,6 @@ export const ircRequestChatHistory = (
   }
 };
 
-export const ircRequestChatHistoryBetween = (
-  target: string,
-  startTime: string,
-  endTime: string,
-  limit = 50,
-): void => {
-  ircSendRawMessage(`CHATHISTORY BETWEEN ${target} timestamp=${startTime} timestamp=${endTime} ${limit}`);
-};
-
-export const ircRequestChatHistoryTargets = (timestamp?: string, limit = 50): void => {
-  if (timestamp) {
-    ircSendRawMessage(`CHATHISTORY TARGETS timestamp=${timestamp} ${limit}`);
-  } else {
-    ircSendRawMessage(`CHATHISTORY TARGETS * ${limit}`);
-  }
-};
-
 // https://ircv3.net/specs/extensions/monitor.html
 export const ircMonitorAdd = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
@@ -418,18 +396,6 @@ export const ircMonitorAdd = (nicks: string[]): void => {
 export const ircMonitorRemove = (nicks: string[]): void => {
   if (nicks.length === 0) { return; }
   ircSendRawMessage(`MONITOR - ${nicks.join(',')}`);
-};
-
-export const ircMonitorClear = (): void => {
-  ircSendRawMessage('MONITOR C');
-};
-
-export const ircMonitorList = (): void => {
-  ircSendRawMessage('MONITOR L');
-};
-
-export const ircMonitorStatus = (): void => {
-  ircSendRawMessage('MONITOR S');
 };
 
 /** Pre-IRCv3 fallback for servers without MONITOR. */
@@ -645,4 +611,4 @@ export const ircAutoAuthenticate = async (): Promise<boolean> => {
   }
 };
 
-export { resetInactivityTimeout, clearInactivityTimeout, startKeepalive, stopKeepalive, clearSavedCredentials, cancelReconnect };
+export { resetInactivityTimeout, clearInactivityTimeout, startKeepalive, stopKeepalive, clearSavedCredentials };

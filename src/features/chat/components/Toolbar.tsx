@@ -315,13 +315,7 @@ const Toolbar = () => {
       if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
         const nick = getCurrentNick();
 
-        const hasFormatting =
-          fontFormatting.bold ||
-          fontFormatting.italic ||
-          fontFormatting.underline ||
-          fontFormatting.colorCode !== null;
-
-        const formattedMessage = hasFormatting ? applyFormatting(message, fontFormatting) : message;
+        const formattedMessage = applyFormatting(message, fontFormatting);
 
         if (isSessionActive(currentChannelName)) {
           // Rendered locally even with echo-message: the echoed SICE frame is dropped by frame id

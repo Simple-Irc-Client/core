@@ -52,14 +52,8 @@ export const processBatch = (ctx: IrcContext, batch: BatchState): void => {
     case BATCH_TYPES.LABELED_RESPONSE:
       // Its messages were handled as they arrived
       break;
-    case BATCH_TYPES.NETJOIN:
-    case BATCH_TYPES.NETSPLIT:
-      for (const message of batch.messages) {
-        processBufferedMessage(ctx, message);
-      }
-      break;
     default:
-      // Unknown batch type
+      // netjoin, netsplit and unknown types are replayed as-is
       for (const message of batch.messages) {
         processBufferedMessage(ctx, message);
       }

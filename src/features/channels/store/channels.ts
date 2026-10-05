@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
 import { devtools, persist } from 'zustand/middleware';
 import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
-import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName, syncCurrentUsers } from '@features/settings/store/settings';
+import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
+import { flushCurrentUsers } from '@features/users/store/users';
 import { createServerScopedStorage } from '@shared/lib/idbStorage';
 import { foldName } from '@shared/lib/caseMapping';
 
@@ -48,7 +49,7 @@ const syncCurrentAfterHydration = (): void => {
     useCurrentStore.getState().setUpdateMessages([...channel.messages]);
     useCurrentStore.getState().setUpdateTopic(channel.topic);
     useCurrentStore.getState().setUpdateTyping([]);
-    syncCurrentUsers();
+    flushCurrentUsers();
   }
 };
 

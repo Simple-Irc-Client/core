@@ -38,15 +38,6 @@ describe('MessageText', () => {
       expect(getByText(/world/)).toBeInTheDocument();
     });
 
-    it('should apply color prop to text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
-
-      const { container } = render(<MessageText text="Colored text" color="#ff0000" />);
-
-      const span = container.querySelector('span');
-      expect(span).toHaveStyle({ color: '#ff0000' });
-    });
-
     it('should preserve whitespace between words', () => {
       vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
 

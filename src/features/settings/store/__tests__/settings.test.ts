@@ -36,21 +36,13 @@ import {
   getMonitorLimit,
   setSilenceLimit,
   getSilenceLimit,
-  setIsDarkMode,
   toggleDarkMode,
-  getIsDarkMode,
   setHideAvatarsInUsersList,
-  getHideAvatarsInUsersList,
   setFontSize,
-  getFontSize,
   setFontFormatting,
-  getFontFormatting,
   setHideTypingIndicator,
-  getHideTypingIndicator,
   setCurrentUserHomepage,
-  getCurrentUserHomepage,
   setCurrentUserColor,
-  getCurrentUserColor,
   setCurrentUserAvatar,
   setCurrentUserDisplayName,
   setCurrentUserStatus,
@@ -58,7 +50,6 @@ import {
   getEncryptedPassword,
   getPasswordNick,
   changeServer,
-  disconnectOnly,
   setWizardHintDismissed,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
@@ -644,139 +635,128 @@ describe('settings store', () => {
   });
 
   describe('dark mode', () => {
-    it('should set isDarkMode to true', () => {
-      setIsDarkMode(true);
-      expect(getIsDarkMode()).toBe(true);
-    });
-
-    it('should set isDarkMode to false', () => {
-      setIsDarkMode(true);
-      setIsDarkMode(false);
-      expect(getIsDarkMode()).toBe(false);
-    });
-
     it('should toggle dark mode', () => {
-      expect(getIsDarkMode()).toBe(false);
+      expect(useSettingsStore.getState().isDarkMode).toBe(false);
 
       toggleDarkMode();
-      expect(getIsDarkMode()).toBe(true);
+      expect(useSettingsStore.getState().isDarkMode).toBe(true);
 
       toggleDarkMode();
-      expect(getIsDarkMode()).toBe(false);
+      expect(useSettingsStore.getState().isDarkMode).toBe(false);
     });
 
     it('should preserve isDarkMode on resetWizardState', () => {
-      setIsDarkMode(true);
+      useSettingsStore.setState({ isDarkMode: true });
       useSettingsStore.getState().resetWizardState();
 
-      expect(getIsDarkMode()).toBe(true);
+      expect(useSettingsStore.getState().isDarkMode).toBe(true);
     });
   });
 
   describe('hide avatars in users list', () => {
     it('should set hideAvatarsInUsersList to true', () => {
       setHideAvatarsInUsersList(true);
-      expect(getHideAvatarsInUsersList()).toBe(true);
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
     });
 
     it('should set hideAvatarsInUsersList to false', () => {
       setHideAvatarsInUsersList(true);
       setHideAvatarsInUsersList(false);
-      expect(getHideAvatarsInUsersList()).toBe(false);
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(false);
     });
 
     it('should default hideAvatarsInUsersList to false', () => {
-      expect(getHideAvatarsInUsersList()).toBe(false);
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(false);
     });
 
     it('should preserve hideAvatarsInUsersList on resetWizardState', () => {
       setHideAvatarsInUsersList(true);
       useSettingsStore.getState().resetWizardState();
 
-      expect(getHideAvatarsInUsersList()).toBe(true);
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
     });
   });
 
   describe('font size', () => {
     it('should set fontSize to small', () => {
       setFontSize('small');
-      expect(getFontSize()).toBe('small');
+      expect(useSettingsStore.getState().fontSize).toBe('small');
     });
 
     it('should set fontSize to medium', () => {
       setFontSize('small');
       setFontSize('medium');
-      expect(getFontSize()).toBe('medium');
+      expect(useSettingsStore.getState().fontSize).toBe('medium');
     });
 
     it('should set fontSize to large', () => {
       setFontSize('large');
-      expect(getFontSize()).toBe('large');
+      expect(useSettingsStore.getState().fontSize).toBe('large');
     });
 
     it('should default fontSize to medium', () => {
-      expect(getFontSize()).toBe('medium');
+      expect(useSettingsStore.getState().fontSize).toBe('medium');
     });
 
     it('should preserve fontSize on resetWizardState', () => {
       setFontSize('large');
       useSettingsStore.getState().resetWizardState();
 
-      expect(getFontSize()).toBe('large');
+      expect(useSettingsStore.getState().fontSize).toBe('large');
     });
   });
 
   describe('current user homepage', () => {
     it('should set currentUserHomepage', () => {
       setCurrentUserHomepage('https://example.com');
-      expect(getCurrentUserHomepage()).toBe('https://example.com');
+      expect(useSettingsStore.getState().currentUserHomepage).toBe('https://example.com');
     });
 
     it('should clear currentUserHomepage with undefined', () => {
       setCurrentUserHomepage('https://example.com');
       setCurrentUserHomepage(undefined);
-      expect(getCurrentUserHomepage()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
     });
 
     it('should default currentUserHomepage to undefined', () => {
-      expect(getCurrentUserHomepage()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
     });
 
     it('should reset currentUserHomepage on resetWizardState', () => {
       setCurrentUserHomepage('https://example.com');
       useSettingsStore.getState().resetWizardState();
 
-      expect(getCurrentUserHomepage()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
     });
   });
 
   describe('current user color', () => {
     it('should set currentUserColor', () => {
       setCurrentUserColor('#ff5500');
-      expect(getCurrentUserColor()).toBe('#ff5500');
+      expect(useSettingsStore.getState().currentUserColor).toBe('#ff5500');
     });
 
     it('should clear currentUserColor with undefined', () => {
       setCurrentUserColor('#ff5500');
       setCurrentUserColor(undefined);
-      expect(getCurrentUserColor()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
     });
 
     it('should default currentUserColor to undefined', () => {
-      expect(getCurrentUserColor()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
     });
 
     it('should reset currentUserColor on resetWizardState', () => {
       setCurrentUserColor('#ff5500');
       useSettingsStore.getState().resetWizardState();
 
-      expect(getCurrentUserColor()).toBeUndefined();
+      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
     });
   });
 
   describe('persistence', () => {
     it('should write preferences to localStorage', () => {
-      setIsDarkMode(true);
+      useSettingsStore.setState({ isDarkMode: true });
       setTheme('classic');
       setFontSize('large');
       setHideAvatarsInUsersList(true);
@@ -892,12 +872,12 @@ describe('settings store', () => {
       // Trigger rehydration
       useSettingsStore.persist.rehydrate();
 
-      expect(getIsDarkMode()).toBe(true);
+      expect(useSettingsStore.getState().isDarkMode).toBe(true);
       expect(useSettingsStore.getState().theme).toBe('classic');
-      expect(getFontSize()).toBe('small');
-      expect(getHideAvatarsInUsersList()).toBe(true);
-      expect(getHideTypingIndicator()).toBe(true);
-      expect(getFontFormatting().bold).toBe(true);
+      expect(useSettingsStore.getState().fontSize).toBe('small');
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
+      expect(useSettingsStore.getState().hideTypingIndicator).toBe(true);
+      expect(useSettingsStore.getState().fontFormatting.bold).toBe(true);
       expect(getCurrentNick()).toBe('SavedNick');
       expect(getServer()).toEqual(persistedData.state.server);
       expect(getIsWizardCompleted()).toBe(true);
@@ -923,7 +903,7 @@ describe('settings store', () => {
       setFontFormatting({ bold: true, italic: true });
       useSettingsStore.getState().resetWizardState();
 
-      const formatting = getFontFormatting();
+      const formatting = useSettingsStore.getState().fontFormatting;
       expect(formatting.bold).toBe(true);
       expect(formatting.italic).toBe(true);
     });
@@ -1073,27 +1053,19 @@ describe('settings store', () => {
     });
 
     it('should preserve user preferences', () => {
-      setIsDarkMode(true);
+      useSettingsStore.setState({ isDarkMode: true });
       setFontSize('large');
       setHideAvatarsInUsersList(true);
 
       changeServer();
 
-      expect(getIsDarkMode()).toBe(true);
-      expect(getFontSize()).toBe('large');
-      expect(getHideAvatarsInUsersList()).toBe(true);
+      expect(useSettingsStore.getState().isDarkMode).toBe(true);
+      expect(useSettingsStore.getState().fontSize).toBe('large');
+      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
     });
 
     it('should clear the monitor list so friend statuses do not leak across servers', () => {
       changeServer();
-
-      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
-    });
-  });
-
-  describe('disconnectOnly', () => {
-    it('should clear the monitor list', () => {
-      disconnectOnly();
 
       expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
     });

@@ -15,7 +15,6 @@ import { splitEmoji } from '@/shared/lib/emoji';
 
 interface MessageTextProps {
   text: string;
-  color?: string;
 }
 
 interface TextPart {
@@ -24,7 +23,7 @@ interface TextPart {
   segments?: FormattedSegment[];
 }
 
-const MessageText = ({ text, color }: MessageTextProps) => {
+const MessageText = ({ text }: MessageTextProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
@@ -101,7 +100,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
   };
 
   return (
-    <span style={{ color }}>
+    <span>
       {(() => {
         let offset = 0;
         return parts.map((part) => {
@@ -121,7 +120,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
           }
 
           if (part.type === 'url') {
-            const content = part.segments ? renderFormattedSegments(part.segments, color, backgroundLuminance) : part.value;
+            const content = part.segments ? renderFormattedSegments(part.segments, undefined, backgroundLuminance) : part.value;
             return (
               <span
                 key={key}
@@ -136,7 +135,7 @@ const MessageText = ({ text, color }: MessageTextProps) => {
 
           const [firstSegment] = part.segments ?? [];
           if (firstSegment) {
-            const style = getStyleFromFormatState(firstSegment.style, color, backgroundLuminance);
+            const style = getStyleFromFormatState(firstSegment.style, undefined, backgroundLuminance);
             const hasStyle = Object.keys(style).length > 0;
             return <span key={key}>{renderWithEmoji(part.value, key, hasStyle ? style : undefined)}</span>;
           }

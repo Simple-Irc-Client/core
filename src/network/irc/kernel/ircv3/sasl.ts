@@ -4,7 +4,7 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { showReply } from '@/network/irc/kernel/replies';
 import { finishCapNegotiation } from '@/network/irc/kernel/ircv3/cap';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { getSaslState, handleSaslChallenge, saveSaslCredentialsForReconnect, setAuthenticatedAccount, setSaslState } from '@/network/irc/sasl';
+import { handleSaslChallenge, isSaslInProgress, saveSaslCredentialsForReconnect, setAuthenticatedAccount, setSaslState } from '@/network/irc/sasl';
 import { MessageCategory } from '@shared/types';
 
 const RPL_LOGGEDIN = '900';
@@ -22,7 +22,7 @@ const RPL_SASLMECHS = '908';
 export const onAuthenticate = (ctx: IrcContext): void => {
   const challenge = ctx.line[0] ?? '+';
 
-  if (getSaslState() !== 'requested' && getSaslState() !== 'authenticating') {
+  if (!isSaslInProgress()) {
     return;
   }
 

@@ -22,8 +22,6 @@ interface PinsStore {
   pinsByNetwork: Record<string, Record<string, E2eePin>>;
   putPin: (network: string, peerKey: string, pin: E2eePin) => void;
   setPinVerified: (network: string, peerKey: string, verified: boolean) => void;
-  removePin: (network: string, peerKey: string) => void;
-  clearNetwork: (network: string) => void;
 }
 
 export const useE2eePinsStore = create<PinsStore>()(
@@ -55,28 +53,6 @@ export const useE2eePinsStore = create<PinsStore>()(
             };
           });
         },
-
-        removePin: (network: string, peerKey: string): void => {
-          set((state) => {
-            const networkPins = state.pinsByNetwork[network];
-            if (!networkPins || !(peerKey in networkPins)) {
-              return state;
-            }
-            const remaining = Object.fromEntries(Object.entries(networkPins).filter(([key]) => key !== peerKey));
-            if (Object.keys(remaining).length === 0) {
-              return {
-                pinsByNetwork: Object.fromEntries(Object.entries(state.pinsByNetwork).filter(([key]) => key !== network)),
-              };
-            }
-            return { pinsByNetwork: { ...state.pinsByNetwork, [network]: remaining } };
-          });
-        },
-
-        clearNetwork: (network: string): void => {
-          set((state) => ({
-            pinsByNetwork: Object.fromEntries(Object.entries(state.pinsByNetwork).filter(([key]) => key !== network)),
-          }));
-        },
       }),
       {
         name: 'sic-e2ee-pins',
@@ -91,8 +67,6 @@ export const useE2eePinsStore = create<PinsStore>()(
 export const getPeerKey = (nick: string, account?: string): string =>
   account && account.length > 0 ? `account:${account.toLowerCase()}` : `nick:${foldName(nick, getCaseMapping())}`;
 
-export const isAccountPeerKey = (peerKey: string): boolean => peerKey.startsWith('account:');
-
 export const getPin = (network: string, peerKey: string): E2eePin | undefined =>
   useE2eePinsStore.getState().pinsByNetwork[network]?.[peerKey];
 
@@ -102,8 +76,4 @@ export const putPin = (network: string, peerKey: string, pin: E2eePin): void => 
 
 export const setPinVerified = (network: string, peerKey: string, verified: boolean): void => {
   useE2eePinsStore.getState().setPinVerified(network, peerKey, verified);
-};
-
-export const removePin = (network: string, peerKey: string): void => {
-  useE2eePinsStore.getState().removePin(network, peerKey);
 };

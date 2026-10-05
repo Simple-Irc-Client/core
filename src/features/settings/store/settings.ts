@@ -114,7 +114,6 @@ export interface SettingsStore {
   setCurrentUserHomepage: (homepage: string | undefined) => void;
   setCurrentUserColor: (color: string | undefined) => void;
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
-  setIsDarkMode: (isDarkMode: boolean) => void;
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
   setHideTypingIndicator: (hide: boolean) => void;
@@ -326,9 +325,6 @@ export const useSettingsStore = create<SettingsStore>()(
         fontFormatting: { ...state.fontFormatting, ...formatting },
       }));
     },
-    setIsDarkMode: (isDarkMode: boolean): void => {
-      set(() => ({ isDarkMode }));
-    },
     toggleDarkMode: (): void => {
       set((state) => ({ isDarkMode: !state.isDarkMode }));
     },
@@ -449,10 +445,6 @@ export const useSettingsStore = create<SettingsStore>()(
   }),
   ),
 );
-
-export const syncCurrentUsers = (): void => {
-  flushCurrentUsers();
-};
 
 export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
   useSettingsStore.getState().setCurrentChannelName(channelName, category);
@@ -658,40 +650,20 @@ export const setCurrentUserDisplayName = (displayName: string | undefined): void
   useSettingsStore.getState().setCurrentUserDisplayName(displayName);
 };
 
-export const getCurrentUserDisplayName = (): string | undefined => {
-  return useSettingsStore.getState().currentUserDisplayName;
-};
-
 export const setCurrentUserStatus = (status: string | undefined): void => {
   useSettingsStore.getState().setCurrentUserStatus(status);
-};
-
-export const getCurrentUserStatus = (): string | undefined => {
-  return useSettingsStore.getState().currentUserStatus;
 };
 
 export const setCurrentUserHomepage = (homepage: string | undefined): void => {
   useSettingsStore.getState().setCurrentUserHomepage(homepage);
 };
 
-export const getCurrentUserHomepage = (): string | undefined => {
-  return useSettingsStore.getState().currentUserHomepage;
-};
-
 export const setCurrentUserColor = (color: string | undefined): void => {
   useSettingsStore.getState().setCurrentUserColor(color);
 };
 
-export const getCurrentUserColor = (): string | undefined => {
-  return useSettingsStore.getState().currentUserColor;
-};
-
 export const setFontFormatting = (formatting: Partial<FontFormatting>): void => {
   useSettingsStore.getState().setFontFormatting(formatting);
-};
-
-export const getFontFormatting = (): FontFormatting => {
-  return useSettingsStore.getState().fontFormatting;
 };
 
 export const resetWizardState = (): void => {
@@ -716,32 +688,16 @@ export const getPasswordNick = (): string | undefined => {
   return state.serverPasswords[network]?.nick;
 };
 
-export const setIsDarkMode = (isDarkMode: boolean): void => {
-  useSettingsStore.getState().setIsDarkMode(isDarkMode);
-};
-
 export const toggleDarkMode = (): void => {
   useSettingsStore.getState().toggleDarkMode();
-};
-
-export const getIsDarkMode = (): boolean => {
-  return useSettingsStore.getState().isDarkMode;
 };
 
 export const setHideAvatarsInUsersList = (hide: boolean): void => {
   useSettingsStore.getState().setHideAvatarsInUsersList(hide);
 };
 
-export const getHideAvatarsInUsersList = (): boolean => {
-  return useSettingsStore.getState().hideAvatarsInUsersList;
-};
-
 export const setHideTypingIndicator = (hide: boolean): void => {
   useSettingsStore.getState().setHideTypingIndicator(hide);
-};
-
-export const getHideTypingIndicator = (): boolean => {
-  return useSettingsStore.getState().hideTypingIndicator;
 };
 
 export const setAutoOfferEncryption = (autoOffer: boolean): void => {
@@ -764,30 +720,12 @@ export const setFontSize = (fontSize: FontSize): void => {
   useSettingsStore.getState().setFontSize(fontSize);
 };
 
-export const getFontSize = (): FontSize => {
-  return useSettingsStore.getState().fontSize;
-};
-
 export const setLanguage = (language: LanguageSetting): void => {
   useSettingsStore.getState().setLanguage(language);
 };
 
-export const getLanguage = (): LanguageSetting => {
-  return useSettingsStore.getState().language;
-};
-
 export const setWizardHintDismissed = (): void => {
   useSettingsStore.getState().setWizardHintDismissed();
-};
-
-export const disconnectOnly = (): void => {
-  // Stays in the main view
-  ircDisconnect();
-  setChannelsClearAll();
-  setUsersClearAll();
-  setCurrentClearAll();
-  setChannelListClear();
-  clearMonitorList();
 };
 
 export const resetAndGoToStart = (clearNick = false): void => {

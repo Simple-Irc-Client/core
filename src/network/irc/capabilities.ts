@@ -156,13 +156,3 @@ export const parseSaslMechanisms = (value: string): string[] => {
   if (!value) return ['PLAIN']; // Default to PLAIN if no mechanisms specified
   return value.split(',').filter((m) => m.length > 0);
 };
-
-export const shouldUseSasl = (): boolean => {
-  return isCapabilityEnabled('sasl');
-};
-
-export const getSupportedSaslMechanisms = (): string[] => {
-  const serverMechanisms = parseSaslMechanisms(getCapabilityValue('sasl') ?? '');
-  const supportedByClient = new Set(['PLAIN', 'EXTERNAL']);
-  return serverMechanisms.filter((m) => supportedByClient.has(m));
-};

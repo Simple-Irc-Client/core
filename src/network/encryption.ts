@@ -86,22 +86,6 @@ export async function initEncryption(base64Key: string): Promise<void> {
   );
 }
 
-export async function encryptMessage(data: unknown): Promise<string> {
-  if (!cryptoKey) {
-    throw new Error('Encryption not initialized');
-  }
-
-  return sealBytes(cryptoKey, JSON.stringify(data));
-}
-
-export async function decryptMessage(encryptedBase64: string): Promise<unknown> {
-  if (!cryptoKey) {
-    throw new Error('Encryption not initialized');
-  }
-
-  return JSON.parse(await openBytes(cryptoKey, encryptedBase64));
-}
-
 export async function encryptString(data: string): Promise<string> {
   if (!cryptoKey) {
     throw new Error('Encryption not initialized');

@@ -7,8 +7,6 @@ interface STSStore {
 
   setPolicy: (host: string, policy: STSPolicy) => void;
   getPolicy: (host: string) => STSPolicy | undefined;
-  removePolicy: (host: string) => void;
-  removeExpiredPolicies: () => void;
   hasValidPolicy: (host: string) => boolean;
   clearAllPolicies: () => void;
 }
@@ -30,33 +28,6 @@ export const useSTSStore = create<STSStore>()(
 
       getPolicy: (host: string) => get().policies[host.toLowerCase()],
 
-      removePolicy: (host: string) =>
-        set(
-          (state) => {
-            const key = host.toLowerCase();
-            const { [key]: _removed, ...newPolicies } = state.policies;
-            return { policies: newPolicies };
-          },
-          false,
-          'removePolicy'
-        ),
-
-      removeExpiredPolicies: () =>
-        set(
-          (state) => {
-            const now = Date.now();
-            const validPolicies: Record<string, STSPolicy> = {};
-            for (const [host, policy] of Object.entries(state.policies)) {
-              if (policy.expiresAt === 0 || policy.expiresAt > now) {
-                validPolicies[host] = policy;
-              }
-            }
-            return { policies: validPolicies };
-          },
-          false,
-          'removeExpiredPolicies'
-        ),
-
       hasValidPolicy: (host: string) => {
         const policy = get().policies[host.toLowerCase()];
         if (!policy) { return false; }
@@ -77,9 +48,3 @@ export const setSTSPolicy = (host: string, policy: STSPolicy): void =>
 
 export const hasValidSTSPolicy = (host: string): boolean =>
   useSTSStore.getState().hasValidPolicy(host);
-
-export const removeExpiredSTSPolicies = (): void =>
-  useSTSStore.getState().removeExpiredPolicies();
-
-export const removeSTSPolicy = (host: string): void =>
-  useSTSStore.getState().removePolicy(host);

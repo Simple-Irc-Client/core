@@ -46,7 +46,6 @@ vi.mock('@features/settings/store/settings', () => ({
   getCaseMapping: vi.fn(() => DEFAULT_CASE_MAPPING),
   isSameName: vi.fn((a: string, b: string) => namesEqual(a, b)),
   setCurrentChannelName: vi.fn(),
-  syncCurrentUsers: vi.fn(),
 }));
 
 const mockSetUpdateTyping = vi.fn();

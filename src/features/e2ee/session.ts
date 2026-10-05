@@ -379,7 +379,7 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
   });
 
   // Glare yields answer at once (the user already offered). Auto-accept never applies to an unknown key
-  const pinnedAndTrusted = getAutoOfferEncryption() && getPin(getNetwork(), peerKeyFor(nick)) !== undefined;
+  const pinnedAndTrusted = getAutoOfferEncryption() && hasPinnedPeer(nick);
   if (yieldingToGlare || pinnedAndTrusted) {
     await acceptIncomingOffer(nick);
   }
@@ -580,8 +580,6 @@ export const markVerified = (nick: string, verified: boolean): void => {
   setPinVerified(getNetwork(), peerKeyFor(nick), verified);
   patchSession(nick, { verified });
 };
-
-export const isOwnFrameId = (frameId: string): boolean => ownFrameIds.has(frameId);
 
 /** Test seam — wipes all in-memory state without touching the wire. */
 export const resetSessionModuleForTests = (): void => {
