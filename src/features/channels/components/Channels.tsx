@@ -41,6 +41,9 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const fontSize = useSettingsStore((state) => state.fontSize);
   const server = useSettingsStore((state) => state.server);
   const networkName = useSettingsStore((state) => state.networkName);
+  // ISUPPORT NETWORK once connected, else the network picked in the wizard
+  const network = networkName ?? server?.network;
+  const networkIcon = network !== undefined && Object.hasOwn(serverIcons, network) ? serverIcons[network] : undefined;
   const lagMs = useSettingsStore((state) => state.lagMs);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
@@ -151,17 +154,14 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       <div>
           <div className="flex items-center justify-between px-4 h-12 border-b border-border">
             <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-              {(() => {
-                const iconKey = networkName ?? server?.network;
-                return iconKey && iconKey in serverIcons ? (
-                  <span
-                    className="h-5 w-5 flex-shrink-0"
-                    aria-hidden="true"
-                    dangerouslySetInnerHTML={{ __html: serverIcons[iconKey] as string }}
-                  />
-                ) : null;
-              })()}
-              <h3 className={`${fontSizeClass} font-semibold truncate`}>{networkName ?? server?.network ?? t('main.channels.title')}</h3>
+              {networkIcon !== undefined && (
+                <span
+                  className="h-5 w-5 flex-shrink-0"
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: networkIcon }}
+                />
+              )}
+              <h3 className={`${fontSizeClass} font-semibold truncate`}>{network ?? t('main.channels.title')}</h3>
             </div>
             {isConnected && lagMs !== undefined && (
               <TooltipProvider>

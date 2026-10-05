@@ -23,11 +23,23 @@ interface TextPart {
   segments?: FormattedSegment[];
 }
 
+type KeyedTextPart = TextPart & { key: string };
+
+/** Keys each part by its position in the text */
+const withOffsetKeys = (parts: TextPart[]): KeyedTextPart[] => {
+  let offset = 0;
+  return parts.map((part) => {
+    const key = `${offset}-${part.value.length}`;
+    offset += part.value.length;
+    return { ...part, key };
+  });
+};
+
 const MessageText = ({ text }: MessageTextProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 
-  const parts = useMemo((): TextPart[] => {
+  const parts = useMemo((): KeyedTextPart[] => {
     const channelTypes = getChannelTypes();
 
     const channelTypesEscaped = channelTypes.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)).join('');
@@ -50,7 +62,7 @@ const MessageText = ({ text }: MessageTextProps) => {
           result.push({ type: 'text', value: word });
         }
       }
-      return result;
+      return withOffsetKeys(result);
     }
 
     const result: TextPart[] = [];
@@ -67,7 +79,7 @@ const MessageText = ({ text }: MessageTextProps) => {
         }
       }
     }
-    return result;
+    return withOffsetKeys(result);
   }, [text]);
 
   const renderWithEmoji = (runText: string, key: string, style?: React.CSSProperties): React.ReactNode => {
@@ -101,48 +113,44 @@ const MessageText = ({ text }: MessageTextProps) => {
 
   return (
     <span>
-      {(() => {
-        let offset = 0;
-        return parts.map((part) => {
-          const key = `${offset}-${part.value.length}`;
-          offset += part.value.length;
+      {parts.map((part) => {
+        const { key } = part;
 
-          if (part.type === 'channel') {
-            return (
-              <span
-                key={key}
-                className="cursor-pointer hover:underline"
-                onContextMenu={(e) => handleChannelClick(e, part.value)}
-              >
-                {part.value}
-              </span>
-            );
-          }
+        if (part.type === 'channel') {
+          return (
+            <span
+              key={key}
+              className="cursor-pointer hover:underline"
+              onContextMenu={(e) => handleChannelClick(e, part.value)}
+            >
+              {part.value}
+            </span>
+          );
+        }
 
-          if (part.type === 'url') {
-            const content = part.segments ? renderFormattedSegments(part.segments, undefined, backgroundLuminance) : part.value;
-            return (
-              <span
-                key={key}
-                className="cursor-pointer hover:underline"
-                onClick={(e) => handleUrlClick(e, part.value)}
-                onContextMenu={(e) => handleUrlClick(e, part.value)}
-              >
-                {content}
-              </span>
-            );
-          }
+        if (part.type === 'url') {
+          const content = part.segments ? renderFormattedSegments(part.segments, undefined, backgroundLuminance) : part.value;
+          return (
+            <span
+              key={key}
+              className="cursor-pointer hover:underline"
+              onClick={(e) => handleUrlClick(e, part.value)}
+              onContextMenu={(e) => handleUrlClick(e, part.value)}
+            >
+              {content}
+            </span>
+          );
+        }
 
-          const [firstSegment] = part.segments ?? [];
-          if (firstSegment) {
-            const style = getStyleFromFormatState(firstSegment.style, undefined, backgroundLuminance);
-            const hasStyle = Object.keys(style).length > 0;
-            return <span key={key}>{renderWithEmoji(part.value, key, hasStyle ? style : undefined)}</span>;
-          }
+        const [firstSegment] = part.segments ?? [];
+        if (firstSegment) {
+          const style = getStyleFromFormatState(firstSegment.style, undefined, backgroundLuminance);
+          const hasStyle = Object.keys(style).length > 0;
+          return <span key={key}>{renderWithEmoji(part.value, key, hasStyle ? style : undefined)}</span>;
+        }
 
-          return <span key={key}>{renderWithEmoji(part.value, key)}</span>;
-        });
-      })()}
+        return <span key={key}>{renderWithEmoji(part.value, key)}</span>;
+      })}
     </span>
   );
 };

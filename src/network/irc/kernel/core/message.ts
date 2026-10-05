@@ -159,6 +159,42 @@ export const onNotice = (ctx: IrcContext): void => {
   setAddMessage({ ...newMessage, target: noticeTarget, id: ctx.tags.msgid ?? uuidv4() });
 };
 
+interface Conversation {
+  /** The window it belongs in: the channel, or the peer's nick for a DM */
+  window: string;
+  isDirect: boolean;
+  /** Our own message, echoed back by the server (IRCv3 echo-message) */
+  isEcho: boolean;
+}
+
+const resolveConversation = (nick: string, target: string, myNick: string): Conversation => {
+  return {
+    window: isSameName(target, myNick) ? nick : target,
+    // Addressed to us, or our own echoed message to a non-channel target
+    isDirect: isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target)),
+    isEcho: isSameName(nick, myNick) && isCapabilityEnabled('echo-message'),
+  };
+};
+
+const openConversationWindow = ({ window, isDirect }: Conversation): void => {
+  if (!existChannel(window)) {
+    setAddChannel(window, isDirect ? ChannelCategory.priv : ChannelCategory.channel);
+    if (isDirect) {
+      subscribeDmPresence(window);
+    }
+  }
+};
+
+const isHighlight = ({ isDirect, isEcho }: Conversation, text: string, myNick: string): boolean =>
+  !isEcho && (isDirect || text.toLowerCase().includes(myNick.toLowerCase()));
+
+const announceHighlight = ({ window, isDirect }: Conversation, nick: string, text: string, currentChannelName: string): void => {
+  if (window !== currentChannelName) {
+    setHasMention(window);
+  }
+  void notifyHighlight({ nick, target: window, message: text, isDirect });
+};
+
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
 // @draft/bot;msgid=GQRN0k0RNmLY3Ai6f9g6Qk;time=2023-03-23T15:32:56.299Z :Global!Global@serwisy.pirc.pl PRIVMSG sic-test :VERSION
@@ -185,61 +221,49 @@ export const onPrivMsg = (ctx: IrcContext): void => {
     return;
   }
 
-  // IRCv3 echo-message: the server's msgid and time give accurate ordering
-  const isEchoMessage = isSameName(nick, myNick) && isCapabilityEnabled('echo-message');
+  const conversation = resolveConversation(nick, target, myNick);
 
   const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
   const isServiceTarget = IRC_SERVICES.includes(target.toLowerCase());
 
   // Echoed messages to services may contain passwords
-  if (isEchoMessage && isServiceTarget) {
+  if (conversation.isEcho && isServiceTarget) {
     return;
   }
 
-  // A direct message is either addressed to us, or is our own echoed message to a non-channel target
-  const isDirectMessage = isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target));
-  const messageTarget = isSameName(target, myNick) ? nick : target;
+  openConversationWindow(conversation);
+  const { window, isEcho } = conversation;
 
-  if (!existChannel(messageTarget)) {
-    setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
-    if (isDirectMessage) {
-      subscribeDmPresence(messageTarget);
-    }
+  if (window !== currentChannelName && !isEcho) {
+    setIncreaseUnreadMessages(window);
   }
 
-  if (messageTarget !== currentChannelName && !isEchoMessage) {
-    setIncreaseUnreadMessages(messageTarget);
+  if (isSameName(window, currentChannelName) && !isEcho) {
+    setTyping(window, nick, 'done');
   }
 
-  if (isSameName(messageTarget, currentChannelName) && !isEchoMessage) {
-    setTyping(messageTarget, nick, 'done');
-  }
-
+  // With echo-message, the server's msgid and time give accurate ordering
   const messageId = ctx.tags.msgid ?? uuidv4();
   const messageTime = ctx.tags.time ?? new Date().toISOString();
-  const highlight = !isEchoMessage && (isDirectMessage || message.toLowerCase().includes(myNick.toLowerCase()));
+  const highlight = isHighlight(conversation, message, myNick);
 
   setAddMessage({
     id: messageId,
     message,
     nick: getUser(nick) ?? nick,
-    target: messageTarget,
+    target: window,
     time: messageTime,
     category: MessageCategory.default,
     color: MessageColor.default,
-    echoed: isEchoMessage,
+    echoed: isEcho,
     highlight,
   });
 
-  if (highlight && messageTarget !== currentChannelName) {
-    setHasMention(messageTarget);
-  }
-
   if (highlight) {
-    void notifyHighlight({ nick, target: messageTarget, message, isDirect: isDirectMessage });
+    announceHighlight(conversation, nick, message, currentChannelName);
   }
 
-  if (!isEchoMessage) {
+  if (!isEcho) {
     const userFlags = getCurrentUserFlags();
     const isAway = userFlags.includes('away');
     if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
@@ -247,11 +271,11 @@ export const onPrivMsg = (ctx: IrcContext): void => {
         id: messageId,
         message,
         nick: getUser(nick) ?? nick,
-        target: messageTarget,
+        target: window,
         time: messageTime,
         category: MessageCategory.default,
         color: MessageColor.default,
-        channel: messageTarget,
+        channel: window,
       });
     }
   }
@@ -350,41 +374,29 @@ export const handleCtcpAction = (
   myNick: string,
   currentChannelName: string
 ): void => {
-  const isEchoMessage = isSameName(nick, myNick) && isCapabilityEnabled('echo-message');
-  // A direct message is either addressed to us, or is our own echoed action to a non-channel target
-  const isDirectMessage = isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target));
-  const messageTarget = isSameName(target, myNick) ? nick : target;
+  const conversation = resolveConversation(nick, target, myNick);
+  openConversationWindow(conversation);
+  const { window, isEcho } = conversation;
 
-  if (!existChannel(messageTarget)) {
-    setAddChannel(messageTarget, isDirectMessage ? ChannelCategory.priv : ChannelCategory.channel);
-    if (isDirectMessage) {
-      subscribeDmPresence(messageTarget);
-    }
+  if (window !== currentChannelName && !isEcho) {
+    setIncreaseUnreadMessages(window);
   }
 
-  if (messageTarget !== currentChannelName && !isEchoMessage) {
-    setIncreaseUnreadMessages(messageTarget);
-  }
-
-  const highlight = !isEchoMessage && (isDirectMessage || action.toLowerCase().includes(myNick.toLowerCase()));
+  const highlight = isHighlight(conversation, action, myNick);
 
   setAddMessage({
     id: ctx.tags.msgid ?? uuidv4(),
     message: action,
     nick: getUser(nick) ?? nick,
-    target: messageTarget,
+    target: window,
     time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.me,
     color: MessageColor.me,
     highlight,
   });
 
-  if (highlight && messageTarget !== currentChannelName) {
-    setHasMention(messageTarget);
-  }
-
   if (highlight) {
-    void notifyHighlight({ nick, target: messageTarget, message: action, isDirect: isDirectMessage });
+    announceHighlight(conversation, nick, action, currentChannelName);
   }
 };
 

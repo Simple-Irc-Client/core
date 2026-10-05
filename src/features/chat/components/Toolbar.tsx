@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getCurrentNick, isSameName, useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
+import { getCurrentNick, isSameName, useSettingsStore, type FontFormatting } from '@features/settings/store/settings';
 import { ChannelCategory, MessageCategory, type User } from '@shared/types';
-import { ircSendCommand, ircSendRawMessage, ircReconnect } from '@/network/irc/network';
+import { ircSendCommand, ircSendRawMessage } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
-import { Send, Smile, User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
+import { Send, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -22,20 +22,12 @@ import { Input } from '@shared/components/ui/input';
 import type { EmojiClickData } from 'emoji-picker-react';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@shared/components/ui/dropdown-menu';
-import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
 import ProfileSettings from '@features/settings/components/ProfileSettings';
 import AwayMessages from '@features/channels/components/AwayMessages';
 import ColorPicker from './ColorPicker';
 import StylePicker from './StylePicker';
+import UserMenu from './UserMenu';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
-import type { FontFormatting } from '@features/settings/store/settings';
 
 // eslint-disable-next-line no-control-regex
 const ACTION_BODY = /^\x01ACTION (.*)\x01$/;
@@ -78,23 +70,48 @@ export const gateOutgoingCommand = (payload: string): OutgoingCommandGate | null
     : { verdict: 'encrypt', target, kind: BodyKind.message, body };
 };
 
+/** Wraps the text in the IRC codes for the user's chosen style */
+const applyFormatting = (text: string, formatting: FontFormatting): string => {
+  let prefix = '';
+  let suffix = '';
+
+  if (formatting.bold) {
+    prefix += IRC_FORMAT.BOLD;
+    suffix = IRC_FORMAT.BOLD + suffix;
+  }
+  if (formatting.italic) {
+    prefix += IRC_FORMAT.ITALIC;
+    suffix = IRC_FORMAT.ITALIC + suffix;
+  }
+  if (formatting.underline) {
+    prefix += IRC_FORMAT.UNDERLINE;
+    suffix = IRC_FORMAT.UNDERLINE + suffix;
+  }
+  if (formatting.colorCode !== null) {
+    const colorStr = formatting.colorCode.toString().padStart(2, '0');
+    prefix += IRC_FORMAT.COLOR + colorStr;
+    suffix = IRC_FORMAT.COLOR + suffix;
+  }
+
+  return prefix + text + suffix;
+};
+
+const isCoarsePointer = (): boolean => globalThis.matchMedia('(pointer: coarse)').matches;
+
 const Toolbar = () => {
   const { t } = useTranslation();
 
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
   const nick: string = useSettingsStore((state) => state.nick);
-  const currentUserAvatar: string | undefined = useSettingsStore((state) => state.currentUserAvatar);
   const currentUserFlags: string[] = useSettingsStore((state) => state.currentUserFlags);
   const isAway = currentUserFlags.includes('away');
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
-  const isConnecting: boolean = useSettingsStore((state) => state.isConnecting);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
-  const isDarkMode = useSettingsStore((state) => state.isDarkMode);
 
-  const awayMessages = useAwayMessagesStore((state) => state.messages);
-  const awayMessagesCount = awayMessages.length;
+  // Status and Debug take no chat messages or typing notifications
+  const isSystemChannel = [STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName);
 
   const [message, setMessage] = useState('');
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -116,34 +133,9 @@ const Toolbar = () => {
 
   const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
-  const applyFormatting = (text: string, formatting: FontFormatting): string => {
-    let prefix = '';
-    let suffix = '';
-
-    if (formatting.bold) {
-      prefix += IRC_FORMAT.BOLD;
-      suffix = IRC_FORMAT.BOLD + suffix;
-    }
-    if (formatting.italic) {
-      prefix += IRC_FORMAT.ITALIC;
-      suffix = IRC_FORMAT.ITALIC + suffix;
-    }
-    if (formatting.underline) {
-      prefix += IRC_FORMAT.UNDERLINE;
-      suffix = IRC_FORMAT.UNDERLINE + suffix;
-    }
-    if (formatting.colorCode !== null) {
-      const colorStr = formatting.colorCode.toString().padStart(2, '0');
-      prefix += IRC_FORMAT.COLOR + colorStr;
-      suffix = IRC_FORMAT.COLOR + suffix;
-    }
-
-    return prefix + text + suffix;
-  };
-
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
-    return commandsNotSorted.sort((a, b) => {
+    return [...commandsNotSorted].sort((a, b) => {
       const A = a.toLowerCase();
       const B = b.toLowerCase();
       return A < B ? -1 : A > B ? 1 : 0;
@@ -218,10 +210,15 @@ const Toolbar = () => {
     autocompleteInput.current?.focus();
   };
 
+  const sendTypingStatus = (status: 'active' | 'done'): void => {
+    typingStatus.current = status;
+    ircSendRawMessage(`@+draft/typing=${status};+typing=${status} TAGMSG ${currentChannelName}`);
+  };
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setMessage(event.target.value);
 
-    if ([STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+    if (isSystemChannel) {
       return;
     }
 
@@ -231,11 +228,9 @@ const Toolbar = () => {
     }
 
     if (event.target.value.length === 0 && typingStatus.current === 'active') {
-      typingStatus.current = 'done';
-      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
+      sendTypingStatus('done');
     } else if (event.target.value.length > 0 && typingStatus.current !== 'active') {
-      typingStatus.current = 'active';
-      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
+      sendTypingStatus('active');
     }
   };
 
@@ -262,9 +257,8 @@ const Toolbar = () => {
   };
 
   const finishSend = (): void => {
-    if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName) && !isSessionActive(currentChannelName)) {
-      typingStatus.current = 'done';
-      ircSendRawMessage(`@+draft/typing=${typingStatus.current};+typing=${typingStatus.current} TAGMSG ${currentChannelName}`);
+    if (!isSystemChannel && !isSessionActive(currentChannelName)) {
+      sendTypingStatus('done');
     }
 
     messageHistory.current = [message, ...messageHistory.current].slice(0, 10);
@@ -312,7 +306,7 @@ const Toolbar = () => {
         return;
       }
     } else {
-      if (![STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName)) {
+      if (!isSystemChannel) {
         const nick = getCurrentNick();
 
         const formattedMessage = applyFormatting(message, fontFormatting);
@@ -440,97 +434,25 @@ const Toolbar = () => {
     }
   };
 
+  const inputLabel = `${t(currentChannelCategory === ChannelCategory.priv ? 'main.toolbar.writeDm' : 'main.toolbar.write')} ${currentChannelName}`;
+
   return (
     <>
       <form className="flex items-center pt-1 pb-safe-2 pl-safe-4 pr-safe-4" onSubmit={handleSubmit}>
         {currentChannelName !== DEBUG_CHANNEL && (
           <>
-            {/* User Avatar with Dropdown Menu */}
-            <div className="relative mr-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    data-avatar-button
-                    aria-label={t('main.toolbar.userMenu')}
-                    className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-ring/50 focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    {currentUserAvatar ? (
-                      <img
-                        src={currentUserAvatar}
-                        alt={nick}
-                        className="h-full w-full object-cover rounded-full"
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center rounded-full bg-muted">
-                        {nick.substring(0, 1).toUpperCase()}
-                      </span>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
-                  <UserIcon className="mr-2 h-4 w-4" />
-                  {t('profileSettings.title')}
-                </DropdownMenuItem>
-                {awayMessagesCount > 0 && (
-                  <DropdownMenuItem onClick={() => setAwayDialogOpen(true)}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    {t('currentUser.awayMessages')}
-                    <span className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                      {awayMessagesCount}
-                    </span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={toggleDarkMode}>
-                  {isDarkMode ? (
-                    <Sun className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Moon className="mr-2 h-4 w-4" />
-                  )}
-                  {isDarkMode ? t('currentUser.lightMode') : t('currentUser.darkMode')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {isConnected ? (
-                  <DropdownMenuItem onClick={() => resetAndGoToStart(true)}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    {t('currentUser.disconnect')}
-                  </DropdownMenuItem>
-                ) : (
-                  <>
-                    <DropdownMenuItem onClick={() => ircReconnect()} disabled={isConnecting}>
-                      <LogIn className="mr-2 h-4 w-4" />
-                      {isConnecting ? t('currentUser.connecting') : t('currentUser.connect')}
-                    </DropdownMenuItem>
-                    {!isConnecting && (
-                      <DropdownMenuItem onClick={changeServer}>
-                        <ArrowLeftRight className="mr-2 h-4 w-4" />
-                        {t('currentUser.changeServer')}
-                      </DropdownMenuItem>
-                    )}
-                  </>
-                )}
-              </DropdownMenuContent>
-              </DropdownMenu>
-              {isAway && (
-                <span className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-500" aria-hidden="true">
-                  <Moon className="h-2.5 w-2.5 text-white" />
-                </span>
-              )}
-              {awayMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1.5 items-center justify-center rounded-full bg-red-500 text-[10px] leading-none text-white font-medium" aria-label={t('main.toolbar.awayMessageCount', { count: awayMessagesCount })}>
-                  {awayMessagesCount > 99 ? '99+' : awayMessagesCount}
-                </span>
-              )}
-            </div>
+            <UserMenu
+              onOpenProfile={() => setProfileDialogOpen(true)}
+              onOpenAwayMessages={() => setAwayDialogOpen(true)}
+            />
 
             <div className="flex-1 relative">
               <Input
                 id="message-input"
                 autoFocus
                 value={message}
-                placeholder={`${t(currentChannelCategory === ChannelCategory.priv ? 'main.toolbar.writeDm' : 'main.toolbar.write')} ${currentChannelName}`}
-                aria-label={`${t(currentChannelCategory === ChannelCategory.priv ? 'main.toolbar.writeDm' : 'main.toolbar.write')} ${currentChannelName}`}
+                placeholder={inputLabel}
+                aria-label={inputLabel}
                 onChange={handleChange}
                 onKeyUp={handleKeyUp}
                 onKeyDown={handleKeyDown}
@@ -545,7 +467,7 @@ const Toolbar = () => {
               </Button>
             )}
             <Popover open={emojiPickerOpen} onOpenChange={(open) => {
-                if (open && globalThis.matchMedia('(pointer: coarse)').matches) {
+                if (open && isCoarsePointer()) {
                   autocompleteInput.current?.blur();
                 }
                 setEmojiPickerOpen(open);
@@ -556,12 +478,12 @@ const Toolbar = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end" onOpenAutoFocus={(e) => {
-                  if (globalThis.matchMedia('(pointer: coarse)').matches) {
+                  if (isCoarsePointer()) {
                     e.preventDefault();
                   }
                 }}>
                 <Suspense>
-                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!globalThis.matchMedia('(pointer: coarse)').matches} />
+                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!isCoarsePointer()} />
                 </Suspense>
               </PopoverContent>
             </Popover>
