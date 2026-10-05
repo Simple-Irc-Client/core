@@ -49,5 +49,5 @@ export const Network = () => {
     return undefined;
   }, [listRequestRemainingSeconds]);
 
-  return <></>;
+  return null;
 };

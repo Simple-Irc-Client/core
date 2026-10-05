@@ -382,13 +382,6 @@ export const useSettingsStore = create<SettingsStore>()(
       if (version < 2) {
         delete state.savedChannels;
       }
-      if (version < 4) {
-        if (typeof state.theme !== 'string' || !isBuiltinTheme(state.theme)) {
-          state.theme = DEFAULT_THEME_ID;
-        }
-        state.customThemes = {};
-        state.builtinThemeOverrides = {};
-      }
       if (version < 3) {
         // Migrate flat encryptedPassword/passwordNick to per-server serverPasswords
         const encrypted = state.encryptedPassword as string | undefined;
@@ -401,6 +394,13 @@ export const useSettingsStore = create<SettingsStore>()(
         }
         delete state.encryptedPassword;
         delete state.passwordNick;
+      }
+      if (version < 4) {
+        if (typeof state.theme !== 'string' || !isBuiltinTheme(state.theme)) {
+          state.theme = DEFAULT_THEME_ID;
+        }
+        state.customThemes = {};
+        state.builtinThemeOverrides = {};
       }
       return persisted as SettingsStore;
     },

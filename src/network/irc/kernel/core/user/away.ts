@@ -31,10 +31,7 @@ export const onAway = (ctx: IrcContext): void => {
 export const onRaw301 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
-  let reason = ctx.line.join(' ');
-  if (reason.startsWith(':')) {
-    reason = reason.substring(1);
-  }
+  const reason = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),

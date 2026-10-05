@@ -76,10 +76,7 @@ export const onRaw312 = (ctx: IrcContext): void => {
 
   const server = ctx.line.shift();
 
-  let description = ctx.line.join(' ');
-  if (description.startsWith(':')) {
-    description = description.substring(1);
-  }
+  const description = ctx.trailing();
 
   showReply(ctx, {
     message: i18next.t('kernel.312', { user, server, description: description.length !== 0 ? `(${description})` : '' }),

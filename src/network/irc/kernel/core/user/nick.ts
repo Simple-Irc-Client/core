@@ -69,10 +69,7 @@ export const onRaw432 = (ctx: IrcContext): void => {
     return;
   }
 
-  let message = ctx.line.join(' ');
-  if (message.startsWith(':')) {
-    message = message.substring(1);
-  }
+  const message = ctx.trailing();
 
   showReply(ctx, {
     message: `${nick} :${message}`,

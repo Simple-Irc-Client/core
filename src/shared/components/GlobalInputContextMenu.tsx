@@ -6,6 +6,22 @@ import { clipboard, isDesktop } from '@/runtime/desktop';
 const readClipboard = (): Promise<string> => clipboard.readText();
 const writeClipboard = (text: string): Promise<void> => clipboard.writeText(text);
 
+// Our own copy/cut text, so Firefox can paste without readText()'s permission popup
+let internalClipboard: string | null = null;
+
+// Resolved at load so paste decisions are synchronous; desktop's clipboard plugin handles permissions itself
+let canQueryClipboard = false;
+if (!isDesktop()) {
+  navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
+    .then((perm) => { canQueryClipboard = perm.state !== 'denied'; })
+    .catch(() => { /* stays false — Firefox */ });
+}
+
+/** Exported for tests */
+export const _setInternalClipboard = (text: string | null): void => { internalClipboard = text; };
+export const _getInternalClipboard = (): string | null => internalClipboard;
+export const _setCanQueryClipboard = (value: boolean): void => { canQueryClipboard = value; };
+
 const clipboardHasContent = async (): Promise<boolean> => {
   if (isDesktop()) {
     try {
@@ -25,22 +41,6 @@ const clipboardHasContent = async (): Promise<boolean> => {
   // Firefox: probing the clipboard pops a permission prompt, so Paste stays enabled
   return true;
 };
-
-// Our own copy/cut text, so Firefox can paste without readText()'s permission popup
-let internalClipboard: string | null = null;
-
-// Resolved at load so paste decisions are synchronous; desktop's clipboard plugin handles permissions itself
-let canQueryClipboard = false;
-if (!isDesktop()) {
-  navigator.permissions?.query({ name: 'clipboard-read' as PermissionName })
-    .then((perm) => { canQueryClipboard = perm.state !== 'denied'; })
-    .catch(() => { /* stays false — Firefox */ });
-}
-
-/** Exported for tests */
-export const _setInternalClipboard = (text: string | null): void => { internalClipboard = text; };
-export const _getInternalClipboard = (): string | null => internalClipboard;
-export const _setCanQueryClipboard = (value: boolean): void => { canQueryClipboard = value; };
 
 const isEditableElement = (target: EventTarget | null): target is HTMLInputElement | HTMLTextAreaElement => {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;

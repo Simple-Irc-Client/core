@@ -35,8 +35,9 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
     { label: t('contextmenu.input.cut'), action: onCut, disabled: !hasSelection },
     { label: t('contextmenu.input.copy'), action: onCopy, disabled: !hasSelection },
     { label: t('contextmenu.input.paste'), action: onPaste, disabled: !canPaste },
-    { label: t('contextmenu.input.selectAll'), action: onSelectAll, disabled: !hasContent || allSelected },
+    { label: t('contextmenu.input.selectAll'), action: onSelectAll, disabled: !hasContent || allSelected, separatorBefore: true },
   ];
+  const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);
 
   const focusItem = useCallback((index: number) => {
     itemRefs.current[index]?.focus();
@@ -75,7 +76,6 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
 
   const handleMenuKeyDown = (e: React.KeyboardEvent) => {
     if (e.target !== e.currentTarget) { return; }
-    const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);
     if (navigableIndices.length === 0) { return; }
 
     switch (e.key) {
@@ -93,7 +93,6 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   };
 
   const handleItemKeyDown = (e: React.KeyboardEvent, index: number) => {
-    const navigableIndices = items.map((_, i) => i).filter((i) => !items[i]?.disabled);
     if (navigableIndices.length === 0) { return; }
 
     const moveFocus = (targetIdx: number | undefined) => {
@@ -154,7 +153,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
     >
       {items.map((item, index) => (
         <div key={item.label}>
-          {index === 3 && <div className="-mx-1 my-1 h-px bg-muted" />}
+          {item.separatorBefore && <div className="-mx-1 my-1 h-px bg-muted" />}
           <div
             ref={(el) => { itemRefs.current[index] = el; }}
             role="menuitem"

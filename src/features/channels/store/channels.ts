@@ -8,7 +8,7 @@ import { flushCurrentUsers } from '@features/users/store/users';
 import { createServerScopedStorage } from '@shared/lib/idbStorage';
 import { foldName } from '@shared/lib/caseMapping';
 
-const updateChannelInBothLists = <T extends { name: string }>(
+const updateChannelByName = <T extends { name: string }>(
   list: T[],
   channelName: string,
   updater: (channel: T) => T,
@@ -163,8 +163,8 @@ export const useChannelsStore = create<ChannelsStore>()(
     },
     setRenameChannel: (from: string, to: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, from, (ch) => ({ ...ch, name: to })),
-        openChannels: updateChannelInBothLists(state.openChannels, from, (ch) => ({
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, from, (ch) => ({ ...ch, name: to })),
+        openChannels: updateChannelByName(state.openChannels, from, (ch) => ({
           ...ch,
           name: to,
           messages: ch.messages.map((message) => (isSameName(message.target, from) ? { ...message, target: to } : message)),
@@ -264,32 +264,32 @@ export const useChannelsStore = create<ChannelsStore>()(
     },
     setClearUnreadMessages: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
       }));
     },
     setIncreaseUnreadMessages: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
       }));
     },
     setHasMention: (channelName: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, hasMention: true })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, hasMention: true })),
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, hasMention: true })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, hasMention: true })),
       }));
     },
     setChannelAvatar: (channelName: string, avatar: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, avatar })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, avatar })),
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, avatar })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, avatar })),
       }));
     },
     setChannelDisplayName: (channelName: string, displayName: string) => {
       set((state) => ({
-        openChannelsShortList: updateChannelInBothLists(state.openChannelsShortList, channelName, (ch) => ({ ...ch, displayName })),
-        openChannels: updateChannelInBothLists(state.openChannels, channelName, (ch) => ({ ...ch, displayName })),
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, displayName })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, displayName })),
       }));
     },
     setClearMessages: (channelName: string) => {
@@ -558,14 +558,6 @@ export const setChannelDisplayName = (channelName: string, displayName: string):
   useChannelsStore.getState().setChannelDisplayName(channelName, displayName);
 };
 
-export const isPriv = (channelName: string): boolean => {
-  const char = channelName?.[0];
-  if (char === undefined) {
-    return false;
-  }
-  return !getChannelTypes().includes(char);
-};
-
 export const isChannel = (channelName: string): boolean => {
   const char = channelName?.[0];
   if (char === undefined) {
@@ -573,6 +565,8 @@ export const isChannel = (channelName: string): boolean => {
   }
   return getChannelTypes().includes(char);
 };
+
+export const isPriv = (channelName: string): boolean => Boolean(channelName) && !isChannel(channelName);
 
 let lastChannelsToAutoJoin: string[] = [];
 

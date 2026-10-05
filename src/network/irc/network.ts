@@ -228,9 +228,10 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   const host = singleServer.host;
   const useTLS = singleServer.tls ?? false;
 
+  setDirectEventCallback(triggerEvent);
+
   // e.g. Ergo
   if (currentServer.connectionType === 'websocket') {
-    setDirectEventCallback(triggerEvent);
     setDirectEncryption(false); // No encryption for direct WebSocket to IRC servers
     setCurrentConnectionInfo(host, useTLS);
     initDirectWebSocket(currentServer);
@@ -238,7 +239,6 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
   }
 
   if (isGatewayMode()) {
-    setDirectEventCallback(triggerEvent);
     setDirectEncryption(false); // No encryption for gateway mode
     setCurrentConnectionInfo(host, useTLS);
 
@@ -260,8 +260,6 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
     initDirectWebSocket(gatewayServer);
     return;
   }
-
-  setDirectEventCallback(triggerEvent);
 
   let effectiveTLS = useTLS;
   let effectivePort = singleServer.port;

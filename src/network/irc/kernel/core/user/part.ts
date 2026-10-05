@@ -23,9 +23,7 @@ export const onPart = (ctx: IrcContext): void => {
     return;
   }
 
-  if (channel.startsWith(':')) {
-    channel = channel.substring(1);
-  }
+  channel = ctx.stripColon(channel);
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
@@ -60,10 +58,7 @@ export const onRaw442 = (ctx: IrcContext): void => {
     return;
   }
 
-  let message = ctx.line.join(' ');
-  if (message.startsWith(':')) {
-    message = message.substring(1);
-  }
+  let message = ctx.trailing();
 
   if (message === "You're not on that channel") {
     message = i18next.t('kernel.442.youre-not-on-that-channel');

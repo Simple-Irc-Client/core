@@ -112,15 +112,8 @@ const handleHandshake = (nick: string, frame: E2eeFrame, source: 'privmsg' | 'no
   });
 };
 
-interface CipherContext {
-  nick: string;
-  messageId: string;
-  /** From the server's `time` tag when present. */
-  time: string;
-}
-
-const renderDecrypted = (context: CipherContext, sealed: string): void => {
-  const { nick, messageId, time } = context;
+/** `time` is from the server's `time` tag when present */
+const renderDecrypted = (nick: string, messageId: string, time: string, sealed: string): void => {
   // A DM's window is named after the peer
   const window = nick;
   const currentChannelName = getCurrentChannelName();
@@ -169,7 +162,7 @@ const handleCipher = (nick: string, frame: Extract<E2eeFrame, { type: 'cipher' }
 
   switch (result.status) {
     case 'complete':
-      renderDecrypted({ nick, messageId, time }, result.sealed);
+      renderDecrypted(nick, messageId, time, result.sealed);
       return;
     case 'noSession':
       // Tell both the peer and our user rather than silently dropping it
@@ -179,7 +172,6 @@ const handleCipher = (nick: string, frame: Extract<E2eeFrame, { type: 'cipher' }
       }
       return;
     case 'echo':
-      return;
     case 'incomplete':
       return;
   }

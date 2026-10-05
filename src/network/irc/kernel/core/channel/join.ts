@@ -36,9 +36,7 @@ export const onJoin = (ctx: IrcContext): void => {
     return;
   }
 
-  if (channel.startsWith(':')) {
-    channel = channel.substring(1);
-  }
+  channel = ctx.stripColon(channel);
 
   // Before setAddMessage auto-creates it: tells a fresh join from a reconnect rejoin
   const channelExisted = existChannel(channel);

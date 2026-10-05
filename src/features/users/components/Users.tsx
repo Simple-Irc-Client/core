@@ -129,51 +129,53 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
   const users = useCurrentStore((state) => state.users);
   const fontSizeClass = fontSizeClasses[fontSize];
 
+  // Only channels and DMs have a user list; while disconnected it shows the notice
+  const hasUserList = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv || !isConnected;
+  if (!hasUserList) {
+    return null;
+  }
+
   return (
-    <>
-      {(currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv || !isConnected) && (
-        <aside
-          data-testid="users-sidebar"
-          aria-label={t('main.users.title')}
-          className={cn(
-            'border-l border-border overflow-y-auto bg-background pt-safe pr-safe',
-            !isUsersDrawerOpen && 'hidden lg:block',
-            isUsersDrawerOpen && 'absolute right-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
-          )}
-          style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
-        >
-          <div>
-            <div className="flex items-center justify-between px-4 h-12 border-b border-border">
-              <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
-              {isUsersDrawerOpen && (
-                <Button variant="ghost" onClick={toggleUsersDrawer} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            {!isConnected && (
-              <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
-                <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
-                <span>{t('main.chat.notConnected')}</span>
-              </div>
-            )}
-            <div className="space-y-1">
-              {users.map((user) => (
-                <UserRow
-                  key={user.nick}
-                  user={user}
-                  currentChannelName={currentChannelName}
-                  userModes={userModes}
-                  hideAvatar={hideAvatarsInUsersList}
-                  fontSizeClass={fontSizeClass}
-                  backgroundLuminance={backgroundLuminance}
-                />
-              ))}
-            </div>
-          </div>
-        </aside>
+    <aside
+      data-testid="users-sidebar"
+      aria-label={t('main.users.title')}
+      className={cn(
+        'border-l border-border overflow-y-auto bg-background pt-safe pr-safe',
+        !isUsersDrawerOpen && 'hidden lg:block',
+        isUsersDrawerOpen && 'absolute right-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
       )}
-    </>
+      style={{ width: `${width}px`, minWidth: `${defaultUsersWidth}px` }}
+    >
+      <div>
+        <div className="flex items-center justify-between px-4 h-12 border-b border-border">
+          <h3 className={`${fontSizeClass} font-semibold uppercase tracking-wider`}>{t('main.users.title')} <span className="text-muted-foreground font-normal">({users.length})</span></h3>
+          {isUsersDrawerOpen && (
+            <Button variant="ghost" onClick={toggleUsersDrawer} className="h-8 w-8 p-0 lg:hidden" aria-label={t('main.users.closeDrawer')}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {!isConnected && (
+          <div role="status" aria-live="polite" className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
+            <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>{t('main.chat.notConnected')}</span>
+          </div>
+        )}
+        <div className="space-y-1">
+          {users.map((user) => (
+            <UserRow
+              key={user.nick}
+              user={user}
+              currentChannelName={currentChannelName}
+              userModes={userModes}
+              hideAvatar={hideAvatarsInUsersList}
+              fontSizeClass={fontSizeClass}
+              backgroundLuminance={backgroundLuminance}
+            />
+          ))}
+        </div>
+      </div>
+    </aside>
   );
 };
 
