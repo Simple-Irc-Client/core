@@ -46,28 +46,25 @@ const Chat = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUp = useRef(false);
-  const isProgrammaticScroll = useRef(false);
+  const lastScrollTop = useRef(0);
 
   const scrollToBottom = useCallback(() => {
     if (containerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-      const newScrollTop = scrollHeight - clientHeight;
-      if (newScrollTop > 0 && Math.abs(scrollTop - newScrollTop) > 1) {
-        isProgrammaticScroll.current = true;
-      }
-      containerRef.current.scrollTop = scrollHeight;
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, []);
 
   const handleScroll = useCallback(() => {
-    if (isProgrammaticScroll.current) {
-      isProgrammaticScroll.current = false;
-      return;
-    }
     if (containerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      isUserScrolledUp.current = distanceFromBottom > 50;
+      if (distanceFromBottom <= 50) {
+        isUserScrolledUp.current = false;
+      } else if (scrollTop < lastScrollTop.current) {
+        // Only an upward move is the user's: scroll anchoring moves the view down when content above it grows (images, theme change)
+        isUserScrolledUp.current = true;
+      }
+      lastScrollTop.current = scrollTop;
     }
   }, []);
 

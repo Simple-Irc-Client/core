@@ -158,4 +158,31 @@ test.describe('Scroll behavior', () => {
     // Switch back for next tests
     await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();
   });
+
+  test('switching theme keeps chat at the bottom', async () => {
+    const chatLog = sharedPage.getByTestId('chat-log');
+    // A tall view makes the theme's height change exceed the scrolled-up threshold
+    await sharedPage.setViewportSize({ width: 1600, height: 1200 });
+
+    for (let i = 1; i <= 60; i++) {
+      bot.sendMessage('#scroll-test', i % 10 === 0 ? `Theme image ${i} https://simpleircclient.com/assets/test-image.png` : `Theme line ${i}`);
+    }
+    await expect(chatLog.getByText('Theme line 59', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByRole('img', { name: 'Image thumbnail' }).last()).toBeVisible({ timeout: 15_000 });
+
+    const distanceFromBottom = () => chatLog.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
+
+    for (const theme of ['irc', 'classic', 'modern']) {
+      await sharedPage.locator('[data-avatar-button]').click();
+      await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+      const themeSelect = sharedPage.getByTestId('theme-select');
+      await themeSelect.click();
+      await sharedPage.getByTestId(`theme-${theme}`).click();
+      // Radix Select restores focus only after its closing animation; Escape before that misses the Dialog
+      await expect(themeSelect).toBeFocused();
+      await sharedPage.keyboard.press('Escape');
+
+      await expect.poll(distanceFromBottom, { message: `after switching to ${theme}` }).toBeLessThan(50);
+    }
+  });
 });

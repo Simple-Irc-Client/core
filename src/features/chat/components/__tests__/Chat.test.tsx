@@ -1434,7 +1434,9 @@ describe('Chat tests', () => {
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
       Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
 
-      // User scrolls up (more than 50px from bottom)
+      // User scrolls up from the bottom (more than 50px from bottom)
+      scrollContainer.scrollTop = 600;
+      fireEvent.scroll(scrollContainer);
       scrollContainer.scrollTop = 400; // distanceFromBottom = 1000 - 400 - 400 = 200 > 50
       fireEvent.scroll(scrollContainer);
 
@@ -1445,6 +1447,27 @@ describe('Chat tests', () => {
 
       // Should NOT scroll to bottom since user scrolled up
       expect(scrollContainer.scrollTop).toBe(scrollTopBeforeResize);
+    });
+
+    it('should keep scrolling to bottom after a scroll anchoring adjustment', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+
+      const { container } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+      scrollContainer.scrollTop = 600;
+      fireEvent.scroll(scrollContainer);
+
+      // Content grows (theme change, images); the browser shifts the view down with it, short of the new bottom
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1500, configurable: true });
+      scrollContainer.scrollTop = 900; // distanceFromBottom = 1500 - 900 - 400 = 200 > 50
+      fireEvent.scroll(scrollContainer);
+
+      resizeObserverCallback([], {} as ResizeObserver);
+
+      expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
     });
 
     it('should disconnect ResizeObserver on unmount', () => {
