@@ -35,7 +35,7 @@ const UserMenu = ({ onOpenProfile, onOpenAwayMessages }: UserMenuProps) => {
             type="button"
             data-avatar-button
             aria-label={t('main.toolbar.userMenu')}
-            className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-ring/50 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex h-10 w-10 shrink-0 overflow-hidden rounded-full hover:ring-2 hover:ring-ring/50 focus:outline-hidden focus:ring-2 focus:ring-ring"
           >
             {currentUserAvatar ? (
               <img

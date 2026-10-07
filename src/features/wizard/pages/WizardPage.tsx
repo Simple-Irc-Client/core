@@ -53,7 +53,7 @@ const Wizard = () => {
         <div className="h-full flex flex-col items-center pb-[15%]">
           {showHint && (
             <div className="w-full mt-6" role="status">
-              <div className="flex items-start gap-3 rounded-xl bg-background/80 backdrop-blur-sm px-4 py-3 text-sm text-foreground/80 shadow-sm">
+              <div className="flex items-start gap-3 rounded-xl bg-background/80 backdrop-blur-sm px-4 py-3 text-sm text-foreground/80 shadow-xs">
                 <p className="flex-1">{t('wizard.hint.message')}</p>
                 <button
                   onClick={setWizardHintDismissed}

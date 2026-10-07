@@ -135,7 +135,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
   };
 
   const itemClass = (disabled: boolean) =>
-    `px-3 py-1.5 text-sm rounded-sm cursor-default select-none outline-none ${
+    `px-3 py-1.5 text-sm rounded-sm cursor-default select-none outline-hidden ${
       disabled
         ? 'opacity-50 pointer-events-none'
         : 'hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
@@ -148,7 +148,7 @@ export const InputContextMenu = ({ contextMenuPosition, hasSelection, hasContent
       tabIndex={-1}
       onMouseDown={(e) => e.preventDefault()}
       onKeyDown={handleMenuKeyDown}
-      className="fixed z-100 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-none"
+      className="fixed z-100 min-w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md outline-hidden"
       style={{ left: `${clamped.x}px`, top: `${clamped.y}px` }}
     >
       {items.map((item, index) => (

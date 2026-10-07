@@ -27,9 +27,9 @@ export const CTCP = '\x01';
 const ECDH_PARAMS: EcKeyGenParams = { name: 'ECDH', namedCurve: 'P-256' };
 
 const toBase64 = (bytes: Uint8Array): string => Buffer.from(bytes).toString('base64');
-const fromBase64 = (value: string): Uint8Array => new Uint8Array(Buffer.from(value, 'base64'));
+const fromBase64 = (value: string): Uint8Array<ArrayBuffer> => new Uint8Array(Buffer.from(value, 'base64'));
 
-const concat = (...parts: Uint8Array[]): Uint8Array => {
+const concat = (...parts: Uint8Array[]): Uint8Array<ArrayBuffer> => {
   const total = parts.reduce((sum, part) => sum + part.length, 0);
   const out = new Uint8Array(total);
   let offset = 0;
@@ -54,10 +54,10 @@ const generatePair = async (): Promise<Pair> => {
 const importPublic = async (b64: string): Promise<webcrypto.CryptoKey> =>
   subtle.importKey('spki', fromBase64(b64), ECDH_PARAMS, true, []);
 
-const dh = async (priv: webcrypto.CryptoKey, pubB64: string): Promise<Uint8Array> =>
+const dh = async (priv: webcrypto.CryptoKey, pubB64: string): Promise<Uint8Array<ArrayBuffer>> =>
   new Uint8Array(await subtle.deriveBits({ name: 'ECDH', public: await importPublic(pubB64) }, priv, 256));
 
-const hkdf = async (ikm: Uint8Array, salt: Uint8Array, info: string): Promise<webcrypto.CryptoKey> => {
+const hkdf = async (ikm: Uint8Array<ArrayBuffer>, salt: Uint8Array<ArrayBuffer>, info: string): Promise<webcrypto.CryptoKey> => {
   const base = await subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
   const bits = await subtle.deriveBits(
     { name: 'HKDF', hash: 'SHA-256', salt, info: new TextEncoder().encode(info) },
