@@ -80,6 +80,27 @@ describe('Tooltip auto-close', () => {
     expect(screen.getByRole('tooltip')).toBeInTheDocument();
   });
 
+  it('does not open when focus returns to a mouse-focused trigger, e.g. on window restore', () => {
+    const trigger = renderTooltip();
+    vi.spyOn(trigger, 'matches').mockImplementation((selector) => selector !== ':focus-visible');
+
+    fireEvent.focus(trigger);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+  });
+
+  it('opens on keyboard focus', () => {
+    const trigger = renderTooltip();
+    vi.spyOn(trigger, 'matches').mockImplementation((selector) => selector === ':focus-visible');
+
+    fireEvent.focus(trigger);
+
+    expect(screen.getByRole('tooltip')).toBeInTheDocument();
+  });
+
   it('restarts the timer for each new open', () => {
     const trigger = renderTooltip();
 

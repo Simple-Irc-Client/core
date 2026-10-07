@@ -24,7 +24,22 @@ function Tooltip(props: TooltipProps) {
   return <TooltipPrimitive.Root {...props} open={open} onOpenChange={setOpen} />
 }
 
-const TooltipTrigger = TooltipPrimitive.Trigger
+// Radix opens on any focus not started by a pointer press, including the focus the browser hands back to
+// a clicked trigger when the window is restored; only keyboard (focus-visible) focus should open it
+const TooltipTrigger = React.forwardRef<
+  React.ComponentRef<typeof TooltipPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>
+>(({ onFocus, ...props }, ref) => (
+  <TooltipPrimitive.Trigger
+    ref={ref}
+    onFocus={(event) => {
+      onFocus?.(event)
+      if (!event.currentTarget.matches(":focus-visible")) event.preventDefault()
+    }}
+    {...props}
+  />
+))
+TooltipTrigger.displayName = TooltipPrimitive.Trigger.displayName
 
 const TooltipContent = React.forwardRef<
   React.ComponentRef<typeof TooltipPrimitive.Content>,
