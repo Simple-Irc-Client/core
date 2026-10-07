@@ -33,6 +33,60 @@ interface SubmenuGuard {
 
 const SubmenuGuardContext = React.createContext<SubmenuGuard | null>(null)
 
+// Diagnostic only: an element as tag and role, without its text
+const describe = (el: Element | null | undefined) => (el ? `${el.tagName.toLowerCase()}[role=${el.getAttribute("role")}]` : "none")
+const hoveredElement = () => describe([...document.querySelectorAll(":hover")].at(-1))
+
+// Diagnostic only: when the user last closed a menu on purpose (dismissed it or picked an item)
+let lastUserCloseAt = 0
+const closedByUser = () => Date.now() - lastUserCloseAt < 1000
+if (typeof document !== "undefined") {
+  document.addEventListener("menu.itemSelect", () => (lastUserCloseAt = Date.now()), true)
+}
+
+// Diagnostic only: Radix dismisses a menu through these handlers, so they say why a menu closed unasked
+function useDismissReport(menu: "menu" | "submenu") {
+  const openedAt = React.useRef(0)
+  const node = React.useRef<HTMLElement | null>(null)
+  // On the Radix content itself: our wrapper stays mounted while the menu is closed
+  const ref = React.useCallback(
+    (element: HTMLElement | null) => {
+      if (element) {
+        if (element !== node.current) openedAt.current = Date.now()
+        node.current = element
+        return
+      }
+      const detached = node.current
+      // Still in the DOM a microtask later: only a re-render or StrictMode re-attached it
+      queueMicrotask(() => {
+        if (menu === "menu" && detached && !detached.isConnected && !closedByUser()) {
+          Sentry.captureMessage("Menu closed without user action", { level: "warning", extra: { msOpen: Date.now() - openedAt.current } })
+        }
+      })
+    },
+    [menu]
+  )
+  const onDismiss = (event: Event) => {
+    const target = event.target instanceof Element ? event.target : null
+    // Not a dismiss: the modal root cancels focus-outside, and a submenu stays open when focus is on its own trigger
+    if (event.defaultPrevented || target?.getAttribute("aria-expanded") === "true") return
+    lastUserCloseAt = Date.now()
+    const data = {
+      menu,
+      kind: event.type,
+      target: describe(target),
+      msOpen: Date.now() - openedAt.current,
+      windowFocused: document.hasFocus(),
+    }
+    Sentry.addBreadcrumb({ category: "menu-dismiss", level: "info", data })
+    // A submenu close is already reported by DropdownMenuSub; this breadcrumb only adds why Radix closed it
+    if (menu === "menu" && data.msOpen < 1000) {
+      Sentry.captureMessage("Menu dismissed suspiciously fast", { level: "warning", extra: data })
+    }
+  }
+  return { ref, onDismiss }
+}
+
 // macOS WKWebView can stop delivering the pointer events Radix's hover intent needs, closing a submenu
 // ~1s after it opens. `:hover` stays correct, so it vetoes Radix's close while the pointer is still over
 // the trigger/submenu; our mouseenter/mouseleave drive the real close. (Related upstream: radix-ui/primitives
@@ -50,20 +104,31 @@ const DropdownMenuSub = ({
   const closeTimerRef = React.useRef<number | undefined>(undefined)
   // Diagnostic only, for the captureMessage below
   const openedAtRef = React.useRef<number | null>(null)
+  const subRef = React.useRef<string | undefined>(undefined)
 
   const commit = React.useCallback(
     (next: boolean, reason: string) => {
       if (next) {
         openedAtRef.current = Date.now()
+        subRef.current = triggerRef.current?.textContent?.trim()
       } else if (openedAtRef.current !== null) {
         const msOpen = Date.now() - openedAtRef.current
         openedAtRef.current = null
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: `closed (${reason})`, level: "info", data: { msOpen } })
+        // Radix also closes on unmount or a parent close; afterUserAction tells those from a dismiss or item pick
+        const data = {
+          msOpen,
+          reason,
+          sub: subRef.current,
+          hovered: hoveredElement(),
+          windowFocused: document.hasFocus(),
+          afterUserAction: closedByUser(),
+        }
+        Sentry.addBreadcrumb({ category: "submenu-guard", message: `closed (${reason})`, level: "info", data })
         // A close this soon is the bug above slipping through; report it to Sentry
         if (msOpen < 1000) {
           Sentry.captureMessage("DropdownMenuSub closed suspiciously fast", {
             level: "warning",
-            extra: { msOpen, reason },
+            extra: data,
           })
         }
       }
@@ -149,12 +214,10 @@ const DropdownMenuSubTrigger = React.forwardRef<
         className
       )}
       onMouseEnter={(event) => {
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: "trigger mouseenter", level: "debug" })
         guard?.cancelClose()
         onMouseEnter?.(event)
       }}
       onMouseLeave={(event) => {
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: "trigger mouseleave", level: "debug" })
         guard?.scheduleClose()
         onMouseLeave?.(event)
       }}
@@ -171,25 +234,33 @@ DropdownMenuSubTrigger.displayName =
 const DropdownMenuSubContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, onMouseEnter, onMouseLeave, ...props }, forwardedRef) => {
+>(({ className, onMouseEnter, onMouseLeave, onFocusOutside, onEscapeKeyDown, ...props }, forwardedRef) => {
   const guard = React.useContext(SubmenuGuardContext)
+  const dismissReport = useDismissReport("submenu")
 
   return (
     <DropdownMenuPrimitive.SubContent
-      ref={composeRefs(forwardedRef, guard?.registerContent)}
+      ref={composeRefs(forwardedRef, guard?.registerContent, dismissReport.ref)}
       className={cn(
         "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
         className
       )}
       onMouseEnter={(event) => {
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: "content mouseenter", level: "debug" })
         guard?.cancelClose()
         onMouseEnter?.(event)
       }}
       onMouseLeave={(event) => {
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: "content mouseleave", level: "debug" })
         guard?.scheduleClose()
         onMouseLeave?.(event)
+      }}
+      // onFocusOutside, not onInteractOutside: it runs before Radix's own handler closes the submenu
+      onFocusOutside={(event) => {
+        dismissReport.onDismiss(event)
+        onFocusOutside?.(event)
+      }}
+      onEscapeKeyDown={(event) => {
+        dismissReport.onDismiss(event)
+        onEscapeKeyDown?.(event)
       }}
       {...props}
     />
@@ -201,20 +272,32 @@ DropdownMenuSubContent.displayName =
 const DropdownMenuContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-32 overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
-        className
-      )}
-      {...props}
-    />
-  </DropdownMenuPrimitive.Portal>
-))
+>(({ className, sideOffset = 4, onInteractOutside, onEscapeKeyDown, ...props }, ref) => {
+  const dismissReport = useDismissReport("menu")
+
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        ref={composeRefs(ref, dismissReport.ref)}
+        sideOffset={sideOffset}
+        onInteractOutside={(event) => {
+          dismissReport.onDismiss(event)
+          onInteractOutside?.(event)
+        }}
+        onEscapeKeyDown={(event) => {
+          dismissReport.onDismiss(event)
+          onEscapeKeyDown?.(event)
+        }}
+        className={cn(
+          "z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-32 overflow-y-auto overflow-x-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
+          className
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  )
+})
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 
 const DropdownMenuItem = React.forwardRef<
