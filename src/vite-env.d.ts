@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-/// <reference types="@testing-library/jest-dom" />
+/// <reference types="@testing-library/jest-dom/vitest" />
 
 interface ImportMetaEnv {
   readonly VITE_GATEWAY_HOST: string;

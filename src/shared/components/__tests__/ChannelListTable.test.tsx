@@ -402,7 +402,7 @@ describe('ChannelListTable', () => {
 
       const boldSpan = screen.getByText('Welcome');
       expect(boldSpan.tagName).toBe('SPAN');
-      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan).toHaveStyle({ fontWeight: '700' });
     });
 
     it('should render topic with italic formatting', () => {
@@ -479,10 +479,10 @@ describe('ChannelListTable', () => {
       );
 
       const styledSpan = screen.getByText('Bold Red');
-      expect(styledSpan).toHaveStyle({ fontWeight: 'bold', color: '#FF0000' });
+      expect(styledSpan).toHaveStyle({ fontWeight: '700', color: '#FF0000' });
 
       const plainSpan = screen.getByText('plain');
-      expect(plainSpan).not.toHaveStyle({ fontWeight: 'bold' });
+      expect(plainSpan).not.toHaveStyle({ fontWeight: '700' });
     });
 
     it('should search by topic text ignoring IRC formatting codes', () => {

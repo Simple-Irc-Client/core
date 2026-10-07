@@ -335,7 +335,7 @@ describe('MessageText', () => {
       );
 
       const boldSpan = container.querySelector('span[style*="font-weight"]');
-      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan).toHaveStyle({ fontWeight: '700' });
       expect(boldSpan?.textContent).toBe('bold');
     });
 
@@ -423,7 +423,7 @@ describe('MessageText', () => {
       );
 
       const styledSpan = container.querySelector('span[style*="font-weight"]');
-      expect(styledSpan).toHaveStyle({ fontWeight: 'bold', fontStyle: 'italic' });
+      expect(styledSpan).toHaveStyle({ fontWeight: '700', fontStyle: 'italic' });
     });
 
     it('should reset formatting after reset code', () => {
@@ -435,7 +435,7 @@ describe('MessageText', () => {
 
       // Check that bold text has bold style and normal text doesn't
       const boldSpan = container.querySelector('span[style*="font-weight"]');
-      expect(boldSpan).toHaveStyle({ fontWeight: 'bold' });
+      expect(boldSpan).toHaveStyle({ fontWeight: '700' });
       expect(boldSpan?.textContent).toBe('bold');
 
       // The entire text content should be preserved
