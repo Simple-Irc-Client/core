@@ -10,6 +10,7 @@ vi.mock('@sentry/react', () => ({
   init: (options: unknown) => sentryInitMock(options),
   setTag: (key: string, value: string) => sentrySetTagMock(key, value),
   browserTracingIntegration: () => ({ name: 'BrowserTracing' }),
+  replayIntegration: () => ({ name: 'Replay' }),
 }));
 
 vi.mock('../desktop', () => ({

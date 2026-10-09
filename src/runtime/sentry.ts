@@ -22,8 +22,11 @@ export const initSentry = (): void => {
   Sentry.init({
     dsn: import.meta.env['VITE_SENTRY_DSN'],
     release: `simple-irc-client@${__GIT_REF__}`,
-    integrations: [Sentry.browserTracingIntegration()],
+    integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
     tracesSampleRate: 0.2,
+    // Buffer only: a replay is uploaded with the error or warning it led up to
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 1.0,
     initialScope: { tags: { runtime: runtimeName() } },
     // Keep the restrictive v10 defaults: v11 otherwise collects user info, cookies and HTTP bodies
     dataCollection: {
