@@ -13,6 +13,10 @@ import {
   DropdownMenuItem,
 } from '../dropdown-menu';
 
+// jsdom has no hit-testing; the submenu diagnostics call these once a pointermove was seen
+document.elementFromPoint = () => null;
+document.elementsFromPoint = () => [];
+
 // Regression coverage for the macOS/WKWebView bug where a submenu opens and
 // then silently closes ~1s later on its own: Radix's internal hover-intent
 // timer relies on a continuous pointermove/pointerleave stream that WebKit
@@ -77,6 +81,28 @@ describe('DropdownMenuSub hover-close guard', () => {
     vi.advanceTimersByTime(250);
 
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('reports where the last delivered pointer position hit-tests when the close slips through', () => {
+    renderMenu(vi.fn());
+    const trigger = screen.getByText('Operator');
+    fireEvent.click(trigger);
+    // `:hover` lies (pointer "gone"), but the last pointermove still lands on the trigger
+    vi.spyOn(trigger, 'matches').mockReturnValue(false);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(trigger);
+    fireEvent.pointerMove(trigger, { clientX: 40, clientY: 12 });
+    fireEvent.mouseLeave(trigger, { relatedTarget: null, clientX: 40, clientY: 12 });
+    vi.advanceTimersByTime(250);
+
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'DropdownMenuSub closed suspiciously fast',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          lastLeave: expect.objectContaining({ from: 'trigger', relatedTarget: 'window', x: 40, y: 12 }),
+          lastPointer: expect.objectContaining({ x: 40, y: 12, overSubmenu: true }),
+        }),
+      })
+    );
   });
 });
 
