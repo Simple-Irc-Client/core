@@ -24,19 +24,30 @@ function composeRefs<T>(...refs: (React.Ref<T> | undefined)[]) {
   }
 }
 
-interface SubmenuGuard {
+// Diagnostic only: lets the trigger and content report to their DropdownMenuSub
+interface SubmenuDiagnostics {
   registerTrigger: (el: HTMLElement | null) => void
   registerContent: (el: HTMLElement | null) => void
-  cancelClose: () => void
-  scheduleClose: () => void
   noteLeave: (from: "trigger" | "content", event: React.MouseEvent) => void
 }
 
-const SubmenuGuardContext = React.createContext<SubmenuGuard | null>(null)
+const SubmenuDiagnosticsContext = React.createContext<SubmenuDiagnostics | null>(null)
 
 // Diagnostic only: an element as tag and role, without its text
 const describe = (el: Element | null | undefined) => (el ? `${el.tagName.toLowerCase()}[role=${el.getAttribute("role")}]` : "none")
 const hoveredElement = () => describe([...document.querySelectorAll(":hover")].at(-1))
+
+// Diagnostic only: a buffered replay uploads only with an exception, so flush it for these warnings;
+// capturing after the flush tags the warning with the replay's id
+const captureWarning = (message: string, extra: Record<string, unknown>) => {
+  const capture = () => Sentry.captureMessage(message, { level: "warning", extra })
+  const replay = Sentry.getReplay()
+  if (!replay) {
+    capture()
+    return
+  }
+  void replay.flush().finally(capture)
+}
 
 // Diagnostic only: when the user last closed a menu on purpose (dismissed it or picked an item)
 let lastUserCloseAt = 0
@@ -123,7 +134,7 @@ function useDismissReport(menu: "menu" | "submenu") {
       // Still in the DOM a microtask later: only a re-render or StrictMode re-attached it
       queueMicrotask(() => {
         if (menu === "menu" && detached && !detached.isConnected && !closedByUser()) {
-          Sentry.captureMessage("Menu closed without user action", { level: "warning", extra: { msOpen: Date.now() - openedAt.current, trail: recentTrail() } })
+          captureWarning("Menu closed without user action", { msOpen: Date.now() - openedAt.current, trail: recentTrail() })
         }
       })
     },
@@ -145,16 +156,13 @@ function useDismissReport(menu: "menu" | "submenu") {
     Sentry.addBreadcrumb({ category: "menu-dismiss", level: "info", data })
     // A submenu close is already reported by DropdownMenuSub; this breadcrumb only adds why Radix closed it
     if (menu === "menu" && data.msOpen < 1000) {
-      Sentry.captureMessage("Menu dismissed suspiciously fast", { level: "warning", extra: { ...data, trail: recentTrail() } })
+      captureWarning("Menu dismissed suspiciously fast", { ...data, trail: recentTrail() })
     }
   }
   return { ref, onDismiss }
 }
 
-// macOS WKWebView can stop delivering the pointer events Radix's hover intent needs, closing a submenu
-// ~1s after it opens. `:hover` stays correct, so it vetoes Radix's close while the pointer is still over
-// the trigger/submenu; our mouseenter/mouseleave drive the real close. (Related upstream: radix-ui/primitives
-// #4036, #3082, #3761, #923.)
+// Radix drives opening and closing; this wrapper only reports how long a submenu stayed open
 const DropdownMenuSub = ({
   open: openProp,
   defaultOpen,
@@ -165,8 +173,6 @@ const DropdownMenuSub = ({
   const open = openProp ?? uncontrolledOpen
   const triggerRef = React.useRef<HTMLElement | null>(null)
   const contentRef = React.useRef<HTMLElement | null>(null)
-  const closeTimerRef = React.useRef<number | undefined>(undefined)
-  // Diagnostic only, for the captureMessage below
   const openedAtRef = React.useRef<number | null>(null)
   const subRef = React.useRef<string | undefined>(undefined)
   const lastLeaveRef = React.useRef<{
@@ -232,10 +238,7 @@ const DropdownMenuSub = ({
         Sentry.addBreadcrumb({ category: "submenu-guard", message: `closed (${reason})`, level: "info", data })
         // A close this soon is the bug above slipping through; report it to Sentry
         if (msOpen < 1000) {
-          Sentry.captureMessage("DropdownMenuSub closed suspiciously fast", {
-            level: "warning",
-            extra: { ...data, trail: recentTrail() },
-          })
+          captureWarning("DropdownMenuSub closed suspiciously fast", { ...data, trail: recentTrail() })
         }
       }
       setUncontrolledOpen(next)
@@ -243,34 +246,6 @@ const DropdownMenuSub = ({
     },
     [onOpenChange]
   )
-
-  const cancelClose = React.useCallback(() => {
-    if (closeTimerRef.current !== undefined) {
-      window.clearTimeout(closeTimerRef.current)
-      closeTimerRef.current = undefined
-    }
-  }, [])
-
-  const isPointerOverSubmenu = React.useCallback(
-    () =>
-      Boolean(triggerRef.current?.matches(":hover")) ||
-      Boolean(contentRef.current?.matches(":hover")),
-    []
-  )
-
-  const scheduleClose = React.useCallback(() => {
-    cancelClose()
-    closeTimerRef.current = window.setTimeout(() => {
-      if (isPointerOverSubmenu()) {
-        Sentry.addBreadcrumb({ category: "submenu-guard", message: "hover timer fired — pointer still over, close skipped", level: "debug" })
-        record("guard: hover timer fired, close skipped (:hover over)")
-      } else {
-        commit(false, "hover-timer-expired")
-      }
-    }, 200)
-  }, [cancelClose, isPointerOverSubmenu, commit])
-
-  React.useEffect(() => () => cancelClose(), [cancelClose])
 
   // Diagnostic only: re-renders, repositioning and highlight moves inside the open menu
   React.useEffect(() => {
@@ -291,7 +266,7 @@ const DropdownMenuSub = ({
     return () => observer.disconnect()
   }, [open])
 
-  const guard = React.useMemo<SubmenuGuard>(
+  const diagnostics = React.useMemo<SubmenuDiagnostics>(
     () => ({
       registerTrigger: (el) => {
         triggerRef.current = el
@@ -299,8 +274,6 @@ const DropdownMenuSub = ({
       registerContent: (el) => {
         contentRef.current = el
       },
-      cancelClose,
-      scheduleClose,
       noteLeave: (from, event) => {
         lastLeaveRef.current = {
           from,
@@ -311,28 +284,20 @@ const DropdownMenuSub = ({
           triggerRect: describeRect(triggerRef.current),
           contentRect: describeRect(contentRef.current),
         }
-        record(`guard: ${from} mouseleave ${describeEvent(event.nativeEvent)}`)
+        record(`submenu: ${from} mouseleave ${describeEvent(event.nativeEvent)}`)
       },
     }),
-    [cancelClose, scheduleClose]
+    []
   )
 
   return (
-    <SubmenuGuardContext.Provider value={guard}>
+    <SubmenuDiagnosticsContext.Provider value={diagnostics}>
       <DropdownMenuPrimitive.Sub
         {...props}
         open={open}
-        onOpenChange={(next) => {
-          if (!next && isPointerOverSubmenu()) {
-            Sentry.addBreadcrumb({ category: "submenu-guard", message: "radix requested close — vetoed, pointer still over", level: "debug" })
-            record(`guard: radix close vetoed (:hover over) during ${window.event ? describeEvent(window.event) : "none"}`)
-            return
-          }
-          cancelClose()
-          commit(next, next ? "radix-open-request" : "radix-close-request")
-        }}
+        onOpenChange={(next) => commit(next, next ? "radix-open-request" : "radix-close-request")}
       />
-    </SubmenuGuardContext.Provider>
+    </SubmenuDiagnosticsContext.Provider>
   )
 }
 
@@ -341,24 +306,19 @@ const DropdownMenuSubTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
     inset?: boolean
   }
->(({ className, inset, children, onMouseEnter, onMouseLeave, ...props }, forwardedRef) => {
-  const guard = React.useContext(SubmenuGuardContext)
+>(({ className, inset, children, onMouseLeave, ...props }, forwardedRef) => {
+  const diagnostics = React.useContext(SubmenuDiagnosticsContext)
 
   return (
     <DropdownMenuPrimitive.SubTrigger
-      ref={composeRefs(forwardedRef, guard?.registerTrigger)}
+      ref={composeRefs(forwardedRef, diagnostics?.registerTrigger)}
       className={cn(
         "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
         inset && "pl-8",
         className
       )}
-      onMouseEnter={(event) => {
-        guard?.cancelClose()
-        onMouseEnter?.(event)
-      }}
       onMouseLeave={(event) => {
-        guard?.noteLeave("trigger", event)
-        guard?.scheduleClose()
+        diagnostics?.noteLeave("trigger", event)
         onMouseLeave?.(event)
       }}
       {...props}
@@ -374,24 +334,19 @@ DropdownMenuSubTrigger.displayName =
 const DropdownMenuSubContent = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, onMouseEnter, onMouseLeave, onFocusOutside, onEscapeKeyDown, ...props }, forwardedRef) => {
-  const guard = React.useContext(SubmenuGuardContext)
+>(({ className, onMouseLeave, onFocusOutside, onEscapeKeyDown, ...props }, forwardedRef) => {
+  const diagnostics = React.useContext(SubmenuDiagnosticsContext)
   const dismissReport = useDismissReport("submenu")
 
   return (
     <DropdownMenuPrimitive.SubContent
-      ref={composeRefs(forwardedRef, guard?.registerContent, dismissReport.ref)}
+      ref={composeRefs(forwardedRef, diagnostics?.registerContent, dismissReport.ref)}
       className={cn(
         "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
         className
       )}
-      onMouseEnter={(event) => {
-        guard?.cancelClose()
-        onMouseEnter?.(event)
-      }}
       onMouseLeave={(event) => {
-        guard?.noteLeave("content", event)
-        guard?.scheduleClose()
+        diagnostics?.noteLeave("content", event)
         onMouseLeave?.(event)
       }}
       // onFocusOutside, not onInteractOutside: it runs before Radix's own handler closes the submenu

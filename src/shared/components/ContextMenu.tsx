@@ -93,6 +93,13 @@ export const getMenuPosition = (
   };
 };
 
+// While the modal menu is open Radix sets `pointer-events: none` on body, so a press on the element targets <html>: hit-test by position too
+const isOnElement = (element: HTMLElement, event: PointerEvent): boolean =>
+  (event.target instanceof Node && element.contains(event.target)) ||
+  Array.from(element.getClientRects()).some(
+    (rect) => event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
+  );
+
 const PositionedMenuContent = ({
   source,
   anchorElement,
@@ -141,9 +148,8 @@ const PositionedMenuContent = ({
           : undefined
       }
       onPointerDownOutside={(event) => {
-        // The opening right-click's trailing mouseup/click must not count as a dismiss
-        const target = event.detail.originalEvent.target;
-        if (anchorElement && target instanceof Node && anchorElement.contains(target)) {
+        // A press on the element that opened the menu (a right-click's trailing events, a double-click's second press) isn't a dismiss
+        if (anchorElement && isOnElement(anchorElement, event.detail.originalEvent)) {
           event.preventDefault();
         }
       }}

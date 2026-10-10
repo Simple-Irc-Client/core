@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, fireEvent, screen, act } from '@testing-library/react';
 import { useState } from 'react';
 import * as Sentry from '@sentry/react';
-vi.mock('@sentry/react', () => ({ addBreadcrumb: vi.fn(), captureMessage: vi.fn() }));
+vi.mock('@sentry/react', () => ({ addBreadcrumb: vi.fn(), captureMessage: vi.fn(), getReplay: vi.fn() }));
 
 import {
   DropdownMenu,
@@ -17,20 +17,15 @@ import {
 document.elementFromPoint = () => null;
 document.elementsFromPoint = () => [];
 
-// Regression coverage for the macOS/WKWebView bug where a submenu opens and
-// then silently closes ~1s later on its own: Radix's internal hover-intent
-// timer relies on a continuous pointermove/pointerleave stream that WebKit
-// can stop delivering, so it fires a close request even though the cursor
-// never left the trigger/content. Our DropdownMenuSub wrapper vetoes that
-// close whenever the (event-independent) `:hover` hit-test still says the
-// pointer is over the submenu, and drives the real close itself via a
-// debounced mouseleave check instead.
+// Radix alone decides when a submenu closes: its pointer grace area keeps the submenu open while the
+// pointer crosses neighbouring items on its way there. A timer of our own on mouseleave used to close it
+// mid-way (seen in Sentry when the submenu flipped left over a narrow window).
 //
 // Assertions go through `onOpenChange` rather than checking whether the
 // submenu content is still in the DOM: Radix's SubContent stays mounted in
 // jsdom while its (nonexistent) exit animation never fires, so a DOM-presence
 // assertion can't distinguish "still open" from "closed but not yet unmounted".
-describe('DropdownMenuSub hover-close guard', () => {
+describe('DropdownMenuSub', () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -44,6 +39,7 @@ describe('DropdownMenuSub hover-close guard', () => {
     render(
       <DropdownMenu open>
         <DropdownMenuContent>
+          <DropdownMenuItem>Whois</DropdownMenuItem>
           <DropdownMenuSub onOpenChange={onOpenChange}>
             <DropdownMenuSubTrigger>Operator</DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
@@ -54,55 +50,54 @@ describe('DropdownMenuSub hover-close guard', () => {
       </DropdownMenu>
     );
 
-  it('does not report a close while the pointer is still hovering the submenu', () => {
+  it('stays open after the pointer leaves the trigger and pauses outside the submenu', () => {
     const onOpenChange = vi.fn();
     renderMenu(onOpenChange);
     const trigger = screen.getByText('Operator');
     fireEvent.click(trigger);
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
 
-    // Simulate the stale-hover case: something asks us to re-check, but the
-    // cursor is still (per the browser's own hit-test) resting on the trigger.
-    vi.spyOn(trigger, 'matches').mockReturnValue(true);
+    vi.spyOn(trigger, 'matches').mockReturnValue(false);
     fireEvent.mouseLeave(trigger);
-    vi.advanceTimersByTime(250);
+    vi.advanceTimersByTime(1000);
 
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
-  it('reports a close once the pointer has genuinely left', () => {
-    const onOpenChange = vi.fn();
-    renderMenu(onOpenChange);
-    const trigger = screen.getByText('Operator');
-    fireEvent.click(trigger);
-    expect(onOpenChange).toHaveBeenLastCalledWith(true);
-
-    fireEvent.mouseLeave(trigger);
-    vi.advanceTimersByTime(250);
-
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('reports where the last delivered pointer position hit-tests when the close slips through', () => {
+  it('reports the last leave and pointer hit-test when Radix closes it quickly', () => {
     renderMenu(vi.fn());
     const trigger = screen.getByText('Operator');
     fireEvent.click(trigger);
-    // `:hover` lies (pointer "gone"), but the last pointermove still lands on the trigger
-    vi.spyOn(trigger, 'matches').mockReturnValue(false);
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(trigger);
     fireEvent.pointerMove(trigger, { clientX: 40, clientY: 12 });
     fireEvent.mouseLeave(trigger, { relatedTarget: null, clientX: 40, clientY: 12 });
-    vi.advanceTimersByTime(250);
+    fireEvent.focusIn(screen.getByText('Whois'));
 
     expect(Sentry.captureMessage).toHaveBeenCalledWith(
       'DropdownMenuSub closed suspiciously fast',
       expect.objectContaining({
         extra: expect.objectContaining({
+          reason: 'radix-close-request',
           lastLeave: expect.objectContaining({ from: 'trigger', relatedTarget: 'window', x: 40, y: 12 }),
           lastPointer: expect.objectContaining({ x: 40, y: 12, overSubmenu: true }),
         }),
       })
     );
+  });
+
+  it('flushes the buffered replay before reporting, so the warning carries its id', async () => {
+    let finishFlush = () => {};
+    const flush = vi.fn(() => new Promise<void>((resolve) => (finishFlush = resolve)));
+    vi.mocked(Sentry.getReplay).mockReturnValueOnce({ flush } as unknown as ReturnType<typeof Sentry.getReplay>);
+    vi.mocked(Sentry.captureMessage).mockClear();
+    renderMenu(vi.fn());
+    fireEvent.click(screen.getByText('Operator'));
+    fireEvent.focusIn(screen.getByText('Whois'));
+
+    expect(flush).toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    await act(async () => finishFlush());
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('DropdownMenuSub closed suspiciously fast', expect.anything());
   });
 });
 

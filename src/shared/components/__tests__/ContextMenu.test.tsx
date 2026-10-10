@@ -1228,5 +1228,45 @@ describe('ContextMenu', () => {
       document.body.removeChild(anchorElement);
       document.body.removeChild(elsewhere);
     });
+
+    // The modal menu sets `pointer-events: none` on body, so a double-click's second press on the
+    // row that opened the menu is delivered to <html>, not to the row
+    const renderWithAnchorAt = (rect: DOMRect) => {
+      const anchorElement = document.createElement('button');
+      document.body.appendChild(anchorElement);
+      vi.spyOn(anchorElement, 'getClientRects').mockReturnValue([rect] as unknown as DOMRectList);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
+      );
+      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
+      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      render(<ContextMenu />);
+      return anchorElement;
+    };
+
+    it('does not close the menu when a press on the anchor area is delivered to <html>', async () => {
+      const anchorElement = renderWithAnchorAt(new DOMRect(800, 140, 120, 40));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(document.documentElement, { clientX: 861.6875, clientY: 160.28515625 });
+
+      expect(mockHandleContextMenuClose).not.toHaveBeenCalled();
+      document.body.removeChild(anchorElement);
+    });
+
+    it('closes the menu when a press delivered to <html> lies outside the anchor', async () => {
+      const anchorElement = renderWithAnchorAt(new DOMRect(800, 140, 120, 40));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(document.documentElement, { clientX: 400, clientY: 160 });
+
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+      document.body.removeChild(anchorElement);
+    });
   });
 });
