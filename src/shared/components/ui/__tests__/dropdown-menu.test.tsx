@@ -64,6 +64,56 @@ describe('DropdownMenuSub', () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
+  // Radix focuses the parent menu itself when the pointer leaves its items, e.g. for the space outside the menus
+  it('stays open when the pointer leaves the items and the parent menu itself takes focus', () => {
+    const onOpenChange = vi.fn();
+    renderMenu(onOpenChange);
+    fireEvent.click(screen.getByText('Operator'));
+    const parentMenu = screen.getByText('Whois').closest('[role="menu"]');
+    if (!(parentMenu instanceof HTMLElement)) throw new Error('parent menu not rendered');
+
+    fireEvent.focusIn(parentMenu);
+
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it('closes when another item of the parent menu takes focus', () => {
+    const onOpenChange = vi.fn();
+    renderMenu(onOpenChange);
+    fireEvent.click(screen.getByText('Operator'));
+
+    fireEvent.focusIn(screen.getByText('Whois'));
+
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('closes, with the whole menu, on a press outside the menus', () => {
+    const onOpenChange = vi.fn();
+    const StatefulMenu = () => {
+      const [open, setOpen] = useState(true);
+      return (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+          <DropdownMenuContent>
+            <DropdownMenuSub onOpenChange={onOpenChange}>
+              <DropdownMenuSubTrigger>Operator</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem>Kick</DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    };
+    render(<StatefulMenu />);
+    fireEvent.click(screen.getByText('Operator'));
+    // Radix defers registering its outside-pointerdown listener by one tick
+    vi.advanceTimersByTime(1);
+
+    fireEvent.pointerDown(document.body);
+
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
   it('reports the last leave and pointer hit-test when Radix closes it quickly', () => {
     renderMenu(vi.fn());
     const trigger = screen.getByText('Operator');

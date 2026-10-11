@@ -351,6 +351,11 @@ const DropdownMenuSubContent = React.forwardRef<
       }}
       // onFocusOutside, not onInteractOutside: it runs before Radix's own handler closes the submenu
       onFocusOutside={(event) => {
+        // Radix focuses a menu itself when the pointer leaves its items, e.g. for the space outside the menus on
+        // the way to a far submenu item: stay open then, and close only when another item takes focus
+        if (event.target instanceof Element && event.target.hasAttribute("data-radix-menu-content")) {
+          event.preventDefault()
+        }
         dismissReport.onDismiss(event)
         onFocusOutside?.(event)
       }}
