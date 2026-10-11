@@ -7,7 +7,7 @@ import { PASSWORD_FILE } from './global-setup';
  * simulating a connection drop (Wi-Fi/cellular handoff, server hiccup) without
  * touching the page itself. Must be called before `page.goto`.
  *
- * Exposes `window.__closeAllWS()` — closes every OPEN/CONNECTING socket and
+ * Exposes `window.__closeAllWS()` — closes every OPEN/CONNECTING app socket and
  * returns `{ total, closed }`. Same technique the reconnect specs already use
  * inline; shared here so the mobile-reconnect and e2ee-reconnect specs agree on
  * it. Playwright's own `context.setOffline` is avoided on purpose: it doesn't
@@ -21,7 +21,10 @@ export const installWebSocketKillSwitch = async (page: Page): Promise<void> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).WebSocket = function (url: string, protocols?: string | string[]) {
       const ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
-      allSockets.push(ws);
+      // Leave Vite's dev-server sockets alone: once its HMR socket drops, the Vite client reloads the page
+      if (![protocols].flat().some((protocol) => protocol === 'vite-hmr' || protocol === 'vite-ping')) {
+        allSockets.push(ws);
+      }
       return ws;
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

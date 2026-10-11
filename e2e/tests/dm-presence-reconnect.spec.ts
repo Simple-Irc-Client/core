@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
 
 // Named *-reconnect.spec.ts on purpose: playwright.config.ts routes anything
 // matching /reconnect\.spec/ to the dedicated, non-parallel reconnect
@@ -10,39 +10,8 @@ test.describe('DM presence indicator survives our own disconnect/reconnect', () 
   test('does not keep showing a peer as online once our own connection drops', async ({ page }) => {
     const bot: IrcClient = await createIrcClient('dmp-recon-bot');
 
-    // Intercept WebSocket creation BEFORE the page loads, same technique as
-    // reconnect.spec.ts, so we can force-close our own connection later.
-    await page.addInitScript(() => {
-      const OrigWS = globalThis.WebSocket;
-      const allSockets: WebSocket[] = [];
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket = function (url: string, protocols?: string | string[]) {
-        const ws = protocols ? new OrigWS(url, protocols) : new OrigWS(url);
-        allSockets.push(ws);
-        return ws;
-      };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket.prototype = OrigWS.prototype;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket.CONNECTING = OrigWS.CONNECTING;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket.OPEN = OrigWS.OPEN;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket.CLOSING = OrigWS.CLOSING;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).WebSocket.CLOSED = OrigWS.CLOSED;
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (globalThis as any).__closeAllWS = () => {
-        for (const ws of allSockets) {
-          if (ws.readyState === OrigWS.OPEN || ws.readyState === OrigWS.CONNECTING) {
-            ws.close();
-          }
-        }
-      };
-    });
-
+    // Installed before the page loads, so we can force-close our own connection later
+    await installWebSocketKillSwitch(page);
     await page.goto('/');
     await connectViaWizard(page, 'dmp-recon-tester', { channels: [] });
 
@@ -56,8 +25,7 @@ test.describe('DM presence indicator survives our own disconnect/reconnect', () 
 
     // Force-close our own connection. The bot stays online and reachable —
     // only OUR client's view of that fact goes away.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await page.evaluate(() => (globalThis as any).__closeAllWS());
+    await dropConnection(page);
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
 
     // The window itself must stay (it's local state), but the dot must not
