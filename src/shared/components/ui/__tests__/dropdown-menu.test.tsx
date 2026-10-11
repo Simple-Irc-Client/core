@@ -50,6 +50,15 @@ describe('DropdownMenuSub', () => {
       </DropdownMenu>
     );
 
+  // Inside the root menu's scroll container WebKit clipped the submenu out of sight
+  it('renders the submenu outside the root menu', () => {
+    renderMenu(vi.fn());
+    fireEvent.click(screen.getByText('Operator'));
+
+    const rootMenu = screen.getByText('Whois').closest('[role="menu"]');
+    expect(rootMenu?.contains(screen.getByText('Kick'))).toBe(false);
+  });
+
   it('stays open after the pointer leaves the trigger and pauses outside the submenu', () => {
     const onOpenChange = vi.fn();
     renderMenu(onOpenChange);

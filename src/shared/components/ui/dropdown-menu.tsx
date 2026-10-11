@@ -339,32 +339,35 @@ const DropdownMenuSubContent = React.forwardRef<
   const dismissReport = useDismissReport("submenu")
 
   return (
-    <DropdownMenuPrimitive.SubContent
-      ref={composeRefs(forwardedRef, diagnostics?.registerContent, dismissReport.ref)}
-      className={cn(
-        "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
-        className
-      )}
-      onMouseLeave={(event) => {
-        diagnostics?.noteLeave("content", event)
-        onMouseLeave?.(event)
-      }}
-      // onFocusOutside, not onInteractOutside: it runs before Radix's own handler closes the submenu
-      onFocusOutside={(event) => {
-        // Radix focuses a menu itself when the pointer leaves its items, e.g. for the space outside the menus on
-        // the way to a far submenu item: stay open then, and close only when another item takes focus
-        if (event.target instanceof Element && event.target.hasAttribute("data-radix-menu-content")) {
-          event.preventDefault()
-        }
-        dismissReport.onDismiss(event)
-        onFocusOutside?.(event)
-      }}
-      onEscapeKeyDown={(event) => {
-        dismissReport.onDismiss(event)
-        onEscapeKeyDown?.(event)
-      }}
-      {...props}
-    />
+    // Portalled: rendered inside the root menu's scroll container, WebKit clips the submenu out of sight
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.SubContent
+        ref={composeRefs(forwardedRef, diagnostics?.registerContent, dismissReport.ref)}
+        className={cn(
+          "z-50 min-w-32 overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-(--radix-dropdown-menu-content-transform-origin)",
+          className
+        )}
+        onMouseLeave={(event) => {
+          diagnostics?.noteLeave("content", event)
+          onMouseLeave?.(event)
+        }}
+        // onFocusOutside, not onInteractOutside: it runs before Radix's own handler closes the submenu
+        onFocusOutside={(event) => {
+          // Radix focuses a menu itself when the pointer leaves its items, e.g. for the space outside the menus on
+          // the way to a far submenu item: stay open then, and close only when another item takes focus
+          if (event.target instanceof Element && event.target.hasAttribute("data-radix-menu-content")) {
+            event.preventDefault()
+          }
+          dismissReport.onDismiss(event)
+          onFocusOutside?.(event)
+        }}
+        onEscapeKeyDown={(event) => {
+          dismissReport.onDismiss(event)
+          onEscapeKeyDown?.(event)
+        }}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
   )
 })
 DropdownMenuSubContent.displayName =
