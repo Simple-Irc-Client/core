@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, fireEvent, screen, act } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
-import * as Sentry from '@sentry/react';
-vi.mock('@sentry/react', () => ({ addBreadcrumb: vi.fn(), captureMessage: vi.fn(), getReplay: vi.fn() }));
 
 import {
   DropdownMenu,
@@ -12,10 +10,6 @@ import {
   DropdownMenuSubContent,
   DropdownMenuItem,
 } from '../dropdown-menu';
-
-// jsdom has no hit-testing; the submenu diagnostics call these once a pointermove was seen
-document.elementFromPoint = () => null;
-document.elementsFromPoint = () => [];
 
 // Radix alone decides when a submenu closes: its pointer grace area keeps the submenu open while the
 // pointer crosses neighbouring items on its way there. A timer of our own on mouseleave used to close it
@@ -97,13 +91,19 @@ describe('DropdownMenuSub', () => {
   });
 
   it('closes, with the whole menu, on a press outside the menus', () => {
-    const onOpenChange = vi.fn();
+    const onRootOpenChange = vi.fn();
     const StatefulMenu = () => {
       const [open, setOpen] = useState(true);
       return (
-        <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenu
+          open={open}
+          onOpenChange={(next) => {
+            onRootOpenChange(next);
+            setOpen(next);
+          }}
+        >
           <DropdownMenuContent>
-            <DropdownMenuSub onOpenChange={onOpenChange}>
+            <DropdownMenuSub>
               <DropdownMenuSubTrigger>Operator</DropdownMenuSubTrigger>
               <DropdownMenuSubContent>
                 <DropdownMenuItem>Kick</DropdownMenuItem>
@@ -120,176 +120,8 @@ describe('DropdownMenuSub', () => {
 
     fireEvent.pointerDown(document.body);
 
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('reports the last leave and pointer hit-test when Radix closes it quickly', () => {
-    renderMenu(vi.fn());
-    const trigger = screen.getByText('Operator');
-    fireEvent.click(trigger);
-    vi.spyOn(document, 'elementFromPoint').mockReturnValue(trigger);
-    fireEvent.pointerMove(trigger, { clientX: 40, clientY: 12 });
-    fireEvent.mouseLeave(trigger, { relatedTarget: null, clientX: 40, clientY: 12 });
-    fireEvent.focusIn(screen.getByText('Whois'));
-
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'DropdownMenuSub closed suspiciously fast',
-      expect.objectContaining({
-        extra: expect.objectContaining({
-          reason: 'radix-close-request',
-          lastLeave: expect.objectContaining({ from: 'trigger', relatedTarget: 'window', x: 40, y: 12 }),
-          lastPointer: expect.objectContaining({ x: 40, y: 12, overSubmenu: true }),
-        }),
-      })
-    );
-  });
-
-  it('flushes the buffered replay before reporting, so the warning carries its id', async () => {
-    let finishFlush = () => {};
-    const flush = vi.fn(() => new Promise<void>((resolve) => (finishFlush = resolve)));
-    vi.mocked(Sentry.getReplay).mockReturnValueOnce({ flush } as unknown as ReturnType<typeof Sentry.getReplay>);
-    vi.mocked(Sentry.captureMessage).mockClear();
-    renderMenu(vi.fn());
-    fireEvent.click(screen.getByText('Operator'));
-    fireEvent.focusIn(screen.getByText('Whois'));
-
-    expect(flush).toHaveBeenCalled();
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
-    await act(async () => finishFlush());
-    expect(Sentry.captureMessage).toHaveBeenCalledWith('DropdownMenuSub closed suspiciously fast', expect.anything());
+    expect(onRootOpenChange).toHaveBeenLastCalledWith(false);
+    expect(screen.queryByText('Kick')).not.toBeInTheDocument();
   });
 });
 
-describe('menu dismiss report', () => {
-  let fakeNow = Date.now();
-
-  beforeEach(() => {
-    // A minute apart, so one test's deliberate close never counts as recent in the next
-    fakeNow += 60_000;
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(fakeNow);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    vi.mocked(Sentry.captureMessage).mockClear();
-    vi.mocked(Sentry.addBreadcrumb).mockClear();
-  });
-
-  const messages = () => vi.mocked(Sentry.captureMessage).mock.calls.map(([message]) => message);
-
-  const ControlledMenu = ({ withSub = true }: { withSub?: boolean }) => {
-    const [open, setOpen] = useState(true);
-    return (
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuContent>
-          <DropdownMenuItem>Whois</DropdownMenuItem>
-          {withSub && (
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>Operator</DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem>Kick</DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
-
-  // Like ContextMenu: the content component stays rendered and only `open` changes
-  const AppControlledMenu = ({ open }: { open: boolean }) => (
-    <DropdownMenu open={open}>
-      <DropdownMenuContent>
-        <DropdownMenuItem>Whois</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
-  it('reports a menu the app closes without a dismiss or item pick', async () => {
-    const { rerender } = render(<AppControlledMenu open />);
-    rerender(<AppControlledMenu open={false} />);
-    await act(async () => {});
-
-    expect(messages()).toContain('Menu closed without user action');
-  });
-
-  it('measures how long the menu was open from each opening, not from the first render', async () => {
-    const { rerender } = render(<AppControlledMenu open={false} />);
-    vi.setSystemTime(fakeNow + 5000);
-    rerender(<AppControlledMenu open />);
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    fireEvent.pointerDown(document.body);
-
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'Menu dismissed suspiciously fast',
-      expect.objectContaining({ extra: expect.objectContaining({ msOpen: 0 }) })
-    );
-  });
-
-  it('does not report a menu closed by picking an item', async () => {
-    render(<ControlledMenu />);
-    fireEvent.click(screen.getByText('Whois'));
-    await act(async () => {});
-
-    expect(screen.queryByText('Whois')).not.toBeInTheDocument();
-    expect(messages()).not.toContain('Menu closed without user action');
-  });
-
-  it('flags a submenu dropped by a re-render as closed without user action', () => {
-    const { rerender } = render(<ControlledMenu />);
-    fireEvent.click(screen.getByText('Operator'));
-    rerender(<ControlledMenu withSub={false} />);
-
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'DropdownMenuSub closed suspiciously fast',
-      expect.objectContaining({ extra: expect.objectContaining({ sub: 'Operator', afterUserAction: false }) })
-    );
-  });
-
-  it('records why Radix closed a submenu before the close is reported', () => {
-    render(<ControlledMenu />);
-    const trigger = screen.getByText('Operator');
-    fireEvent.click(trigger);
-    // jsdom reports `:hover` as matching, which would make the guard veto this close
-    vi.spyOn(trigger, 'matches').mockReturnValue(false);
-    const submenu = screen.getByText('Kick').closest('[role="menu"]');
-    if (!submenu) throw new Error('submenu not rendered');
-    vi.spyOn(submenu, 'matches').mockReturnValue(false);
-    fireEvent.focusIn(screen.getByText('Whois'));
-
-    const dismissOrder = vi.mocked(Sentry.addBreadcrumb).mock.calls.findIndex(([crumb]) => crumb.category === 'menu-dismiss');
-    expect(dismissOrder).not.toBe(-1);
-    const dismissCall = vi.mocked(Sentry.addBreadcrumb).mock.invocationCallOrder[dismissOrder] ?? Infinity;
-    const reportCall = vi.mocked(Sentry.captureMessage).mock.invocationCallOrder[messages().indexOf('DropdownMenuSub closed suspiciously fast')] ?? -Infinity;
-    expect(dismissCall).toBeLessThan(reportCall);
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'DropdownMenuSub closed suspiciously fast',
-      expect.objectContaining({ extra: expect.objectContaining({ afterUserAction: true }) })
-    );
-  });
-
-  const renderRoot = () =>
-    render(
-      <>
-        <DropdownMenu open>
-          <DropdownMenuContent>
-            <DropdownMenuItem>Whois</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </>
-    );
-
-  it('reports a pointer press outside right after opening', async () => {
-    renderRoot();
-    // Radix starts listening for outside presses on the next tick
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    fireEvent.pointerDown(document.body);
-
-    expect(Sentry.captureMessage).toHaveBeenCalledWith(
-      'Menu dismissed suspiciously fast',
-      expect.objectContaining({ extra: expect.objectContaining({ menu: 'menu', kind: 'dismissableLayer.pointerDownOutside' }) })
-    );
-  });
-
-});
