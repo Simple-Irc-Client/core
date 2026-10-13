@@ -109,7 +109,7 @@ const Chat = () => {
         handleContextMenuUserClick(e, 'chat', currentChannelName);
       }
     }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
-      <div className="sticky top-0 z-10">
+      <div className="sticky top-0 z-10 break-normal">
         {!isConnected && <DisconnectedBanner />}
         <E2eeBanner />
       </div>
