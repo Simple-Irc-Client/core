@@ -18,7 +18,7 @@ const AppVersion = () => {
   }, []);
 
   return (
-    <div data-testid="app-version" className="px-4 pt-2 pb-safe-2 text-[10px] text-muted-foreground select-text">
+    <div data-testid="app-version" className="px-4 pt-2 pb-safe-2 text-[8px] text-muted-foreground select-text">
       {appVersion !== null ? `v${appVersion} · ${__GIT_REF__}` : __GIT_REF__}
     </div>
   );
