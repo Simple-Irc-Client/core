@@ -22,6 +22,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The gateway e2e projects run the gateway from source
+      - name: Check out the gateway
+        uses: actions/checkout@v7
+        with:
+          repository: Simple-Irc-Client/gateway
+          path: gateway-src
+
+      - name: Install gateway dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: gateway-src
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
 
@@ -30,6 +41,8 @@ jobs:
 
       - name: Run e2e tests
         run: pnpm exec playwright test
+        env:
+          E2E_GATEWAY_DIR: ${{ github.workspace }}/gateway-src
 
       # - name: Upload test results
       #   uses: actions/upload-artifact@v7

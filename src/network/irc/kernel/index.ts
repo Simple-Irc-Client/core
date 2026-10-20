@@ -3,7 +3,8 @@ import { MessageColor } from '@/config/theme';
 import { addToBatch, BATCH_TYPES, getBatch, getMessageBatchId } from '@/network/irc/batch';
 import { parseIrcRawMessage } from '@/network/irc/helpers';
 import { IrcContext } from '@/network/irc/kernel/context';
-import { handleConnect, handleDisconnected, handleError } from '@/network/irc/kernel/connection';
+import { GATEWAY_SEQ_TAG, isAwaitingGatewayResume, noteGatewaySeq } from '@/network/irc/gatewaySession';
+import { handleConnect, handleDisconnected, handleError, handleGatewayHello } from '@/network/irc/kernel/connection';
 import { ircHandlers } from '@/network/irc/kernel/registry';
 import { onUnhandledNumeric } from '@/network/irc/kernel/unhandled';
 import { takeLabel } from '@/network/irc/labels';
@@ -40,7 +41,10 @@ export class Kernel {
   handle(): void {
     switch (this.event.type) {
       case 'connect':
-        handleConnect();
+        // A resumed session is already registered; the gateway's first line says whether it was resumed
+        if (!isAwaitingGatewayResume()) {
+          handleConnect();
+        }
         break;
       case 'close':
         handleDisconnected();
@@ -60,7 +64,11 @@ export class Kernel {
 
   private readonly handleRaw = (event: string): void => {
     resetInactivityTimeout();
+    if (handleGatewayHello(this.eventLine)) {
+      return;
+    }
     const ctx = new IrcContext(parseIrcRawMessage(event), this.eventLine);
+    noteGatewaySeq(ctx.tags[GATEWAY_SEQ_TAG]);
 
     if (import.meta.env.DEV) {
       setAddMessage({

@@ -87,6 +87,8 @@
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.reconnecting": "Reconnecting to server...",
+    "kernel.resumed": "Session resumed",
+    "kernel.resumedPartial": "Session resumed - some messages from while you were away could not be kept",
     "kernel.inactivityTimeout": "Connection lost - no activity from server for 3 minutes",
     "kernel.inactivityTimeoutReconnecting": "Connection lost - reconnecting (attempt {{attempt}}/{{max}})...",
     "kernel.inactivityTimeoutMaxRetries": "Connection lost - maximum reconnection attempts reached",

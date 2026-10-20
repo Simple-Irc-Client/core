@@ -1,0 +1,129 @@
+/**
+ * @vitest-environment node
+ */
+import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
+import { Kernel } from '@/network/irc/kernel';
+import * as settingsFile from '@features/settings/store/settings';
+import * as channelsFile from '@features/channels/store/channels';
+import * as friendsFile from '@features/friends/friends';
+import * as networkFile from '@/network/irc/network';
+import {
+  beginGatewayConnection,
+  forgetGatewaySession,
+  hasGatewaySession,
+  rememberGatewaySession,
+} from '@/network/irc/gatewaySession';
+import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
+import i18next from '@/app/i18n';
+
+const raw = (line: string): void => new Kernel({ type: 'raw', line }).handle();
+
+describe('kernel gateway hello', () => {
+  setupKernelTest();
+
+  let send: MockInstance<typeof networkFile.ircSendRawMessage>;
+
+  beforeEach(() => {
+    forgetGatewaySession();
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    vi.spyOn(networkFile, 'resetConnectionState').mockImplementation(() => {});
+    send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+  });
+
+  const sentLines = (): string[] => send.mock.calls.map(([line]) => line);
+
+  const resumeAttempt = (): void => {
+    rememberGatewaySession('token-1');
+    beginGatewayConnection(true);
+    new Kernel({ type: 'connect' }).handle();
+  };
+
+  it('remembers the token of a new session', () => {
+    beginGatewayConnection(false);
+    new Kernel({ type: 'connect' }).handle();
+    raw(':sic-gateway SESSION abc_DEF-123');
+
+    expect(hasGatewaySession()).toBe(true);
+    expect(beginGatewayConnection(true)).toEqual({ resume: 'abc_DEF-123', since: '0' });
+  });
+
+  it('does not register while waiting to hear whether the session was resumed', () => {
+    resumeAttempt();
+
+    expect(sentLines()).toEqual([]);
+  });
+
+  it('marks the resumed session connected without registering or rejoining', () => {
+    const setIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const joinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
+    const subscribeFriends = vi.spyOn(friendsFile, 'subscribeFriendsOnRegistration').mockImplementation(() => {});
+    resumeAttempt();
+
+    raw(':sic-gateway RESUMED complete');
+
+    expect(setIsConnected).toHaveBeenCalledWith(true);
+    expect(networkFile.startKeepalive).toHaveBeenCalled();
+    expect(subscribeFriends).toHaveBeenCalled();
+    expect(joinChannels).not.toHaveBeenCalled();
+    expect(sentLines().some((line) => /^(CAP|NICK|USER|NAMES|LIST)\b/.test(line))).toBe(false);
+    expect(channelsFile.setAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.resumed') }));
+  });
+
+  it('refreshes channel rosters when part of the replay was lost', () => {
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(channelsFile, 'getOpenChannelNames').mockImplementation(() => ['#one', '#two']);
+    resumeAttempt();
+
+    raw(':sic-gateway RESUMED partial');
+
+    expect(sentLines()).toEqual(expect.arrayContaining(['NAMES #one', 'NAMES #two']));
+    expect(channelsFile.setAddMessageToAllChannels).toHaveBeenCalledWith(
+      expect.objectContaining({ message: i18next.t('kernel.resumedPartial') }),
+    );
+  });
+
+  it('registers from scratch when the gateway no longer had the session', () => {
+    resumeAttempt();
+
+    raw(':sic-gateway SESSION token-2');
+
+    expect(networkFile.resetConnectionState).toHaveBeenCalled();
+    expect(sentLines()).toEqual(['CAP LS 302', 'NICK TestNick', 'USER TestNick 0 * :TestNick']);
+    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-2', since: '0' });
+  });
+
+  it('registers and handles the line when the gateway has no session support', () => {
+    const setNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    resumeAttempt();
+
+    raw(':irc.test 001 OtherNick :Welcome');
+
+    expect(sentLines().slice(0, 3)).toEqual(['CAP LS 302', 'NICK TestNick', 'USER TestNick 0 * :TestNick']);
+    expect(setNick).toHaveBeenCalledWith('OtherNick');
+    expect(hasGatewaySession()).toBe(false);
+  });
+
+  it('ignores gateway-looking lines after the first one', () => {
+    const setIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    beginGatewayConnection(false);
+    raw(':sic-gateway SESSION token-1');
+
+    raw(':sic-gateway SESSION spoofed');
+    raw(':sic-gateway RESUMED complete');
+
+    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-1', since: '0' });
+    expect(setIsConnected).not.toHaveBeenCalled();
+  });
+
+  it('tracks the sequence number of relayed lines', () => {
+    beginGatewayConnection(false);
+    raw(':sic-gateway SESSION token-1');
+
+    raw('@simpleircclient.com/seq=41;time=2026-01-01T00:00:00.000Z :irc.test NOTICE TestNick :hi');
+
+    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-1', since: '41' });
+  });
+});

@@ -3,15 +3,16 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
-import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
+import { forgetGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
+import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
 import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
-import { clearAllTyping, existChannel, getChannelsToAutoJoin, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { resetDmPresenceSubscription } from '@features/dmPresence/dmPresence';
+import { clearAllTyping, existChannel, getChannelsToAutoJoin, getOpenChannelNames, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
+import { resetDmPresenceSubscription, subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
 import { clearIncomingState } from '@features/e2ee/incoming';
 import { endAllSessions } from '@features/e2ee/session';
-import { resetFriendsSubscription } from '@features/friends/friends';
+import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { getCurrentChannelName, getCurrentNick, getIsWizardCompleted, getServer, isSameName, setConnectedTime, setCurrentChannelName, setIsConnected, setIsConnecting, setLagMs, setWizardProgress } from '@features/settings/store/settings';
 import { ChannelCategory, MessageCategory } from '@shared/types';
@@ -94,6 +95,69 @@ export const handleConnected = (): void => {
       ircJoinChannels(channels);
     }
   }
+};
+
+const GATEWAY_HELLO = /^:sic-gateway (SESSION|RESUMED) (\S+)$/;
+
+/**
+ * The first line on a gateway connection: a new session's token, or confirmation that this page's session was
+ * resumed. Returns whether the line was the gateway's own.
+ */
+export const handleGatewayHello = (line: string): boolean => {
+  const expected = takeExpectedGatewayHello();
+  if (expected === null) {
+    return false;
+  }
+
+  const [, kind, value = ''] = GATEWAY_HELLO.exec(line) ?? [];
+  if (kind === 'RESUMED' && expected === 'resume') {
+    handleResumed(value === 'complete');
+    return true;
+  }
+
+  if (kind === 'SESSION') {
+    rememberGatewaySession(value);
+  } else {
+    forgetGatewaySession();
+  }
+
+  // The gateway no longer had the session (expired, or the gateway restarted): register on this connection
+  if (expected === 'resume') {
+    resetConnectionState();
+    handleConnect();
+  }
+  return kind === 'SESSION';
+};
+
+/** The gateway reattached this page to the IRC connection it kept; registration and channels are still in place. */
+export const handleResumed = (complete: boolean): void => {
+  setIsConnecting(false);
+  setIsConnected(true);
+
+  startKeepalive();
+  resetInactivityReconnectRetries();
+  clearSavedCredentials();
+
+  // Presence was cleared with the WebSocket; subscribing again makes the server report it anew
+  resetFriendsSubscription();
+  subscribeFriendsOnRegistration();
+  resetDmPresenceSubscription();
+  subscribeDmPresenceOnRegistration();
+
+  // Joins and parts may be among the dropped lines
+  if (!complete) {
+    for (const channel of getOpenChannelNames()) {
+      ircSendRawMessage(`NAMES ${channel}`);
+    }
+  }
+
+  setAddMessageToAllChannels({
+    id: uuidv4(),
+    message: i18next.t(complete ? 'kernel.resumed' : 'kernel.resumedPartial'),
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+    color: MessageColor.info,
+  });
 };
 
 export const handleDisconnected = (): void => {

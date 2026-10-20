@@ -87,6 +87,8 @@
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.reconnecting": "Ponowne łączenie z serwerem...",
+    "kernel.resumed": "Wznowiono sesję",
+    "kernel.resumedPartial": "Wznowiono sesję - części wiadomości z czasu nieobecności nie udało się zachować",
     "kernel.inactivityTimeout": "Utracono połączenie - brak aktywności z serwera przez 3 minuty",
     "kernel.inactivityTimeoutReconnecting": "Utracono połączenie - ponowne łączenie (próba {{attempt}}/{{max}})...",
     "kernel.inactivityTimeoutMaxRetries": "Utracono połączenie - osiągnięto maksymalną liczbę prób",

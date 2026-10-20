@@ -12,6 +12,18 @@ A React IRC client that connects to IRC servers directly over WebSocket.
 - English and Polish translations (i18next)
 - IRCv3: SASL, STS, chathistory, typing, metadata, MONITOR and more
 - End-to-end encrypted private messages (SIC-E2EE v1, described below)
+- Through the Simple IRC Client gateway: sessions survive a backgrounded mobile tab (see below)
+
+## Resumable Gateway Sessions
+
+Built in gateway mode, the app asks the [gateway](https://github.com/Simple-Irc-Client/gateway) for a resumable session. When the WebSocket drops (a phone puts the tab in the background), the gateway keeps the IRC connection and buffers what arrives. When the tab is visible again, the app reconnects with the session token and the number of the last line it saw, skips registration, and receives exactly the lines it missed. Channels, nick and negotiated capabilities stay as they were, and other users see no quit or rejoin.
+
+- If the gateway no longer has the session (it expired or the gateway restarted), the same connection registers from scratch.
+- After a page reload the app cannot resume, so it asks the gateway to end the old session and starts a new one.
+- Disconnecting from the menu, or `/quit`, sends QUIT so the gateway ends the session right away.
+- When some missed lines were dropped from the gateway's buffer, the app says so and refreshes the user lists of open channels.
+
+The protocol is described in the gateway's README.
 
 ## End-to-End Encryption (E2EE)
 
@@ -133,6 +145,15 @@ pnpm run dev
 ```
 
 The application will be available at `http://localhost:5173`
+
+### Tests
+
+```bash
+pnpm test          # unit tests
+pnpm run test:e2e  # Playwright, against an ergo IRC server in Docker
+```
+
+The e2e suite also runs the gateway from source for the `*-gateway` projects. It expects a checkout next to this repository (`../gateway`, with `pnpm install` done); set `E2E_GATEWAY_DIR` to use another location.
 
 ### Docker
 

@@ -1,4 +1,4 @@
-import { localBackendHost, localBackendPort, localBackendPath, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode } from '@/config/config';
+import { defaultQuitMessage, localBackendHost, localBackendPort, localBackendPath, encryptionKey, gatewayHost, gatewayPort, gatewayPath, isGatewayMode } from '@/config/config';
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
@@ -23,6 +23,7 @@ import {
 } from './transport';
 import { clearAllBatches } from './batch';
 import { clearLabels, createLabel, type LabeledRequest } from './labels';
+import { beginGatewayConnection, forgetGatewaySession, hasGatewaySession } from './gatewaySession';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};
@@ -212,11 +213,28 @@ export const ircDisconnect = (): void => {
   clearSaslCredentials();
   resetSTSSessionState();
 
+  // Without QUIT the gateway would keep the session waiting for this page to resume it
+  if (hasGatewaySession() && isDirectConnected()) {
+    ircSendRawMessage(`QUIT :${defaultQuitMessage}`);
+  }
+  forgetGatewaySession();
+
   disconnectDirect();
   notifyConnectionTornDown();
 };
 
-export const ircConnect = (currentServer: Server, nick: string): void => {
+/** Forgets what was negotiated on the previous IRC connection; saved credentials are kept. */
+export const resetConnectionState = (): void => {
+  resetCapabilityState();
+  resetSaslState();
+  resetSTSSessionState();
+  clearAllBatches();
+  clearLabels();
+  notifyConnectionTornDown();
+};
+
+/** `resumeGatewaySession` reattaches to the IRC connection the gateway kept for this page, if it still has it. */
+export const ircConnect = (currentServer: Server, nick: string, { resumeGatewaySession = false } = {}): void => {
   const singleServer = parseServer(currentServer);
   if (singleServer == null || singleServer.host === undefined || singleServer.host === '') {
     throw new Error('Unable to connect to IRC network - server host is empty');
@@ -248,6 +266,7 @@ export const ircConnect = (currentServer: Server, nick: string): void => {
       port: String(singleServer.port),
       tls: String(useTLS),
       encoding: currentServer.encoding ?? 'utf8',
+      ...beginGatewayConnection(resumeGatewaySession),
     });
     const gatewayWebSocketUrl = `${protocol}//${gatewayHost}:${gatewayPort}${gatewayPath}?${params.toString()}`;
 
@@ -491,17 +510,24 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
     });
   }
 
-  // Keeps saved credentials
   clearInactivityTimeout();
   stopKeepalive();
-  resetCapabilityState();
-  resetSaslState();
-  resetSTSSessionState();
-  clearAllBatches();
-  clearLabels();
   disconnectDirect();
-  notifyConnectionTornDown();
 
+  // Needed even when resuming: if the gateway no longer has the session, this connection registers anew
+  await restoreCredentials(nick);
+
+  // Everything negotiated stays valid while the gateway keeps the IRC connection
+  if (isGatewayMode() && hasGatewaySession()) {
+    ircConnect(server, nick, { resumeGatewaySession: true });
+    return;
+  }
+
+  resetConnectionState();
+  ircConnect(server, nick);
+};
+
+const restoreCredentials = async (nick: string): Promise<void> => {
   const restored = await restoreSaslCredentials();
 
   // Fall back to persistent storage
@@ -517,8 +543,6 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
       }
     }
   }
-
-  ircConnect(server, nick);
 };
 
 // On `online`/tab-visible: mobile freezes the watchdog's timers in the background, so it can't be relied on

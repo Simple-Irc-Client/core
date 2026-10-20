@@ -1,8 +1,10 @@
 import { execSync } from 'node:child_process';
+import { stopGateway } from './global-setup';
 
 const ERGO_CONTAINER = 'sic-e2e-ergo';
 
 const globalTeardown = async (): Promise<void> => {
+  stopGateway();
   try {
     execSync(`docker rm -f ${ERGO_CONTAINER} 2>/dev/null`, { stdio: 'pipe' });
   } catch {

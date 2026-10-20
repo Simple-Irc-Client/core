@@ -368,10 +368,14 @@ export const setRenameChannel = (from: string, to: string): void => {
   }
 };
 
-export const getChannelsToAutoJoin = (): string[] => {
-  const channels = useChannelsStore.getState().openChannelsShortList
+export const getOpenChannelNames = (): string[] => {
+  return useChannelsStore.getState().openChannelsShortList
     .filter((ch) => ch.category === ChannelCategory.channel)
     .map((ch) => ch.name);
+};
+
+export const getChannelsToAutoJoin = (): string[] => {
+  const channels = getOpenChannelNames();
   return channels.length > 0 ? channels : lastChannelsToAutoJoin;
 };
 

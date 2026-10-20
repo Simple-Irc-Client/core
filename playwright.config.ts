@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { GATEWAY_APP_PORT, GATEWAY_PORT } from './e2e/global-setup';
 
 const chromiumConfig = {
   ...devices['Desktop Chrome'],
@@ -43,12 +44,12 @@ export default defineConfig({
     {
       name: 'chromium-parallel',
       use: chromiumConfig,
-      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/],
+      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/, /gateway-.*\.spec/],
     },
     {
       name: 'firefox-parallel',
       use: firefoxConfig,
-      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/],
+      testIgnore: [/reconnect\.spec/, /input-context-menu\.spec/, /gateway-.*\.spec/],
     },
     {
       name: 'chromium-reconnect',
@@ -75,12 +76,36 @@ export default defineConfig({
       use: firefoxConfig,
       testMatch: /input-context-menu\.spec/,
     },
+    // The app built for the gateway, which relays to the IRC server instead of the browser connecting directly
+    {
+      name: 'chromium-gateway',
+      use: { ...chromiumConfig, baseURL: `http://localhost:${GATEWAY_APP_PORT}` },
+      testMatch: /gateway-.*\.spec/,
+    },
+    {
+      name: 'firefox-gateway',
+      use: { ...firefoxConfig, baseURL: `http://localhost:${GATEWAY_APP_PORT}` },
+      testMatch: /gateway-.*\.spec/,
+    },
   ],
 
-  webServer: {
-    command: 'pnpm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+    },
+    {
+      command: `pnpm exec vite --port ${GATEWAY_APP_PORT} --strictPort`,
+      url: `http://localhost:${GATEWAY_APP_PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 30_000,
+      env: {
+        VITE_GATEWAY_HOST: 'localhost',
+        VITE_GATEWAY_PORT: String(GATEWAY_PORT),
+        VITE_GATEWAY_PATH: '/webirc',
+      },
+    },
+  ],
 });
