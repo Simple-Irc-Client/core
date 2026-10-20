@@ -19,6 +19,8 @@ import i18next from '@/app/i18n';
 
 const raw = (line: string): void => new Kernel({ type: 'raw', line }).handle();
 
+const target = { host: 'irc.test', port: 6697, tls: true, encoding: 'utf8' };
+
 describe('kernel gateway hello', () => {
   setupKernelTest();
 
@@ -36,18 +38,19 @@ describe('kernel gateway hello', () => {
   const sentLines = (): string[] => send.mock.calls.map(([line]) => line);
 
   const resumeAttempt = (): void => {
+    beginGatewayConnection(false, target);
     rememberGatewaySession('token-1');
-    beginGatewayConnection(true);
+    beginGatewayConnection(true, target);
     new Kernel({ type: 'connect' }).handle();
   };
 
   it('remembers the token of a new session', () => {
-    beginGatewayConnection(false);
+    beginGatewayConnection(false, target);
     new Kernel({ type: 'connect' }).handle();
     raw(':sic-gateway SESSION abc_DEF-123');
 
     expect(hasGatewaySession()).toBe(true);
-    expect(beginGatewayConnection(true)).toEqual({ resume: 'abc_DEF-123', since: '0' });
+    expect(beginGatewayConnection(true, target).query).toEqual({ resume: 'abc_DEF-123', since: '0' });
   });
 
   it('does not register while waiting to hear whether the session was resumed', () => {
@@ -74,7 +77,7 @@ describe('kernel gateway hello', () => {
 
   it('keeps encrypted conversations over a dropped WebSocket the gateway may resume', () => {
     const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
-    beginGatewayConnection(false);
+    beginGatewayConnection(false, target);
     new Kernel({ type: 'connect' }).handle();
     raw(':sic-gateway SESSION token-1');
 
@@ -124,7 +127,7 @@ describe('kernel gateway hello', () => {
 
     expect(networkFile.resetConnectionState).toHaveBeenCalled();
     expect(sentLines()).toEqual(['CAP LS 302', 'NICK TestNick', 'USER TestNick 0 * :TestNick']);
-    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-2', since: '0' });
+    expect(beginGatewayConnection(true, target).query).toEqual({ resume: 'token-2', since: '0' });
   });
 
   it('registers and handles the line when the gateway has no session support', () => {
@@ -141,22 +144,22 @@ describe('kernel gateway hello', () => {
 
   it('ignores gateway-looking lines after the first one', () => {
     const setIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    beginGatewayConnection(false);
+    beginGatewayConnection(false, target);
     raw(':sic-gateway SESSION token-1');
 
     raw(':sic-gateway SESSION spoofed');
     raw(':sic-gateway RESUMED complete');
 
-    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-1', since: '0' });
+    expect(beginGatewayConnection(true, target).query).toEqual({ resume: 'token-1', since: '0' });
     expect(setIsConnected).not.toHaveBeenCalled();
   });
 
   it('tracks the sequence number of relayed lines', () => {
-    beginGatewayConnection(false);
+    beginGatewayConnection(false, target);
     raw(':sic-gateway SESSION token-1');
 
     raw('@simpleircclient.com/seq=41;time=2026-01-01T00:00:00.000Z :irc.test NOTICE TestNick :hi');
 
-    expect(beginGatewayConnection(true)).toEqual({ resume: 'token-1', since: '41' });
+    expect(beginGatewayConnection(true, target).query).toEqual({ resume: 'token-1', since: '41' });
   });
 });

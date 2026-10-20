@@ -10,7 +10,23 @@ const STORAGE_KEY = 'sic-gateway-session';
 
 export type GatewayHello = 'session' | 'resume';
 
+/** The IRC server the gateway connects to; a session resumes only for the same one. */
+export interface GatewayTarget {
+  host: string;
+  port: number;
+  tls: boolean;
+  encoding: string;
+}
+
+export interface GatewayConnection {
+  target: GatewayTarget;
+  /** Session parameters for the gateway WebSocket URL */
+  query: Record<string, string>;
+}
+
 let token: string | null = null;
+// Kept apart from the server settings: an STS upgrade moves the connection to another port
+let target: GatewayTarget | null = null;
 let lastSeenSeq = 0;
 let expectedHello: GatewayHello | null = null;
 
@@ -37,18 +53,19 @@ const storeToken = (value: string | null): void => {
 /** Whether this page holds a session the gateway may still keep. */
 export const hasGatewaySession = (): boolean => token !== null;
 
-/** Query parameters for the next gateway WebSocket: resumes this page's session if asked to, otherwise starts a new one. */
-export const beginGatewayConnection = (resume: boolean): Record<string, string> => {
-  if (resume && token !== null) {
+/** The next gateway WebSocket: resumes this page's session where it is connected if asked to, otherwise starts a new one to `requested`. */
+export const beginGatewayConnection = (resume: boolean, requested: GatewayTarget): GatewayConnection => {
+  if (resume && token !== null && target !== null) {
     expectedHello = 'resume';
-    return { resume: token, since: String(lastSeenSeq) };
+    return { target, query: { resume: token, since: String(lastSeenSeq) } };
   }
 
   const previous = token ?? readStoredToken();
   token = null;
+  target = requested;
   lastSeenSeq = 0;
   expectedHello = 'session';
-  return previous === null ? { session: 'true' } : { session: 'true', replace: previous };
+  return { target, query: previous === null ? { session: 'true' } : { session: 'true', replace: previous } };
 };
 
 export const isAwaitingGatewayResume = (): boolean => expectedHello === 'resume';
@@ -75,6 +92,7 @@ export const noteGatewaySeq = (value: string | undefined): void => {
 
 export const forgetGatewaySession = (): void => {
   token = null;
+  target = null;
   lastSeenSeq = 0;
   expectedHello = null;
   storeToken(null);

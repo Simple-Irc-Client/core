@@ -226,11 +226,10 @@ export const ircDisconnect = (): void => {
   notifyConnectionTornDown();
 };
 
-/** Forgets what was negotiated on the previous IRC connection; saved credentials are kept. */
+/** Forgets what was negotiated on the previous IRC connection; saved credentials and the connection's own host/TLS are kept. */
 export const resetConnectionState = (): void => {
   resetCapabilityState();
   resetSaslState();
-  resetSTSSessionState();
   clearAllBatches();
   clearLabels();
   notifyConnectionTornDown();
@@ -261,15 +260,22 @@ export const ircConnect = (currentServer: Server, nick: string, { resumeGatewayS
 
   if (isGatewayMode()) {
     setDirectEncryption(false); // No encryption for gateway mode
-    setCurrentConnectionInfo(host, useTLS);
+
+    const { target, query } = beginGatewayConnection(resumeGatewaySession, {
+      host,
+      port: singleServer.port,
+      tls: useTLS,
+      encoding: currentServer.encoding ?? 'utf8',
+    });
+    setCurrentConnectionInfo(target.host, target.tls);
 
     const protocol = globalThis.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const params = new URLSearchParams({
-      host: singleServer.host,
-      port: String(singleServer.port),
-      tls: String(useTLS),
-      encoding: currentServer.encoding ?? 'utf8',
-      ...beginGatewayConnection(resumeGatewaySession),
+      host: target.host,
+      port: String(target.port),
+      tls: String(target.tls),
+      encoding: target.encoding,
+      ...query,
     });
     const gatewayWebSocketUrl = `${protocol}//${gatewayHost}:${gatewayPort}${gatewayPath}?${params.toString()}`;
 

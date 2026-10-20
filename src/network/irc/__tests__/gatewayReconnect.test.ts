@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/config/config', () => ({
   defaultQuitMessage: 'bye',
+  defaultIRCPort: 6667,
   localBackendHost: 'localhost',
   localBackendPort: 8080,
   localBackendPath: 'webirc',
@@ -51,8 +52,10 @@ vi.mock('@/network/encryption', () => ({
 }));
 
 const server = { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test.net:6697'], tls: true };
+const plaintextServer = { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test.net:6667'], tls: false };
+let settingsServer = server;
 vi.mock('@features/settings/store/settings', () => ({
-  getServer: () => server,
+  getServer: () => settingsServer,
   getCurrentNick: () => 'tester',
   setNick: vi.fn(),
   setIsConnected: vi.fn(),
@@ -84,6 +87,7 @@ describe('network in gateway mode', () => {
     vi.resetModules();
     vi.clearAllMocks();
     sessionStorage.clear();
+    settingsServer = server;
     mockIsDirectConnected.mockReturnValue(true);
     network = await import('../network');
     gatewaySession = await import('../gatewaySession');
@@ -103,6 +107,7 @@ describe('network in gateway mode', () => {
   });
 
   it('resumes the session on reconnect and keeps what was negotiated', async () => {
+    network.ircConnect(server, 'tester');
     gatewaySession.rememberGatewaySession('token-1');
     gatewaySession.noteGatewaySeq('12');
 
@@ -114,6 +119,28 @@ describe('network in gateway mode', () => {
     expect(mockSendDirectRaw).not.toHaveBeenCalledWith(expect.stringMatching(/^QUIT/));
   });
 
+  it('resumes a session moved to TLS by STS on the port it was upgraded to', async () => {
+    settingsServer = plaintextServer;
+    network.ircConnectWithTLS(plaintextServer, 'tester', 6697);
+    gatewaySession.rememberGatewaySession('token-1');
+
+    await network.ircReconnect();
+
+    expect(lastConnectParams().get('resume')).toBe('token-1');
+    expect(lastConnectParams().get('port')).toBe('6697');
+    expect(lastConnectParams().get('tls')).toBe('true');
+  });
+
+  it('keeps the connection host and TLS when it resets negotiated state for a fresh registration', async () => {
+    const sts = await import('../sts');
+    network.ircConnect(server, 'tester');
+
+    network.resetConnectionState();
+
+    expect(sts.getCurrentConnectionHost()).toBe('irc.test.net');
+    expect(sts.isCurrentConnectionSecure()).toBe(true);
+  });
+
   it('starts over on reconnect when it holds no session', async () => {
     await network.ircReconnect();
 
@@ -122,6 +149,7 @@ describe('network in gateway mode', () => {
   });
 
   it('quits the session on an explicit disconnect so the gateway does not keep it', () => {
+    network.ircConnect(server, 'tester');
     gatewaySession.rememberGatewaySession('token-1');
 
     network.ircDisconnect();
@@ -144,6 +172,7 @@ describe('network in gateway mode', () => {
     vi.useFakeTimers();
     const tornDown = vi.fn();
     network.onConnectionTornDown(tornDown);
+    network.ircConnect(server, 'tester');
     gatewaySession.rememberGatewaySession('token-1');
 
     network.resetInactivityTimeout();
