@@ -19,6 +19,7 @@ import ChannelListDialog from '@shared/components/ChannelListDialog';
 import Friends from '@features/friends/components/Friends';
 import { unsubscribeDmPresence } from '@features/dmPresence/dmPresence';
 import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
+import AppVersion from './AppVersion';
 
 interface ChannelsProps {
   width?: number;
@@ -142,8 +143,8 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       data-testid="channels-sidebar"
       aria-label={t('main.channels.title')}
       className={cn(
-        'border-r border-border overflow-y-auto bg-background pt-safe pl-safe',
-        !isChannelsDrawerOpen && 'hidden lg:block',
+        'flex flex-col border-r border-border overflow-y-auto bg-background pt-safe pl-safe',
+        !isChannelsDrawerOpen && 'hidden lg:flex',
         isChannelsDrawerOpen && 'absolute left-0 top-0 bottom-0 z-20 lg:relative lg:z-auto',
       )}
       style={{
@@ -151,7 +152,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         minWidth: `${defaultChannelsWidth}px`,
       }}
     >
-      <div>
+      <div className="flex-1">
           <div className="flex items-center justify-between px-4 h-12 border-b border-border">
             <div className="flex items-center gap-2 min-w-0 overflow-hidden">
               {networkIcon !== undefined && (
@@ -312,6 +313,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
             <Friends fontSizeClass={fontSizeClass} />
           </div>
         </div>
+      <AppVersion />
       <ChannelListDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

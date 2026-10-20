@@ -59,6 +59,18 @@ test.describe('Responsive layout', () => {
     await expect(channelNav.getByRole('button', { name: channel, exact: true })).toBeVisible();
   });
 
+  test('channels drawer shows the app version at the bottom', async () => {
+    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    const version = channelNav.getByTestId('app-version');
+    await expect(version).toBeVisible();
+    await expect(version).toHaveText(/^[0-9a-f]{7,}$|^unknown$/);
+
+    // Pinned to the drawer's bottom edge, not right under the last list item
+    const navBottom = await channelNav.evaluate((el) => el.getBoundingClientRect().bottom);
+    const versionBottom = await version.evaluate((el) => el.getBoundingClientRect().bottom);
+    expect(navBottom - versionBottom).toBeLessThan(1);
+  });
+
   test('clicking a channel closes the drawer', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: channel, exact: true }).click();

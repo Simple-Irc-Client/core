@@ -27,6 +27,8 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
+vi.stubGlobal('__GIT_REF__', 'abc1234');
+
 vi.mock('@/network/irc/network', () => ({
   ircJoinChannels: vi.fn(),
   ircPartChannel: vi.fn(),
@@ -128,6 +130,19 @@ describe('Channels', () => {
 
       // When drawer is closed, the container should have 'hidden' class (visible only on lg+)
       expect(container.firstChild).toHaveClass('hidden');
+    });
+
+    it('should render the app version at the bottom of the sidebar', () => {
+      setupMocks({
+        isChannelsDrawerOpen: true,
+        openChannelsShort: [createChannel({ name: '#general' })],
+      });
+
+      render(<Channels />);
+
+      const version = screen.getByTestId('app-version');
+      expect(version).toHaveTextContent('abc1234');
+      expect(screen.getByTestId('channels-sidebar').lastElementChild).toBe(version);
     });
 
     it('should render channel buttons', () => {
