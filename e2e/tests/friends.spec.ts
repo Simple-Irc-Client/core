@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 let sharedPage: Page;
 let bot: IrcClient | undefined;
@@ -49,6 +50,7 @@ test.describe('Friends list', () => {
   });
 
   test('friend is shown online when they connect', async () => {
+    skipWithoutIrcv3('presence comes from MONITOR');
     bot = await createIrcClient(botNick);
 
     await expect(friendRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
@@ -62,6 +64,7 @@ test.describe('Friends list', () => {
   });
 
   test('friend is shown offline when they disconnect', async () => {
+    skipWithoutIrcv3('presence comes from MONITOR');
     bot?.disconnect();
     bot = undefined;
 
@@ -69,6 +72,7 @@ test.describe('Friends list', () => {
   });
 
   test('friends persist across reload and resubscribe on reconnect', async () => {
+    skipWithoutIrcv3('presence comes from MONITOR');
     bot = await createIrcClient(botNick);
 
     await sharedPage.reload();

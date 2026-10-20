@@ -36,6 +36,8 @@ export const parseMessageToCommand = (channel: string, message: string): string 
     case 'amsg':
     case 'all':
       return allCommand(line) ?? originalLine;
+    case 'away':
+      return awayCommand(line);
     case 'help':
       return helpCommand(channel);
     case 'j':
@@ -121,6 +123,11 @@ export const parseMessageToCommand = (channel: string, message: string): string 
   }
 
   return originalLine;
+};
+
+const awayCommand = (line: string[]): string => {
+  const message = line.join(' ');
+  return message.length !== 0 ? `AWAY :${message}` : 'AWAY';
 };
 
 const joinCommand = (line: string[]): string => {

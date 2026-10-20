@@ -2,7 +2,7 @@ import i18next from '@/app/i18n';
 import { clientSourceUrl, clientVersion, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
-import { parseNick } from '@/network/irc/helpers';
+import { isIrcService, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
@@ -223,11 +223,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
 
   const conversation = resolveConversation(nick, target, myNick);
 
-  const IRC_SERVICES = ['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv'];
-  const isServiceTarget = IRC_SERVICES.includes(target.toLowerCase());
-
-  // Echoed messages to services may contain passwords
-  if (conversation.isEcho && isServiceTarget) {
+  if (conversation.isEcho && isIrcService(target)) {
     return;
   }
 

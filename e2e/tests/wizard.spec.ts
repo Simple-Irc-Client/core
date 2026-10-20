@@ -1,9 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { getServerPassword } from '../helpers';
+import { fillTestServer, getServerPassword, testServerAddress } from '../helpers';
 
-const ERGO_HOST = 'localhost';
-const ERGO_WSS_PORT = '8097';
 
 /** Fill in nick step and advance to the server step. */
 const fillNickStep = async (page: Page, nick: string): Promise<void> => {
@@ -11,12 +9,9 @@ const fillNickStep = async (page: Page, nick: string): Promise<void> => {
   await page.getByRole('button', { name: 'Next' }).click();
 };
 
-/** Fill in server step with the local ergo WSS server and click Next. */
+/** Fill in server step with the project's test server and click Next. */
 const fillServerStepAndConnect = async (page: Page): Promise<void> => {
-  await page.getByLabel('Server address').fill(ERGO_HOST);
-  await page.getByLabel('Port').clear();
-  await page.getByLabel('Port').fill(ERGO_WSS_PORT);
-  await page.getByRole('button', { name: 'WebSocket' }).click();
+  await fillTestServer(page);
   await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
 };
@@ -51,16 +46,11 @@ test.describe('Wizard', () => {
     await expect(page.getByText('Choose your server')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Libera.Chat' })).toBeVisible();
 
-    // Enter custom server
-    await page.getByLabel('Server address').fill('localhost');
-    await page.getByLabel('Port').clear();
-    await page.getByLabel('Port').fill('8097');
-
-    // Connection type selector appears for custom servers
+    // Enter custom server; the connection type selector appears for custom servers
+    await fillTestServer(page);
     await expect(page.getByText('Connection Type')).toBeVisible();
-    const wsButton = page.getByRole('button', { name: 'WebSocket' });
-    await wsButton.click();
-    await expect(wsButton).toHaveAttribute('aria-pressed', 'true');
+    const typeButton = page.getByRole('button', { name: testServerAddress().type });
+    await expect(typeButton).toHaveAttribute('aria-pressed', 'true');
 
     // Enter server password
     await page.getByLabel('Server password').fill(getServerPassword());
@@ -92,10 +82,7 @@ test.describe('Wizard', () => {
     await page.getByLabel('Enter your nickname').fill('reconnect-tester');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    await page.getByLabel('Server address').fill('localhost');
-    await page.getByLabel('Port').clear();
-    await page.getByLabel('Port').fill('8097');
-    await page.getByRole('button', { name: 'WebSocket' }).click();
+    await fillTestServer(page);
     await page.getByLabel('Server password').fill(getServerPassword());
     await page.getByRole('button', { name: 'Next' }).click();
 
@@ -149,9 +136,9 @@ test.describe('Wizard', () => {
     await fillNickStep(page, 'wizardbot');
     await fillServerStepAndConnect(page);
 
-    // Error message should appear with "Nickname is already in use"
-    await expect(page.getByText(/Failed to connect|Nickname is already in use|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Nickname is already in use/i).first()).toBeVisible({ timeout: 5_000 });
+    // Error message should show the server's "Nickname (is) already in use"
+    await expect(page.getByText(/Failed to connect|Nickname (is )?already in use|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Nickname (is )?already in use/i).first()).toBeVisible({ timeout: 5_000 });
 
     // "Go Back" button should be visible
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
@@ -234,10 +221,7 @@ test.describe('Wizard', () => {
     await fillNickStep(page, 'wrong-pass');
 
     // Enter the correct server but wrong password
-    await page.getByLabel('Server address').fill(ERGO_HOST);
-    await page.getByLabel('Port').clear();
-    await page.getByLabel('Port').fill(ERGO_WSS_PORT);
-    await page.getByRole('button', { name: 'WebSocket' }).click();
+    await fillTestServer(page);
     await page.getByLabel('Server password').fill('incorrect-password');
     await page.getByRole('button', { name: 'Next' }).click();
 

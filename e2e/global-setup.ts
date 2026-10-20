@@ -11,7 +11,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const ERGO_CONTAINER = 'sic-e2e-ergo';
 const ERGO_IMAGE = 'ghcr.io/ergochat/ergo:stable';
-const IRC_PORT = 6667;
+export const IRC_PORT = 6667;
+export const LEGACY_IRC_CONTAINER = 'sic-e2e-ngircd';
+const LEGACY_IRC_IMAGE = 'docker.io/linuxserver/ngircd:version-27-r1';
+/** A server without IRCv3, reached through the gateway */
+export const LEGACY_IRC_PORT = 6668;
 // Port 6697 is blocked by Chrome (ERR_UNSAFE_PORT); use 8097 instead
 const WSS_PORT = 8097;
 const STARTUP_TIMEOUT_MS = 15_000;
@@ -87,8 +91,12 @@ const startGateway = async (): Promise<void> => {
       PORT: String(GATEWAY_PORT),
       HOST: '127.0.0.1',
       ALLOWED_ORIGINS: `http://localhost:${GATEWAY_APP_PORT}`,
-      // The test IRC server is on loopback
+      // The test IRC servers are on loopback
       BLOCK_PRIVATE_HOSTS: 'false',
+      // Keeps the suite off real networks, such as a test's ?server=Libera.Chat
+      ALLOWED_SERVERS: `127.0.0.1:${IRC_PORT},127.0.0.1:${LEGACY_IRC_PORT}`,
+      // Each test's closed page leaves its session behind, holding the nick; long enough for the resume tests only
+      SESSION_LINGER: '15',
     },
     detached: true,
     stdio: ['ignore', log, log],
@@ -101,6 +109,34 @@ const startGateway = async (): Promise<void> => {
   } catch {
     console.error('Gateway log:', readFileSync(GATEWAY_LOG_FILE, 'utf8'));
     throw new Error('Gateway failed to start');
+  }
+};
+
+const startLegacyIrcServer = async (serverPassword: string): Promise<void> => {
+  const template = readFileSync(join(__dirname, 'ngircd', 'ngircd.conf'), 'utf8');
+  const configPath = join(tmpdir(), 'sic-e2e-config', 'ngircd.conf');
+  writeFileSync(configPath, template.replace(/^\[Global\]$/m, `[Global]\n\tPassword = ${serverPassword}`), 'utf8');
+
+  try {
+    execSync(`docker rm -f ${LEGACY_IRC_CONTAINER} 2>/dev/null`);
+  } catch {
+    // Container didn't exist
+  }
+
+  execSync(
+    `docker run -d --name ${LEGACY_IRC_CONTAINER} ` +
+    `-p 127.0.0.1:${LEGACY_IRC_PORT}:6667 ` +
+    `-v "${configPath}:/ngircd.conf:ro" ` +
+    `--entrypoint /usr/sbin/ngircd ` +
+    `${LEGACY_IRC_IMAGE} --nodaemon --config /ngircd.conf`,
+    { stdio: 'pipe' }
+  );
+
+  try {
+    await waitForPort(LEGACY_IRC_PORT, '127.0.0.1', STARTUP_TIMEOUT_MS);
+  } catch {
+    console.error('ngircd container logs:', execSync(`docker logs ${LEGACY_IRC_CONTAINER} 2>&1`).toString());
+    throw new Error('ngircd IRC server failed to start');
   }
 };
 
@@ -165,6 +201,7 @@ const globalSetup = async (): Promise<void> => {
     throw new Error('Ergo IRC server failed to start');
   }
 
+  await startLegacyIrcServer(serverPassword);
   await startGateway();
 };
 

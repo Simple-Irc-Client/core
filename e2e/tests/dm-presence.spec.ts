@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 let sharedPage: Page;
 let bot: IrcClient | undefined;
@@ -11,6 +12,7 @@ let testerNick: string;
 let chanNick: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
+  skipWithoutIrcv3('presence comes from MONITOR');
   const suffix = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   botNick = `dmp-bot-${suffix}`;
   testerNick = `dmp-tester-${suffix}`;
@@ -25,7 +27,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  await sharedPage.close();
+  await sharedPage?.close();
   bot?.disconnect();
 });
 

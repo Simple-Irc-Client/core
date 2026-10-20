@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 test.describe('Responsive layout', () => {
   test.describe.configure({ mode: 'serial' });
@@ -152,6 +153,7 @@ test.describe('Responsive layout', () => {
   });
 
   test('profile settings dialog fits the viewport and scrolls on mobile', async () => {
+    skipWithoutIrcv3('the METADATA fields are what make the dialog taller than a phone');
     await sharedPage.locator('[data-avatar-button]').click();
     await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
 

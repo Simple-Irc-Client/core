@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 /**
  * Lets a test hold every incoming WebSocket message and release them in order later, like a slow network.
@@ -53,6 +54,7 @@ const joinChannel = async (page: Page, channel: string): Promise<void> => {
 
 test.describe('Labeled responses', () => {
   test('a reply that arrives after switching windows is shown where the command was typed', async ({ page }) => {
+    skipWithoutIrcv3('replies are matched to commands by labeled-response');
     await installIncomingHold(page);
     await page.goto('/');
     await connectViaWizard(page, 'label-tester');

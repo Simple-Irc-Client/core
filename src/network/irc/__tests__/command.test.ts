@@ -13,7 +13,8 @@ describe('command tests', () => {
     useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
   });
   it('test away command', () => {
-    expect(parseMessageToCommand('#channel', '/away message')).toStrictEqual('away message');
+    expect(parseMessageToCommand('#channel', '/away Taking a break')).toStrictEqual('AWAY :Taking a break');
+    expect(parseMessageToCommand('#channel', '/away')).toStrictEqual('AWAY');
   });
 
   it('test join command', () => {

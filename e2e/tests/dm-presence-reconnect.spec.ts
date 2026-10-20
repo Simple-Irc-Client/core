@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 // Named *-reconnect.spec.ts on purpose: playwright.config.ts routes anything
 // matching /reconnect\.spec/ to the dedicated, non-parallel reconnect
@@ -8,6 +9,7 @@ import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '..
 // enough that it shouldn't run concurrently with the rest of the e2e suite.
 test.describe('DM presence indicator survives our own disconnect/reconnect', () => {
   test('does not keep showing a peer as online once our own connection drops', async ({ page }) => {
+    skipWithoutIrcv3('presence comes from MONITOR');
     const bot: IrcClient = await createIrcClient('dmp-recon-bot');
 
     // Installed before the page loads, so we can force-close our own connection later

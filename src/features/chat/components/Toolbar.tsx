@@ -28,11 +28,7 @@ import ColorPicker from './ColorPicker';
 import StylePicker from './StylePicker';
 import UserMenu from './UserMenu';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
-
-// eslint-disable-next-line no-control-regex
-const ACTION_BODY = /^\x01ACTION (.*)\x01$/;
-// Case-insensitive so a hand-typed lowercase `/quote privmsg` can't slip past the E2EE gate as plaintext
-const PRIVMSG_OR_NOTICE = /^(PRIVMSG|NOTICE) (\S+) :([\s\S]*)$/i;
+import { ACTION_BODY, PRIVMSG_OR_NOTICE, showOwnCommandMessages } from '@features/chat/ownMessages';
 
 export type OutgoingCommandGate =
   | { verdict: 'encrypt'; target: string; kind: BodyKind; body: string }
@@ -211,6 +207,10 @@ const Toolbar = () => {
   };
 
   const sendTypingStatus = (status: 'active' | 'done'): void => {
+    // Client tags such as +typing need message-tags; other servers would answer with an error
+    if (!isCapabilityEnabled('message-tags')) {
+      return;
+    }
     typingStatus.current = status;
     ircSendRawMessage(`@+draft/typing=${status};+typing=${status} TAGMSG ${currentChannelName}`);
   };
@@ -304,6 +304,11 @@ const Toolbar = () => {
           color: MessageColor.error,
         });
         return;
+      }
+
+      // With echo-message the server echoes it back and it's added then
+      if (!isCapabilityEnabled('echo-message')) {
+        showOwnCommandMessages(payload, currentChannelName);
       }
     } else {
       if (!isSystemChannel) {

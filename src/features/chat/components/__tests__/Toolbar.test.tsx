@@ -7,6 +7,7 @@ import * as network from '@/network/irc/network';
 import * as users from '@features/users/store/users';
 import * as channelList from '@features/channels/store/channelList';
 import * as capabilities from '@/network/irc/capabilities';
+import * as ownMessages from '@features/chat/ownMessages';
 import { ChannelCategory } from '@shared/types';
 
 vi.mock('react-i18next', () => ({
@@ -1527,6 +1528,21 @@ describe('Toolbar', () => {
   });
 
   describe('Typing indicator', () => {
+    beforeEach(() => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'message-tags');
+    });
+
+    it('does not send typing notifications to a server without message-tags', () => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(false);
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'Hi' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringContaining('TAGMSG'));
+    });
+
     it('should send typing=active TAGMSG when user starts typing', () => {
       render(<Toolbar />);
 
@@ -1830,6 +1846,30 @@ describe('Toolbar', () => {
       fireEvent.submit(form as HTMLFormElement);
 
       expect(mockIsCapabilityEnabled).toHaveBeenCalledWith('echo-message');
+    });
+
+    it('shows what a command sends when the server does not echo it', () => {
+      const showOwn = vi.spyOn(ownMessages, 'showOwnCommandMessages').mockImplementation(() => {});
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/me waves' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(showOwn).toHaveBeenCalledWith('PRIVMSG #test :\x01ACTION waves\x01', '#test');
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :\x01ACTION waves\x01', { window: '#test' });
+    });
+
+    it('leaves what a command sends to the echo when the server has echo-message', () => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockReturnValue(true);
+      const showOwn = vi.spyOn(ownMessages, 'showOwnCommandMessages').mockImplementation(() => {});
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/me waves' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(showOwn).not.toHaveBeenCalled();
     });
   });
 

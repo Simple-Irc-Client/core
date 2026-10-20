@@ -86,6 +86,11 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   return { tags, sender, command, line };
 };
 
+const IRC_SERVICES = new Set(['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv']);
+
+/** Messages to services may carry passwords, so the client never shows its own copies of them. */
+export const isIrcService = (nick: string): boolean => IRC_SERVICES.has(nick.toLowerCase());
+
 // eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_RE = /[\x00-\x1f\x7f]/g;
 const MAX_NICK_PARSE_LENGTH = 100;

@@ -131,7 +131,10 @@ const handleInactivityTimeout = async (): Promise<void> => {
 
   // Silently: no stale 'close' reaches the kernel mid-reconnect
   disconnectDirect();
-  notifyConnectionTornDown();
+  // A gateway session is resumed with its per-connection state, or reconnectAs resets it
+  if (!hasGatewaySession()) {
+    notifyConnectionTornDown();
+  }
   setIsConnecting(false);
   setIsConnected(false);
   clearAllTyping();

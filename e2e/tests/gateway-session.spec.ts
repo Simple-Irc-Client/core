@@ -7,13 +7,13 @@ import { createIrcClient, type IrcClient } from '../irc-client';
  * connection, so the page comes back to the same session and sees what it missed, and nobody else sees a quit.
  */
 
-// chromium-gateway and firefox-gateway share one ergo, so names are per project (see e2e-nick-collision-flake)
+// Both browser projects share one server, so names are per project (see e2e-nick-collision-flake)
 const names = (testInfo: TestInfo, base: string): { nick: string; peer: string; channel: string } => {
   const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   return { nick: `${base}-${tag}`, peer: `${base}-p-${tag}`, channel: `#${base}-${tag}` };
 };
 
-const joinChannel = async (page: Page, channel: string): Promise<void> => {
+const joinChannel = async (page: Page, nick: string, channel: string): Promise<void> => {
   const input = page.locator('#message-input');
   await expect(input).toBeEnabled({ timeout: 10_000 });
   await input.fill(`/join ${channel}`);
@@ -22,6 +22,8 @@ const joinChannel = async (page: Page, channel: string): Promise<void> => {
   await expect(sidebarEntry).toBeVisible({ timeout: 10_000 });
   await sidebarEntry.click();
   await expect(page.getByTestId('chat-header-name')).toContainText(channel);
+  // The sidebar entry appears before the server confirms the join
+  await expect(page.getByTestId('chat-log').getByText(`${nick} has joined`)).toBeVisible({ timeout: 10_000 });
 };
 
 const sendFromApp = async (page: Page, text: string): Promise<void> => {
@@ -46,8 +48,8 @@ test.describe('Resumable gateway session', () => {
     const { nick, peer: peerNick, channel } = names(testInfo, 'gw-resume');
     await installWebSocketKillSwitch(page);
     await page.goto('/');
-    await connectViaWizard(page, nick, { channels: [], viaGateway: true });
-    await joinChannel(page, channel);
+    await connectViaWizard(page, nick, { channels: [] });
+    await joinChannel(page, nick, channel);
 
     peer = await createIrcClient(peerNick);
     await peer.join(channel);
@@ -76,8 +78,8 @@ test.describe('Resumable gateway session', () => {
   test('after a page reload the old session is replaced instead of left behind', async ({ page }, testInfo) => {
     const { nick, peer: peerNick, channel } = names(testInfo, 'gw-reload');
     await page.goto('/');
-    await connectViaWizard(page, nick, { channels: [], viaGateway: true });
-    await joinChannel(page, channel);
+    await connectViaWizard(page, nick, { channels: [] });
+    await joinChannel(page, nick, channel);
 
     peer = await createIrcClient(peerNick);
     await peer.join(channel);
@@ -100,8 +102,8 @@ test.describe('Resumable gateway session', () => {
   test('disconnecting from the menu ends the session instead of leaving it to the gateway', async ({ page }, testInfo) => {
     const { nick, peer: peerNick, channel } = names(testInfo, 'gw-quit');
     await page.goto('/');
-    await connectViaWizard(page, nick, { channels: [], viaGateway: true });
-    await joinChannel(page, channel);
+    await connectViaWizard(page, nick, { channels: [] });
+    await joinChannel(page, nick, channel);
 
     peer = await createIrcClient(peerNick);
     await peer.join(channel);

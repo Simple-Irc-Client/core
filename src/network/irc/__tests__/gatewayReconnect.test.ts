@@ -91,6 +91,7 @@ describe('network in gateway mode', () => {
 
   afterEach(() => {
     network.clearInactivityTimeout();
+    vi.useRealTimers();
   });
 
   it('asks the gateway for a resumable session', () => {
@@ -137,6 +138,30 @@ describe('network in gateway mode', () => {
     network.ircDisconnect();
 
     expect(mockSendDirectRaw).not.toHaveBeenCalled();
+  });
+
+  it('keeps per-connection state over an inactivity reconnect that can resume the session', async () => {
+    vi.useFakeTimers();
+    const tornDown = vi.fn();
+    network.onConnectionTornDown(tornDown);
+    gatewaySession.rememberGatewaySession('token-1');
+
+    network.resetInactivityTimeout();
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(mockDisconnectDirect).toHaveBeenCalled();
+    expect(tornDown).not.toHaveBeenCalled();
+  });
+
+  it('tears per-connection state down on an inactivity reconnect without a session', async () => {
+    vi.useFakeTimers();
+    const tornDown = vi.fn();
+    network.onConnectionTornDown(tornDown);
+
+    network.resetInactivityTimeout();
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(tornDown).toHaveBeenCalled();
   });
 
   it('ends the session a reloaded page left behind', () => {

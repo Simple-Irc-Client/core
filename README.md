@@ -21,7 +21,9 @@ Built in gateway mode, the app asks the [gateway](https://github.com/Simple-Irc-
 - If the gateway no longer has the session (it expired or the gateway restarted), the same connection registers from scratch.
 - After a page reload the app cannot resume, so it asks the gateway to end the old session and starts a new one.
 - Disconnecting from the menu, or `/quit`, sends QUIT so the gateway ends the session right away.
-- When some missed lines were dropped from the gateway's buffer, the app says so and refreshes the user lists of open channels.
+- Encrypted conversations carry on: the peer never saw the connection end, so the session keys are kept and missed encrypted messages are decrypted from the replay.
+- When some missed lines were dropped from the gateway's buffer, the app says so, refreshes the user lists of open channels and ends encrypted sessions, since a lost QUIT could mean someone else now holds a peer's nick; they are re-offered once presence reports the peer.
+- It works the same on servers without IRCv3: the gateway adds the time it received each line to replayed lines that have no server-time.
 
 The protocol is described in the gateway's README.
 
@@ -150,10 +152,10 @@ The application will be available at `http://localhost:5173`
 
 ```bash
 pnpm test          # unit tests
-pnpm run test:e2e  # Playwright, against an ergo IRC server in Docker
+pnpm run test:e2e  # Playwright, against IRC servers in Docker
 ```
 
-The e2e suite also runs the gateway from source for the `*-gateway` projects. It expects a checkout next to this repository (`../gateway`, with `pnpm install` done); set `E2E_GATEWAY_DIR` to use another location.
+Every e2e test runs twice: against ergo, an IRCv3 server, and through the gateway against ngircd, a server without IRCv3 (the `*-legacy-*` projects). Tests of IRCv3-only features are skipped on ngircd. The gateway runs from source for the `*-gateway` and `*-legacy-*` projects; it expects a checkout next to this repository (`../gateway`, with `pnpm install` done); set `E2E_GATEWAY_DIR` to use another location.
 
 ### Docker
 

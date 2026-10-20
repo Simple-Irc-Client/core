@@ -3,7 +3,7 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
-import { forgetGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
+import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
 import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
@@ -138,18 +138,20 @@ export const handleResumed = (complete: boolean): void => {
   resetInactivityReconnectRetries();
   clearSavedCredentials();
 
+  // Joins, parts or a peer's quit may be among the dropped lines
+  if (!complete) {
+    endAllSessions();
+    clearIncomingState();
+    for (const channel of getOpenChannelNames()) {
+      ircSendRawMessage(`NAMES ${channel}`);
+    }
+  }
+
   // Presence was cleared with the WebSocket; subscribing again makes the server report it anew
   resetFriendsSubscription();
   subscribeFriendsOnRegistration();
   resetDmPresenceSubscription();
   subscribeDmPresenceOnRegistration();
-
-  // Joins and parts may be among the dropped lines
-  if (!complete) {
-    for (const channel of getOpenChannelNames()) {
-      ircSendRawMessage(`NAMES ${channel}`);
-    }
-  }
 
   setAddMessageToAllChannels({
     id: uuidv4(),
@@ -180,9 +182,11 @@ export const handleDisconnected = (): void => {
   setLagMs(undefined);
   clearAllTyping();
 
-  // Session keys are per-connection; the peer forgets them too
-  endAllSessions();
-  clearIncomingState();
+  // Session keys are per IRC connection; one the gateway may resume keeps them until resetConnectionState says otherwise
+  if (!hasGatewaySession()) {
+    endAllSessions();
+    clearIncomingState();
+  }
 
   // MONITOR/WATCH dies with the socket, so stale presence can't be vouched for
   clearMonitorList();

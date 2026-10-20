@@ -3,6 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
 import { CTCP, ctcpBody, E2eePeer } from '../e2ee-peer';
+import { testServer } from '../test-server';
 
 /**
  * E2EE across our own disconnect/reconnect.
@@ -13,6 +14,9 @@ import { CTCP, ctcpBody, E2eePeer } from '../e2ee-peer';
  * silently re-sends an OFFER — the user shouldn't have to press "Encrypt again"
  * after every blip. A session the user *deliberately* turned off must not come
  * back that way.
+ *
+ * Through the gateway the IRC connection outlives the WebSocket, so the peer
+ * never sees us leave: the session is resumed rather than renegotiated.
  *
  * Named *-reconnect.spec.ts so playwright.config.ts routes it to the serial
  * reconnect project.
@@ -69,9 +73,13 @@ const handshakeWithBotAsInitiator = async (): Promise<void> => {
   await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted/, { timeout: 10_000 });
 };
 
-const reconnectViaBanner = async (): Promise<void> => {
+const dropAndWait = async (): Promise<void> => {
   await dropConnection(page);
   await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
+};
+
+const reconnectViaBanner = async (): Promise<void> => {
+  await dropAndWait();
   await page.getByRole('button', { name: 'Connect' }).click();
   await expect(page.getByText('Not connected to server').first()).not.toBeVisible({ timeout: 30_000 });
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
@@ -103,6 +111,7 @@ test.describe('E2EE resume on reconnect', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('re-offers encryption automatically after the connection drops and returns', async () => {
+    test.skip(testServer().viaGateway, 'the gateway resumes the IRC connection, so the session never ends');
     await openDmWithBot();
     await handshakeWithBotAsInitiator();
 
@@ -127,6 +136,25 @@ test.describe('E2EE resume on reconnect', () => {
     await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted/, { timeout: 15_000 });
   });
 
+  test('a resumed gateway session keeps the conversation encrypted', async () => {
+    test.skip(!testServer().viaGateway, 'only the gateway keeps the IRC connection over a drop');
+    await openDmWithBot();
+    await handshakeWithBotAsInitiator();
+    const capture = bot.captureLines();
+
+    await dropAndWait();
+    // Sent while the page was away; the gateway replays it
+    for (const frame of await peer.sealFrames('kept while you were away')) {
+      bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${frame}${CTCP}`);
+    }
+    await page.getByRole('button', { name: 'Connect' }).click();
+
+    await expect(page.getByTestId('chat-log').getByText('kept while you were away')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted/);
+    capture.stop();
+    expect(capture.lines.join('\n'), 'the peer still holds the session, so nothing is renegotiated').not.toContain('SIC-E2EE OFFER');
+  });
+
   test('does not re-offer a session the user turned off before the drop', async () => {
     await openDmWithBot();
     await handshakeWithBotAsInitiator();
@@ -148,6 +176,7 @@ test.describe('E2EE resume on reconnect', () => {
   });
 
   test('a changed identity key on the resume handshake is blocked, not silently accepted', async () => {
+    test.skip(testServer().viaGateway, 'the gateway resumes the IRC connection, so there is no resume handshake');
     await openDmWithBot();
     await handshakeWithBotAsInitiator(); // pins the real peer identity
 

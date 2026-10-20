@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 let alice: IrcClient;
 let bob: IrcClient;
@@ -67,6 +68,7 @@ test.describe('Chat', () => {
   });
 
   test('shows different messages per channel', async () => {
+    skipWithoutIrcv3('messages sent before joining come from CHATHISTORY');
     const chatLog = sharedPage.getByTestId('chat-log');
 
     // Switch to #general - should have messages from alice and bob

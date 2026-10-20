@@ -7,6 +7,7 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
 import * as friendsFile from '@features/friends/friends';
 import * as networkFile from '@/network/irc/network';
+import * as e2eeSessionFile from '@features/e2ee/session';
 import {
   beginGatewayConnection,
   forgetGatewaySession,
@@ -71,7 +72,37 @@ describe('kernel gateway hello', () => {
     expect(channelsFile.setAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.resumed') }));
   });
 
+  it('keeps encrypted conversations over a dropped WebSocket the gateway may resume', () => {
+    const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
+    beginGatewayConnection(false);
+    new Kernel({ type: 'connect' }).handle();
+    raw(':sic-gateway SESSION token-1');
+
+    new Kernel({ type: 'close' }).handle();
+
+    expect(endSessions).not.toHaveBeenCalled();
+  });
+
+  it('ends encrypted conversations with the connection when there is no gateway session', () => {
+    const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
+
+    new Kernel({ type: 'close' }).handle();
+
+    expect(endSessions).toHaveBeenCalled();
+  });
+
+  it('carries encrypted conversations over a complete resume', () => {
+    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
+    resumeAttempt();
+
+    raw(':sic-gateway RESUMED complete');
+
+    expect(endSessions).not.toHaveBeenCalled();
+  });
+
   it('refreshes channel rosters when part of the replay was lost', () => {
+    const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'getOpenChannelNames').mockImplementation(() => ['#one', '#two']);
     resumeAttempt();
@@ -79,6 +110,8 @@ describe('kernel gateway hello', () => {
     raw(':sic-gateway RESUMED partial');
 
     expect(sentLines()).toEqual(expect.arrayContaining(['NAMES #one', 'NAMES #two']));
+    // A lost QUIT could mean someone else holds the peer's nick now
+    expect(endSessions).toHaveBeenCalled();
     expect(channelsFile.setAddMessageToAllChannels).toHaveBeenCalledWith(
       expect.objectContaining({ message: i18next.t('kernel.resumedPartial') }),
     );

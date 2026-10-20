@@ -36,8 +36,10 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
 
-      - name: Pull ergo IRC server image
-        run: docker pull ghcr.io/ergochat/ergo:stable
+      - name: Pull IRC server images
+        run: |
+          docker pull ghcr.io/ergochat/ergo:stable
+          docker pull docker.io/linuxserver/ngircd:version-27-r1
 
       - name: Run e2e tests
         run: pnpm exec playwright test

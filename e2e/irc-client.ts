@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import { PASSWORD_FILE } from './global-setup';
+import { testServer } from './test-server';
 
 /**
  * Pattern to match RPL_WELCOME (001) from a server
@@ -288,7 +289,7 @@ export class IrcClient {
     this.client = new RawIrcClient();
   }
 
-  async connect(host = '127.0.0.1', port = 6667): Promise<void> {
+  async connect(host = '127.0.0.1', port = testServer().ircPort): Promise<void> {
     return new Promise((resolve, reject) => {
       let nickAttempt = 0;
       const tryNick = () => this.nick + (nickAttempt > 0 ? String(nickAttempt) : '');
@@ -437,7 +438,7 @@ export class IrcClient {
   }
 }
 
-export const createIrcClient = async (nick: string, host = '127.0.0.1', port = 6667, requestCaps?: string[]): Promise<IrcClient> => {
+export const createIrcClient = async (nick: string, host = '127.0.0.1', port = testServer().ircPort, requestCaps?: string[]): Promise<IrcClient> => {
   const password = readFileSync(PASSWORD_FILE, 'utf8');
   const client = new IrcClient(nick, password, requestCaps);
   await client.connect(host, port);

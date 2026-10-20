@@ -1,11 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
 let sharedPage: Page;
 
 test.beforeAll(async ({ browser }) => {
+  skipWithoutIrcv3('typing notifications are message tags');
   bot = await createIrcClient('typingbot');
   await bot.join('#typing-test');
 
@@ -17,8 +19,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  await sharedPage.close();
-  bot.disconnect();
+  await sharedPage?.close();
+  bot?.disconnect();
 });
 
 test.describe('Typing indicator', () => {

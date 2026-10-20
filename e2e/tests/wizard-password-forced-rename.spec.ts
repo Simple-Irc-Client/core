@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { getServerPassword } from '../helpers';
+import { fillTestServer, getServerPassword, testServerAddress } from '../helpers';
 
-const ERGO_HOST = 'localhost';
-const ERGO_WSS_PORT = '8097';
 
 const TEST_NICK = 'pw-forced-rename-tester';
 const FORCED_NICK = 'Unidentified-pwtest';
@@ -14,12 +12,9 @@ const fillNickStep = async (page: Page, nick: string): Promise<void> => {
   await page.getByRole('button', { name: 'Next' }).click();
 };
 
-/** Fill in server step with the local ergo WSS server and click Next. */
+/** Fill in server step with the project's test server and click Next. */
 const fillServerStepAndConnect = async (page: Page): Promise<void> => {
-  await page.getByLabel('Server address').fill(ERGO_HOST);
-  await page.getByLabel('Port').clear();
-  await page.getByLabel('Port').fill(ERGO_WSS_PORT);
-  await page.getByRole('button', { name: 'WebSocket' }).click();
+  await fillTestServer(page);
   await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
 };
@@ -119,7 +114,7 @@ test.describe('Wizard password survives a server-forced nick change', () => {
     // pre-filled from the persisted server settings. ---
     await fillNickStep(page, TEST_NICK);
 
-    await expect(page.getByLabel('Server address')).toHaveValue(ERGO_HOST);
+    await expect(page.getByLabel('Server address')).toHaveValue(testServerAddress().host);
     await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
