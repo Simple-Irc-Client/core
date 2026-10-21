@@ -1,6 +1,7 @@
 ## Simple Irc Client core
 
 [![Build Status](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml/badge.svg)](https://github.com/Simple-Irc-Client/core/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Simple-Irc-Client/core/badge)](https://scorecard.dev/viewer/?uri=github.com/Simple-Irc-Client/core)
 
 A React IRC client that connects to IRC servers directly over WebSocket.
 
