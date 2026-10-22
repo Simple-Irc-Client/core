@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { PASSWORD_FILE } from './global-setup';
 import { testServer } from './test-server';
 
@@ -154,4 +154,30 @@ export const identifyInApp = async (page: Page, account: string, password: strin
   await messageInput.fill(`/msg NickServ IDENTIFY ${account} ${password}`);
   await messageInput.press('Enter');
   await page.getByText(`You're now logged in as ${account}`).waitFor({ timeout: 10_000 });
+};
+
+/** Waits until the channels store has written `text` to IndexedDB: it debounces writes, so a burst of traffic keeps postponing them */
+export const waitForPersistedChannels = async (page: Page, text: string): Promise<void> => {
+  await expect.poll(() => page.evaluate(async () => {
+    const settings = JSON.parse(localStorage.getItem('sic-settings') ?? '{}') as {
+      state?: { server?: { network: string; servers: string[]; default: number } };
+    };
+    const server = settings.state?.server;
+    if (!server) {
+      return '';
+    }
+    const key = `sic-channels:${server.network}:${server.servers[server.default]}`;
+
+    // idb-keyval's defaults: database "keyval-store", object store "keyval"
+    return new Promise<string>((resolve, reject) => {
+      const open = indexedDB.open('keyval-store');
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const request = db.transaction('keyval', 'readonly').objectStore('keyval').get(key);
+        request.onsuccess = () => { db.close(); resolve(typeof request.result === 'string' ? request.result : ''); };
+        request.onerror = () => { db.close(); reject(request.error); };
+      };
+    });
+  }), { timeout: 15_000 }).toContain(text);
 };

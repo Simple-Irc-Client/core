@@ -1,5 +1,5 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPersistedChannels } from '../helpers';
 
 /**
  * Event-driven reconnect, the way mobile web actually recovers.
@@ -104,13 +104,14 @@ test.describe('Mobile event-driven reconnect', () => {
   test('reconnecting after a page reload keeps the restored view, not Status', async ({ page }, testInfo) => {
     await setUpOnChannel(page, 'mob-rec-reload', testInfo);
 
-    // Send a line so the window has content, and let the channels/settings
-    // stores flush (2s IndexedDB debounce) before the reload.
+    // Send a line so the window has content, and let the channels store write it to IndexedDB before the reload
+    // Per project: the browsers share the channel and its history
+    const anchor = `anchor message before reload (${testInfo.project.name})`;
     const input = page.locator('#message-input');
-    await input.fill('anchor message before reload');
+    await input.fill(anchor);
     await input.press('Enter');
-    await expect(page.getByTestId('chat-log').getByText('anchor message before reload')).toBeVisible();
-    await page.waitForTimeout(2500);
+    await expect(page.getByTestId('chat-log').getByText(anchor)).toBeVisible();
+    await waitForPersistedChannels(page, anchor);
 
     // A reload is a fresh JS session: persisted windows + currentChannelName are
     // restored, and the app comes up disconnected. This is the exact shape of
@@ -129,6 +130,6 @@ test.describe('Mobile event-driven reconnect', () => {
     // window was already showing.
     await expect(page.getByTestId('chat-header-name')).toContainText(CHANNEL);
     await expect(page.getByTestId('chat-header-name')).not.toHaveText('Status');
-    await expect(page.getByTestId('chat-log').getByText('anchor message before reload')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('chat-log').getByText(anchor)).toBeVisible({ timeout: 10_000 });
   });
 });
