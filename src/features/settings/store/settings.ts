@@ -5,7 +5,7 @@ import { BUILTIN_THEMES, DEFAULT_THEME_ID, isBuiltinTheme, type BuiltinThemeId }
 import { type CustomTheme } from '@features/themes/themeSelectors';
 import { devtools, persist } from 'zustand/middleware';
 import { ChannelCategory, type ChannelMode, type UserMode } from '@shared/types';
-import { getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
+import { forgetChannelsToAutoJoin, getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
 import { useCurrentStore, setCurrentClearAll } from '@features/chat/store/current';
 import { flushCurrentUsers, setUsersClearAll } from '@features/users/store/users';
 import { defaultChannelTypes } from '@/config/config';
@@ -16,7 +16,7 @@ import { ircDisconnect } from '@/network/irc/network';
 import { markRead } from '@/network/irc/readMarkers';
 import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
 
-export type WizardStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
+export type WizardStep = 'nick' | 'server' | 'bouncer' | 'loading' | 'networks' | 'password' | 'channels';
 
 export interface WizardProgress {
   value: number;
@@ -725,14 +725,31 @@ export const setWizardHintDismissed = (): void => {
   useSettingsStore.getState().setWizardHintDismissed();
 };
 
-export const resetAndGoToStart = (clearNick = false): void => {
-  ircDisconnect();
-
+/** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */
+export const clearNetworkState = (): void => {
   setChannelsClearAll();
   setUsersClearAll();
   setCurrentClearAll();
   setChannelListClear();
   clearMonitorList();
+};
+
+/** Before connecting to another network on a bouncer: nothing learned on the previous one holds there; the wizard stays where it is */
+export const clearForAnotherNetwork = (): void => {
+  clearNetworkState();
+  forgetChannelsToAutoJoin();
+  useSettingsStore.setState((state) => ({
+    ...sessionDefaults(),
+    isWizardCompleted: state.isWizardCompleted,
+    wizardStep: state.wizardStep,
+    wizardProgress: state.wizardProgress,
+  }));
+};
+
+export const resetAndGoToStart = (clearNick = false): void => {
+  ircDisconnect();
+
+  clearNetworkState();
 
   resetWizardState();
 
@@ -745,11 +762,7 @@ export const resetAndGoToStart = (clearNick = false): void => {
 export const changeServer = (): void => {
   ircDisconnect();
 
-  setChannelsClearAll();
-  setUsersClearAll();
-  setCurrentClearAll();
-  setChannelListClear();
-  clearMonitorList();
+  clearNetworkState();
 
   // Passwords are preserved per server
   resetWizardState();

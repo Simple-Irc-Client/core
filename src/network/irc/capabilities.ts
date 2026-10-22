@@ -41,6 +41,10 @@ export const DESIRED_CAPABILITIES = [
   // Capability management
   'cap-notify',
 
+  // Bouncer networks (soju)
+  'soju.im/bouncer-networks',
+  'soju.im/bouncer-networks-notify',
+
   // History (draft)
   'draft/chathistory',
   'draft/event-playback',

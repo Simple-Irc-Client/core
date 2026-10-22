@@ -542,6 +542,16 @@ const reconnectAs = async (server: Server, nick: string, announce: boolean): Pro
 const restoreCredentials = async (nick: string): Promise<void> => {
   const restored = await restoreSaslCredentials();
 
+  const bouncer = getServer()?.bouncer;
+  if (!restored && bouncer !== undefined) {
+    try {
+      setSaslCredentials(bouncer.account, await decryptPersistent(bouncer.encryptedPassword));
+    } catch {
+      // Continue without credentials: the bouncer then refuses to bind a network
+    }
+    return;
+  }
+
   // Fall back to persistent storage
   if (!restored) {
     const encryptedPassword = getEncryptedPassword();

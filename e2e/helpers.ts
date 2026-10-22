@@ -97,6 +97,12 @@ export const fillTestServer = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: type }).click();
 };
 
+/** A custom server asks for a bouncer account first; the test IRC servers are no bouncers */
+export const skipBouncerAccount = async (page: Page): Promise<void> => {
+  await expect(page.getByRole('heading', { name: 'Bouncer account' })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+};
+
 /**
  * Go through the wizard to connect to the project's test server.
  * Enters nick, custom server, server password,
@@ -117,8 +123,9 @@ export const connectViaWizard = async (
   // Enter server password
   await page.getByLabel('Server password').fill(getServerPassword());
 
-  // Submit (this triggers connection + goes to loading step)
   await page.getByRole('button', { name: 'Next' }).click();
+  // Skipping it connects and goes to the loading step
+  await skipBouncerAccount(page);
 
   // Step 3: Loading - wait for connection and password check (≈5 seconds)
   await page.getByText('Connected').waitFor({ timeout: 15_000 });

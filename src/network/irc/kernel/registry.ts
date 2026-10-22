@@ -37,6 +37,7 @@ import { handlers as extensionsQuietlist } from '@/network/irc/kernel/extensions
 import { handlers as extensionsWatch } from '@/network/irc/kernel/extensions/watch';
 import { handlers as ircv3Account } from '@/network/irc/kernel/ircv3/account';
 import { handlers as ircv3Batch } from '@/network/irc/kernel/ircv3/batch';
+import { handlers as ircv3Bouncer } from '@/network/irc/kernel/ircv3/bouncer';
 import { handlers as ircv3Cap } from '@/network/irc/kernel/ircv3/cap';
 import { handlers as ircv3Chghost } from '@/network/irc/kernel/ircv3/chghost';
 import { handlers as ircv3Labeledresponse } from '@/network/irc/kernel/ircv3/labeledresponse';
@@ -101,6 +102,7 @@ export const ircHandlers = mergeHandlers(
   extensionsWatch,
   ircv3Account,
   ircv3Batch,
+  ircv3Bouncer,
   ircv3Cap,
   ircv3Chghost,
   ircv3Labeledresponse,

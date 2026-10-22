@@ -24,6 +24,7 @@ import type { EmojiClickData } from 'emoji-picker-react';
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 import ProfileSettings from '@features/settings/components/ProfileSettings';
 import AwayMessages from '@features/channels/components/AwayMessages';
+import BouncerNetworksDialog from '@features/bouncer/components/BouncerNetworksDialog';
 import ColorPicker from './ColorPicker';
 import StylePicker from './StylePicker';
 import UserMenu from './UserMenu';
@@ -115,6 +116,7 @@ const Toolbar = () => {
   const [stylePickerOpen, setStylePickerOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [awayDialogOpen, setAwayDialogOpen] = useState(false);
+  const [bouncerNetworksDialogOpen, setBouncerNetworksDialogOpen] = useState(false);
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
   const autocompleteInput = useRef<HTMLInputElement>(null);
@@ -449,6 +451,7 @@ const Toolbar = () => {
             <UserMenu
               onOpenProfile={() => setProfileDialogOpen(true)}
               onOpenAwayMessages={() => setAwayDialogOpen(true)}
+              onOpenBouncerNetworks={() => setBouncerNetworksDialogOpen(true)}
             />
 
             <div className="flex-1 relative">
@@ -509,6 +512,11 @@ const Toolbar = () => {
       <AwayMessages
         open={awayDialogOpen}
         onOpenChange={setAwayDialogOpen}
+      />
+
+      <BouncerNetworksDialog
+        open={bouncerNetworksDialogOpen}
+        onOpenChange={setBouncerNetworksDialogOpen}
       />
 
     </>

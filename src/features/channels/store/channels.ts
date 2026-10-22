@@ -657,3 +657,8 @@ export const setChannelsClearAll = (): void => {
   useChannelsStore.getState().setClearAll();
 };
 
+/** The channels kept for the next connection belong to another network */
+export const forgetChannelsToAutoJoin = (): void => {
+  lastChannelsToAutoJoin = [];
+};
+

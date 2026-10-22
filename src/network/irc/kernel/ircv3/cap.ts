@@ -3,6 +3,7 @@ import { MessageColor } from '@/config/theme';
 import { addAvailableCapabilities, endCapNegotiation, getCapabilitiesToRequest, isCapabilityEnabled, markCapabilitiesAcknowledged, markCapabilitiesRequested, parseCapabilityList, removeCapabilities, setAwaitingMoreCaps } from '@/network/irc/capabilities';
 import { handleSocketClose } from '@/network/irc/kernel/connection';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { sendBouncerBind } from '@/network/irc/bouncer';
 import { ircDisconnect, ircRequestMetadata, ircSendRawMessage } from '@/network/irc/network';
 import { sendPreAway } from '@/network/irc/preAway';
 import { getSaslAccount, getSaslPassword, saveSaslCredentialsForReconnect, setSaslState } from '@/network/irc/sasl';
@@ -163,6 +164,7 @@ export const startSaslAuthentication = (): void => {
 
 export const finishCapNegotiation = (): void => {
   endCapNegotiation();
+  sendBouncerBind();
   sendPreAway();
   ircSendRawMessage('CAP END');
 };

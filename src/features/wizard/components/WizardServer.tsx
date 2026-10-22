@@ -64,6 +64,13 @@ const WizardServer = () => {
 
     if (serverToConnect !== undefined) {
       setServer(serverToConnect);
+
+      // A bouncer is always a custom server: its account is asked for before connecting
+      if (isCustom) {
+        setWizardStep('bouncer');
+        return;
+      }
+
       const nick = getCurrentNick();
 
       ircConnect(serverToConnect, nick);

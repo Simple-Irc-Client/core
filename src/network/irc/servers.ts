@@ -1,6 +1,16 @@
 export type ConnectionType = 'backend' | 'websocket';
 
+/** An account on a bouncer (soju.im/bouncer-networks), logged into with SASL */
+export interface BouncerLogin {
+  account: string;
+  /** Encrypted at rest, as the NickServ password is */
+  encryptedPassword: string;
+  /** The bouncer network this server connects to; none until the user picks one */
+  networkId?: string;
+}
+
 export interface Server {
+  bouncer?: BouncerLogin;
   command?: string;
   connectionType?: ConnectionType;
   default: number;

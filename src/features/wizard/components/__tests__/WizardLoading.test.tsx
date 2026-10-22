@@ -5,6 +5,7 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as ircNetwork from '@/network/irc/network';
 import * as queryParams from '@shared/lib/queryParams';
 import * as stsModule from '@/network/irc/sts';
+import * as bouncerModule from '@/network/irc/bouncer';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -36,6 +37,10 @@ vi.mock('@shared/lib/queryParams', () => ({
 
 vi.mock('@/network/irc/sts', () => ({
   getPendingSTSUpgrade: vi.fn(),
+}));
+
+vi.mock('@/network/irc/bouncer', () => ({
+  isBouncerControlConnection: vi.fn(() => false),
 }));
 
 vi.mock('@shared/lib/utils', async (importOriginal) => {
@@ -195,6 +200,22 @@ describe('WizardLoading', () => {
       });
 
       expect(settingsStore.setWizardProgress).toHaveBeenCalledWith(3, 'wizard.loading.isPasswordRequired');
+    });
+
+    it('should let the user pick a network when connected to a bouncer without one', () => {
+      vi.mocked(bouncerModule.isBouncerControlConnection).mockReturnValueOnce(true);
+      setupMocks({
+        isConnected: true,
+      });
+
+      render(<WizardLoading />);
+
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      expect(settingsStore.setWizardStep).toHaveBeenCalledExactlyOnceWith('networks');
+      expect(ircNetwork.ircJoinChannels).not.toHaveBeenCalled();
     });
 
     it('should navigate to channels step after 5 seconds if password not required', () => {

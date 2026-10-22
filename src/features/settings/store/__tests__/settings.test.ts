@@ -50,12 +50,13 @@ import {
   getEncryptedPassword,
   getPasswordNick,
   changeServer,
+  clearForAnotherNetwork,
   setWizardHintDismissed,
   setCurrentChannelName,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 import { clearMonitorList } from '@features/monitor/store/monitor';
-import { setClearUnreadMessages } from '@features/channels/store/channels';
+import { forgetChannelsToAutoJoin, setChannelsClearAll, setClearUnreadMessages } from '@features/channels/store/channels';
 import { markRead } from '@/network/irc/readMarkers';
 
 vi.mock('@features/channels/store/channels', () => ({
@@ -64,6 +65,7 @@ vi.mock('@features/channels/store/channels', () => ({
   getTyping: vi.fn(() => []),
   setClearUnreadMessages: vi.fn(),
   setChannelsClearAll: vi.fn(),
+  forgetChannelsToAutoJoin: vi.fn(),
 }));
 
 vi.mock('@features/chat/store/current', () => ({
@@ -1084,6 +1086,40 @@ describe('settings store', () => {
       changeServer();
 
       expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
+    });
+  });
+
+  describe('clearForAnotherNetwork', () => {
+    it('forgets what was learned on the network before, and its channels', () => {
+      useSettingsStore.setState({ networkName: 'Libera.Chat', channelTypes: ['#'], currentUserFlags: ['away'], monitorLimit: 100, isConnected: true });
+
+      clearForAnotherNetwork();
+
+      const state = useSettingsStore.getState();
+      expect(state.networkName).toBeUndefined();
+      expect(state.channelTypes).toEqual([]);
+      expect(state.currentUserFlags).toEqual([]);
+      expect(state.monitorLimit).toBe(0);
+      expect(state.isConnected).toBe(false);
+      expect(vi.mocked(setChannelsClearAll)).toHaveBeenCalled();
+      expect(vi.mocked(forgetChannelsToAutoJoin)).toHaveBeenCalled();
+      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
+    });
+
+    it('keeps the wizard where it is, and the server and nick', () => {
+      const server = { default: 0, network: 'bouncer', servers: ['bouncer.example.net'], encoding: 'utf-8' };
+      setServer(server);
+      setNick('alice');
+      useSettingsStore.setState({ isWizardCompleted: false, wizardStep: 'loading', wizardProgress: { value: 2, label: 'Connected' } });
+
+      clearForAnotherNetwork();
+
+      const state = useSettingsStore.getState();
+      expect(state.wizardStep).toBe('loading');
+      expect(state.wizardProgress).toEqual({ value: 2, label: 'Connected' });
+      expect(state.isWizardCompleted).toBe(false);
+      expect(getServer()).toEqual(server);
+      expect(getCurrentNick()).toBe('alice');
     });
   });
 });

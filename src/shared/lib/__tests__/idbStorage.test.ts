@@ -53,6 +53,17 @@ describe('idbStorage', () => {
       expect(vi.mocked(get)).toHaveBeenCalledWith('sic-channels:PIrc:b.pirc.pl');
     });
 
+    it('should keep each network on a bouncer apart', async () => {
+      const stored = JSON.parse(settings('soju', ['bouncer.example.net'], 0)) as { state: { server: Record<string, unknown> } };
+      stored.state.server.bouncer = { account: 'alice', encryptedPassword: 'x', networkId: '3' };
+      localStorage.setItem('sic-settings', JSON.stringify(stored));
+      const storage = createStorage();
+
+      await storage.getItem('sic-channels');
+
+      expect(vi.mocked(get)).toHaveBeenCalledWith('sic-channels:soju:bouncer.example.net:3');
+    });
+
     it('should fall back to the bare name when no settings are stored', async () => {
       const storage = createStorage();
 

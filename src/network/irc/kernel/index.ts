@@ -1,6 +1,7 @@
 import { DEBUG_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { addToBatch, BATCH_TYPES, getBatch, getMessageBatchId } from '@/network/irc/batch';
+import { clearBouncerBind } from '@/network/irc/bouncer';
 import { clearHistoryRequests } from '@/network/irc/chatHistory';
 import { parseIrcRawMessage } from '@/network/irc/helpers';
 import { IrcContext } from '@/network/irc/kernel/context';
@@ -11,6 +12,7 @@ import { onUnhandledNumeric } from '@/network/irc/kernel/unhandled';
 import { takeLabel } from '@/network/irc/labels';
 import { onConnectionTornDown, resetInactivityTimeout } from '@/network/irc/network';
 import { clearReadMarkers } from '@/network/irc/readMarkers';
+import { clearBouncerNetworks } from '@features/bouncer/store/bouncerNetworks';
 import { setAddMessage } from '@features/channels/store/channels';
 import { clearIncomingState } from '@features/e2ee/incoming';
 import { endAllSessions } from '@features/e2ee/session';
@@ -31,6 +33,8 @@ onConnectionTornDown(() => {
   clearMonitorList();
   clearReadMarkers();
   clearHistoryRequests();
+  clearBouncerBind();
+  clearBouncerNetworks();
 });
 
 export class Kernel {

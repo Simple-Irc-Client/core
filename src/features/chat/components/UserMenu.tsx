@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight } from 'lucide-react';
+import { User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight, Network } from 'lucide-react';
 import { useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ircReconnect } from '@/network/irc/network';
 import {
@@ -14,9 +14,10 @@ import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
 interface UserMenuProps {
   onOpenProfile: () => void;
   onOpenAwayMessages: () => void;
+  onOpenBouncerNetworks: () => void;
 }
 
-const UserMenu = ({ onOpenProfile, onOpenAwayMessages }: UserMenuProps) => {
+const UserMenu = ({ onOpenProfile, onOpenAwayMessages, onOpenBouncerNetworks }: UserMenuProps) => {
   const { t } = useTranslation();
 
   const nick = useSettingsStore((state) => state.nick);
@@ -25,6 +26,7 @@ const UserMenu = ({ onOpenProfile, onOpenAwayMessages }: UserMenuProps) => {
   const isConnected = useSettingsStore((state) => state.isConnected);
   const isConnecting = useSettingsStore((state) => state.isConnecting);
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
+  const isOnBouncer = useSettingsStore((state) => state.server?.bouncer !== undefined);
   const awayMessagesCount = useAwayMessagesStore((state) => state.messages.length);
 
   return (
@@ -72,6 +74,12 @@ const UserMenu = ({ onOpenProfile, onOpenAwayMessages }: UserMenuProps) => {
             )}
             {isDarkMode ? t('currentUser.lightMode') : t('currentUser.darkMode')}
           </DropdownMenuItem>
+          {isConnected && isOnBouncer && (
+            <DropdownMenuItem onClick={onOpenBouncerNetworks}>
+              <Network className="mr-2 h-4 w-4" />
+              {t('currentUser.bouncerNetworks')}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           {isConnected ? (
             <DropdownMenuItem onClick={() => resetAndGoToStart(true)}>

@@ -74,10 +74,12 @@ export const handleConnected = (): void => {
   clearPendingSTSUpgrade();
   resetSTSRetries();
 
-  // NickServ fallback when SASL wasn't used or failed
+  // NickServ fallback when SASL wasn't used or failed; a bouncer account's password is not for the network's NickServ
   const nickServCredentials = getNickServFallbackCredentials();
   if (nickServCredentials) {
-    ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
+    if (getServer()?.bouncer === undefined) {
+      ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
+    }
     clearSaslCredentials();
   }
 

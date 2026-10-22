@@ -7,6 +7,7 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as stsFile from '@/network/irc/sts';
+import * as saslFile from '@/network/irc/sasl';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { useFriendsStore } from '@features/friends/store/friends';
@@ -29,6 +30,43 @@ describe('kernel core/user/register', () => {
     expect(mockSetConnectedTime).toBeCalledTimes(1);
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledWith(expect.objectContaining({ message: i18next.t('kernel.connected') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  describe('without SASL', () => {
+    const connectWithFallback = (server: ReturnType<typeof settingsFile.getServer>) => {
+      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => server);
+      vi.spyOn(saslFile, 'getNickServFallbackCredentials').mockImplementation(() => ({ account: 'alice', password: 'secret' }));
+      const clearSaslCredentials = vi.spyOn(saslFile, 'clearSaslCredentials').mockImplementation(() => {});
+      const send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+      new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
+
+      return { send, clearSaslCredentials };
+    };
+
+    it('identifies to NickServ instead', () => {
+      const { send, clearSaslCredentials } = connectWithFallback({ default: 0, encoding: 'utf8', network: 'net', servers: ['irc.net'] });
+
+      expect(send).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY alice secret');
+      expect(clearSaslCredentials).toHaveBeenCalled();
+    });
+
+    it('keeps a bouncer account\'s password from the network\'s NickServ', () => {
+      const { send, clearSaslCredentials } = connectWithFallback({
+        default: 0,
+        encoding: 'utf8',
+        network: 'bouncer',
+        servers: ['bouncer.example.net'],
+        bouncer: { account: 'alice', encryptedPassword: 'x', networkId: '1' },
+      });
+
+      expect(send).not.toHaveBeenCalledWith(expect.stringContaining('IDENTIFY'));
+      expect(clearSaslCredentials).toHaveBeenCalled();
+    });
   });
 
   it('test end of MOTD (376) subscribes persisted friends once per connection', () => {

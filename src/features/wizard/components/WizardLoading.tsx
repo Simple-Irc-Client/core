@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart, setIsConnecting } from '@features/settings/store/settings';
 import { ircConnect, ircDisconnect, ircJoinChannels, on, off } from '@/network/irc/network';
 import { getChannelParam } from '@shared/lib/queryParams';
+import { isBouncerControlConnection } from '@/network/irc/bouncer';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 
@@ -93,6 +94,12 @@ const WizardLoading = () => {
       }, 2_000); // 2 sec
 
       const timeout5 = setTimeout(() => {
+        // The bouncer's own connection: a network is picked first
+        if (isBouncerControlConnection()) {
+          setWizardStep('networks');
+          return;
+        }
+
         const isPasswordRequired = getIsPasswordRequired();
         if (isPasswordRequired === false || isPasswordRequired === undefined) {
           const channels = getChannelParam();

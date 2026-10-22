@@ -442,6 +442,17 @@ describe('WizardServer', () => {
       expect(button).not.toBeDisabled();
     });
 
+    it('should ask for a bouncer account before connecting to a custom server', () => {
+      render(<WizardServer />);
+
+      fireEvent.change(screen.getByPlaceholderText('wizard.server.host'), { target: { value: 'bouncer.example.net' } });
+      fireEvent.click(screen.getByText('wizard.server.button.next'));
+
+      expect(settingsStore.setServer).toHaveBeenCalledWith(expect.objectContaining({ network: 'bouncer.example.net' }));
+      expect(settingsStore.setWizardStep).toHaveBeenCalledWith('bouncer');
+      expect(network.ircConnect).not.toHaveBeenCalled();
+    });
+
     it('should create backend server config by default', () => {
       vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);

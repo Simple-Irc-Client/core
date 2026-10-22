@@ -2,7 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useSettingsStore, setWizardHintDismissed } from '@features/settings/store/settings';
 import { getBackgroundParam } from '@shared/lib/queryParams';
+import WizardBouncer from '../components/WizardBouncer';
 import WizardChannelList from '../components/WizardChannelList';
+import WizardNetworks from '../components/WizardNetworks';
 import WizardNick from '../components/WizardNick';
 import WizardPassword from '../components/WizardPassword';
 import WizardServer from '../components/WizardServer';
@@ -73,6 +75,16 @@ const Wizard = () => {
           {wizardStep === 'server' && (
             <div className={`my-auto w-full ${cardClass}`}>
               <WizardServer />
+            </div>
+          )}
+          {wizardStep === 'bouncer' && (
+            <div className={`my-auto w-full ${cardClass}`}>
+              <WizardBouncer />
+            </div>
+          )}
+          {wizardStep === 'networks' && (
+            <div className={`my-auto w-full ${cardClass}`}>
+              <WizardNetworks />
             </div>
           )}
           {wizardStep === 'password' && (

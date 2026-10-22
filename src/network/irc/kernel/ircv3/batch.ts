@@ -12,6 +12,7 @@ import { onNick } from '@/network/irc/kernel/core/user/nick';
 import { onPart } from '@/network/irc/kernel/core/user/part';
 import { onQuit } from '@/network/irc/kernel/core/user/quit';
 import { onAccount } from '@/network/irc/kernel/ircv3/account';
+import { onBouncer } from '@/network/irc/kernel/ircv3/bouncer';
 import { onChghost } from '@/network/irc/kernel/ircv3/chghost';
 import { onMetadata } from '@/network/irc/kernel/ircv3/metadata';
 import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
@@ -56,7 +57,7 @@ export const processBatch = (ctx: IrcContext, batch: BatchState): void => {
       // Its messages were handled as they arrived
       break;
     default:
-      // netjoin, netsplit and unknown types are replayed as-is
+      // netjoin, netsplit, soju.im/bouncer-networks and unknown types are replayed as-is
       for (const message of batch.messages) {
         processBufferedMessage(ctx, message);
       }
@@ -89,6 +90,7 @@ const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART
 const bufferedHandlers = new Map<string, IrcHandler>([
   ['ACCOUNT', onAccount],
   ['AWAY', onAway],
+  ['BOUNCER', onBouncer],
   ['CHGHOST', onChghost],
   ['JOIN', onJoin],
   ['KICK', onKick],

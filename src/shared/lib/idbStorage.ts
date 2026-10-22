@@ -7,10 +7,12 @@ const getServerStorageKey = (baseName: string): string => {
   try {
     const settingsJson = localStorage.getItem('sic-settings');
     if (settingsJson) {
-      const settings = JSON.parse(settingsJson) as { state?: { server?: { network: string; servers: string[]; default: number } } };
+      const settings = JSON.parse(settingsJson) as { state?: { server?: { network: string; servers: string[]; default: number; bouncer?: { networkId?: string } } } };
       const server = settings?.state?.server;
       if (server) {
-        return `${baseName}:${server.network}:${server.servers[server.default]}`;
+        // Each network on a bouncer is a server of its own
+        const bouncerNetwork = server.bouncer?.networkId;
+        return `${baseName}:${server.network}:${server.servers[server.default]}${bouncerNetwork === undefined ? '' : `:${bouncerNetwork}`}`;
       }
     }
   } catch (error) {

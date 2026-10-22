@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { fillTestServer, getServerPassword, testServerAddress } from '../helpers';
+import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress } from '../helpers';
 
 
 const TEST_NICK = 'pw-forced-rename-tester';
@@ -17,6 +17,7 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await fillTestServer(page);
   await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
+  await skipBouncerAccount(page);
 };
 
 /**
@@ -116,6 +117,7 @@ test.describe('Wizard password survives a server-forced nick change', () => {
 
     await expect(page.getByLabel('Server address')).toHaveValue(testServerAddress().host);
     await page.getByRole('button', { name: 'Next' }).click();
+    await skipBouncerAccount(page);
 
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
     await triggerPasswordRequired(page);

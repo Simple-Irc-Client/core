@@ -1532,6 +1532,46 @@ describe('network', () => {
       expect(mockSetSaslCredentials).not.toHaveBeenCalled();
     });
 
+    it('should log in to the bouncer account kept with the server, not as the nick', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'bouncer.example.net',
+        servers: ['bouncer.example.net'],
+        bouncer: { account: 'alice', encryptedPassword: 'encrypted:bouncerPassword', networkId: '1' },
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(false);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:nickServPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+
+      await network.ircReconnect();
+
+      expect(mockSetSaslCredentials).toHaveBeenCalledExactlyOnceWith('alice', 'bouncerPassword');
+    });
+
+    it('should connect without the bouncer account when its password cannot be decrypted', async () => {
+      mockGetServer.mockReturnValue({
+        default: 0,
+        encoding: 'utf8',
+        network: 'bouncer.example.net',
+        servers: ['bouncer.example.net'],
+        bouncer: { account: 'alice', encryptedPassword: 'bad-data' },
+      });
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockRestoreSaslCredentials.mockResolvedValue(false);
+      mockGetEncryptedPassword.mockReturnValue('encrypted:nickServPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+      mockDecryptPersistent.mockRejectedValueOnce(new Error('decrypt failed'));
+
+      await network.ircReconnect();
+
+      // Not the NickServ password instead: that one is for the network, not the bouncer
+      expect(mockSetSaslCredentials).not.toHaveBeenCalled();
+      await flushPromises();
+      expect(mockInitDirectWebSocket).toHaveBeenCalled();
+    });
+
     it('should handle persistent password decryption failure gracefully', async () => {
       mockGetServer.mockReturnValue({
         default: 0,

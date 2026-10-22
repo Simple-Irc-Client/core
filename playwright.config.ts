@@ -1,5 +1,5 @@
 import { defineConfig, devices, type Project } from '@playwright/test';
-import { GATEWAY_APP_PORT, GATEWAY_PORT, IRC_PORT, LEGACY_IRC_PORT } from './e2e/global-setup';
+import { APP_PORT, GATEWAY_APP_PORT, GATEWAY_PORT, IRC_PORT, LEGACY_IRC_PORT } from './e2e/global-setup';
 import type { TestServer } from './e2e/test-server';
 
 const chromiumConfig = {
@@ -76,7 +76,7 @@ export default defineConfig({
   globalTeardown: './e2e/global-teardown.ts',
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: `http://localhost:${APP_PORT}`,
     locale: 'en-US',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
@@ -87,7 +87,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'pnpm run dev',
-      url: 'http://localhost:5173',
+      url: `http://localhost:${APP_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
     },

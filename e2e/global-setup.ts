@@ -18,6 +18,12 @@ const LEGACY_IRC_IMAGE = 'docker.io/linuxserver/ngircd:version-27-r1';
 export const LEGACY_IRC_PORT = 6668;
 // Port 6697 is blocked by Chrome (ERR_UNSAFE_PORT); use 8097 instead
 const WSS_PORT = 8097;
+/** A bouncer (soju.im/bouncer-networks) whose networks are the test IRC servers */
+export const SOJU_CONTAINER = 'sic-e2e-soju';
+const SOJU_IMAGE = 'codeberg.org/emersion/soju:v0.11.1';
+export const SOJU_WSS_PORT = 8098;
+/** sojuctl's config inside the container */
+export const SOJU_CONFIG = '/soju-config';
 const STARTUP_TIMEOUT_MS = 15_000;
 const STARTUP_POLL_MS = 300;
 
@@ -26,6 +32,8 @@ export const PASSWORD_FILE = join(tmpdir(), 'sic-e2e-password');
 
 // The gateway specs run the gateway from source, checked out next to core unless E2E_GATEWAY_DIR says otherwise
 const GATEWAY_DIR = process.env.E2E_GATEWAY_DIR ?? resolve(__dirname, '../../gateway');
+/** Where the dev server serves the app for the projects that connect straight to the servers */
+export const APP_PORT = 5173;
 export const GATEWAY_PORT = 8668;
 export const GATEWAY_APP_PORT = 5174;
 const GATEWAY_PID_FILE = join(tmpdir(), 'sic-e2e-gateway.pid');
@@ -140,6 +148,41 @@ const startLegacyIrcServer = async (serverPassword: string): Promise<void> => {
   }
 };
 
+const startSoju = async (tlsDir: string): Promise<void> => {
+  const configPath = join(tmpdir(), 'sic-e2e-config', 'soju');
+  writeFileSync(configPath, [
+    `listen wss://127.0.0.1:${SOJU_WSS_PORT}`,
+    'listen unix+admin:///data/admin.sock',
+    'tls /tls/cert.pem /tls/key.pem',
+    // The app's page is another origin than the bouncer's WebSocket
+    `http-origin localhost:${APP_PORT}`,
+    'db sqlite3 /data/soju.db',
+    'hostname soju.test',
+  ].join('\n'), 'utf8');
+
+  try {
+    execSync(`docker rm -f ${SOJU_CONTAINER} 2>/dev/null`);
+  } catch {
+    // Container didn't exist
+  }
+
+  // On the host network: its networks are the test servers, published on loopback only
+  execSync(
+    `docker run -d --name ${SOJU_CONTAINER} --network host --tmpfs /data ` +
+    `-v "${configPath}:${SOJU_CONFIG}:ro" ` +
+    `-v "${tlsDir}:/tls:ro" ` +
+    `${SOJU_IMAGE}`,
+    { stdio: 'pipe' }
+  );
+
+  try {
+    await waitForPort(SOJU_WSS_PORT, '127.0.0.1', STARTUP_TIMEOUT_MS);
+  } catch {
+    console.error('soju container logs:', execSync(`docker logs ${SOJU_CONTAINER} 2>&1`).toString());
+    throw new Error('soju bouncer failed to start');
+  }
+};
+
 const globalSetup = async (): Promise<void> => {
   // Generate a random server password for this test run
   const serverPassword = randomBytes(16).toString('hex');
@@ -202,6 +245,7 @@ const globalSetup = async (): Promise<void> => {
   }
 
   await startLegacyIrcServer(serverPassword);
+  await startSoju(tlsDir);
   await startGateway();
 };
 

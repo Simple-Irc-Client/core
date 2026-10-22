@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { fillTestServer, getServerPassword, testServerAddress } from '../helpers';
+import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress } from '../helpers';
 
 
 /** Fill in nick step and advance to the server step. */
@@ -14,6 +14,7 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await fillTestServer(page);
   await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
+  await skipBouncerAccount(page);
 };
 
 test.describe('Wizard', () => {
@@ -55,8 +56,11 @@ test.describe('Wizard', () => {
     // Enter server password
     await page.getByLabel('Server password').fill(getServerPassword());
 
-    // Connect
     await page.getByRole('button', { name: 'Next' }).click();
+
+    // A custom server may be a bouncer: its account is asked for, and skipping it connects
+    await expect(page.getByRole('heading', { name: 'Bouncer account' })).toBeVisible();
+    await page.getByRole('button', { name: 'Skip' }).click();
 
     // Step 3: Loading
     await expect(page.getByText('Connecting to server')).toBeVisible();
@@ -85,6 +89,7 @@ test.describe('Wizard', () => {
     await fillTestServer(page);
     await page.getByLabel('Server password').fill(getServerPassword());
     await page.getByRole('button', { name: 'Next' }).click();
+    await skipBouncerAccount(page);
 
     // Wait for connection and skip channels
     await expect(page.getByText('Select a irc channel')).toBeVisible({ timeout: 20_000 });
@@ -182,6 +187,7 @@ test.describe('Wizard', () => {
     await page.getByLabel('Port').fill('19999'); // nothing listening here
     await page.getByRole('button', { name: 'WebSocket' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
+    await skipBouncerAccount(page);
 
     // Should show disconnected/error state since the server doesn't exist
     await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/).first()).toBeVisible({ timeout: 30_000 });
@@ -201,6 +207,7 @@ test.describe('Wizard', () => {
     await page.getByLabel('Port').fill('19999');
     await page.getByRole('button', { name: 'WebSocket' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
+    await skipBouncerAccount(page);
 
     // Wait for error
     await expect(page.getByText(/Disconnected|Failed to connect|Something went wrong/).first()).toBeVisible({ timeout: 30_000 });
@@ -224,6 +231,7 @@ test.describe('Wizard', () => {
     await fillTestServer(page);
     await page.getByLabel('Server password').fill('incorrect-password');
     await page.getByRole('button', { name: 'Next' }).click();
+    await skipBouncerAccount(page);
 
     // Should show error about password mismatch
     await expect(page.getByText(/Failed to connect|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
