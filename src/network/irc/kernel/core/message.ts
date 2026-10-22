@@ -16,7 +16,7 @@ import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { handlePeerOffline } from '@features/e2ee/session';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
-import { ChannelCategory, MessageCategory } from '@shared/types';
+import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const ERR_NOSUCHNICK = '401';
@@ -25,6 +25,14 @@ const ERR_NORECIPIENT = '411';
 const ERR_NOTEXTTOSEND = '412';
 const ERR_NONONREG = '486';
 const ERR_CANTSENDTOUSER = '531';
+
+const addMessage = (ctx: IrcContext, message: Message): void => {
+  if (ctx.historyPage !== undefined) {
+    ctx.historyPage.push(message);
+  } else {
+    setAddMessage(message);
+  }
+};
 
 // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
 // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above
@@ -157,7 +165,7 @@ export const onNotice = (ctx: IrcContext): void => {
     color: MessageColor.notice,
   };
 
-  setAddMessage({ ...newMessage, target: noticeTarget, id: ctx.tags.msgid ?? uuidv4() });
+  addMessage(ctx, { ...newMessage, target: noticeTarget, id: ctx.tags.msgid ?? uuidv4() });
 };
 
 interface Conversation {
@@ -260,7 +268,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
   const messageTime = ctx.tags.time ?? new Date().toISOString();
   const highlight = isHighlight(conversation, message, myNick);
 
-  setAddMessage({
+  addMessage(ctx, {
     id: messageId,
     message,
     nick: getUser(nick) ?? nick,
@@ -405,7 +413,7 @@ export const handleCtcpAction = (
 
   const highlight = isHighlight(conversation, action, myNick);
 
-  setAddMessage({
+  addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
     message: action,
     nick: getUser(nick) ?? nick,

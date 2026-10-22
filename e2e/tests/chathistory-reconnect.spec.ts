@@ -30,7 +30,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   readChannel = `#hist-read-${tag}`;
   currentChannel = `#hist-current-${tag}`;
 
-  bot = await createIrcClient(`histbot-${tag}`);
+  bot = await createIrcClient(`histbot-${tag}`, undefined, undefined, ['echo-message']);
   await bot.join(readChannel);
   await bot.join(currentChannel);
 
@@ -52,10 +52,11 @@ test.describe('Chat history replayed after a reconnect', () => {
   test('messages already read do not come back as unread, and old CTCP requests are not answered again', async () => {
     const botLines = bot.captureLines();
 
+    const versionAnswered = bot.waitForLine((line) => line.includes(`NOTICE ${bot.nick} :\x01VERSION `));
     bot.sendMessage(readChannel, `hey ${nick}, are you there?`);
     bot.send(`PRIVMSG ${readChannel} :\x01VERSION\x01`);
     await expect(unreadBadge(readChannel)).toBeVisible({ timeout: 10_000 });
-    await bot.waitForLine((line) => line.includes(`NOTICE ${bot.nick} :\x01VERSION `));
+    await versionAnswered;
 
     await openChannel(readChannel);
     await expect(unreadBadge(readChannel)).not.toBeVisible();
@@ -81,5 +82,31 @@ test.describe('Chat history replayed after a reconnect', () => {
 
     await expect(unreadBadge(readChannel)).not.toBeVisible();
     expect(botLines.lines.filter((line) => line.includes(`NOTICE ${bot.nick} :\x01VERSION `))).toHaveLength(1);
+  });
+
+  test('a reconnect catches up on everything missed, in order, even past one page of history', async () => {
+    const missed = Array.from({ length: 80 }, (_, index) => `missed ${String(index + 1).padStart(2, '0')}`);
+    const lastMissed = 'missed 80';
+
+    await dropConnection(sharedPage);
+    const stored = bot.waitForLine((line) => line.endsWith(`PRIVMSG ${currentChannel} :${lastMissed}`));
+    for (const text of missed) {
+      bot.sendMessage(currentChannel, text);
+    }
+    await stored;
+
+    const rejoined = bot.waitForLine((line) => line.includes(`JOIN ${currentChannel}`) && line.includes(`:${nick}!`), 30_000);
+    await sharedPage.getByRole('button', { name: 'Connect' }).click();
+    await rejoined;
+
+    const chatLog = sharedPage.getByTestId('chat-log');
+    await expect(chatLog.getByText('missed 01', { exact: true })).toBeAttached({ timeout: 15_000 });
+    await expect(chatLog.getByText(lastMissed, { exact: true })).toBeAttached();
+
+    const texts = await chatLog.locator('.sic-msg').allInnerTexts();
+    const shownMissed = texts.flatMap((text) => /missed \d{2}/.exec(text) ?? []);
+    expect(shownMissed).toEqual(missed);
+    const lastJoin = texts.findLastIndex((text) => text.includes(`${nick} has joined`));
+    expect(lastJoin).toBeGreaterThan(texts.findIndex((text) => text.includes(lastMissed)));
   });
 });

@@ -134,6 +134,20 @@ describe('kernel core/info/isupport', () => {
     expect(mockSetSilenceLimit).toHaveBeenCalledWith(15);
   });
 
+  it.each([
+    ['CHATHISTORY=50', 50],
+    ['CHATHISTORY=0', 0],
+    ['CHATHISTORY', 0],
+    ['CHATHISTORY=junk', 0],
+  ])('test raw 005 %s caps chathistory requests at %i (0: no cap)', (token, limit) => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetChatHistoryLimit = vi.spyOn(settingsFile, 'setChatHistoryLimit').mockImplementation(() => {});
+
+    new Kernel({ type: 'raw', line: `:server 005 nick ${token} :are supported by this server` }).handle();
+
+    expect(mockSetChatHistoryLimit).toHaveBeenCalledWith(limit);
+  });
+
   it('test raw 005 ignores words of the trailing text', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});

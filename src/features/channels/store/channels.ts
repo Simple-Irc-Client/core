@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
 import { devtools, persist } from 'zustand/middleware';
-import { DEBUG_CHANNEL, maxMessages, STATUS_CHANNEL } from '@/config/config';
+import { DEBUG_CHANNEL, maxMessages, maxViewedMessages, STATUS_CHANNEL } from '@/config/config';
 import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
 import { flushCurrentUsers } from '@features/users/store/users';
@@ -14,6 +14,39 @@ const updateChannelByName = <T extends { name: string }>(
   updater: (channel: T) => T,
 ): T[] => list.map((channel) => (isSameName(channel.name, channelName) ? updater(channel) : channel));
 
+/**
+ * Places a chathistory page, in the server's order, among the messages already shown.
+ * Messages the page shares with them, and the one it was asked for as older than (`beforeId`), pin its new ones in place;
+ * elsewhere time decides, which can't order messages sharing a millisecond.
+ */
+export const mergeHistoryPage = (shown: Message[], page: Message[], beforeId?: string): Message[] => {
+  const result = [...shown];
+  const placedIds = new Set(shown.map((message) => message.id));
+  const pinnedIds = new Set(page.filter((message) => placedIds.has(message.id)).map((message) => message.id));
+  if (beforeId !== undefined) {
+    pinnedIds.add(beforeId);
+  }
+  let cursor = 0;
+
+  for (const message of page) {
+    if (placedIds.has(message.id)) {
+      cursor = Math.max(cursor, result.findIndex((placed) => placed.id === message.id) + 1);
+      continue;
+    }
+
+    const time = Date.parse(message.time);
+    const offset = result.slice(cursor).findIndex((placed) => pinnedIds.has(placed.id) || Date.parse(placed.time) > time);
+    const index = offset === -1 ? result.length : cursor + offset;
+    result.splice(index, 0, message);
+    placedIds.add(message.id);
+    cursor = index + 1;
+  }
+
+  return result;
+};
+
+const keepNewest = (messages: Message[], limit: number): Message[] => (messages.length > limit ? messages.slice(-limit) : messages);
+
 interface ChannelsStore {
   openChannels: ChannelExtended[];
   openChannelsShortList: Channel[];
@@ -24,7 +57,10 @@ interface ChannelsStore {
   setRenameChannel: (from: string, to: string) => void;
   setTopic: (channelName: string, newTopic: string) => void;
   setTopicSetBy: (channelName: string, nick: string, when: number) => void;
-  setAddMessage: (newMessage: Message) => void;
+  /** The oldest beyond `limit` are dropped */
+  setAddMessage: (newMessage: Message, limit: number) => void;
+  /** A chathistory page, in the server's order, older than the message `beforeId` when given */
+  setAddHistoryPage: (channelName: string, page: Message[], limit: number, beforeId?: string) => void;
   /** Patch a message already in the list, keeping its position (E2EE decryption) */
   setUpdateMessage: (channelName: string, messageId: string, patch: Partial<Message>) => void;
   /** IRCv3 message-tags (typing) */
@@ -195,7 +231,7 @@ export const useChannelsStore = create<ChannelsStore>()(
         }),
       }));
     },
-    setAddMessage: (newMessage: Message): void => {
+    setAddMessage: (newMessage: Message, limit: number): void => {
       set((state) => ({
         openChannels: state.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, newMessage.target)) {
@@ -207,12 +243,16 @@ export const useChannelsStore = create<ChannelsStore>()(
             return channel;
           }
 
-          const messages = [...channel.messages, newMessage];
-          if (messages.length > maxMessages) {
-            messages.shift();
-          }
-          return { ...channel, messages };
+          return { ...channel, messages: keepNewest([...channel.messages, newMessage], limit) };
         }),
+      }));
+    },
+    setAddHistoryPage: (channelName: string, page: Message[], limit: number, beforeId?: string): void => {
+      set((state) => ({
+        openChannels: updateChannelByName(state.openChannels, channelName, (channel) => ({
+          ...channel,
+          messages: keepNewest(mergeHistoryPage(channel.messages, page, beforeId), limit),
+        })),
       }));
     },
     setUpdateMessage: (channelName: string, messageId: string, patch: Partial<Message>): void => {
@@ -419,26 +459,50 @@ export const getTopicTime = (channelName: string): number => {
   return getChannel(channelName)?.topicSetTime ?? 0;
 };
 
-export const setAddMessage = (newMessage: Message): void => {
-  if (!existChannel(newMessage.target)) {
-    let category;
-    if (isSameName(newMessage.target, DEBUG_CHANNEL)) {
-      category = ChannelCategory.debug;
-    } else if (isSameName(newMessage.target, STATUS_CHANNEL)) {
-      category = ChannelCategory.status;
-    } else {
-      category = isPriv(newMessage.target) ? ChannelCategory.priv : ChannelCategory.channel;
-    }
+// The window being read keeps more, so history scrolled back to is not trimmed away
+const messageLimit = (isCurrent: boolean): number => (isCurrent ? maxViewedMessages : maxMessages);
 
-    useChannelsStore.getState().setAddChannel(newMessage.target, category);
+const ensureChannel = (target: string): void => {
+  if (existChannel(target)) {
+    return;
   }
 
-  useChannelsStore.getState().setAddMessage(newMessage);
+  let category;
+  if (isSameName(target, DEBUG_CHANNEL)) {
+    category = ChannelCategory.debug;
+  } else if (isSameName(target, STATUS_CHANNEL)) {
+    category = ChannelCategory.status;
+  } else {
+    category = isPriv(target) ? ChannelCategory.priv : ChannelCategory.channel;
+  }
 
-  const currentChannelName = getCurrentChannelName();
+  useChannelsStore.getState().setAddChannel(target, category);
+};
 
-  if (isSameName(currentChannelName, newMessage.target)) {
+export const setAddMessage = (newMessage: Message): void => {
+  ensureChannel(newMessage.target);
+
+  const isCurrent = isSameName(getCurrentChannelName(), newMessage.target);
+  useChannelsStore.getState().setAddMessage(newMessage, messageLimit(isCurrent));
+
+  if (isCurrent) {
     useCurrentStore.getState().setUpdateMessages(getMessages(newMessage.target));
+  }
+};
+
+/** A chathistory page, in the server's order: placed among what is shown rather than at the end; older than the message `beforeId` when given */
+export const setAddHistoryPage = (page: Message[], beforeId?: string): void => {
+  const currentChannelName = getCurrentChannelName();
+  const targets = [...new Set(page.map((message) => message.target))];
+
+  for (const target of targets) {
+    ensureChannel(target);
+    const isCurrent = isSameName(currentChannelName, target);
+    useChannelsStore.getState().setAddHistoryPage(target, page.filter((message) => message.target === target), messageLimit(isCurrent), beforeId);
+
+    if (isCurrent) {
+      useCurrentStore.getState().setUpdateMessages(getMessages(target));
+    }
   }
 };
 
@@ -456,9 +520,10 @@ export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>):
   const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {
-    useChannelsStore.getState().setAddMessage({ ...newMessage, target: channel.name });
+    const isCurrent = isSameName(currentChannelName, channel.name);
+    useChannelsStore.getState().setAddMessage({ ...newMessage, target: channel.name }, messageLimit(isCurrent));
 
-    if (isSameName(currentChannelName, channel.name)) {
+    if (isCurrent) {
       useCurrentStore.getState().setUpdateMessages(getMessages(currentChannelName));
     }
   }

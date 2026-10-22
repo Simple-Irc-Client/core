@@ -1,4 +1,5 @@
 import { BATCH_TYPES, type BatchState, endBatch, startBatch } from '@/network/irc/batch';
+import { onHistoryBatch, pendingHistoryAnchor } from '@/network/irc/chatHistory';
 import { takeLabel } from '@/network/irc/labels';
 import { IrcContext, type IrcHandler, type IrcHandlers } from '@/network/irc/kernel/context';
 import { onJoin } from '@/network/irc/kernel/core/channel/join';
@@ -15,8 +16,9 @@ import { onChghost } from '@/network/irc/kernel/ircv3/chghost';
 import { onMetadata } from '@/network/irc/kernel/ircv3/metadata';
 import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
 import { onSetname } from '@/network/irc/kernel/ircv3/setname';
+import { setAddHistoryPage } from '@features/channels/store/channels';
 import { onTagMsg } from '@/network/irc/kernel/ircv3/typing';
-import { type ParsedIrcRawMessage } from '@shared/types';
+import { type Message, type ParsedIrcRawMessage } from '@shared/types';
 
 // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
 // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
@@ -61,17 +63,23 @@ export const processBatch = (ctx: IrcContext, batch: BatchState): void => {
   }
 };
 
-/** Inserts at the beginning of the channel */
 export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): void => {
   const target = batch.params[0];
   if (!target) { return; }
 
+  const page: Message[] = [];
   // Skip TAGMSG: typing indicators from history are stale
   for (const message of batch.messages) {
     if (message.command === 'TAGMSG') { continue; }
-    processBufferedMessage(ctx, message, { isHistory: true });
+    processBufferedMessage(ctx, message, page);
   }
+  setAddHistoryPage(page, pendingHistoryAnchor(target));
   applyReadMarker(target);
+
+  // A chathistory batch is in the server's order: the first message is the oldest
+  const first = batch.messages.find((message) => !Number.isNaN(Date.parse(message.tags.time ?? '')));
+  const oldest = first === undefined ? undefined : { time: Date.parse(first.tags.time ?? ''), msgid: first.tags.msgid };
+  onHistoryBatch(target, batch.messages.length, oldest);
 };
 
 // Commands replayed from a finished batch; numerics inside batches are not replayed
@@ -93,8 +101,9 @@ const bufferedHandlers = new Map<string, IrcHandler>([
   ['TOPIC', onTopic],
 ]);
 
-export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage, { isHistory = false } = {}): void => {
-  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine, { isHistory }));
+/** `historyPage` collects what a replayed chathistory message shows */
+export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage, historyPage?: Message[]): void => {
+  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine, { historyPage }));
 };
 
 export const handlers: IrcHandlers = {

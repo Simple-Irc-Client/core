@@ -23,6 +23,7 @@ export const encryptionKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
 export const defaultIRCPort = 6667;
 
 export const maxMessages = 300;
+export const maxViewedMessages = 1000;
 
 export const defaultChannelTypes = ['#', '&'];
 

@@ -417,6 +417,26 @@ describe('network', () => {
     });
   });
 
+  describe('ircRequestChatHistory', () => {
+    it('should ask for the latest messages, or only those after a timestamp', () => {
+      network.ircRequestChatHistory('#chan', 'LATEST', undefined, 50);
+      network.ircRequestChatHistory('#chan', 'LATEST', { timestamp: '2026-10-22T10:00:00.000Z' }, 20);
+
+      expect(mockSendDirectRaw).toHaveBeenNthCalledWith(1, 'CHATHISTORY LATEST #chan * 50');
+      expect(mockSendDirectRaw).toHaveBeenNthCalledWith(2, 'CHATHISTORY LATEST #chan timestamp=2026-10-22T10:00:00.000Z 20');
+    });
+
+    it('should page back from a message id or a timestamp, never from nothing', () => {
+      network.ircRequestChatHistory('#chan', 'BEFORE', undefined, 50);
+      network.ircRequestChatHistory('#chan', 'BEFORE', { msgid: 'abc' }, 50);
+      network.ircRequestChatHistory('#chan', 'BEFORE', { timestamp: '2026-10-22T10:00:00.000Z' }, 50);
+
+      expect(mockSendDirectRaw).toHaveBeenCalledTimes(2);
+      expect(mockSendDirectRaw).toHaveBeenNthCalledWith(1, 'CHATHISTORY BEFORE #chan msgid=abc 50');
+      expect(mockSendDirectRaw).toHaveBeenNthCalledWith(2, 'CHATHISTORY BEFORE #chan timestamp=2026-10-22T10:00:00.000Z 50');
+    });
+  });
+
   describe('ircSendRawMessage', () => {
     it('should send raw message via sendDirectRaw', () => {
       network.ircSendRawMessage('PRIVMSG #test :Hello world');

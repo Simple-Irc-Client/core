@@ -64,6 +64,7 @@ export interface SettingsStore {
   watchLimit: number; // WATCH limit from 005, 0 if not supported
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
+  chatHistoryLimit: number; // CHATHISTORY from 005 — most messages one request may ask for; 0 when unlimited or not advertised
   nickLenLimit: number; // NICKLEN from 005, default 50
   lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
   networkName: string | undefined; // NETWORK from 005, overrides server.network for display
@@ -111,6 +112,7 @@ export interface SettingsStore {
   setWatchLimit: (limit: number) => void;
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
+  setChatHistoryLimit: (limit: number) => void;
   setNickLenLimit: (limit: number) => void;
   setLineLenLimit: (limit: number) => void;
   setNetworkName: (name: string | undefined) => void;
@@ -155,6 +157,7 @@ const sessionDefaults = () => ({
   watchLimit: 0,
   monitorLimit: 0,
   silenceLimit: 0,
+  chatHistoryLimit: 0,
   nickLenLimit: 50,
   lineLenLimit: 0,
   networkName: undefined,
@@ -304,6 +307,9 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setSilenceLimit: (limit: number): void => {
       set(() => ({ silenceLimit: limit }));
+    },
+    setChatHistoryLimit: (limit: number): void => {
+      set(() => ({ chatHistoryLimit: limit }));
     },
     setNickLenLimit: (limit: number): void => {
       set(() => ({ nickLenLimit: limit }));
@@ -598,6 +604,14 @@ export const setSilenceLimit = (limit: number): void => {
 
 export const getSilenceLimit = (): number => {
   return useSettingsStore.getState().silenceLimit;
+};
+
+export const setChatHistoryLimit = (limit: number): void => {
+  useSettingsStore.getState().setChatHistoryLimit(limit);
+};
+
+export const getChatHistoryLimit = (): number => {
+  return useSettingsStore.getState().chatHistoryLimit;
 };
 
 export const setNickLenLimit = (limit: number): void => {

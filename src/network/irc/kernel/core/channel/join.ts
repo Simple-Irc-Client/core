@@ -6,7 +6,8 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { requestChannelWho } from '@/network/irc/kernel/core/who';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { ircRequestChatHistory, ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
+import { requestLatestHistory } from '@/network/irc/chatHistory';
+import { ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
 import { getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setAddUser } from '@features/users/store/users';
@@ -71,9 +72,7 @@ export const onJoin = (ctx: IrcContext): void => {
     }
     ircSendRawMessage(`MODE ${channel}`);
     requestChannelWho(channel);
-    if (isCapabilityEnabled('draft/chathistory')) {
-      ircRequestChatHistory(channel, 'LATEST', undefined, 50);
-    }
+    requestLatestHistory(channel);
     if (isCapabilityEnabled('draft/metadata-2') || isCapabilityEnabled('draft/metadata') || isCapabilityEnabled('draft/metadata-notify-2')) {
       ircRequestMetadataList(channel);
     }

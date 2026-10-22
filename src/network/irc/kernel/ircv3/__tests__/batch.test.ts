@@ -9,6 +9,7 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
+import * as chatHistoryFile from '@/network/irc/chatHistory';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { clearReadMarkers } from '@/network/irc/readMarkers';
@@ -38,7 +39,7 @@ describe('kernel ircv3/batch', () => {
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
       return {
-        setAddMessage: vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {}),
+        setAddHistoryPage: vi.spyOn(channelsFile, 'setAddHistoryPage').mockImplementation(() => {}),
         setIncreaseUnreadMessages: vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {}),
         setHasMention: vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {}),
         setTyping: vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {}),
@@ -61,7 +62,7 @@ describe('kernel ircv3/batch', () => {
 
       replay('#channel', ['msgid=h1;time=2023-02-12T02:06:12.210Z :Friend!~u@host PRIVMSG #channel :hey MyNick']);
 
-      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'h1', target: '#channel', message: 'hey MyNick', highlight: true }));
+      expect(mocks.setAddHistoryPage).toHaveBeenCalledWith([expect.objectContaining({ id: 'h1', target: '#channel', message: 'hey MyNick', highlight: true })], undefined);
       expect(mocks.notifyHighlight).not.toHaveBeenCalled();
       expect(mocks.setHasMention).not.toHaveBeenCalled();
       expect(mocks.setIncreaseUnreadMessages).not.toHaveBeenCalled();
@@ -74,7 +75,7 @@ describe('kernel ircv3/batch', () => {
 
       replay('#channel', ['msgid=h2;time=2023-02-12T02:06:12.210Z :Friend!~u@host PRIVMSG #channel :\x01ACTION pokes MyNick\x01']);
 
-      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'h2', message: 'pokes MyNick', highlight: true }));
+      expect(mocks.setAddHistoryPage).toHaveBeenCalledWith([expect.objectContaining({ id: 'h2', message: 'pokes MyNick', highlight: true })], undefined);
       expect(mocks.notifyHighlight).not.toHaveBeenCalled();
       expect(mocks.setIncreaseUnreadMessages).not.toHaveBeenCalled();
     });
@@ -105,6 +106,23 @@ describe('kernel ircv3/batch', () => {
 
       expect(mocks.notifyHighlight).toHaveBeenCalledTimes(1);
       expect(mocks.setIncreaseUnreadMessages).toHaveBeenCalledWith('#channel');
+    });
+
+    it('should place a page in one go and report its size and oldest message', () => {
+      const mocks = mockReplayEnvironment();
+      const onHistoryBatch = vi.spyOn(chatHistoryFile, 'onHistoryBatch').mockImplementation(() => {});
+
+      replay('#channel', [
+        'msgid=p1;time=2023-02-12T02:00:00.000Z :Friend!~u@host PRIVMSG #channel :first',
+        '+typing=active;time=2023-02-12T02:00:30.000Z :Friend!~u@host TAGMSG #channel',
+        'msgid=p2;time=2023-02-12T02:01:00.000Z :Friend!~u@host PRIVMSG #channel :second',
+      ]);
+
+      expect(mocks.setAddHistoryPage).toHaveBeenCalledExactlyOnceWith([
+        expect.objectContaining({ id: 'p1', message: 'first' }),
+        expect.objectContaining({ id: 'p2', message: 'second' }),
+      ], undefined);
+      expect(onHistoryBatch).toHaveBeenCalledExactlyOnceWith('#channel', 3, { time: Date.parse('2023-02-12T02:00:00.000Z'), msgid: 'p1' });
     });
 
     describe('with a read marker', () => {

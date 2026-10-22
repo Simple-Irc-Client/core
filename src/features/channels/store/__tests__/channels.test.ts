@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as settingsFile from '@features/settings/store/settings';
 import { DEFAULT_CASE_MAPPING, namesEqual } from '@shared/lib/caseMapping';
+import { maxMessages, maxViewedMessages } from '@/config/config';
 import {
   useChannelsStore,
   setAddChannel,
@@ -27,6 +28,8 @@ import {
   isPriv,
   isChannel,
   setAddMessage,
+  setAddHistoryPage,
+  mergeHistoryPage,
   setUpdateMessage,
   setRenameChannel,
   migrateChannels,
@@ -73,6 +76,7 @@ const createMessageAt = (id: string, message: string, target: string, time: stri
   ...createMessage(id, message, target),
   time,
 });
+
 
 describe('channels store', () => {
   beforeEach(() => {
@@ -220,10 +224,108 @@ describe('channels store', () => {
   });
 
   describe('messages', () => {
+    describe('placing a chathistory page', () => {
+      const at = (id: string, time: string): Message => createMessageAt(id, id, '#test', time);
+      const ids = (messages: Message[]): string[] => messages.map((message) => message.id);
+
+      it('should place older history above what is shown, in the page order', () => {
+        const shown = [at('joined', '2026-10-22T10:05:00.000Z')];
+
+        const merged = mergeHistoryPage(shown, [at('a', '2026-10-22T10:00:00.000Z'), at('b', '2026-10-22T10:01:00.000Z')]);
+
+        expect(ids(merged)).toEqual(['a', 'b', 'joined']);
+      });
+
+      it('should fill a gap between what is shown, by time', () => {
+        const shown = [at('old', '2026-10-22T10:00:00.000Z'), at('joined', '2026-10-22T10:05:00.000Z')];
+
+        const merged = mergeHistoryPage(shown, [at('missed', '2026-10-22T10:02:00.000Z')]);
+
+        expect(ids(merged)).toEqual(['old', 'missed', 'joined']);
+      });
+
+      it('should keep the server order of a burst sharing one millisecond, pinned by the messages it already has', () => {
+        const burst = '2026-10-22T10:02:00.000Z';
+        const shown = [at('32', burst), at('33', burst), at('joined', '2026-10-22T10:05:00.000Z')];
+
+        const merged = mergeHistoryPage(shown, [at('30', burst), at('31', burst), at('32', burst), at('33', burst)]);
+
+        expect(ids(merged)).toEqual(['30', '31', '32', '33', 'joined']);
+      });
+
+      it('should place a page asked for as older than a message above it, even sharing its millisecond', () => {
+        const burst = '2026-10-22T10:02:00.000Z';
+        const shown = [at('32', burst), at('33', burst), at('joined', '2026-10-22T10:05:00.000Z')];
+
+        const merged = mergeHistoryPage(shown, [at('30', burst), at('31', burst)], '32');
+
+        expect(ids(merged)).toEqual(['30', '31', '32', '33', 'joined']);
+      });
+
+      it('should place what comes after a message it already has below that message', () => {
+        const burst = '2026-10-22T10:02:00.000Z';
+        const shown = [at('since', burst), at('joined', '2026-10-22T10:05:00.000Z')];
+
+        const merged = mergeHistoryPage(shown, [at('since', burst), at('next', burst), at('later', '2026-10-22T10:03:00.000Z')]);
+
+        expect(ids(merged)).toEqual(['since', 'next', 'later', 'joined']);
+      });
+
+      it('should not add a message twice', () => {
+        const shown = [at('a', '2026-10-22T10:00:00.000Z')];
+
+        expect(ids(mergeHistoryPage(shown, [at('a', '2026-10-22T10:00:00.000Z')]))).toEqual(['a']);
+      });
+
+      it('should place pages for each window they belong to', () => {
+        setAddChannel('#test', ChannelCategory.channel);
+        setAddMessage(at('joined', '2026-10-22T10:05:00.000Z'));
+
+        setAddHistoryPage([at('a', '2026-10-22T10:00:00.000Z'), { ...at('dm', '2026-10-22T10:01:00.000Z'), target: 'Friend' }]);
+
+        expect(ids(getMessages('#test'))).toEqual(['a', 'joined']);
+        expect(ids(getMessages('Friend'))).toEqual(['dm']);
+      });
+    });
+
+    it('should append a live message even when it is older than the last one', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+      setAddMessage(createMessageAt('local', 'local', '#test', '2026-10-22T10:05:00.000Z'));
+
+      setAddMessage(createMessageAt('server', 'server', '#test', '2026-10-22T10:04:59.000Z'));
+
+      expect(getMessages('#test').map((message) => message.id)).toEqual(['local', 'server']);
+    });
+
+    it('should keep the newest maxMessages in a window not being read', () => {
+      setAddChannel('#other', ChannelCategory.channel);
+
+      for (let index = 0; index <= maxMessages; index++) {
+        setAddMessage(createMessage(`m${index}`, 'text', '#other'));
+      }
+
+      const messages = getMessages('#other');
+      expect(messages.length).toBe(maxMessages);
+      expect(messages[0]?.id).toBe('m1');
+    });
+
+    it('should keep more in the window being read, so history scrolled back to stays', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+
+      for (let index = 0; index <= maxMessages; index++) {
+        setAddMessage(createMessage(`m${index}`, 'text', '#test'));
+      }
+      expect(getMessages('#test').length).toBe(maxMessages + 1);
+
+      setAddHistoryPage(Array.from({ length: maxViewedMessages }, (_, index) => createMessageAt(`h${index}`, 'text', '#test', '2000-01-01T00:00:00.000Z')));
+      expect(getMessages('#test').length).toBe(maxViewedMessages);
+      expect(getMessages('#test').at(-1)?.id).toBe(`m${maxMessages}`);
+    });
+
     it('should add message to channel', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'), maxMessages);
 
       const messages = getMessages('#test');
       expect(messages.length).toBe(1);
@@ -233,8 +335,8 @@ describe('channels store', () => {
     it('should add multiple messages', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'));
-      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test'), maxMessages);
 
       const messages = getMessages('#test');
       expect(messages.length).toBe(2);
@@ -249,7 +351,7 @@ describe('channels store', () => {
       setAddChannel('#test1', ChannelCategory.channel);
       setAddChannel('#test2', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test1'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test1'), maxMessages);
 
       expect(getMessages('#test1').length).toBe(1);
       expect(getMessages('#test2').length).toBe(0);
@@ -258,8 +360,8 @@ describe('channels store', () => {
     it('should not add duplicate message with same id', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'), maxMessages);
 
       expect(getMessages('#test').length).toBe(1);
     });
@@ -267,8 +369,8 @@ describe('channels store', () => {
     it('should not add duplicate even with different message text', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Different text', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Different text', '#test'), maxMessages);
 
       const messages = getMessages('#test');
       expect(messages.length).toBe(1);
@@ -278,8 +380,8 @@ describe('channels store', () => {
     it('should add messages with different ids', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'));
-      useChannelsStore.getState().setAddMessage(createMessage('msg-2', 'World', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('msg-2', 'World', '#test'), maxMessages);
 
       expect(getMessages('#test').length).toBe(2);
     });
@@ -288,8 +390,8 @@ describe('channels store', () => {
       setAddChannel('#test1', ChannelCategory.channel);
       setAddChannel('#test2', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test1'));
-      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test2'));
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test1'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('msg-1', 'Hello', '#test2'), maxMessages);
 
       expect(getMessages('#test1').length).toBe(1);
       expect(getMessages('#test2').length).toBe(1);
@@ -298,8 +400,8 @@ describe('channels store', () => {
     it('should clear messages for a specific channel', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'));
-      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test'), maxMessages);
       expect(getMessages('#test').length).toBe(2);
 
       setClearMessages('#test');
@@ -311,8 +413,8 @@ describe('channels store', () => {
       setAddChannel('#test1', ChannelCategory.channel);
       setAddChannel('#test2', ChannelCategory.channel);
 
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test1'));
-      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test2'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'Hello', '#test1'), maxMessages);
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'World', '#test2'), maxMessages);
 
       setClearMessages('#test1');
 
@@ -620,10 +722,10 @@ describe('channels store', () => {
 
     it('should not mutate messages array when adding message', () => {
       setAddChannel('#test', ChannelCategory.channel);
-      useChannelsStore.getState().setAddMessage(createMessage('1', 'First', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('1', 'First', '#test'), maxMessages);
       const messagesBefore = getChannel('#test')?.messages;
 
-      useChannelsStore.getState().setAddMessage(createMessage('2', 'Second', '#test'));
+      useChannelsStore.getState().setAddMessage(createMessage('2', 'Second', '#test'), maxMessages);
       const messagesAfter = getChannel('#test')?.messages;
 
       expect(messagesBefore).not.toBe(messagesAfter);

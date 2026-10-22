@@ -92,6 +92,7 @@ describe('kernel ircv3/labeledresponse', () => {
   it('still buffers a chathistory batch nested in a labeled batch', () => {
     const label = createLabel({ window: '#sent-from' });
     const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
+    const mockSetAddHistoryPage = vi.spyOn(channelsFile, 'setAddHistoryPage').mockImplementation(() => {});
 
     handle(`@label=${label} :server BATCH +outer labeled-response`);
     handle('@batch=outer :server BATCH +history chathistory #chan');
@@ -102,7 +103,7 @@ describe('kernel ircv3/labeledresponse', () => {
     handle('@batch=outer :server BATCH -history');
     handle(':server BATCH -outer');
 
-    expect(shownReplies()).toEqual([expect.objectContaining({ target: '#chan', message: 'old message' })]);
+    expect(mockSetAddHistoryPage).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ target: '#chan', message: 'old message' })], undefined);
     mockSetAddChannel.mockRestore();
   });
 

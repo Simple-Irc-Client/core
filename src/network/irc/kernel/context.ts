@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { type LabeledRequest } from '@/network/irc/labels';
 import { redactSensitiveIrc } from '@shared/lib/utils';
-import { type ParsedIrcRawMessage } from '@shared/types';
+import { type Message, type ParsedIrcRawMessage } from '@shared/types';
 
 export const joinParamsAndText = (params: string[], text: string): string =>
   [params.join(' '), text].filter((part) => part !== '').join(': ');
@@ -17,10 +17,13 @@ export class IrcContext {
   request?: LabeledRequest;
   /** Replayed from chathistory: shown, but not acted on as if it had just arrived */
   readonly isHistory: boolean;
+  /** Where a replayed message goes, to be placed together with the rest of its page */
+  readonly historyPage?: Message[];
 
-  constructor(message: ParsedIrcRawMessage, eventLine: string, { isHistory = false } = {}) {
+  constructor(message: ParsedIrcRawMessage, eventLine: string, { historyPage }: { historyPage?: Message[] } = {}) {
     this.eventLine = eventLine;
-    this.isHistory = isHistory;
+    this.isHistory = historyPage !== undefined;
+    this.historyPage = historyPage;
     this.tags = message.tags;
     this.sender = message.sender;
     this.command = message.command;

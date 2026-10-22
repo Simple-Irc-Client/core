@@ -4,6 +4,7 @@ import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
+import * as chatHistoryFile from '@/network/irc/chatHistory';
 import { MessageCategory, type Message, type User } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
@@ -1111,6 +1112,56 @@ describe('Chat tests', () => {
       const joinMsg = container.querySelector('.sic-msg[data-category="join"]');
       expect(joinMsg).not.toBeNull();
       expect(joinMsg?.querySelector('.cursor-pointer')).toBeNull();
+    });
+  });
+
+  describe('Loading older history', () => {
+    const scrollUpTo = (scrollContainer: HTMLDivElement, scrollTop: number): void => {
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+      scrollContainer.scrollTop = 600;
+      fireEvent.scroll(scrollContainer);
+      scrollContainer.scrollTop = scrollTop;
+      fireEvent.scroll(scrollContainer);
+    };
+
+    it('should ask for older messages when the user scrolls up near the top', () => {
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
+      const { container } = render(<Main />);
+
+      scrollUpTo(container.firstChild as HTMLDivElement, 150);
+
+      expect(requestOlderHistory).toHaveBeenCalledWith('#channel1');
+    });
+
+    it('should not ask while the user reads further down', () => {
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+      const { container } = render(<Main />);
+
+      scrollUpTo(container.firstChild as HTMLDivElement, 300);
+
+      expect(requestOlderHistory).not.toHaveBeenCalled();
+    });
+
+    it('should keep what the user reads in place when older messages go in above it', () => {
+      vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      const tops: Record<string, number> = { '2': 10, '3': 60 };
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+        return { top: tops[this.closest<HTMLElement>('[data-message-id]')?.dataset.messageId ?? ''] ?? 0 } as DOMRect;
+      });
+      const shown = [createMessage({ id: '2' }), createMessage({ id: '3' })];
+      setupMocks({ messages: shown });
+      const { container, rerender } = render(<Main />);
+      const scrollContainer = container.firstChild as HTMLDivElement;
+      scrollUpTo(scrollContainer, 100);
+
+      tops['2'] = 310;
+      setupMocks({ messages: [createMessage({ id: '1', time: '2024-01-01T11:00:00Z' }), ...shown] });
+      rerender(<Main />);
+
+      expect(scrollContainer.scrollTop).toBe(400);
     });
   });
 

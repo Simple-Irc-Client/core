@@ -400,17 +400,20 @@ export const ircRequestMetadataList = (nick: string): void => {
 };
 
 // https://ircv3.net/specs/extensions/chathistory
+export type ChatHistoryReference = { timestamp: string } | { msgid: string };
+
+/** Without a reference, LATEST asks for the newest messages; the others need one */
 export const ircRequestChatHistory = (
   target: string,
-  subcommand: 'LATEST' | 'BEFORE' | 'AFTER' | 'AROUND' = 'LATEST',
-  timestamp?: string,
-  limit = 50,
+  subcommand: 'LATEST' | 'BEFORE' | 'AFTER' | 'AROUND',
+  reference: ChatHistoryReference | undefined,
+  limit: number,
 ): void => {
-  if (subcommand === 'LATEST') {
-    ircSendRawMessage(`CHATHISTORY LATEST ${target} * ${limit}`);
-  } else if (timestamp) {
-    ircSendRawMessage(`CHATHISTORY ${subcommand} ${target} timestamp=${timestamp} ${limit}`);
+  if (reference === undefined && subcommand !== 'LATEST') {
+    return;
   }
+  const bound = reference === undefined ? '*' : 'msgid' in reference ? `msgid=${reference.msgid}` : `timestamp=${reference.timestamp}`;
+  ircSendRawMessage(`CHATHISTORY ${subcommand} ${target} ${bound} ${limit}`);
 };
 
 // https://ircv3.net/specs/extensions/monitor.html

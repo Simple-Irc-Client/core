@@ -3,7 +3,7 @@ import { parseChannelModes, parseUserModes } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendNamesXProto } from '@/network/irc/network';
-import { setCaseMapping, setChannelModes, setChannelTypes, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
+import { setCaseMapping, setChannelModes, setChatHistoryLimit, setChannelTypes, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
 
@@ -60,6 +60,9 @@ export const onRaw005 = (ctx: IrcContext): void => {
         break;
       case 'SILENCE':
         setSilenceLimit(parseIsupportLimit(value));
+        break;
+      case 'CHATHISTORY':
+        setChatHistoryLimit(value !== undefined ? Number.parseInt(value, 10) || 0 : 0);
         break;
       case 'NICKLEN':
         setNickLenLimit(value !== undefined ? Number.parseInt(value, 10) : 50);

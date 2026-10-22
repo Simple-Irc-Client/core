@@ -1,6 +1,7 @@
 import { DEBUG_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { addToBatch, BATCH_TYPES, getBatch, getMessageBatchId } from '@/network/irc/batch';
+import { clearHistoryRequests } from '@/network/irc/chatHistory';
 import { parseIrcRawMessage } from '@/network/irc/helpers';
 import { IrcContext } from '@/network/irc/kernel/context';
 import { GATEWAY_SEQ_TAG, isAwaitingGatewayResume, noteGatewaySeq } from '@/network/irc/gatewaySession';
@@ -29,6 +30,7 @@ onConnectionTornDown(() => {
   clearIncomingState();
   clearMonitorList();
   clearReadMarkers();
+  clearHistoryRequests();
 });
 
 export class Kernel {
