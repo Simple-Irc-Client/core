@@ -39,9 +39,14 @@ server:
     suppress-lusers: false
 
 accounts:
-    authentication-enabled: false
+    authentication-enabled: true
     registration:
-        enabled: false
+        enabled: true
+        throttling:
+            enabled: false
+        bcrypt-cost: 4
+        email-verification:
+            enabled: false
     login-throttling:
         enabled: false
     skip-server-password: false
@@ -54,8 +59,12 @@ accounts:
         force-guest-format: false
         force-nick-equals-account: false
         forbid-anonymous-nick-changes: false
+    # Stands in for a bouncer: an account opts in with NickServ SET MULTICLIENT ON, then each SASL login attaches to its session
     multiclient:
-        enabled: false
+        enabled: true
+        allowed-by-default: false
+        always-on: "disabled"
+        auto-away: "disabled"
     vhosts:
         enabled: false
     default-user-modes: ""

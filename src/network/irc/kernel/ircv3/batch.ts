@@ -68,7 +68,7 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   // Skip TAGMSG: typing indicators from history are stale
   for (const message of batch.messages) {
     if (message.command === 'TAGMSG') { continue; }
-    processBufferedMessage(ctx, message);
+    processBufferedMessage(ctx, message, { isHistory: true });
   }
 };
 
@@ -91,8 +91,8 @@ const bufferedHandlers = new Map<string, IrcHandler>([
   ['TOPIC', onTopic],
 ]);
 
-export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage): void => {
-  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine));
+export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage, { isHistory = false } = {}): void => {
+  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine, { isHistory }));
 };
 
 export const handlers: IrcHandlers = {

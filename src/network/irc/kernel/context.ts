@@ -15,9 +15,12 @@ export class IrcContext {
   readonly eventLine: string;
   /** The labeled command this message answers, when the server supports labeled-response */
   request?: LabeledRequest;
+  /** Replayed from chathistory: shown, but not acted on as if it had just arrived */
+  readonly isHistory: boolean;
 
-  constructor(message: ParsedIrcRawMessage, eventLine: string) {
+  constructor(message: ParsedIrcRawMessage, eventLine: string, { isHistory = false } = {}) {
     this.eventLine = eventLine;
+    this.isHistory = isHistory;
     this.tags = message.tags;
     this.sender = message.sender;
     this.command = message.command;

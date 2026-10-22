@@ -51,7 +51,7 @@ export const onNotice = (ctx: IrcContext): void => {
     setUserBot(nick, true);
   }
 
-  if (isSameName(nick, 'NickServ') && isSameName(target, getCurrentNick()) && passwordRequired.test(message)) {
+  if (!ctx.isHistory && isSameName(nick, 'NickServ') && isSameName(target, getCurrentNick()) && passwordRequired.test(message)) {
     setIsPasswordRequired(true);
     // Auto-identify with the saved password for this nick
     if (getIsWizardCompleted() && getEncryptedPassword() && isSameName(getPasswordNick() ?? '', getCurrentNick())) {
@@ -61,7 +61,7 @@ export const onNotice = (ctx: IrcContext): void => {
     }
   }
 
-  if (list.test(message) && isSameName(target, getCurrentNick())) {
+  if (!ctx.isHistory && list.test(message) && isSameName(target, getCurrentNick())) {
     const regexpGroups = list.exec(message)?.groups;
     const seconds = regexpGroups?.secs1 ?? regexpGroups?.secs2 ?? regexpGroups?.secs3;
 
@@ -107,8 +107,8 @@ export const onNotice = (ctx: IrcContext): void => {
 
   // Handle CTCP replies (NOTICE with \x01 delimiters)
   if (message.startsWith('\x01')) {
-    // Only show CTCP replies addressed to us
-    if (!isSameName(target, getCurrentNick())) {
+    // Only show live CTCP replies addressed to us; replayed ones answer requests long gone
+    if (ctx.isHistory || !isSameName(target, getCurrentNick())) {
       return;
     }
 
@@ -163,16 +163,20 @@ interface Conversation {
   /** The window it belongs in: the channel, or the peer's nick for a DM */
   window: string;
   isDirect: boolean;
+  /** Sent by us, from this client or another one on the same bouncer (IRCv3 echo-message, znc.in/self-message) */
+  isOwn: boolean;
   /** Our own message, echoed back by the server (IRCv3 echo-message) */
   isEcho: boolean;
 }
 
 const resolveConversation = (nick: string, target: string, myNick: string): Conversation => {
+  const isOwn = isSameName(nick, myNick);
   return {
     window: isSameName(target, myNick) ? nick : target,
-    // Addressed to us, or our own echoed message to a non-channel target
-    isDirect: isSameName(target, myNick) || (isSameName(nick, myNick) && !isChannel(target)),
-    isEcho: isSameName(nick, myNick) && isCapabilityEnabled('echo-message'),
+    // Addressed to us, or our own message to a non-channel target
+    isDirect: isSameName(target, myNick) || (isOwn && !isChannel(target)),
+    isOwn,
+    isEcho: isOwn && isCapabilityEnabled('echo-message'),
   };
 };
 
@@ -185,8 +189,8 @@ const openConversationWindow = ({ window, isDirect }: Conversation): void => {
   }
 };
 
-const isHighlight = ({ isDirect, isEcho }: Conversation, text: string, myNick: string): boolean =>
-  !isEcho && (isDirect || text.toLowerCase().includes(myNick.toLowerCase()));
+const isHighlight = ({ isDirect, isOwn }: Conversation, text: string, myNick: string): boolean =>
+  !isOwn && (isDirect || text.toLowerCase().includes(myNick.toLowerCase()));
 
 const announceHighlight = ({ window, isDirect }: Conversation, nick: string, text: string, currentChannelName: string): void => {
   if (window !== currentChannelName) {
@@ -223,18 +227,19 @@ export const onPrivMsg = (ctx: IrcContext): void => {
 
   const conversation = resolveConversation(nick, target, myNick);
 
-  if (conversation.isEcho && isIrcService(target)) {
+  if (conversation.isOwn && isIrcService(target)) {
     return;
   }
 
   openConversationWindow(conversation);
-  const { window, isEcho } = conversation;
+  const { window, isOwn, isEcho } = conversation;
+  const isLiveFromOthers = !ctx.isHistory && !isOwn;
 
-  if (window !== currentChannelName && !isEcho) {
+  if (window !== currentChannelName && isLiveFromOthers) {
     setIncreaseUnreadMessages(window);
   }
 
-  if (isSameName(window, currentChannelName) && !isEcho) {
+  if (isSameName(window, currentChannelName) && isLiveFromOthers) {
     setTyping(window, nick, 'done');
   }
 
@@ -255,11 +260,11 @@ export const onPrivMsg = (ctx: IrcContext): void => {
     highlight,
   });
 
-  if (highlight) {
+  if (highlight && !ctx.isHistory) {
     announceHighlight(conversation, nick, message, currentChannelName);
   }
 
-  if (!isEcho) {
+  if (isLiveFromOthers) {
     const userFlags = getCurrentUserFlags();
     const isAway = userFlags.includes('away');
     if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
@@ -284,6 +289,20 @@ export const handleCtcp = (ctx: IrcContext, nick: string, target: string, messag
 
   const ctcpContent = message.split('\x01').join('');
 
+  const spaceIndex = ctcpContent.indexOf(' ');
+  const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
+  const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
+
+  if (ctcpCommand.toUpperCase() === 'ACTION') {
+    handleCtcpAction(ctx, nick, target, ctcpParams, myNick, currentChannelName);
+    return;
+  }
+
+  // Only live requests from others are acted on: a replayed one is stale, and our own are for someone else to answer
+  if (ctx.isHistory || isSameName(nick, myNick)) {
+    return;
+  }
+
   // E2EE frames skip the CTCP notices, or every encrypted message would log a pair
   if (
     handleE2eeCtcp({
@@ -298,16 +317,9 @@ export const handleCtcp = (ctx: IrcContext, nick: string, target: string, messag
     return;
   }
 
-  const spaceIndex = ctcpContent.indexOf(' ');
-  const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
-  const ctcpParams = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
-
   let ctcpResponse: string;
 
   switch (ctcpCommand.toUpperCase()) {
-    case 'ACTION':
-      handleCtcpAction(ctx, nick, target, ctcpParams, myNick, currentChannelName);
-      return;
     case 'VERSION':
       ctcpResponse = clientVersion;
       break;
@@ -372,9 +384,9 @@ export const handleCtcpAction = (
 ): void => {
   const conversation = resolveConversation(nick, target, myNick);
   openConversationWindow(conversation);
-  const { window, isEcho } = conversation;
+  const { window, isOwn } = conversation;
 
-  if (window !== currentChannelName && !isEcho) {
+  if (window !== currentChannelName && !ctx.isHistory && !isOwn) {
     setIncreaseUnreadMessages(window);
   }
 
@@ -391,7 +403,7 @@ export const handleCtcpAction = (
     highlight,
   });
 
-  if (highlight) {
+  if (highlight && !ctx.isHistory) {
     announceHighlight(conversation, nick, action, currentChannelName);
   }
 };

@@ -7,6 +7,9 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import * as capabilitiesFile from '@/network/irc/capabilities';
+import * as networkFile from '@/network/irc/network';
+import * as notificationsFile from '@/runtime/notifications';
+import * as awayMessagesFile from '@features/channels/store/awayMessages';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { ChannelCategory } from '@shared/types';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
@@ -745,6 +748,96 @@ describe('kernel core/message', () => {
       new Kernel({ type: 'raw', line }).handle();
 
       expect(mockSetHasMention).toHaveBeenCalledWith('#channel');
+    });
+  });
+
+  describe('Own messages from other clients (znc.in/self-message)', () => {
+    const mockOwnMessageEnvironment = () => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => ['away']);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
+      return {
+        setAddMessage: vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {}),
+        setIncreaseUnreadMessages: vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {}),
+        setHasMention: vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {}),
+        setTyping: vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {}),
+        notifyHighlight: vi.spyOn(notificationsFile, 'notifyHighlight').mockImplementation(async () => {}),
+        addAwayMessage: vi.spyOn(awayMessagesFile, 'addAwayMessage').mockImplementation(() => {}),
+        ircSendRawMessage: vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {}),
+      };
+    };
+
+    it('should show a direct message sent from another client in the peer window as our own, without echo-message', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = '@msgid=own1;time=2023-02-12T02:06:12.210Z :MyNick!~user@host PRIVMSG Friend :sent from my phone, MyNick';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: 'Friend', message: 'sent from my phone, MyNick', highlight: false, echoed: false }));
+      expect(mocks.setIncreaseUnreadMessages).not.toHaveBeenCalled();
+      expect(mocks.setHasMention).not.toHaveBeenCalled();
+      expect(mocks.notifyHighlight).not.toHaveBeenCalled();
+      expect(mocks.addAwayMessage).not.toHaveBeenCalled();
+    });
+
+    it('should not count a channel message sent from another client as unread', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = '@msgid=own2;time=2023-02-12T02:06:12.210Z :MyNick!~user@host PRIVMSG #channel :hello';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', message: 'hello', highlight: false }));
+      expect(mocks.setIncreaseUnreadMessages).not.toHaveBeenCalled();
+      expect(mocks.setTyping).not.toHaveBeenCalled();
+    });
+
+    it('should not count an ACTION sent from another client as unread or a highlight', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = '@msgid=own3;time=2023-02-12T02:06:12.210Z :MyNick!~user@host PRIVMSG Friend :\x01ACTION waves\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: 'Friend', message: 'waves', highlight: false }));
+      expect(mocks.setIncreaseUnreadMessages).not.toHaveBeenCalled();
+      expect(mocks.notifyHighlight).not.toHaveBeenCalled();
+    });
+
+    it('should hide a message to services sent from another client, without echo-message', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = ':MyNick!~user@host PRIVMSG NickServ :IDENTIFY secret';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledTimes(1); // the debug line only
+    });
+
+    it('should not answer our own CTCP request', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = ':MyNick!~user@host PRIVMSG Friend :\x01VERSION\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(mocks.setAddMessage).toHaveBeenCalledTimes(1); // the debug line only
+    });
+
+    it('should still answer a CTCP request from someone else', () => {
+      const mocks = mockOwnMessageEnvironment();
+
+      const line = ':Friend!~user@host PRIVMSG MyNick :\x01VERSION\x01';
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      expect(mocks.ircSendRawMessage).toHaveBeenCalledWith(expect.stringContaining('NOTICE Friend :\x01VERSION '));
     });
   });
 });

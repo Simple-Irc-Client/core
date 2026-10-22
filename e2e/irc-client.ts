@@ -50,6 +50,11 @@ const CAP_MAX_RETRIES = 2;
  */
 const CAP_LS_PATTERN = /(?:^|\s)CAP \S+ LS(\s\*)?\s*:?(.*)/;
 const CAP_ACK_PATTERN = /(?:^|\s)CAP \S+ ACK\s/;
+const AUTHENTICATE_CONTINUE_PATTERN = /^(@\S+ )?(:\S+ )?AUTHENTICATE \+$/;
+/** RPL_SASLSUCCESS (903) */
+const RPL_SASLSUCCESS_PATTERN = /^(@\S+ )?:[^\s!@]+ 903 /;
+/** ERR_NICKLOCKED (902), ERR_SASLFAIL (904), ERR_SASLTOOLONG (905), ERR_SASLABORTED (906) */
+const ERR_SASL_PATTERN = /^(@\S+ )?:[^\s!@]+ 90[2456] /;
 
 /** Strip CR/LF to prevent IRC line injection */
 const stripCRLF = (input: string): string => input.replace(/[\r\n]/g, '');
@@ -66,6 +71,13 @@ interface RawIrcClientOptions {
   pongTimeout?: number;
   /** Capabilities to request from the server during CAP negotiation */
   requestCaps?: string[];
+  /** Log in with SASL PLAIN during registration */
+  sasl?: SaslCredentials;
+}
+
+export interface SaslCredentials {
+  account: string;
+  password: string;
 }
 
 /**
@@ -85,6 +97,7 @@ class RawIrcClient extends EventEmitter {
   private capEndSent = false;
   private requestedCaps: string[] = [];
   private availableCaps: string[] = [];
+  private sasl?: SaslCredentials;
 
   get connected(): boolean {
     return this.socket?.writable ?? false;
@@ -117,7 +130,8 @@ class RawIrcClient extends EventEmitter {
     this.capRetryCount = 0;
     this.capResponseReceived = false;
     this.capEndSent = false;
-    this.requestedCaps = options.requestCaps ?? [];
+    this.sasl = options.sasl;
+    this.requestedCaps = [...(options.requestCaps ?? []), ...(options.sasl ? ['sasl'] : [])];
     this.availableCaps = [];
     this.send('CAP LS 302');
     this.startCapResponseTimer();
@@ -200,10 +214,28 @@ class RawIrcClient extends EventEmitter {
     }
 
     if (CAP_ACK_PATTERN.test(line)) {
-      if (!this.capEndSent) {
-        this.capEndSent = true;
-        this.send('CAP END');
+      if (this.sasl && /[ :]sasl(\s|$)/.test(line)) {
+        this.send('AUTHENTICATE PLAIN');
+      } else {
+        this.endCapNegotiation();
       }
+      return;
+    }
+
+    if (this.sasl && AUTHENTICATE_CONTINUE_PATTERN.test(line)) {
+      const { account, password } = this.sasl;
+      this.send(`AUTHENTICATE ${Buffer.from(`${account}\0${account}\0${password}`).toString('base64')}`);
+      return;
+    }
+
+    if (RPL_SASLSUCCESS_PATTERN.test(line)) {
+      this.endCapNegotiation();
+      return;
+    }
+
+    if (ERR_SASL_PATTERN.test(line)) {
+      this.emit('error', new Error(`SASL login failed: ${line}`));
+      this.endCapNegotiation();
       return;
     }
 
@@ -213,6 +245,13 @@ class RawIrcClient extends EventEmitter {
 
     if (ERR_NICKNAMEINUSE_PATTERN.test(line)) {
       this.emit('nick_in_use');
+    }
+  }
+
+  private endCapNegotiation(): void {
+    if (!this.capEndSent) {
+      this.capEndSent = true;
+      this.send('CAP END');
     }
   }
 
@@ -281,11 +320,13 @@ export class IrcClient {
   readonly nick: string;
   private readonly password?: string;
   private readonly requestCaps?: string[];
+  private readonly sasl?: SaslCredentials;
 
-  constructor(nick: string, password?: string, requestCaps?: string[]) {
+  constructor(nick: string, password?: string, requestCaps?: string[], sasl?: SaslCredentials) {
     this.nick = nick;
     this.password = password;
     this.requestCaps = requestCaps;
+    this.sasl = sasl;
     this.client = new RawIrcClient();
   }
 
@@ -313,7 +354,7 @@ export class IrcClient {
         this.client.off('nick_in_use', onNickInUse);
         reject(err);
       });
-      this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick, requestCaps: this.requestCaps });
+      this.client.connect({ host, port, nick: this.nick, password: this.password, username: this.nick, gecos: this.nick, requestCaps: this.requestCaps, sasl: this.sasl });
     });
   }
 
