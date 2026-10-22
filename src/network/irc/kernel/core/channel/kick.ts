@@ -3,8 +3,8 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
+import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setRemoveUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
@@ -32,15 +32,20 @@ export const onKick = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  setAddMessage({
+  addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
     message: i18next.t(`kernel.kick${isSameName(kicked, currentNick) ? '-you' : ''}`, { kicked, kickedBy: nick, channel, reason: reason.length !== 0 ? `(${reason})` : '' }),
     nick: getUser(nick) ?? nick,
-    target: isSameName(kicked, currentNick) ? STATUS_CHANNEL : channel,
+    // Live, the channel window is about to close; history is the channel's own
+    target: isSameName(kicked, currentNick) && !ctx.isHistory ? STATUS_CHANNEL : channel,
     time: ctx.tags.time ?? new Date().toISOString(),
     category: MessageCategory.kick,
     color: MessageColor.kick,
   });
+
+  if (ctx.isHistory) {
+    return;
+  }
 
   setRemoveUser(kicked, channel);
 

@@ -2,6 +2,7 @@ import i18next from '@/app/i18n';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { addMessage } from '@/network/irc/kernel/replies';
 import { endSession } from '@features/e2ee/session';
 import { setMultipleMonitorOffline } from '@features/monitor/store/monitor';
 import { getUserModes } from '@features/settings/store/settings';
@@ -23,6 +24,12 @@ export const onQuit = (ctx: IrcContext): void => {
     category: MessageCategory.quit,
     color: MessageColor.quit,
   };
+
+  // The channels a replayed quit was seen in are not the user's current ones
+  if (ctx.history !== undefined) {
+    addMessage(ctx, { ...message, target: ctx.history.target });
+    return;
+  }
 
   // Peer is gone: drop the session without a RESET (nobody to tell)
   endSession(nick, false);

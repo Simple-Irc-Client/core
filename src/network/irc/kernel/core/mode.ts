@@ -3,7 +3,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { channelModeType, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
 import { getChannelModes, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
@@ -77,7 +77,7 @@ export const onMode = (ctx: IrcContext): void => {
 
   if (isChannel(userOrChannel)) {
     handleChannelModes(ctx, userOrChannel, changes, nick, serverUserModes);
-  } else {
+  } else if (!ctx.isHistory) {
     handleUserModes(ctx, userOrChannel, changes, nick);
   }
 };
@@ -88,14 +88,15 @@ const handleChannelModes = (ctx: IrcContext, channel: string, changes: ModeChang
   // Modes that take a parameter consume them from the rest of the line, in order
   let flagParameterIndex = 0;
 
-  for (const { sign, flag } of changes) {
+  for (const [index, { sign, flag }] of changes.entries()) {
     const mode = `${sign}${flag}`;
     const type = channelModeType(flag, serverChannelModes, serverUserModes);
 
     let message = '';
     const translate = `kernel.mode.channel.${sign === '+' ? 'plus' : 'minus'}.${flag}`;
 
-    const isSettingsOpen = useChannelSettingsStore.getState().channelName === channel;
+    // Replayed changes are shown, not applied: they may be long superseded
+    const isSettingsOpen = !ctx.isHistory && useChannelSettingsStore.getState().channelName === channel;
 
     switch (`${sign}${type ?? ''}`) {
       case '+A':
@@ -150,7 +151,9 @@ const handleChannelModes = (ctx: IrcContext, channel: string, changes: ModeChang
         if (user !== undefined) {
           flagParameterIndex++;
           message = i18next.t(translate, { user, setBy, defaultValue: i18next.t('kernel.mode.channel.user', { user, setBy, mode }) });
-          setUpdateUserFlag(user, channel, sign, flag, serverUserModes);
+          if (!ctx.isHistory) {
+            setUpdateUserFlag(user, channel, sign, flag, serverUserModes);
+          }
         }
         break;
       }
@@ -160,8 +163,9 @@ const handleChannelModes = (ctx: IrcContext, channel: string, changes: ModeChang
         break;
     }
 
-    setAddMessage({
-      id: uuidv4(),
+    addMessage(ctx, {
+      // From the server's id, so the same change replayed from history is recognised as already shown
+      id: ctx.tags.msgid !== undefined ? `${ctx.tags.msgid}-${index}` : uuidv4(),
       message,
       target: channel,
       time: ctx.tags.time ?? new Date().toISOString(),

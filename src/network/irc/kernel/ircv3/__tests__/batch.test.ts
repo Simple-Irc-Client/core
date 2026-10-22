@@ -125,6 +125,97 @@ describe('kernel ircv3/batch', () => {
       expect(onHistoryBatch).toHaveBeenCalledExactlyOnceWith('#channel', 3, { time: Date.parse('2023-02-12T02:00:00.000Z'), msgid: 'p1' });
     });
 
+    describe('with event playback', () => {
+      const mockStateChanges = () => ({
+        setAddUser: vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {}),
+        setRemoveUser: vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {}),
+        setQuitUser: vi.spyOn(usersFile, 'setQuitUser').mockImplementation(() => {}),
+        setRenameUser: vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {}),
+        setUpdateUserFlag: vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {}),
+        setUserAway: vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {}),
+        setTopic: vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {}),
+        setRenameChannel: vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {}),
+        setRemoveChannel: vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {}),
+        setCurrentChannelName: vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {}),
+        setNick: vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {}),
+        requestLatestHistory: vi.spyOn(chatHistoryFile, 'requestLatestHistory').mockImplementation(() => {}),
+      });
+
+      it('should show replayed channel events in the window without applying them', () => {
+        const mocks = mockReplayEnvironment();
+        const changes = mockStateChanges();
+        vi.spyOn(channelsFile, 'getChannel').mockImplementation(() => ({ name: '#Channel' }) as ReturnType<typeof channelsFile.getChannel>);
+
+        replay('#channel', [
+          'msgid=e1;time=2023-02-12T02:00:00.000Z :MyNick!~u@host JOIN #channel',
+          'msgid=e2;time=2023-02-12T02:01:00.000Z :Friend!~u@host JOIN #channel',
+          'msgid=e3;time=2023-02-12T02:02:00.000Z :Friend!~u@host TOPIC #channel :old topic',
+          'msgid=e4;time=2023-02-12T02:03:00.000Z :Op!~u@host MODE #channel +o-v Friend Friend',
+          'msgid=e5;time=2023-02-12T02:04:00.000Z :Friend!~u@host NICK Friend2',
+          'msgid=e6;time=2023-02-12T02:05:00.000Z :Friend2!~u@host PART #channel later',
+          'msgid=e7;time=2023-02-12T02:06:00.000Z :Op!~u@host KICK #channel Other bye',
+          'msgid=e8;time=2023-02-12T02:07:00.000Z :Other!~u@host QUIT :gone',
+        ]);
+
+        expect(mocks.setAddHistoryPage).toHaveBeenCalledExactlyOnceWith([
+          expect.objectContaining({ id: 'e1', target: '#channel', category: MessageCategory.join }),
+          expect.objectContaining({ id: 'e2', target: '#channel', category: MessageCategory.join }),
+          expect.objectContaining({ id: 'e3', target: '#channel', message: expect.stringContaining('old topic') }),
+          expect.objectContaining({ id: 'e4-0', target: '#channel', category: MessageCategory.mode }),
+          expect.objectContaining({ id: 'e4-1', target: '#channel', category: MessageCategory.mode }),
+          expect.objectContaining({ id: 'e5', target: '#channel', message: expect.stringContaining('Friend2') }),
+          expect.objectContaining({ id: 'e6', target: '#channel', category: MessageCategory.part }),
+          expect.objectContaining({ id: 'e7', target: '#channel', category: MessageCategory.kick }),
+          expect.objectContaining({ id: 'e8', target: '#channel', category: MessageCategory.quit }),
+        ], undefined);
+        for (const change of Object.values(changes)) {
+          expect(change).not.toHaveBeenCalled();
+        }
+        expect(mocks.ircSendRawMessage).not.toHaveBeenCalled();
+      });
+
+      it('should keep a replayed kick of us in the channel it happened in', () => {
+        const mocks = mockReplayEnvironment();
+        const changes = mockStateChanges();
+
+        replay('#channel', ['msgid=k1;time=2023-02-12T02:00:00.000Z :Op!~u@host KICK #channel MyNick :out']);
+
+        expect(mocks.setAddHistoryPage).toHaveBeenCalledWith([expect.objectContaining({ id: 'k1', target: '#channel', category: MessageCategory.kick })], undefined);
+        expect(changes.setRemoveChannel).not.toHaveBeenCalled();
+        expect(changes.setCurrentChannelName).not.toHaveBeenCalled();
+      });
+
+      it('should show a replayed quit in the window it was replayed for', () => {
+        const mocks = mockReplayEnvironment();
+        mockStateChanges();
+
+        replay('Friend', ['msgid=q1;time=2023-02-12T02:00:00.000Z :Friend!~u@host QUIT :gone']);
+
+        expect(mocks.setAddHistoryPage).toHaveBeenCalledWith([expect.objectContaining({ id: 'q1', target: 'Friend' })], undefined);
+      });
+
+      it('should not apply events history does not show', () => {
+        const mocks = mockReplayEnvironment();
+        const changes = mockStateChanges();
+
+        replay('#channel', ['msgid=a1;time=2023-02-12T02:00:00.000Z :Friend!~u@host AWAY :lunch']);
+
+        expect(changes.setUserAway).not.toHaveBeenCalled();
+        expect(mocks.setAddHistoryPage).toHaveBeenCalledWith([], undefined);
+      });
+
+      it('should give a live mode change the ids its replay will carry', () => {
+        mockReplayEnvironment();
+        mockStateChanges();
+        const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+
+        new Kernel({ type: 'raw', line: '@msgid=m1;time=2023-02-12T02:00:00.000Z :Op!~u@host MODE #channel +o-v Friend Friend' }).handle();
+
+        expect(setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1-0', target: '#channel' }));
+        expect(setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ id: 'm1-1', target: '#channel' }));
+      });
+    });
+
     describe('with a read marker', () => {
       beforeEach(() => {
         clearReadMarkers();

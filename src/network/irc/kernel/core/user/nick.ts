@@ -36,6 +36,15 @@ export const onNick = (ctx: IrcContext): void => {
     return;
   }
 
+  if (ctx.history !== undefined) {
+    showReply(ctx, {
+      message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
+      target: ctx.history.target,
+      category: MessageCategory.info,
+    });
+    return;
+  }
+
   const channels = getUserChannels(oldNick);
   setRenameUser(oldNick, newNick);
 

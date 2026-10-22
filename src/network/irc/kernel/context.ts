@@ -6,6 +6,12 @@ import { type Message, type ParsedIrcRawMessage } from '@shared/types';
 export const joinParamsAndText = (params: string[], text: string): string =>
   [params.join(' '), text].filter((part) => part !== '').join(': ');
 
+/** A chathistory batch being replayed: the window it is for, and the page its messages go to */
+export interface HistoryReplay {
+  target: string;
+  page: Message[];
+}
+
 /** One parsed IRC line; handlers consume `line` as they read parameters. */
 export class IrcContext {
   tags: Record<string, string>;
@@ -17,13 +23,12 @@ export class IrcContext {
   request?: LabeledRequest;
   /** Replayed from chathistory: shown, but not acted on as if it had just arrived */
   readonly isHistory: boolean;
-  /** Where a replayed message goes, to be placed together with the rest of its page */
-  readonly historyPage?: Message[];
+  readonly history?: HistoryReplay;
 
-  constructor(message: ParsedIrcRawMessage, eventLine: string, { historyPage }: { historyPage?: Message[] } = {}) {
+  constructor(message: ParsedIrcRawMessage, eventLine: string, { history }: { history?: HistoryReplay } = {}) {
     this.eventLine = eventLine;
-    this.isHistory = historyPage !== undefined;
-    this.historyPage = historyPage;
+    this.isHistory = history !== undefined;
+    this.history = history;
     this.tags = message.tags;
     this.sender = message.sender;
     this.command = message.command;

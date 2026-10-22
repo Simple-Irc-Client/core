@@ -4,7 +4,7 @@ import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { isIrcService, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { markReadSoon, noteShownMessage } from '@/network/irc/readMarkers';
 import { notifyHighlight } from '@/runtime/notifications';
@@ -16,7 +16,7 @@ import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { handlePeerOffline } from '@features/e2ee/session';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
-import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
+import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
 const ERR_NOSUCHNICK = '401';
@@ -25,14 +25,6 @@ const ERR_NORECIPIENT = '411';
 const ERR_NOTEXTTOSEND = '412';
 const ERR_NONONREG = '486';
 const ERR_CANTSENDTOUSER = '531';
-
-const addMessage = (ctx: IrcContext, message: Message): void => {
-  if (ctx.historyPage !== undefined) {
-    ctx.historyPage.push(message);
-  } else {
-    setAddMessage(message);
-  }
-};
 
 // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
 // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above

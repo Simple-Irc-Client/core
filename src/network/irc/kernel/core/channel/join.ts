@@ -5,7 +5,7 @@ import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { requestChannelWho } from '@/network/irc/kernel/core/who';
-import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { requestLatestHistory } from '@/network/irc/chatHistory';
 import { ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
@@ -39,6 +39,21 @@ export const onJoin = (ctx: IrcContext): void => {
 
   channel = ctx.stripColon(channel);
 
+  const message = {
+    id: ctx.tags.msgid ?? uuidv4(),
+    message: i18next.t('kernel.join', { nick }),
+    nick: getUser(nick) ?? nick,
+    target: channel,
+    time: ctx.tags.time ?? new Date().toISOString(),
+    category: MessageCategory.join,
+    color: MessageColor.join,
+  };
+
+  if (ctx.isHistory) {
+    addMessage(ctx, message);
+    return;
+  }
+
   // Before setAddMessage auto-creates it: tells a fresh join from a reconnect rejoin
   const channelExisted = existChannel(channel);
 
@@ -48,15 +63,7 @@ export const onJoin = (ctx: IrcContext): void => {
     setRenameChannel(openedAs, channel);
   }
 
-  setAddMessage({
-    id: ctx.tags.msgid ?? uuidv4(),
-    message: i18next.t('kernel.join', { nick }),
-    nick: getUser(nick) ?? nick,
-    target: channel,
-    time: ctx.tags.time ?? new Date().toISOString(),
-    category: MessageCategory.join,
-    color: MessageColor.join,
-  });
+  setAddMessage(message);
 
   setAddUser({
     nick,

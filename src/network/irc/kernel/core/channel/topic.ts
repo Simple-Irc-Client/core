@@ -29,7 +29,9 @@ export const onTopic = (ctx: IrcContext): void => {
     category: MessageCategory.info,
   });
 
-  setTopic(channel, topic);
+  if (!ctx.isHistory) {
+    setTopic(channel, topic);
+  }
 };
 
 // :server 331 mynick #channel :No topic is set

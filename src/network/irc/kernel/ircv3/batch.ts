@@ -1,7 +1,7 @@
 import { BATCH_TYPES, type BatchState, endBatch, startBatch } from '@/network/irc/batch';
 import { onHistoryBatch, pendingHistoryAnchor } from '@/network/irc/chatHistory';
 import { takeLabel } from '@/network/irc/labels';
-import { IrcContext, type IrcHandler, type IrcHandlers } from '@/network/irc/kernel/context';
+import { type HistoryReplay, IrcContext, type IrcHandler, type IrcHandlers } from '@/network/irc/kernel/context';
 import { onJoin } from '@/network/irc/kernel/core/channel/join';
 import { onKick } from '@/network/irc/kernel/core/channel/kick';
 import { onTopic } from '@/network/irc/kernel/core/channel/topic';
@@ -18,7 +18,7 @@ import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
 import { onSetname } from '@/network/irc/kernel/ircv3/setname';
 import { setAddHistoryPage } from '@features/channels/store/channels';
 import { onTagMsg } from '@/network/irc/kernel/ircv3/typing';
-import { type Message, type ParsedIrcRawMessage } from '@shared/types';
+import { type ParsedIrcRawMessage } from '@shared/types';
 
 // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
 // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
@@ -67,13 +67,13 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   const target = batch.params[0];
   if (!target) { return; }
 
-  const page: Message[] = [];
-  // Skip TAGMSG: typing indicators from history are stale
+  const history: HistoryReplay = { target, page: [] };
   for (const message of batch.messages) {
-    if (message.command === 'TAGMSG') { continue; }
-    processBufferedMessage(ctx, message, page);
+    if (historyCommands.has(message.command)) {
+      processBufferedMessage(ctx, message, history);
+    }
   }
-  setAddHistoryPage(page, pendingHistoryAnchor(target));
+  setAddHistoryPage(history.page, pendingHistoryAnchor(target));
   applyReadMarker(target);
 
   // A chathistory batch is in the server's order: the first message is the oldest
@@ -81,6 +81,9 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   const oldest = first === undefined ? undefined : { time: Date.parse(first.tags.time ?? ''), msgid: first.tags.msgid };
   onHistoryBatch(target, batch.messages.length, oldest);
 };
+
+// What history shows; other events would apply stale state, as would typing indicators
+const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART', 'PRIVMSG', 'QUIT', 'TOPIC']);
 
 // Commands replayed from a finished batch; numerics inside batches are not replayed
 const bufferedHandlers = new Map<string, IrcHandler>([
@@ -101,9 +104,9 @@ const bufferedHandlers = new Map<string, IrcHandler>([
   ['TOPIC', onTopic],
 ]);
 
-/** `historyPage` collects what a replayed chathistory message shows */
-export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage, historyPage?: Message[]): void => {
-  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine, { historyPage }));
+/** `history` collects what a replayed chathistory message shows */
+export const processBufferedMessage = (ctx: IrcContext, message: ParsedIrcRawMessage, history?: HistoryReplay): void => {
+  bufferedHandlers.get(message.command)?.(new IrcContext(message, ctx.eventLine, { history }));
 };
 
 export const handlers: IrcHandlers = {

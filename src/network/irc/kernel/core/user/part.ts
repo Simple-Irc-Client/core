@@ -3,8 +3,8 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { existChannel, setAddMessage, setRemoveChannel } from '@features/channels/store/channels';
+import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { existChannel, setRemoveChannel } from '@features/channels/store/channels';
 import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, getUserChannels, setRemoveUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
@@ -27,7 +27,7 @@ export const onPart = (ctx: IrcContext): void => {
 
   const { nick } = parseNick(ctx.sender, getUserModes());
 
-  setAddMessage({
+  addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
     message: i18next.t('kernel.part', { nick, reason: reason.length !== 0 ? ` (${reason})` : '' }),
     nick: getUser(nick) ?? nick,
@@ -36,6 +36,10 @@ export const onPart = (ctx: IrcContext): void => {
     category: MessageCategory.part,
     color: MessageColor.part,
   });
+
+  if (ctx.isHistory) {
+    return;
+  }
 
   setRemoveUser(nick, channel);
 
