@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as awayMessagesFile from '@features/channels/store/awayMessages';
@@ -10,6 +10,9 @@ import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
 import { DEBUG_CHANNEL } from '@/config/config';
+import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
+import { clearReadMarkers } from '@/network/irc/readMarkers';
+import { type Message, MessageCategory } from '@shared/types';
 import { defaultUserModes, setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
 
 describe('kernel ircv3/batch', () => {
@@ -102,6 +105,47 @@ describe('kernel ircv3/batch', () => {
 
       expect(mocks.notifyHighlight).toHaveBeenCalledTimes(1);
       expect(mocks.setIncreaseUnreadMessages).toHaveBeenCalledWith('#channel');
+    });
+
+    describe('with a read marker', () => {
+      beforeEach(() => {
+        clearReadMarkers();
+        resetCapabilityState();
+        markCapabilitiesAcknowledged(['draft/read-marker']);
+      });
+
+      const replayed = (id: string, time: string, highlight = false): Message =>
+        ({ id, message: 'text', nick: 'Friend', target: '#channel', time, category: MessageCategory.default, highlight });
+
+      it('should count replayed messages after the marker as unread', () => {
+        const mocks = mockReplayEnvironment();
+        const setUnreadMessages = vi.spyOn(channelsFile, 'setUnreadMessages').mockImplementation(() => {});
+        vi.spyOn(channelsFile, 'getMessages').mockImplementation(() => [
+          replayed('h5', '2023-02-12T02:00:00.000Z'),
+          replayed('h6', '2023-02-12T02:10:00.000Z', true),
+        ]);
+
+        new Kernel({ type: 'raw', line: ':ergo.test MARKREAD #channel timestamp=2023-02-12T02:05:00.000Z' }).handle();
+        replay('#channel', [
+          'msgid=h5;time=2023-02-12T02:00:00.000Z :Friend!~u@host PRIVMSG #channel :read on the phone',
+          'msgid=h6;time=2023-02-12T02:10:00.000Z :Friend!~u@host PRIVMSG #channel :missed, MyNick',
+        ]);
+
+        expect(setUnreadMessages).toHaveBeenLastCalledWith('#channel', 1, true);
+        expect(mocks.notifyHighlight).not.toHaveBeenCalled();
+      });
+
+      it('should mark history replayed into the window being read as read', () => {
+        const mocks = mockReplayEnvironment();
+
+        new Kernel({ type: 'raw', line: ':ergo.test MARKREAD #current timestamp=2023-02-12T02:05:00.000Z' }).handle();
+        replay('#current', [
+          'msgid=h7;time=2023-02-12T02:10:00.000Z :Friend!~u@host PRIVMSG #current :one',
+          'msgid=h8;time=2023-02-12T02:11:00.000Z :Friend!~u@host PRIVMSG #current :two',
+        ]);
+
+        expect(mocks.ircSendRawMessage).toHaveBeenCalledExactlyOnceWith('MARKREAD #current timestamp=2023-02-12T02:11:00.000Z');
+      });
     });
   });
 });

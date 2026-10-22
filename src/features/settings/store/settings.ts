@@ -13,6 +13,7 @@ import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { ircDisconnect } from '@/network/irc/network';
+import { markRead } from '@/network/irc/readMarkers';
 import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
 
 export type WizardStep = 'nick' | 'server' | 'loading' | 'password' | 'channels';
@@ -431,6 +432,7 @@ export const setCurrentChannelName = (channelName: string, category: ChannelCate
   useSettingsStore.getState().setCurrentChannelName(channelName, category);
 
   setClearUnreadMessages(channelName);
+  markRead(channelName);
 
   useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
   useCurrentStore.getState().setUpdateMessages(getMessages(channelName));

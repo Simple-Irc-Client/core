@@ -485,3 +485,18 @@ export const createIrcClient = async (nick: string, host = '127.0.0.1', port = t
   await client.connect(host, port);
   return client;
 };
+
+/** Registers an account whose SASL logins all attach to one session: ergo's stand-in for a bouncer */
+export const registerMulticlientAccount = async ({ account, password }: SaslCredentials): Promise<void> => {
+  const registrar = await createIrcClient(account);
+  const created = registrar.waitForLine((line) => line.includes('Account created'));
+  registrar.sendMessage('NickServ', `REGISTER ${password}`);
+  await created;
+  const multiclient = registrar.waitForLine((line) => line.includes('Multiclient functionality is currently enabled'));
+  registrar.sendMessage('NickServ', 'SET MULTICLIENT ON');
+  await multiclient;
+  // Frees the nick for the next login
+  const closed = registrar.waitForLine((line) => line.startsWith('ERROR'));
+  registrar.disconnect();
+  await closed;
+};

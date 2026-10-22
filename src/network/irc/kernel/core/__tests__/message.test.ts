@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
@@ -9,6 +9,7 @@ import * as usersFile from '@features/users/store/users';
 import * as capabilitiesFile from '@/network/irc/capabilities';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
+import { clearReadMarkers } from '@/network/irc/readMarkers';
 import * as awayMessagesFile from '@features/channels/store/awayMessages';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { ChannelCategory } from '@shared/types';
@@ -838,6 +839,60 @@ describe('kernel core/message', () => {
       new Kernel({ type: 'raw', line }).handle();
 
       expect(mocks.ircSendRawMessage).toHaveBeenCalledWith(expect.stringContaining('NOTICE Friend :\x01VERSION '));
+    });
+  });
+
+  describe('Read marker (draft/read-marker)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      clearReadMarkers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const mockReadMarkerEnvironment = () => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/read-marker');
+      return vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+    };
+
+    it('should mark the window being read as read up to a message that arrives in it', () => {
+      const send = mockReadMarkerEnvironment();
+
+      new Kernel({ type: 'raw', line: '@time=2026-10-22T10:00:00.000Z :Friend!~u@host PRIVMSG #current :one' }).handle();
+      new Kernel({ type: 'raw', line: '@time=2026-10-22T10:00:01.000Z :Friend!~u@host PRIVMSG #current :\x01ACTION waves\x01' }).handle();
+      vi.runAllTimers();
+
+      expect(send).toHaveBeenCalledExactlyOnceWith('MARKREAD #current timestamp=2026-10-22T10:00:01.000Z');
+    });
+
+    it('should leave other windows unread', () => {
+      const send = mockReadMarkerEnvironment();
+
+      new Kernel({ type: 'raw', line: '@time=2026-10-22T10:00:00.000Z :Friend!~u@host PRIVMSG #other :one' }).handle();
+      new Kernel({ type: 'raw', line: '@time=2026-10-22T10:00:00.000Z :Friend!~u@host PRIVMSG MyNick :hi' }).handle();
+      vi.runAllTimers();
+
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('should not put our own clock in a marker when the server sends no time', () => {
+      const send = mockReadMarkerEnvironment();
+
+      new Kernel({ type: 'raw', line: ':Friend!~u@host PRIVMSG #current :one' }).handle();
+      vi.runAllTimers();
+
+      expect(send).not.toHaveBeenCalled();
     });
   });
 });

@@ -9,6 +9,7 @@ import { ircHandlers } from '@/network/irc/kernel/registry';
 import { onUnhandledNumeric } from '@/network/irc/kernel/unhandled';
 import { takeLabel } from '@/network/irc/labels';
 import { onConnectionTornDown, resetInactivityTimeout } from '@/network/irc/network';
+import { clearReadMarkers } from '@/network/irc/readMarkers';
 import { setAddMessage } from '@features/channels/store/channels';
 import { clearIncomingState } from '@features/e2ee/incoming';
 import { endAllSessions } from '@features/e2ee/session';
@@ -27,6 +28,7 @@ onConnectionTornDown(() => {
   endAllSessions();
   clearIncomingState();
   clearMonitorList();
+  clearReadMarkers();
 });
 
 export class Kernel {

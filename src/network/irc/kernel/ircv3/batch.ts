@@ -13,6 +13,7 @@ import { onQuit } from '@/network/irc/kernel/core/user/quit';
 import { onAccount } from '@/network/irc/kernel/ircv3/account';
 import { onChghost } from '@/network/irc/kernel/ircv3/chghost';
 import { onMetadata } from '@/network/irc/kernel/ircv3/metadata';
+import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
 import { onSetname } from '@/network/irc/kernel/ircv3/setname';
 import { onTagMsg } from '@/network/irc/kernel/ircv3/typing';
 import { type ParsedIrcRawMessage } from '@shared/types';
@@ -70,6 +71,7 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
     if (message.command === 'TAGMSG') { continue; }
     processBufferedMessage(ctx, message, { isHistory: true });
   }
+  applyReadMarker(target);
 };
 
 // Commands replayed from a finished batch; numerics inside batches are not replayed

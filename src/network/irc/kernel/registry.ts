@@ -42,6 +42,7 @@ import { handlers as ircv3Chghost } from '@/network/irc/kernel/ircv3/chghost';
 import { handlers as ircv3Labeledresponse } from '@/network/irc/kernel/ircv3/labeledresponse';
 import { handlers as ircv3Metadata } from '@/network/irc/kernel/ircv3/metadata';
 import { handlers as ircv3Monitor } from '@/network/irc/kernel/ircv3/monitor';
+import { handlers as ircv3Readmarker } from '@/network/irc/kernel/ircv3/readmarker';
 import { handlers as ircv3Sasl } from '@/network/irc/kernel/ircv3/sasl';
 import { handlers as ircv3Setname } from '@/network/irc/kernel/ircv3/setname';
 import { handlers as ircv3Typing } from '@/network/irc/kernel/ircv3/typing';
@@ -104,6 +105,7 @@ export const ircHandlers = mergeHandlers(
   ircv3Labeledresponse,
   ircv3Metadata,
   ircv3Monitor,
+  ircv3Readmarker,
   ircv3Sasl,
   ircv3Setname,
   ircv3Typing,

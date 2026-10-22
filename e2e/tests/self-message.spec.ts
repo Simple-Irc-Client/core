@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
-import { createIrcClient, IrcClient } from '../irc-client';
-import { connectViaWizard, getServerPassword } from '../helpers';
+import { createIrcClient, IrcClient, registerMulticlientAccount } from '../irc-client';
+import { connectViaWizard, getServerPassword, identifyInApp } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 // ergo's multiclient stands in for a bouncer: the app and a "phone" are two sessions of one account
@@ -12,38 +12,20 @@ let peer: IrcClient;
 let phone: IrcClient;
 let sharedPage: Page;
 
-const registerMulticlientAccount = async (): Promise<void> => {
-  const registrar = new IrcClient(account, getServerPassword());
-  await registrar.connect();
-  const created = registrar.waitForLine((line) => line.includes('Account created'));
-  registrar.sendMessage('NickServ', `REGISTER ${PASSWORD}`);
-  await created;
-  const multiclient = registrar.waitForLine((line) => line.includes('Multiclient functionality is currently enabled'));
-  registrar.sendMessage('NickServ', 'SET MULTICLIENT ON');
-  await multiclient;
-  // The app takes this nick next
-  const closed = registrar.waitForLine((line) => line.startsWith('ERROR'));
-  registrar.disconnect();
-  await closed;
-};
-
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('ergo multiclient stands in for a bouncer');
   const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   // Accounts outlive a retried test; a fresh name per attempt
   account = `selfmsg-${tag}-${randomBytes(3).toString('hex')}`;
 
-  await registerMulticlientAccount();
+  await registerMulticlientAccount({ account, password: PASSWORD });
   peer = await createIrcClient(`selfpeer-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
   await connectViaWizard(sharedPage, account);
 
-  const messageInput = sharedPage.locator('#message-input');
-  await messageInput.fill(`/msg NickServ IDENTIFY ${account} ${PASSWORD}`);
-  await messageInput.press('Enter');
-  await expect(sharedPage.getByText(`You're now logged in as ${account}`)).toBeVisible({ timeout: 10_000 });
+  await identifyInApp(sharedPage, account, PASSWORD);
 
   phone = new IrcClient(account, getServerPassword(), ['echo-message'], { account, password: PASSWORD });
   await phone.connect();

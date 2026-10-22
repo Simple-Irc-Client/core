@@ -6,6 +6,7 @@ import { isIrcService, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
+import { markReadSoon, noteShownMessage } from '@/network/irc/readMarkers';
 import { notifyHighlight } from '@/runtime/notifications';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, setListDeprecated } from '@features/channels/store/channelList';
@@ -199,6 +200,17 @@ const announceHighlight = ({ window, isDirect }: Conversation, nick: string, tex
   void notifyHighlight({ nick, target: window, message: text, isDirect });
 };
 
+const trackReadPosition = (ctx: IrcContext, window: string, currentChannelName: string): void => {
+  // Without server-time there is nothing to put in a read marker
+  if (ctx.tags.time === undefined) {
+    return;
+  }
+  noteShownMessage(window, ctx.tags.time);
+  if (!ctx.isHistory && isSameName(window, currentChannelName)) {
+    markReadSoon(window);
+  }
+};
+
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4
 // @draft/bot;msgid=GQRN0k0RNmLY3Ai6f9g6Qk;time=2023-03-23T15:32:56.299Z :Global!Global@serwisy.pirc.pl PRIVMSG sic-test :VERSION
@@ -259,6 +271,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
     echoed: isEcho,
     highlight,
   });
+  trackReadPosition(ctx, window, currentChannelName);
 
   if (highlight && !ctx.isHistory) {
     announceHighlight(conversation, nick, message, currentChannelName);
@@ -402,6 +415,7 @@ export const handleCtcpAction = (
     color: MessageColor.me,
     highlight,
   });
+  trackReadPosition(ctx, window, currentChannelName);
 
   if (highlight && !ctx.isHistory) {
     announceHighlight(conversation, nick, action, currentChannelName);

@@ -40,6 +40,7 @@ export const DESIRED_CAPABILITIES = [
 
   // History (draft)
   'draft/chathistory',
+  'draft/read-marker',
 
   // Metadata (draft)
   'draft/metadata-2',

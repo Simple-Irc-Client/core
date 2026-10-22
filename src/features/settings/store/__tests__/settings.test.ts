@@ -51,9 +51,12 @@ import {
   getPasswordNick,
   changeServer,
   setWizardHintDismissed,
+  setCurrentChannelName,
 } from '../settings';
 import { ChannelCategory } from '@shared/types';
 import { clearMonitorList } from '@features/monitor/store/monitor';
+import { setClearUnreadMessages } from '@features/channels/store/channels';
+import { markRead } from '@/network/irc/readMarkers';
 
 vi.mock('@features/channels/store/channels', () => ({
   getMessages: vi.fn(() => []),
@@ -77,6 +80,7 @@ vi.mock('@features/chat/store/current', () => ({
 
 vi.mock('@features/users/store/users', () => ({
   getUsersFromChannelSortedByMode: vi.fn(() => []),
+  flushCurrentUsers: vi.fn(),
   setUsersClearAll: vi.fn(),
 }));
 
@@ -90,6 +94,10 @@ vi.mock('@features/monitor/store/monitor', () => ({
 
 vi.mock('@/network/irc/network', () => ({
   ircDisconnect: vi.fn(),
+}));
+
+vi.mock('@/network/irc/readMarkers', () => ({
+  markRead: vi.fn(),
 }));
 
 describe('settings store', () => {
@@ -325,6 +333,14 @@ describe('settings store', () => {
     it('should return default channel types when empty (before 005 arrives)', () => {
       setChannelTypes([]);
       expect(getChannelTypes()).toEqual(['#', '&']);
+    });
+
+    it('should mark the channel it switches to as read, here and on the server', () => {
+      setCurrentChannelName('#chan', ChannelCategory.channel);
+
+      expect(getCurrentChannelName()).toBe('#chan');
+      expect(setClearUnreadMessages).toHaveBeenCalledWith('#chan');
+      expect(markRead).toHaveBeenCalledWith('#chan');
     });
   });
 

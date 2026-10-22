@@ -22,6 +22,7 @@ import {
   clearAllTyping,
   setClearUnreadMessages,
   setIncreaseUnreadMessages,
+  setUnreadMessages,
   setHasMention,
   isPriv,
   isChannel,
@@ -551,6 +552,17 @@ describe('channels store', () => {
 
       const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
       expect(shortListChannel?.unReadMessages).toBe(1);
+    });
+
+    it('should replace the count and the mention flag in both lists', () => {
+      setAddChannel('#test', ChannelCategory.channel);
+      setIncreaseUnreadMessages('#test');
+      setHasMention('#test');
+
+      setUnreadMessages('#TEST', 3, false);
+
+      expect(getChannel('#test')).toEqual(expect.objectContaining({ unReadMessages: 3, hasMention: false }));
+      expect(useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test')).toEqual(expect.objectContaining({ unReadMessages: 3, hasMention: false }));
     });
   });
 

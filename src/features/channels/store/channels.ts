@@ -32,6 +32,8 @@ interface ChannelsStore {
   setClearAllTyping: () => void;
   setClearUnreadMessages: (channelName: string) => void;
   setIncreaseUnreadMessages: (channelName: string) => void;
+  /** Recounted from a read marker (IRCv3 draft/read-marker) */
+  setUnreadMessages: (channelName: string, count: number, hasMention: boolean) => void;
   setHasMention: (channelName: string) => void;
   /** IRCv3 METADATA */
   setChannelAvatar: (channelName: string, avatar: string) => void;
@@ -272,6 +274,12 @@ export const useChannelsStore = create<ChannelsStore>()(
       set((state) => ({
         openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
         openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+      }));
+    },
+    setUnreadMessages: (channelName: string, count: number, hasMention: boolean) => {
+      set((state) => ({
+        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
+        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
       }));
     },
     setHasMention: (channelName: string) => {
@@ -548,6 +556,10 @@ export const setClearUnreadMessages = (channelName: string): void => {
 
 export const setIncreaseUnreadMessages = (channelName: string): void => {
   useChannelsStore.getState().setIncreaseUnreadMessages(channelName);
+};
+
+export const setUnreadMessages = (channelName: string, count: number, hasMention: boolean): void => {
+  useChannelsStore.getState().setUnreadMessages(channelName, count, hasMention);
 };
 
 export const setHasMention = (channelName: string): void => {

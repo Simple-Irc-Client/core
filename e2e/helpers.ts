@@ -147,3 +147,11 @@ export const connectViaWizard = async (
   // Wait for main page to render
   await page.locator('#message-input').waitFor({ timeout: 10_000 });
 };
+
+/** Logs the connected app into a NickServ account */
+export const identifyInApp = async (page: Page, account: string, password: string): Promise<void> => {
+  const messageInput = page.locator('#message-input');
+  await messageInput.fill(`/msg NickServ IDENTIFY ${account} ${password}`);
+  await messageInput.press('Enter');
+  await page.getByText(`You're now logged in as ${account}`).waitFor({ timeout: 10_000 });
+};
