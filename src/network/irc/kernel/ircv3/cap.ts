@@ -4,6 +4,7 @@ import { addAvailableCapabilities, endCapNegotiation, getCapabilitiesToRequest, 
 import { handleSocketClose } from '@/network/irc/kernel/connection';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { ircDisconnect, ircRequestMetadata, ircSendRawMessage } from '@/network/irc/network';
+import { sendPreAway } from '@/network/irc/preAway';
 import { getSaslAccount, getSaslPassword, saveSaslCredentialsForReconnect, setSaslState } from '@/network/irc/sasl';
 import { setSTSPolicy } from '@/network/irc/store/stsStore';
 import { createSTSPolicy, getCurrentConnectionHost, isCurrentConnectionSecure, parseSTSValue, setPendingSTSUpgrade } from '@/network/irc/sts';
@@ -162,6 +163,7 @@ export const startSaslAuthentication = (): void => {
 
 export const finishCapNegotiation = (): void => {
   endCapNegotiation();
+  sendPreAway();
   ircSendRawMessage('CAP END');
 };
 

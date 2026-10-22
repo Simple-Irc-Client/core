@@ -112,6 +112,7 @@
     "kernel.010": "Przekierowanie serwera: {{hostname}}:{{port}} {{message}}",
     "kernel.263.rate-limited": "Ta komenda była użyta zbyt niedawno i jest ograniczona. Spróbuj ponownie za chwilę",
     "kernel.276": "* {{user}} {{message}}",
+    "kernel.away-in-background": "połączony w tle",
     "kernel.301": "* {{user}} jest nieobecny {{reason}}",
     "kernel.303": "Dostępni: {{nicks}}",
     "kernel.303.none": "Żaden z podanych nicków nie jest dostępny",

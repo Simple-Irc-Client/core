@@ -13,6 +13,9 @@ const RPL_AWAY = '301';
 const RPL_UNAWAY = '305';
 const RPL_NOWAWAY = '306';
 
+// draft/pre-away: `*` is a client connected without the user present
+const describeAwayReason = (reason: string): string => (reason === '*' ? i18next.t('kernel.away-in-background') : reason);
+
 // IRCv3 away-notify
 // @account=wariatnakaftan;msgid=THDuCqdstQzWng1N5ALKi4;time=2023-03-23T17:04:33.953Z :wariatnakaftan!uid502816@vhost:far.away AWAY
 // @account=wariatnakaftan;msgid=k9mhVRzgAdqLBnnr2YboOh;time=2023-03-23T17:14:37.516Z :wariatnakaftan!uid502816@vhost:far.away AWAY :Auto-away
@@ -21,7 +24,7 @@ export const onAway = (ctx: IrcContext): void => {
   const reason = ctx.trailingOptional();
 
   if (reason) {
-    setUserAway(nick, true, reason);
+    setUserAway(nick, true, describeAwayReason(reason));
   } else {
     setUserAway(nick, false);
   }
@@ -31,7 +34,7 @@ export const onAway = (ctx: IrcContext): void => {
 export const onRaw301 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const user = ctx.line.shift();
-  const reason = ctx.trailing();
+  const reason = describeAwayReason(ctx.trailing());
 
   showReply(ctx, {
     message: i18next.t('kernel.301', { user, reason: reason.length !== 0 ? `(${reason})` : '' }),
@@ -42,6 +45,11 @@ export const onRaw301 = (ctx: IrcContext): void => {
 
 // :insomnia.pirc.pl 305 mero-test-2354324234 :You are no longer marked as being away
 export const onRaw305 = (ctx: IrcContext): void => {
+  // Our own presence update (pre-away): nothing the user did
+  if (ctx.request?.automatic === true) {
+    return;
+  }
+
   const myNick = ctx.line.shift();
   let message = ctx.trailing();
 
@@ -63,6 +71,10 @@ export const onRaw305 = (ctx: IrcContext): void => {
 
 // :bzyk.pirc.pl 306 mero-test-2354324234 :You have been marked as being away
 export const onRaw306 = (ctx: IrcContext): void => {
+  if (ctx.request?.automatic === true) {
+    return;
+  }
+
   const myNick = ctx.line.shift();
   let message = ctx.trailing();
 

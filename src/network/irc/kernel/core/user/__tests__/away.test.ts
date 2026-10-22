@@ -9,6 +9,7 @@ import * as usersFile from '@features/users/store/users';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
+import { createLabel } from '@/network/irc/labels';
 
 describe('kernel core/user/away', () => {
   setupKernelTest();
@@ -84,5 +85,34 @@ describe('kernel core/user/away', () => {
 
     expect(mockSetAddMessageToAllChannels).toHaveBeenNthCalledWith(1, expect.objectContaining({ message: i18next.t('kernel.306.you-have-been-marked-as-being-away') }));
     expect(mockSetAddMessageToAllChannels).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the away of a client connected without the user present (pre-away *) in words', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+    new Kernel({ type: 'raw', line: ':friend!~u@host AWAY :*' }).handle();
+    new Kernel({ type: 'raw', line: ':server 301 sic-test friend :*' }).handle();
+
+    const reason = i18next.t('kernel.away-in-background');
+    expect(mockSetUserAway).toHaveBeenCalledWith('friend', true, reason);
+    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ message: `* friend jest nieobecny (${reason})` }));
+  });
+
+  it.each([
+    ['305', 'You are no longer marked as being away'],
+    ['306', 'You have been marked as being away'],
+  ])('keeps quiet about the reply %s to our own presence update', (numeric, text) => {
+    const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
+    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+    const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
+    const label = createLabel({ automatic: true });
+
+    new Kernel({ type: 'raw', line: `@label=${label} :server ${numeric} * :${text}` }).handle();
+
+    expect(mockSetAddMessageToAllChannels).not.toHaveBeenCalled();
+    expect(mockSetCurrentUserFlag).not.toHaveBeenCalled();
+    expect(mockSetUserAway).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
@@ -166,6 +166,28 @@ describe('kernel ircv3/cap', () => {
     // No capabilities to request, so CAP negotiation should end
     expect(mockEndCapNegotiation).toHaveBeenCalledTimes(1);
     expect(mockIrcSendRawMessage).toHaveBeenCalledWith('CAP END');
+  });
+
+  describe('in a page nobody is looking at', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('registers the connection as not present before ending negotiation', () => {
+      vi.stubGlobal('document', { visibilityState: 'hidden' });
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => true);
+      const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      capabilitiesFile.resetCapabilityState();
+
+      new Kernel({ type: 'raw', line: ':ergo.test CAP * ACK :draft/pre-away labeled-response batch' }).handle();
+
+      expect(mockIrcSendCommand).toHaveBeenCalledExactlyOnceWith('AWAY *', { automatic: true });
+      expect(mockIrcSendRawMessage).toHaveBeenCalledWith('CAP END');
+      expect(mockIrcSendCommand.mock.invocationCallOrder[0]).toBeLessThan(mockIrcSendRawMessage.mock.invocationCallOrder.at(-1) ?? 0);
+    });
   });
 
   it('test raw CAP #3', () => {

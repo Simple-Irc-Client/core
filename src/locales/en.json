@@ -112,6 +112,7 @@
     "kernel.010": "Server redirect: {{hostname}}:{{port}} {{message}}",
     "kernel.263.rate-limited": "This command was used too recently and is rate-limited. Try again in a moment",
     "kernel.276": "* {{user}} {{message}}",
+    "kernel.away-in-background": "connected in the background",
     "kernel.301": "* {{user}} is away {{reason}}",
     "kernel.303": "Online: {{nicks}}",
     "kernel.303.none": "None of the given nicks are online",

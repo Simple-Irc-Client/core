@@ -35,6 +35,9 @@ export const DESIRED_CAPABILITIES = [
   // Authentication
   'sasl',
 
+  // Away status set before registration completes
+  'draft/pre-away',
+
   // Capability management
   'cap-notify',
 

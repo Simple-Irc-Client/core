@@ -6,6 +6,7 @@ import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
 import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
+import { announcePresence } from '@/network/irc/preAway';
 import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
 import { clearAllTyping, existChannel, getChannelsToAutoJoin, getOpenChannelNames, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
@@ -88,6 +89,9 @@ export const handleConnected = (): void => {
     color: MessageColor.info,
   });
 
+  // The user may have come back while registration was still running
+  announcePresence();
+
   // The wizard handles channel selection itself
   if (getIsWizardCompleted()) {
     const channels = getChannelsToAutoJoin();
@@ -146,6 +150,9 @@ export const handleResumed = (complete: boolean): void => {
       ircSendRawMessage(`NAMES ${channel}`);
     }
   }
+
+  // The connection the gateway kept may have been registered in the background
+  announcePresence();
 
   // Presence was cleared with the WebSocket; subscribing again makes the server report it anew
   resetFriendsSubscription();

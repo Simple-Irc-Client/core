@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { ircSendList, on, off, isConnected, startReachabilityWatch, stopReachabilityWatch } from '@/network/irc/network';
 import { type IrcEvent, Kernel } from '@/network/irc/kernel';
+import { startPresenceWatch, stopPresenceWatch } from '@/network/irc/preAway';
 import * as Sentry from '@sentry/react';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 
@@ -26,10 +27,12 @@ export const Network = () => {
     on('sic-irc-event', onIrcEvent);
 
     startReachabilityWatch();
+    startPresenceWatch();
 
     return () => {
       off('sic-irc-event', onIrcEvent);
       stopReachabilityWatch();
+      stopPresenceWatch();
     };
   }, []);
 
