@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, readPersistedChannels } from '../helpers';
 import { testServer } from '../test-server';
 
 /**
@@ -137,8 +137,8 @@ test.describe('Channel name casing', () => {
   test('case-duplicate windows left by older versions are merged on load', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
-    // Let any pending persist write flush before we overwrite the record
-    await sharedPage.waitForTimeout(2_500);
+    // The removal must be written before we overwrite the record, or its pending write would overwrite ours
+    await expect.poll(() => readPersistedChannels(sharedPage), { timeout: 15_000 }).not.toMatch(/"name":"#casingtest"/i);
 
     // Exactly what an affected user has in storage: the same channel twice,
     // one window holding the system messages and the other the chat, written
@@ -168,7 +168,8 @@ test.describe('Channel name casing', () => {
   test('a window restored under a stale casing is adopted, not duplicated', async () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
-    await sharedPage.waitForTimeout(2_500);
+    // Likewise the merged windows from the previous reload
+    await expect.poll(() => readPersistedChannels(sharedPage), { timeout: 15_000 }).not.toContain('"name":"#Seeded"');
 
     // A single window under the casing the user typed. On reconnect the client
     // rejoins it and the server answers with its own casing - which used to

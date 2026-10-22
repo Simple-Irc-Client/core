@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, waitForPersistedChannels } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -126,8 +126,7 @@ test.describe('Private messages', () => {
     await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
     await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
 
-    // Channel state is persisted to IndexedDB with a 2s write debounce - let it flush
-    await sharedPage.waitForTimeout(2_500);
+    await waitForPersistedChannels(sharedPage, 'before the reload');
 
     await sharedPage.reload();
 

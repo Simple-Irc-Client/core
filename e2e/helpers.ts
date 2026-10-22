@@ -156,9 +156,9 @@ export const identifyInApp = async (page: Page, account: string, password: strin
   await page.getByText(`You're now logged in as ${account}`).waitFor({ timeout: 10_000 });
 };
 
-/** Waits until the channels store has written `text` to IndexedDB: it debounces writes, so a burst of traffic keeps postponing them */
-export const waitForPersistedChannels = async (page: Page, text: string): Promise<void> => {
-  await expect.poll(() => page.evaluate(async () => {
+/** The channels store as last written to IndexedDB, '' before its first write */
+export const readPersistedChannels = (page: Page): Promise<string> =>
+  page.evaluate(async () => {
     const settings = JSON.parse(localStorage.getItem('sic-settings') ?? '{}') as {
       state?: { server?: { network: string; servers: string[]; default: number } };
     };
@@ -179,5 +179,9 @@ export const waitForPersistedChannels = async (page: Page, text: string): Promis
         request.onerror = () => { db.close(); reject(request.error); };
       };
     });
-  }), { timeout: 15_000 }).toContain(text);
+  });
+
+/** Waits until the channels store has written `text` to IndexedDB: it debounces writes, so a burst of traffic keeps postponing them */
+export const waitForPersistedChannels = async (page: Page, text: string): Promise<void> => {
+  await expect.poll(() => readPersistedChannels(page), { timeout: 15_000 }).toContain(text);
 };
