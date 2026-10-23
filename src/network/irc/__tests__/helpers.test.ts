@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../servers';
 import { type UserMode } from '@shared/types';
-import { calculateMaxPermission, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes, unescapeTagValue } from '../helpers';
+import { calculateMaxPermission, escapeTagValue, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes, unescapeTagValue } from '../helpers';
 
 describe('helper tests', () => {
   const defaultUserModes = [
@@ -212,6 +212,22 @@ describe('helper tests', () => {
     expect(calculateMaxPermission(['v'], serverModes)).toEqual(252);
     expect(calculateMaxPermission(['xyz'], serverModes)).toEqual(-1);
     expect(calculateMaxPermission([], serverModes)).toEqual(-1);
+  });
+
+  describe('escapeTagValue', () => {
+    it('should escape what a tag value cannot hold', () => {
+      expect(escapeTagValue('a b;c\\d\r\n')).toBe(String.raw`a\sb\:c\\d\r\n`);
+    });
+
+    it('should leave other text, emoji included, as it is', () => {
+      expect(escapeTagValue('👍🏽')).toBe('👍🏽');
+      expect(escapeTagValue('')).toBe('');
+    });
+
+    it('should be undone by unescapeTagValue', () => {
+      const value = 'a \\s; b\\:\n';
+      expect(unescapeTagValue(escapeTagValue(value))).toBe(value);
+    });
   });
 
   describe('unescapeTagValue', () => {

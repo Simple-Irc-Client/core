@@ -64,6 +64,7 @@ export interface SettingsStore {
   watchLimit: number; // WATCH limit from 005, 0 if not supported
   monitorLimit: number; // MONITOR limit from 005, 0 if not supported
   silenceLimit: number; // SILENCE limit from 005, 0 if not supported
+  clientTagDeny: string[]; // CLIENTTAGDENY from 005 — client tags the server drops; `*` for all, `-tag` exempts one
   chatHistoryLimit: number; // CHATHISTORY from 005 — most messages one request may ask for; 0 when unlimited or not advertised
   nickLenLimit: number; // NICKLEN from 005, default 50
   lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
@@ -113,6 +114,7 @@ export interface SettingsStore {
   setMonitorLimit: (limit: number) => void;
   setSilenceLimit: (limit: number) => void;
   setChatHistoryLimit: (limit: number) => void;
+  setClientTagDeny: (tags: string[]) => void;
   setNickLenLimit: (limit: number) => void;
   setLineLenLimit: (limit: number) => void;
   setNetworkName: (name: string | undefined) => void;
@@ -158,6 +160,7 @@ const sessionDefaults = () => ({
   monitorLimit: 0,
   silenceLimit: 0,
   chatHistoryLimit: 0,
+  clientTagDeny: [],
   nickLenLimit: 50,
   lineLenLimit: 0,
   networkName: undefined,
@@ -310,6 +313,9 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setChatHistoryLimit: (limit: number): void => {
       set(() => ({ chatHistoryLimit: limit }));
+    },
+    setClientTagDeny: (tags: string[]): void => {
+      set(() => ({ clientTagDeny: tags }));
     },
     setNickLenLimit: (limit: number): void => {
       set(() => ({ nickLenLimit: limit }));
@@ -612,6 +618,14 @@ export const setChatHistoryLimit = (limit: number): void => {
 
 export const getChatHistoryLimit = (): number => {
   return useSettingsStore.getState().chatHistoryLimit;
+};
+
+export const setClientTagDeny = (tags: string[]): void => {
+  useSettingsStore.getState().setClientTagDeny(tags);
+};
+
+export const getClientTagDeny = (): string[] => {
+  return useSettingsStore.getState().clientTagDeny;
 };
 
 export const setNickLenLimit = (limit: number): void => {

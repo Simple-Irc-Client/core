@@ -102,6 +102,8 @@
     "main.chat.notConnected": "Brak połączenia z serwerem",
     "main.chat.notConnectedDescription": "Otwórz menu profilu i kliknij Połącz, aby rozpocząć.",
     "main.chat.dateChanged": "{{date}}",
+    "main.chat.addReaction": "Dodaj reakcję",
+    "main.chat.reaction": "{{emoji}} od: {{nicks}}",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.reconnecting": "Ponowne łączenie z serwerem...",

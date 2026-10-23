@@ -102,6 +102,8 @@
     "main.chat.notConnected": "Not connected to server",
     "main.chat.notConnectedDescription": "Open your profile menu and tap Connect to get started.",
     "main.chat.dateChanged": "{{date}}",
+    "main.chat.addReaction": "Add reaction",
+    "main.chat.reaction": "{{emoji}} from {{nicks}}",
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.reconnecting": "Reconnecting to server...",

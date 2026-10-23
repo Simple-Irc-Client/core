@@ -148,6 +148,20 @@ describe('kernel core/info/isupport', () => {
     expect(mockSetChatHistoryLimit).toHaveBeenCalledWith(limit);
   });
 
+  it.each([
+    ['CLIENTTAGDENY=*,-draft/typing,-typing,-draft/reply', ['*', '-draft/typing', '-typing', '-draft/reply']],
+    ['CLIENTTAGDENY=draft/react', ['draft/react']],
+    ['CLIENTTAGDENY=', []],
+    ['CLIENTTAGDENY', []],
+  ])('test raw 005 %s lists the client tags the server drops', (token, deny) => {
+    vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const mockSetClientTagDeny = vi.spyOn(settingsFile, 'setClientTagDeny').mockImplementation(() => {});
+
+    new Kernel({ type: 'raw', line: `:server 005 nick ${token} :are supported by this server` }).handle();
+
+    expect(mockSetClientTagDeny).toHaveBeenCalledExactlyOnceWith(deny);
+  });
+
   it('test raw 005 ignores words of the trailing text', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});

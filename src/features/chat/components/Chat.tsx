@@ -12,6 +12,8 @@ import DisconnectedBanner from './DisconnectedBanner';
 import E2eeBanner from '@features/e2ee/components/E2eeBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage, { contentCategories } from './ChatMessage';
+import ReactionPicker, { type ReactionPickerHandle } from '@features/reactions/components/ReactionPicker';
+import { useCanReact } from '@features/reactions/useCanReact';
 
 // Close enough to the top that the older page is usually in before the user gets there
 const LOAD_OLDER_THRESHOLD_PX = 200;
@@ -26,6 +28,10 @@ const Chat = () => {
   const isConnected = useSettingsStore((state) => state.isConnected);
   const messages = useCurrentStore((state) => state.messages);
   const fontSizeClass = fontSizeClasses[fontSize];
+  const canReact = useCanReact(currentChannelName);
+  const reactionPicker = useRef<ReactionPickerHandle>(null);
+
+  const handleAddReaction = useCallback((message: Message, anchor: HTMLElement) => reactionPicker.current?.open(message, anchor), []);
 
   const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
 
@@ -146,11 +152,20 @@ const Chat = () => {
           return (
             <div key={`message-${message.id}`} data-message-id={message.id}>
               {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
-              <ChatMessage message={message} grouped={grouped} isDebug={isDebug} fontSizeClass={fontSizeClass} />
+              <ChatMessage
+                message={message}
+                grouped={grouped}
+                isDebug={isDebug}
+                fontSizeClass={fontSizeClass}
+                canReact={canReact}
+                onAddReaction={handleAddReaction}
+              />
             </div>
           );
         })}
       </div>
+      {/* Keyed, so switching windows closes it */}
+      <ReactionPicker key={currentChannelName} ref={reactionPicker} />
     </div>
   );
 };

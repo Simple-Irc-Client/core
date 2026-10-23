@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
+import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
@@ -8,6 +8,7 @@ import * as chatHistoryFile from '@/network/irc/chatHistory';
 import { MessageCategory, type Message, type User } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
+import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -83,6 +84,7 @@ describe('Chat tests', () => {
     theme?: string;
     messages?: Message[];
     isConnected?: boolean;
+    clientTagDeny?: string[];
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -95,6 +97,8 @@ describe('Chat tests', () => {
         currentChannelName,
         theme,
         isConnected: overrides.isConnected ?? true,
+        clientTagDeny: overrides.clientTagDeny ?? [],
+        nick: 'me',
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -1865,6 +1869,59 @@ describe('Chat tests', () => {
       expect(stopPropagationSpy).toHaveBeenCalled();
 
       mockGetSelection.mockRestore();
+    });
+  });
+
+  describe('Reactions', () => {
+    const getAddReaction = (container: HTMLElement) => container.querySelector('.sic-msg-actions .sic-msg-react');
+
+    beforeEach(() => {
+      markCapabilitiesAcknowledged(['message-tags']);
+    });
+
+    afterEach(() => {
+      resetCapabilityState();
+    });
+
+    it('offers to react to a message the server gave a msgid', () => {
+      setupMocks({ messages: [createMessage({ id: 'm1', msgid: 'm1' })] });
+
+      const { container } = render(<Main />);
+
+      expect(getAddReaction(container)).toBeInTheDocument();
+      // Focusable, for a tap to show the actions on touch screens
+      expect(getMessages(container)[0]).toHaveAttribute('tabindex', '-1');
+    });
+
+    it.each([
+      ['a message without a msgid', { messages: [createMessage({ id: 'local' })] }],
+      ['while disconnected', { messages: [createMessage({ id: 'm1', msgid: 'm1' })], isConnected: false }],
+      ['when the server drops reactions', { messages: [createMessage({ id: 'm1', msgid: 'm1' })], clientTagDeny: ['draft/react'] }],
+    ])('does not offer to react to %s', (_case, mocks) => {
+      setupMocks(mocks);
+
+      const { container } = render(<Main />);
+
+      expect(getAddReaction(container)).not.toBeInTheDocument();
+      expect(getMessages(container)[0]).not.toHaveAttribute('tabindex');
+    });
+
+    it('shows the reactions under the message', () => {
+      setupMocks({ messages: [createMessage({ id: 'm1', msgid: 'm1', reactions: [{ emoji: '👍', nicks: ['alice', 'bob'] }] })] });
+
+      const { container } = render(<Main />);
+
+      const reaction = container.querySelector('.sic-msg-content .sic-msg-reactions .sic-reaction');
+      expect(reaction).toHaveTextContent('👍2');
+      expect(reaction).toBeEnabled();
+    });
+
+    it('shows reactions it cannot add to while disconnected', () => {
+      setupMocks({ messages: [createMessage({ id: 'm1', msgid: 'm1', reactions: [{ emoji: '👍', nicks: ['alice'] }] })], isConnected: false });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-reaction')).toBeDisabled();
     });
   });
 

@@ -21,6 +21,10 @@
  *       .sic-emoji            wraps each emoji character/sequence inside the body
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
+ *   .sic-msg-reactions        reactions under the message: a .sic-reaction button
+ *                             each (.sic-reaction-emoji, .sic-reaction-count),
+ *                             [aria-pressed="true"] on your own
+ *   .sic-msg-actions          the row's hover toolbar: .sic-msg-react adds a reaction
  *
  * Around the messages:
  *   .sic-date-separator       day-change row: .sic-date-separator-label (the date)
@@ -130,6 +134,11 @@
   margin-left: auto;
   padding-left: 0.5rem;
   min-width: fit-content;
+}
+
+/* Clear of the timestamps, which sit at the right edge */
+.sic-msg-actions {
+  right: 3.5rem;
 }
 
 .sic-msg-body {

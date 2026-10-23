@@ -16,6 +16,8 @@ import NickHighlightedMessage from './NickHighlightedMessage';
 import { getNickFromMessage, getDisplayNickFromMessage } from '@shared/lib/displayName';
 import { isSafeCssColor, ensureReadableColor } from '@shared/lib/utils';
 import { useThemeBackgroundStore } from '@features/themes/themeBackground';
+import AddReactionButton from '@features/reactions/components/AddReactionButton';
+import MessageReactions from '@features/reactions/components/MessageReactions';
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
@@ -31,13 +33,16 @@ interface ChatMessageProps {
   /** Debug/Status channel message — styled by the fixed [data-debug] rules, not by themes. */
   isDebug: boolean;
   fontSizeClass: string;
+  /** Reactions can be sent in this window */
+  canReact: boolean;
+  onAddReaction: (message: Message, anchor: HTMLElement) => void;
 }
 
 /**
  * Renders the same `sic-*` DOM for every theme; theme CSS hides/arranges parts (contract in
  * themes/builtin/*.css). Hidden parts still render so switching themes is pure CSS.
  */
-const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessageProps) => {
+const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAddReaction }: ChatMessageProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
   const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
@@ -57,6 +62,8 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
   const isBot = isBotMessage(message);
   const time = new Date(message.time);
   const locale = getDateFnsLocale();
+  // Reactions point at the server's msgid
+  const isReactable = canReact && message.msgid !== undefined;
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -85,6 +92,8 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
       data-debug={isDebug || undefined}
       data-system={message.system || undefined}
       data-e2ee={message.e2ee}
+      // Focusable, so a tap shows the message's actions where there is no hover
+      tabIndex={isReactable ? -1 : undefined}
     >
       <div className="sic-msg-gutter">
         {showHeaderLayout && (
@@ -145,7 +154,13 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass }: ChatMessagePr
             <SocialEmbed text={message.message} />
           </div>
         )}
+        {message.reactions && <MessageReactions message={message} canReact={isReactable} />}
       </div>
+      {isReactable && (
+        <div className="sic-msg-actions">
+          <AddReactionButton onClick={(anchor) => onAddReaction(message, anchor)} />
+        </div>
+      )}
     </div>
   );
 };

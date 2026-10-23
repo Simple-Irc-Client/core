@@ -35,8 +35,16 @@ export const MessageCategory = {
 
 export type MessageCategory = (typeof MessageCategory)[keyof typeof MessageCategory];
 
+/** IRCv3 +draft/react: one reaction and who gave it, in arrival order */
+export interface Reaction {
+  emoji: string;
+  nicks: string[];
+}
+
 export interface Message {
   id: string;
+  /** The server's IRCv3 msgid, which replies and reactions refer to */
+  msgid?: string;
   message: string;
   nick?: User | string;
   target: string;
@@ -50,6 +58,7 @@ export interface Message {
   e2ee?: 'decrypting' | 'ok' | 'failed';
   /** Conversation-level notice (e.g. E2EE handshake outcome) with no speaker */
   system?: boolean;
+  reactions?: Reaction[];
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

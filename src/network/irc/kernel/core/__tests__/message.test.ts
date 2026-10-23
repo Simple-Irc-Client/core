@@ -341,6 +341,25 @@ describe('kernel core/message', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it.each([
+    ['a message', '@msgid=abc;time=2023-02-12T02:06:12.210Z :Friend!~u@host PRIVMSG #sic :hi', 'abc'],
+    ['an action', '@msgid=abc;time=2023-02-12T02:06:12.210Z :Friend!~u@host PRIVMSG #sic :\x01ACTION waves\x01', 'abc'],
+    ['a message from a server without msgid', ':Friend!~u@host PRIVMSG #sic :hi', undefined],
+  ])('test raw PRIVMSG keeps the server msgid of %s, for reactions to refer to', (_case, line, msgid) => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+    vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenLastCalledWith(expect.objectContaining({ target: '#sic' }));
+    expect(mockSetAddMessage.mock.lastCall?.[0].msgid).toBe(msgid);
+  });
+
   it('test raw NOTICE addressed to an open channel is routed to that channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);

@@ -3,7 +3,7 @@ import { parseChannelModes, parseUserModes } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendNamesXProto } from '@/network/irc/network';
-import { setCaseMapping, setChannelModes, setChatHistoryLimit, setChannelTypes, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
+import { setCaseMapping, setChannelModes, setChatHistoryLimit, setChannelTypes, setClientTagDeny, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
 import { setBoundBouncerNetworkId } from '@features/bouncer/store/bouncerNetworks';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
@@ -64,6 +64,9 @@ export const onRaw005 = (ctx: IrcContext): void => {
         break;
       case 'BOUNCER_NETID':
         if (value !== undefined) { setBoundBouncerNetworkId(value); }
+        break;
+      case 'CLIENTTAGDENY':
+        setClientTagDeny(value === undefined || value === '' ? [] : value.split(','));
         break;
       case 'CHATHISTORY':
         setChatHistoryLimit(value !== undefined ? Number.parseInt(value, 10) || 0 : 0);

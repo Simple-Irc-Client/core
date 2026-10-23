@@ -22,6 +22,10 @@
  *       .sic-emoji            wraps each emoji character/sequence inside the body
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
+ *   .sic-msg-reactions        reactions under the message: a .sic-reaction button
+ *                             each (.sic-reaction-emoji, .sic-reaction-count),
+ *                             [aria-pressed="true"] on your own
+ *   .sic-msg-actions          the row's hover toolbar: .sic-msg-react adds a reaction
  *
  * Around the messages:
  *   .sic-date-separator       day-change row: .sic-date-separator-label (the date)
@@ -304,10 +308,16 @@ body {
   white-space: pre-wrap;
 }
 
-/* Link previews sit in the text column, under the message they belong to.
-   Square, outlined thumbnails instead of the default rounded ones. */
-.sic-msg-embeds {
+/* Link previews and reactions sit in the text column, under the message they
+   belong to. Square, outlined thumbnails instead of the default rounded ones. */
+.sic-msg-embeds,
+.sic-msg-reactions {
   grid-column: 3;
+}
+
+.sic-reaction,
+.sic-msg-react {
+  border-radius: 0;
 }
 
 /* On a narrow screen, hanging text under each line's own nick leaves a long
@@ -334,7 +344,7 @@ body {
     margin-right: 1ch;
   }
 
-  .sic-msg[data-content] .sic-msg-embeds {
+  .sic-msg[data-content] :is(.sic-msg-embeds, .sic-msg-reactions) {
     grid-column: 1 / -1;
     padding-left: 6ch;
   }

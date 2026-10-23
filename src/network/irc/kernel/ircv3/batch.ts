@@ -18,7 +18,7 @@ import { onMetadata } from '@/network/irc/kernel/ircv3/metadata';
 import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
 import { onSetname } from '@/network/irc/kernel/ircv3/setname';
 import { setAddHistoryPage } from '@features/channels/store/channels';
-import { onTagMsg } from '@/network/irc/kernel/ircv3/typing';
+import { onTagMsg } from '@/network/irc/kernel/ircv3/tagmsg';
 import { type ParsedIrcRawMessage } from '@shared/types';
 
 // :netsplit.pirc.pl BATCH +0G9Zyu0qr7Jem5SdPufanF chathistory #sic
@@ -83,8 +83,8 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   onHistoryBatch(target, batch.messages.length, oldest);
 };
 
-// What history shows; other events would apply stale state, as would typing indicators
-const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART', 'PRIVMSG', 'QUIT', 'TOPIC']);
+// What history shows; other events would apply stale state. TAGMSG brings reactions, its typing is ignored
+const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART', 'PRIVMSG', 'QUIT', 'TAGMSG', 'TOPIC']);
 
 // Commands replayed from a finished batch; numerics inside batches are not replayed
 const bufferedHandlers = new Map<string, IrcHandler>([

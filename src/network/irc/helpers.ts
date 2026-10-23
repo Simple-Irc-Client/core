@@ -31,6 +31,10 @@ export const parseServer = (currentServer?: Server): SingleServer | undefined =>
   return { host: serverHost, port: Number.parseInt(serverPort || `${defaultIRCPort}`, 10), tls };
 };
 
+/** The reverse of unescapeTagValue, for tag values we send */
+export const escapeTagValue = (value: string): string =>
+  value.replace(/[\\; \r\n]/g, (character) => ({ '\\': '\\\\', ';': '\\:', ' ': '\\s', '\r': '\\r', '\n': '\\n' })[character] ?? character);
+
 /** https://ircv3.net/specs/extensions/message-tags.html: \: → ; | \s → space | \\ → \ | \r → CR | \n → LF */
 export const unescapeTagValue = (value: string): string => {
   let result = '';

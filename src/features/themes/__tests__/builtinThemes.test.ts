@@ -93,10 +93,10 @@ describe('builtinThemes', () => {
       expect(layout).toMatch(/\[data-category='notice'\] \.sic-msg-nick-inline::before,[^{]*::after \{\s*content: '-';/);
     });
 
-    it('should hang wrapped text and previews in the text column', () => {
+    it('should hang wrapped text, previews and reactions in the text column', () => {
       expect(layout).toMatch(/\.sic-msg-line \{\s*display: contents;/);
       expect(layout).toMatch(/\.sic-msg-body \{\s*grid-column: 3;/);
-      expect(layout).toMatch(/\.sic-msg-embeds \{\s*grid-column: 3;/);
+      expect(layout).toMatch(/\.sic-msg-embeds,\s*\.sic-msg-reactions \{\s*grid-column: 3;/);
     });
 
     it('should keep status-line markers out of Debug/Status output', () => {

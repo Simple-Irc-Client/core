@@ -262,6 +262,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
 
   addMessage(ctx, {
     id: messageId,
+    msgid: ctx.tags.msgid,
     message,
     nick: getUser(nick) ?? nick,
     target: window,
@@ -407,6 +408,7 @@ export const handleCtcpAction = (
 
   addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
+    msgid: ctx.tags.msgid,
     message: action,
     nick: getUser(nick) ?? nick,
     target: window,

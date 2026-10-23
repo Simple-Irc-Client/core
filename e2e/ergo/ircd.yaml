@@ -137,6 +137,9 @@ history:
         enabled: false
     tagmsg-storage:
         default: false
+        whitelist:
+            - "+draft/react"
+            - "+draft/unreact"
 
 lock-file: ""
 

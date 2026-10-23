@@ -47,7 +47,7 @@ import { handlers as ircv3Readmarker } from '@/network/irc/kernel/ircv3/readmark
 import { handlers as ircv3Sasl } from '@/network/irc/kernel/ircv3/sasl';
 import { handlers as ircv3Setname } from '@/network/irc/kernel/ircv3/setname';
 import { handlers as ircv3Standardreplies } from '@/network/irc/kernel/ircv3/standardreplies';
-import { handlers as ircv3Typing } from '@/network/irc/kernel/ircv3/typing';
+import { handlers as ircv3Tagmsg } from '@/network/irc/kernel/ircv3/tagmsg';
 
 /** A Map, so commands like `constructor` never resolve to Object.prototype members. */
 export const mergeHandlers = (...modules: IrcHandlers[]): Map<string, IrcHandler> => {
@@ -112,5 +112,5 @@ export const ircHandlers = mergeHandlers(
   ircv3Sasl,
   ircv3Setname,
   ircv3Standardreplies,
-  ircv3Typing,
+  ircv3Tagmsg,
 );
