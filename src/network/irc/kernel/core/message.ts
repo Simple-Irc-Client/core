@@ -15,8 +15,9 @@ import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { REPLY_TAG } from '@features/replies/replies';
 import { handlePeerOffline } from '@features/e2ee/session';
-import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
+import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getHighlightWords, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
+import { containsHighlight } from '@shared/lib/highlight';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -191,8 +192,10 @@ const openConversationWindow = ({ window, isDirect }: Conversation): void => {
   }
 };
 
+const mentionsMe = (text: string, myNick: string): boolean => containsHighlight(text, [myNick, ...getHighlightWords()]);
+
 const isHighlight = ({ isDirect, isOwn }: Conversation, text: string, myNick: string): boolean =>
-  !isOwn && (isDirect || text.toLowerCase().includes(myNick.toLowerCase()));
+  !isOwn && (isDirect || mentionsMe(text, myNick));
 
 const announceHighlight = ({ window, isDirect }: Conversation, nick: string, text: string, currentChannelName: string): void => {
   if (window !== currentChannelName) {
@@ -283,7 +286,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
   if (isLiveFromOthers) {
     const userFlags = getCurrentUserFlags();
     const isAway = userFlags.includes('away');
-    if (isAway && message.toLowerCase().includes(myNick.toLowerCase())) {
+    if (isAway && mentionsMe(message, myNick)) {
       addAwayMessage({
         id: messageId,
         message,

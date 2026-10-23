@@ -86,6 +86,7 @@ export interface SettingsStore {
   language: LanguageSetting; // Language preference ('auto' = browser detection)
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
   isWizardHintDismissed: boolean; // Whether the wizard intro hint has been permanently dismissed
+  highlightWords: string[]; // Words that highlight a message besides the own nick
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -135,6 +136,7 @@ export interface SettingsStore {
   setLanguage: (language: LanguageSetting) => void;
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
   setWizardHintDismissed: () => void;
+  setHighlightWords: (words: string[]) => void;
   resetWizardState: () => void;
 }
 
@@ -192,6 +194,7 @@ export const useSettingsStore = create<SettingsStore>()(
     language: 'auto',
     serverPasswords: {},
     isWizardHintDismissed: false,
+    highlightWords: [],
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -384,6 +387,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setWizardHintDismissed: (): void => {
       set(() => ({ isWizardHintDismissed: true }));
     },
+    setHighlightWords: (words: string[]): void => {
+      set(() => ({ highlightWords: words }));
+    },
     resetWizardState: (): void => {
       set(sessionDefaults());
     },
@@ -432,6 +438,7 @@ export const useSettingsStore = create<SettingsStore>()(
       nick: state.nick,
       server: state.server,
       language: state.language,
+      highlightWords: state.highlightWords,
       isWizardCompleted: state.isWizardCompleted,
       serverPasswords: state.serverPasswords,
       currentChannelName: state.currentChannelName,
@@ -738,6 +745,10 @@ export const setLanguage = (language: LanguageSetting): void => {
 
 export const setWizardHintDismissed = (): void => {
   useSettingsStore.getState().setWizardHintDismissed();
+};
+
+export const getHighlightWords = (): string[] => {
+  return useSettingsStore.getState().highlightWords;
 };
 
 /** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */

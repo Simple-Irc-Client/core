@@ -21,6 +21,7 @@ import { isBuiltinTheme } from '@features/themes/builtinThemes';
 import { getThemeList } from '@features/themes/themeSelectors';
 import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
 import ThemeCreatorDialog from '@features/themes/components/ThemeCreatorDialog';
+import HighlightWordsSetting from './HighlightWordsSetting';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -350,6 +351,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
             onEditCss={(draft) => setThemeDialog({ kind: 'editor', mode: themeDialog.mode, draft })}
           />
         )}
+        <HighlightWordsSetting />
         <div className="col-span-full flex items-center gap-4">
           <Switch
             id="hide-avatars"

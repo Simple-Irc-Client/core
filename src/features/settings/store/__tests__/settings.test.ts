@@ -53,6 +53,7 @@ import {
   clearForAnotherNetwork,
   setWizardHintDismissed,
   setCurrentChannelName,
+  getHighlightWords,
 } from '../settings';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { clearMonitorList } from '@features/monitor/store/monitor';
@@ -134,6 +135,7 @@ describe('settings store', () => {
       fontSize: 'medium',
       currentUserHomepage: undefined,
       currentUserColor: undefined,
+      highlightWords: [],
     });
     vi.clearAllMocks();
   });
@@ -789,6 +791,23 @@ describe('settings store', () => {
       expect(stored.state.hideAvatarsInUsersList).toBe(true);
       expect(stored.state.hideTypingIndicator).toBe(true);
       expect(stored.state.fontFormatting.bold).toBe(true);
+    });
+
+    it('should write highlight words to localStorage', () => {
+      useSettingsStore.getState().setHighlightWords(['deploy', 'release']);
+
+      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      expect(stored.state.highlightWords).toEqual(['deploy', 'release']);
+      expect(getHighlightWords()).toEqual(['deploy', 'release']);
+    });
+
+    it('should have no highlight words when restoring settings saved before they existed', async () => {
+      localStorage.setItem('sic-settings', JSON.stringify({ state: { nick: 'SavedNick' }, version: 4 }));
+
+      await useSettingsStore.persist.rehydrate();
+
+      expect(getCurrentNick()).toBe('SavedNick');
+      expect(getHighlightWords()).toEqual([]);
     });
 
     it('should write nick and server to localStorage', () => {

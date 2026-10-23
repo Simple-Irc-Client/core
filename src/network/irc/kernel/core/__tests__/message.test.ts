@@ -789,6 +789,69 @@ describe('kernel core/message', () => {
     });
   });
 
+  describe('Highlight words', () => {
+    const mockChannelEnvironment = (flags: string[] = []) => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => flags);
+      vi.spyOn(settingsFile, 'getHighlightWords').mockImplementation(() => ['deploy', 'build failed']);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      return {
+        setAddMessage: vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {}),
+        setHasMention: vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {}),
+        notifyHighlight: vi.spyOn(notificationsFile, 'notifyHighlight').mockResolvedValue(),
+        addAwayMessage: vi.spyOn(awayMessagesFile, 'addAwayMessage').mockImplementation(() => {}),
+      };
+    };
+
+    it('should highlight a message containing one of the words, and announce it', () => {
+      const mocks = mockChannelEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :the Build Failed again' }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: true }));
+      expect(mocks.setHasMention).toHaveBeenCalledWith('#channel');
+      expect(mocks.notifyHighlight).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', message: 'the Build Failed again' }));
+    });
+
+    it('should highlight an ACTION containing one of the words', () => {
+      const mocks = mockChannelEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :\x01ACTION starts the deploy\x01' }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: true }));
+    });
+
+    it('should not highlight a word or the nick standing inside another word', () => {
+      const mocks = mockChannelEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :redeployed by MyNickname' }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: false }));
+      expect(mocks.setHasMention).not.toHaveBeenCalled();
+    });
+
+    it('should not highlight an own message containing one of the words', () => {
+      const mocks = mockChannelEnvironment();
+
+      new Kernel({ type: 'raw', line: ':MyNick!~user@host PRIVMSG #channel :deploy done' }).handle();
+
+      expect(mocks.setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', highlight: false }));
+    });
+
+    it('should keep a message with one of the words for later while away', () => {
+      const mocks = mockChannelEnvironment(['away']);
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :deploy now' }).handle();
+
+      expect(mocks.addAwayMessage).toHaveBeenCalledWith(expect.objectContaining({ message: 'deploy now' }));
+    });
+  });
+
   describe('Own messages from other clients (znc.in/self-message)', () => {
     const mockOwnMessageEnvironment = () => {
       vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
