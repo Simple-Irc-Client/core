@@ -12,6 +12,7 @@ import { defaultChannelTypes } from '@/config/config';
 import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { clearMonitorList } from '@features/monitor/store/monitor';
+import { clearAllReplies } from '@features/replies/store/replyTo';
 import { ircDisconnect } from '@/network/irc/network';
 import { markRead } from '@/network/irc/readMarkers';
 import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
@@ -746,6 +747,7 @@ export const clearNetworkState = (): void => {
   setCurrentClearAll();
   setChannelListClear();
   clearMonitorList();
+  clearAllReplies();
 };
 
 /** Before connecting to another network on a bouncer: nothing learned on the previous one holds there; the wizard stays where it is */

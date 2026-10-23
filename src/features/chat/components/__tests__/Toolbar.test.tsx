@@ -8,7 +8,10 @@ import * as users from '@features/users/store/users';
 import * as channelList from '@features/channels/store/channelList';
 import * as capabilities from '@/network/irc/capabilities';
 import * as ownMessages from '@features/chat/ownMessages';
-import { ChannelCategory } from '@shared/types';
+import { act } from '@testing-library/react';
+import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
+import { clearAllReplies, getReplyTo, setReplyTo } from '@features/replies/store/replyTo';
+import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1956,6 +1959,133 @@ describe('Toolbar', () => {
       const badge = document.querySelector('[aria-label*="main.toolbar.awayMessageCount"]');
       expect(badge).toBeInTheDocument();
       expect(badge?.textContent).toBe('1');
+    });
+  });
+
+  describe('Replies', () => {
+    const question: Message = {
+      id: 'm1',
+      msgid: 'm1',
+      message: 'the question',
+      nick: 'alice',
+      target: '#test',
+      time: '2026-10-23T10:00:00.000Z',
+      category: MessageCategory.default,
+    };
+
+    const send = (text: string): void => {
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: text } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+    };
+
+    const withCapabilities = (...enabled: string[]): void => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockImplementation((cap) => enabled.includes(cap));
+    };
+
+    beforeEach(() => {
+      clearAllReplies();
+    });
+
+    it('shows the message being replied to above the input, and focuses it', () => {
+      render(<Toolbar />);
+
+      act(() => setReplyTo('#test', question));
+
+      expect(screen.getByText(/main.toolbar.replyingTo/)).toHaveTextContent('the question');
+      expect(screen.getByRole('textbox')).toHaveFocus();
+    });
+
+    it('cancels the reply from its bar or with Escape', () => {
+      render(<Toolbar />);
+      act(() => setReplyTo('#test', question));
+
+      fireEvent.click(screen.getByRole('button', { name: 'main.toolbar.cancelReply' }));
+      expect(getReplyTo('#test')).toBeUndefined();
+      expect(screen.queryByText(/main.toolbar.replyingTo/)).not.toBeInTheDocument();
+
+      act(() => setReplyTo('#test', question));
+      fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Escape' });
+      expect(getReplyTo('#test')).toBeUndefined();
+    });
+
+    it('refers to the message by its msgid where the server relays message tags', () => {
+      withCapabilities('message-tags');
+      setReplyTo('#test', question);
+      render(<Toolbar />);
+
+      send('the answer');
+
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith('@+draft/reply=m1 PRIVMSG #test :the answer', { window: '#test' });
+      expect(mockSetAddMessage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'the answer', replyTo: 'm1' }));
+      expect(getReplyTo('#test')).toBeUndefined();
+    });
+
+    it('waits for the echo to show it where the server echoes', () => {
+      withCapabilities('message-tags', 'echo-message');
+      setReplyTo('#test', question);
+      render(<Toolbar />);
+
+      send('the answer');
+
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith('@+draft/reply=m1 PRIVMSG #test :the answer', { window: '#test' });
+      expect(mockSetAddMessage).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['a server without message tags', () => withCapabilities(), question],
+      ['a server that drops the reply tag', () => {
+        withCapabilities('message-tags');
+        vi.spyOn(settingsStore, 'getClientTagDeny').mockReturnValue(['draft/reply']);
+      }, question],
+      ['a message without a msgid', () => withCapabilities('message-tags'), { ...question, msgid: undefined }],
+    ])('quotes the message on a line of its own on %s', (_case, arrange, replied) => {
+      arrange();
+      setReplyTo('#test', replied);
+      render(<Toolbar />);
+
+      send('the answer');
+
+      expect(vi.mocked(network.ircSendCommand).mock.calls).toEqual([
+        ['PRIVMSG #test :> <alice> the question', { window: '#test' }],
+        ['PRIVMSG #test :the answer', { window: '#test' }],
+      ]);
+      expect(mockSetAddMessage.mock.calls.map(([message]) => [(message as Message).message, (message as Message).replyTo])).toEqual([
+        ['> <alice> the question', undefined],
+        ['the answer', undefined],
+      ]);
+    });
+
+    it('keeps the reply while a command is sent', () => {
+      setReplyTo('#test', question);
+      render(<Toolbar />);
+
+      send('/join #other');
+
+      expect(getReplyTo('#test')).toBe(question);
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith(expect.not.stringContaining('draft/reply'), { window: '#test' });
+    });
+
+    it('sets the reply aside in an encrypted conversation', () => {
+      setReplyTo('#test', question);
+      useE2eeStore.setState({ sessions: { [getSessionKey('#test')]: { state: E2eeState.active } as E2eeSession } });
+
+      render(<Toolbar />);
+
+      expect(screen.queryByText(/main.toolbar.replyingTo/)).not.toBeInTheDocument();
+      act(() => useE2eeStore.setState({ sessions: {} }));
+      expect(screen.getByText(/main.toolbar.replyingTo/)).toBeInTheDocument();
+    });
+
+    it('keeps the reply of each window to itself', () => {
+      setReplyTo('#other', question);
+      render(<Toolbar />);
+
+      expect(screen.queryByText(/main.toolbar.replyingTo/)).not.toBeInTheDocument();
+      send('not an answer');
+
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith('PRIVMSG #test :not an answer', { window: '#test' });
+      expect(getReplyTo('#other')).toBe(question);
     });
   });
 });

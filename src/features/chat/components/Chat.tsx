@@ -14,9 +14,14 @@ import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage, { contentCategories } from './ChatMessage';
 import ReactionPicker, { type ReactionPickerHandle } from '@features/reactions/components/ReactionPicker';
 import { useCanReact } from '@features/reactions/useCanReact';
+import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
+import { setReplyTo } from '@features/replies/store/replyTo';
 
 // Close enough to the top that the older page is usually in before the user gets there
 const LOAD_OLDER_THRESHOLD_PX = 200;
+
+// How long a message gone to from a reply stays marked
+const SHOWN_MESSAGE_MARK_MS = 2000;
 
 // The message itself: a date separator can appear above it in the same row once older messages go in
 const messageTop = (row: HTMLElement): number => (row.lastElementChild ?? row).getBoundingClientRect().top;
@@ -32,8 +37,10 @@ const Chat = () => {
   const reactionPicker = useRef<ReactionPickerHandle>(null);
 
   const handleAddReaction = useCallback((message: Message, anchor: HTMLElement) => reactionPicker.current?.open(message, anchor), []);
+  const handleReply = useCallback((message: Message) => setReplyTo(message.target, message), []);
 
   const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
+  const canReply = useCanSendPlaintext(currentChannelName) && !isDebug;
 
   const rows = useMemo(() => {
     const result: { message: Message; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
@@ -48,7 +55,9 @@ const Chat = () => {
       const nick = getNickFromMessage(message) ?? '';
       const lastNick = showDateSeparator ? '' : prevNick;
 
-      result.push({ message, currentDate, showDateSeparator, grouped: !isDebug && isContent && lastNick === nick });
+      // A reply shows what it answers above its header
+      const grouped = !isDebug && isContent && lastNick === nick && message.replyTo === undefined;
+      result.push({ message, currentDate, showDateSeparator, grouped });
 
       prevDayStart = dayStart;
       prevNick = isContent ? nick : '';
@@ -56,6 +65,8 @@ const Chat = () => {
 
     return result;
   }, [messages, isDebug]);
+
+  const messagesByMsgid = useMemo(() => new Map(messages.flatMap((message) => (message.msgid === undefined ? [] : [[message.msgid, message] as const]))), [messages]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUp = useRef(false);
@@ -67,6 +78,30 @@ const Chat = () => {
     const first = containerRef.current?.querySelector<HTMLElement>('[data-message-id]');
     topMessage.current = first?.dataset.messageId !== undefined ? { id: first.dataset.messageId, top: messageTop(first) } : null;
   }, []);
+
+  /** A message a reply was clicked for, being looked for in older history */
+  const soughtMsgid = useRef<string | undefined>(undefined);
+
+  /** Scrolls to the message and marks it a moment; false when it is not shown */
+  const showMessage = useCallback((msgid: string): boolean => {
+    const row = containerRef.current?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(msgid)}"] .sic-msg`);
+    if (!row) {
+      return false;
+    }
+    row.scrollIntoView({ block: 'center' });
+    row.dataset.shown = '';
+    setTimeout(() => { delete row.dataset.shown; }, SHOWN_MESSAGE_MARK_MS);
+    return true;
+  }, []);
+
+  const handleShowMessage = useCallback((msgid: string) => {
+    if (showMessage(msgid)) {
+      soughtMsgid.current = undefined;
+      return;
+    }
+    // Not shown: paged back for until it is, or history has no more
+    soughtMsgid.current = requestOlderHistory(currentChannelName) ? msgid : undefined;
+  }, [currentChannelName, showMessage]);
 
   const scrollToBottom = useCallback(() => {
     if (containerRef.current) {
@@ -94,6 +129,7 @@ const Chat = () => {
 
   useLayoutEffect(() => {
     isUserScrolledUp.current = false;
+    soughtMsgid.current = undefined;
     scrollToBottom();
   }, [currentChannelName, scrollToBottom]);
 
@@ -111,6 +147,13 @@ const Chat = () => {
     }
     rememberTopMessage();
   }, [messages, scrollToBottom, rememberTopMessage]);
+
+  // After the effect above, so finding the sought message moves the view to it rather than back to the bottom
+  useLayoutEffect(() => {
+    if (soughtMsgid.current !== undefined) {
+      handleShowMessage(soughtMsgid.current);
+    }
+  }, [messages, handleShowMessage]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -159,6 +202,10 @@ const Chat = () => {
                 fontSizeClass={fontSizeClass}
                 canReact={canReact}
                 onAddReaction={handleAddReaction}
+                canReply={canReply}
+                onReply={handleReply}
+                replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
+                onShowMessage={handleShowMessage}
               />
             </div>
           );

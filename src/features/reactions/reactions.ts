@@ -2,13 +2,13 @@ import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { escapeTagValue } from '@/network/irc/helpers';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getMessages, setUpdateMessage } from '@features/channels/store/channels';
+import { REPLY_TAG } from '@features/replies/replies';
 import { getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { type Message, type Reaction } from '@shared/types';
 
 // https://ircv3.net/specs/client-tags/react
 export const REACT_TAG = '+draft/react';
 export const UNREACT_TAG = '+draft/unreact';
-export const REPLY_TAG = '+draft/reply';
 
 export const hasReacted = (reaction: Reaction, nick: string): boolean => reaction.nicks.some((reacted) => isSameName(reacted, nick));
 

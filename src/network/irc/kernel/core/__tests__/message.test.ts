@@ -360,6 +360,24 @@ describe('kernel core/message', () => {
     expect(mockSetAddMessage.mock.lastCall?.[0].msgid).toBe(msgid);
   });
 
+  it.each([
+    ['a message', '@+draft/reply=q1;msgid=abc :Friend!~u@host PRIVMSG #sic :yes', 'q1'],
+    ['an action', '@+draft/reply=q1;msgid=abc :Friend!~u@host PRIVMSG #sic :\x01ACTION nods\x01', 'q1'],
+    ['a message replying to nothing', '@msgid=abc :Friend!~u@host PRIVMSG #sic :hi', undefined],
+  ])('test raw PRIVMSG keeps what %s replies to', (_case, line, replyTo) => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+    vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+    vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+
+    new Kernel({ type: 'raw', line }).handle();
+
+    expect(mockSetAddMessage.mock.lastCall?.[0].replyTo).toBe(replyTo);
+  });
+
   it('test raw NOTICE addressed to an open channel is routed to that channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);

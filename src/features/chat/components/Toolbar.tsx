@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, isSameName, useSettingsStore, type FontFormatting } from '@features/settings/store/settings';
-import { ChannelCategory, MessageCategory, type User } from '@shared/types';
+import { ChannelCategory, type Message, MessageCategory, type User } from '@shared/types';
 import { ircSendCommand, ircSendRawMessage } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { Send, Smile } from 'lucide-react';
@@ -30,6 +30,10 @@ import StylePicker from './StylePicker';
 import UserMenu from './UserMenu';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import { ACTION_BODY, PRIVMSG_OR_NOTICE, showOwnCommandMessages } from '@features/chat/ownMessages';
+import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
+import ReplyBar from '@features/replies/components/ReplyBar';
+import { quoteLine, replyTags } from '@features/replies/replies';
+import { clearReplyTo, useReplyToStore } from '@features/replies/store/replyTo';
 
 export type OutgoingCommandGate =
   | { verdict: 'encrypt'; target: string; kind: BodyKind; body: string }
@@ -106,6 +110,10 @@ const Toolbar = () => {
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
+  // An encrypted conversation sends no plaintext reference to the message
+  const canSendPlaintext = useCanSendPlaintext(currentChannelName);
+  const storedReplyTo = useReplyToStore((state) => state.replies[currentChannelName]);
+  const replyTo = canSendPlaintext ? storedReplyTo : undefined;
 
   // Status and Debug take no chat messages or typing notifications
   const isSystemChannel = [STATUS_CHANNEL, DEBUG_CHANNEL].includes(currentChannelName);
@@ -185,6 +193,12 @@ const Toolbar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (replyTo !== undefined) {
+      autocompleteInput.current?.focus();
+    }
+  }, [replyTo]);
+
   const switchDraft = useEffectEvent((previousChannel: string, nextChannel: string) => {
     setDraft(previousChannel, message);
     setMessage(getDraft(nextChannel));
@@ -258,6 +272,28 @@ const Toolbar = () => {
     });
   };
 
+  const sendPlainMessage = (text: string, replyTo?: Message): void => {
+    const tags = replyTo === undefined ? undefined : replyTags(replyTo);
+    const nick = getCurrentNick();
+
+    // With echo-message the server echoes it back and it's added then
+    if (!isCapabilityEnabled('echo-message')) {
+      setAddMessage({
+        id: uuidv4(),
+        replyTo: tags === undefined ? undefined : replyTo?.msgid,
+        message: text,
+        nick: getUser(nick) ?? nick,
+        target: currentChannelName,
+        time: new Date().toISOString(),
+        category: MessageCategory.default,
+        color: MessageColor.default,
+      });
+    }
+
+    const privmsg = `PRIVMSG ${currentChannelName} :${text}`;
+    ircSendCommand(tags === undefined ? privmsg : `${tags} ${privmsg}`, { window: currentChannelName });
+  };
+
   const finishSend = (): void => {
     if (!isSystemChannel && !isSessionActive(currentChannelName)) {
       sendTypingStatus('done');
@@ -325,20 +361,14 @@ const Toolbar = () => {
           return;
         }
 
-        // With echo-message the server echoes it back and it's added then
-        if (!isCapabilityEnabled('echo-message')) {
-          setAddMessage({
-            id: uuidv4(),
-            message: formattedMessage,
-            nick: getUser(nick) ?? nick,
-            target: currentChannelName,
-            time: new Date().toISOString(),
-            category: MessageCategory.default,
-            color: MessageColor.default,
-          });
+        // Where the server can't refer to the message, the reply quotes it on a line of its own first
+        if (replyTo !== undefined && replyTags(replyTo) === undefined) {
+          sendPlainMessage(quoteLine(replyTo));
         }
-
-        payload = `PRIVMSG ${currentChannelName} :${formattedMessage}`;
+        sendPlainMessage(formattedMessage, replyTo);
+        clearReplyTo(currentChannelName);
+        finishSend();
+        return;
       }
     }
     ircSendCommand(payload, { window: currentChannelName });
@@ -435,6 +465,13 @@ const Toolbar = () => {
         }
         break;
       }
+      case 'Escape':
+        if (replyTo !== undefined) {
+          event.preventDefault();
+          clearReplyTo(currentChannelName);
+        }
+        autocompleteIndex.current = -1;
+        break;
       default:
         autocompleteIndex.current = -1;
         break;
@@ -445,6 +482,7 @@ const Toolbar = () => {
 
   return (
     <>
+      {replyTo !== undefined && <ReplyBar message={replyTo} onCancel={() => clearReplyTo(currentChannelName)} />}
       <form className="flex items-center pt-1 pb-safe-2 pl-safe-4 pr-safe-4" onSubmit={handleSubmit}>
         {currentChannelName !== DEBUG_CHANNEL && (
           <>

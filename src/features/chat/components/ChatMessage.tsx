@@ -18,6 +18,11 @@ import { isSafeCssColor, ensureReadableColor } from '@shared/lib/utils';
 import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import AddReactionButton from '@features/reactions/components/AddReactionButton';
 import MessageReactions from '@features/reactions/components/MessageReactions';
+import ReplyButton from '@features/replies/components/ReplyButton';
+import ReplyQuote from '@features/replies/components/ReplyQuote';
+import { QUOTE_PREFIX } from '@features/replies/replies';
+
+const repliableCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me]);
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
 
@@ -36,13 +41,19 @@ interface ChatMessageProps {
   /** Reactions can be sent in this window */
   canReact: boolean;
   onAddReaction: (message: Message, anchor: HTMLElement) => void;
+  /** Replies can be sent in this window */
+  canReply: boolean;
+  onReply: (message: Message) => void;
+  /** The message this one replies to, when it is shown */
+  replied: Message | undefined;
+  onShowMessage: (msgid: string) => void;
 }
 
 /**
  * Renders the same `sic-*` DOM for every theme; theme CSS hides/arranges parts (contract in
  * themes/builtin/*.css). Hidden parts still render so switching themes is pure CSS.
  */
-const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAddReaction }: ChatMessageProps) => {
+const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAddReaction, canReply, onReply, replied, onShowMessage }: ChatMessageProps) => {
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
   const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
@@ -64,6 +75,12 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
   const locale = getDateFnsLocale();
   // Reactions point at the server's msgid
   const isReactable = canReact && message.msgid !== undefined;
+  // An encrypted message is never quoted in plaintext
+  const isRepliable = canReply && repliableCategories.has(message.category) && !message.system && message.e2ee === undefined;
+  const hasActions = isReactable || isRepliable;
+  const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX);
+  const { replyTo } = message;
+  const showsReplyQuote = replyTo !== undefined && isContent && !isDebug;
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
     if (nick) {
@@ -92,8 +109,10 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
       data-debug={isDebug || undefined}
       data-system={message.system || undefined}
       data-e2ee={message.e2ee}
+      data-quote={isQuote || undefined}
+      data-reply={showsReplyQuote || undefined}
       // Focusable, so a tap shows the message's actions where there is no hover
-      tabIndex={isReactable ? -1 : undefined}
+      tabIndex={hasActions ? -1 : undefined}
     >
       <div className="sic-msg-gutter">
         {showHeaderLayout && (
@@ -107,6 +126,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
         )}
       </div>
       <div className="sic-msg-content min-w-0">
+        {showsReplyQuote && <ReplyQuote replied={replied} onShow={() => onShowMessage(replyTo)} />}
         {showHeaderLayout && (
           <div className={`sic-msg-header ${fontSizeClass}`}>
             <span
@@ -142,7 +162,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
             {(isItalic || !isContent) && nick ? (
               <NickHighlightedMessage text={message.message} displayNick={displayNick} onContextMenu={handleNickContextMenu} />
             ) : (
-              <MessageText text={message.message} />
+              <MessageText text={isQuote ? message.message.slice(QUOTE_PREFIX.length) : message.message} />
             )}
           </span>
           {showHeaderLayout && renderTime('sic-msg-time-trailing', true)}
@@ -156,9 +176,10 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
         )}
         {message.reactions && <MessageReactions message={message} canReact={isReactable} />}
       </div>
-      {isReactable && (
+      {hasActions && (
         <div className="sic-msg-actions">
-          <AddReactionButton onClick={(anchor) => onAddReaction(message, anchor)} />
+          {isRepliable && <ReplyButton onClick={() => onReply(message)} />}
+          {isReactable && <AddReactionButton onClick={(anchor) => onAddReaction(message, anchor)} />}
         </div>
       )}
     </div>

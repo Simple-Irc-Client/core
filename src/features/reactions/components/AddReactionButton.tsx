@@ -13,7 +13,7 @@ const AddReactionButton = ({ onClick }: AddReactionButtonProps) => {
     <button
       type="button"
       tabIndex={-1}
-      className="sic-msg-react"
+      className="sic-msg-action sic-msg-react"
       aria-label={t('main.chat.addReaction')}
       title={t('main.chat.addReaction')}
       onClick={(event) => onClick(event.currentTarget)}

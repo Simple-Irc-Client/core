@@ -1,5 +1,6 @@
 import { type IrcContext } from '@/network/irc/kernel/context';
-import { REACT_TAG, REPLY_TAG, setReaction, UNREACT_TAG, withReaction } from '@features/reactions/reactions';
+import { REACT_TAG, setReaction, UNREACT_TAG, withReaction } from '@features/reactions/reactions';
+import { REPLY_TAG } from '@features/replies/replies';
 import { getCurrentNick, isSameName } from '@features/settings/store/settings';
 
 const applyReaction = (ctx: IrcContext, window: string, msgid: string, emoji: string, nick: string, isAdded: boolean): void => {

@@ -141,7 +141,7 @@ describe('chatHistory', () => {
     it('asks for the page before the oldest message from others', () => {
       messages = [message(3, null), message(4, 'MyNick'), message(5), message(6)];
 
-      requestOlderHistory('#chan');
+      expect(requestOlderHistory('#chan')).toBe(true);
 
       expect(send).toHaveBeenCalledExactlyOnceWith('#chan', 'BEFORE', before(ms(5)), 50);
     });
@@ -173,7 +173,8 @@ describe('chatHistory', () => {
       messages = [message(5)];
 
       requestOlderHistory('#chan');
-      requestOlderHistory('#CHAN');
+      // Still on its way
+      expect(requestOlderHistory('#CHAN')).toBe(true);
 
       expect(send).toHaveBeenCalledTimes(1);
     });
@@ -195,7 +196,7 @@ describe('chatHistory', () => {
       onHistoryBatch('#chan', 2, { time: ms(3) });
       messages = [message(3), message(4), message(5)];
 
-      requestOlderHistory('#chan');
+      expect(requestOlderHistory('#chan')).toBe(false);
 
       expect(send).toHaveBeenCalledTimes(1);
     });
@@ -244,7 +245,7 @@ describe('chatHistory', () => {
     it('does not page past what a window can show', () => {
       messages = Array.from({ length: maxViewedMessages - 49 }, () => message(5));
 
-      requestOlderHistory('#chan');
+      expect(requestOlderHistory('#chan')).toBe(false);
 
       expect(send).not.toHaveBeenCalled();
     });
@@ -252,7 +253,7 @@ describe('chatHistory', () => {
     it('asks nothing for the status window or a window with only local messages', () => {
       vi.spyOn(channelsFile, 'getCategory').mockImplementation(() => ChannelCategory.status);
       messages = [message(5)];
-      requestOlderHistory('Status');
+      expect(requestOlderHistory('Status')).toBe(false);
 
       vi.spyOn(channelsFile, 'getCategory').mockImplementation(() => ChannelCategory.channel);
       messages = [message(5, null)];

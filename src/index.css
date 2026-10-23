@@ -374,7 +374,7 @@
   content: '← ';
 }
 
-/* Reactions under a message and its actions (add a reaction). The actions
+/* Reactions under a message and its actions (reply, add a reaction). The actions
    show for the message under the pointer or, without hover, the one tapped
    (the row is focusable then). :where() keeps these at the lowest
    specificity, so any theme rule wins. */
@@ -419,6 +419,8 @@
   white-space: nowrap;
 }
 :where(.sic-msg-actions) {
+  display: flex;
+  gap: 0.25rem;
   position: absolute;
   top: 0.125rem;
   right: 1rem;
@@ -437,7 +439,7 @@
     pointer-events: auto;
   }
 }
-:where(.sic-msg-react) {
+:where(.sic-msg-action) {
   display: flex;
   padding: 0.25rem;
   border: 1px solid var(--border);
@@ -446,8 +448,50 @@
   color: var(--muted-foreground);
   cursor: pointer;
 }
-:where(.sic-msg-react:hover) {
+:where(.sic-msg-action:hover) {
   color: var(--foreground);
+}
+
+/* A reply's quote of the message it answers, one line above it; a line
+   written as a quote (`> text`); and the message a quote was clicked for */
+:where(.sic-msg-reply) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  margin-bottom: 0.125rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+:where(.sic-msg-reply:hover) {
+  color: var(--foreground);
+}
+:where(.sic-msg-reply-icon) {
+  flex-shrink: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: scaleY(-1);
+}
+:where(.sic-msg-reply-nick) {
+  flex-shrink: 0;
+  font-weight: var(--font-weight-semibold, 600);
+}
+:where(.sic-msg-reply-text) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:where(.sic-msg[data-quote]) .sic-msg-body {
+  padding-left: 0.5rem;
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+}
+:where(.sic-msg[data-shown]) {
+  background-color: color-mix(in oklab, var(--primary) 15%, transparent);
+  transition: background-color 0.3s;
 }
 
 /* Fixed styling for chat messages in the debug/Status channels.

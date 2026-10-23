@@ -13,6 +13,7 @@ import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, 
 import { existChannel, isChannel, setAddChannel, setAddMessage, setHasMention, setIncreaseUnreadMessages, setTyping } from '@features/channels/store/channels';
 import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
+import { REPLY_TAG } from '@features/replies/replies';
 import { handlePeerOffline } from '@features/e2ee/session';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
@@ -263,6 +264,7 @@ export const onPrivMsg = (ctx: IrcContext): void => {
   addMessage(ctx, {
     id: messageId,
     msgid: ctx.tags.msgid,
+    replyTo: ctx.tags[REPLY_TAG],
     message,
     nick: getUser(nick) ?? nick,
     target: window,
@@ -409,6 +411,7 @@ export const handleCtcpAction = (
   addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
     msgid: ctx.tags.msgid,
+    replyTo: ctx.tags[REPLY_TAG],
     message: action,
     nick: getUser(nick) ?? nick,
     target: window,

@@ -54,10 +54,11 @@ import {
   setWizardHintDismissed,
   setCurrentChannelName,
 } from '../settings';
-import { ChannelCategory } from '@shared/types';
+import { ChannelCategory, MessageCategory } from '@shared/types';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { forgetChannelsToAutoJoin, setChannelsClearAll, setClearUnreadMessages } from '@features/channels/store/channels';
 import { markRead } from '@/network/irc/readMarkers';
+import { getReplyTo, setReplyTo } from '@features/replies/store/replyTo';
 
 vi.mock('@features/channels/store/channels', () => ({
   getMessages: vi.fn(() => []),
@@ -1086,6 +1087,14 @@ describe('settings store', () => {
       changeServer();
 
       expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
+    });
+
+    it('should drop replies being written to messages of the server before', () => {
+      setReplyTo('#chan', { id: 'm1', message: 'hi', target: '#chan', time: '2026-10-23T10:00:00.000Z', category: MessageCategory.default });
+
+      changeServer();
+
+      expect(getReplyTo('#chan')).toBeUndefined();
     });
   });
 

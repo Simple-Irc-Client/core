@@ -45,6 +45,8 @@ export interface Message {
   id: string;
   /** The server's IRCv3 msgid, which replies and reactions refer to */
   msgid?: string;
+  /** IRCv3 +draft/reply: the msgid of the message this one answers */
+  replyTo?: string;
   message: string;
   nick?: User | string;
   target: string;

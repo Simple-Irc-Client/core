@@ -83,22 +83,26 @@ export const requestLatestHistory = (target: string): void => {
   send(target, 'LATEST', since === undefined ? undefined : { time: since }, { since, fetched: 0 });
 };
 
-/** Scrolled to the top of a window: the page before its oldest message */
-export const requestOlderHistory = (target: string): void => {
+/** Scrolled to the top of a window: the page before its oldest message. False when no more is coming */
+export const requestOlderHistory = (target: string): boolean => {
   const key = keyOf(target);
   const category = getCategory(target);
-  if (!isCapabilityEnabled('draft/chathistory') || pending.has(key) || (category !== ChannelCategory.channel && category !== ChannelCategory.priv)) {
-    return;
+  if (!isCapabilityEnabled('draft/chathistory') || (category !== ChannelCategory.channel && category !== ChannelCategory.priv)) {
+    return false;
+  }
+  if (pending.has(key)) {
+    return true;
   }
   if (getMessages(target).length + pageSize() > maxViewedMessages) {
-    return;
+    return false;
   }
   // Shown in the server's order, so the first is the oldest
   const [oldest] = fromServer(target);
   if (oldest === undefined || oldest.time <= (historyStart.get(key) ?? Number.NEGATIVE_INFINITY)) {
-    return;
+    return false;
   }
   send(target, 'BEFORE', oldest, { fetched: 0, before: oldest });
+  return true;
 };
 
 /** The message the window's outstanding request asked for history before */

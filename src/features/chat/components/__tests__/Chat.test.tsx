@@ -9,6 +9,8 @@ import { MessageCategory, type Message, type User } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
+import { clearAllReplies, getReplyTo } from '@features/replies/store/replyTo';
+import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -1130,7 +1132,7 @@ describe('Chat tests', () => {
     };
 
     it('should ask for older messages when the user scrolls up near the top', () => {
-      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => true);
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
       const { container } = render(<Main />);
 
@@ -1140,7 +1142,7 @@ describe('Chat tests', () => {
     });
 
     it('should not ask while the user reads further down', () => {
-      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => true);
       setupMocks({ messages: [createMessage({ id: '1' })] });
       const { container } = render(<Main />);
 
@@ -1150,7 +1152,7 @@ describe('Chat tests', () => {
     });
 
     it('should keep what the user reads in place when older messages go in above it', () => {
-      vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => {});
+      vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => true);
       const tops: Record<string, number> = { '2': 10, '3': 60 };
       vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
         return { top: tops[this.closest<HTMLElement>('[data-message-id]')?.dataset.messageId ?? ''] ?? 0 } as DOMRect;
@@ -1903,7 +1905,6 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(getAddReaction(container)).not.toBeInTheDocument();
-      expect(getMessages(container)[0]).not.toHaveAttribute('tabindex');
     });
 
     it('shows the reactions under the message', () => {
@@ -1922,6 +1923,142 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(container.querySelector('.sic-reaction')).toBeDisabled();
+    });
+  });
+
+  describe('Replies', () => {
+    const getReplyButton = (container: HTMLElement) => container.querySelector('.sic-msg-actions .sic-msg-reply-action');
+
+    beforeEach(() => {
+      clearAllReplies();
+      useE2eeStore.setState({ sessions: {} });
+    });
+
+    it('offers to reply, on a server without message tags too', () => {
+      const message = createMessage({ id: 'local', nick: 'alice' });
+      setupMocks({ messages: [message] });
+
+      const { container } = render(<Main />);
+      fireEvent.click(getReplyButton(container) as Element);
+
+      expect(getReplyTo('#test')).toBe(message);
+      expect(getMessages(container)[0]).toHaveAttribute('tabindex', '-1');
+    });
+
+    it.each([
+      ['while disconnected', { messages: [createMessage({ id: '1' })], isConnected: false }],
+      ['to a notice', { messages: [createMessage({ id: '1', category: MessageCategory.notice })] }],
+      ['to a system message', { messages: [createMessage({ id: '1', system: true })] }],
+      ['to an encrypted message', { messages: [createMessage({ id: '1', e2ee: 'ok' })] }],
+      ['in Status', { messages: [createMessage({ id: '1', target: STATUS_CHANNEL })], currentChannelName: STATUS_CHANNEL }],
+    ])('does not offer to reply %s', (_case, mocks) => {
+      setupMocks(mocks);
+
+      const { container } = render(<Main />);
+
+      expect(getReplyButton(container)).not.toBeInTheDocument();
+      expect(getMessages(container)[0]).not.toHaveAttribute('tabindex');
+    });
+
+    it('does not offer to reply in an encrypted conversation', () => {
+      useE2eeStore.setState({ sessions: { [getSessionKey('bob')]: { state: E2eeState.active } as E2eeSession } });
+      setupMocks({ messages: [createMessage({ id: '1', target: 'bob' })], currentChannelName: 'bob' });
+
+      const { container } = render(<Main />);
+
+      expect(getReplyButton(container)).not.toBeInTheDocument();
+    });
+
+    it('shows what a reply answers above it, with its own header', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: 'm1', msgid: 'm1', nick: createUserNick({ nick: 'alice' }), message: 'the \x02question\x02' }),
+          createMessage({ id: 'm2', msgid: 'm2', nick: createUserNick({ nick: 'alice' }), message: 'the answer', replyTo: 'm1' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const reply = getMessages(container)[1];
+      expect(reply?.querySelector('.sic-msg-content > .sic-msg-reply')).toHaveTextContent('alicethe question');
+      expect(reply).not.toHaveAttribute('data-grouped');
+      expect(reply).toHaveAttribute('data-reply');
+      expect(getMessages(container)[0]).not.toHaveAttribute('data-reply');
+    });
+
+    it('says when the message replied to is not shown', () => {
+      setupMocks({ messages: [createMessage({ id: 'm2', msgid: 'm2', message: 'the answer', replyTo: 'gone' })] });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-reply .sic-msg-reply-text')).toBeInTheDocument();
+      expect(container.querySelector('.sic-msg-reply .sic-msg-reply-nick')).not.toBeInTheDocument();
+    });
+
+    it('goes to the message replied to, and marks it a moment', () => {
+      vi.useFakeTimers();
+      setupMocks({
+        messages: [
+          createMessage({ id: 'm1', msgid: 'm1', message: 'the question' }),
+          createMessage({ id: 'm2', msgid: 'm2', message: 'the answer', replyTo: 'm1' }),
+        ],
+      });
+      const { container } = render(<Main />);
+      const original = getMessages(container)[0] as HTMLElement;
+      vi.mocked(Element.prototype.scrollIntoView).mockClear();
+
+      fireEvent.click(container.querySelector('.sic-msg-reply') as Element);
+
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([original]);
+      expect(original).toHaveAttribute('data-shown');
+      vi.advanceTimersByTime(2000);
+      expect(original).not.toHaveAttribute('data-shown');
+      vi.useRealTimers();
+    });
+
+    it('pages back through history for a message not shown, and goes to it once it is', () => {
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => true);
+      const reply = createMessage({ id: 'm2', msgid: 'm2', message: 'the answer', replyTo: 'm1', time: '2024-01-01T12:05:00Z' });
+      setupMocks({ messages: [reply] });
+      const { container, rerender } = render(<Main />);
+
+      fireEvent.click(container.querySelector('.sic-msg-reply') as Element);
+      expect(requestOlderHistory).toHaveBeenCalledExactlyOnceWith('#test');
+
+      // A page without it: on to the next
+      const older = createMessage({ id: 'm0', msgid: 'm0', message: 'older', time: '2024-01-01T12:00:00Z' });
+      setupMocks({ messages: [older, reply] });
+      rerender(<Main />);
+      expect(requestOlderHistory).toHaveBeenCalledTimes(2);
+
+      vi.mocked(Element.prototype.scrollIntoView).mockClear();
+      setupMocks({ messages: [older, createMessage({ id: 'm1', msgid: 'm1', message: 'the question', time: '2024-01-01T12:01:00Z' }), reply] });
+      rerender(<Main />);
+
+      expect(requestOlderHistory).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([getMessages(container)[1]]);
+    });
+
+    it('stops looking once history has no more', () => {
+      const requestOlderHistory = vi.spyOn(chatHistoryFile, 'requestOlderHistory').mockImplementation(() => false);
+      const reply = createMessage({ id: 'm2', msgid: 'm2', message: 'the answer', replyTo: 'm1' });
+      setupMocks({ messages: [reply] });
+      const { container, rerender } = render(<Main />);
+
+      fireEvent.click(container.querySelector('.sic-msg-reply') as Element);
+      setupMocks({ messages: [reply, createMessage({ id: 'm3', message: 'later' })] });
+      rerender(<Main />);
+
+      expect(requestOlderHistory).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows a line written as a quote as one, without its marker', () => {
+      setupMocks({ messages: [createMessage({ id: '1', message: '> <alice> the question' })] });
+
+      const { container } = render(<Main />);
+
+      expect(getMessages(container)[0]).toHaveAttribute('data-quote');
+      expect(getBody(container)).toHaveTextContent(/^<alice> the question$/);
     });
   });
 
