@@ -32,6 +32,26 @@ describe('batch', () => {
       const batch = getBatch('batch2');
       expect(batch?.request).toEqual({ window: '#chan' });
     });
+
+    it('should keep the tags of the opening line', () => {
+      startBatch('ml', 'draft/multiline', ['#chan'], undefined, { msgid: 'm1', time: '2026-10-23T10:00:00.000Z' });
+
+      expect(getBatch('ml')?.tags).toEqual({ msgid: 'm1', time: '2026-10-23T10:00:00.000Z' });
+      expect(getBatch('ml')?.parent).toBeUndefined();
+    });
+
+    it('should know the batch it is nested in', () => {
+      startBatch('hist', 'chathistory', ['#chan']);
+      startBatch('ml', 'draft/multiline', ['#chan'], undefined, { batch: 'hist' });
+
+      expect(getBatch('ml')?.parent).toBe('hist');
+    });
+
+    it('should not nest in a batch that is not open', () => {
+      startBatch('ml', 'draft/multiline', ['#chan'], undefined, { batch: 'gone' });
+
+      expect(getBatch('ml')?.parent).toBeUndefined();
+    });
   });
 
   describe('endBatch', () => {

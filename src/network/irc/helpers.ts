@@ -58,7 +58,7 @@ export const unescapeTagValue = (value: string): string => {
 };
 
 export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
-  const line: string[] = message.trim().split(' ');
+  const line: string[] = message.replace(/[\r\n]+$/, '').trimStart().split(' ');
 
   // @msgid=rPQvwimgWqGnqVcuVONIFJ;time=2023-02-01T23:08:26.026Z
   // @draft/bot;msgid=oZvJsXO82XJXWMsnlSFTD5;time=2023-02-01T22:54:54.532Z
@@ -86,6 +86,13 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   }
 
   const command = line.shift() ?? '';
+
+  // The trailing parameter is kept as sent: its spaces are part of the text, which a multiline batch joins
+  if (!line.some((param) => param.startsWith(':'))) {
+    while (line.at(-1) === '') {
+      line.pop();
+    }
+  }
 
   return { tags, sender, command, line };
 };

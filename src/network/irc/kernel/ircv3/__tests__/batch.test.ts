@@ -257,4 +257,148 @@ describe('kernel ircv3/batch', () => {
       });
     });
   });
+
+  describe('draft/multiline', () => {
+    const mockLiveEnvironment = () => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      const setAddHistoryPage = vi.spyOn(channelsFile, 'setAddHistoryPage').mockImplementation(() => {});
+      const shown = (): Message[] => setAddMessage.mock.calls.map(([message]) => message).filter((message) => message.target !== DEBUG_CHANNEL);
+      return { shown, setAddHistoryPage };
+    };
+
+    const receive = (lines: string[]): void => {
+      for (const line of lines) {
+        new Kernel({ type: 'raw', line }).handle();
+      }
+    };
+
+    it('should show a batch as one message with the tags of its opening line', () => {
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@msgid=ml1;time=2023-02-12T02:00:00.000Z;+draft/reply=m0 :Friend!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :first line',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :second ',
+        '@batch=ml;draft/multiline-concat :Friend!~u@host PRIVMSG #channel :line',
+      ]);
+      expect(shown()).toEqual([]);
+
+      receive([':Friend!~u@host BATCH -ml']);
+
+      expect(shown()).toEqual([expect.objectContaining({
+        id: 'ml1',
+        msgid: 'ml1',
+        replyTo: 'm0',
+        time: '2023-02-12T02:00:00.000Z',
+        target: '#channel',
+        message: 'first line\n\nsecond line',
+        category: MessageCategory.default,
+      })]);
+    });
+
+    it('should read a batch whose last parameter comes as a trailing one', () => {
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@msgid=ml6 :Friend!~u@host BATCH +ml draft/multiline :#channel',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :one',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :two',
+        ':Friend!~u@host BATCH :-ml',
+      ]);
+
+      expect(shown()).toEqual([expect.objectContaining({ id: 'ml6', target: '#channel', message: 'one\ntwo' })]);
+    });
+
+    it('should show a NOTICE batch as one notice', () => {
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@msgid=ml2 :Friend!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :Friend!~u@host NOTICE #channel :one',
+        '@batch=ml :Friend!~u@host NOTICE #channel :two',
+        ':Friend!~u@host BATCH -ml',
+      ]);
+
+      expect(shown()).toEqual([expect.objectContaining({ message: 'one\ntwo', category: MessageCategory.notice })]);
+    });
+
+    it('should show the lines of a batch that does not make one message one by one', () => {
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@msgid=ml3 :Friend!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :hello',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :\x01ACTION waves\x01',
+        ':Friend!~u@host BATCH -ml',
+      ]);
+
+      expect(shown()).toEqual([
+        expect.objectContaining({ message: 'hello', category: MessageCategory.default }),
+        expect.objectContaining({ message: 'waves', category: MessageCategory.me }),
+      ]);
+    });
+
+    it('should show nothing of a batch that never ends', () => {
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@msgid=ml4 :Friend!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :one',
+      ]);
+
+      expect(shown()).toEqual([]);
+    });
+
+    it('should place a batch replayed in chathistory into the page as one message, in order', () => {
+      const { shown, setAddHistoryPage } = mockLiveEnvironment();
+      const onHistoryBatch = vi.spyOn(chatHistoryFile, 'onHistoryBatch').mockImplementation(() => {});
+
+      receive([
+        ':ergo.test BATCH +hist chathistory #channel',
+        '@batch=hist;msgid=h1;time=2023-02-12T02:00:00.000Z :Friend!~u@host PRIVMSG #channel :before',
+        '@batch=hist;msgid=h2;time=2023-02-12T02:01:00.000Z :Friend!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :one',
+        '@batch=ml :Friend!~u@host PRIVMSG #channel :two',
+        '@batch=hist :Friend!~u@host BATCH -ml',
+        '@batch=hist;msgid=h3;time=2023-02-12T02:02:00.000Z :Friend!~u@host PRIVMSG #channel :after',
+        ':ergo.test BATCH -hist',
+      ]);
+
+      expect(shown()).toEqual([]);
+      expect(setAddHistoryPage).toHaveBeenCalledExactlyOnceWith([
+        expect.objectContaining({ id: 'h1', message: 'before' }),
+        expect.objectContaining({ id: 'h2', message: 'one\ntwo', time: '2023-02-12T02:01:00.000Z' }),
+        expect.objectContaining({ id: 'h3', message: 'after' }),
+      ], undefined);
+      expect(onHistoryBatch).toHaveBeenCalledExactlyOnceWith('#channel', 3, { time: Date.parse('2023-02-12T02:00:00.000Z'), msgid: 'h1' });
+    });
+
+    it('should show a batch nested in a labeled response as it arrives', () => {
+      markCapabilitiesAcknowledged(['labeled-response', 'batch']);
+      const { shown } = mockLiveEnvironment();
+
+      receive([
+        '@label=L1 :ergo.test BATCH +lr labeled-response',
+        '@batch=lr;msgid=ml5 :MyNick!~u@host BATCH +ml draft/multiline #channel',
+        '@batch=ml :MyNick!~u@host PRIVMSG #channel :one',
+        '@batch=ml :MyNick!~u@host PRIVMSG #channel :two',
+        '@batch=lr :MyNick!~u@host BATCH -ml',
+      ]);
+
+      expect(shown()).toEqual([expect.objectContaining({ id: 'ml5', message: 'one\ntwo' })]);
+
+      receive([':ergo.test BATCH -lr']);
+
+      expect(shown()).toHaveLength(1);
+    });
+  });
 });

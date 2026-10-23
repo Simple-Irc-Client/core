@@ -441,7 +441,7 @@ export const ircWatchRemove = (nicks: string[]): void => {
 // 512 incl. \r\n unless ISUPPORT LINELEN says otherwise. E2EE chunking derives from the same value, or chunks would be truncated
 const DEFAULT_MAX_IRC_MESSAGE_LENGTH = 510;
 
-const getMaxIrcMessageLength = (): number => getLineLenLimit() || DEFAULT_MAX_IRC_MESSAGE_LENGTH;
+export const getMaxIrcMessageLength = (): number => getLineLenLimit() || DEFAULT_MAX_IRC_MESSAGE_LENGTH;
 
 export const ircSendRawMessage = (data: string): void => {
   if (data.length === 0) {

@@ -12,6 +12,10 @@ export interface BatchState {
   startTime: number;
   /** For labeled-response: the command this batch answers */
   request?: LabeledRequest;
+  /** Of the opening BATCH line; a multiline message's msgid, time and client tags */
+  tags: Record<string, string>;
+  /** The batch this one is nested in */
+  parent?: string;
 }
 
 export const BATCH_TYPES = {
@@ -19,6 +23,7 @@ export const BATCH_TYPES = {
   LABELED_RESPONSE: 'labeled-response',
   NETJOIN: 'netjoin',
   NETSPLIT: 'netsplit',
+  MULTILINE: 'draft/multiline',
 } as const;
 
 const MAX_BATCH_MESSAGES = 10_000;
@@ -27,7 +32,7 @@ const BATCH_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 const activeBatches = new Map<string, BatchState>();
 
-export const startBatch = (id: string, type: string, params: string[], request?: LabeledRequest): void => {
+export const startBatch = (id: string, type: string, params: string[], request?: LabeledRequest, tags: Record<string, string> = {}): void => {
   const now = Date.now();
   for (const [batchId, batch] of activeBatches) {
     if (now - batch.startTime > BATCH_TIMEOUT_MS) {
@@ -44,6 +49,8 @@ export const startBatch = (id: string, type: string, params: string[], request?:
     messages: [],
     startTime: now,
     request,
+    tags,
+    parent: tags.batch !== undefined && activeBatches.has(tags.batch) ? tags.batch : undefined,
   });
 };
 

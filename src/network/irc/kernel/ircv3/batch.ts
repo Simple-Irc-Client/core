@@ -1,6 +1,7 @@
-import { BATCH_TYPES, type BatchState, endBatch, startBatch } from '@/network/irc/batch';
+import { addToBatch, BATCH_TYPES, type BatchState, endBatch, getBatch, startBatch } from '@/network/irc/batch';
 import { onHistoryBatch, pendingHistoryAnchor } from '@/network/irc/chatHistory';
 import { takeLabel } from '@/network/irc/labels';
+import { combineMultiline } from '@/network/irc/multiline';
 import { type HistoryReplay, IrcContext, type IrcHandler, type IrcHandlers } from '@/network/irc/kernel/context';
 import { onJoin } from '@/network/irc/kernel/core/channel/join';
 import { onKick } from '@/network/irc/kernel/core/channel/kick';
@@ -25,19 +26,19 @@ import { type ParsedIrcRawMessage } from '@shared/types';
 // :netsplit.pirc.pl BATCH -0G9Zyu0qr7Jem5SdPufanF
 // BATCH +reference type [params...]
 // BATCH -reference
+// The last parameter may come as a trailing one: BATCH +reference type :target, BATCH :-reference
 export const onBatch = (ctx: IrcContext): void => {
-  const reference = ctx.line.shift();
+  const { params: middle, text } = ctx.paramsAndText();
+  const [reference, type = '', ...params] = ctx.line.some((token) => token.startsWith(':')) ? [...middle, text] : middle;
 
   if (!reference) { return; }
 
   if (reference.startsWith('+')) {
     const id = reference.substring(1);
-    const type = ctx.line.shift() ?? '';
-    const params = [...ctx.line];
 
     const label = ctx.tags.label;
 
-    startBatch(id, type, params, label !== undefined ? takeLabel(label) : undefined);
+    startBatch(id, type, params, label !== undefined ? takeLabel(label) : undefined, ctx.tags);
   } else if (reference.startsWith('-')) {
     const id = reference.substring(1);
     const batch = endBatch(id);
@@ -55,6 +56,9 @@ export const processBatch = (ctx: IrcContext, batch: BatchState): void => {
       break;
     case BATCH_TYPES.LABELED_RESPONSE:
       // Its messages were handled as they arrived
+      break;
+    case BATCH_TYPES.MULTILINE:
+      processMultilineBatch(ctx, batch);
       break;
     default:
       // netjoin, netsplit, soju.im/bouncer-networks and unknown types are replayed as-is
@@ -81,6 +85,21 @@ export const processChatHistoryBatch = (ctx: IrcContext, batch: BatchState): voi
   const first = batch.messages.find((message) => !Number.isNaN(Date.parse(message.tags.time ?? '')));
   const oldest = first === undefined ? undefined : { time: Date.parse(first.tags.time ?? ''), msgid: first.tags.msgid };
   onHistoryBatch(target, batch.messages.length, oldest);
+};
+
+/** Delivered as one message where its lines would have gone: into the batch it is nested in, or as just arrived */
+export const processMultilineBatch = (ctx: IrcContext, batch: BatchState): void => {
+  const combined = combineMultiline(batch);
+  const parent = batch.parent === undefined ? undefined : getBatch(batch.parent);
+  for (const message of combined === undefined ? batch.messages : [combined]) {
+    if (parent !== undefined && parent.type !== BATCH_TYPES.LABELED_RESPONSE) {
+      addToBatch(parent.id, message);
+      continue;
+    }
+    const messageCtx = new IrcContext(message, ctx.eventLine);
+    messageCtx.request = batch.request ?? parent?.request;
+    bufferedHandlers.get(message.command)?.(messageCtx);
+  }
 };
 
 // What history shows; other events would apply stale state. TAGMSG brings reactions, its typing is ignored

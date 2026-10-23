@@ -140,6 +140,20 @@ describe('helper tests', () => {
     });
   });
 
+  it('should keep the spaces of the trailing parameter', () => {
+    expect(parseIrcRawMessage(':nick!u@h PRIVMSG #chan :second  \r\n').line).toStrictEqual(['#chan', ':second', '', '']);
+    expect(parseIrcRawMessage(':nick!u@h PRIVMSG #chan : \n').line).toStrictEqual(['#chan', ':', '']);
+  });
+
+  it('should drop the spaces after the last middle parameter and before the line', () => {
+    expect(parseIrcRawMessage('  :server MODE #chan +o nick  \r\n')).toStrictEqual({
+      tags: {},
+      sender: 'server',
+      command: 'MODE',
+      line: ['#chan', '+o', 'nick'],
+    });
+  });
+
   it('test parse channel', () => {
     expect(parseChannel('@#channel1', defaultUserModes)).toStrictEqual('#channel1');
     expect(parseChannel('!@+#channel1', defaultUserModes)).toStrictEqual('#channel1');

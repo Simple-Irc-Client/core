@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentNick, isSameName, useSettingsStore, type FontFormatting } from '@features/settings/store/settings';
 import { ChannelCategory, type Message, MessageCategory, type User } from '@shared/types';
 import { ircSendCommand, ircSendRawMessage } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
+import { buildPrivmsgs } from '@/network/irc/multiline';
 import { Send, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { channelCommands, generalCommands, parseMessageToCommand } from '@/network/irc/command';
@@ -18,7 +19,7 @@ import { MessageColor } from '@/config/theme';
 import { v4 as uuidv4 } from 'uuid';
 import { getChannelListSortedByAZ } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
-import { Input } from '@shared/components/ui/input';
+import { Textarea } from '@shared/components/ui/textarea';
 import type { EmojiClickData } from 'emoji-picker-react';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
@@ -99,6 +100,9 @@ const applyFormatting = (text: string, formatting: FontFormatting): string => {
 
 const isCoarsePointer = (): boolean => globalThis.matchMedia('(pointer: coarse)').matches;
 
+/** The word being typed: everything after the last whitespace */
+const lastWord = (text: string): string => /\S*$/.exec(text)?.[0] ?? '';
+
 const Toolbar = () => {
   const { t } = useTranslation();
 
@@ -127,7 +131,7 @@ const Toolbar = () => {
   const [bouncerNetworksDialogOpen, setBouncerNetworksDialogOpen] = useState(false);
   const autocompleteMessage = useRef('');
   const autocompleteIndex = useRef(-1);
-  const autocompleteInput = useRef<HTMLInputElement>(null);
+  const autocompleteInput = useRef<HTMLTextAreaElement>(null);
 
   const typingStatus = useRef<'active' | 'paused' | 'done' | undefined>(undefined);
 
@@ -193,6 +197,15 @@ const Toolbar = () => {
     };
   }, []);
 
+  // Grows with its lines up to its max height
+  useLayoutEffect(() => {
+    const input = autocompleteInput.current;
+    if (input !== null) {
+      input.style.height = 'auto';
+      input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
+    }
+  }, [message]);
+
   useEffect(() => {
     if (replyTo !== undefined) {
       autocompleteInput.current?.focus();
@@ -231,7 +244,7 @@ const Toolbar = () => {
     ircSendRawMessage(`@+draft/typing=${status};+typing=${status} TAGMSG ${currentChannelName}`);
   };
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
     setMessage(event.target.value);
 
     if (isSystemChannel) {
@@ -276,22 +289,26 @@ const Toolbar = () => {
     const tags = replyTo === undefined ? undefined : replyTags(replyTo);
     const nick = getCurrentNick();
 
-    // With echo-message the server echoes it back and it's added then
-    if (!isCapabilityEnabled('echo-message')) {
-      setAddMessage({
-        id: uuidv4(),
-        replyTo: tags === undefined ? undefined : replyTo?.msgid,
-        message: text,
-        nick: getUser(nick) ?? nick,
-        target: currentChannelName,
-        time: new Date().toISOString(),
-        category: MessageCategory.default,
-        color: MessageColor.default,
-      });
-    }
+    for (const [index, { text: sentText, lines: [command, ...rest] }] of buildPrivmsgs(nick, currentChannelName, text, tags).entries()) {
+      // With echo-message the server echoes it back and it's added then
+      if (!isCapabilityEnabled('echo-message')) {
+        setAddMessage({
+          id: uuidv4(),
+          replyTo: index === 0 && tags !== undefined ? replyTo?.msgid : undefined,
+          message: sentText,
+          nick: getUser(nick) ?? nick,
+          target: currentChannelName,
+          time: new Date().toISOString(),
+          category: MessageCategory.default,
+          color: MessageColor.default,
+        });
+      }
 
-    const privmsg = `PRIVMSG ${currentChannelName} :${text}`;
-    ircSendCommand(tags === undefined ? privmsg : `${tags} ${privmsg}`, { window: currentChannelName });
+      ircSendCommand(command, { window: currentChannelName });
+      for (const line of rest) {
+        ircSendRawMessage(line);
+      }
+    }
   };
 
   const finishSend = (): void => {
@@ -318,7 +335,7 @@ const Toolbar = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    if (message.length === 0) {
+    if (message.replaceAll('\n', '').length === 0) {
       return;
     }
 
@@ -352,7 +369,8 @@ const Toolbar = () => {
       if (!isSystemChannel) {
         const nick = getCurrentNick();
 
-        const formattedMessage = applyFormatting(message, fontFormatting);
+        // Line by line: without draft/multiline each line is a message of its own
+        const formattedMessage = message.split('\n').map((line) => (line === '' ? line : applyFormatting(line, fontFormatting))).join('\n');
 
         if (isSessionActive(currentChannelName)) {
           // Rendered locally even with echo-message: the echoed SICE frame is dropped by frame id
@@ -376,7 +394,7 @@ const Toolbar = () => {
     finishSend();
   };
 
-  const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>): void => {
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     switch (event.key) {
       case 'Tab':
       case 'Up':
@@ -396,10 +414,8 @@ const Toolbar = () => {
       if (name.toLowerCase().startsWith(word) && index > autocompleteIndex.current) {
         autocompleteIndex.current = index;
 
-        const newMessage = autocompleteMessage.current.split(' ');
-        newMessage.pop();
-        newMessage.push(name);
-        setMessage(newMessage.join(' ') + ' ');
+        const typed = autocompleteMessage.current;
+        setMessage(`${typed.slice(0, typed.length - lastWord(typed).length)}${name} `);
 
         return true;
       }
@@ -407,12 +423,12 @@ const Toolbar = () => {
     return false;
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>): void => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     switch (event.key) {
       case 'Tab': {
         event.preventDefault();
-        const word = autocompleteMessage.current.split(' ').pop()?.toLowerCase();
-        if (word !== undefined && word.length !== 0) {
+        const word = lastWord(autocompleteMessage.current).toLowerCase();
+        if (word.length !== 0) {
           let names: string[];
           if (word.startsWith('/')) {
             names = commands;
@@ -430,8 +446,20 @@ const Toolbar = () => {
         }
         break;
       }
+      case 'Enter':
+        // Shift+Enter starts a new line; Enter while composing confirms the IME's text
+        if (!event.shiftKey && !event.nativeEvent.isComposing) {
+          event.preventDefault();
+          event.currentTarget.form?.requestSubmit();
+        }
+        autocompleteIndex.current = -1;
+        break;
       case 'Up':
       case 'ArrowUp': {
+        // Within the text it moves the caret up a line
+        if (message.slice(0, event.currentTarget.selectionStart).includes('\n')) {
+          return;
+        }
         event.preventDefault();
         if (messageHistory.current.length === 0) {
           return;
@@ -450,6 +478,9 @@ const Toolbar = () => {
       }
       case 'Down':
       case 'ArrowDown': {
+        if (message.includes('\n', event.currentTarget.selectionEnd)) {
+          return;
+        }
         event.preventDefault();
         if (historyIndex.current === -1) {
           return;
@@ -483,7 +514,7 @@ const Toolbar = () => {
   return (
     <>
       {replyTo !== undefined && <ReplyBar message={replyTo} onCancel={() => clearReplyTo(currentChannelName)} />}
-      <form className="flex items-center pt-1 pb-safe-2 pl-safe-4 pr-safe-4" onSubmit={handleSubmit}>
+      <form className="flex items-end pt-1 pb-safe-2 pl-safe-4 pr-safe-4" onSubmit={handleSubmit}>
         {currentChannelName !== DEBUG_CHANNEL && (
           <>
             <UserMenu
@@ -493,8 +524,10 @@ const Toolbar = () => {
             />
 
             <div className="flex-1 relative">
-              <Input
+              <Textarea
                 id="message-input"
+                className="max-h-40"
+                rows={1}
                 autoFocus
                 value={message}
                 placeholder={inputLabel}

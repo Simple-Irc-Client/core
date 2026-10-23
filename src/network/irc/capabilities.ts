@@ -17,6 +17,7 @@ export const DESIRED_CAPABILITIES = [
   'batch',
   'labeled-response',
   'echo-message',
+  'draft/multiline',
   // Our messages sent from other clients on the same bouncer
   'znc.in/self-message',
 

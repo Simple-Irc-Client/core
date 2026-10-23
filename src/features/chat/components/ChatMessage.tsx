@@ -78,7 +78,8 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
   // An encrypted message is never quoted in plaintext
   const isRepliable = canReply && repliableCategories.has(message.category) && !message.system && message.e2ee === undefined;
   const hasActions = isReactable || isRepliable;
-  const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX);
+  // Of a multiline message only one line would be the quote
+  const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX) && !message.message.includes('\n');
   const { replyTo } = message;
   const showsReplyQuote = replyTo !== undefined && isContent && !isDebug;
 

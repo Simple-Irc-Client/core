@@ -15,7 +15,7 @@ const ERR_MONLISTFULL = '734';
 // MONITOR responses
 // :server 730 <nick> :nick1!user@host,nick2!user@host
 export const onRaw730 = (ctx: IrcContext): void => {
-  const userList = ctx.line.slice(1).join(' ').replace(/^:/, '');
+  const userList = ctx.line.slice(1).join(' ').replace(/^:/, '').trim();
   if (!userList) { return; }
 
   const users = userList.split(',');
@@ -41,7 +41,7 @@ export const onRaw730 = (ctx: IrcContext): void => {
 
 // :server 731 <nick> :nick1,nick2,nick3
 export const onRaw731 = (ctx: IrcContext): void => {
-  const nickList = ctx.line.slice(1).join(' ').replace(/^:/, '');
+  const nickList = ctx.line.slice(1).join(' ').replace(/^:/, '').trim();
   if (!nickList) { return; }
 
   const nicks = nickList.split(',').filter((n) => n.length > 0);
@@ -53,7 +53,7 @@ export const onRaw731 = (ctx: IrcContext): void => {
 
 // :server 732 <nick> :nick1,nick2,nick3
 export const onRaw732 = (ctx: IrcContext): void => {
-  const nickList = ctx.line.slice(1).join(' ').replace(/^:/, '');
+  const nickList = ctx.line.slice(1).join(' ').replace(/^:/, '').trim();
   if (!nickList) { return; }
 
   const nicks = nickList.split(',').filter((n) => n.length > 0);

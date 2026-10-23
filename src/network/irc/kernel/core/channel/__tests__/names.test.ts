@@ -50,6 +50,18 @@ describe('kernel core/channel/names', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(1);
   });
 
+  it('should ignore the space some servers end the list with', () => {
+    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
+
+    new Kernel({ type: 'raw', line: ':irc.example.net 353 sic-test = #chan :@op voiced ' }).handle();
+
+    expect(mockBufferNamesUsers).toHaveBeenCalledWith('#chan', [
+      expect.objectContaining({ nick: 'op', flags: ['o'] }),
+      expect.objectContaining({ nick: 'voiced', flags: [] }),
+    ]);
+  });
+
   it('test raw 353 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);

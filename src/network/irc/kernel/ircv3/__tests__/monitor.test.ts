@@ -220,6 +220,19 @@ describe('kernel ircv3/monitor', () => {
       expect(isNickOnline('OtherUser')).toBe(false);
     });
 
+    it('reads a MONITOR list that ends with a space', () => {
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
+      subscribeDmPresence('OtherUser');
+      new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :OtherUser!user@host ' }).handle();
+      expect(isNickOnline('OtherUser')).toBe(true);
+
+      new Kernel({ type: 'raw', line: ':irc.example.net 731 MyNick :OtherUser ' }).handle();
+
+      expect(isNickOnline('OtherUser')).toBe(false);
+    });
+
     it('clears all presence state on a natural disconnect (close event) instead of leaving stale online/offline dots', () => {
       vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
       vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);

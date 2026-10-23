@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: vi.fn(),
   ircSendCommand: vi.fn(),
+  getMaxIrcMessageLength: () => 510,
   ircReconnect: vi.fn(),
 }));
 
@@ -47,6 +48,7 @@ vi.mock('@features/channels/store/channels', () => ({
 
 vi.mock('@/network/irc/capabilities', () => ({
   isCapabilityEnabled: vi.fn(),
+  getCapabilityValue: vi.fn(),
 }));
 
 let mockAwayMessages: unknown[] = [];
@@ -2086,6 +2088,180 @@ describe('Toolbar', () => {
 
       expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith('PRIVMSG #test :not an answer', { window: '#test' });
       expect(getReplyTo('#other')).toBe(question);
+    });
+  });
+
+  describe('Multi-line messages', () => {
+    beforeEach(() => {
+      clearAllReplies();
+    });
+
+    const type = (text: string): HTMLTextAreaElement => {
+      const input = screen.getByRole<HTMLTextAreaElement>('textbox');
+      fireEvent.change(input, { target: { value: text } });
+      return input;
+    };
+
+    const send = (text: string): void => {
+      fireEvent.submit(type(text).closest('form') as HTMLFormElement);
+    };
+
+    const withMultiline = (...others: string[]): void => {
+      vi.spyOn(capabilities, 'isCapabilityEnabled').mockImplementation((cap) => ['batch', 'draft/multiline', ...others].includes(cap));
+      vi.spyOn(capabilities, 'getCapabilityValue').mockImplementation((cap) => (cap === 'draft/multiline' ? 'max-bytes=4096,max-lines=100' : undefined));
+    };
+
+    /** The reference of the batch the client opened */
+    const sentReference = (): string => {
+      const command = vi.mocked(network.ircSendCommand).mock.calls[0]?.[0] ?? '';
+      return /BATCH \+(\S+)/.exec(command)?.[1] ?? '';
+    };
+
+    it('sends with Enter', () => {
+      render(<Toolbar />);
+      const input = type('hello');
+
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith('PRIVMSG #test :hello', { window: '#test' });
+      expect(input).toHaveValue('');
+    });
+
+    it('starts a new line with Shift+Enter', () => {
+      render(<Toolbar />);
+      const input = type('hello');
+
+      const notPrevented = fireEvent.keyDown(input, { key: 'Enter', shiftKey: true });
+
+      expect(notPrevented).toBe(true);
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
+    });
+
+    it('does not send with the Enter that confirms an IME composition', () => {
+      render(<Toolbar />);
+      const input = type('かな');
+
+      fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
+      expect(input).toHaveValue('かな');
+    });
+
+    it('sends the lines as one draft/multiline batch and shows them as one message', () => {
+      withMultiline();
+      render(<Toolbar />);
+
+      send('first\n\nsecond');
+
+      const reference = sentReference();
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith(`BATCH +${reference} draft/multiline #test`, { window: '#test' });
+      expect(vi.mocked(network.ircSendRawMessage).mock.calls).toEqual([
+        [`@batch=${reference} PRIVMSG #test :first`],
+        [`@batch=${reference} PRIVMSG #test :`],
+        [`@batch=${reference} PRIVMSG #test :second`],
+        [`BATCH -${reference}`],
+      ]);
+      expect(mockSetAddMessage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'first\n\nsecond', target: '#test' }));
+    });
+
+    it('waits for the echo of the batch where the server echoes', () => {
+      withMultiline('echo-message');
+      render(<Toolbar />);
+
+      send('first\nsecond');
+
+      expect(network.ircSendCommand).toHaveBeenCalledTimes(1);
+      expect(mockSetAddMessage).not.toHaveBeenCalled();
+    });
+
+    it('puts the reply tag on the opening line of the batch', () => {
+      withMultiline('message-tags');
+      vi.spyOn(settingsStore, 'getClientTagDeny').mockReturnValue([]);
+      setReplyTo('#test', { id: 'm1', msgid: 'm1', message: 'question', nick: 'alice', target: '#test', time: '2026-10-23T10:00:00.000Z', category: MessageCategory.default });
+      render(<Toolbar />);
+
+      send('first\nsecond');
+
+      expect(network.ircSendCommand).toHaveBeenCalledExactlyOnceWith(`@+draft/reply=m1 BATCH +${sentReference()} draft/multiline #test`, { window: '#test' });
+      expect(mockSetAddMessage).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ message: 'first\nsecond', replyTo: 'm1' }));
+    });
+
+    it('sends each line as its own message without draft/multiline', () => {
+      render(<Toolbar />);
+
+      send('first\n\nsecond\n');
+
+      expect(vi.mocked(network.ircSendCommand).mock.calls).toEqual([
+        ['PRIVMSG #test :first', { window: '#test' }],
+        ['PRIVMSG #test :second', { window: '#test' }],
+      ]);
+      expect(network.ircSendRawMessage).not.toHaveBeenCalled();
+      expect(mockSetAddMessage.mock.calls.map(([message]) => (message as Message).message)).toEqual(['first', 'second']);
+    });
+
+    it('formats each line on its own', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: true, italic: false, underline: false },
+          setFontFormatting: vi.fn(),
+        } as unknown as settingsStore.SettingsStore)
+      );
+      render(<Toolbar />);
+
+      send('first\n\nsecond');
+
+      expect(vi.mocked(network.ircSendCommand).mock.calls.map(([command]) => command)).toEqual([
+        'PRIVMSG #test :\x02first\x02',
+        'PRIVMSG #test :\x02second\x02',
+      ]);
+    });
+
+    it('sends nothing for blank lines only and keeps them in the input', () => {
+      render(<Toolbar />);
+
+      send('\n\n');
+
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
+      expect(screen.getByRole('textbox')).toHaveValue('\n\n');
+    });
+
+    it('moves through the lines with the arrows, and through the history from the first and last line', () => {
+      render(<Toolbar />);
+      send('earlier');
+      const input = type('one\ntwo');
+
+      input.setSelectionRange(5, 5);
+      expect(fireEvent.keyDown(input, { key: 'ArrowUp' })).toBe(true);
+      expect(input).toHaveValue('one\ntwo');
+
+      input.setSelectionRange(1, 1);
+      expect(fireEvent.keyDown(input, { key: 'ArrowDown' })).toBe(true);
+      expect(input).toHaveValue('one\ntwo');
+
+      fireEvent.keyDown(input, { key: 'ArrowUp' });
+      expect(input).toHaveValue('earlier');
+
+      fireEvent.keyDown(input, { key: 'ArrowDown' });
+      expect(input).toHaveValue('one\ntwo');
+    });
+
+    it('completes the word on the line being typed', () => {
+      vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
+        selector({ users: [{ nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] }] } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+      );
+      render(<Toolbar />);
+      const input = type('hello\nal');
+
+      fireEvent.keyUp(input, { key: 'l' });
+      fireEvent.keyDown(input, { key: 'Tab' });
+
+      expect(input).toHaveValue('hello\nalice ');
     });
   });
 });

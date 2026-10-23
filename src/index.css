@@ -363,6 +363,11 @@
   }
 }
 
+/* A draft/multiline message keeps its line breaks */
+:where(.sic-msg-body) {
+  white-space: pre-line;
+}
+
 /* Membership changes (join/part/quit/kick) are marked with an arrow drawn
    here rather than written into the message text, so a theme can swap it
    (the IRC theme prints weechat's "-->" / "<--"). :where() keeps these at the

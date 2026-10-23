@@ -26,6 +26,10 @@ export const onRaw353 = (ctx: IrcContext): void => {
     if (user.startsWith(':')) {
       user = user.substring(1);
     }
+    // Some servers end the list with a space
+    if (user === '') {
+      continue;
+    }
 
     const { flags, nick, ident, hostname } = parseNick(user, serverPrefixes);
 

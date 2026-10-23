@@ -221,5 +221,9 @@ describe('capabilities', () => {
       expect(DESIRED_CAPABILITIES).toContain('account-notify');
       expect(DESIRED_CAPABILITIES).toContain('echo-message');
     });
+
+    it('should ask for multiline messages', () => {
+      expect(DESIRED_CAPABILITIES).toContain('draft/multiline');
+    });
   });
 });

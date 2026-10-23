@@ -2060,6 +2060,15 @@ describe('Chat tests', () => {
       expect(getMessages(container)[0]).toHaveAttribute('data-quote');
       expect(getBody(container)).toHaveTextContent(/^<alice> the question$/);
     });
+
+    it('does not show a multiline message starting with a quote as one', () => {
+      setupMocks({ messages: [createMessage({ id: '1', message: '> <alice> the question\nthe answer' })] });
+
+      const { container } = render(<Main />);
+
+      expect(getMessages(container)[0]).not.toHaveAttribute('data-quote');
+      expect(getBody(container)?.textContent).toBe('> <alice> the question\nthe answer');
+    });
   });
 
   describe('Date separator', () => {
