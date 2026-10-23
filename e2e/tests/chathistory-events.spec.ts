@@ -49,8 +49,11 @@ test.describe('Channel events in chat history', () => {
     await page.locator('#message-input').press('Enter');
     await expect(page.getByTestId('chat-header-name')).toContainText(channel, { timeout: 10_000 });
 
-    // The events before the rejoin, from the server's history
+    // The events before the rejoin, from the server's history, with any collapsed run opened up
     await expect(chatLog.getByText('visitor says hi')).toBeVisible({ timeout: 10_000 });
+    for (const run of await chatLog.locator('.sic-msg-events-toggle').all()) {
+      await run.click();
+    }
     await expect(chatLog.getByText(`${visitorNick} has joined`)).toHaveCount(1);
     await expect(chatLog.getByText(`${visitorNick} has left (see you)`)).toHaveCount(1);
     await expect(chatLog.getByText(`You have been kicked from ${channel} by eventsop-${tag} (out you go)`)).toHaveCount(1);

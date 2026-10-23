@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { chooseMembershipEventsDisplay, connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -20,6 +20,8 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await connectViaWizard(sharedPage, `live-tester-${tag}`, { channels: [channel] });
   await sharedPage.getByRole('button', { name: channel, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  // These tests are about each event's own line; collapsing them has its own spec
+  await chooseMembershipEventsDisplay(sharedPage, 'Show all');
 });
 
 test.afterAll(async () => {

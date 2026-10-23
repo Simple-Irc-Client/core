@@ -165,6 +165,18 @@ export const openProfileSettings = async (page: Page, tab: ProfileSettingsTab): 
   await page.getByTestId(`profile-tab-${tab}`).click();
 };
 
+/** Sets Appearance → "Joins and parts" by its English option label */
+export const chooseMembershipEventsDisplay = async (page: Page, option: 'Show all' | 'Collapse' | 'Collapse and hide idle users'): Promise<void> => {
+  await openProfileSettings(page, 'appearance');
+  const select = page.getByTestId('membership-events-select');
+  await select.click();
+  await page.getByRole('option', { name: option }).click();
+  // Escape before the Select hands focus back would close the Select, not the dialog
+  await expect(select).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+};
+
 export const identifyInApp = async (page: Page, account: string, password: string): Promise<void> => {
   const messageInput = page.locator('#message-input');
   await messageInput.fill(`/msg NickServ IDENTIFY ${account} ${password}`);

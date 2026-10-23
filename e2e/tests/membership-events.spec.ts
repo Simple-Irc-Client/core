@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings } from '../helpers';
+import { chooseMembershipEventsDisplay, connectViaWizard } from '../helpers';
 
 let talker: IrcClient;
 let page: Page;
@@ -21,17 +21,6 @@ const visitor = async (name: string): Promise<IrcClient> => {
   const client = await createIrcClient(`${name}-${tag}`);
   visitors.push(client);
   return client;
-};
-
-const chooseDisplay = async (option: string): Promise<void> => {
-  await openProfileSettings(page, 'appearance');
-  const select = page.getByTestId('membership-events-select');
-  await select.click();
-  await page.getByRole('option', { name: option }).click();
-  // Escape before the Select hands focus back would close the Select, not the dialog
-  await expect(select).toBeFocused();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toBeHidden();
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
@@ -82,7 +71,7 @@ test.describe('Joins and parts', () => {
   });
 
   test('"Show all" shows every line', async () => {
-    await chooseDisplay('Show all');
+    await chooseMembershipEventsDisplay(page, 'Show all');
 
     await expect(eventRuns()).toHaveCount(0);
     await expect(chatLog().getByText(`settler-${tag} has joined`)).toBeVisible();
@@ -90,7 +79,7 @@ test.describe('Joins and parts', () => {
   });
 
   test('hiding idle people keeps the events of someone who spoke', async () => {
-    await chooseDisplay('Collapse and hide idle users');
+    await chooseMembershipEventsDisplay(page, 'Collapse and hide idle users');
     await startRound('round three');
     const idle = await visitor('idler');
     const chatty = await visitor('chatty');
