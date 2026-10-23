@@ -6,6 +6,7 @@ import Typing from '@features/chat/components/Typing';
 import Toolbar from '@features/chat/components/Toolbar';
 import Topic from '@features/chat/components/Topic';
 import Users from '@features/users/components/Users';
+import KeyboardShortcuts from '@features/shortcuts/components/KeyboardShortcuts';
 import { ResizeHandle } from '@shared/components/ui/resize-handle';
 import { channelsWidth as defaultChannelsWidth, usersWidth as defaultUsersWidth } from '@/config/theme';
 import { useSettingsStore } from '@features/settings/store/settings';
@@ -43,6 +44,7 @@ function MainPage() {
       </main>
       <ResizeHandle onResize={handleUsersResize} direction="left" className="hidden lg:block" aria-label={t('a11y.resizeUsers')} />
       <Users width={usersWidth} />
+      <KeyboardShortcuts />
     </div>
   );
 }

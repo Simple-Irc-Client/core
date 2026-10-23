@@ -382,6 +382,9 @@ export const useChannelsStore = create<ChannelsStore>()(
   ),
 );
 
+/** The order of the window groups in the sidebar */
+export const CHANNEL_CATEGORY_ORDER: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv];
+
 export const setAddChannel = (channelName: string, category: ChannelCategory): void => {
   if (!existChannel(channelName)) {
     useChannelsStore.getState().setAddChannel(channelName, category);

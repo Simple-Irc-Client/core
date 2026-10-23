@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight, Network } from 'lucide-react';
+import { User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight, Network, Keyboard } from 'lucide-react';
 import { useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
 import { ircReconnect } from '@/network/irc/network';
 import {
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
 import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
+import { openShortcutsHelp } from '@features/shortcuts/store/shortcuts';
 
 interface UserMenuProps {
   onOpenProfile: () => void;
@@ -73,6 +74,10 @@ const UserMenu = ({ onOpenProfile, onOpenAwayMessages, onOpenBouncerNetworks }: 
               <Moon className="mr-2 h-4 w-4" />
             )}
             {isDarkMode ? t('currentUser.lightMode') : t('currentUser.darkMode')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={openShortcutsHelp}>
+            <Keyboard className="mr-2 h-4 w-4" />
+            {t('currentUser.keyboardShortcuts')}
           </DropdownMenuItem>
           {isConnected && isOnBouncer && (
             <DropdownMenuItem onClick={onOpenBouncerNetworks}>

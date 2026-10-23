@@ -1,18 +1,17 @@
 import { useMemo, useState } from 'react';
-import { Hash, Home, Wrench, User, X, Plus, WifiOff } from 'lucide-react';
+import { X, Plus, WifiOff } from 'lucide-react';
 import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
 import { serverIcons } from '@/network/irc/servers';
 import { useTranslation } from 'react-i18next';
-import { setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
+import { CHANNEL_CATEGORY_ORDER, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/DrawersContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
-import { Badge } from '@shared/components/ui/badge';
 import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import ChannelListDialog from '@shared/components/ChannelListDialog';
@@ -20,6 +19,8 @@ import Friends from '@features/friends/components/Friends';
 import { unsubscribeDmPresence } from '@features/dmPresence/dmPresence';
 import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
 import AppVersion from './AppVersion';
+import ChannelIcon from './ChannelIcon';
+import UnreadBadge from './UnreadBadge';
 
 interface ChannelsProps {
   width?: number;
@@ -62,7 +63,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
 
   const groupedChannels = useMemo(() => {
     const groups: { category: ChannelCategory; label: string; channels: Channel[] }[] = [];
-    const categoryOrder: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv];
     const labelKeys: Record<ChannelCategory, string> = {
       [ChannelCategory.status]: '',
       [ChannelCategory.debug]: '',
@@ -70,7 +70,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
       [ChannelCategory.priv]: 'main.channels.categoryDirectMessages',
     };
 
-    for (const cat of categoryOrder) {
+    for (const cat of CHANNEL_CATEGORY_ORDER) {
       const channels = openChannelsShort.filter((ch) => ch.category === cat);
       if (channels.length > 0) {
         groups.push({ category: cat, label: labelKeys[cat], channels });
@@ -120,21 +120,6 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
     setCurrentChannelName(channel.name, channel.category);
     if (globalThis.matchMedia?.('(max-width: 1023px)').matches) {
       toggleChannelsDrawer();
-    }
-  };
-
-  const getChannelIcon = (category: ChannelCategory | undefined) => {
-    switch (category) {
-      case 'channel':
-        return <Hash className="h-4 w-4" />;
-      case 'priv':
-        return <User className="h-4 w-4" />;
-      case 'status':
-        return <Home className="h-4 w-4" />;
-      case 'debug':
-        return <Wrench className="h-4 w-4" />;
-      default:
-        return <Hash className="h-4 w-4" />;
     }
   };
 
@@ -260,7 +245,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                                     className="h-4 w-4"
                                   />
                                 ) : (
-                                  getChannelIcon(channel.category)
+                                  <ChannelIcon category={channel.category} />
                                 )}
                                 {channel.category === ChannelCategory.priv && (
                                   <DmPresenceDot nick={channel.name} className="absolute -bottom-0.5 -right-0.5 ring-2 ring-background" />
@@ -279,16 +264,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
                       {![DEBUG_CHANNEL, STATUS_CHANNEL].includes(channel.name) && (
                         <>
                           {showRemoveChannelIcon !== channel.name && channel.unReadMessages > 0 && (
-                            <Badge
-                              variant="default"
-                              className={cn(
-                                'h-5 min-w-5 flex items-center justify-center text-xs',
-                                channel.hasMention && 'bg-[var(--msg-highlight)] text-white hover:bg-[var(--msg-highlight)] border-transparent',
-                              )}
-                              aria-label={channel.hasMention ? t('main.channels.unreadMentions', { count: channel.unReadMessages }) : t('main.channels.unreadCount', { count: channel.unReadMessages })}
-                            >
-                              {channel.unReadMessages > 99 ? '99+' : channel.unReadMessages}
-                            </Badge>
+                            <UnreadBadge channel={channel} />
                           )}
                           {(channel.category === ChannelCategory.channel || channel.category === ChannelCategory.priv) && showRemoveChannelIcon === channel.name && (
                             <Button

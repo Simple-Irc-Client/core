@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InputContextMenu } from '@features/chat/components/InputContextMenu';
 import { clipboard, isDesktop } from '@/runtime/desktop';
+import { isMac } from '@shared/lib/platform';
 
 const readClipboard = (): Promise<string> => clipboard.readText();
 const writeClipboard = (text: string): Promise<void> => clipboard.writeText(text);
@@ -57,7 +58,6 @@ export const handleNoContextMenu = (event: React.MouseEvent): void => {
   event.preventDefault();
 };
 
-const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
 const pasteShortcut = isMac ? '⌘V' : 'Ctrl+V';
 
 const PasteHint = ({ position, onClose }: { position: { x: number; y: number }; onClose: () => void }) => {

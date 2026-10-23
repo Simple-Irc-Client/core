@@ -12,6 +12,7 @@ import { act } from '@testing-library/react';
 import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
 import { clearAllReplies, getReplyTo, setReplyTo } from '@features/replies/store/replyTo';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
+import { useShortcutsStore } from '@features/shortcuts/store/shortcuts';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -1785,6 +1786,19 @@ describe('Toolbar', () => {
       await user.click(darkModeItem);
 
       expect(mockToggleDarkMode).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Keyboard shortcuts menu item', () => {
+    it('should open the keyboard shortcuts list', async () => {
+      useShortcutsStore.setState({ openDialog: null });
+      const user = userEvent.setup();
+      render(<Toolbar />);
+
+      await user.click(screen.getByRole('button', { name: 'main.toolbar.userMenu' }));
+      await user.click(screen.getByText('currentUser.keyboardShortcuts'));
+
+      expect(useShortcutsStore.getState().openDialog).toBe('help');
     });
   });
 
