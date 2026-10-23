@@ -13,12 +13,13 @@ import { useContextMenu } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
 import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
-import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getSilenceLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
+import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { ircSendUserCommand } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, Ban, Copy, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ArrowDown, ArrowUp, Ban, Copy, Eye, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { getCurrentUserChannelModes, getUser } from '@features/users/store/users';
 import { addFriend, isFriend, removeFriend } from '@features/friends/friends';
+import { addIgnore, isIgnoredMask, nickIgnoreMask, removeIgnore } from '@features/ignore/ignore';
 import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { offerEncryption } from '@features/e2ee/session';
 import { isSafeUrl } from '@shared/lib/utils';
@@ -224,11 +225,12 @@ export const ContextMenu = () => {
     };
 
     const handleIgnore = (): void => {
-      const user = getUser(contextMenuItem);
-      if (user !== undefined) {
-        const hostmask = `${user.nick}!${user.ident}@${user.hostname}`;
-        ircSendUserCommand(`SILENCE +${hostmask}`);
-      }
+      addIgnore(nickIgnoreMask(contextMenuItem));
+      handleContextMenuClose();
+    };
+
+    const handleUnignore = (): void => {
+      removeIgnore(nickIgnoreMask(contextMenuItem));
       handleContextMenuClose();
     };
 
@@ -280,10 +282,9 @@ export const ContextMenu = () => {
     const isRegistered = currentUserFlags.includes('r');
     const watchLimit = getWatchLimit();
     const monitorLimit = getMonitorLimit();
-    const silenceLimit = getSilenceLimit();
     const isFriendAlready = isFriend(contextMenuItem);
     const canAddFriend = !isCurrentUser && !isFriendAlready && isRegistered && (watchLimit > 0 || monitorLimit > 0);
-    const canIgnore = !isCurrentUser && isRegistered && silenceLimit > 0;
+    const isIgnored = isIgnoredMask(nickIgnoreMask(contextMenuItem));
 
     const channelCategory = getCurrentChannelCategory();
     const isInChannel = channelCategory === ChannelCategory.channel;
@@ -329,10 +330,16 @@ export const ContextMenu = () => {
               {t('contextmenu.user.removefriend')}
             </DropdownMenuItem>
           )}
-          {canIgnore && (
+          {!isCurrentUser && !isIgnored && (
             <DropdownMenuItem onClick={handleIgnore}>
               <EyeOff className="mr-2 h-4 w-4" aria-hidden="true" />
               {t('contextmenu.user.ignore')}
+            </DropdownMenuItem>
+          )}
+          {!isCurrentUser && isIgnored && (
+            <DropdownMenuItem onClick={handleUnignore}>
+              <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
+              {t('contextmenu.user.unignore')}
             </DropdownMenuItem>
           )}
           {!isCurrentUser && userChannels.length > 0 && (

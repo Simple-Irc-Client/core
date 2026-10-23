@@ -1,9 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { parseMessageToCommand } from '../command';
+import * as channelsFile from '@features/channels/store/channels';
 import { useChannelsStore } from '@features/channels/store/channels';
+import { useIgnoreStore } from '@features/ignore/store/ignore';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory } from '@shared/types';
 
@@ -244,5 +246,60 @@ describe('command tests', () => {
     expect(parseMessageToCommand('Status', '/op user1')).toStrictEqual('op user1');
     expect(parseMessageToCommand('Status', '/voice user1')).toStrictEqual('voice user1');
     expect(parseMessageToCommand('Status', '/kick user1')).toStrictEqual('kick user1');
+  });
+
+  describe('ignore commands', () => {
+    const spyOnPrinted = () => vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const printed = (spy: ReturnType<typeof spyOnPrinted>): string[] => spy.mock.calls.map(([message]) => message.message);
+
+    beforeEach(() => {
+      useSettingsStore.setState({ server: { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] } });
+      useIgnoreStore.setState({ masksByNetwork: {} });
+    });
+
+    it('should ignore a nick locally, sending nothing', () => {
+      const setAddMessage = spyOnPrinted();
+
+      expect(parseMessageToCommand('#channel', '/ignore troll')).toBe('');
+
+      expect(useIgnoreStore.getState().masksByNetwork).toEqual({ TestNet: ['troll!*@*'] });
+      expect(setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel' }));
+      expect(printed(setAddMessage)[0]).toContain('troll!*@*');
+    });
+
+    it('should list the ignored masks, or say there are none', () => {
+      const setAddMessage = spyOnPrinted();
+
+      parseMessageToCommand('#channel', '/ignore');
+      useIgnoreStore.setState({ masksByNetwork: { TestNet: ['troll!*@*', '*!*@spam.example'] } });
+      parseMessageToCommand('#channel', '/IGNORE');
+
+      expect(printed(setAddMessage)[0]).not.toContain('!');
+      expect(printed(setAddMessage)[1]).toContain('troll!*@*, *!*@spam.example');
+    });
+
+    it('should refuse what is not a mask', () => {
+      const setAddMessage = spyOnPrinted();
+
+      expect(parseMessageToCommand('#channel', '/ignore a@b@c')).toBe('');
+
+      expect(useIgnoreStore.getState().masksByNetwork).toEqual({});
+      expect(printed(setAddMessage)[0]).toContain('a@b@c');
+    });
+
+    it('should stop ignoring, or say the mask was not ignored', () => {
+      useIgnoreStore.setState({ masksByNetwork: { TestNet: ['troll!*@*'] } });
+      const setAddMessage = spyOnPrinted();
+
+      expect(parseMessageToCommand('#channel', '/unignore someone')).toBe('');
+      expect(parseMessageToCommand('#channel', '/unignore Troll')).toBe('');
+      expect(parseMessageToCommand('#channel', '/unignore')).toBe('');
+
+      expect(useIgnoreStore.getState().masksByNetwork).toEqual({});
+      expect(printed(setAddMessage)).toHaveLength(3);
+      expect(printed(setAddMessage)[0]).toContain('someone!*@*');
+      expect(printed(setAddMessage)[1]).toContain('Troll!*@*');
+      expect(printed(setAddMessage)[2]).toContain('/unignore');
+    });
   });
 });

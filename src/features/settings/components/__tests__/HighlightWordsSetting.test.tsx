@@ -29,7 +29,7 @@ describe('HighlightWordsSetting', () => {
 
     expect(words()).toEqual(['deploy']);
     expect(screen.getByLabelText('profileSettings.highlightWords')).toHaveValue('');
-    expect(screen.getByTestId('highlight-words')).toHaveTextContent('deploy');
+    expect(screen.getByTestId('highlight-words-list')).toHaveTextContent('deploy');
   });
 
   it('should add a phrase with the button', async () => {
@@ -50,7 +50,7 @@ describe('HighlightWordsSetting', () => {
     await user.click(screen.getByRole('button', { name: 'profileSettings.addHighlightWord' }));
 
     expect(words()).toEqual([]);
-    expect(screen.queryByTestId('highlight-words')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('highlight-words-list')).not.toBeInTheDocument();
   });
 
   it('should not add a word already on the list, whatever its case', async () => {
@@ -72,6 +72,6 @@ describe('HighlightWordsSetting', () => {
     await user.click(screen.getByRole('button', { name: 'profileSettings.removeHighlightWord:deploy' }));
 
     expect(words()).toEqual(['release']);
-    expect(screen.getByTestId('highlight-words')).not.toHaveTextContent('deploy');
+    expect(screen.getByTestId('highlight-words-list')).not.toHaveTextContent('deploy');
   });
 });

@@ -22,6 +22,7 @@ import { getThemeList } from '@features/themes/themeSelectors';
 import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
 import ThemeCreatorDialog from '@features/themes/components/ThemeCreatorDialog';
 import HighlightWordsSetting from './HighlightWordsSetting';
+import IgnoreSetting from './IgnoreSetting';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -352,6 +353,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
           />
         )}
         <HighlightWordsSetting />
+        <IgnoreSetting />
         <div className="col-span-full flex items-center gap-4">
           <Switch
             id="hide-avatars"

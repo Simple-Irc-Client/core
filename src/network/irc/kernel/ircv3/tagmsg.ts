@@ -2,6 +2,7 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { onReaction } from '@/network/irc/kernel/ircv3/react';
 import { onTyping } from '@/network/irc/kernel/ircv3/typing';
+import { isIgnoredSender } from '@features/ignore/ignore';
 import { getUserModes } from '@features/settings/store/settings';
 
 // TAGMSG carries client tags only: typing notifications and reactions
@@ -10,6 +11,10 @@ export const onTagMsg = (ctx: IrcContext): void => {
 
   if (target === undefined) {
     ctx.logParseError(onTagMsg, 'target');
+    return;
+  }
+
+  if (isIgnoredSender(ctx.sender)) {
     return;
   }
 

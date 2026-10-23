@@ -7,6 +7,7 @@ import * as settings from '@features/settings/store/settings';
 import * as users from '@features/users/store/users';
 import * as channels from '@features/channels/store/channels';
 import * as network from '@/network/irc/network';
+import { useIgnoreStore } from '@features/ignore/store/ignore';
 import { ChannelCategory } from '@shared/types';
 
 // Mock i18next
@@ -68,7 +69,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -87,7 +87,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -103,7 +102,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -121,7 +119,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('otherUser');
 
@@ -137,7 +134,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('someoneElse');
 
@@ -155,7 +151,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]); // No +r flag
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(10);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -171,7 +166,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -187,7 +181,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(128);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -203,7 +196,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(10);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(128);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -213,52 +205,57 @@ describe('ContextMenu', () => {
   });
 
   describe('Ignore functionality', () => {
-    it('should not show Ignore when user is not registered', () => {
-      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
-        createContextMenuMock({ contextMenuItem: 'otherUser' })
-      );
+    const mockUserMenu = (item: string) => {
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(createContextMenuMock({ contextMenuItem: item }));
       vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(15);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(settings, 'getServer').mockReturnValue({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
+    };
+
+    const clickItem = (label: string): void => {
+      const item = [...document.body.querySelectorAll('[role="menuitem"]')].find((element) => element.textContent === label);
+      expect(item).toBeDefined();
+      if (item) fireEvent.click(item);
+    };
+
+    beforeEach(() => {
+      useIgnoreStore.setState({ masksByNetwork: {} });
+    });
+
+    it('should ignore another user by nick, without the server', () => {
+      const mockIrcSendUserCommand = vi.spyOn(network, 'ircSendUserCommand').mockImplementation(() => false);
+      mockUserMenu('otherUser');
+
+      render(<ContextMenu />);
+      expect(document.body.textContent).not.toContain('contextmenu.user.unignore');
+      clickItem('contextmenu.user.ignore');
+
+      expect(useIgnoreStore.getState().masksByNetwork).toEqual({ TestNet: ['otherUser!*@*'] });
+      expect(mockIrcSendUserCommand).not.toHaveBeenCalled();
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+    });
+
+    it('should offer to stop ignoring an ignored user', () => {
+      useIgnoreStore.setState({ masksByNetwork: { TestNet: ['otherUser!*@*'] } });
+      mockUserMenu('OTHERUSER');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.ignore');
+      clickItem('contextmenu.user.unignore');
+
+      expect(useIgnoreStore.getState().masksByNetwork).toEqual({});
     });
 
-    it('should show Ignore when user is registered and SILENCE is supported', () => {
-      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
-        createContextMenuMock({ contextMenuItem: 'otherUser' })
-      );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(15);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-
-      render(<ContextMenu />);
-      expect(document.body.textContent).toContain('contextmenu.user.ignore');
-    });
-
-    it('should not show Ignore for current user', () => {
-      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
-        createContextMenuMock({ contextMenuItem: 'currentUser' })
-      );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(15);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+    it('should not offer ignoring the current user', () => {
+      mockUserMenu('currentUser');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.ignore');
+      expect(document.body.textContent).not.toContain('contextmenu.user.unignore');
     });
   });
 
@@ -271,7 +268,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -287,7 +283,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['h']);
@@ -313,7 +308,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -339,7 +333,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -366,7 +359,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -384,7 +376,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
@@ -409,7 +400,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
@@ -439,7 +429,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
@@ -469,7 +458,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
@@ -498,7 +486,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
@@ -530,7 +517,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
@@ -550,7 +536,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
@@ -569,7 +554,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
@@ -586,7 +570,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
@@ -680,7 +663,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
@@ -1057,7 +1039,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -1078,7 +1059,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -1113,7 +1093,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -1147,7 +1126,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
@@ -1184,7 +1162,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -1213,7 +1190,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
 
@@ -1242,7 +1218,6 @@ describe('ContextMenu', () => {
       vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
       vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getSilenceLimit').mockReturnValue(0);
       vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
       vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
       render(<ContextMenu />);

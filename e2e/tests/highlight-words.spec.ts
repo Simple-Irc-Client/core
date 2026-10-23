@@ -42,7 +42,7 @@ test.describe('Highlight words', () => {
     const field = page.getByLabel('Highlight words');
     await field.fill('deploy');
     await field.press('Enter');
-    await expect(page.getByTestId('highlight-words')).toHaveText('deploy');
+    await expect(page.getByTestId('highlight-words-list')).toHaveText('deploy');
     await page.keyboard.press('Escape');
 
     bot.sendMessage(channel, 'starting the Deploy now');
@@ -67,7 +67,7 @@ test.describe('Highlight words', () => {
     await page.locator('[data-avatar-button]').click();
     await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
     await page.getByRole('button', { name: 'Remove deploy' }).click();
-    await expect(page.getByTestId('highlight-words')).toHaveCount(0);
+    await expect(page.getByTestId('highlight-words-list')).toHaveCount(0);
     await page.keyboard.press('Escape');
 
     bot.sendMessage(channel, 'one more deploy');

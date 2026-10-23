@@ -7,11 +7,12 @@ import i18next from '@/app/i18n';
 import { acknowledgePlaintext, endSession, markVerified, offerEncryption } from '@features/e2ee/session';
 import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2ee';
 import { getE2eeEnabled } from '@features/settings/store/settings';
+import { addIgnore, getIgnoreMasks, removeIgnore, toIgnoreMask } from '@features/ignore/ignore';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
   '/whois', '/whereis', '/who', '/notice', '/nick', '/mode', '/whowas', '/names', '/knock', '/watch',
-  '/ns', '/cs', '/hs', '/bs', '/ms', '/e2ee'
+  '/ns', '/cs', '/hs', '/bs', '/ms', '/e2ee', '/ignore', '/unignore'
 ];
 export const channelCommands = [
   '/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic',
@@ -53,6 +54,10 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return msgCommand(line) ?? originalLine;
     case 'e2ee':
       return e2eeCommand(channel, line);
+    case 'ignore':
+      return ignoreCommand(channel, line);
+    case 'unignore':
+      return unignoreCommand(channel, line);
     case 'whereis':
       return whoisCommand(line);
     // Services commands
@@ -154,18 +159,19 @@ const quoteCommand = (channel: string, line: string[]): string => {
 };
 
 /** `/e2ee [on|off|status|verify]`. Always returns '': it prints its own feedback and sends nothing raw. */
+const printInfo = (channel: string, message: string): void => {
+  setAddMessage({
+    id: uuidv4(),
+    message,
+    target: channel,
+    time: new Date().toISOString(),
+    category: MessageCategory.info,
+    color: MessageColor.info,
+  });
+};
+
 const e2eeCommand = (channel: string, line: string[]): string => {
-  const time = new Date().toISOString();
-  const print = (message: string): void => {
-    setAddMessage({
-      id: uuidv4(),
-      message,
-      target: channel,
-      time,
-      category: MessageCategory.info,
-      color: MessageColor.info,
-    });
-  };
+  const print = (message: string): void => printInfo(channel, message);
 
   if (isChannel(channel) || channel === STATUS_CHANNEL) {
     print(i18next.t('e2ee.command.privateOnly'));
@@ -392,6 +398,30 @@ const watchCommand = (line: string[]): string => {
   return `WATCH ${action}`;
 };
 
+// Local: nothing is sent to the server
+const ignoreCommand = (channel: string, line: string[]): string => {
+  const entry = line.join(' ').trim();
+  if (entry.length === 0) {
+    const masks = getIgnoreMasks();
+    printInfo(channel, masks.length === 0 ? i18next.t('ignore.command.empty') : i18next.t('ignore.command.list', { masks: masks.join(', ') }));
+    return '';
+  }
+  const mask = toIgnoreMask(entry);
+  printInfo(channel, mask !== undefined && addIgnore(entry) ? i18next.t('ignore.command.added', { mask }) : i18next.t('ignore.command.invalid', { entry }));
+  return '';
+};
+
+const unignoreCommand = (channel: string, line: string[]): string => {
+  const entry = line.join(' ').trim();
+  if (entry.length === 0) {
+    printInfo(channel, i18next.t('ignore.command.unignoreUsage'));
+    return '';
+  }
+  const mask = toIgnoreMask(entry) ?? entry;
+  printInfo(channel, removeIgnore(entry) ? i18next.t('ignore.command.removed', { mask }) : i18next.t('ignore.command.notIgnored', { mask }));
+  return '';
+};
+
 const quickModeCommand = (channel: string, line: string[], mode: string): string | undefined => {
   const nick = line.shift();
   if (!nick) {
@@ -414,6 +444,7 @@ const helpCommands = [
   { cmd: '/halfop <nick>', key: 'help.cmd.halfop' },
   { cmd: '/help', key: 'help.cmd.help' },
   { cmd: '/hs <command>', key: 'help.cmd.hs' },
+  { cmd: '/ignore [nick|mask]', key: 'help.cmd.ignore' },
   { cmd: '/invite <nick>', key: 'help.cmd.invite' },
   { cmd: '/join, /j <channel>', key: 'help.cmd.join' },
   { cmd: '/kb, /kban <nick> [reason]', key: 'help.cmd.kban' },
@@ -432,6 +463,7 @@ const helpCommands = [
   { cmd: '/part, /p [reason]', key: 'help.cmd.part' },
   { cmd: '/quit, /q [reason]', key: 'help.cmd.quit' },
   { cmd: '/topic <text>', key: 'help.cmd.topic' },
+  { cmd: '/unignore <nick|mask>', key: 'help.cmd.unignore' },
   { cmd: '/voice <nick>', key: 'help.cmd.voice' },
   { cmd: '/watch [+/-nick]', key: 'help.cmd.watch' },
   { cmd: '/whois, /whereis <nick>', key: 'help.cmd.whois' },

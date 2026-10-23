@@ -2,6 +2,7 @@ import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { isIgnoredSender } from '@features/ignore/ignore';
 import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 
@@ -19,6 +20,10 @@ export const onInvite = (ctx: IrcContext): void => {
 
   if (channel === undefined) {
     ctx.logParseError(onInvite, 'channel');
+    return;
+  }
+
+  if (isIgnoredSender(ctx.sender)) {
     return;
   }
 

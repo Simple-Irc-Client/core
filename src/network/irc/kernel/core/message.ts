@@ -15,6 +15,7 @@ import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { REPLY_TAG } from '@features/replies/replies';
 import { handlePeerOffline } from '@features/e2ee/session';
+import { isIgnoredSender } from '@features/ignore/ignore';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getHighlightWords, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
 import { containsHighlight } from '@shared/lib/highlight';
@@ -105,6 +106,10 @@ export const onNotice = (ctx: IrcContext): void => {
     }
 
     // Header or other Alis lines — skip silently
+    return;
+  }
+
+  if (isIgnoredSender(ctx.sender)) {
     return;
   }
 
@@ -229,6 +234,10 @@ export const onPrivMsg = (ctx: IrcContext): void => {
 
   if (target === undefined) {
     ctx.logParseError(onPrivMsg, 'target');
+    return;
+  }
+
+  if (isIgnoredSender(ctx.sender)) {
     return;
   }
 
