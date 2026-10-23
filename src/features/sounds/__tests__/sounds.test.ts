@@ -128,6 +128,43 @@ describe('sounds', () => {
       expect(warn).toHaveBeenCalledWith('[sounds] audio unavailable:', expect.any(Error));
     });
 
+    it('should skip a sound while audio cannot start, without playing it late, and resume only once', async () => {
+      let release = (): void => {};
+      resume.mockImplementation((context: FakeAudioContext) => new Promise<void>((resolve) => {
+        release = () => {
+          context.state = 'running';
+          resolve();
+        };
+      }));
+
+      await sounds.playSound('ping', 50);
+      await sounds.playSound('chime', 50);
+      expect(oscillators).toEqual([]);
+      expect(resume).toHaveBeenCalledTimes(1);
+
+      release();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(oscillators).toEqual([]);
+
+      await sounds.playSound('ping', 50);
+      expect(playedFrequencies()).toEqual([1567.98]);
+    });
+
+    it('should report a start that fails after the sound gave up waiting', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      let fail = (): void => {};
+      resume.mockImplementation(() => new Promise<void>((_, reject) => {
+        fail = () => reject(new Error('device lost'));
+      }));
+
+      await sounds.playSound('ping', 50);
+      fail();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(oscillators).toEqual([]);
+      expect(warn).toHaveBeenCalledWith('[sounds] audio unavailable:', expect.any(Error));
+    });
+
     it('should play nothing without Web Audio', async () => {
       vi.stubGlobal('AudioContext', undefined);
 
@@ -137,7 +174,8 @@ describe('sounds', () => {
   });
 
   describe('playHighlightSound', () => {
-    const flush = (): Promise<void> => Promise.resolve().then(() => Promise.resolve());
+    // Runs after every pending microtask, so once the sound has started or given up
+    const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
 
     it('should play the private message sound for a DM, and the mention sound for a channel', async () => {
       sounds.playHighlightSound('friend', true);

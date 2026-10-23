@@ -36,6 +36,13 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
 
+      # Firefox runs Web Audio only with a sound device; the runner has none, so PulseAudio gives it a silent one
+      - name: Start a virtual sound device
+        run: |
+          sudo apt-get install -y --no-install-recommends pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl info
+
       - name: Pull IRC server images
         run: |
           docker pull ghcr.io/ergochat/ergo:stable

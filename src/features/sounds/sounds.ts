@@ -29,9 +29,29 @@ const PEAK_GAIN = 0.4;
 const ATTACK_SECONDS = 0.01;
 /** A burst of highlights plays one sound */
 const REPEAT_GAP_MS = 1000;
+/** How long a sound waits for audio to start; later it would be stale */
+const START_WAIT_MS = 200;
 
 let audioContext: AudioContext | undefined;
+/** One resume at a time: without a sound device (e.g. Firefox) it never settles */
+let resuming: Promise<void> | undefined;
 let lastPlayedAt = Number.NEGATIVE_INFINITY;
+
+/** Whether audio runs, starting it if needed; a sound that has to wait longer is skipped, not played late */
+const startAudio = async (context: AudioContext): Promise<boolean> => {
+  if (context.state !== 'running') {
+    resuming ??= context
+      .resume()
+      .catch((err: unknown) => {
+        console.warn('[sounds] audio unavailable:', err);
+      })
+      .finally(() => {
+        resuming = undefined;
+      });
+    await Promise.race([resuming, new Promise((resolve) => setTimeout(resolve, START_WAIT_MS))]);
+  }
+  return context.state === 'running';
+};
 
 /** Volume is 0–100; an unknown sound (e.g. a stale stored setting) plays nothing */
 export const playSound = async (sound: NotificationSound, volume: number): Promise<void> => {
@@ -44,11 +64,11 @@ export const playSound = async (sound: NotificationSound, volume: number): Promi
   }
   try {
     audioContext ??= new AudioContext();
-    if (audioContext.state !== 'running') {
-      await audioContext.resume();
-    }
   } catch (err) {
     console.warn('[sounds] audio unavailable:', err);
+    return;
+  }
+  if (!(await startAudio(audioContext))) {
     return;
   }
 
