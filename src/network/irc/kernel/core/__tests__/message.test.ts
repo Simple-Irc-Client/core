@@ -9,6 +9,7 @@ import * as usersFile from '@features/users/store/users';
 import * as capabilitiesFile from '@/network/irc/capabilities';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
+import * as soundsFile from '@features/sounds/sounds';
 import { clearReadMarkers } from '@/network/irc/readMarkers';
 import * as awayMessagesFile from '@features/channels/store/awayMessages';
 import { DEBUG_CHANNEL } from '@/config/config';
@@ -849,6 +850,66 @@ describe('kernel core/message', () => {
       new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :deploy now' }).handle();
 
       expect(mocks.addAwayMessage).toHaveBeenCalledWith(expect.objectContaining({ message: 'deploy now' }));
+    });
+  });
+
+  describe('Notification sounds', () => {
+    const mockSoundEnvironment = () => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddHistoryPage').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
+      vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
+      vi.spyOn(notificationsFile, 'notifyHighlight').mockResolvedValue();
+      return vi.spyOn(soundsFile, 'playHighlightSound').mockImplementation(() => {});
+    };
+
+    it('should play for a mention in a channel', () => {
+      const playHighlightSound = mockSoundEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :MyNick: ping' }).handle();
+
+      expect(playHighlightSound).toHaveBeenCalledWith('#channel', false);
+    });
+
+    it('should play for a private message and a private ACTION', () => {
+      const playHighlightSound = mockSoundEnvironment();
+
+      new Kernel({ type: 'raw', line: ':Friend!~user@host PRIVMSG MyNick :hi' }).handle();
+      new Kernel({ type: 'raw', line: ':Friend!~user@host PRIVMSG MyNick :\x01ACTION waves\x01' }).handle();
+
+      expect(playHighlightSound.mock.calls).toEqual([['Friend', true], ['Friend', true]]);
+    });
+
+    it('should not play for an ordinary channel message, an own message or a notice', () => {
+      const playHighlightSound = mockSoundEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :hello all' }).handle();
+      new Kernel({ type: 'raw', line: ':MyNick!~user@host PRIVMSG #channel :MyNick here' }).handle();
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host NOTICE MyNick :MyNick, psst' }).handle();
+
+      expect(playHighlightSound).not.toHaveBeenCalled();
+    });
+
+    it('should not play for a mention replayed from history', () => {
+      const playHighlightSound = mockSoundEnvironment();
+
+      for (const line of [
+        'BATCH +hist chathistory #channel',
+        '@batch=hist;time=2026-10-23T10:00:00.000Z :OtherUser!~user@host PRIVMSG #channel :MyNick: old ping',
+        '@batch=hist;time=2026-10-23T10:00:01.000Z :Friend!~user@host PRIVMSG MyNick :old hello',
+        'BATCH -hist',
+      ]) {
+        new Kernel({ type: 'raw', line }).handle();
+      }
+
+      expect(playHighlightSound).not.toHaveBeenCalled();
     });
   });
 

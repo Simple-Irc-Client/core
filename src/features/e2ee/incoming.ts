@@ -20,6 +20,7 @@ import { getCurrentChannelName, getCurrentNick, isSameName } from '@/features/se
 import { getUser } from '@/features/users/store/users';
 import { notifyHighlight } from '@/runtime/notifications';
 import { subscribeDmPresence } from '@/features/dmPresence/dmPresence';
+import { playHighlightSound } from '@/features/sounds/sounds';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 
 import { BodyKind, parseCtcpFrame, type E2eeFrame } from './protocol';
@@ -147,6 +148,7 @@ const renderDecrypted = (nick: string, messageId: string, time: string, sealed: 
         e2ee: 'ok',
       });
 
+      playHighlightSound(window, true);
       void notifyHighlight({ nick, target: window, message: text, isDirect: true });
     },
     (error: unknown) => {

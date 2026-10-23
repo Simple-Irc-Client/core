@@ -12,6 +12,7 @@ import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, setListDeprecated } from '@features/channels/store/channelList';
 import { existChannel, isChannel, setAddChannel, setAddMessage, setHasMention, setIncreaseUnreadMessages, setTyping } from '@features/channels/store/channels';
 import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
+import { playHighlightSound } from '@features/sounds/sounds';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { REPLY_TAG } from '@features/replies/replies';
 import { handlePeerOffline } from '@features/e2ee/session';
@@ -206,6 +207,7 @@ const announceHighlight = ({ window, isDirect }: Conversation, nick: string, tex
   if (window !== currentChannelName) {
     setHasMention(window);
   }
+  playHighlightSound(window, isDirect);
   void notifyHighlight({ nick, target: window, message: text, isDirect });
 };
 

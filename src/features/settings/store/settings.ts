@@ -13,6 +13,7 @@ import { type LanguageSetting } from '@/config/languages';
 import { setChannelListClear } from '@features/channels/store/channelList';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { clearAllReplies } from '@features/replies/store/replyTo';
+import { type NotificationSound } from '@features/sounds/sounds';
 import { ircDisconnect } from '@/network/irc/network';
 import { markRead } from '@/network/irc/readMarkers';
 import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
@@ -87,6 +88,9 @@ export interface SettingsStore {
   serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
   isWizardHintDismissed: boolean; // Whether the wizard intro hint has been permanently dismissed
   highlightWords: string[]; // Words that highlight a message besides the own nick
+  directSound: NotificationSound; // Sound for a private message
+  mentionSound: NotificationSound; // Sound for a mention in a channel
+  soundVolume: number; // Notification sound volume, 0–100
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -137,6 +141,9 @@ export interface SettingsStore {
   setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
   setWizardHintDismissed: () => void;
   setHighlightWords: (words: string[]) => void;
+  setDirectSound: (sound: NotificationSound) => void;
+  setMentionSound: (sound: NotificationSound) => void;
+  setSoundVolume: (volume: number) => void;
   resetWizardState: () => void;
 }
 
@@ -195,6 +202,9 @@ export const useSettingsStore = create<SettingsStore>()(
     serverPasswords: {},
     isWizardHintDismissed: false,
     highlightWords: [],
+    directSound: 'chime',
+    mentionSound: 'ping',
+    soundVolume: 60,
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -390,6 +400,15 @@ export const useSettingsStore = create<SettingsStore>()(
     setHighlightWords: (words: string[]): void => {
       set(() => ({ highlightWords: words }));
     },
+    setDirectSound: (sound: NotificationSound): void => {
+      set(() => ({ directSound: sound }));
+    },
+    setMentionSound: (sound: NotificationSound): void => {
+      set(() => ({ mentionSound: sound }));
+    },
+    setSoundVolume: (volume: number): void => {
+      set(() => ({ soundVolume: volume }));
+    },
     resetWizardState: (): void => {
       set(sessionDefaults());
     },
@@ -439,6 +458,9 @@ export const useSettingsStore = create<SettingsStore>()(
       server: state.server,
       language: state.language,
       highlightWords: state.highlightWords,
+      directSound: state.directSound,
+      mentionSound: state.mentionSound,
+      soundVolume: state.soundVolume,
       isWizardCompleted: state.isWizardCompleted,
       serverPasswords: state.serverPasswords,
       currentChannelName: state.currentChannelName,
@@ -749,6 +771,18 @@ export const setWizardHintDismissed = (): void => {
 
 export const getHighlightWords = (): string[] => {
   return useSettingsStore.getState().highlightWords;
+};
+
+export const getDirectSound = (): NotificationSound => {
+  return useSettingsStore.getState().directSound;
+};
+
+export const getMentionSound = (): NotificationSound => {
+  return useSettingsStore.getState().mentionSound;
+};
+
+export const getSoundVolume = (): number => {
+  return useSettingsStore.getState().soundVolume;
 };
 
 /** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */

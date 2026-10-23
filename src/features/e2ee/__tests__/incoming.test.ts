@@ -7,6 +7,7 @@ const addedMessages: Message[] = [];
 const updatedMessages: { channel: string; id: string; patch: Partial<Message> }[] = [];
 const unreadBumps: string[] = [];
 const notifications: { nick: string; message: string }[] = [];
+const sounds: { window: string; isDirect: boolean }[] = [];
 
 vi.mock('@/network/irc/network', () => ({
   ircSendRawMessage: (line: string): void => {
@@ -49,6 +50,12 @@ vi.mock('@/features/channels/store/channels', () => ({
 vi.mock('@/runtime/notifications', () => ({
   notifyHighlight: async ({ nick, message }: { nick: string; message: string }): Promise<void> => {
     notifications.push({ nick, message });
+  },
+}));
+
+vi.mock('@/features/sounds/sounds', () => ({
+  playHighlightSound: (window: string, isDirect: boolean): void => {
+    sounds.push({ window, isDirect });
   },
 }));
 
@@ -114,6 +121,7 @@ describe('e2ee incoming CTCP handling', () => {
     updatedMessages.length = 0;
     unreadBumps.length = 0;
     notifications.length = 0;
+    sounds.length = 0;
     resetSessionModuleForTests();
     clearIncomingState();
     localStorage.clear();
@@ -256,6 +264,7 @@ describe('e2ee incoming CTCP handling', () => {
       expect(addedMessages[0]).toMatchObject({ id: 'e2ee:msg-1', e2ee: 'decrypting' });
       expect(updatedMessages.at(-1)?.patch).toMatchObject({ e2ee: 'failed' });
       expect(notifications).toHaveLength(0);
+      expect(sounds).toHaveLength(0);
     });
 
     it('renders a decrypted message in place, preserving arrival order', async () => {
@@ -277,6 +286,7 @@ describe('e2ee incoming CTCP handling', () => {
         patch: { message: 'the meeting is at six', e2ee: 'ok' },
       });
       expect(notifications).toEqual([{ nick: 'bob', message: 'the meeting is at six' }]);
+      expect(sounds).toEqual([{ window: 'bob', isDirect: true }]);
     });
 
     it('keeps two back-to-back messages in arrival order even if their decryptions settle the other way round', async () => {

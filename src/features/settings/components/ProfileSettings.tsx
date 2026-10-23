@@ -23,6 +23,7 @@ import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
 import ThemeCreatorDialog from '@features/themes/components/ThemeCreatorDialog';
 import HighlightWordsSetting from './HighlightWordsSetting';
 import IgnoreSetting from './IgnoreSetting';
+import NotificationSoundsSetting from './NotificationSoundsSetting';
 
 type LanguageSetting = 'auto' | (typeof languages)[number]['code'];
 
@@ -354,6 +355,7 @@ const ProfileSettingsContent = ({ onOpenChange, currentNick }: ProfileSettingsCo
         )}
         <HighlightWordsSetting />
         <IgnoreSetting />
+        <NotificationSoundsSetting />
         <div className="col-span-full flex items-center gap-4">
           <Switch
             id="hide-avatars"
