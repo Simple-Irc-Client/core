@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -25,22 +25,20 @@ test.describe('Language switching', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('profile settings shows language selector', async () => {
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
 
     // Language selector should be visible
     await expect(sharedPage.getByTestId('language-select')).toBeVisible();
 
-    // "Nickname" label should be in English by default
-    await expect(sharedPage.getByLabel('Nickname')).toBeVisible();
+    // Tab names should be in English by default
+    await expect(sharedPage.getByRole('tab', { name: 'Appearance' })).toBeVisible();
 
     await sharedPage.keyboard.press('Escape');
   });
 
   test('switching to Polish translates UI', async () => {
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
 
     // Open language select
@@ -48,8 +46,8 @@ test.describe('Language switching', () => {
     await sharedPage.getByTestId('language-pl').click();
 
     // UI should now be in Polish
-    // "Nickname" → "Pseudonim"
-    await expect(sharedPage.getByLabel('Pseudonim')).toBeVisible({ timeout: 5_000 });
+    // "Appearance" → "Wygląd"
+    await expect(sharedPage.getByRole('tab', { name: 'Wygląd' })).toBeVisible({ timeout: 5_000 });
 
     // Dialog title should be in Polish
     await expect(sharedPage.getByText('Ustawienia profilu')).toBeVisible();
@@ -69,14 +67,15 @@ test.describe('Language switching', () => {
     await sharedPage.locator('[data-avatar-button]').click();
     // Menu item should be in Polish now
     await sharedPage.getByRole('menuitem', { name: 'Ustawienia profilu' }).click();
+    await sharedPage.getByTestId('profile-tab-appearance').click();
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
 
     // Switch back to English
     await sharedPage.getByTestId('language-select').click();
     await sharedPage.getByTestId('language-en').click();
 
-    // "Pseudonim" → "Nickname"
-    await expect(sharedPage.getByLabel('Nickname')).toBeVisible({ timeout: 5_000 });
+    // "Wygląd" → "Appearance"
+    await expect(sharedPage.getByRole('tab', { name: 'Appearance' })).toBeVisible({ timeout: 5_000 });
     await expect(sharedPage.getByText('Profile Settings')).toBeVisible();
 
     // See the comment in the previous test: wait for the Select's own close
@@ -86,8 +85,7 @@ test.describe('Language switching', () => {
   });
 
   test('auto language uses browser locale', async () => {
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
 
     // Switch to auto
@@ -96,7 +94,7 @@ test.describe('Language switching', () => {
 
     // Since the browser locale is English by default in Playwright,
     // UI should remain in English
-    await expect(sharedPage.getByLabel('Nickname')).toBeVisible({ timeout: 5_000 });
+    await expect(sharedPage.getByRole('tab', { name: 'Appearance' })).toBeVisible({ timeout: 5_000 });
 
     // See the comment further up: wait for the Select's own close to finish
     // before Escape, or the Dialog is left open for the next test.

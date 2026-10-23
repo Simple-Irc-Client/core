@@ -5,6 +5,7 @@ import { NOTIFICATION_SOUNDS, playSound, type NotificationSound } from '@feature
 import { Button } from '@shared/components/ui/button';
 import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
+import { SETTING_LABEL, SETTING_ROW } from './settingsLayout';
 
 const SOUND_OPTIONS: NotificationSound[] = ['off', ...NOTIFICATION_SOUNDS];
 
@@ -20,12 +21,12 @@ const SoundRow = ({ id, label, sound, volume, onChange }: SoundRowProps) => {
   const { t } = useTranslation();
 
   return (
-    <div className="col-span-full grid grid-cols-subgrid items-center">
-      <Label id={`${id}-label`} className="text-right">
+    <div className={SETTING_ROW}>
+      <Label id={`${id}-label`} className={SETTING_LABEL}>
         {label}
       </Label>
       <Select value={sound} onValueChange={(value) => onChange(value as NotificationSound)}>
-        <SelectTrigger className="col-span-2" data-testid={`${id}-select`} aria-labelledby={`${id}-label`}>
+        <SelectTrigger className="sm:col-span-2" data-testid={`${id}-select`} aria-labelledby={`${id}-label`}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -63,8 +64,8 @@ const NotificationSoundsSetting = () => {
     <>
       <SoundRow id="direct-sound" label={t('profileSettings.directSound')} sound={directSound} volume={soundVolume} onChange={setDirectSound} />
       <SoundRow id="mention-sound" label={t('profileSettings.mentionSound')} sound={mentionSound} volume={soundVolume} onChange={setMentionSound} />
-      <div className="col-span-full grid grid-cols-subgrid items-center">
-        <Label htmlFor="sound-volume" className="text-right">
+      <div className={SETTING_ROW}>
+        <Label htmlFor="sound-volume" className={SETTING_LABEL}>
           {t('profileSettings.soundVolume')}
         </Label>
         <input
@@ -75,7 +76,7 @@ const NotificationSoundsSetting = () => {
           step={5}
           value={soundVolume}
           onChange={(e) => setSoundVolume(Number(e.target.value))}
-          className="col-span-2 accent-primary"
+          className="accent-primary sm:col-span-2"
         />
         <span className="text-sm text-muted-foreground tabular-nums">{soundVolume}%</span>
       </div>

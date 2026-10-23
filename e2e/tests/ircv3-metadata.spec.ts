@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
@@ -29,8 +29,7 @@ test.describe('Metadata', () => {
     const avatarUrl = 'https://simpleircclient.com/assets/test-image.png';
 
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'profile');
 
     // Avatar input is conditionally rendered when the server supports metadata
     const avatarInput = sharedPage.locator('#avatar');
@@ -52,8 +51,7 @@ test.describe('Metadata', () => {
   test('set nick color via profile settings', async () => {
 
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'profile');
 
     // Color input is conditionally rendered when the server supports metadata
     const colorInput = sharedPage.locator('#color');

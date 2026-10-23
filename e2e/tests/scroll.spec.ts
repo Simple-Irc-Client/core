@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, serveImagePreviews } from '../helpers';
+import { connectViaWizard, openProfileSettings, serveImagePreviews } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -173,8 +173,7 @@ test.describe('Scroll behavior', () => {
     const distanceFromBottom = () => chatLog.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
 
     for (const theme of ['irc', 'classic', 'modern']) {
-      await sharedPage.locator('[data-avatar-button]').click();
-      await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+      await openProfileSettings(sharedPage, 'appearance');
       const themeSelect = sharedPage.getByTestId('theme-select');
       await themeSelect.click();
       await sharedPage.getByTestId(`theme-${theme}`).click();

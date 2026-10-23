@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 test.describe('Responsive layout', () => {
@@ -164,10 +164,9 @@ test.describe('Responsive layout', () => {
     await expect(chatLog.getByText('Hello from mobile!')).toBeVisible({ timeout: 10_000 });
   });
 
-  test('profile settings dialog fits the viewport and scrolls on mobile', async () => {
-    skipWithoutIrcv3('the METADATA fields are what make the dialog taller than a phone');
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+  test('profile settings dialog fits the viewport on mobile', async () => {
+    skipWithoutIrcv3('the METADATA fields make the Profile tab the longest');
+    await openProfileSettings(sharedPage, 'profile');
 
     const dialog = sharedPage.getByRole('dialog');
     await expect(dialog).toBeVisible();
@@ -185,15 +184,31 @@ test.describe('Responsive layout', () => {
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 
-    // Content is taller than a phone screen, so the dialog itself must scroll
-    const isScrollable = await dialog.evaluate((el) => el.scrollHeight > el.clientHeight);
-    expect(isScrollable).toBe(true);
+    // Every tab fits the phone's width
+    for (const tab of await sharedPage.getByRole('tab').all()) {
+      await expect(tab).toBeInViewport({ ratio: 1 });
+    }
 
-    // Both the first and the last control must be reachable
+    // Both the first and the last field of the Profile tab must be reachable
     await expect(sharedPage.getByLabel('Nickname')).toBeInViewport();
-    const languageSelect = sharedPage.getByTestId('language-select');
-    await languageSelect.scrollIntoViewIfNeeded();
-    await expect(languageSelect).toBeInViewport({ ratio: 1 });
+    const homepage = sharedPage.locator('#homepage');
+    await homepage.scrollIntoViewIfNeeded();
+    await expect(homepage).toBeInViewport({ ratio: 1 });
+
+    await sharedPage.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+  });
+
+  test('profile settings dialog keeps its size when switching tabs on mobile', async () => {
+    await openProfileSettings(sharedPage, 'profile');
+    const dialog = sharedPage.getByRole('dialog');
+    await sharedPage.waitForFunction(() => document.querySelector('[role="dialog"]')?.getAnimations().length === 0);
+    const first = await dialog.boundingBox();
+
+    for (const tab of ['appearance', 'notifications', 'privacy'] as const) {
+      await sharedPage.getByTestId(`profile-tab-${tab}`).click();
+      expect(await dialog.boundingBox()).toEqual(first);
+    }
 
     await sharedPage.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();

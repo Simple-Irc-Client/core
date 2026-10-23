@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let troll: IrcClient;
 let friend: IrcClient;
@@ -18,8 +18,7 @@ const openUserMenu = async (nick: string): Promise<void> => {
 };
 
 const openSettings = async (): Promise<void> => {
-  await page.locator('[data-avatar-button]').click();
-  await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+  await openProfileSettings(page, 'privacy');
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {

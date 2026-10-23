@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let bot: IrcClient;
 let page: Page;
@@ -37,8 +37,7 @@ test.describe('Highlight words', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('a word added in the settings highlights a message containing it', async () => {
-    await page.locator('[data-avatar-button]').click();
-    await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(page, 'notifications');
     const field = page.getByLabel('Highlight words');
     await field.fill('deploy');
     await field.press('Enter');
@@ -64,8 +63,7 @@ test.describe('Highlight words', () => {
   });
 
   test('a removed word no longer highlights', async () => {
-    await page.locator('[data-avatar-button]').click();
-    await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(page, 'notifications');
     await page.getByRole('button', { name: 'Remove deploy' }).click();
     await expect(page.getByTestId('highlight-words-list')).toHaveCount(0);
     await page.keyboard.press('Escape');

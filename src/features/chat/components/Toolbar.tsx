@@ -23,7 +23,7 @@ import { Textarea } from '@shared/components/ui/textarea';
 import type { EmojiClickData } from 'emoji-picker-react';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
-import ProfileSettings from '@features/settings/components/ProfileSettings';
+import ProfileSettings from '@features/settings/components/ProfileSettings/ProfileSettings';
 import AwayMessages from '@features/channels/components/AwayMessages';
 import BouncerNetworksDialog from '@features/bouncer/components/BouncerNetworksDialog';
 import ColorPicker from './ColorPicker';

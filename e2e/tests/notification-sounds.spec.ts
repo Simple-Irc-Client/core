@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 
 // Rounded: AudioParam values are single precision
 const CHIME = [880, 1319];
@@ -37,8 +37,7 @@ const expectTones = async (expected: number[]): Promise<void> => {
 };
 
 const openSettings = async (): Promise<void> => {
-  await page.locator('[data-avatar-button]').click();
-  await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+  await openProfileSettings(page, 'notifications');
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {

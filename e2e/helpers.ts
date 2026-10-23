@@ -156,6 +156,15 @@ export const connectViaWizard = async (
 };
 
 /** Logs the connected app into a NickServ account */
+export type ProfileSettingsTab = 'profile' | 'appearance' | 'notifications' | 'privacy';
+
+/** The dialog reopens on the last tab used, so a test always names the one it needs */
+export const openProfileSettings = async (page: Page, tab: ProfileSettingsTab): Promise<void> => {
+  await page.locator('[data-avatar-button]').click();
+  await page.getByRole('menuitem', { name: 'Profile Settings' }).click();
+  await page.getByTestId(`profile-tab-${tab}`).click();
+};
+
 export const identifyInApp = async (page: Page, account: string, password: string): Promise<void> => {
   const messageInput = page.locator('#message-input');
   await messageInput.fill(`/msg NickServ IDENTIFY ${account} ${password}`);

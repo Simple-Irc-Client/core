@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -33,7 +33,9 @@ test.describe('Profile settings', () => {
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
     await expect(sharedPage.getByRole('heading', { name: 'Profile Settings' })).toBeVisible();
 
-    // Should show nickname field
+    // Opens on the Profile tab, with the others one click away
+    await expect(sharedPage.getByRole('tab')).toHaveText(['Profile', 'Appearance', 'Notifications', 'Privacy']);
+    await expect(sharedPage.getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
     await expect(sharedPage.getByLabel('Nickname')).toBeVisible();
 
     // Close dialog so subsequent tests start clean
@@ -42,8 +44,7 @@ test.describe('Profile settings', () => {
 
   test('changes nickname from profile settings', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'profile');
 
     // Change nickname
     const nickInput = sharedPage.getByLabel('Nickname');
@@ -61,8 +62,7 @@ test.describe('Profile settings', () => {
 
   test('switches theme between Classic and Modern', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     const themeSelect = sharedPage.getByTestId('theme-select');
     await expect(themeSelect).toBeVisible();
@@ -94,8 +94,7 @@ test.describe('Profile settings', () => {
     await expect(sharedPage.locator('.sic-msg').first()).toBeVisible({ timeout: 10_000 });
 
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     // Edit opens the Creator; its "Edit CSS" button switches to the CSS editor
     await sharedPage.getByTestId('theme-edit').click();
@@ -129,8 +128,7 @@ test.describe('Profile settings', () => {
 
   test('creates and deletes a custom theme', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     // New theme opens the Creator; switch to the CSS editor and save from there
     await sharedPage.getByTestId('theme-new').click();
@@ -155,8 +153,7 @@ test.describe('Profile settings', () => {
 
   test('creates a theme with the Theme Creator', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     await sharedPage.getByTestId('theme-new').click();
 
@@ -191,8 +188,7 @@ test.describe('Profile settings', () => {
 
   test('changes font size', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     const smallButton = sharedPage.getByTestId('font-size-small');
     const mediumButton = sharedPage.getByTestId('font-size-medium');
@@ -215,8 +211,7 @@ test.describe('Profile settings', () => {
 
   test('toggles hide avatars', async () => {
     // Open profile settings
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
 
     const toggle = sharedPage.getByTestId('hide-avatars-toggle');
     const initialChecked = await toggle.isChecked();

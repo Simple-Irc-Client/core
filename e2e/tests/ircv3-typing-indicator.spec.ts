@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, openProfileSettings } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
@@ -62,8 +62,7 @@ test.describe('Typing indicator', () => {
     await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
 
     // Open profile settings and toggle off typing indicator
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
     await expect(sharedPage.getByRole('dialog')).toBeVisible();
 
     const hideTypingToggle = sharedPage.getByTestId('hide-typing-toggle');
@@ -85,8 +84,7 @@ test.describe('Typing indicator', () => {
 
   test('re-enabling typing indicator shows it again', async () => {
     // Re-enable typing indicator (was disabled in previous test)
-    await sharedPage.locator('[data-avatar-button]').click();
-    await sharedPage.getByRole('menuitem', { name: 'Profile Settings' }).click();
+    await openProfileSettings(sharedPage, 'appearance');
     await sharedPage.getByTestId('hide-typing-toggle').click();
     await sharedPage.keyboard.press('Escape');
 

@@ -4,6 +4,7 @@ import { Badge } from '@shared/components/ui/badge';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
+import { SETTING_LABEL, SETTING_ROW } from './settingsLayout';
 
 interface ListSettingProps {
   id: string;
@@ -29,15 +30,15 @@ const ListSetting = ({ id, label, placeholder, addLabel, removeLabel, items, onA
 
   return (
     <>
-      <div className="col-span-full grid grid-cols-subgrid items-center">
-        <Label htmlFor={id} className="text-right">
+      <div className={SETTING_ROW}>
+        <Label htmlFor={id} className={SETTING_LABEL}>
           {label}
         </Label>
         <Input
           id={id}
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
-          className="col-span-2"
+          className="sm:col-span-2"
           placeholder={placeholder}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
@@ -51,7 +52,7 @@ const ListSetting = ({ id, label, placeholder, addLabel, removeLabel, items, onA
         </Button>
       </div>
       {items.length > 0 && (
-        <ul className="col-span-3 col-start-2 flex flex-wrap gap-2" data-testid={`${id}-list`}>
+        <ul className="col-span-full flex flex-wrap gap-2 sm:col-span-3 sm:col-start-2" data-testid={`${id}-list`}>
           {items.map((item) => (
             <li key={item}>
               <Badge variant="secondary" className="gap-1 pr-1 font-normal">
