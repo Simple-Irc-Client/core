@@ -4,9 +4,9 @@ import type { TestServer } from './e2e/test-server';
 
 const chromiumConfig = {
   ...devices['Desktop Chrome'],
-  // Required to accept the self-signed cert used for ergo's WSS listener
   launchOptions: {
-    args: ['--ignore-certificate-errors'],
+    // The certificate flag accepts the self-signed cert of ergo's WSS listener; muting keeps notification sounds off the speakers
+    args: ['--ignore-certificate-errors', '--mute-audio'],
   },
 };
 
@@ -18,6 +18,8 @@ const firefoxConfig = {
       // Required to accept the self-signed cert used for ergo's WSS listener
       'network.stricttransportsecurity.preloadlist': false,
       'security.cert_pinning.enforcement_level': 0,
+      // Keeps notification sounds off the speakers
+      'media.volume_scale': '0.0',
     },
   },
 };
