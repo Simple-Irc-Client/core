@@ -61,6 +61,8 @@ export interface Message {
   /** Conversation-level notice (e.g. E2EE handshake outcome) with no speaker */
   system?: boolean;
   reactions?: Reaction[];
+  /** A nick change line: who became whom */
+  renamed?: { from: string; to: string };
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

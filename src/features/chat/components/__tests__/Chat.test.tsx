@@ -87,6 +87,7 @@ describe('Chat tests', () => {
     messages?: Message[];
     isConnected?: boolean;
     clientTagDeny?: string[];
+    membershipEvents?: settingsStore.SettingsStore['membershipEvents'];
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -101,6 +102,8 @@ describe('Chat tests', () => {
         isConnected: overrides.isConnected ?? true,
         clientTagDeny: overrides.clientTagDeny ?? [],
         nick: 'me',
+        membershipEvents: overrides.membershipEvents ?? 'collapse',
+        caseMapping: 'rfc1459',
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -466,6 +469,67 @@ describe('Chat tests', () => {
       expect(container.querySelector('.sic-msg-header')).not.toBeInTheDocument();
       expect(container.querySelector('.sic-msg-embeds')).not.toBeInTheDocument();
       expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Membership events', () => {
+    const joins = (): Message[] => [
+      createMessage({ id: 'say', nick: 'alice', message: 'hi all' }),
+      createMessage({ id: 'j1', nick: 'bob', message: 'bob has joined', category: MessageCategory.join }),
+      createMessage({ id: 'j2', nick: 'carol', message: 'carol has joined', category: MessageCategory.join }),
+      createMessage({ id: 'n1', message: 'dave has changed his nickname to dave_', category: MessageCategory.info, renamed: { from: 'dave', to: 'dave_' } }),
+    ];
+
+    it('should show events in a row as one line that lists who did what', () => {
+      setupMocks({ messages: joins() });
+
+      const { container } = render(<Main />);
+
+      const toggle = screen.getByRole('button', { expanded: false });
+      expect(toggle).toHaveTextContent('Weszli: bob, carol · Zmienili nick: dave → dave_');
+      expect(container.querySelector('.sic-msg[data-category="events"]')).not.toBeNull();
+      expect(container.textContent).not.toContain('bob has joined');
+      // The run's wrapper carries its last event's id, which older history cannot change
+      expect(container.querySelector('[data-message-id="n1"] .sic-msg[data-category="events"]')).not.toBeNull();
+    });
+
+    it('should show and hide the events themselves', () => {
+      setupMocks({ messages: joins() });
+
+      const { container } = render(<Main />);
+      fireEvent.click(screen.getByRole('button', { expanded: false }));
+
+      expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
+      expect(container.textContent).toContain('bob has joined');
+      expect(container.textContent).toContain('carol has joined');
+
+      fireEvent.click(screen.getByRole('button', { expanded: true }));
+      expect(container.textContent).not.toContain('bob has joined');
+    });
+
+    it('should show every event line with "all"', () => {
+      setupMocks({ messages: joins(), membershipEvents: 'all' });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg[data-category="events"]')).toBeNull();
+      expect(getMessages(container)).toHaveLength(4);
+    });
+
+    it.each([STATUS_CHANNEL, DEBUG_CHANNEL])('should not collapse in %s', (channel) => {
+      setupMocks({ currentChannelName: channel, messages: joins() });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg[data-category="events"]')).toBeNull();
+    });
+
+    it('should not group a message after a run with the one before it', () => {
+      setupMocks({ messages: [...joins(), createMessage({ id: 'again', nick: 'alice', message: 'still here' })] });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('[data-message-id="again"] .sic-msg')).not.toHaveAttribute('data-grouped');
     });
   });
 

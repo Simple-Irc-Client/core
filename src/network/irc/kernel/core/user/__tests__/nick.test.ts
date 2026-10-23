@@ -72,7 +72,7 @@ describe('kernel core/user/nick', () => {
     expect(mockGetUserChannels).toHaveBeenCalledWith('OldNick');
     expect(mockSetRenameUser).toHaveBeenCalledWith('OldNick', 'NewNick');
     // Channel message should use parsed nick, not full sender prefix
-    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel1', message: expect.stringContaining('OldNick') }));
+    expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel1', message: expect.stringContaining('OldNick'), renamed: { from: 'OldNick', to: 'NewNick' } }));
     expect(mockSetAddMessage).not.toHaveBeenCalledWith(expect.objectContaining({ target: '#channel1', message: expect.stringContaining('~user@') }));
   });
 

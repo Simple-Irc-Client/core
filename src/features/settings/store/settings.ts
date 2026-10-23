@@ -14,6 +14,7 @@ import { setChannelListClear } from '@features/channels/store/channelList';
 import { clearMonitorList } from '@features/monitor/store/monitor';
 import { clearAllReplies } from '@features/replies/store/replyTo';
 import { type NotificationSound } from '@features/sounds/sounds';
+import { type MembershipEventsDisplay } from '@features/chat/membershipEvents';
 import { ircDisconnect } from '@/network/irc/network';
 import { markRead } from '@/network/irc/readMarkers';
 import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
@@ -91,6 +92,7 @@ export interface SettingsStore {
   directSound: NotificationSound; // Sound for a private message
   mentionSound: NotificationSound; // Sound for a mention in a channel
   soundVolume: number; // Notification sound volume, 0–100
+  membershipEvents: MembershipEventsDisplay; // How join/part/quit/nick lines are shown
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -144,6 +146,7 @@ export interface SettingsStore {
   setDirectSound: (sound: NotificationSound) => void;
   setMentionSound: (sound: NotificationSound) => void;
   setSoundVolume: (volume: number) => void;
+  setMembershipEvents: (display: MembershipEventsDisplay) => void;
   resetWizardState: () => void;
 }
 
@@ -205,6 +208,7 @@ export const useSettingsStore = create<SettingsStore>()(
     directSound: 'chime',
     mentionSound: 'ping',
     soundVolume: 60,
+    membershipEvents: 'collapse',
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -409,6 +413,9 @@ export const useSettingsStore = create<SettingsStore>()(
     setSoundVolume: (volume: number): void => {
       set(() => ({ soundVolume: volume }));
     },
+    setMembershipEvents: (display: MembershipEventsDisplay): void => {
+      set(() => ({ membershipEvents: display }));
+    },
     resetWizardState: (): void => {
       set(sessionDefaults());
     },
@@ -461,6 +468,7 @@ export const useSettingsStore = create<SettingsStore>()(
       directSound: state.directSound,
       mentionSound: state.mentionSound,
       soundVolume: state.soundVolume,
+      membershipEvents: state.membershipEvents,
       isWizardCompleted: state.isWizardCompleted,
       serverPasswords: state.serverPasswords,
       currentChannelName: state.currentChannelName,

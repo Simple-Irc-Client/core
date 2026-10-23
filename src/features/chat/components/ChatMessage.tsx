@@ -21,12 +21,11 @@ import MessageReactions from '@features/reactions/components/MessageReactions';
 import ReplyButton from '@features/replies/components/ReplyButton';
 import ReplyQuote from '@features/replies/components/ReplyQuote';
 import { QUOTE_PREFIX } from '@features/replies/replies';
+import { contentCategories } from '../membershipEvents';
 
 const repliableCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me]);
 
 const italicCategories = new Set<MessageCategory>([MessageCategory.join, MessageCategory.part, MessageCategory.quit, MessageCategory.kick]);
-
-export const contentCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me, MessageCategory.notice]);
 
 const isBotMessage = (message: Message): boolean =>
   message.nick !== undefined && typeof message.nick !== 'string' && message.nick.bot === true;

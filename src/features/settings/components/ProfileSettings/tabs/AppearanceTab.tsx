@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/app/i18n';
 import { languages, type LanguageSetting } from '@/config/languages';
 import { type FontSize, useSettingsStore } from '@features/settings/store/settings';
+import { type MembershipEventsDisplay } from '@features/chat/membershipEvents';
 import { isBuiltinTheme } from '@features/themes/builtinThemes';
 import { getThemeList } from '@features/themes/themeSelectors';
 import ThemeEditorDialog from '@features/themes/components/ThemeEditorDialog';
@@ -20,6 +21,12 @@ const FONT_SIZES: { size: FontSize; label: string }[] = [
   { size: 'large', label: 'profileSettings.fontSizeLarge' },
 ];
 
+const MEMBERSHIP_EVENTS: { display: MembershipEventsDisplay; label: string }[] = [
+  { display: 'all', label: 'profileSettings.membershipEventsAll' },
+  { display: 'collapse', label: 'profileSettings.membershipEventsCollapse' },
+  { display: 'collapseHideIdle', label: 'profileSettings.membershipEventsCollapseHideIdle' },
+];
+
 const AppearanceTab = () => {
   const { t } = useTranslation();
   const theme = useSettingsStore((state) => state.theme);
@@ -34,6 +41,8 @@ const AppearanceTab = () => {
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const setHideAvatarsInUsersList = useSettingsStore((state) => state.setHideAvatarsInUsersList);
   const hideTypingIndicator = useSettingsStore((state) => state.hideTypingIndicator);
+  const membershipEvents = useSettingsStore((state) => state.membershipEvents);
+  const setMembershipEvents = useSettingsStore((state) => state.setMembershipEvents);
   const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
   const [themeDialog, setThemeDialog] = useState<{
     kind: 'editor' | 'creator';
@@ -157,6 +166,25 @@ const AppearanceTab = () => {
               {languages.map(({ code, label, flag }) => (
                 <SelectItem key={code} value={code} data-testid={`language-${code}`}>
                   {flag} {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className={SETTING_ROW}>
+        <Label id="membership-events-label" className={SETTING_LABEL}>
+          {t('profileSettings.membershipEvents')}
+        </Label>
+        <div className="col-span-full sm:col-span-3">
+          <Select value={membershipEvents} onValueChange={(value) => setMembershipEvents(value as MembershipEventsDisplay)}>
+            <SelectTrigger data-testid="membership-events-select" aria-labelledby="membership-events-label">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MEMBERSHIP_EVENTS.map(({ display, label }) => (
+                <SelectItem key={display} value={display}>
+                  {t(label)}
                 </SelectItem>
               ))}
             </SelectContent>

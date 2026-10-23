@@ -549,4 +549,19 @@ describe('AppearanceTab', () => {
       expect(useSettingsStore.getState().fontSize).toBe('large');
     });
   });
+
+  describe('Joins and parts', () => {
+    it('should collapse them by default, and switch to hiding idle people', async () => {
+      useSettingsStore.setState({ membershipEvents: 'collapse' });
+      const user = userEvent.setup();
+      render(<AppearanceTab />);
+
+      expect(screen.getByTestId('membership-events-select')).toHaveTextContent('profileSettings.membershipEventsCollapse');
+
+      await user.click(screen.getByTestId('membership-events-select'));
+      await user.click(screen.getByRole('option', { name: 'profileSettings.membershipEventsCollapseHideIdle' }));
+
+      expect(useSettingsStore.getState().membershipEvents).toBe('collapseHideIdle');
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { startOfDay } from 'date-fns';
 import type { Message } from '@shared/types';
@@ -11,7 +11,10 @@ import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
 import E2eeBanner from '@features/e2ee/components/E2eeBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
-import ChatMessage, { contentCategories } from './ChatMessage';
+import ChatMessage from './ChatMessage';
+import MembershipEventsRow from './MembershipEventsRow';
+import { collapseMembershipEvents, contentCategories, type ChatItem } from '../membershipEvents';
+import { foldName } from '@shared/lib/caseMapping';
 import ReactionPicker, { type ReactionPickerHandle } from '@features/reactions/components/ReactionPicker';
 import { useCanReact } from '@features/reactions/useCanReact';
 import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
@@ -32,6 +35,12 @@ const Chat = () => {
   const fontSize = useSettingsStore((state) => state.fontSize);
   const isConnected = useSettingsStore((state) => state.isConnected);
   const messages = useCurrentStore((state) => state.messages);
+  const membershipEvents = useSettingsStore((state) => state.membershipEvents);
+  const myNick = useSettingsStore((state) => state.nick);
+  const caseMapping = useSettingsStore((state) => state.caseMapping);
+  const fold = useCallback((nick: string) => foldName(nick, caseMapping), [caseMapping]);
+  /** The event runs shown line by line, by the id of their first event */
+  const [expandedRuns, setExpandedRuns] = useState<ReadonlySet<string>>(() => new Set());
   const fontSizeClass = fontSizeClasses[fontSize];
   const canReact = useCanReact(currentChannelName);
   const reactionPicker = useRef<ReactionPickerHandle>(null);
@@ -43,28 +52,41 @@ const Chat = () => {
   const canReply = useCanSendPlaintext(currentChannelName) && !isDebug;
 
   const rows = useMemo(() => {
-    const result: { message: Message; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
+    const items = collapseMembershipEvents(messages, { display: isDebug ? 'all' : membershipEvents, fold, myNick });
+    const result: { item: ChatItem; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
     let prevDayStart: number | null = null;
     let prevNick = '';
 
-    for (const message of messages) {
+    for (const item of items) {
+      const message = item.kind === 'message' ? item.message : item.messages[0];
+      if (message === undefined) { continue; }
       const currentDate = startOfDay(new Date(message.time));
       const dayStart = currentDate.getTime();
       const showDateSeparator = prevDayStart !== null && dayStart !== prevDayStart;
-      const isContent = contentCategories.has(message.category);
+      const isContent = item.kind === 'message' && contentCategories.has(message.category);
       const nick = getNickFromMessage(message) ?? '';
       const lastNick = showDateSeparator ? '' : prevNick;
 
       // A reply shows what it answers above its header
       const grouped = !isDebug && isContent && lastNick === nick && message.replyTo === undefined;
-      result.push({ message, currentDate, showDateSeparator, grouped });
+      result.push({ item, currentDate, showDateSeparator, grouped });
 
       prevDayStart = dayStart;
       prevNick = isContent ? nick : '';
     }
 
     return result;
-  }, [messages, isDebug]);
+  }, [messages, isDebug, membershipEvents, fold, myNick]);
+
+  const toggleRun = useCallback((id: string) => {
+    setExpandedRuns((expanded) => {
+      const next = new Set(expanded);
+      if (!next.delete(id)) {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
 
   const messagesByMsgid = useMemo(() => new Map(messages.flatMap((message) => (message.msgid === undefined ? [] : [[message.msgid, message] as const]))), [messages]);
 
@@ -191,22 +213,40 @@ const Chat = () => {
       </div>
       {!isConnected && messages.length === 0 && <NotConnected />}
       <div className="pt-0 pb-0">
-        {rows.map(({ message, showDateSeparator, currentDate, grouped }) => {
+        {rows.map(({ item, showDateSeparator, currentDate, grouped }) => {
+          const renderMessage = (message: Message, isGrouped: boolean) => (
+            <ChatMessage
+              message={message}
+              grouped={isGrouped}
+              isDebug={isDebug}
+              fontSizeClass={fontSizeClass}
+              canReact={canReact}
+              onAddReaction={handleAddReaction}
+              canReply={canReply}
+              onReply={handleReply}
+              replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
+              onShowMessage={handleShowMessage}
+            />
+          );
+          if (item.kind === 'message') {
+            return (
+              <div key={`message-${item.message.id}`} data-message-id={item.message.id}>
+                {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
+                {renderMessage(item.message, grouped)}
+              </div>
+            );
+          }
+          const expanded = expandedRuns.has(item.id);
           return (
-            <div key={`message-${message.id}`} data-message-id={message.id}>
+            // The last event's id: older history going in above can lengthen a run, but never changes its last event
+            <div key={`events-${item.id}`} data-message-id={item.messages.at(-1)?.id}>
               {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
-              <ChatMessage
-                message={message}
-                grouped={grouped}
-                isDebug={isDebug}
-                fontSizeClass={fontSizeClass}
-                canReact={canReact}
-                onAddReaction={handleAddReaction}
-                canReply={canReply}
-                onReply={handleReply}
-                replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
-                onShowMessage={handleShowMessage}
-              />
+              <MembershipEventsRow id={item.id} events={item.messages} expanded={expanded} onToggle={toggleRun} fontSizeClass={fontSizeClass} fold={fold} />
+              {expanded && item.messages.map((message) => (
+                <div key={`message-${message.id}`} data-message-id={message.id}>
+                  {renderMessage(message, false)}
+                </div>
+              ))}
             </div>
           );
         })}

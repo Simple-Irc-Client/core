@@ -41,6 +41,7 @@ export const onNick = (ctx: IrcContext): void => {
       message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
       target: ctx.history.target,
       category: MessageCategory.info,
+      renamed: { from: oldNick, to: newNick },
     });
     return;
   }
@@ -59,6 +60,7 @@ export const onNick = (ctx: IrcContext): void => {
       message: i18next.t('kernel.nick', { from: oldNick, to: newNick }),
       target: channel,
       category: MessageCategory.info,
+      renamed: { from: oldNick, to: newNick },
     });
   }
 

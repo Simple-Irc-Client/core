@@ -15,6 +15,7 @@ interface Reply {
   message: string;
   target: string;
   category: keyof typeof colors;
+  renamed?: Message['renamed'];
 }
 
 /** Where a reply to a command belongs: the window it was sent from, when labeled-response tells; otherwise the current one. */
@@ -30,7 +31,7 @@ export const addMessage = (ctx: IrcContext, message: Message): void => {
 };
 
 /** Shows a server reply in the `target` window; id and time come from the server's tags when it sent them. */
-export const showReply = (ctx: IrcContext, { message, target, category }: Reply): void => {
+export const showReply = (ctx: IrcContext, { message, target, category, renamed }: Reply): void => {
   addMessage(ctx, {
     id: ctx.tags.msgid ?? uuidv4(),
     message,
@@ -38,5 +39,6 @@ export const showReply = (ctx: IrcContext, { message, target, category }: Reply)
     time: ctx.tags.time ?? new Date().toISOString(),
     category,
     color: colors[category],
+    renamed,
   });
 };

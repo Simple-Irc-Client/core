@@ -5,7 +5,9 @@
  * are visible and how they are arranged:
  *
  *   .sic-msg                  message row; attributes:
- *                               [data-category="default|join|part|quit|kick|mode|notice|info|me|error|motd"]
+ *                               [data-category="default|join|part|quit|kick|mode|notice|info|me|error|motd|events"]
+ *                               ("events": one line for a run of joins/parts/quits/nick changes;
+ *                               its .sic-msg-body is the .sic-msg-events-toggle button, [data-expanded] when open)
  *                               [data-content]   present on default/me/notice (user content)
  *                               [data-grouped]   consecutive message from the same nick
  *                               [data-highlight] message mentions your nick
@@ -120,7 +122,8 @@
 .sic-msg[data-category='join'] .sic-msg-body,
 .sic-msg[data-category='part'] .sic-msg-body,
 .sic-msg[data-category='quit'] .sic-msg-body,
-.sic-msg[data-category='kick'] .sic-msg-body {
+.sic-msg[data-category='kick'] .sic-msg-body,
+.sic-msg[data-category='events'] .sic-msg-body {
   font-style: italic;
 }
 
