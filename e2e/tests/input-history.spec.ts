@@ -4,15 +4,19 @@ import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('histbot');
-  await bot.join('#history-test');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`histbot-${tag}`);
+  await bot.join(`#history-test-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'hist-tester', { channels: ['#history-test'] });
-  await sharedPage.getByRole('button', { name: '#history-test', exact: true }).click();
+  await connectViaWizard(sharedPage, `hist-tester-${tag}`, { channels: [`#history-test-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#history-test-${tag}`, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 

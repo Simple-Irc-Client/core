@@ -8,19 +8,21 @@ import { skipWithoutIrcv3 } from '../test-server';
 // project, because closing every WebSocket on the page (below) is disruptive
 // enough that it shouldn't run concurrently with the rest of the e2e suite.
 test.describe('DM presence indicator survives our own disconnect/reconnect', () => {
-  test('does not keep showing a peer as online once our own connection drops', async ({ page }) => {
+  test('does not keep showing a peer as online once our own connection drops', async ({ page }, testInfo) => {
     skipWithoutIrcv3('presence comes from MONITOR');
-    const bot: IrcClient = await createIrcClient('dmp-recon-bot');
+    // Each browser project runs this at once on the same server: names of its own keep them apart
+    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const bot: IrcClient = await createIrcClient(`dmp-recon-bot-${tag}`);
 
     // Installed before the page loads, so we can force-close our own connection later
     await installWebSocketKillSwitch(page);
     await page.goto('/');
-    await connectViaWizard(page, 'dmp-recon-tester', { channels: [] });
+    await connectViaWizard(page, `dmp-recon-tester-${tag}`, { channels: [] });
 
     const channelNav = page.getByTestId('channels-sidebar');
-    const dmRow = channelNav.getByRole('button', { name: 'dmp-recon-bot', exact: true });
+    const dmRow = channelNav.getByRole('button', { name: `dmp-recon-bot-${tag}`, exact: true });
 
-    bot.sendMessage('dmp-recon-tester', 'hi');
+    bot.sendMessage(`dmp-recon-tester-${tag}`, 'hi');
     await expect(dmRow).toBeVisible({ timeout: 10_000 });
     await expect(dmRow.getByLabel('Online')).toBeVisible({ timeout: 10_000 });
     await dmRow.click();

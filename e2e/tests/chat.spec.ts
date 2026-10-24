@@ -6,23 +6,27 @@ import { skipWithoutIrcv3 } from '../test-server';
 let alice: IrcClient;
 let bob: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
   // Alice joins both channels
-  alice = await createIrcClient('alice');
-  await alice.join('#general');
-  await alice.join('#random');
-  await alice.setTopic('#general', 'General discussion channel');
-  await alice.setTopic('#random', 'Random off-topic chat');
+  alice = await createIrcClient(`alice-${tag}`);
+  await alice.join(`#general-${tag}`);
+  await alice.join(`#random-${tag}`);
+  await alice.setTopic(`#general-${tag}`, 'General discussion channel');
+  await alice.setTopic(`#random-${tag}`, 'Random off-topic chat');
 
   // Bob joins only #general
-  bob = await createIrcClient('bob');
-  await bob.join('#general');
+  bob = await createIrcClient(`bob-${tag}`);
+  await bob.join(`#general-${tag}`);
 
   // Send messages to create channel history
-  alice.sendMessage('#general', 'Hello from alice in general!');
-  bob.sendMessage('#general', 'Hey alice, bob here in general!');
-  alice.sendMessage('#random', 'Alice talking in random channel');
+  alice.sendMessage(`#general-${tag}`, `Hello from alice-${tag} in general!`);
+  bob.sendMessage(`#general-${tag}`, `Hey alice-${tag}, bob-${tag} here in general!`);
+  alice.sendMessage(`#random-${tag}`, 'Alice talking in random channel');
 
   // Small delay to ensure messages are processed by ergo
   await new Promise((r) => setTimeout(r, 500));
@@ -30,7 +34,7 @@ test.beforeAll(async ({ browser }) => {
   // Create shared page and connect once
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'chat-tester', { channels: ['#general', '#random'] });
+  await connectViaWizard(sharedPage, `chat-tester-${tag}`, { channels: [`#general-${tag}`, `#random-${tag}`] });
 });
 
 test.afterAll(async () => {
@@ -49,21 +53,21 @@ test.describe('Chat', () => {
     await expect(sharedPage.getByTestId('users-sidebar')).toBeVisible();
 
     // Verify both channels appear in sidebar
-    await expect(sharedPage.getByRole('button', { name: '#general', exact: true })).toBeVisible();
-    await expect(sharedPage.getByRole('button', { name: '#random', exact: true })).toBeVisible();
+    await expect(sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true })).toBeVisible();
+    await expect(sharedPage.getByRole('button', { name: `#random-${tag}`, exact: true })).toBeVisible();
   });
 
   test('shows different topics when switching channels', async () => {
     // Click #general - verify its topic
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
     await expect(sharedPage.getByTestId('topic-display')).toHaveText('General discussion channel');
 
     // Switch to #random - verify different topic
-    await sharedPage.getByRole('button', { name: '#random', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#random-${tag}`, exact: true }).click();
     await expect(sharedPage.getByTestId('topic-display')).toHaveText('Random off-topic chat');
 
     // Switch back to #general - topic should still be correct
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
     await expect(sharedPage.getByTestId('topic-display')).toHaveText('General discussion channel');
   });
 
@@ -72,35 +76,35 @@ test.describe('Chat', () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 
     // Switch to #general - should have messages from alice and bob
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
-    await expect(chatLog.getByText('Hello from alice in general!')).toBeVisible({ timeout: 10_000 });
-    await expect(chatLog.getByText('Hey alice, bob here in general!')).toBeVisible();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
+    await expect(chatLog.getByText(`Hello from alice-${tag} in general!`)).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText(`Hey alice-${tag}, bob-${tag} here in general!`)).toBeVisible();
 
     // Switch to #random - should have only alice's message
-    await sharedPage.getByRole('button', { name: '#random', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#random-${tag}`, exact: true }).click();
     await expect(chatLog.getByText('Alice talking in random channel')).toBeVisible({ timeout: 10_000 });
 
     // Bob's message should NOT be in #random
-    await expect(chatLog.getByText('bob here in general')).not.toBeVisible();
+    await expect(chatLog.getByText(`bob-${tag} here in general`)).not.toBeVisible();
   });
 
   test('shows different users per channel', async () => {
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
 
     // Switch to #general - should show alice, bob, and the test user
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
-    await expect(usersSidebar.getByText('bob')).toBeVisible();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
+    await expect(usersSidebar.getByText(`alice-${tag}`)).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByText(`bob-${tag}`)).toBeVisible();
 
     // Switch to #random - should show alice but NOT bob
-    await sharedPage.getByRole('button', { name: '#random', exact: true }).click();
-    await expect(usersSidebar.getByText('alice')).toBeVisible({ timeout: 10_000 });
-    await expect(usersSidebar.getByText('bob')).not.toBeVisible();
+    await sharedPage.getByRole('button', { name: `#random-${tag}`, exact: true }).click();
+    await expect(usersSidebar.getByText(`alice-${tag}`)).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByText(`bob-${tag}`)).not.toBeVisible();
   });
 
   test('can send a message', async () => {
     // Switch to #general
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
 
     const messageInput = sharedPage.locator('#message-input');
     await expect(messageInput).toBeEnabled({ timeout: 10_000 });
@@ -118,7 +122,7 @@ test.describe('Chat', () => {
   });
 
   test('can send a message with Enter key', async () => {
-    await sharedPage.getByRole('button', { name: '#general', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
 
     const messageInput = sharedPage.locator('#message-input');
     await expect(messageInput).toBeEnabled({ timeout: 10_000 });

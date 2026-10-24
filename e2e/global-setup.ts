@@ -32,10 +32,10 @@ export const PASSWORD_FILE = join(tmpdir(), 'sic-e2e-password');
 
 // The gateway specs run the gateway from source, checked out next to core unless E2E_GATEWAY_DIR says otherwise
 const GATEWAY_DIR = process.env.E2E_GATEWAY_DIR ?? resolve(__dirname, '../../gateway');
-/** Where the dev server serves the app for the projects that connect straight to the servers */
-export const APP_PORT = 5173;
+/** Where the app is served for the projects that connect straight to the servers: off Vite's default 5173+, so tests never hit a running `pnpm start` */
+export const APP_PORT = 5273;
 export const GATEWAY_PORT = 8668;
-export const GATEWAY_APP_PORT = 5174;
+export const GATEWAY_APP_PORT = 5274;
 const GATEWAY_PID_FILE = join(tmpdir(), 'sic-e2e-gateway.pid');
 const GATEWAY_LOG_FILE = join(tmpdir(), 'sic-e2e-gateway.log');
 

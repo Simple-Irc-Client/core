@@ -3,12 +3,16 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
+let tag: string;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({}, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
   // Bot creates and owns #bot-topic-chan (gets ops as first joiner)
-  bot = await createIrcClient('topicbot');
-  await bot.join('#bot-topic-chan');
-  await bot.setTopic('#bot-topic-chan', 'Bot-controlled topic');
+  bot = await createIrcClient(`topicbot-${tag}`);
+  await bot.join(`#bot-topic-chan-${tag}`);
+  await bot.setTopic(`#bot-topic-chan-${tag}`, 'Bot-controlled topic');
 });
 
 test.afterAll(() => {
@@ -20,15 +24,15 @@ test.describe('Topic', () => {
 
   test('edit topic as channel operator', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'topic-op');
+    await connectViaWizard(page, `topic-op-${tag}`);
 
     // Create a new channel where this user will be the first joiner (gets ops)
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #my-topic-chan');
+    await messageInput.fill(`/join #my-topic-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#my-topic-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#my-topic-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#my-topic-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#my-topic-chan-${tag}`, exact: true }).click();
 
     // As op, the topic input should be an editable input field
     const topicInput = page.getByTestId('topic-input');
@@ -49,9 +53,9 @@ test.describe('Topic', () => {
   test('topic is read-only without ops', async ({ page }) => {
     await page.goto('/');
     // Join bot's channel where user won't have ops
-    await connectViaWizard(page, 'topic-noops', { channels: ['#bot-topic-chan'] });
+    await connectViaWizard(page, `topic-noops-${tag}`, { channels: [`#bot-topic-chan-${tag}`] });
 
-    await page.getByRole('button', { name: '#bot-topic-chan', exact: true }).click();
+    await page.getByRole('button', { name: `#bot-topic-chan-${tag}`, exact: true }).click();
 
     // The topic text should be visible in the read-only display
     await expect(page.getByTestId('topic-display')).toHaveText('Bot-controlled topic', { timeout: 10_000 });

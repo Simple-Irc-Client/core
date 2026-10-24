@@ -5,16 +5,20 @@ import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
   skipWithoutIrcv3('typing notifications are message tags');
-  bot = await createIrcClient('typingbot');
-  await bot.join('#typing-test');
+  bot = await createIrcClient(`typingbot-${tag}`);
+  await bot.join(`#typing-test-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'typing-watcher', { channels: ['#typing-test'] });
-  await sharedPage.getByRole('button', { name: '#typing-test', exact: true }).click();
+  await connectViaWizard(sharedPage, `typing-watcher-${tag}`, { channels: [`#typing-test-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#typing-test-${tag}`, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -28,38 +32,38 @@ test.describe('Typing indicator', () => {
 
   test('shows typing indicator when another user is typing', async () => {
     // Bot sends TAGMSG with typing=active
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     // Typing indicator should appear showing the bot's nick
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
-    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).toContainText(`typingbot-${tag}`, { timeout: 10_000 });
     await expect(typingStatus).toContainText('typing', { timeout: 5_000 });
   });
 
   test('typing indicator disappears when user stops typing', async () => {
     // Bot starts typing
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
-    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).toContainText(`typingbot-${tag}`, { timeout: 10_000 });
 
     // Bot sends done typing
-    bot.send('@+typing=done TAGMSG #typing-test');
+    bot.send(`@+typing=done TAGMSG #typing-test-${tag}`);
 
     // Typing indicator should disappear
-    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).not.toContainText(`typingbot-${tag}`, { timeout: 10_000 });
   });
 
   test('profile settings toggle hides typing indicator', async () => {
     // Verify typing indicator is initially visible when bot types
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
-    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).toContainText(`typingbot-${tag}`, { timeout: 10_000 });
 
     // Stop typing first
-    bot.send('@+typing=done TAGMSG #typing-test');
-    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
+    bot.send(`@+typing=done TAGMSG #typing-test-${tag}`);
+    await expect(typingStatus).not.toContainText(`typingbot-${tag}`, { timeout: 10_000 });
 
     // Open profile settings and toggle off typing indicator
     await openProfileSettings(sharedPage, 'appearance');
@@ -74,12 +78,12 @@ test.describe('Typing indicator', () => {
     await expect(sharedPage.getByRole('dialog')).not.toBeVisible({ timeout: 3_000 });
 
     // Bot starts typing again
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     // Typing indicator should NOT appear (entire component is hidden)
     // Wait a bit to ensure it doesn't appear
     await new Promise((r) => setTimeout(r, 2000));
-    await expect(sharedPage.locator('.text-gray-500').filter({ hasText: 'typingbot' })).not.toBeVisible();
+    await expect(sharedPage.locator('.text-gray-500').filter({ hasText: `typingbot-${tag}` })).not.toBeVisible();
   });
 
   test('re-enabling typing indicator shows it again', async () => {
@@ -89,15 +93,15 @@ test.describe('Typing indicator', () => {
     await sharedPage.keyboard.press('Escape');
 
     // Bot starts typing
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     // Typing indicator should appear again
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
-    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).toContainText(`typingbot-${tag}`, { timeout: 10_000 });
 
     // Clean up for the next tests
-    bot.send('@+typing=done TAGMSG #typing-test');
-    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
+    bot.send(`@+typing=done TAGMSG #typing-test-${tag}`);
+    await expect(typingStatus).not.toContainText(`typingbot-${tag}`, { timeout: 10_000 });
   });
 
   test('own typing does not show a self typing indicator', async () => {
@@ -107,18 +111,18 @@ test.describe('Typing indicator', () => {
     await messageInput.pressSequentially('typing something slowly', { delay: 80 });
 
     // Our own nick must never appear as typing
-    await expect(sharedPage.getByText('typing-watcher is typing...')).not.toBeVisible();
+    await expect(sharedPage.getByText(`typing-watcher-${tag} is typing...`)).not.toBeVisible();
     await messageInput.clear();
   });
 
   test('typing indicator expires when the sender goes silent', async () => {
     // Bot starts typing and then never sends 'done' (e.g. its client died)
-    bot.send('@+typing=active TAGMSG #typing-test');
+    bot.send(`@+typing=active TAGMSG #typing-test-${tag}`);
 
     const typingStatus = sharedPage.locator('[role="status"][aria-live="polite"]').last();
-    await expect(typingStatus).toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).toContainText(`typingbot-${tag}`, { timeout: 10_000 });
 
     // The indicator goes stale after 6s without updates
-    await expect(typingStatus).not.toContainText('typingbot', { timeout: 10_000 });
+    await expect(typingStatus).not.toContainText(`typingbot-${tag}`, { timeout: 10_000 });
   });
 });

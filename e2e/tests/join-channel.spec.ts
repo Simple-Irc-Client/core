@@ -3,11 +3,17 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
+let tag: string;
+let channel: string;
 
-test.beforeAll(async () => {
-  bot = await createIrcClient('joinbot');
-  await bot.join('#joinable');
-  await bot.setTopic('#joinable', 'Come join us');
+test.beforeAll(async ({}, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  channel = `#joinable-${tag}`;
+
+  bot = await createIrcClient(`joinbot-${tag}`);
+  await bot.join(channel);
+  await bot.setTopic(channel, 'Come join us');
 });
 
 test.afterAll(() => {
@@ -19,7 +25,7 @@ test.describe('Join channel button', () => {
 
   test('join button opens channel list dialog', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'join-tester');
+    await connectViaWizard(page, `join-tester-${tag}`);
 
     // The join channel button should be visible in the sidebar
     const channelNav = page.getByTestId('channels-sidebar');
@@ -37,7 +43,7 @@ test.describe('Join channel button', () => {
 
   test('channel list dialog shows available channels', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'list-tester');
+    await connectViaWizard(page, `list-tester-${tag}`);
 
     const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();
@@ -45,12 +51,12 @@ test.describe('Join channel button', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // #joinable should appear in the list (bot created it)
-    await expect(page.getByText('#joinable')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(channel)).toBeVisible({ timeout: 10_000 });
   });
 
   test('selecting and joining a channel from dialog', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'dialog-joiner');
+    await connectViaWizard(page, `dialog-joiner-${tag}`);
 
     const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();
@@ -58,8 +64,8 @@ test.describe('Join channel button', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Wait for channels to load and select #joinable
-    await expect(page.getByText('#joinable')).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: /joinable/ }).click();
+    await expect(page.getByText(channel)).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: new RegExp(channel) }).click();
 
     // Join button should be enabled now
     const dialogJoinButton = page.getByRole('dialog').getByRole('button', { name: 'Join', exact: true });
@@ -70,16 +76,16 @@ test.describe('Join channel button', () => {
     await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 5_000 });
 
     // Channel should appear in the sidebar
-    await expect(channelNav.getByRole('button', { name: '#joinable', exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: channel, exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Click on it and verify topic
-    await channelNav.getByRole('button', { name: '#joinable', exact: true }).click();
+    await channelNav.getByRole('button', { name: channel, exact: true }).click();
     await expect(page.getByTestId('topic-display')).toHaveText('Come join us', { timeout: 5_000 });
   });
 
   test('already-joined channels are excluded from dialog', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'exclude-tester', { channels: ['#joinable'] });
+    await connectViaWizard(page, `exclude-tester-${tag}`, { channels: [channel] });
 
     const channelNav = page.getByTestId('channels-sidebar');
 
@@ -90,13 +96,13 @@ test.describe('Join channel button', () => {
     // #joinable should NOT appear since we already joined it
     // Wait for list to load first
     await new Promise((r) => setTimeout(r, 2000));
-    const rows = page.getByRole('dialog').getByRole('button', { name: /joinable/ });
+    const rows = page.getByRole('dialog').getByRole('button', { name: new RegExp(channel) });
     await expect(rows).toHaveCount(0);
   });
 
   test('cancel button closes dialog without joining', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'cancel-tester');
+    await connectViaWizard(page, `cancel-tester-${tag}`);
 
     const channelNav = page.getByTestId('channels-sidebar');
     await channelNav.getByRole('button', { name: /join channel/i }).click();

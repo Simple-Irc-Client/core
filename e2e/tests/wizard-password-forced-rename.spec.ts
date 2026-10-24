@@ -2,8 +2,6 @@ import { test, expect, type Page } from '@playwright/test';
 import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress } from '../helpers';
 
 
-const TEST_NICK = 'pw-forced-rename-tester';
-const FORCED_NICK = 'Unidentified-pwtest';
 const NICKSERV_PASSWORD = 'CorrectHorseBattery42';
 
 /** Fill in nick step and advance to the server step. */
@@ -64,14 +62,18 @@ const readCurrentNick = (page: Page): Promise<string> =>
   });
 
 test.describe('Wizard password survives a server-forced nick change', () => {
-  test('reconnecting after a forced rename + disconnect still finds the saved password', async ({ page }) => {
+  test('reconnecting after a forced rename + disconnect still finds the saved password', async ({ page }, testInfo) => {
     test.setTimeout(90_000);
+    // Each browser project runs this at once on the same server: names of its own keep them apart
+    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const nick = `pw-forced-rename-tester-${tag}`;
+    const forcedNick = `Unidentified-pwtest-${tag}`;
 
     // --- First connection: get flagged as password-protected, enter + save
     // the password (with "remember" on), finish the wizard. ---
     await page.goto('/');
 
-    await fillNickStep(page, TEST_NICK);
+    await fillNickStep(page, nick);
     await fillServerStepAndConnect(page);
 
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
@@ -98,9 +100,9 @@ test.describe('Wizard password survives a server-forced nick change', () => {
     // identify-timeout enforcement (":oldnick NICK :newnick", handled identically
     // to a self-issued /nick by kernel.ts's onNick — see commands.spec.ts). ---
     const messageInput = page.locator('#message-input');
-    await messageInput.fill(`/nick ${FORCED_NICK}`);
+    await messageInput.fill(`/nick ${forcedNick}`);
     await messageInput.press('Enter');
-    await expect.poll(() => readCurrentNick(page), { timeout: 10_000 }).toBe(FORCED_NICK);
+    await expect.poll(() => readCurrentNick(page), { timeout: 10_000 }).toBe(forcedNick);
 
     // --- Disconnect. The wizard's nick field must NOT come back pre-filled with
     // the forced nick — that was the bug: it silently prevented the saved
@@ -113,7 +115,7 @@ test.describe('Wizard password survives a server-forced nick change', () => {
 
     // --- Reconnect with the original nick. The server step should already be
     // pre-filled from the persisted server settings. ---
-    await fillNickStep(page, TEST_NICK);
+    await fillNickStep(page, nick);
 
     await expect(page.getByLabel('Server address')).toHaveValue(testServerAddress().host);
     await page.getByRole('button', { name: 'Next' }).click();

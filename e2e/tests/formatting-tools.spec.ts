@@ -4,15 +4,19 @@ import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('fmtbot');
-  await bot.join('#formatting');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`fmtbot-${tag}`);
+  await bot.join(`#formatting-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'fmt-tester', { channels: ['#formatting'] });
-  await sharedPage.getByRole('button', { name: '#formatting', exact: true }).click();
+  await connectViaWizard(sharedPage, `fmt-tester-${tag}`, { channels: [`#formatting-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#formatting-${tag}`, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 

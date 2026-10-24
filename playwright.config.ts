@@ -88,7 +88,7 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'pnpm run dev',
+      command: `pnpm exec vite --port ${APP_PORT} --strictPort`,
       url: `http://localhost:${APP_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,

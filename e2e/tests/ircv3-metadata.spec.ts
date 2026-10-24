@@ -5,16 +5,20 @@ import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
   skipWithoutIrcv3('avatars and colors are METADATA');
-  bot = await createIrcClient('metabot', '127.0.0.1', 6667, ['draft/metadata-2']);
-  await bot.join('#metadata-test');
+  bot = await createIrcClient(`metabot-${tag}`, '127.0.0.1', 6667, ['draft/metadata-2']);
+  await bot.join(`#metadata-test-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'meta-tester', { channels: ['#metadata-test'] });
-  await sharedPage.getByRole('button', { name: '#metadata-test', exact: true }).click();
+  await connectViaWizard(sharedPage, `meta-tester-${tag}`, { channels: [`#metadata-test-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#metadata-test-${tag}`, exact: true }).click();
 });
 
 test.afterAll(async () => {
@@ -63,7 +67,7 @@ test.describe('Metadata', () => {
 
     // Verify color is applied — nick in users sidebar should have the color style
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    const nickEl = usersSidebar.getByText('meta-tester');
+    const nickEl = usersSidebar.getByText(`meta-tester-${tag}`);
     await expect(nickEl).toBeVisible({ timeout: 10_000 });
     // The nick should have the chosen color applied
     await expect(nickEl).toHaveCSS('color', 'rgb(255, 0, 0)');
@@ -73,7 +77,7 @@ test.describe('Metadata', () => {
     const avatarUrl = 'https://simpleircclient.com/assets/test-image.jpg';
 
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    await expect(usersSidebar.getByText('metabot')).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByText(`metabot-${tag}`)).toBeVisible({ timeout: 10_000 });
 
     // Bot sets its avatar via raw METADATA command
     bot.send(`METADATA * SET avatar :${avatarUrl}`);
@@ -93,7 +97,7 @@ test.describe('Metadata', () => {
     test(`channel avatar renders ${ext} image`, async () => {
       const avatarUrl = `https://simpleircclient.com/assets/test-image.${ext}`;
       const channelNav = sharedPage.getByTestId('channels-sidebar');
-      const channelButton = channelNav.getByRole('button', { name: '#metadata-test', exact: true });
+      const channelButton = channelNav.getByRole('button', { name: `#metadata-test-${tag}`, exact: true });
 
       // Collect page errors to detect service worker "no-response" rejections
       const pageErrors: string[] = [];
@@ -101,7 +105,7 @@ test.describe('Metadata', () => {
       sharedPage.on('pageerror', onPageError);
 
       // Bot (channel operator) sets the channel avatar
-      bot.send(`METADATA #metadata-test SET avatar :${avatarUrl}`);
+      bot.send(`METADATA #metadata-test-${tag} SET avatar :${avatarUrl}`);
 
       // The img must stay visible (not replaced by fallback letter), confirming
       // the image actually loaded. If the service worker intercepted and rejected

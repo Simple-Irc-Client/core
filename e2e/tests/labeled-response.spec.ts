@@ -53,18 +53,20 @@ const joinChannel = async (page: Page, channel: string): Promise<void> => {
 };
 
 test.describe('Labeled responses', () => {
-  test('a reply that arrives after switching windows is shown where the command was typed', async ({ page }) => {
+  test('a reply that arrives after switching windows is shown where the command was typed', async ({ page }, testInfo) => {
     skipWithoutIrcv3('replies are matched to commands by labeled-response');
+    // Each browser project runs this at once on the same server: names of its own keep them apart
+    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
     await installIncomingHold(page);
     await page.goto('/');
-    await connectViaWizard(page, 'label-tester');
-    await joinChannel(page, '#label-a');
-    await joinChannel(page, '#label-b');
+    await connectViaWizard(page, `label-tester-${tag}`);
+    await joinChannel(page, `#label-a-${tag}`);
+    await joinChannel(page, `#label-b-${tag}`);
 
     const messageInput = page.locator('#message-input');
     const chatLog = page.getByTestId('chat-log');
 
-    await page.getByRole('button', { name: '#label-a', exact: true }).click();
+    await page.getByRole('button', { name: `#label-a-${tag}`, exact: true }).click();
     await expect(messageInput).toBeEnabled();
 
     // The reply is held until the user is already looking at another window
@@ -72,7 +74,7 @@ test.describe('Labeled responses', () => {
     await page.evaluate(() => (globalThis as any).__holdIncoming(true));
     await messageInput.fill('/whois no-such-label-nick');
     await messageInput.press('Enter');
-    await page.getByRole('button', { name: '#label-b', exact: true }).click();
+    await page.getByRole('button', { name: `#label-b-${tag}`, exact: true }).click();
     await page.waitForTimeout(500);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await page.evaluate(() => (globalThis as any).__holdIncoming(false));
@@ -80,7 +82,7 @@ test.describe('Labeled responses', () => {
     await page.waitForTimeout(500);
     await expect(chatLog.getByText(/no-such-label-nick/)).toHaveCount(0);
 
-    await page.getByRole('button', { name: '#label-a', exact: true }).click();
+    await page.getByRole('button', { name: `#label-a-${tag}`, exact: true }).click();
     await expect(chatLog.getByText(/no-such-label-nick/)).toBeVisible({ timeout: 10_000 });
   });
 });

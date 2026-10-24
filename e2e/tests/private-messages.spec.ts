@@ -4,15 +4,19 @@ import { connectViaWizard, waitForPersistedChannels } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('dmbot');
-  await bot.join('#dm-test');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`dmbot-${tag}`);
+  await bot.join(`#dm-test-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'dm-tester', { channels: ['#dm-test'] });
-  await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
+  await connectViaWizard(sharedPage, `dm-tester-${tag}`, { channels: [`#dm-test-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#dm-test-${tag}`, exact: true }).click();
 });
 
 test.afterAll(async () => {
@@ -27,13 +31,13 @@ test.describe('Private messages', () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Bot sends a private message to the test user
-    bot.sendMessage('dm-tester', 'Hello from DM bot!');
+    bot.sendMessage(`dm-tester-${tag}`, 'Hello from DM bot!');
 
     // A new tab for the bot should appear in the sidebar
-    await expect(channelNav.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: `dmbot-${tag}` })).toBeVisible({ timeout: 10_000 });
 
     // Click on the DM tab
-    await channelNav.getByRole('button', { name: 'dmbot' }).click();
+    await channelNav.getByRole('button', { name: `dmbot-${tag}` }).click();
 
     // The message should be visible in the chat log
     const chatLog = sharedPage.getByTestId('chat-log');
@@ -42,16 +46,16 @@ test.describe('Private messages', () => {
 
   test('can reply to a DM', async () => {
     // Navigate back to #dm-test (test 1 left us on the dmbot tab)
-    await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#dm-test-${tag}`, exact: true }).click();
 
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Bot sends a DM
-    bot.sendMessage('dm-tester', 'Can you reply?');
+    bot.sendMessage(`dm-tester-${tag}`, 'Can you reply?');
 
     // Wait for DM tab
-    await expect(channelNav.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
-    await channelNav.getByRole('button', { name: 'dmbot' }).click();
+    await expect(channelNav.getByRole('button', { name: `dmbot-${tag}` })).toBeVisible({ timeout: 10_000 });
+    await channelNav.getByRole('button', { name: `dmbot-${tag}` }).click();
 
     // Reply
     const messageInput = sharedPage.locator('#message-input');
@@ -68,26 +72,26 @@ test.describe('Private messages', () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Bot sends a DM and we open the DM tab
-    bot.sendMessage('dm-tester', 'Checking the users list');
-    await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
-    await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
+    bot.sendMessage(`dm-tester-${tag}`, 'Checking the users list');
+    await expect(channelNav.getByRole('button', { name: `dmbot-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await channelNav.getByRole('button', { name: `dmbot-${tag}`, exact: true }).click();
 
     // The users sidebar should list exactly the two participants
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    await expect(usersSidebar.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 5_000 });
-    await expect(usersSidebar.getByRole('button', { name: 'dm-tester' })).toBeVisible({ timeout: 5_000 });
+    await expect(usersSidebar.getByRole('button', { name: `dmbot-${tag}` })).toBeVisible({ timeout: 5_000 });
+    await expect(usersSidebar.getByRole('button', { name: `dm-tester-${tag}` })).toBeVisible({ timeout: 5_000 });
   });
 
   test('DM messages do not appear in channel tabs', async () => {
     // Ensure we're on #dm-test
-    await sharedPage.getByRole('button', { name: '#dm-test', exact: true }).click();
+    await sharedPage.getByRole('button', { name: `#dm-test-${tag}`, exact: true }).click();
 
     // Bot sends a DM
-    bot.sendMessage('dm-tester', 'This is a private message');
+    bot.sendMessage(`dm-tester-${tag}`, 'This is a private message');
 
     // Wait for DM tab to appear
     const channelNav = sharedPage.getByTestId('channels-sidebar');
-    await expect(channelNav.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
+    await expect(channelNav.getByRole('button', { name: `dmbot-${tag}` })).toBeVisible({ timeout: 10_000 });
 
     // Stay on #dm-test — the DM message should NOT appear in the channel chat log
     const chatLog = sharedPage.getByTestId('chat-log');
@@ -98,11 +102,11 @@ test.describe('Private messages', () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Make the DM window the current one
-    bot.sendMessage('dm-tester', 'about to be closed');
-    const dmTab = channelNav.getByRole('button', { name: 'dmbot', exact: true });
+    bot.sendMessage(`dm-tester-${tag}`, 'about to be closed');
+    const dmTab = channelNav.getByRole('button', { name: `dmbot-${tag}`, exact: true });
     await expect(dmTab).toBeVisible({ timeout: 10_000 });
     await dmTab.click();
-    await expect(sharedPage.locator('#message-input')).toHaveAttribute('placeholder', /dmbot/);
+    await expect(sharedPage.locator('#message-input')).toHaveAttribute('placeholder', new RegExp(bot.nick));
 
     // Close the focused DM via its X button (appears on hover). The .click()
     // above already left the cursor resting on this exact tab, so hovering
@@ -110,11 +114,11 @@ test.describe('Private messages', () => {
     // close icon would never appear — move away first.
     await sharedPage.mouse.move(0, 0);
     await dmTab.hover();
-    await channelNav.getByRole('button', { name: 'Leave dmbot' }).click();
+    await channelNav.getByRole('button', { name: `Leave dmbot-${tag}` }).click();
     await expect(dmTab).not.toBeVisible();
 
     // The main view must not still point at the removed window
-    await expect(sharedPage.locator('#message-input')).not.toHaveAttribute('placeholder', /dmbot/);
+    await expect(sharedPage.locator('#message-input')).not.toHaveAttribute('placeholder', new RegExp(bot.nick));
   });
 
   // Keep this test last: reloading leaves the client disconnected
@@ -122,9 +126,9 @@ test.describe('Private messages', () => {
     const channelNav = sharedPage.getByTestId('channels-sidebar');
 
     // Recreate the DM window (the previous test closed it) and make it current
-    bot.sendMessage('dm-tester', 'before the reload');
-    await expect(channelNav.getByRole('button', { name: 'dmbot', exact: true })).toBeVisible({ timeout: 10_000 });
-    await channelNav.getByRole('button', { name: 'dmbot', exact: true }).click();
+    bot.sendMessage(`dm-tester-${tag}`, 'before the reload');
+    await expect(channelNav.getByRole('button', { name: `dmbot-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await channelNav.getByRole('button', { name: `dmbot-${tag}`, exact: true }).click();
 
     await waitForPersistedChannels(sharedPage, 'before the reload');
 
@@ -133,7 +137,7 @@ test.describe('Private messages', () => {
     // The DM window is restored from persistence; its users list must still
     // show both participants even before reconnecting
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    await expect(usersSidebar.getByRole('button', { name: 'dmbot' })).toBeVisible({ timeout: 10_000 });
-    await expect(usersSidebar.getByRole('button', { name: 'dm-tester' })).toBeVisible({ timeout: 5_000 });
+    await expect(usersSidebar.getByRole('button', { name: `dmbot-${tag}` })).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByRole('button', { name: `dm-tester-${tag}` })).toBeVisible({ timeout: 5_000 });
   });
 });

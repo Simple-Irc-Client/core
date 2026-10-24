@@ -14,7 +14,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   channel = `#scroll-test-${tag}`;
   otherChannel = `#scroll-other-${tag}`;
 
-  bot = await createIrcClient(`scrollbot-${tag}`);
+  bot = await createIrcClient(`scrollerbot-${tag}`);
   await bot.join(channel);
   await bot.join(otherChannel);
 

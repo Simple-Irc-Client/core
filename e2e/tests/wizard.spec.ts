@@ -21,11 +21,15 @@ test.describe('Wizard', () => {
   test.describe.configure({ mode: 'serial' });
 
   let bot: IrcClient;
+  let tag: string;
 
-  test.beforeAll(async () => {
-    bot = await createIrcClient('wizardbot');
-    await bot.join('#welcome');
-    await bot.setTopic('#welcome', 'Welcome to the test server!');
+  test.beforeAll(async ({}, testInfo) => {
+    // Each browser project runs this at once on the same server: names of its own keep them apart
+    tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+    bot = await createIrcClient(`wizardbot-${tag}`);
+    await bot.join(`#welcome-${tag}`);
+    await bot.setTopic(`#welcome-${tag}`, 'Welcome to the test server!');
   });
 
   test.afterAll(() => {
@@ -39,7 +43,7 @@ test.describe('Wizard', () => {
     await expect(page.getByText('Hello')).toBeVisible();
     await expect(page.getByLabel('Enter your nickname')).toBeFocused();
 
-    await page.getByLabel('Enter your nickname').fill('wizard-tester');
+    await page.getByLabel('Enter your nickname').fill(`wizard-tester-${tag}`);
     await expect(page.getByRole('button', { name: 'Next' })).toBeEnabled();
     await page.getByRole('button', { name: 'Next' }).click();
 
@@ -68,7 +72,7 @@ test.describe('Wizard', () => {
 
     // Step 4: Channels list
     await expect(page.getByText('Select a irc channel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText('#welcome')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(`#welcome-${tag}`)).toBeVisible({ timeout: 10_000 });
 
     // Select and join (click the row to select it — it becomes a badge above the table)
     await page.getByRole('button', { name: /welcome/ }).click();
@@ -76,14 +80,14 @@ test.describe('Wizard', () => {
 
     // Main page
     await expect(page.locator('#message-input')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: '#welcome', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: `#welcome-${tag}`, exact: true })).toBeVisible();
   });
 
   test('saves nick and server settings for reconnecting', async ({ page }) => {
     await page.goto('/');
 
     // Complete wizard with specific nick
-    await page.getByLabel('Enter your nickname').fill('reconnect-tester');
+    await page.getByLabel('Enter your nickname').fill(`reconnect-tester-${tag}`);
     await page.getByRole('button', { name: 'Next' }).click();
 
     await fillTestServer(page);
@@ -138,7 +142,7 @@ test.describe('Wizard', () => {
     await page.goto('/');
 
     // Use the same nick that the bot already has
-    await fillNickStep(page, 'wizardbot');
+    await fillNickStep(page, `wizardbot-${tag}`);
     await fillServerStepAndConnect(page);
 
     // Error message should show the server's "Nickname (is) already in use"
@@ -153,7 +157,7 @@ test.describe('Wizard', () => {
     await page.goto('/');
 
     // Try with taken nick
-    await fillNickStep(page, 'wizardbot');
+    await fillNickStep(page, `wizardbot-${tag}`);
     await fillServerStepAndConnect(page);
 
     // Wait for error

@@ -4,10 +4,14 @@ import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('datebot');
-  await bot.join('#date-sep');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`datebot-${tag}`);
+  await bot.join(`#date-sep-${tag}`);
 
   sharedPage = await browser.newPage();
 
@@ -48,8 +52,8 @@ test.beforeAll(async ({ browser }) => {
   `);
 
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'date-tester', { channels: ['#date-sep'] });
-  await sharedPage.getByRole('button', { name: '#date-sep', exact: true }).click();
+  await connectViaWizard(sharedPage, `date-tester-${tag}`, { channels: [`#date-sep-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#date-sep-${tag}`, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -63,8 +67,8 @@ test.describe('Date separator', () => {
 
   test('no separator between messages from the same day', async () => {
     // Send two messages on the same day
-    bot.sendMessage('#date-sep', 'Same day message 1');
-    bot.sendMessage('#date-sep', 'Same day message 2');
+    bot.sendMessage(`#date-sep-${tag}`, 'Same day message 1');
+    bot.sendMessage(`#date-sep-${tag}`, 'Same day message 2');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Same day message 1')).toBeVisible({ timeout: 10_000 });
@@ -90,14 +94,14 @@ test.describe('Date separator', () => {
     });
 
     // Send a message — its server-time will be shifted to ~5s before midnight
-    bot.sendMessage('#date-sep', 'Before midnight message');
+    bot.sendMessage(`#date-sep-${tag}`, 'Before midnight message');
     await expect(chatLog.getByText('Before midnight message')).toBeVisible({ timeout: 10_000 });
 
     // Wait for the shifted clock to cross midnight
     await sharedPage.waitForTimeout(7_000);
 
     // Send another message — its server-time will be shifted to ~2s after midnight (next day)
-    bot.sendMessage('#date-sep', 'After midnight message');
+    bot.sendMessage(`#date-sep-${tag}`, 'After midnight message');
     await expect(chatLog.getByText('After midnight message')).toBeVisible({ timeout: 10_000 });
 
     // A date separator should now appear between the two days

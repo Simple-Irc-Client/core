@@ -4,14 +4,18 @@ import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('settingsbot');
-  await bot.join('#settings');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`settingsbot-${tag}`);
+  await bot.join(`#settings-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'settings-user', { channels: ['#settings'] });
+  await connectViaWizard(sharedPage, `settings-user-${tag}`, { channels: [`#settings-${tag}`] });
 });
 
 test.afterAll(async () => {
@@ -90,7 +94,7 @@ test.describe('Profile settings', () => {
 
   test('edits theme CSS with live apply and resets to default', async () => {
     // Make sure at least one chat message exists to assert the applied styling on
-    bot.sendMessage('#settings', 'theme test message');
+    bot.sendMessage(`#settings-${tag}`, 'theme test message');
     await expect(sharedPage.locator('.sic-msg').first()).toBeVisible({ timeout: 10_000 });
 
     // Open profile settings

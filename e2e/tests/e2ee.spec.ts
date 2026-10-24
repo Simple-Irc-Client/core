@@ -18,11 +18,9 @@ import { CTCP, ctcpBody, E2eePeer, FrameCollector } from '../e2ee-peer';
  * sent within a millisecond of the keypress and routinely arrive first.
  */
 
-const APP_NICK = 'e2ee-tester';
-const BOT_NICK = 'e2eebot';
-
 let bot: IrcClient;
 let page: Page;
+let appNick: string;
 let botNick: string;
 
 /**
@@ -40,7 +38,7 @@ const openDmWithBot = async (): Promise<void> => {
     await sidebar.getByRole('button', { name: botNick }).click();
     return;
   }
-  bot.sendMessage(APP_NICK, 'opening a window');
+  bot.sendMessage(appNick, 'opening a window');
   await expect(sidebar.getByRole('button', { name: botNick })).toBeVisible({ timeout: 20_000 });
   await sidebar.getByRole('button', { name: botNick }).click();
 };
@@ -93,7 +91,7 @@ const handshakeAsInitiator = async (): Promise<void> => {
   await peer.newHandshake();
   const capture = bot.captureLines();
 
-  bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${peer.offerFrame()}${CTCP}`);
+  bot.send(`PRIVMSG ${appNick} :${CTCP}${peer.offerFrame()}${CTCP}`);
 
   await expect(page.getByTestId('e2ee-banner')).toContainText('wants to encrypt', { timeout: 20_000 });
   await page.getByRole('button', { name: 'Encrypt', exact: true }).click();
@@ -116,8 +114,12 @@ const sendInDm = async (text: string): Promise<void> => {
   await input.press('Enter');
 };
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient(BOT_NICK);
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  appNick = `e2ee-tester-${tag}`;
+
+  bot = await createIrcClient(`e2eebot-${tag}`);
   botNick = bot.nick;
 
   peer = new E2eePeer();
@@ -125,7 +127,7 @@ test.beforeAll(async ({ browser }) => {
 
   page = await browser.newPage();
   await page.goto('/');
-  await connectViaWizard(page, APP_NICK);
+  await connectViaWizard(page, appNick);
 });
 
 test.afterAll(async () => {
@@ -164,7 +166,7 @@ test.describe('End-to-end encryption', () => {
     await handshakeAsInitiator();
 
     for (const frame of await peer.sealFrames('meet me by the river')) {
-      bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${frame}${CTCP}`);
+      bot.send(`PRIVMSG ${appNick} :${CTCP}${frame}${CTCP}`);
     }
 
     await expect(page.getByTestId('chat-log').getByText('meet me by the river')).toBeVisible({ timeout: 20_000 });
@@ -220,7 +222,7 @@ test.describe('End-to-end encryption', () => {
     await openDmWithBot();
 
     const capture = bot.captureLines();
-    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${peer.offerFrame()}${CTCP}`);
+    bot.send(`PRIVMSG ${appNick} :${CTCP}${peer.offerFrame()}${CTCP}`);
 
     await expect(page.getByTestId('e2ee-banner')).toContainText('wants to encrypt', { timeout: 20_000 });
     await page.getByRole('button', { name: 'No thanks' }).click();
@@ -241,13 +243,13 @@ test.describe('End-to-end encryption', () => {
     await openDmWithBot();
 
     // Something from a real speaker lands in the window first...
-    bot.sendNotice(APP_NICK, 'plain-notice-before-offer');
+    bot.sendNotice(appNick, 'plain-notice-before-offer');
     await expect(page.getByTestId('chat-log').getByText('plain-notice-before-offer')).toBeVisible({ timeout: 20_000 });
 
     // ...then an inbound E2EE offer lands right under it. Without the detach it
     // groups under the previous author's header and reads as their message.
     await page.waitForTimeout(1100); // inbound-offer throttle
-    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${peer.offerFrame()}${CTCP}`);
+    bot.send(`PRIVMSG ${appNick} :${CTCP}${peer.offerFrame()}${CTCP}`);
 
     // Earlier tests in this file each left an offer notice in this same shared
     // log, so match the most recent one.
@@ -307,7 +309,7 @@ test.describe('End-to-end encryption', () => {
     const impostor = new E2eePeer();
     await impostor.init();
 
-    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${impostor.offerFrame()}${CTCP}`);
+    bot.send(`PRIVMSG ${appNick} :${CTCP}${impostor.offerFrame()}${CTCP}`);
 
     await expect(page.getByTestId('e2ee-banner')).toContainText('encryption key has changed', { timeout: 20_000 });
     await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /key changed/);
@@ -329,12 +331,12 @@ test.describe('End-to-end encryption', () => {
 
     // Tearing the session down with a RESET is how an attacker forces the
     // conversation back to plaintext. Doing it silently is the actual risk.
-    bot.send(`PRIVMSG ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+    bot.send(`PRIVMSG ${appNick} :${CTCP}SIC-E2EE RESET${CTCP}`);
 
     await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /Encrypted/, { timeout: 5_000 });
 
     // A RESET is only honoured over NOTICE, so the PRIVMSG above must be ignored.
-    bot.send(`NOTICE ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+    bot.send(`NOTICE ${appNick} :${CTCP}SIC-E2EE RESET${CTCP}`);
 
     await expect(page.getByTestId('e2ee-banner')).toContainText('you have encrypted with', { timeout: 20_000 });
     await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute(
@@ -348,7 +350,7 @@ test.describe('End-to-end encryption', () => {
 
     // ...and re-encrypting must arm the warning again for a later loss.
     await handshakeAsInitiator();
-    bot.send(`NOTICE ${APP_NICK} :${CTCP}SIC-E2EE RESET${CTCP}`);
+    bot.send(`NOTICE ${appNick} :${CTCP}SIC-E2EE RESET${CTCP}`);
     await expect(page.getByTestId('e2ee-banner')).toContainText('you have encrypted with', { timeout: 20_000 });
     await page.getByRole('button', { name: 'Dismiss' }).click();
   });
@@ -360,7 +362,7 @@ test.describe('End-to-end encryption', () => {
     await sendInDm('secret-that-must-not-persist');
     await expect(page.getByTestId('chat-log').getByText('secret-that-must-not-persist')).toBeVisible();
 
-    bot.sendMessage(APP_NICK, 'plaintext-that-should-persist');
+    bot.sendMessage(appNick, 'plaintext-that-should-persist');
     await expect(page.getByTestId('chat-log').getByText('plaintext-that-should-persist')).toBeVisible({ timeout: 20_000 });
 
     // The channels store debounces its IndexedDB write by 2s.

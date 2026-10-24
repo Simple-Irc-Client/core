@@ -4,20 +4,25 @@ import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let channel: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('compbot');
-  await bot.join('#autocomplete');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  channel = `#autocomplete-${tag}`;
+
+  bot = await createIrcClient(`compbot-${tag}`);
+  await bot.join(channel);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'compuser', { channels: ['#autocomplete'] });
-  await sharedPage.getByRole('button', { name: '#autocomplete', exact: true }).click();
+  await connectViaWizard(sharedPage, `compuser-${tag}`, { channels: [channel] });
+  await sharedPage.getByRole('button', { name: channel, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
   // Wait for users sidebar to populate
   const usersSidebar = sharedPage.getByTestId('users-sidebar');
-  await expect(usersSidebar.getByText('compbot')).toBeVisible({ timeout: 10_000 });
+  await expect(usersSidebar.getByText(bot.nick)).toBeVisible({ timeout: 10_000 });
 });
 
 test.afterAll(async () => {
@@ -61,7 +66,7 @@ test.describe('Autocomplete', () => {
     await messageInput.pressSequentially('#auto');
     await messageInput.press('Tab');
 
-    await expect(messageInput).toHaveValue('#autocomplete ');
+    await expect(messageInput).toHaveValue(`${channel} `);
 
     // Clear input
     await messageInput.fill('');
@@ -70,11 +75,11 @@ test.describe('Autocomplete', () => {
   test('Tab completes user nicknames', async () => {
     const messageInput = sharedPage.locator('#message-input');
 
-    // Type partial username matching 'compbot'
-    await messageInput.pressSequentially('comp');
+    // Type partial username matching the bot
+    await messageInput.pressSequentially('compb');
     await messageInput.press('Tab');
 
-    await expect(messageInput).toHaveValue('compbot ');
+    await expect(messageInput).toHaveValue(`${bot.nick} `);
 
     // Clear input
     await messageInput.fill('');
@@ -84,10 +89,10 @@ test.describe('Autocomplete', () => {
     const messageInput = sharedPage.locator('#message-input');
 
     // Type a sentence then partial username
-    await messageInput.pressSequentially('hello comp');
+    await messageInput.pressSequentially('hello compb');
     await messageInput.press('Tab');
 
-    await expect(messageInput).toHaveValue('hello compbot ');
+    await expect(messageInput).toHaveValue(`hello ${bot.nick} `);
 
     // Clear input
     await messageInput.fill('');

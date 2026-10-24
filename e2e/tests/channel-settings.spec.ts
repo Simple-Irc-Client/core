@@ -3,11 +3,14 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
 
 let bot: IrcClient;
+let tag: string;
 
-test.beforeAll(async () => {
+test.beforeAll(async ({}, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   // Bot joins a channel so ergo has at least one channel visible in LIST
-  bot = await createIrcClient('chansettingsbot');
-  await bot.join('#chan-settings');
+  bot = await createIrcClient(`chansettingsbot-${tag}`);
+  await bot.join(`#chan-settings-${tag}`);
 });
 
 test.afterAll(() => {
@@ -22,16 +25,16 @@ test.describe('Channel settings', () => {
     // Connect and join #chan-settings — the bot is already there, but ergo gives ops
     // to the first user per channel. We need to create our OWN channel to get ops.
     // Skip channels from wizard, then manually join a fresh channel via message input.
-    await connectViaWizard(page, 'opsuser');
+    await connectViaWizard(page, `opsuser-${tag}`);
 
     // Join a new channel where this user will be the first (and get ops)
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #my-ops-chan');
+    await messageInput.fill(`/join #my-ops-chan-${tag}`);
     await messageInput.press('Enter');
 
     // Wait for channel to appear in sidebar and switch to it
-    await expect(page.getByRole('button', { name: '#my-ops-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#my-ops-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#my-ops-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#my-ops-chan-${tag}`, exact: true }).click();
 
     // Channel settings button should be visible (user has ops as first joiner)
     await expect(page.getByTestId('channel-settings-button')).toBeVisible({ timeout: 5_000 });
@@ -39,33 +42,33 @@ test.describe('Channel settings', () => {
 
   test('opens channel settings dialog', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'settings-opener');
+    await connectViaWizard(page, `settings-opener-${tag}`);
 
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #settings-dialog-chan');
+    await messageInput.fill(`/join #settings-dialog-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#settings-dialog-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#settings-dialog-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#settings-dialog-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#settings-dialog-chan-${tag}`, exact: true }).click();
 
     // Click channel settings button
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
     // Dialog should appear with channel name in title
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByText('Channel Settings - #settings-dialog-chan')).toBeVisible();
+    await expect(page.getByText(`Channel Settings - #settings-dialog-chan-${tag}`)).toBeVisible();
   });
 
   test('shows modes tab with channel flags', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'modes-viewer');
+    await connectViaWizard(page, `modes-viewer-${tag}`);
 
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #modes-test-chan');
+    await messageInput.fill(`/join #modes-test-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#modes-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#modes-test-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#modes-test-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#modes-test-chan-${tag}`, exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -80,14 +83,14 @@ test.describe('Channel settings', () => {
 
   test('can toggle channel mode', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'mode-toggler');
+    await connectViaWizard(page, `mode-toggler-${tag}`);
 
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #toggle-mode-chan');
+    await messageInput.fill(`/join #toggle-mode-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#toggle-mode-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#toggle-mode-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#toggle-mode-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#toggle-mode-chan-${tag}`, exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -110,14 +113,14 @@ test.describe('Channel settings', () => {
 
   test('shows lists tab with ban list', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'lists-viewer');
+    await connectViaWizard(page, `lists-viewer-${tag}`);
 
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #lists-test-chan');
+    await messageInput.fill(`/join #lists-test-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#lists-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#lists-test-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#lists-test-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#lists-test-chan-${tag}`, exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -135,14 +138,14 @@ test.describe('Channel settings', () => {
 
   test('can add and remove a ban entry', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'ban-tester');
+    await connectViaWizard(page, `ban-tester-${tag}`);
 
     const messageInput = page.locator('#message-input');
-    await messageInput.fill('/join #ban-test-chan');
+    await messageInput.fill(`/join #ban-test-chan-${tag}`);
     await messageInput.press('Enter');
 
-    await expect(page.getByRole('button', { name: '#ban-test-chan', exact: true })).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('button', { name: '#ban-test-chan', exact: true }).click();
+    await expect(page.getByRole('button', { name: `#ban-test-chan-${tag}`, exact: true })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: `#ban-test-chan-${tag}`, exact: true }).click();
 
     await page.getByTestId('channel-settings-button').click({ timeout: 5_000 });
 
@@ -169,10 +172,10 @@ test.describe('Channel settings', () => {
 
   test('channel settings button is hidden without ops', async ({ page }) => {
     await page.goto('/');
-    await connectViaWizard(page, 'noops-user', { channels: ['#chan-settings'] });
+    await connectViaWizard(page, `noops-user-${tag}`, { channels: [`#chan-settings-${tag}`] });
 
     // Switch to #chan-settings — the bot created this channel and has ops, not this user
-    await page.getByRole('button', { name: '#chan-settings', exact: true }).click();
+    await page.getByRole('button', { name: `#chan-settings-${tag}`, exact: true }).click();
 
     // Channel settings button should NOT be visible (no ops)
     await expect(page.getByTestId('channel-settings-button')).not.toBeVisible({ timeout: 3_000 });

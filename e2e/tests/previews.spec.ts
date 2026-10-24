@@ -8,15 +8,20 @@ test.describe('Previews', () => {
   let bot: IrcClient;
   let sharedPage: Page;
 
-  test.beforeAll(async ({ browser }) => {
-    bot = await createIrcClient('previewbot');
-    await bot.join('#previews');
+  let tag: string;
+
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+    bot = await createIrcClient(`previewbot-${tag}`);
+    await bot.join(`#previews-${tag}`);
 
     sharedPage = await browser.newPage();
     await serveImagePreviews(sharedPage);
     await sharedPage.goto('/');
-    await connectViaWizard(sharedPage, 'preview-tester', { channels: ['#previews'] });
-    await sharedPage.getByRole('button', { name: '#previews', exact: true }).click();
+    await connectViaWizard(sharedPage, `preview-tester-${tag}`, { channels: [`#previews-${tag}`] });
+    await sharedPage.getByRole('button', { name: `#previews-${tag}`, exact: true }).click();
     await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
   });
 
@@ -26,7 +31,7 @@ test.describe('Previews', () => {
   });
 
   test('YouTube link renders thumbnail preview', async () => {
-    bot.sendMessage('#previews', 'Check this out https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    bot.sendMessage(`#previews-${tag}`, 'Check this out https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this out')).toBeVisible({ timeout: 10_000 });
@@ -40,7 +45,7 @@ test.describe('Previews', () => {
   });
 
   test('youtu.be short link renders thumbnail preview', async () => {
-    bot.sendMessage('#previews', 'Short link https://youtu.be/dQw4w9WgXcQ');
+    bot.sendMessage(`#previews-${tag}`, 'Short link https://youtu.be/dQw4w9WgXcQ');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Short link')).toBeVisible({ timeout: 10_000 });
@@ -53,7 +58,7 @@ test.describe('Previews', () => {
 
     const countBefore = await chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).count();
 
-    bot.sendMessage('#previews', 'Just a normal message, no links here');
+    bot.sendMessage(`#previews-${tag}`, 'Just a normal message, no links here');
     await expect(chatLog.getByText('Just a normal message')).toBeVisible({ timeout: 10_000 });
 
     const countAfter = await chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).count();
@@ -61,7 +66,7 @@ test.describe('Previews', () => {
   });
 
   test('image link renders inline preview', async () => {
-    bot.sendMessage('#previews', 'Look at this https://simpleircclient.com/assets/test-image.png');
+    bot.sendMessage(`#previews-${tag}`, 'Look at this https://simpleircclient.com/assets/test-image.png');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Look at this')).toBeVisible({ timeout: 10_000 });
@@ -82,7 +87,7 @@ test.describe('Previews', () => {
 
     const countBefore = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
 
-    bot.sendMessage('#previews', 'Two images https://simpleircclient.com/assets/test-image.jpg https://simpleircclient.com/assets/test-image.png');
+    bot.sendMessage(`#previews-${tag}`, 'Two images https://simpleircclient.com/assets/test-image.jpg https://simpleircclient.com/assets/test-image.png');
     await expect(chatLog.getByText('Two images')).toBeVisible({ timeout: 10_000 });
 
     const previews = chatLog.getByRole('img', { name: 'Image thumbnail' });
@@ -94,7 +99,7 @@ test.describe('Previews', () => {
   });
 
   test('webp image link renders inline preview', async () => {
-    bot.sendMessage('#previews', 'WebP test https://simpleircclient.com/assets/test-image.webp');
+    bot.sendMessage(`#previews-${tag}`, 'WebP test https://simpleircclient.com/assets/test-image.webp');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('WebP test')).toBeVisible({ timeout: 10_000 });
@@ -115,7 +120,7 @@ test.describe('Previews', () => {
 
     const countBefore = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
 
-    bot.sendMessage('#previews', 'Visit https://example.com/page.html');
+    bot.sendMessage(`#previews-${tag}`, 'Visit https://example.com/page.html');
     await expect(chatLog.getByText('Visit')).toBeVisible({ timeout: 10_000 });
 
     const countAfter = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
@@ -123,7 +128,7 @@ test.describe('Previews', () => {
   });
 
   test('Twitter/X link renders embed iframe', async () => {
-    bot.sendMessage('#previews', 'Check this tweet https://x.com/user/status/1234567890123456789');
+    bot.sendMessage(`#previews-${tag}`, 'Check this tweet https://x.com/user/status/1234567890123456789');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this tweet')).toBeVisible({ timeout: 10_000 });
@@ -137,7 +142,7 @@ test.describe('Previews', () => {
   });
 
   test('Bluesky link renders embed iframe', async () => {
-    bot.sendMessage('#previews', 'Bluesky post https://bsky.app/profile/user.bsky.social/post/3abc123def');
+    bot.sendMessage(`#previews-${tag}`, 'Bluesky post https://bsky.app/profile/user.bsky.social/post/3abc123def');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('Bluesky post')).toBeVisible({ timeout: 10_000 });
@@ -149,7 +154,7 @@ test.describe('Previews', () => {
   });
 
   test('Facebook link renders embed iframe', async () => {
-    bot.sendMessage('#previews', 'FB post https://www.facebook.com/user/posts/123456789');
+    bot.sendMessage(`#previews-${tag}`, 'FB post https://www.facebook.com/user/posts/123456789');
 
     const chatLog = sharedPage.getByTestId('chat-log');
     await expect(chatLog.getByText('FB post')).toBeVisible({ timeout: 10_000 });
@@ -165,7 +170,7 @@ test.describe('Previews', () => {
 
     const countBefore = await chatLog.locator('iframe[title="View social media post"]').count();
 
-    bot.sendMessage('#previews', 'Regular link https://example.com/article');
+    bot.sendMessage(`#previews-${tag}`, 'Regular link https://example.com/article');
     await expect(chatLog.getByText('Regular link')).toBeVisible({ timeout: 10_000 });
 
     const countAfter = await chatLog.locator('iframe[title="View social media post"]').count();

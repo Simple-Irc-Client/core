@@ -4,15 +4,19 @@ import { connectViaWizard, openProfileSettings } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('langbot');
-  await bot.join('#language');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+
+  bot = await createIrcClient(`langbot-${tag}`);
+  await bot.join(`#language-${tag}`);
 
   sharedPage = await browser.newPage();
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'lang-tester', { channels: ['#language'] });
-  await sharedPage.getByRole('button', { name: '#language', exact: true }).click();
+  await connectViaWizard(sharedPage, `lang-tester-${tag}`, { channels: [`#language-${tag}`] });
+  await sharedPage.getByRole('button', { name: `#language-${tag}`, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
