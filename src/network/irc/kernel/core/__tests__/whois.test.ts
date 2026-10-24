@@ -188,6 +188,18 @@ describe('kernel core/whois', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 317 - signon time in the user\'s time format', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(settingsFile, 'getTimeFormat').mockImplementation(() => '12h');
+    vi.spyOn(settingsFile, 'getShowSeconds').mockImplementation(() => true);
+    const signon = new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000;
+
+    new Kernel({ type: 'raw', line: `:insomnia.pirc.pl 317 sic-test toto 118 ${signon} :seconds idle, signon time` }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ message: expect.stringContaining('24 paź 2026 10:40:09 PM') }));
+  });
+
   it('test raw 330 - logged in as', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');

@@ -1,12 +1,8 @@
 import { contentCategories } from '@features/chat/membershipEvents';
-import { isSpoiler } from '@features/chat/spoilers';
+import { plainText } from '@features/chat/spoilers';
 import { isSameName } from '@features/settings/store/settings';
 import { escapeRegExp } from '@shared/lib/highlight';
-import { hasIrcFormatting, parseIrcFormatting } from '@shared/lib/ircFormatting';
 import { ChannelCategory, type ChannelExtended, type Message } from '@shared/types';
-
-/** Stands in for a spoiler's text, which search neither shows nor finds */
-export const SPOILER_MASK = '▒▒▒';
 
 export interface SearchResult {
   channel: ChannelExtended;
@@ -16,25 +12,6 @@ export interface SearchResult {
   /** Where the query occurs in `text`: [start, end) */
   matches: [number, number][];
 }
-
-/** The message as plain text: formatting dropped, each spoiler masked */
-export const searchableText = (message: string): string => {
-  if (!hasIrcFormatting(message)) {
-    return message;
-  }
-  let text = '';
-  let inSpoiler = false;
-  for (const segment of parseIrcFormatting(message)) {
-    const spoiler = isSpoiler(segment.style);
-    if (!spoiler) {
-      text += segment.text;
-    } else if (!inSpoiler) {
-      text += SPOILER_MASK;
-    }
-    inSpoiler = spoiler;
-  }
-  return text;
-};
 
 // What someone wrote and can be read; a message still decrypting or that failed to has no text of its own
 const isSearchable = (message: Message): boolean =>
@@ -59,7 +36,7 @@ export const searchMessages = (channels: ChannelExtended[], query: string, inCha
       if (!isSearchable(message)) {
         continue;
       }
-      const text = searchableText(message.message);
+      const text = plainText(message.message);
       const matches = [...text.matchAll(pattern)].map((match): [number, number] => [match.index, match.index + match[0].length]);
       if (matches.length > 0) {
         results.push({ channel, message, text, matches });

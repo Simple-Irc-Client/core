@@ -2,6 +2,12 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AwayMessages from '../AwayMessages';
+import { useSettingsStore } from '@features/settings/store/settings';
+
+vi.mock('@/shared/lib/dateLocale', async () => {
+  const { enUS } = await import('date-fns/locale');
+  return { getDateFnsLocale: () => enUS };
+});
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -59,6 +65,20 @@ describe('AwayMessages', () => {
   });
 
   describe('Displaying messages', () => {
+    it('should show when each came in the user\'s time format, with the date for an earlier day', () => {
+      vi.useFakeTimers({ now: new Date(2026, 9, 24, 23, 0), toFake: ['Date'] });
+      useSettingsStore.setState({ timeFormat: '12h', showSeconds: true });
+      const away = (id: string, time: Date) => ({ id, message: 'hi', nick: 'sender1', target: '#test', time: time.toISOString(), category: 'default', channel: '#test' });
+      mockAwayMessages = [away('today', new Date(2026, 9, 24, 22, 40, 9)), away('earlier', new Date(2026, 9, 23, 9, 5, 0))];
+
+      render(<AwayMessages open={true} onOpenChange={mockOnOpenChange} />);
+
+      expect(document.body.textContent).toContain('10:40:09 PM');
+      expect(document.body.textContent).toContain('9:05:00 AM (23 Oct 2026)');
+      useSettingsStore.setState({ timeFormat: '24h', showSeconds: false });
+      vi.useRealTimers();
+    });
+
     it('should display away messages', () => {
       mockAwayMessages = [
         {

@@ -16,6 +16,7 @@ import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { playHighlightSound } from '@features/sounds/sounds';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { REPLY_TAG } from '@features/replies/replies';
+import { plainText } from '@features/chat/spoilers';
 import { handlePeerOffline } from '@features/e2ee/session';
 import { isIgnoredSender } from '@features/ignore/ignore';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getEncryptedPassword, getHighlightWords, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
@@ -232,7 +233,7 @@ const announceHighlight = ({ window, isDirect }: Conversation, nick: string, tex
     setHasMention(window);
   }
   playHighlightSound(window, isDirect);
-  void notifyHighlight({ nick, target: window, message: text, isDirect });
+  void notifyHighlight({ nick, target: window, message: plainText(text), isDirect });
 };
 
 const trackReadPosition = (ctx: IrcContext, window: string, currentChannelName: string): void => {

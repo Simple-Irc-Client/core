@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
 import { Menu, Save, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
-import { isSameName, useSettingsStore } from '@features/settings/store/settings';
+import { isSameName, useSettingsStore, type TimeFormat } from '@features/settings/store/settings';
 import { useUsersStore } from '@features/users/store/users';
 import { getCurrentNick } from '@features/settings/store/settings';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
@@ -12,8 +12,7 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
-import { format } from 'date-fns';
-import { getDateFnsLocale } from '@/shared/lib/dateLocale';
+import { formatDateTime } from '@shared/lib/dateTime';
 import type { TFunction } from 'i18next';
 import { parseIrcFormatting, renderFormattedSegments } from '@/shared/lib/ircFormatting';
 import { getUserDisplayName } from '@shared/lib/displayName';
@@ -25,7 +24,7 @@ import { openMessageSearch } from '@features/shortcuts/store/shortcuts';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
-const formatTopicTooltip = (channelName: string, t: TFunction): string | undefined => {
+const formatTopicTooltip = (channelName: string, t: TFunction, timeFormat: TimeFormat, showSeconds: boolean): string | undefined => {
   const topicSetBy = getTopicSetBy(channelName);
   const topicTime = getTopicTime(channelName);
 
@@ -36,7 +35,7 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
   const date = new Date(topicTime * 1000);
   return t('main.topic.setBy', {
     nick: getUserDisplayName(topicSetBy),
-    date: format(date, 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }),
+    date: formatDateTime(date, timeFormat, showSeconds),
     interpolation: { escapeValue: false },
   });
 };
@@ -45,6 +44,8 @@ const formatTopicTooltip = (channelName: string, t: TFunction): string | undefin
 const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChannelName: string }) => {
   const { t } = useTranslation();
   const [editedTopic, setEditedTopic] = useState(topic);
+  const timeFormat = useSettingsStore((state) => state.timeFormat);
+  const showSeconds = useSettingsStore((state) => state.showSeconds);
 
   const canEditTopic = useUsersStore((state) => {
     const nick = getCurrentNick();
@@ -65,7 +66,7 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
     }
   };
 
-  const topicTooltip = formatTopicTooltip(currentChannelName, t);
+  const topicTooltip = formatTopicTooltip(currentChannelName, t, timeFormat, showSeconds);
   const formattedSegments = parseIrcFormatting(topic);
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
 

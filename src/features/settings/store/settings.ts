@@ -844,6 +844,14 @@ export const getSoundVolume = (): number => {
   return useSettingsStore.getState().soundVolume;
 };
 
+export const getTimeFormat = (): TimeFormat => {
+  return useSettingsStore.getState().timeFormat;
+};
+
+export const getShowSeconds = (): boolean => {
+  return useSettingsStore.getState().showSeconds;
+};
+
 /** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */
 export const clearNetworkState = (): void => {
   setChannelsClearAll();

@@ -19,6 +19,7 @@ import {
 import { getCurrentChannelName, getCurrentNick, isSameName } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { notifyHighlight } from '@/runtime/notifications';
+import { plainText } from '@features/chat/spoilers';
 import { subscribeDmPresence } from '@/features/dmPresence/dmPresence';
 import { playHighlightSound } from '@/features/sounds/sounds';
 import { ChannelCategory, MessageCategory } from '@shared/types';
@@ -149,7 +150,7 @@ const renderDecrypted = (nick: string, messageId: string, time: string, sealed: 
       });
 
       playHighlightSound(window, true);
-      void notifyHighlight({ nick, target: window, message: text, isDirect: true });
+      void notifyHighlight({ nick, target: window, message: plainText(text), isDirect: true });
     },
     (error: unknown) => {
       // Never show unauthenticated bytes as a message from a verified peer

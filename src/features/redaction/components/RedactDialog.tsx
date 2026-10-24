@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@shared/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@shared/components/ui/dialog';
 import { getDisplayNickFromMessage } from '@shared/lib/displayName';
-import { stripIrcFormatting } from '@shared/lib/ircFormatting';
+import { plainText } from '@features/chat/spoilers';
 import { type Message } from '@shared/types';
 import { sendRedaction } from '../redaction';
 
@@ -32,7 +32,7 @@ const RedactDialog = ({ message, onClose }: RedactDialogProps) => {
         </DialogHeader>
         {message !== undefined && (
           <p className="line-clamp-3 break-words rounded border-l-4 border-border bg-muted px-3 py-2 text-sm">
-            <span className="font-semibold">{getDisplayNickFromMessage(message)}</span> {stripIrcFormatting(message.message)}
+            <span className="font-semibold">{getDisplayNickFromMessage(message)}</span> {plainText(message.message)}
           </p>
         )}
         <DialogFooter>

@@ -2151,6 +2151,16 @@ describe('Chat tests', () => {
       expect(screen.queryByTestId('redact-dialog')).not.toBeInTheDocument();
     });
 
+    it('keeps a spoiler hidden when asking to delete the message', () => {
+      setupMocks({ messages: [{ ...ownMessage, message: 'it was \x0314,14the butler\x03' }] });
+
+      const { container } = render(<Main />);
+      fireEvent.click(getDeleteButton(container) as Element);
+
+      expect(screen.getByTestId('redact-dialog')).toHaveTextContent('it was ▒▒▒');
+      expect(screen.getByTestId('redact-dialog')).not.toHaveTextContent('butler');
+    });
+
     it('sends nothing when the deletion is cancelled', () => {
       const send = vi.spyOn(network, 'ircSendCommand').mockImplementation(() => true);
       setupMocks({ messages: [ownMessage] });
@@ -2276,6 +2286,19 @@ describe('Chat tests', () => {
       expect(reply).not.toHaveAttribute('data-grouped');
       expect(reply).toHaveAttribute('data-reply');
       expect(getMessages(container)[0]).not.toHaveAttribute('data-reply');
+    });
+
+    it('keeps a spoiler hidden in what a reply answers', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: 'm1', msgid: 'm1', message: 'it was \x0314,14the butler\x03' }),
+          createMessage({ id: 'm2', msgid: 'm2', message: 'no way', replyTo: 'm1' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-reply .sic-msg-reply-text')).toHaveTextContent(/^it was ▒▒▒$/);
     });
 
     it('says when the message replied to is not shown', () => {

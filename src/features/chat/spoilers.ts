@@ -1,4 +1,4 @@
-import { IRC_FORMAT, type FormatState } from '@/shared/lib/ircFormatting';
+import { IRC_FORMAT, hasIrcFormatting, parseIrcFormatting, type FormatState } from '@/shared/lib/ircFormatting';
 
 const DELIMITER = '||';
 const ESCAPED_DELIMITER = String.raw`\||`;
@@ -12,6 +12,28 @@ const DEFAULT_COLORS = '99,99';
 /** Text in its own background color: hidden in any client, shown covered here */
 export const isSpoiler = (style: FormatState): boolean =>
   style.foreground !== null && style.foreground.toLowerCase() === style.background?.toLowerCase();
+
+/** Stands in for a spoiler's text wherever a message shows as plain text */
+export const SPOILER_MASK = '▒▒▒';
+
+/** The message as plain text: formatting dropped, each spoiler masked */
+export const plainText = (message: string): string => {
+  if (!hasIrcFormatting(message)) {
+    return message;
+  }
+  let text = '';
+  let inSpoiler = false;
+  for (const segment of parseIrcFormatting(message)) {
+    const spoiler = isSpoiler(segment.style);
+    if (!spoiler) {
+      text += segment.text;
+    } else if (!inSpoiler) {
+      text += SPOILER_MASK;
+    }
+    inSpoiler = spoiler;
+  }
+  return text;
+};
 
 const spoilerClose = (next: string | undefined, color: number | null): string => {
   if (color !== null) {

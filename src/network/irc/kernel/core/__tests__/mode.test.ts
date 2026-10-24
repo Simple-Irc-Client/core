@@ -154,6 +154,17 @@ describe('kernel core/mode', () => {
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
+  it('test raw 329 - creation time in the user\'s time format', () => {
+    const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getTimeFormat').mockImplementation(() => '12h');
+    vi.spyOn(settingsFile, 'getShowSeconds').mockImplementation(() => false);
+    const created = new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000;
+
+    new Kernel({ type: 'raw', line: `:chmurka.pirc.pl 329 sic-test #sic ${created}` }).handle();
+
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#sic', message: expect.stringContaining('24 paź 2026 10:40 PM') }));
+  });
+
   it('test raw 482 - not channel operator', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 

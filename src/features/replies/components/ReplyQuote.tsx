@@ -1,7 +1,7 @@
 import { Reply } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getDisplayNickFromMessage } from '@shared/lib/displayName';
-import { stripIrcFormatting } from '@shared/lib/ircFormatting';
+import { plainText } from '@features/chat/spoilers';
 import { type Message } from '@shared/types';
 
 interface ReplyQuoteProps {
@@ -22,7 +22,7 @@ const ReplyQuote = ({ replied, onShow }: ReplyQuoteProps) => {
       ) : (
         <>
           <span className="sic-msg-reply-nick">{getDisplayNickFromMessage(replied)}</span>
-          <span className="sic-msg-reply-text">{replied.redacted === true ? t('main.chat.deleted') : stripIrcFormatting(replied.message)}</span>
+          <span className="sic-msg-reply-text">{replied.redacted === true ? t('main.chat.deleted') : plainText(replied.message)}</span>
         </>
       )}
     </button>

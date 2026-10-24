@@ -63,6 +63,14 @@ test.describe('Chat layout settings', () => {
     await expect.poll(() => page.getByTestId('chat-log').evaluate((log) => (log as HTMLElement).style.getPropertyValue('--sic-time-width'))).toBe('11ch');
   });
 
+  test('WHOIS shows when someone signed on in the chosen format', async () => {
+    const input = page.locator('#message-input');
+    await input.fill(`/whois ${bot.nick}`);
+    await input.press('Enter');
+
+    await expect(page.getByTestId('chat-log').getByText(/signed on/)).toContainText(/signed on \d{1,2} \w{3} \d{4} \d{1,2}:\d{2}:\d{2} (AM|PM)$/, { timeout: 10_000 });
+  });
+
   test('compact spacing packs the messages closer', async () => {
     // From another speaker than the line above, so it starts a group
     const input = page.locator('#message-input');

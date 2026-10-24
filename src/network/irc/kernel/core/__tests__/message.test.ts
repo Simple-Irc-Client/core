@@ -821,6 +821,14 @@ describe('kernel core/message', () => {
       expect(mocks.notifyHighlight).toHaveBeenCalledWith(expect.objectContaining({ target: '#channel', message: 'the Build Failed again' }));
     });
 
+    it('should announce a highlight as plain text, a spoiler kept hidden', () => {
+      const mocks = mockChannelEnvironment();
+
+      new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :the \x02deploy\x02 is \x0314,14delayed\x03' }).handle();
+
+      expect(mocks.notifyHighlight).toHaveBeenCalledWith(expect.objectContaining({ message: 'the deploy is ▒▒▒' }));
+    });
+
     it('should highlight an ACTION containing one of the words', () => {
       const mocks = mockChannelEnvironment();
 

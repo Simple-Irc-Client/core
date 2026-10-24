@@ -61,6 +61,10 @@ describe('replies', () => {
       expect(quoteLine(message({ message: '\x02bold\x02 and\n\x0304red\x03   text ' }))).toBe('> <alice> bold and red text');
     });
 
+    it('keeps a spoiler hidden', () => {
+      expect(quoteLine(message({ message: 'it was \x0314,14the butler\x03' }))).toBe('> <alice> it was ▒▒▒');
+    });
+
     it('shortens a long message', () => {
       const line = quoteLine(message({ message: 'x'.repeat(500) }));
 

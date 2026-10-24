@@ -1,8 +1,8 @@
 import { isClientTagAllowed } from '@/network/irc/clientTags';
 import { escapeTagValue } from '@/network/irc/helpers';
+import { plainText } from '@features/chat/spoilers';
 import { getClientTagDeny } from '@features/settings/store/settings';
 import { getNickFromMessage } from '@shared/lib/displayName';
-import { stripIrcFormatting } from '@shared/lib/ircFormatting';
 import { type Message } from '@shared/types';
 
 // https://ircv3.net/specs/client-tags/reply
@@ -22,7 +22,7 @@ export const replyTags = (message: Message): string | undefined =>
 
 /** The text a reply quotes the message by where it can't refer to it: `> <nick> text` */
 export const quoteLine = (message: Message): string => {
-  const text = stripIrcFormatting(message.message).replaceAll(/\s+/g, ' ').trim();
+  const text = plainText(message.message).replaceAll(/\s+/g, ' ').trim();
   const quoted = text.length > MAX_QUOTED_LENGTH ? `${text.slice(0, MAX_QUOTED_LENGTH - 1)}…` : text;
   return `${QUOTE_PREFIX}<${getNickFromMessage(message) ?? ''}> ${quoted}`;
 };

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
-import MessageTime, { timePattern, timeWidthCh } from '../MessageTime';
+import MessageTime, { timeWidthCh } from '../MessageTime';
 import { useSettingsStore } from '@features/settings/store/settings';
 
 // Local time, so the expectations don't depend on the machine's time zone
@@ -50,16 +50,5 @@ describe('MessageTime', () => {
     expect(timeWidthCh('24h', true)).toBe(8);
     expect(timeWidthCh('12h', false)).toBe(8);
     expect(timeWidthCh('12h', true)).toBe(11);
-  });
-});
-
-describe('timePattern', () => {
-  it.each([
-    ['24h', false, 'HH:mm'],
-    ['24h', true, 'HH:mm:ss'],
-    ['12h', false, 'h:mm a'],
-    ['12h', true, 'h:mm:ss a'],
-  ] as const)('should give %s with seconds %s as %s', (timeFormat, showSeconds, pattern) => {
-    expect(timePattern(timeFormat, showSeconds)).toBe(pattern);
   });
 });

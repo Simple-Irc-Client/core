@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applySpoilerMarkup, isSpoiler } from '../spoilers';
-import { parseIrcFormatting, stripIrcFormatting } from '@/shared/lib/ircFormatting';
+import { applySpoilerMarkup, isSpoiler, plainText, SPOILER_MASK } from '../spoilers';
+import { IRC_FORMAT, parseIrcFormatting, stripIrcFormatting } from '@/shared/lib/ircFormatting';
 
 const style = (foreground: string | null, background: string | null) => ({
   bold: false, italic: false, underline: false, strikethrough: false, monospace: false, reverse: false, foreground, background,
@@ -58,5 +58,23 @@ describe('spoilers', () => {
     it('leaves text without || untouched', () => {
       expect(applySpoilerMarkup('a | b', null)).toBe('a | b');
     });
+  });
+});
+
+describe('plainText', () => {
+  it('should drop formatting', () => {
+    expect(plainText(`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.BOLD} and ${IRC_FORMAT.COLOR}04red`)).toBe('bold and red');
+  });
+
+  it('should mask a spoiler, however it is styled inside', () => {
+    expect(plainText(applySpoilerMarkup(`it was ||the ${IRC_FORMAT.BOLD}butler${IRC_FORMAT.BOLD}|| all along`, null))).toBe(`it was ${SPOILER_MASK} all along`);
+  });
+
+  it('should mask each of two spoilers apart', () => {
+    expect(plainText(applySpoilerMarkup('||one|| and ||two||', null))).toBe(`${SPOILER_MASK} and ${SPOILER_MASK}`);
+  });
+
+  it('should leave plain text as it is', () => {
+    expect(plainText('plain || text')).toBe('plain || text');
   });
 });

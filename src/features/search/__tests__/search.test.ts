@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { searchableText, searchMessages, SPOILER_MASK } from '../search';
+import { searchMessages } from '../search';
 import { applySpoilerMarkup } from '@features/chat/spoilers';
 import { IRC_FORMAT } from '@shared/lib/ircFormatting';
 import { ChannelCategory, MessageCategory, type ChannelExtended, type Message } from '@shared/types';
@@ -26,24 +26,6 @@ const channel = (name: string, messages: Message[], category: ChannelCategory = 
 
 const ids = (channels: ChannelExtended[], query: string, inChannel?: string): string[] =>
   searchMessages(channels, query, inChannel).map((result) => result.message.id);
-
-describe('searchableText', () => {
-  it('should drop formatting', () => {
-    expect(searchableText(`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.BOLD} and ${IRC_FORMAT.COLOR}04red`)).toBe('bold and red');
-  });
-
-  it('should mask a spoiler, however it is styled inside', () => {
-    expect(searchableText(applySpoilerMarkup(`it was ||the ${IRC_FORMAT.BOLD}butler${IRC_FORMAT.BOLD}|| all along`, null))).toBe(`it was ${SPOILER_MASK} all along`);
-  });
-
-  it('should mask each of two spoilers apart', () => {
-    expect(searchableText(applySpoilerMarkup('||one|| and ||two||', null))).toBe(`${SPOILER_MASK} and ${SPOILER_MASK}`);
-  });
-
-  it('should leave plain text as it is', () => {
-    expect(searchableText('plain || text')).toBe('plain || text');
-  });
-});
 
 describe('searchMessages', () => {
   it('should find the query anywhere in a message, ignoring case, newest first across windows', () => {

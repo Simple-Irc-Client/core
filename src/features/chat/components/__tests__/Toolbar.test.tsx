@@ -2158,6 +2158,15 @@ describe('Toolbar', () => {
       expect(screen.getByRole('textbox')).toHaveFocus();
     });
 
+    it('keeps a spoiler hidden in the message being replied to', () => {
+      render(<Toolbar />);
+
+      act(() => setReplyTo('#test', { ...question, message: 'it was \x0314,14the butler\x03' }));
+
+      expect(screen.getByText(/main.toolbar.replyingTo/)).toHaveTextContent('it was ▒▒▒');
+      expect(screen.getByText(/main.toolbar.replyingTo/)).not.toHaveTextContent('butler');
+    });
+
     it('cancels the reply from its bar or with Escape', () => {
       render(<Toolbar />);
       act(() => setReplyTo('#test', question));

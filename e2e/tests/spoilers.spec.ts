@@ -70,4 +70,18 @@ test.describe('Spoilers', () => {
     await spoiler.press('Enter');
     await expect(spoiler).toHaveText('he dies');
   });
+
+  test('replying to a spoiler keeps it covered above the input', async () => {
+    bot.sendMessage(channel, 'the twist: \x0301,01they were twins\x03');
+    const row = messageRow('the twist:');
+    await expect(row).toBeVisible({ timeout: 10_000 });
+
+    await row.hover();
+    await row.getByRole('button', { name: 'Reply', exact: true }).click();
+
+    const replyBar = page.getByText(/^Replying to /);
+    await expect(replyBar).toContainText('the twist: ▒▒▒');
+    await expect(replyBar).not.toContainText('twins');
+    await page.locator('#message-input').press('Escape');
+  });
 });

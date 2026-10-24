@@ -60,6 +60,8 @@ describe('Topic', () => {
     userFlags?: string[];
     isChannelsDrawerOpen?: boolean;
     isUsersDrawerOpen?: boolean;
+    timeFormat?: settingsStore.TimeFormat;
+    showSeconds?: boolean;
   } = {}) => {
     const { topic = '', currentChannelName = '#test', currentChannelCategory = 'channel', userFlags = [], isChannelsDrawerOpen = false, isUsersDrawerOpen = false } = overrides;
 
@@ -82,6 +84,8 @@ describe('Topic', () => {
         currentChannelName,
         currentChannelCategory,
         isConnected: true,
+        timeFormat: overrides.timeFormat ?? '24h',
+        showSeconds: overrides.showSeconds ?? false,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -383,6 +387,16 @@ describe('Topic', () => {
       render(<Topic />);
 
       expect(screen.getByText(/Set by admin on/)).toBeInTheDocument();
+    });
+
+    it('should show when it was set in the user\'s time format', () => {
+      setupMocks({ topic: 'Test Topic', userFlags: ['o'], timeFormat: '12h', showSeconds: true });
+      vi.mocked(channelsStore.getTopicSetBy).mockReturnValue('admin');
+      vi.mocked(channelsStore.getTopicTime).mockReturnValue(new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000);
+
+      render(<Topic />);
+
+      expect(screen.getByText('Set by admin on 24 Oct 2026 10:40:09 PM')).toBeInTheDocument();
     });
 
     it('should not render tooltip content when topicSetBy is empty', () => {

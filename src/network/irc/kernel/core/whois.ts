@@ -2,11 +2,10 @@ import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { getUserModes } from '@features/settings/store/settings';
+import { getShowSeconds, getTimeFormat, getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
-import { getDateFnsLocale } from '@shared/lib/dateLocale';
+import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory } from '@shared/types';
-import { format } from 'date-fns';
 
 const RPL_WHOISCERTFP = '276';
 const RPL_WHOISREGNICK = '307';
@@ -202,7 +201,7 @@ export const onRaw317 = (ctx: IrcContext): void => {
   const signonTime = Number(ctx.line.shift() ?? '0');
 
   const idleFormatted = formatDuration(idleSeconds);
-  const signonDate = signonTime > 0 ? format(new Date(signonTime * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() }) : '';
+  const signonDate = signonTime > 0 ? formatDateTime(new Date(signonTime * 1000), getTimeFormat(), getShowSeconds()) : '';
 
   showReply(ctx, {
     message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),

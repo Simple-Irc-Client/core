@@ -289,6 +289,18 @@ describe('e2ee incoming CTCP handling', () => {
       expect(sounds).toEqual([{ window: 'bob', isDirect: true }]);
     });
 
+    it('announces a decrypted message as plain text, a spoiler kept hidden', async () => {
+      const peer = await establishSession();
+
+      await peer.sendEncrypted('me', 'it is \x0314,14a surprise\x03', BodyKind.message);
+      for (const line of peer.drain()) {
+        handleE2eeCtcp({ nick: 'bob', target: 'me', ctcpContent: bodyOf(line), source: 'privmsg', msgid: 'msg-43' });
+      }
+      await until(() => notifications.length > 0);
+
+      expect(notifications).toEqual([{ nick: 'bob', message: 'it is ▒▒▒' }]);
+    });
+
     it('keeps two back-to-back messages in arrival order even if their decryptions settle the other way round', async () => {
       // The whole reason `handleCipher` inserts a placeholder synchronously
       // (see incoming.ts's file header) is that WebCrypto is not synchronous:

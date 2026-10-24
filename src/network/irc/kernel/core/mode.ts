@@ -6,11 +6,10 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
-import { getChannelModes, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
+import { getChannelModes, getCurrentNick, getShowSeconds, getTimeFormat, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUpdateUserFlag, setUserBot } from '@features/users/store/users';
-import { getDateFnsLocale } from '@shared/lib/dateLocale';
+import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory, type UserMode } from '@shared/types';
-import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
 const RPL_UMODEIS = '221';
@@ -372,7 +371,7 @@ export const onRaw329 = (ctx: IrcContext): void => {
   const timestamp = Number(ctx.line.shift() ?? '0');
 
   if (channel && timestamp > 0) {
-    const createdDate = format(new Date(timestamp * 1000), 'd MMM yyyy HH:mm', { locale: getDateFnsLocale() });
+    const createdDate = formatDateTime(new Date(timestamp * 1000), getTimeFormat(), getShowSeconds());
     showReply(ctx, {
       message: i18next.t('kernel.329', { channel, created: createdDate, defaultValue: `Channel created: ${createdDate}` }),
       target: channel,

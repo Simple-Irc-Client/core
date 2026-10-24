@@ -24,6 +24,7 @@ export const initMobileNotifications = async (): Promise<void> => {
 export const notifyHighlight = async (params: {
   nick: string;
   target: string;
+  /** Plain text: a notification shows formatting codes as they are */
   message: string;
   /** DM rather than a channel mention */
   isDirect: boolean;
