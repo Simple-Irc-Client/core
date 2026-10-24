@@ -4,10 +4,12 @@ import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '..
 test.describe('Reconnect', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('disconnect shows banner and manual reconnect works', async ({ page }) => {
+  test('disconnect shows banner and manual reconnect works', async ({ page }, testInfo) => {
+    // Each browser project runs this at once on the same server: a nick of its own keeps them apart
+    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
     await installWebSocketKillSwitch(page);
     await page.goto('/');
-    await connectViaWizard(page, 'reconnect-user', { channels: [] });
+    await connectViaWizard(page, `reconnect-user-${tag}`, { channels: [] });
     await expect(page.locator('#message-input')).toBeVisible({ timeout: 10_000 });
 
     // Close the app's WebSocket to simulate a disconnect: its onclose handler sets isConnected=false at once.
