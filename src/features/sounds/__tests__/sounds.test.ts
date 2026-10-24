@@ -173,6 +173,90 @@ describe('sounds', () => {
     });
   });
 
+  describe('initSounds', () => {
+    const gestureListeners: [string, EventListenerOrEventListenerObject][] = [];
+
+    beforeEach(() => {
+      const addEventListener = window.addEventListener.bind(window);
+      vi.spyOn(window, 'addEventListener').mockImplementation((type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) => {
+        gestureListeners.push([type, listener]);
+        addEventListener(type, listener, options);
+      });
+    });
+
+    afterEach(() => {
+      for (const [type, listener] of gestureListeners.splice(0)) {
+        window.removeEventListener(type, listener, true);
+      }
+    });
+
+    it.each(['pointerdown', 'keydown'])('should start audio on the first %s, before any sound plays', (gesture) => {
+      sounds.initSounds();
+      expect(contextsCreated).toBe(0);
+
+      window.dispatchEvent(new Event(gesture));
+      window.dispatchEvent(new Event(gesture));
+
+      expect(contextsCreated).toBe(1);
+      expect(resume).toHaveBeenCalledTimes(1);
+      expect(oscillators).toEqual([]);
+    });
+
+    it('should let the first sound play at once on the started audio', async () => {
+      sounds.initSounds();
+      window.dispatchEvent(new Event('pointerdown'));
+      await Promise.resolve();
+
+      await sounds.playSound('ping', 50);
+
+      expect(contextsCreated).toBe(1);
+      expect(resume).toHaveBeenCalledTimes(1);
+      expect(playedFrequencies()).toEqual([1567.98]);
+    });
+
+    it('should not start audio while every sound is off, and start it once one is turned on', () => {
+      settings.useSettingsStore.setState({ directSound: 'off', mentionSound: 'off' });
+      sounds.initSounds();
+
+      window.dispatchEvent(new Event('pointerdown'));
+      expect(contextsCreated).toBe(0);
+
+      settings.useSettingsStore.setState({ mentionSound: 'ping' });
+      window.dispatchEvent(new Event('pointerdown'));
+      expect(contextsCreated).toBe(1);
+    });
+
+    it('should not start audio while the volume is 0', () => {
+      settings.useSettingsStore.setState({ soundVolume: 0 });
+      sounds.initSounds();
+
+      window.dispatchEvent(new Event('keydown'));
+
+      expect(contextsCreated).toBe(0);
+    });
+
+    it('should report audio that cannot start, and try again on the next sound', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      resume.mockRejectedValueOnce(new Error('not allowed'));
+      sounds.initSounds();
+
+      window.dispatchEvent(new Event('pointerdown'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(warn).toHaveBeenCalledWith('[sounds] audio unavailable:', expect.any(Error));
+
+      await sounds.playSound('ping', 50);
+      expect(resume).toHaveBeenCalledTimes(2);
+      expect(playedFrequencies()).toEqual([1567.98]);
+    });
+
+    it('should do nothing without Web Audio', () => {
+      vi.stubGlobal('AudioContext', undefined);
+      sounds.initSounds();
+
+      expect(() => window.dispatchEvent(new Event('pointerdown'))).not.toThrow();
+    });
+  });
+
   describe('playHighlightSound', () => {
     // Runs after every pending microtask, so once the sound has started or given up
     const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));

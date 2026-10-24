@@ -37,6 +37,18 @@ let audioContext: AudioContext | undefined;
 let resuming: Promise<void> | undefined;
 let lastPlayedAt = Number.NEGATIVE_INFINITY;
 
+const getAudioContext = (): AudioContext | undefined => {
+  if (typeof AudioContext === 'undefined') {
+    return undefined;
+  }
+  try {
+    audioContext ??= new AudioContext();
+  } catch (err) {
+    console.warn('[sounds] audio unavailable:', err);
+  }
+  return audioContext;
+};
+
 /** Whether audio runs, starting it if needed; a sound that has to wait longer is skipped, not played late */
 const startAudio = async (context: AudioContext): Promise<boolean> => {
   if (context.state !== 'running') {
@@ -55,24 +67,18 @@ const startAudio = async (context: AudioContext): Promise<boolean> => {
 
 /** Volume is 0–100; an unknown sound (e.g. a stale stored setting) plays nothing */
 export const playSound = async (sound: NotificationSound, volume: number): Promise<void> => {
-  if (sound === 'off' || !Object.hasOwn(TONES, sound) || !(volume > 0) || typeof AudioContext === 'undefined') {
+  if (sound === 'off' || !Object.hasOwn(TONES, sound) || !(volume > 0)) {
     return;
   }
   // Browsers refuse audio until the user has interacted with the page
   if ('userActivation' in navigator && !navigator.userActivation.hasBeenActive) {
     return;
   }
-  try {
-    audioContext ??= new AudioContext();
-  } catch (err) {
-    console.warn('[sounds] audio unavailable:', err);
-    return;
-  }
-  if (!(await startAudio(audioContext))) {
+  const context = getAudioContext();
+  if (context === undefined || !(await startAudio(context))) {
     return;
   }
 
-  const context = audioContext;
   const peak = (PEAK_GAIN * Math.min(volume, 100)) / 100;
   for (const tone of TONES[sound]) {
     const start = context.currentTime + tone.start;
@@ -86,6 +92,27 @@ export const playSound = async (sound: NotificationSound, volume: number): Promi
     oscillator.connect(gain).connect(context.destination);
     oscillator.start(start);
     oscillator.stop(end);
+  }
+};
+
+const GESTURES = ['pointerdown', 'keydown'] as const;
+
+/** At startup: audio starts on the user's first gesture, so the first sound doesn't wait for the device to open */
+export const initSounds = (): void => {
+  const start = (): void => {
+    if ((getDirectSound() === 'off' && getMentionSound() === 'off') || !(getSoundVolume() > 0)) {
+      return;
+    }
+    for (const gesture of GESTURES) {
+      window.removeEventListener(gesture, start, true);
+    }
+    const context = getAudioContext();
+    if (context !== undefined) {
+      void startAudio(context);
+    }
+  };
+  for (const gesture of GESTURES) {
+    window.addEventListener(gesture, start, { capture: true, passive: true });
   }
 };
 
