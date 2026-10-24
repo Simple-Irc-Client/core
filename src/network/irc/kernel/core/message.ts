@@ -7,6 +7,7 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { markReadSoon, noteShownMessage } from '@/network/irc/readMarkers';
+import { serviceRequestWindow } from '@/network/irc/serviceRequests';
 import { notifyHighlight } from '@/runtime/notifications';
 import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, setListDeprecated } from '@features/channels/store/channelList';
@@ -35,6 +36,34 @@ const ERR_CANTSENDTOUSER = '531';
 // :netsplit.pirc.pl NOTICE * :*** No ident response; username prefixed with ~
 // @draft/bot;msgid=hjeGCPN39ksrHai7Rs5gda;time=2023-02-04T22:48:46.472Z :NickServ!NickServ@serwisy.pirc.pl NOTICE SIC-test :Twój nick nie jest zarejestrowany. Aby dowiedzieć się, jak go zarejestrować i po co, zajrzyj na https://pirc.pl/serwisy/nickserv/
 // :irc.librairc.net NOTICE SIC-test :*** You cannot list within the first 60 seconds of connecting. Please try again later.
+// A bot's or ChanServ's channel greeting, sent to us: "[#channel] Welcome!"
+const CHANNEL_PREFIX = /^\[(\S+)\] /;
+
+const shownWindow = (window: string | undefined): string | undefined => (window !== undefined && existChannel(window) ? window : undefined);
+
+/**
+ * A notice to a channel, or about one, goes to that channel. Services talk to us unasked when we connect
+ * and identify, so theirs go to Status unless they answer something the user wrote from a window.
+ * Any other notice to us goes to the current window (classic IRC behavior).
+ */
+const noticeWindow = (ctx: IrcContext, nick: string, target: string, message: string, isServerNotice: boolean, currentChannelName: string): string => {
+  if (isServerNotice) {
+    return STATUS_CHANNEL;
+  }
+  if (isChannel(target) && existChannel(target)) {
+    return target;
+  }
+  const mentioned = CHANNEL_PREFIX.exec(message)?.[1];
+  const greetedIn = mentioned !== undefined && isChannel(mentioned) ? shownWindow(mentioned) : undefined;
+  if (greetedIn !== undefined) {
+    return greetedIn;
+  }
+  if (isIrcService(nick)) {
+    return shownWindow(ctx.request?.window ?? serviceRequestWindow(nick)) ?? STATUS_CHANNEL;
+  }
+  return currentChannelName;
+};
+
 export const onNotice = (ctx: IrcContext): void => {
   const currentChannelName = getCurrentChannelName();
 
@@ -148,14 +177,7 @@ export const onNotice = (ctx: IrcContext): void => {
   // route to Status to avoid flooding the current channel during connection/reconnection
   const isServerNotice = !ctx.sender.includes('!');
 
-  // Notices addressed to a channel we have open belong in that channel's window;
-  // notices addressed to us go to the current window (classic IRC behavior)
-  let noticeTarget = currentChannelName;
-  if (isServerNotice) {
-    noticeTarget = STATUS_CHANNEL;
-  } else if (isChannel(target) && existChannel(target)) {
-    noticeTarget = target;
-  }
+  const noticeTarget = noticeWindow(ctx, nick, target, message, isServerNotice, currentChannelName);
 
   const newMessage = {
     message,

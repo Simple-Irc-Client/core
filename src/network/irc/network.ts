@@ -2,7 +2,8 @@ import { defaultQuitMessage, localBackendHost, localBackendPort, localBackendPat
 import { type Server } from './servers';
 import { parseServer } from './helpers';
 import { resetCapabilityState, isCapabilityEnabled } from './capabilities';
-import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCredentialsForReconnect, restoreSaslCredentials, clearSavedCredentials } from './sasl';
+import { setSaslCredentials, resetSaslState, clearSaslCredentials, saveSaslCredentialsForReconnect, restoreSaslCredentials, clearSavedCredentials, getSaslState, isIdentifySent, markIdentifySent } from './sasl';
+import { clearServiceRequests, noteServiceRequest } from './serviceRequests';
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
@@ -214,6 +215,7 @@ export const ircDisconnect = (): void => {
   resetCapabilityState();
   resetSaslState();
   clearSaslCredentials();
+  clearServiceRequests();
   resetSTSSessionState();
 
   // Without QUIT the gateway would keep the session waiting for this page to resume it
@@ -232,6 +234,7 @@ export const resetConnectionState = (): void => {
   resetSaslState();
   clearAllBatches();
   clearLabels();
+  clearServiceRequests();
   notifyConnectionTornDown();
 };
 
@@ -356,6 +359,7 @@ export const ircSendPassword = (password: string): void => {
   if (account) {
     setSaslCredentials(account, password);
   }
+  markIdentifySent();
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${password}`);
 };
 
@@ -364,6 +368,7 @@ export const ircAuthenticate = (account: string, password: string): void => {
   if (isCapabilityEnabled('sasl')) {
     if (import.meta.env.DEV) { console.warn('SASL enabled but authentication requested post-connect, falling back to NickServ'); }
   }
+  markIdentifySent();
   ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${account} ${password}`);
 };
 
@@ -464,6 +469,9 @@ export const ircSendRawMessage = (data: string): void => {
  * Returns whether it was labeled; without the capability the replies can't be told apart.
  */
 export const ircSendCommand = (data: string, request: LabeledRequest): boolean => {
+  if (request.window !== undefined) {
+    noteServiceRequest(data, request.window);
+  }
   if (data.length === 0 || !isCapabilityEnabled('labeled-response') || !isCapabilityEnabled('batch')) {
     ircSendRawMessage(data);
     return false;
@@ -641,6 +649,11 @@ export const ircAutoAuthenticate = async (): Promise<boolean> => {
   const nick = getCurrentNick();
   const encryptedPassword = getEncryptedPassword();
   const passwordNick = getPasswordNick();
+
+  // Already identified, or on the way: a second IDENTIFY only earns "you are already identified"
+  if (getSaslState() === 'success' || isIdentifySent()) {
+    return false;
+  }
 
   if (!encryptedPassword || passwordNick === undefined || !isSameName(passwordNick, nick)) {
     return false;

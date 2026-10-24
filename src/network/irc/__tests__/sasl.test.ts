@@ -32,6 +32,8 @@ import {
   saveSaslCredentialsForReconnect,
   restoreSaslCredentials,
   clearSavedCredentials,
+  isIdentifySent,
+  markIdentifySent,
 } from '../sasl';
 
 describe('sasl', () => {
@@ -167,11 +169,21 @@ describe('sasl', () => {
     it('should reset state correctly', () => {
       setSaslState('success');
       setAuthenticatedAccount('account');
+      markIdentifySent();
 
       resetSaslState();
 
       expect(getSaslState()).toBe('none');
       expect(getAuthenticatedAccount()).toBeNull();
+      expect(isIdentifySent()).toBe(false);
+    });
+
+    it('should remember an IDENTIFY sent on this connection', () => {
+      expect(isIdentifySent()).toBe(false);
+
+      markIdentifySent();
+
+      expect(isIdentifySent()).toBe(true);
     });
   });
 

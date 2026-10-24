@@ -25,6 +25,9 @@ const mockClearSaslCredentials = vi.fn();
 const mockSaveSaslCredentialsForReconnect = vi.fn().mockResolvedValue(undefined);
 const mockRestoreSaslCredentials = vi.fn().mockResolvedValue(true);
 const mockClearSavedCredentials = vi.fn();
+const mockGetSaslState = vi.fn();
+const mockIsIdentifySent = vi.fn();
+const mockMarkIdentifySent = vi.fn();
 
 vi.mock('../sasl', () => ({
   setSaslCredentials: (...args: unknown[]) => mockSetSaslCredentials(...args),
@@ -35,6 +38,9 @@ vi.mock('../sasl', () => ({
   saveSaslCredentialsForReconnect: () => mockSaveSaslCredentialsForReconnect(),
   restoreSaslCredentials: () => mockRestoreSaslCredentials(),
   clearSavedCredentials: () => mockClearSavedCredentials(),
+  getSaslState: () => mockGetSaslState(),
+  isIdentifySent: () => mockIsIdentifySent(),
+  markIdentifySent: () => mockMarkIdentifySent(),
 }));
 
 // Mock capabilities module
@@ -147,6 +153,9 @@ describe('network', () => {
     mockSaveSaslCredentialsForReconnect.mockClear();
     mockRestoreSaslCredentials.mockClear().mockResolvedValue(true);
     mockClearSavedCredentials.mockClear();
+    mockGetSaslState.mockClear().mockReturnValue('none');
+    mockIsIdentifySent.mockClear().mockReturnValue(false);
+    mockMarkIdentifySent.mockClear();
     // Persistent password mocks
     mockGetEncryptedPassword.mockClear().mockReturnValue(undefined);
     mockGetPasswordNick.mockClear().mockReturnValue(undefined);
@@ -320,6 +329,7 @@ describe('network', () => {
       network.ircSendPassword('myPassword');
 
       expect(mockSendDirectRaw).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY myPassword');
+      expect(mockMarkIdentifySent).toHaveBeenCalled();
     });
 
     it('should store credentials for reconnect using current nick', () => {
@@ -1596,6 +1606,21 @@ describe('network', () => {
   });
 
   describe('ircAutoAuthenticate', () => {
+    it.each([
+      ['SASL already logged in', () => mockGetSaslState.mockReturnValue('success')],
+      ['IDENTIFY already went out on this connection', () => mockIsIdentifySent.mockReturnValue(true)],
+    ])('should not identify again when %s', async (_, arrange) => {
+      mockGetCurrentNick.mockReturnValue('testNick');
+      mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');
+      mockGetPasswordNick.mockReturnValue('testNick');
+      arrange();
+
+      const result = await network.ircAutoAuthenticate();
+
+      expect(result).toBe(false);
+      expect(mockSendDirectRaw).not.toHaveBeenCalled();
+    });
+
     it('should decrypt and send persistent password', async () => {
       mockGetCurrentNick.mockReturnValue('testNick');
       mockGetEncryptedPassword.mockReturnValue('encrypted:myPassword');

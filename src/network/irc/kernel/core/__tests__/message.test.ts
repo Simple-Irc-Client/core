@@ -11,8 +11,10 @@ import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
 import * as soundsFile from '@features/sounds/sounds';
 import { clearReadMarkers } from '@/network/irc/readMarkers';
+import { clearServiceRequests, noteServiceRequest } from '@/network/irc/serviceRequests';
+import { createLabel } from '@/network/irc/labels';
 import * as awayMessagesFile from '@features/channels/store/awayMessages';
-import { DEBUG_CHANNEL } from '@/config/config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { ChannelCategory } from '@shared/types';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
 
@@ -90,7 +92,7 @@ describe('kernel core/message', () => {
     expect(mockSetWizardStep).toHaveBeenCalledWith('password');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie, zaloguj się za pomocą /msg NickServ IDENTIFY hasło.' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie, zaloguj się za pomocą /msg NickServ IDENTIFY hasło.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -113,7 +115,7 @@ describe('kernel core/message', () => {
     expect(mockSetWizardStep).toHaveBeenCalledWith('password');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -136,7 +138,7 @@ describe('kernel core/message', () => {
     expect(mockSetWizardStep).toHaveBeenCalledWith('password');
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY password.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -160,7 +162,7 @@ describe('kernel core/message', () => {
     expect(mockSetWizardStep).not.toHaveBeenCalled();
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -180,9 +182,9 @@ describe('kernel core/message', () => {
     expect(mockSetIsPasswordRequired).not.toHaveBeenCalled();
     expect(mockSetWizardStep).not.toHaveBeenCalled();
 
-    // Message should still be added to debug channel and current channel (normal NOTICE behavior)
+    // Services' notices go to Status
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
-    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
+    expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: STATUS_CHANNEL, message: 'This nickname is registered and protected. If this is your nick, please identify with /msg NickServ IDENTIFY password.' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
   });
 
@@ -243,7 +245,7 @@ describe('kernel core/message', () => {
 
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      target: '#current-channel',
+      target: STATUS_CHANNEL,
       message: 'This nickname is registered. Please choose a different nickname, or identify via /msg NickServ IDENTIFY dilfridge <password>',
     }));
   });
@@ -850,6 +852,71 @@ describe('kernel core/message', () => {
       new Kernel({ type: 'raw', line: ':OtherUser!~user@host PRIVMSG #channel :deploy now' }).handle();
 
       expect(mocks.addAwayMessage).toHaveBeenCalledWith(expect.objectContaining({ message: 'deploy now' }));
+    });
+  });
+
+  describe('Notice routing', () => {
+    const mockNoticeEnvironment = (openWindows: string[]) => {
+      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#viewing');
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => openWindows.some((open) => open.toLowerCase() === name.toLowerCase()));
+      const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      return (line: string) => {
+        setAddMessage.mockClear();
+        new Kernel({ type: 'raw', line }).handle();
+        return setAddMessage.mock.calls.map(([message]) => message).filter((message) => message.target !== DEBUG_CHANNEL);
+      };
+    };
+
+    beforeEach(() => {
+      clearServiceRequests();
+    });
+
+    it('should send what services say unasked to Status', () => {
+      const notice = mockNoticeEnvironment(['#viewing', STATUS_CHANNEL]);
+
+      expect(notice(':NickServ!NickServ@services NOTICE MyNick :Password accepted - you are now recognized.')).toEqual([expect.objectContaining({ target: STATUS_CHANNEL })]);
+      expect(notice(':HostServ!HostServ@services NOTICE MyNick :Your vhost is now activated.')).toEqual([expect.objectContaining({ target: STATUS_CHANNEL })]);
+    });
+
+    it('should send a service\'s answer to the window the user wrote to it from', () => {
+      const notice = mockNoticeEnvironment(['#viewing', '#asked-from', STATUS_CHANNEL]);
+      noteServiceRequest('PRIVMSG NickServ :INFO', '#asked-from');
+
+      expect(notice(':NickServ!NickServ@services NOTICE MyNick :Information on MyNick')).toEqual([expect.objectContaining({ target: '#asked-from' })]);
+      expect(notice(':ChanServ!ChanServ@services NOTICE MyNick :You are not authorized.')).toEqual([expect.objectContaining({ target: STATUS_CHANNEL })]);
+    });
+
+    it('should send a labeled answer to the window of its command', () => {
+      const notice = mockNoticeEnvironment(['#viewing', '#labeled', STATUS_CHANNEL]);
+      const label = createLabel({ window: '#labeled' });
+
+      expect(notice(`@label=${label} :NickServ!NickServ@services NOTICE MyNick :Information on MyNick`)).toEqual([expect.objectContaining({ target: '#labeled' })]);
+    });
+
+    it('should fall back to Status when the window asked from is closed', () => {
+      const notice = mockNoticeEnvironment(['#viewing', STATUS_CHANNEL]);
+      noteServiceRequest('PRIVMSG NickServ :INFO', '#closed-since');
+
+      expect(notice(':NickServ!NickServ@services NOTICE MyNick :Information on MyNick')).toEqual([expect.objectContaining({ target: STATUS_CHANNEL })]);
+    });
+
+    it('should send a channel greeting to that channel', () => {
+      const notice = mockNoticeEnvironment(['#viewing', '#religie', STATUS_CHANNEL]);
+
+      expect(notice(':Pomocnik!pomocny@bot NOTICE MyNick :[#religie] Dla trolli są inne kanały...')).toEqual([expect.objectContaining({ target: '#religie' })]);
+      expect(notice(':ChanServ!ChanServ@services NOTICE MyNick :[#Religie] Welcome!')).toEqual([expect.objectContaining({ target: '#Religie' })]);
+    });
+
+    it.each([
+      ['a channel not open', ':Pomocnik!pomocny@bot NOTICE MyNick :[#elsewhere] Hello'],
+      ['a bracketed word that is no channel', ':alice!a@host NOTICE MyNick :[info] the build is green'],
+      ['a user\'s ordinary notice', ':alice!a@host NOTICE MyNick :ping me later'],
+    ])('should keep %s in the current window', (_, line) => {
+      const notice = mockNoticeEnvironment(['#viewing', STATUS_CHANNEL]);
+
+      expect(notice(line)).toEqual([expect.objectContaining({ target: '#viewing' })]);
     });
   });
 

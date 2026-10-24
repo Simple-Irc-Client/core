@@ -8,6 +8,7 @@ import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as stsFile from '@/network/irc/sts';
 import * as saslFile from '@/network/irc/sasl';
+import * as encryptionFile from '@/network/encryption';
 import i18next from '@/app/i18n';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { useFriendsStore } from '@features/friends/store/friends';
@@ -34,6 +35,7 @@ describe('kernel core/user/register', () => {
 
   describe('without SASL', () => {
     const connectWithFallback = (server: ReturnType<typeof settingsFile.getServer>) => {
+      saslFile.resetSaslState();
       vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
       vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
@@ -53,6 +55,26 @@ describe('kernel core/user/register', () => {
 
       expect(send).toHaveBeenCalledWith('PRIVMSG NickServ :IDENTIFY alice secret');
       expect(clearSaslCredentials).toHaveBeenCalled();
+      expect(saslFile.isIdentifySent()).toBe(true);
+    });
+
+    it('does not identify a second time when NickServ then says the nick is registered', async () => {
+      connectWithFallback({ default: 0, encoding: 'utf8', network: 'net', servers: ['irc.net'] });
+      // Every IDENTIFY the client sends stores its credentials first
+      const identifiesAgain = vi.spyOn(saslFile, 'setSaslCredentials');
+      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'alice');
+      vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
+      vi.spyOn(settingsFile, 'getEncryptedPassword').mockImplementation(() => 'encrypted');
+      vi.spyOn(settingsFile, 'getPasswordNick').mockImplementation(() => 'alice');
+      vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(encryptionFile, 'decryptPersistent').mockResolvedValue('secret');
+
+      new Kernel({ type: 'raw', line: ':NickServ!NickServ@services NOTICE alice :This nickname is registered and protected.' }).handle();
+      // Auto-identify decrypts the saved password first
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(identifiesAgain).not.toHaveBeenCalled();
     });
 
     it('keeps a bouncer account\'s password from the network\'s NickServ', () => {
@@ -66,6 +88,7 @@ describe('kernel core/user/register', () => {
 
       expect(send).not.toHaveBeenCalledWith(expect.stringContaining('IDENTIFY'));
       expect(clearSaslCredentials).toHaveBeenCalled();
+      expect(saslFile.isIdentifySent()).toBe(false);
     });
   });
 

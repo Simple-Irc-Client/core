@@ -10,6 +10,8 @@ let saslState: SaslState = 'none';
 let saslAccount: string | null = null;
 let saslPassword: string | null = null;
 let authenticatedAccount: string | null = null;
+/** NickServ IDENTIFY went out on this connection, as SASL's fallback or by the user */
+let identifySent = false;
 
 let savedEncryptedAccount: string | null = null;
 let savedEncryptedPassword: string | null = null;
@@ -45,6 +47,12 @@ export const clearSaslCredentials = (): void => {
   saslPassword = null;
 };
 
+export const markIdentifySent = (): void => {
+  identifySent = true;
+};
+
+export const isIdentifySent = (): boolean => identifySent;
+
 export const getSaslAccount = (): string | null => saslAccount;
 
 export const getSaslPassword = (): string | null => saslPassword;
@@ -52,6 +60,7 @@ export const getSaslPassword = (): string | null => saslPassword;
 export const resetSaslState = (): void => {
   saslState = 'none';
   authenticatedAccount = null;
+  identifySent = false;
   // Credentials are kept for reconnect
 };
 

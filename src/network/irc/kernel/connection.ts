@@ -7,7 +7,7 @@ import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeEx
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
 import { announcePresence } from '@/network/irc/preAway';
-import { clearSaslCredentials, getNickServFallbackCredentials, restoreSaslCredentials } from '@/network/irc/sasl';
+import { clearSaslCredentials, getNickServFallbackCredentials, markIdentifySent, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
 import { clearAllTyping, existChannel, getChannelsToAutoJoin, getOpenChannelNames, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { resetDmPresenceSubscription, subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
@@ -78,6 +78,7 @@ export const handleConnected = (): void => {
   const nickServCredentials = getNickServFallbackCredentials();
   if (nickServCredentials) {
     if (getServer()?.bouncer === undefined) {
+      markIdentifySent();
       ircSendRawMessage(`PRIVMSG NickServ :IDENTIFY ${nickServCredentials.account} ${nickServCredentials.password}`);
     }
     clearSaslCredentials();
