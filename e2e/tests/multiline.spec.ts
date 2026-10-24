@@ -113,6 +113,18 @@ test.describe('Multiline messages', () => {
     expect(await shownText(row)).toBe('roses are red\nviolets are blue');
   });
 
+  test('the quoted lines of a batch show as a quote, the answer under them as text', async () => {
+    skipWithoutIrcv3('ngircd has no draft/multiline');
+
+    await botSendsBatch(channel, 'mlbot3', ['> <alice> is it lunch yet?', '> asking for a friend', 'it is noon']);
+
+    const row = messageRow('it is noon');
+    await expect(row).toHaveCount(1, { timeout: 10_000 });
+    await expect(row.locator('.sic-msg-quote')).toHaveCount(1);
+    expect(await row.locator('.sic-msg-quote').evaluate((quote) => (quote as HTMLElement).innerText)).toBe('<alice> is it lunch yet?\nasking for a friend');
+    expect(await shownText(row)).toBe('<alice> is it lunch yet?\nasking for a friend\nit is noon');
+  });
+
   test('a batch comes back from history as one message', async () => {
     skipWithoutIrcv3('history is fetched with draft/chathistory');
 

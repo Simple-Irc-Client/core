@@ -12,13 +12,15 @@ import type { FormattedSegment } from '@/shared/lib/ircFormatting';
 import { isSafeUrl } from '@shared/lib/utils';
 import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import { splitEmoji } from '@/shared/lib/emoji';
+import { isSpoiler } from '../spoilers';
+import Spoiler from './Spoiler';
 
 interface MessageTextProps {
   text: string;
 }
 
 interface TextPart {
-  type: 'text' | 'channel' | 'url';
+  type: 'text' | 'channel' | 'url' | 'spoiler';
   value: string;
   segments?: FormattedSegment[];
 }
@@ -67,6 +69,17 @@ const MessageText = ({ text }: MessageTextProps) => {
 
     const result: TextPart[] = [];
     for (const segment of segments) {
+      if (isSpoiler(segment.style)) {
+        const last = result.at(-1);
+        // Bold or italic inside a spoiler splits it into runs: still one box when the color stays
+        if (last?.type === 'spoiler' && last.segments?.[0]?.style.background === segment.style.background) {
+          last.value += segment.text;
+          last.segments.push(segment);
+        } else {
+          result.push({ type: 'spoiler', value: segment.text, segments: [segment] });
+        }
+        continue;
+      }
       const words = segment.text.split(/(\s+)/);
       for (const word of words) {
         const stripped = stripIrcFormatting(word);
@@ -126,6 +139,10 @@ const MessageText = ({ text }: MessageTextProps) => {
               {part.value}
             </span>
           );
+        }
+
+        if (part.type === 'spoiler') {
+          return <Spoiler key={key} segments={part.segments ?? []} />;
         }
 
         if (part.type === 'url') {

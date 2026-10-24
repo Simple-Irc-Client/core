@@ -489,10 +489,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-:where(.sic-msg[data-quote]) .sic-msg-body {
+:where(.sic-msg[data-quote]) .sic-msg-body,
+:where(.sic-msg-quote) {
   padding-left: 0.5rem;
   border-left: 3px solid var(--border);
   color: var(--muted-foreground);
+}
+/* Every line of a quote within a multiline message gets the bar */
+:where(.sic-msg-quote) {
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* A spoiler (text in its own background color) is revealed by a click */
+:where(.sic-spoiler[role='button']) {
+  cursor: pointer;
 }
 :where(.sic-msg[data-shown]) {
   background-color: color-mix(in oklab, var(--primary) 15%, transparent);

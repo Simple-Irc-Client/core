@@ -10,6 +10,8 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ['Tab'], action: 'shortcuts.help.complete' },
   { keys: ['↑', '↓'], action: 'shortcuts.help.history' },
   { keys: ['Esc'], action: 'shortcuts.help.cancelReply' },
+  { keys: ['||…||'], action: 'shortcuts.help.spoiler' },
+  { keys: ['> …'], action: 'shortcuts.help.quote' },
 ];
 
 interface ShortcutsHelpProps {

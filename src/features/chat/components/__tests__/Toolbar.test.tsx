@@ -172,6 +172,49 @@ describe('Toolbar', () => {
       expect(input).toHaveValue('');
     });
 
+    it('should send ||text|| as a spoiler', () => {
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'the end: ||he dies||' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :the end: \x0314,14he dies\x03', { window: '#test' });
+    });
+
+    it('should go back to the chosen color after a spoiler', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: 4, bold: false, italic: false, underline: false },
+          setFontFormatting: vi.fn(),
+        } as unknown as settingsStore.SettingsStore)
+      );
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '||a|| b' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :\x0304\x0314,14a\x0304,99 b\x03', { window: '#test' });
+    });
+
+    it('should not touch || in a command', () => {
+      vi.spyOn(ownMessages, 'showOwnCommandMessages').mockImplementation(() => {});
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: '/me ||x||' } });
+      fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+      expect(network.ircSendCommand).toHaveBeenCalledWith('PRIVMSG #test :\x01ACTION ||x||\x01', { window: '#test' });
+    });
+
     it('should not send message when input is empty', () => {
       render(<Toolbar />);
 

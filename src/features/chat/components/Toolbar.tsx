@@ -32,6 +32,7 @@ import UserMenu from './UserMenu';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import { ACTION_BODY, PRIVMSG_OR_NOTICE, showOwnCommandMessages } from '@features/chat/ownMessages';
 import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
+import { applySpoilerMarkup } from '@features/chat/spoilers';
 import ReplyBar from '@features/replies/components/ReplyBar';
 import { quoteLine, replyTags } from '@features/replies/replies';
 import { clearReplyTo, useReplyToStore } from '@features/replies/store/replyTo';
@@ -370,7 +371,10 @@ const Toolbar = () => {
         const nick = getCurrentNick();
 
         // Line by line: without draft/multiline each line is a message of its own
-        const formattedMessage = message.split('\n').map((line) => (line === '' ? line : applyFormatting(line, fontFormatting))).join('\n');
+        const formattedMessage = message
+          .split('\n')
+          .map((line) => (line === '' ? line : applyFormatting(applySpoilerMarkup(line, fontFormatting.colorCode), fontFormatting)))
+          .join('\n');
 
         if (isSessionActive(currentChannelName)) {
           // Rendered locally even with echo-message: the echoed SICE frame is dropped by frame id

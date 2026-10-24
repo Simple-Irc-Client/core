@@ -25,6 +25,8 @@
  *     .sic-msg-e2ee           lock shown on end-to-end encrypted private messages
  *     .sic-msg-body           the message text
  *       .sic-emoji            wraps each emoji character/sequence inside the body
+ *       .sic-msg-quote        quoted lines ("> text") within a multiline message
+ *       .sic-spoiler          text hidden in its own background color, [data-revealed] once clicked
  *     .sic-msg-time-trailing  timestamp at the end of the line
  *   .sic-msg-embeds           link previews (YouTube, images, social)
  *   .sic-msg-reactions        reactions under the message: a .sic-reaction button

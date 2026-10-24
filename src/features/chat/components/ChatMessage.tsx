@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { Fragment, memo } from 'react';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { ChannelCategory, MessageCategory, type Message } from '@shared/types';
@@ -20,7 +20,7 @@ import AddReactionButton from '@features/reactions/components/AddReactionButton'
 import MessageReactions from '@features/reactions/components/MessageReactions';
 import ReplyButton from '@features/replies/components/ReplyButton';
 import ReplyQuote from '@features/replies/components/ReplyQuote';
-import { QUOTE_PREFIX } from '@features/replies/replies';
+import { QUOTE_PREFIX, splitQuotedLines } from '@features/replies/replies';
 import { contentCategories } from '../membershipEvents';
 
 const repliableCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me]);
@@ -77,8 +77,12 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
   // An encrypted message is never quoted in plaintext
   const isRepliable = canReply && repliableCategories.has(message.category) && !message.system && message.e2ee === undefined;
   const hasActions = isReactable || isRepliable;
-  // Of a multiline message only one line would be the quote
-  const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX) && !message.message.includes('\n');
+  const isMultiline = message.message.includes('\n');
+  const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX) && !isMultiline;
+  // Of a multiline message only some lines may be quotes
+  const quotedLines = isContent && isMultiline && message.message.split('\n').some((line) => line.startsWith(QUOTE_PREFIX))
+    ? splitQuotedLines(message.message)
+    : undefined;
   const { replyTo } = message;
   const showsReplyQuote = replyTo !== undefined && isContent && !isDebug;
 
@@ -161,6 +165,14 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
           <span className="sic-msg-body" style={message.color ? { color: message.color } : undefined}>
             {(isItalic || !isContent) && nick ? (
               <NickHighlightedMessage text={message.message} displayNick={displayNick} onContextMenu={handleNickContextMenu} />
+            ) : quotedLines ? (
+              quotedLines.map((run, index) => (
+                // Runs alternate, so the position stays the run's own
+                <Fragment key={index}>
+                  {index > 0 && '\n'}
+                  {run.quote ? <span className="sic-msg-quote"><MessageText text={run.text} /></span> : <MessageText text={run.text} />}
+                </Fragment>
+              ))
             ) : (
               <MessageText text={isQuote ? message.message.slice(QUOTE_PREFIX.length) : message.message} />
             )}

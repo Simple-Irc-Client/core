@@ -576,4 +576,41 @@ describe('MessageText', () => {
       expect(boldSpan?.textContent).toContain('bold');
     });
   });
+
+  describe('Spoilers', () => {
+    it('shows text in its own background color as one covered spoiler', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container, getAllByRole } = render(<MessageText text={`see ${IRC_FORMAT.COLOR}14,14he \x02dies\x02 #end${IRC_FORMAT.COLOR} ok`} />);
+
+      expect(getAllByRole('button')).toHaveLength(1);
+      expect(container.querySelector('.sic-spoiler')).toHaveTextContent(/^he dies #end$/);
+      expect(container).toHaveTextContent(/^see he dies #end ok$/);
+    });
+
+    it('keeps a channel inside a spoiler from being clickable', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}04,04#secret`} />);
+
+      expect(container.querySelector('.hover\\:underline')).not.toBeInTheDocument();
+    });
+
+    it('shows spoilers in two colors as two', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { getAllByRole } = render(<MessageText text={`${IRC_FORMAT.COLOR}14,14one${IRC_FORMAT.COLOR}01,01two`} />);
+
+      expect(getAllByRole('button')).toHaveLength(2);
+    });
+
+    it('does not take default colors for a spoiler', () => {
+      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+
+      const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}99,99plain`} />);
+
+      expect(container.querySelector('.sic-spoiler')).not.toBeInTheDocument();
+      expect(container).toHaveTextContent('plain');
+    });
+  });
 });

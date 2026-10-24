@@ -2154,13 +2154,33 @@ describe('Chat tests', () => {
       expect(getBody(container)).toHaveTextContent(/^<alice> the question$/);
     });
 
-    it('does not show a multiline message starting with a quote as one', () => {
-      setupMocks({ messages: [createMessage({ id: '1', message: '> <alice> the question\nthe answer' })] });
+    it('shows the quoted lines of a multiline message as quotes, the other lines as they are', () => {
+      setupMocks({ messages: [createMessage({ id: '1', message: '> <alice> the question\n> and more\nthe answer' })] });
 
       const { container } = render(<Main />);
 
       expect(getMessages(container)[0]).not.toHaveAttribute('data-quote');
-      expect(getBody(container)?.textContent).toBe('> <alice> the question\nthe answer');
+      const quotes = container.querySelectorAll('.sic-msg-body .sic-msg-quote');
+      expect(quotes).toHaveLength(1);
+      expect(quotes[0]?.textContent).toBe('<alice> the question\nand more');
+      expect(getBody(container)?.textContent).toBe('<alice> the question\nand more\nthe answer');
+    });
+
+    it('does not quote a multiline message without quoted lines', () => {
+      setupMocks({ messages: [createMessage({ id: '1', message: 'one\n>two' })] });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-quote')).not.toBeInTheDocument();
+      expect(getBody(container)?.textContent).toBe('one\n>two');
+    });
+
+    it('does not quote lines of a notice from the server', () => {
+      setupMocks({ messages: [createMessage({ id: '1', message: '> one\n> two', category: MessageCategory.info })] });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-quote')).not.toBeInTheDocument();
     });
   });
 

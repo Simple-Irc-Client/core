@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { quoteLine, replyTags } from '../replies';
+import { quoteLine, splitQuotedLines, replyTags } from '../replies';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import * as settingsFile from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
@@ -65,6 +65,30 @@ describe('replies', () => {
       const line = quoteLine(message({ message: 'x'.repeat(500) }));
 
       expect(line).toBe(`> <alice> ${'x'.repeat(119)}…`);
+    });
+  });
+
+  describe('splitQuotedLines', () => {
+    it('gathers quoted lines and the others into runs, without the quote marker', () => {
+      expect(splitQuotedLines('> <alice> the question\n> still hers\nmy answer\n> again')).toEqual([
+        { quote: true, text: '<alice> the question\nstill hers' },
+        { quote: false, text: 'my answer' },
+        { quote: true, text: 'again' },
+      ]);
+    });
+
+    it('does not take a line without the space for a quote', () => {
+      expect(splitQuotedLines('>not a quote\n> one')).toEqual([
+        { quote: false, text: '>not a quote' },
+        { quote: true, text: 'one' },
+      ]);
+    });
+
+    it('keeps empty lines', () => {
+      expect(splitQuotedLines('first\n\n> q')).toEqual([
+        { quote: false, text: 'first\n' },
+        { quote: true, text: 'q' },
+      ]);
     });
   });
 });

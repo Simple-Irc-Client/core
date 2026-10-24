@@ -26,3 +26,19 @@ export const quoteLine = (message: Message): string => {
   const quoted = text.length > MAX_QUOTED_LENGTH ? `${text.slice(0, MAX_QUOTED_LENGTH - 1)}…` : text;
   return `${QUOTE_PREFIX}<${getNickFromMessage(message) ?? ''}> ${quoted}`;
 };
+
+/** A multiline message's lines as runs of quoted lines (`> text`, the prefix left out) and of the others */
+export const splitQuotedLines = (text: string): { quote: boolean; text: string }[] => {
+  const runs: { quote: boolean; text: string }[] = [];
+  for (const line of text.split('\n')) {
+    const quote = line.startsWith(QUOTE_PREFIX);
+    const lineText = quote ? line.slice(QUOTE_PREFIX.length) : line;
+    const last = runs.at(-1);
+    if (last?.quote === quote) {
+      last.text += `\n${lineText}`;
+    } else {
+      runs.push({ quote, text: lineText });
+    }
+  }
+  return runs;
+};
