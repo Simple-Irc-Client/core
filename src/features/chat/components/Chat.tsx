@@ -26,6 +26,9 @@ const LOAD_OLDER_THRESHOLD_PX = 200;
 // How long a message gone to from a reply stays marked
 const SHOWN_MESSAGE_MARK_MS = 2000;
 
+// After this long without a word the author's next message gets its header again
+const GROUP_BREAK_MS = 5 * 60 * 1000;
+
 // The message itself: a date separator can appear above it in the same row once older messages go in
 const messageTop = (row: HTMLElement): number => (row.lastElementChild ?? row).getBoundingClientRect().top;
 
@@ -56,6 +59,7 @@ const Chat = () => {
     const result: { item: ChatItem; currentDate: Date; showDateSeparator: boolean; grouped: boolean }[] = [];
     let prevDayStart: number | null = null;
     let prevNick = '';
+    let prevTime = 0;
 
     for (const item of items) {
       const message = item.kind === 'message' ? item.message : item.messages[0];
@@ -65,7 +69,8 @@ const Chat = () => {
       const showDateSeparator = prevDayStart !== null && dayStart !== prevDayStart;
       const isContent = item.kind === 'message' && contentCategories.has(message.category);
       const nick = getNickFromMessage(message) ?? '';
-      const lastNick = showDateSeparator ? '' : prevNick;
+      const time = new Date(message.time).getTime();
+      const lastNick = showDateSeparator || time - prevTime > GROUP_BREAK_MS ? '' : prevNick;
 
       // A reply shows what it answers above its header
       const grouped = !isDebug && isContent && lastNick === nick && message.replyTo === undefined;
@@ -73,6 +78,7 @@ const Chat = () => {
 
       prevDayStart = dayStart;
       prevNick = isContent ? nick : '';
+      prevTime = time;
     }
 
     return result;

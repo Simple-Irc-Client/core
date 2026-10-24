@@ -964,6 +964,35 @@ describe('Chat tests', () => {
       expect(messages[2]).not.toHaveAttribute('data-grouped');
     });
 
+    it('should not mark a message as grouped after more than 5 minutes of silence', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'Hello', nick: 'User1', time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'Back again', nick: 'User1', time: '2024-01-01T12:05:01Z' }),
+          createMessage({ id: '3', message: 'Still here', nick: 'User1', time: '2024-01-01T12:06:00Z' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      const messages = getMessages(container);
+      expect(messages[1]).not.toHaveAttribute('data-grouped');
+      expect(messages[2]).toHaveAttribute('data-grouped');
+    });
+
+    it('should mark a message as grouped exactly 5 minutes after the previous one', () => {
+      setupMocks({
+        messages: [
+          createMessage({ id: '1', message: 'Hello', nick: 'User1', time: '2024-01-01T12:00:00Z' }),
+          createMessage({ id: '2', message: 'Same thought', nick: 'User1', time: '2024-01-01T12:05:00Z' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(getMessages(container)[1]).toHaveAttribute('data-grouped');
+    });
+
     it('should handle mixed string and User object nicks for grouping', () => {
       setupMocks({
         messages: [
