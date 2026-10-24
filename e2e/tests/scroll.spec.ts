@@ -4,17 +4,25 @@ import { connectViaWizard, openProfileSettings, serveImagePreviews } from '../he
 
 let bot: IrcClient;
 let sharedPage: Page;
+let tag: string;
+let channel: string;
+let otherChannel: string;
 
-test.beforeAll(async ({ browser }) => {
-  bot = await createIrcClient('scrollbot');
-  await bot.join('#scroll-test');
-  await bot.join('#scroll-other');
+test.beforeAll(async ({ browser }, testInfo) => {
+  // Each browser project runs this at once on the same server: names of its own keep them apart
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  channel = `#scroll-test-${tag}`;
+  otherChannel = `#scroll-other-${tag}`;
+
+  bot = await createIrcClient(`scrollbot-${tag}`);
+  await bot.join(channel);
+  await bot.join(otherChannel);
 
   sharedPage = await browser.newPage();
   await serveImagePreviews(sharedPage);
   await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, 'scroll-tester', { channels: ['#scroll-test', '#scroll-other'] });
-  await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();
+  await connectViaWizard(sharedPage, `scroll-tester-${tag}`, { channels: [channel, otherChannel] });
+  await sharedPage.getByRole('button', { name: channel, exact: true }).click();
   await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
@@ -31,7 +39,7 @@ test.describe('Scroll behavior', () => {
 
     // Send enough messages to fill the viewport and make content scrollable
     for (let i = 1; i <= 40; i++) {
-      bot.sendMessage('#scroll-test', `Autoscroll message ${i}`);
+      bot.sendMessage(channel, `Autoscroll message ${i}`);
     }
 
     // Last message should be visible (auto-scrolled)
@@ -57,7 +65,7 @@ test.describe('Scroll behavior', () => {
     }));
 
     // Send a new message while scrolled up
-    bot.sendMessage('#scroll-test', 'Message while scrolled up');
+    bot.sendMessage(channel, 'Message while scrolled up');
     await sharedPage.waitForTimeout(2000);
 
     // We should NOT be at the bottom
@@ -75,7 +83,7 @@ test.describe('Scroll behavior', () => {
     await sharedPage.waitForTimeout(200);
 
     // Now new messages should auto-scroll again
-    bot.sendMessage('#scroll-test', 'After re-scroll message');
+    bot.sendMessage(channel, 'After re-scroll message');
     await expect(chatLog.getByText('After re-scroll message')).toBeVisible({ timeout: 10_000 });
 
     const isAtBottom = await chatLog.evaluate((el) => {
@@ -92,24 +100,24 @@ test.describe('Scroll behavior', () => {
     await sharedPage.waitForTimeout(200);
 
     // Send messages with YouTube and image links (these load async previews)
-    bot.sendMessage('#scroll-test', 'Check this video https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-    bot.sendMessage('#scroll-test', 'Look at this image https://simpleircclient.com/assets/test-image.png');
-    bot.sendMessage('#scroll-test', 'Another video https://youtu.be/jNQXAC9IVRw');
+    bot.sendMessage(channel, 'Check this video https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    bot.sendMessage(channel, 'Look at this image https://simpleircclient.com/assets/test-image.png');
+    bot.sendMessage(channel, 'Another video https://youtu.be/jNQXAC9IVRw');
 
     // Send several plain text messages after the media messages
     for (let i = 1; i <= 5; i++) {
-      bot.sendMessage('#scroll-test', `Follow-up text message ${i}`);
+      bot.sendMessage(channel, `Follow-up text message ${i}`);
     }
 
     // Wait for text messages to appear
     await expect(chatLog.getByText('Follow-up text message 5')).toBeVisible({ timeout: 10_000 });
 
     // Simulate a user joining (system event after media messages)
-    const joiner = await createIrcClient('scroll-joiner');
-    await joiner.join('#scroll-test');
+    const joiner = await createIrcClient(`scroll-joiner-${tag}`);
+    await joiner.join(channel);
 
     // Wait for the join message to appear
-    await expect(chatLog.getByText(/scroll-joiner/)).toBeVisible({ timeout: 10_000 });
+    await expect(chatLog.getByText(joiner.nick)).toBeVisible({ timeout: 10_000 });
 
     // Wait for async media previews to load (YouTube thumbnails, image previews)
     await expect(chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).first()).toBeVisible({ timeout: 15_000 });
@@ -145,8 +153,8 @@ test.describe('Scroll behavior', () => {
     await chatLog.evaluate((el) => { el.scrollTop = 0; });
     await sharedPage.waitForTimeout(200);
 
-    // Switch to #scroll-other
-    await sharedPage.getByRole('button', { name: '#scroll-other', exact: true }).click();
+    // Switch to the other channel
+    await sharedPage.getByRole('button', { name: otherChannel, exact: true }).click();
     await sharedPage.waitForTimeout(500);
 
     // Should be at bottom on the new channel
@@ -156,7 +164,7 @@ test.describe('Scroll behavior', () => {
     expect(isAtBottom).toBe(true);
 
     // Switch back for next tests
-    await sharedPage.getByRole('button', { name: '#scroll-test', exact: true }).click();
+    await sharedPage.getByRole('button', { name: channel, exact: true }).click();
   });
 
   test('switching theme keeps chat at the bottom', async () => {
@@ -165,7 +173,7 @@ test.describe('Scroll behavior', () => {
     await sharedPage.setViewportSize({ width: 1600, height: 1200 });
 
     for (let i = 1; i <= 60; i++) {
-      bot.sendMessage('#scroll-test', i % 10 === 0 ? `Theme image ${i} https://simpleircclient.com/assets/test-image.png` : `Theme line ${i}`);
+      bot.sendMessage(channel, i % 10 === 0 ? `Theme image ${i} https://simpleircclient.com/assets/test-image.png` : `Theme line ${i}`);
     }
     await expect(chatLog.getByText('Theme line 59', { exact: true })).toBeVisible({ timeout: 10_000 });
     await expect(chatLog.getByRole('img', { name: 'Image thumbnail' }).last()).toBeVisible({ timeout: 15_000 });
