@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type ShortcutDialog = 'switcher' | 'help';
+export type ShortcutDialog = 'switcher' | 'search' | 'help';
 
 interface ShortcutsStore {
   openDialog: ShortcutDialog | null;
@@ -16,4 +16,8 @@ export const useShortcutsStore = create<ShortcutsStore>()((set) => ({
 
 export const openShortcutsHelp = (): void => {
   useShortcutsStore.getState().setOpenDialog('help');
+};
+
+export const openMessageSearch = (): void => {
+  useShortcutsStore.getState().setOpenDialog('search');
 };

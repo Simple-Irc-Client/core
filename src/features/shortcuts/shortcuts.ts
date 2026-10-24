@@ -6,13 +6,17 @@ import { type ShortcutDialog } from './store/shortcuts';
 
 export const MOD_KEY = isMac ? '⌘' : 'Ctrl';
 
-/** Ctrl+K / ⌘K opens the switcher, Ctrl+/ / ⌘/ the shortcuts list */
+/** Ctrl+K / ⌘K opens the switcher, Ctrl+Shift+F / ⌘⇧F message search, Ctrl+/ / ⌘/ the shortcuts list */
 export const shortcutDialogFor = (event: KeyboardEvent): ShortcutDialog | undefined => {
   if (!(event.ctrlKey || event.metaKey) || event.altKey) {
     return undefined;
   }
   if (event.key.toLowerCase() === 'k' && !event.shiftKey) {
     return 'switcher';
+  }
+  // Plain Ctrl+F stays the browser's find in the window shown
+  if (event.key.toLowerCase() === 'f' && event.shiftKey) {
+    return 'search';
   }
   // Shift is allowed: layouts like German type `/` with it
   if (event.key === '/') {

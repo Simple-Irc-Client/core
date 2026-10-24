@@ -1,4 +1,4 @@
-const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const WORD_CHAR = '[\\p{L}\\p{N}\\p{M}]';
 

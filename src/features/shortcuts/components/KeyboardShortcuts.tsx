@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { shortcutDialogFor } from '../shortcuts';
 import { useShortcutsStore } from '../store/shortcuts';
+import MessageSearch from '@features/search/components/MessageSearch';
 import QuickSwitcher from './QuickSwitcher';
 import ShortcutsHelp from './ShortcutsHelp';
 
@@ -34,6 +35,7 @@ const KeyboardShortcuts = () => {
   return (
     <>
       <QuickSwitcher open={openDialog === 'switcher'} onOpenChange={closeOn} />
+      <MessageSearch open={openDialog === 'search'} onOpenChange={closeOn} />
       <ShortcutsHelp open={openDialog === 'help'} onOpenChange={closeOn} />
     </>
   );

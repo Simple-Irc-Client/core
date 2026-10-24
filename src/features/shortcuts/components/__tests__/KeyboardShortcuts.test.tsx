@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import KeyboardShortcuts from '../KeyboardShortcuts';
-import { useShortcutsStore } from '../../store/shortcuts';
+import { openMessageSearch, useShortcutsStore } from '../../store/shortcuts';
 import { useChannelsStore } from '@features/channels/store/channels';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory } from '@shared/types';
@@ -118,11 +118,27 @@ describe('KeyboardShortcuts', () => {
     expect(screen.getByTestId('shortcuts-list')).toBeInTheDocument();
   });
 
+  it('should open message search with Ctrl+Shift+F, or from the store, and close it with the same shortcut', async () => {
+    const user = userEvent.setup();
+    render(<KeyboardShortcuts />);
+
+    await user.keyboard('{Control>}{Shift>}F{/Shift}{/Control}');
+    expect(screen.getByTestId('message-search')).toBeInTheDocument();
+
+    await user.keyboard('{Control>}{Shift>}F{/Shift}{/Control}');
+    expect(screen.queryByTestId('message-search')).not.toBeInTheDocument();
+
+    act(() => {
+      openMessageSearch();
+    });
+    expect(screen.getByTestId('message-search')).toBeInTheDocument();
+  });
+
   it('should leave other keys alone', async () => {
     const user = userEvent.setup();
     render(<KeyboardShortcuts />);
 
-    await user.keyboard('k{Control>}j{/Control}');
+    await user.keyboard('k{Control>}j{/Control}{Control>}f{/Control}');
 
     expect(useShortcutsStore.getState().openDialog).toBeNull();
   });

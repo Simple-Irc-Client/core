@@ -16,6 +16,8 @@ describe('shortcutDialogFor', () => {
     [{ key: 'k', ctrlKey: true }, 'switcher'],
     [{ key: 'k', metaKey: true }, 'switcher'],
     [{ key: 'K', ctrlKey: true }, 'switcher'],
+    [{ key: 'F', ctrlKey: true, shiftKey: true }, 'search'],
+    [{ key: 'f', metaKey: true, shiftKey: true }, 'search'],
     [{ key: '/', ctrlKey: true }, 'help'],
     [{ key: '/', metaKey: true, shiftKey: true }, 'help'],
   ])('should map %o to %s', (init, dialog) => {
@@ -28,6 +30,8 @@ describe('shortcutDialogFor', () => {
     { key: 'k', ctrlKey: true, shiftKey: true },
     { key: 'k', ctrlKey: true, altKey: true },
     { key: 'j', ctrlKey: true },
+    { key: 'f', ctrlKey: true },
+    { key: 'F', ctrlKey: true, shiftKey: true, altKey: true },
   ])('should ignore %o', (init) => {
     expect(shortcutDialogFor(key(init))).toBeUndefined();
   });

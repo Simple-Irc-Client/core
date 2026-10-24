@@ -1,7 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
-import { Menu, Save, Users } from 'lucide-react';
+import { Menu, Save, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
 import { isSameName, useSettingsStore } from '@features/settings/store/settings';
 import { useUsersStore } from '@features/users/store/users';
@@ -21,6 +21,7 @@ import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import ChannelSettingsButton from '@features/channels/components/ChannelSettings/ChannelSettingsButton';
 import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 import ChannelEncryptionHint from '@features/e2ee/components/ChannelEncryptionHint';
+import { openMessageSearch } from '@features/shortcuts/store/shortcuts';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
@@ -130,6 +131,18 @@ const Topic = () => {
           <span className="mx-2 text-border shrink-0" aria-hidden="true">|</span>
           <TopicInput key={topic} topic={topic} currentChannelName={currentChannelName} />
         </>
+      )}
+      {!isAnyDrawerOpen && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" onClick={openMessageSearch} className="h-12 ml-auto shrink-0" aria-label={t('search.open')}>
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t('search.open')}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
       {!isDebugChannel && !isAnyDrawerOpen && <ChannelSettingsButton channelName={currentChannelName} />}
       {currentChannelCategory === 'priv' && !isAnyDrawerOpen && <E2eeStatusButton channelName={currentChannelName} />}

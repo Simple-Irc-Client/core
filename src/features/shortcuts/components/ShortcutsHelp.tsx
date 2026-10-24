@@ -4,6 +4,7 @@ import { MOD_KEY } from '../shortcuts';
 
 const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: [MOD_KEY, 'K'], action: 'shortcuts.help.switcher' },
+  { keys: [MOD_KEY, 'Shift', 'F'], action: 'shortcuts.help.search' },
   { keys: [MOD_KEY, '/'], action: 'shortcuts.help.help' },
   { keys: ['Enter'], action: 'shortcuts.help.send' },
   { keys: ['Shift', 'Enter'], action: 'shortcuts.help.newLine' },

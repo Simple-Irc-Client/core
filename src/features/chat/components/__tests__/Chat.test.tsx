@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
@@ -10,6 +10,7 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { clearAllReplies, getReplyTo } from '@features/replies/store/replyTo';
+import { useGoToMessageStore } from '@features/chat/store/goToMessage';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
 import { useUsersStore } from '@features/users/store/users';
 import * as network from '@/network/irc/network';
@@ -2310,6 +2311,76 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(container.querySelector('.sic-msg-quote')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Going to a message', () => {
+    const messages = [createMessage({ id: 'm1', message: 'found it' }), createMessage({ id: 'm2', message: 'later' })];
+
+    afterEach(() => {
+      useGoToMessageStore.setState({ sought: undefined });
+    });
+
+    it('goes to the message once its window shows, and marks it a moment', () => {
+      vi.useFakeTimers();
+      setupMocks({ messages });
+      const { container } = render(<Main />);
+      vi.mocked(Element.prototype.scrollIntoView).mockClear();
+
+      act(() => {
+        useGoToMessageStore.setState({ sought: { channelName: '#TEST', messageId: 'm1' } });
+      });
+
+      const found = getMessages(container)[0];
+      expect(vi.mocked(Element.prototype.scrollIntoView).mock.contexts).toEqual([found]);
+      expect(found).toHaveAttribute('data-shown');
+      expect(useGoToMessageStore.getState().sought).toBeUndefined();
+      vi.advanceTimersByTime(2000);
+      expect(found).not.toHaveAttribute('data-shown');
+      vi.useRealTimers();
+    });
+
+    it('keeps the view on the message as new ones arrive', () => {
+      setupMocks({ messages });
+      const { container, rerender } = render(<Main />);
+      const log = container.querySelector<HTMLElement>('[data-testid="chat-log"]') as HTMLElement;
+      Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 2000 });
+      Object.defineProperty(log, 'clientHeight', { configurable: true, value: 500 });
+      // Where scrolling to the message lands, far above the bottom
+      vi.mocked(Element.prototype.scrollIntoView).mockImplementation(() => { log.scrollTop = 600; });
+
+      act(() => {
+        useGoToMessageStore.setState({ sought: { channelName: '#test', messageId: 'm1' } });
+      });
+      setupMocks({ messages: [...messages, createMessage({ id: 'm3', message: 'newer' })] });
+      rerender(<Main />);
+      act(() => {
+        resizeObserverCallback([], {} as ResizeObserver);
+      });
+
+      expect(log.scrollTop).toBe(600);
+      vi.mocked(Element.prototype.scrollIntoView).mockReset();
+    });
+
+    it('waits while another window shows', () => {
+      useGoToMessageStore.setState({ sought: { channelName: '#other', messageId: 'm1' } });
+      setupMocks({ messages });
+
+      render(<Main />);
+
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+      expect(useGoToMessageStore.getState().sought).toEqual({ channelName: '#other', messageId: 'm1' });
+    });
+
+    it('stops looking for a message the window no longer holds', () => {
+      useGoToMessageStore.setState({ sought: { channelName: '#test', messageId: 'dropped' } });
+      setupMocks({ messages });
+
+      const { container } = render(<Main />);
+
+      expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+      expect(container.querySelector('[data-shown]')).not.toBeInTheDocument();
+      expect(useGoToMessageStore.getState().sought).toBeUndefined();
     });
   });
 

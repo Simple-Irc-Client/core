@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
+import { useSettingsStore, fontSizeClasses, isSameName } from '@features/settings/store/settings';
 import { startOfDay } from 'date-fns';
 import type { Message } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { requestOlderHistory } from '@/network/irc/chatHistory';
 import { useCurrentStore } from '@features/chat/store/current';
+import { clearGoToMessage, useGoToMessageStore } from '@features/chat/store/goToMessage';
 import DateSeparator from './DateSeparator';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import NotConnected from './NotConnected';
@@ -27,7 +28,10 @@ import { setReplyTo } from '@features/replies/store/replyTo';
 // Close enough to the top that the older page is usually in before the user gets there
 const LOAD_OLDER_THRESHOLD_PX = 200;
 
-// How long a message gone to from a reply stays marked
+// This close to the bottom the view follows new messages
+const AT_BOTTOM_PX = 50;
+
+// How long a message gone to from a reply or a search result stays marked
 const SHOWN_MESSAGE_MARK_MS = 2000;
 
 // After this long without a word the author's next message gets its header again
@@ -48,6 +52,7 @@ const Chat = () => {
   const density = useSettingsStore((state) => state.density);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
+  const soughtMessage = useGoToMessageStore((state) => state.sought);
   const fold = useCallback((nick: string) => foldName(nick, caseMapping), [caseMapping]);
   /** The event runs shown line by line, by the id of their first event */
   const [expandedRuns, setExpandedRuns] = useState<ReadonlySet<string>>(() => new Set());
@@ -126,11 +131,16 @@ const Chat = () => {
 
   /** Scrolls to the message and marks it a moment; false when it is not shown */
   const showMessage = useCallback((msgid: string): boolean => {
-    const row = containerRef.current?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(msgid)}"] .sic-msg`);
-    if (!row) {
+    const container = containerRef.current;
+    const row = container?.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(msgid)}"] .sic-msg`);
+    if (!container || !row) {
       return false;
     }
     row.scrollIntoView({ block: 'center' });
+    // The view stays there: a scroll event can't tell this from a move down when it lands below where the previous window was
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    isUserScrolledUp.current = scrollHeight - scrollTop - clientHeight > AT_BOTTOM_PX;
+    lastScrollTop.current = scrollTop;
     row.dataset.shown = '';
     setTimeout(() => { delete row.dataset.shown; }, SHOWN_MESSAGE_MARK_MS);
     return true;
@@ -155,7 +165,7 @@ const Chat = () => {
     if (containerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-      if (distanceFromBottom <= 50) {
+      if (distanceFromBottom <= AT_BOTTOM_PX) {
         isUserScrolledUp.current = false;
       } else if (scrollTop < lastScrollTop.current) {
         // Only an upward move is the user's: scroll anchoring moves the view down when content above it grows (images, theme change)
@@ -196,6 +206,14 @@ const Chat = () => {
       handleShowMessage(soughtMsgid.current);
     }
   }, [messages, handleShowMessage]);
+
+  // Once its window shows; one dropped from the window meanwhile isn't waited for
+  useLayoutEffect(() => {
+    if (soughtMessage !== undefined && isSameName(soughtMessage.channelName, currentChannelName)) {
+      showMessage(soughtMessage.messageId);
+      clearGoToMessage();
+    }
+  }, [soughtMessage, currentChannelName, showMessage]);
 
   useEffect(() => {
     const container = containerRef.current;
