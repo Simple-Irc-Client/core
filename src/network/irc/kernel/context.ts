@@ -58,6 +58,12 @@ export class IrcContext {
     };
   }
 
+  /** Remaining parameters, the trailing one last without its ':': servers may send any last parameter either way */
+  allParams(): string[] {
+    const { params, text } = this.paramsAndText();
+    return this.line.some((token) => token.startsWith(':')) ? [...params, text] : params;
+  }
+
   /** Remaining middle parameters and trailing text as `params: text`, either part omitted when empty */
   paramsWithText(): string {
     const { params, text } = this.paramsAndText();

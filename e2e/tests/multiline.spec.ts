@@ -6,6 +6,7 @@ import { skipWithoutIrcv3, testServer } from '../test-server';
 let bot: IrcClient;
 let page: Page;
 let channel: string;
+let tag: string;
 
 const messageRow = (text: string): Locator =>
   page.getByTestId('chat-log').locator('.sic-msg').filter({ has: page.locator('.sic-msg-body', { hasText: text }) });
@@ -29,7 +30,7 @@ const botSendsBatch = async (target: string, reference: string, lines: string[],
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
   channel = `#multiline-${tag}`;
 
   bot = await createIrcClient(`multibot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message', 'batch', 'draft/multiline'] : undefined);
@@ -140,5 +141,25 @@ test.describe('Multiline messages', () => {
     const row = messageRow('said before');
     await expect(row).toHaveCount(1, { timeout: 10_000 });
     expect(await shownText(row)).toBe('said before\nyou joined');
+  });
+
+  test('a long window name keeps the empty input one line tall', async () => {
+    const input = page.locator('#message-input');
+    await page.setViewportSize({ width: 360, height: 740 });
+    const oneLine = await input.evaluate((element) => element.getBoundingClientRect().height);
+
+    const longChannel = `#placeholder-wraps-in-a-narrow-window-${tag}`;
+    await input.fill(`/join ${longChannel}`);
+    await input.press('Enter');
+    await expect(page.getByTestId('chat-header-name')).toHaveText(longChannel, { timeout: 10_000 });
+
+    await expect(input).toHaveAttribute('placeholder', new RegExp(longChannel));
+    const { height, overflows } = await input.evaluate((element) => ({
+      height: element.getBoundingClientRect().height,
+      overflows: element.scrollHeight > element.clientHeight,
+    }));
+    expect(height).toBe(oneLine);
+    expect(overflows).toBe(false);
+    await page.setViewportSize({ width: 1280, height: 720 });
   });
 });

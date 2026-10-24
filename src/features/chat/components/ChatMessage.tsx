@@ -22,6 +22,7 @@ import ReplyButton from '@features/replies/components/ReplyButton';
 import ReplyQuote from '@features/replies/components/ReplyQuote';
 import RedactButton from '@features/redaction/components/RedactButton';
 import { QUOTE_PREFIX, splitQuotedLines } from '@features/replies/replies';
+import { plainText } from '../spoilers';
 import { contentCategories } from '../membershipEvents';
 
 const repliableCategories = new Set<MessageCategory>([MessageCategory.default, MessageCategory.me]);
@@ -90,6 +91,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
     ? splitQuotedLines(message.message)
     : undefined;
   const { replyTo } = message;
+  const shownText = plainText(message.message);
   const showsReplyQuote = replyTo !== undefined && isContent && !isDebug;
 
   const handleNickContextMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -188,10 +190,11 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
           {showHeaderLayout && renderTime('sic-msg-time-trailing', true)}
         </div>
         {!isDebug && !isRedacted && (
+          // What the line shows: a link inside a spoiler gets no preview
           <div className="sic-msg-embeds">
-            <YouTubeThumbnail text={message.message} />
-            <ImagesPreview text={message.message} />
-            <SocialEmbed text={message.message} />
+            <YouTubeThumbnail text={shownText} />
+            <ImagesPreview text={shownText} />
+            <SocialEmbed text={shownText} />
           </div>
         )}
         {message.reactions && <MessageReactions message={message} canReact={isReactable} />}

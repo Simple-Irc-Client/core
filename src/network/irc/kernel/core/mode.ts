@@ -237,10 +237,11 @@ const handleUserModes = (ctx: IrcContext, user: string, changes: ModeChange[], s
 
 // :server 324 mynick #channel +tnl 50
 // :chmurka.pirc.pl 324 sic-test #sic +nt
+// :server 324 mynick #channel +l :50
 export const onRaw324 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
-  const channel = ctx.line.shift();
-  let modesString = ctx.line.shift() ?? '';
+  const [channel, modesParam = '', ...modeParams] = ctx.allParams();
+  let modesString = modesParam;
 
   if (channel === undefined) {
     return;
@@ -263,7 +264,7 @@ export const onRaw324 = (ctx: IrcContext): void => {
     const type = channelModeType(flag, serverChannelModes, getUserModes());
 
     if (type === 'B' || type === 'C') {
-      const param = ctx.line[paramIndex];
+      const param = modeParams[paramIndex];
       if (param !== undefined) {
         modes[flag] = param;
         paramIndex++;

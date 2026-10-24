@@ -59,11 +59,40 @@ describe('kernel ircv3/standardreplies', () => {
     ':ergo.test FAIL CHATHISTORY INVALID_PARAMS :Missing target',
     ':ergo.test FAIL MARKREAD INVALID_PARAMS garbage :Invalid timestamp',
     ':ergo.test FAIL',
-  ])('ignores a failure it has nothing to do with: %s', (line) => {
+  ])('keeps quiet about a failure of what the client asked for itself: %s', (line) => {
     const onHistoryFailed = vi.spyOn(chatHistoryFile, 'onHistoryFailed').mockImplementation(() => {});
+    const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line }).handle();
 
     expect(onHistoryFailed).not.toHaveBeenCalled();
+    expect(setAddMessage).not.toHaveBeenCalledWith(expect.objectContaining({ category: MessageCategory.error }));
+  });
+
+  it('shows any other failure in the window its command was typed in', () => {
+    const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const label = createLabel({ window: '#sic' });
+
+    new Kernel({ type: 'raw', line: `@label=${label} :ergo.test FAIL METADATA KEY_INVALID avatar! :Invalid key name` }).handle();
+
+    expect(setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: '#sic', message: 'Invalid key name', category: MessageCategory.error }));
+  });
+
+  it('shows any other failure in Status when the server does not say what it answers', () => {
+    const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+
+    new Kernel({ type: 'raw', line: ':ergo.test FAIL NICK NICKNAME_RESERVED * :Nickname is reserved' }).handle();
+
+    expect(setAddMessage).toHaveBeenCalledWith(expect.objectContaining({ target: STATUS_CHANNEL, message: 'Nickname is reserved', category: MessageCategory.error }));
+  });
+
+  it('keeps quiet about a failure of a request the client made on its own', () => {
+    const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+    const label = createLabel({ automatic: true });
+
+    new Kernel({ type: 'raw', line: `@label=${label} :ergo.test FAIL AWAY INVALID_PARAMS :Bad away message` }).handle();
+
+    expect(setAddMessage).not.toHaveBeenCalledWith(expect.objectContaining({ category: MessageCategory.error }));
   });
 });

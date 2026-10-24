@@ -105,52 +105,45 @@ export async function decryptString(encryptedBase64: string): Promise<string> {
 // --- Persistent encryption (key stored in localStorage) ---
 
 const PERSISTENT_KEY_STORAGE = 'sic-ek';
-let persistentKey: CryptoKey | null = null;
+let persistentKey: Promise<CryptoKey> | null = null;
+
+const importAesKey = (base64Key: string): Promise<CryptoKey> =>
+  crypto.subtle.importKey('raw', base64ToBytes(base64Key).buffer as ArrayBuffer, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+
+const loadPersistentKey = async (): Promise<CryptoKey> => {
+  const stored = localStorage.getItem(PERSISTENT_KEY_STORAGE);
+  if (stored) {
+    try {
+      return await importAesKey(stored);
+    } catch (error) {
+      // What a damaged key sealed can't be opened anyway; keeping it would fail every save
+      console.warn('[encryption] stored key unusable, replacing it:', error);
+    }
+  }
+
+  const base64Key = bytesToBase64(crypto.getRandomValues(new Uint8Array(32)));
+  localStorage.setItem(PERSISTENT_KEY_STORAGE, base64Key);
+  return importAesKey(base64Key);
+};
+
+// One load for every caller, or two at once could each store a key of their own; a failed load is tried again
+const getPersistentKey = (): Promise<CryptoKey> => {
+  persistentKey ??= loadPersistentKey().catch((error: unknown) => {
+    persistentKey = null;
+    throw error;
+  });
+  return persistentKey;
+};
 
 /** Key in localStorage['sic-ek']. */
 export async function initPersistentEncryption(): Promise<void> {
-  if (persistentKey !== null) { return; }
-
-  let base64Key = localStorage.getItem(PERSISTENT_KEY_STORAGE);
-  if (!base64Key) {
-    const rawKey = crypto.getRandomValues(new Uint8Array(32));
-    base64Key = bytesToBase64(rawKey);
-    localStorage.setItem(PERSISTENT_KEY_STORAGE, base64Key);
-  }
-
-  const keyData = base64ToBytes(base64Key);
-  persistentKey = await crypto.subtle.importKey(
-    'raw',
-    keyData.buffer as ArrayBuffer,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt', 'decrypt']
-  );
+  await getPersistentKey();
 }
 
 export async function encryptPersistent(data: string): Promise<string> {
-  if (!persistentKey) {
-    await initPersistentEncryption();
-  }
-
-  const key = persistentKey;
-  if (!key) {
-    throw new Error('Persistent encryption not initialized');
-  }
-
-  return sealBytes(key, data);
+  return sealBytes(await getPersistentKey(), data);
 }
 
 export async function decryptPersistent(encryptedBase64: string): Promise<string> {
-  if (!persistentKey) {
-    await initPersistentEncryption();
-  }
-
-  const key = persistentKey;
-  if (!key) {
-    throw new Error('Persistent encryption not initialized');
-  }
-
-  return openBytes(key, encryptedBase64);
+  return openBytes(await getPersistentKey(), encryptedBase64);
 }
-

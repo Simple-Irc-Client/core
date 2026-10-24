@@ -73,6 +73,28 @@ test.describe('Metadata', () => {
     await expect(nickEl).toHaveCSS('color', 'rgb(255, 0, 0)');
   });
 
+  test('set display name, status and homepage via profile settings', async () => {
+    const nick = `meta-tester-${tag}`;
+
+    // Each change closes the dialog
+    for (const [id, value] of [['displayName', 'Meta Tester'], ['status', 'testing things'], ['homepage', 'https://example.com/meta']] as const) {
+      await openProfileSettings(sharedPage, 'profile');
+      const field = sharedPage.locator(`#${id}`);
+      await expect(field).toBeVisible({ timeout: 10_000 });
+      await field.fill(value);
+      await field.press('Enter');
+      await expect(sharedPage.getByRole('dialog')).toBeHidden();
+    }
+
+    await expect(sharedPage.getByTestId('users-sidebar').getByText('Meta Tester')).toBeVisible({ timeout: 10_000 });
+    // What the server now holds for everyone else
+    const capture = bot.captureLines();
+    bot.send(`METADATA ${nick} GET display-name status homepage`);
+    await expect.poll(() => capture.lines.filter((line) => / 761 /.test(line)).join('\n'), { timeout: 10_000 })
+      .toMatch(/display-name \S+ :Meta Tester[\s\S]*status \S+ :testing things[\s\S]*homepage \S+ :?https:\/\/example\.com\/meta/);
+    capture.stop();
+  });
+
   test('bot metadata update is visible to browser user', async () => {
     const avatarUrl = 'https://simpleircclient.com/assets/test-image.jpg';
 

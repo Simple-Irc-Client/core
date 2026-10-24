@@ -9,9 +9,17 @@ A React IRC client that connects to IRC servers directly over WebSocket.
 
 - Direct WebSocket connection, no backend required
 - Responsive UI (Tailwind CSS, shadcn/ui), light and dark mode
-- Built-in themes (classic, modern, irc) and custom CSS themes
+- Built-in themes (classic, modern, irc) and custom CSS themes; comfortable or compact spacing, 24 or 12-hour time, with or without seconds
 - English and Polish translations (i18next)
-- IRCv3: SASL, STS, chathistory, typing, metadata, MONITOR and more
+- IRCv3: SASL, STS, chathistory, typing, metadata, MONITOR, read markers, pre-away, standard replies and more
+- Replies, emoji reactions, multiline messages and deleting messages (IRCv3 drafts); replies and multiline messages fall back to plain lines where the server lacks them
+- Spoilers (`||text||`) and quotes (`> text`)
+- Bouncers: soju networks picked in the wizard or from the user menu, and the history and read state the bouncer keeps
+- Older history loaded by scrolling up, and a search through the messages of the open windows
+- Highlight words, an ignore list (`/ignore`), and notification sounds for private messages and mentions
+- Joins, parts, quits and nick changes collapsed into one line, optionally hiding people who said nothing
+- Keyboard shortcuts: a window switcher (Ctrl/⌘+K), message search (Ctrl/⌘+Shift+F) and the list of shortcuts (Ctrl/⌘+/)
+- Auto away after a chosen time, with a message of your own
 - End-to-end encrypted private messages (SIC-E2EE v1, described below)
 - Through the Simple IRC Client gateway: sessions survive a backgrounded mobile tab (see below)
 
@@ -156,7 +164,7 @@ pnpm test          # unit tests
 pnpm run test:e2e  # Playwright, against IRC servers in Docker
 ```
 
-Every e2e test runs twice: against ergo, an IRCv3 server, and through the gateway against ngircd, a server without IRCv3 (the `*-legacy-*` projects). Tests of IRCv3-only features are skipped on ngircd. The gateway runs from source for the `*-gateway` and `*-legacy-*` projects; it expects a checkout next to this repository (`../gateway`, with `pnpm install` done); set `E2E_GATEWAY_DIR` to use another location.
+Every e2e test runs twice: against ergo, an IRCv3 server, and through the gateway against ngircd, a server without IRCv3 (the `*-legacy-*` projects). The tests serve the app on ports of their own (5273 and 5274), so a running `pnpm run dev` is left alone. Tests of IRCv3-only features are skipped on ngircd. The gateway runs from source for the `*-gateway` and `*-legacy-*` projects; it expects a checkout next to this repository (`../gateway`, with `pnpm install` done); set `E2E_GATEWAY_DIR` to use another location.
 
 ### Docker
 

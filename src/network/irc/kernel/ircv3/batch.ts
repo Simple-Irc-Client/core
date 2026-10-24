@@ -29,8 +29,7 @@ import { type ParsedIrcRawMessage } from '@shared/types';
 // BATCH -reference
 // The last parameter may come as a trailing one: BATCH +reference type :target, BATCH :-reference
 export const onBatch = (ctx: IrcContext): void => {
-  const { params: middle, text } = ctx.paramsAndText();
-  const [reference, type = '', ...params] = ctx.line.some((token) => token.startsWith(':')) ? [...middle, text] : middle;
+  const [reference, type = '', ...params] = ctx.allParams();
 
   if (!reference) { return; }
 

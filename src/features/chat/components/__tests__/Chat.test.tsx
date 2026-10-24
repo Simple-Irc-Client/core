@@ -311,6 +311,26 @@ describe('Chat tests', () => {
       expect(container.querySelector('.sic-msg-embeds')).toBeInTheDocument();
     });
 
+    it('should preview no link hidden in a spoiler', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'the twist: \x0314,14https://youtu.be/dQw4w9WgXcQ https://example.com/end.png\x03', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-embeds')?.childElementCount).toBe(0);
+    });
+
+    it('should preview a link however it is formatted', () => {
+      setupMocks({
+        messages: [createMessage({ id: '1', message: 'watch \x02https://youtu.be/dQw4w9WgXcQ\x02 now', nick: 'TestUser' })],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-embeds a[href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"]')).toBeInTheDocument();
+    });
+
     it('should display avatar letter when no avatar image', () => {
       setupMocks({
         messages: [createMessage({ id: '1', message: 'Test', nick: 'TestUser' })],

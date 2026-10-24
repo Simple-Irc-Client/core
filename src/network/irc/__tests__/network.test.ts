@@ -580,6 +580,27 @@ describe('network', () => {
       expect(takeLabel(label ?? '')).toEqual({ window: '#current' });
     });
 
+    it('should send a command of several lines one line at a time, each labeled for the same window', async () => {
+      await enableCapabilities('labeled-response', 'batch');
+      const { takeLabel } = await import('../labels');
+
+      const labeled = network.ircSendCommand('PART #chan\nJOIN #chan\n', { window: '#chan' });
+
+      const sent = mockSendDirectRaw.mock.calls.map(([line]) => line as string);
+      expect(labeled).toBe(true);
+      expect(sent).toEqual([expect.stringMatching(/^@label=\S+ PART #chan$/), expect.stringMatching(/^@label=\S+ JOIN #chan$/)]);
+      const labels = sent.map((line) => /^@label=(\S+) /.exec(line)?.[1] ?? '');
+      expect(new Set(labels).size).toBe(2);
+      expect(labels.map((label) => takeLabel(label))).toEqual([{ window: '#chan' }, { window: '#chan' }]);
+    });
+
+    it('should send a command of several lines one line at a time without labeled-response', async () => {
+      await enableCapabilities();
+
+      expect(network.ircSendCommand('MODE #chan +b bob\nKICK #chan bob :bye', { window: '#chan' })).toBe(false);
+      expect(mockSendDirectRaw.mock.calls.map(([line]) => line)).toEqual(['MODE #chan +b bob', 'KICK #chan bob :bye']);
+    });
+
     it('should not send or label an empty command', async () => {
       await enableCapabilities('labeled-response', 'batch');
 

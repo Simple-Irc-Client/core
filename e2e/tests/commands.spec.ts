@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { connectViaWizard } from '../helpers';
+import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -120,5 +121,16 @@ test.describe('Slash commands', () => {
 
     // Go back to #commands
     await sharedPage.getByRole('button', { name: `#commands-${tag}`, exact: true }).click();
+  });
+
+  test('a command the server refuses with FAIL shows why, where it was typed', async () => {
+    skipWithoutIrcv3('ngircd has no standard replies');
+    await sharedPage.getByRole('button', { name: `#commands-${tag}`, exact: true }).click();
+    const messageInput = sharedPage.locator('#message-input');
+
+    await messageInput.fill('/quote SETNAME :');
+    await messageInput.press('Enter');
+
+    await expect(sharedPage.getByTestId('chat-log').getByText('Realname is not valid')).toBeVisible({ timeout: 10_000 });
   });
 });

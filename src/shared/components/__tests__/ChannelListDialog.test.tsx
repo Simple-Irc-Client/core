@@ -20,7 +20,14 @@ vi.mock('react-i18next', () => ({
 vi.mock('@shared/components/ui/dialog', () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) => <div>{children}</div>;
   return {
-    Dialog: passthrough,
+    // What Radix calls when the user dismisses the dialog (Escape, outside click) or it opens again
+    Dialog: ({ children, onOpenChange }: { children?: React.ReactNode; onOpenChange: (open: boolean) => void }) => (
+      <div>
+        <button onClick={() => onOpenChange(false)}>dismiss</button>
+        <button onClick={() => onOpenChange(true)}>reopen</button>
+        {children}
+      </div>
+    ),
     DialogContent: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
       <div data-testid="dialog-content" {...props}>{children}</div>
     ),
@@ -123,6 +130,48 @@ describe('ChannelListDialog', () => {
 
       unmount();
       expect(onJoin).toHaveBeenCalledExactlyOnceWith(['#test']);
+    });
+  });
+
+  describe('closing', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('cancels without joining, forgetting the selection', () => {
+      const { onJoin, onOpenChange, rerender } = renderDialog(true);
+      fireEvent.click(screen.getByText('select'));
+
+      fireEvent.click(screen.getByText('channelListDialog.button.cancel'));
+      rerender(<ChannelListDialog open onOpenChange={onOpenChange} channelList={channelList} isLoading={false} onJoin={onJoin} />);
+
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onJoin).not.toHaveBeenCalled();
+      expect(screen.getByText('channelListDialog.button.join')).toBeDisabled();
+    });
+
+    it('forgets the selection when dismissed', () => {
+      const { onJoin, onOpenChange } = renderDialog(true);
+      fireEvent.click(screen.getByText('select'));
+
+      fireEvent.click(screen.getByText('dismiss'));
+
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      expect(onJoin).not.toHaveBeenCalled();
+      expect(screen.getByText('channelListDialog.button.join')).toBeDisabled();
+    });
+
+    it('drops a join still waiting when opened again', () => {
+      vi.useFakeTimers();
+      const { onJoin, onOpenChange } = renderDialog(true);
+      fireEvent.click(screen.getByText('select'));
+      fireEvent.click(screen.getByText('channelListDialog.button.join'));
+
+      fireEvent.click(screen.getByText('reopen'));
+      vi.advanceTimersByTime(350);
+
+      expect(onOpenChange).toHaveBeenLastCalledWith(true);
+      expect(onJoin).not.toHaveBeenCalled();
     });
   });
 });

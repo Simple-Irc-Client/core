@@ -84,4 +84,14 @@ test.describe('Spoilers', () => {
     await expect(replyBar).not.toContainText('twins');
     await page.locator('#message-input').press('Escape');
   });
+
+  test('a link hidden in a spoiler gets no preview to give it away', async () => {
+    bot.sendMessage(channel, 'the video: \x0301,01https://youtu.be/dQw4w9WgXcQ\x03 and https://youtu.be/jNQXAC9IVRw');
+    const row = messageRow('the video:');
+    await expect(row.locator('.sic-spoiler')).toHaveCount(1, { timeout: 10_000 });
+
+    const previews = row.locator('.sic-msg-embeds a');
+    await expect(previews).toHaveCount(1);
+    await expect(previews).toHaveAttribute('href', 'https://www.youtube.com/watch?v=jNQXAC9IVRw');
+  });
 });

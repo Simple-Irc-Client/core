@@ -469,6 +469,10 @@ export const ircSendRawMessage = (data: string): void => {
  * Returns whether it was labeled; without the capability the replies can't be told apart.
  */
 export const ircSendCommand = (data: string, request: LabeledRequest): boolean => {
+  // A command like /cycle is several IRC lines, and a WebSocket message carries one: each goes on its own
+  if (data.includes('\n')) {
+    return data.split('\n').filter((line) => line !== '').map((line) => ircSendCommand(line, request)).every(Boolean);
+  }
   if (request.window !== undefined) {
     noteServiceRequest(data, request.window);
   }

@@ -531,7 +531,8 @@ const Toolbar = () => {
             <div className="flex-1 relative">
               <Textarea
                 id="message-input"
-                className="max-h-40"
+                // A long window name would wrap the placeholder past the one line the empty input is tall
+                className="max-h-40 placeholder:truncate"
                 rows={1}
                 autoFocus
                 value={message}
