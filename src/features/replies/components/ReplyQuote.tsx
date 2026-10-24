@@ -22,7 +22,7 @@ const ReplyQuote = ({ replied, onShow }: ReplyQuoteProps) => {
       ) : (
         <>
           <span className="sic-msg-reply-nick">{getDisplayNickFromMessage(replied)}</span>
-          <span className="sic-msg-reply-text">{stripIrcFormatting(replied.message)}</span>
+          <span className="sic-msg-reply-text">{replied.redacted === true ? t('main.chat.deleted') : stripIrcFormatting(replied.message)}</span>
         </>
       )}
     </button>

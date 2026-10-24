@@ -1,6 +1,5 @@
 import { Fragment, memo } from 'react';
-import { format } from 'date-fns';
-import { getDateFnsLocale } from '@/shared/lib/dateLocale';
+import { useTranslation } from 'react-i18next';
 import { ChannelCategory, MessageCategory, type Message } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
@@ -9,6 +8,7 @@ import ImagesPreview from '@shared/components/ImagesPreview';
 import YouTubeThumbnail from '@shared/components/YouTubeThumbnail';
 import SocialEmbed from '@shared/components/SocialEmbed';
 import MessageText from './MessageText';
+import MessageTime from './MessageTime';
 import BotIndicator from './BotIndicator';
 import EchoedIndicator from './EchoedIndicator';
 import E2eeIndicator from '@features/e2ee/components/E2eeIndicator';
@@ -20,6 +20,7 @@ import AddReactionButton from '@features/reactions/components/AddReactionButton'
 import MessageReactions from '@features/reactions/components/MessageReactions';
 import ReplyButton from '@features/replies/components/ReplyButton';
 import ReplyQuote from '@features/replies/components/ReplyQuote';
+import RedactButton from '@features/redaction/components/RedactButton';
 import { QUOTE_PREFIX, splitQuotedLines } from '@features/replies/replies';
 import { contentCategories } from '../membershipEvents';
 
@@ -46,13 +47,17 @@ interface ChatMessageProps {
   /** The message this one replies to, when it is shown */
   replied: Message | undefined;
   onShowMessage: (msgid: string) => void;
+  /** This message may be deleted by the user */
+  canRedact: boolean;
+  onRedact: (message: Message) => void;
 }
 
 /**
  * Renders the same `sic-*` DOM for every theme; theme CSS hides/arranges parts (contract in
  * themes/builtin/*.css). Hidden parts still render so switching themes is pure CSS.
  */
-const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAddReaction, canReply, onReply, replied, onShowMessage }: ChatMessageProps) => {
+const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAddReaction, canReply, onReply, replied, onShowMessage, canRedact, onRedact }: ChatMessageProps) => {
+  const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
   const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
@@ -71,12 +76,13 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
   const isItalic = italicCategories.has(message.category);
   const isBot = isBotMessage(message);
   const time = new Date(message.time);
-  const locale = getDateFnsLocale();
+  const isRedacted = message.redacted === true;
   // Reactions point at the server's msgid
-  const isReactable = canReact && message.msgid !== undefined;
+  const isReactable = canReact && message.msgid !== undefined && !isRedacted;
   // An encrypted message is never quoted in plaintext
-  const isRepliable = canReply && repliableCategories.has(message.category) && !message.system && message.e2ee === undefined;
-  const hasActions = isReactable || isRepliable;
+  const isRepliable = canReply && repliableCategories.has(message.category) && !message.system && message.e2ee === undefined && !isRedacted;
+  const isRedactable = canRedact && message.msgid !== undefined && repliableCategories.has(message.category) && message.e2ee === undefined && !isRedacted;
+  const hasActions = isReactable || isRepliable || isRedactable;
   const isMultiline = message.message.includes('\n');
   const isQuote = isContent && message.message.startsWith(QUOTE_PREFIX) && !isMultiline;
   // Of a multiline message only some lines may be quotes
@@ -95,8 +101,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
 
   const renderTime = (slotClass: string, withEcho: boolean) => (
     <span className={`sic-msg-time ${slotClass}`}>
-      {format(time, 'HH:mm', { locale })}
-      <span className="sic-msg-time-seconds">{format(time, ':ss', { locale })}</span>
+      <MessageTime time={time} />
       {withEcho && message.echoed && <EchoedIndicator />}
       {/* In every slot (unlike the echo tick): single-line themes only show the inline time */}
       {message.e2ee && <E2eeIndicator state={message.e2ee} />}
@@ -115,6 +120,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
       data-e2ee={message.e2ee}
       data-quote={isQuote || undefined}
       data-reply={showsReplyQuote || undefined}
+      data-redacted={isRedacted || undefined}
       // Focusable, so a tap shows the message's actions where there is no hover
       tabIndex={hasActions ? -1 : undefined}
     >
@@ -163,7 +169,9 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
             </>
           )}
           <span className="sic-msg-body" style={message.color ? { color: message.color } : undefined}>
-            {(isItalic || !isContent) && nick ? (
+            {isRedacted ? (
+              <span className="sic-msg-redacted">{t('main.chat.deleted')}</span>
+            ) : (isItalic || !isContent) && nick ? (
               <NickHighlightedMessage text={message.message} displayNick={displayNick} onContextMenu={handleNickContextMenu} />
             ) : quotedLines ? (
               quotedLines.map((run, index) => (
@@ -179,7 +187,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
           </span>
           {showHeaderLayout && renderTime('sic-msg-time-trailing', true)}
         </div>
-        {!isDebug && (
+        {!isDebug && !isRedacted && (
           <div className="sic-msg-embeds">
             <YouTubeThumbnail text={message.message} />
             <ImagesPreview text={message.message} />
@@ -192,6 +200,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
         <div className="sic-msg-actions">
           {isRepliable && <ReplyButton onClick={() => onReply(message)} />}
           {isReactable && <AddReactionButton onClick={(anchor) => onAddReaction(message, anchor)} />}
+          {isRedactable && <RedactButton onClick={() => onRedact(message)} />}
         </div>
       )}
     </div>

@@ -18,6 +18,7 @@ export const DESIRED_CAPABILITIES = [
   'labeled-response',
   'echo-message',
   'draft/multiline',
+  'draft/message-redaction',
   // Our messages sent from other clients on the same bouncer
   'znc.in/self-message',
 

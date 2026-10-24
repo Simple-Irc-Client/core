@@ -1,12 +1,11 @@
 import { memo, useMemo } from 'react';
-import { format } from 'date-fns';
 import { ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { MessageColor } from '@/config/theme';
-import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { cn } from '@shared/lib/utils';
 import { type Message } from '@shared/types';
 import { summarizeEvents, type EventsSummary } from '../membershipEvents';
+import MessageTime from './MessageTime';
 
 /** Past this many names a list ends in "+N" */
 const NAMES_SHOWN = 3;
@@ -45,7 +44,6 @@ const MembershipEventsRow = ({ id, events, expanded, onToggle, fontSizeClass, fo
   }).join(' · ');
 
   const time = new Date(events[0]?.time ?? 0);
-  const locale = getDateFnsLocale();
 
   return (
     <div className="sic-msg" data-category="events" data-expanded={expanded || undefined}>
@@ -53,8 +51,7 @@ const MembershipEventsRow = ({ id, events, expanded, onToggle, fontSizeClass, fo
       <div className="sic-msg-content min-w-0">
         <div className={`sic-msg-line ${fontSizeClass}`}>
           <span className="sic-msg-time sic-msg-time-inline">
-            {format(time, 'HH:mm', { locale })}
-            <span className="sic-msg-time-seconds">{format(time, ':ss', { locale })}</span>
+            <MessageTime time={time} />
           </span>
           <button
             type="button"

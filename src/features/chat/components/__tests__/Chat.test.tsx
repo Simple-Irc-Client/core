@@ -11,6 +11,8 @@ import { MessageColor } from '@/config/theme';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { clearAllReplies, getReplyTo } from '@features/replies/store/replyTo';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
+import { useUsersStore } from '@features/users/store/users';
+import * as network from '@/network/irc/network';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -88,6 +90,9 @@ describe('Chat tests', () => {
     isConnected?: boolean;
     clientTagDeny?: string[];
     membershipEvents?: settingsStore.SettingsStore['membershipEvents'];
+    density?: settingsStore.Density;
+    timeFormat?: settingsStore.TimeFormat;
+    showSeconds?: boolean;
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -104,6 +109,9 @@ describe('Chat tests', () => {
         nick: 'me',
         membershipEvents: overrides.membershipEvents ?? 'collapse',
         caseMapping: 'rfc1459',
+        density: overrides.density ?? 'comfortable',
+        timeFormat: overrides.timeFormat ?? '24h',
+        showSeconds: overrides.showSeconds ?? false,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -156,6 +164,27 @@ describe('Chat tests', () => {
 
       // scrollTop should be set to scrollHeight (scroll to bottom)
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
+    });
+  });
+
+  describe('Layout settings for themes', () => {
+    it('should tell themes the spacing the user chose', () => {
+      setupMocks({ density: 'compact' });
+
+      render(<Main />);
+
+      expect(screen.getByTestId('chat-log')).toHaveAttribute('data-density', 'compact');
+    });
+
+    it('should tell themes how wide the time is', () => {
+      setupMocks();
+      const { unmount } = render(<Main />);
+      expect(screen.getByTestId('chat-log').style.getPropertyValue('--sic-time-width')).toBe('5ch');
+      unmount();
+
+      setupMocks({ timeFormat: '12h', showSeconds: true });
+      render(<Main />);
+      expect(screen.getByTestId('chat-log').style.getPropertyValue('--sic-time-width')).toBe('11ch');
     });
   });
 
@@ -2016,6 +2045,106 @@ describe('Chat tests', () => {
       const { container } = render(<Main />);
 
       expect(container.querySelector('.sic-reaction')).toBeDisabled();
+    });
+  });
+
+  describe('Deleting messages', () => {
+    const getDeleteButton = (container: HTMLElement) => container.querySelector('.sic-msg-actions .sic-msg-delete-action');
+    const ownMessage = createMessage({ id: 'local', msgid: 'm1', nick: 'me', message: 'oops' });
+    const theirMessage = createMessage({ id: 'local', msgid: 'm1', nick: 'alice', message: 'spam' });
+    const asMember = (flags: string[]) => useUsersStore.setState({
+      users: [{ nick: 'me', ident: '', hostname: '', flags: [], channels: [{ name: '#test', flags, maxPermission: -1 }] } as unknown as User],
+    });
+
+    beforeEach(() => {
+      markCapabilitiesAcknowledged(['message-tags', 'draft/message-redaction']);
+      asMember([]);
+    });
+
+    afterEach(() => {
+      resetCapabilityState();
+      useUsersStore.setState({ users: [] });
+    });
+
+    it('deletes the user\'s own message once confirmed', () => {
+      const send = vi.spyOn(network, 'ircSendCommand').mockImplementation(() => true);
+      setupMocks({ messages: [ownMessage] });
+
+      const { container } = render(<Main />);
+      fireEvent.click(getDeleteButton(container) as Element);
+      expect(screen.getByTestId('redact-dialog')).toHaveTextContent('oops');
+      expect(send).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByTestId('redact-confirm'));
+
+      expect(send).toHaveBeenCalledExactlyOnceWith('REDACT #test m1', { window: '#test' });
+      expect(screen.queryByTestId('redact-dialog')).not.toBeInTheDocument();
+    });
+
+    it('sends nothing when the deletion is cancelled', () => {
+      const send = vi.spyOn(network, 'ircSendCommand').mockImplementation(() => true);
+      setupMocks({ messages: [ownMessage] });
+
+      const { container } = render(<Main />);
+      fireEvent.click(getDeleteButton(container) as Element);
+      fireEvent.keyDown(screen.getByTestId('redact-dialog'), { key: 'Escape' });
+
+      expect(screen.queryByTestId('redact-dialog')).not.toBeInTheDocument();
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('lets a channel operator delete anyone\'s message', () => {
+      asMember(['o']);
+      setupMocks({ messages: [theirMessage] });
+
+      const { container } = render(<Main />);
+
+      expect(getDeleteButton(container)).toBeInTheDocument();
+    });
+
+    it.each([
+      ['someone else\'s message, to a voiced user', ['v'], { messages: [theirMessage] }],
+      ['without the capability', [], { messages: [ownMessage] }, true],
+      ['a message without a msgid', [], { messages: [{ ...ownMessage, msgid: undefined }] }],
+      ['an encrypted message', [], { messages: [{ ...ownMessage, e2ee: 'ok' as const }] }],
+      ['a notice', [], { messages: [{ ...ownMessage, category: MessageCategory.notice }] }],
+      ['in Status', [], { messages: [{ ...ownMessage, target: STATUS_CHANNEL }], currentChannelName: STATUS_CHANNEL }],
+    ])('does not offer to delete %s', (_case, flags, mocks, withoutCapability = false) => {
+      if (withoutCapability) {
+        resetCapabilityState();
+      }
+      asMember(flags);
+      setupMocks(mocks);
+
+      const { container } = render(<Main />);
+
+      expect(getDeleteButton(container)).not.toBeInTheDocument();
+    });
+
+    it('shows a deleted message as one, without its text, actions or previews', () => {
+      setupMocks({ messages: [{ ...ownMessage, message: '', redacted: true }] });
+
+      const { container } = render(<Main />);
+
+      const row = getMessages(container)[0];
+      expect(row).toHaveAttribute('data-redacted');
+      expect(row?.querySelector('.sic-msg-body .sic-msg-redacted')).toBeInTheDocument();
+      expect(row?.querySelector('.sic-msg-actions')).not.toBeInTheDocument();
+      expect(row?.querySelector('.sic-msg-embeds')).not.toBeInTheDocument();
+    });
+
+    it('shows a reply to a deleted message as answering a deleted one', () => {
+      setupMocks({
+        messages: [
+          { ...theirMessage, message: '', redacted: true },
+          createMessage({ id: 'r1', msgid: 'r1', nick: 'bob', replyTo: 'm1', message: 'lol' }),
+        ],
+      });
+
+      const { container } = render(<Main />);
+
+      expect(container.querySelector('.sic-msg-reply-text')?.textContent).not.toBe('');
+      expect(container.querySelector('.sic-msg-reply-text')?.textContent).toBe(getMessages(container)[0]?.querySelector('.sic-msg-redacted')?.textContent);
     });
   });
 

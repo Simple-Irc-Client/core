@@ -15,10 +15,12 @@
  *                               [data-quote]     a line written as a quote ("> text"; the body leaves out the "> ")
  *                               [data-reply]     a reply, with .sic-msg-reply above it
  *                               [data-shown]     briefly, the message a reply's quote was clicked for
+ *                               [data-redacted]  deleted; its body is a .sic-msg-redacted note instead of the text
  *   .sic-msg-gutter           avatar column (.sic-msg-avatar inside)
  *   .sic-msg-header           header row: .sic-msg-nick, bot icon, .sic-msg-time-header
  *   .sic-msg-line             the message line itself:
- *     .sic-msg-time-inline    timestamp: "HH:mm" + .sic-msg-time-seconds ":ss"
+ *     .sic-msg-time-inline    timestamp in the user's format: "HH:mm" + .sic-msg-time-seconds ":ss"
+ *                             (the seconds are part of the time instead when the user shows them)
  *     .sic-msg-nick-inline    sender nick (bare text — add <> via ::before/::after)
  *     .sic-msg-bot-inline     bot icon next to the inline nick
  *     .sic-msg-e2ee           lock shown on end-to-end encrypted private messages
@@ -32,11 +34,14 @@
  *                             each (.sic-reaction-emoji, .sic-reaction-count),
  *                             [aria-pressed="true"] on your own
  *   .sic-msg-actions          the row's hover toolbar of .sic-msg-action buttons:
- *                             .sic-msg-reply-action replies, .sic-msg-react adds a reaction
+ *                             .sic-msg-reply-action replies, .sic-msg-react adds a reaction,
+ *                             .sic-msg-delete-action deletes the message
  *   .sic-msg-reply            above a reply, first in .sic-msg-content: what it answers
  *                             (.sic-msg-reply-icon, .sic-msg-reply-nick, .sic-msg-reply-text)
  *
  * Around the messages:
+ *   [data-density]            on the chat log: "comfortable" or "compact", the spacing the user chose
+ *   --sic-time-width          on the chat log: the widest time in the user's format, in ch
  *   .sic-date-separator       day-change row: .sic-date-separator-label (the date)
  *                             between two .sic-date-separator-rule lines, and a
  *                             hidden .sic-date-separator-time ("00:00" + seconds)
@@ -66,6 +71,30 @@
 .sic-msg[data-grouped] {
   padding-top: 0;
   padding-bottom: 0;
+}
+
+[data-density='compact'] .sic-msg:not([data-grouped]) {
+  padding-top: 0.25rem;
+  padding-bottom: 0.125rem;
+}
+
+[data-density='compact'] .sic-msg:not([data-content]) {
+  padding-top: 0.0625rem;
+  padding-bottom: 0.0625rem;
+}
+
+[data-density='compact'] .sic-msg-gutter {
+  width: 2rem;
+  margin-right: 0.5rem;
+}
+
+[data-density='compact'] .sic-msg-avatar {
+  width: 2rem;
+  height: 2rem;
+}
+
+[data-density='compact'] .sic-msg-header {
+  margin-bottom: 0;
 }
 
 .sic-msg[data-highlight] {

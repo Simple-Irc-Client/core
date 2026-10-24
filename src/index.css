@@ -500,6 +500,11 @@
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
+/* What is left of a deleted message */
+:where(.sic-msg-redacted) {
+  color: var(--muted-foreground);
+  font-style: italic;
+}
 /* A spoiler (text in its own background color) is revealed by a click */
 :where(.sic-spoiler[role='button']) {
   cursor: pointer;

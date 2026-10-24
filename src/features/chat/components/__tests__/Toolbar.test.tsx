@@ -825,6 +825,8 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
@@ -834,6 +836,8 @@ describe('Toolbar', () => {
         currentUserFlags: [],
         isConnected: true,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
     });
 
@@ -896,6 +900,8 @@ describe('Toolbar', () => {
           isAutoAway: true,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
@@ -904,6 +910,8 @@ describe('Toolbar', () => {
         currentUserFlags: ['away'],
         isConnected: true,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
@@ -929,6 +937,8 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
@@ -937,6 +947,8 @@ describe('Toolbar', () => {
         currentUserFlags: ['away'],
         isConnected: true,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
@@ -955,6 +967,8 @@ describe('Toolbar', () => {
         currentUserFlags: ['away'],
         isConnected: true,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
@@ -971,6 +985,8 @@ describe('Toolbar', () => {
         currentUserFlags: [],
         isConnected: false,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
@@ -993,6 +1009,8 @@ describe('Toolbar', () => {
           isAutoAway: true,
           isConnected: false,
           setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore)
       );
@@ -1001,6 +1019,8 @@ describe('Toolbar', () => {
         currentUserFlags: ['away'],
         isConnected: false,
         setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes: 15,
+          autoAwayMessage: '',
       } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
@@ -1012,6 +1032,89 @@ describe('Toolbar', () => {
 
       // Should NOT send AWAY command because not connected
       expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY');
+    });
+      describe('with the user settings', () => {
+      const mockAutoAwaySettings = (autoAwayMinutes: number, autoAwayMessage = '') => {
+        const state = {
+          currentChannelName: '#test',
+          currentChannelCategory: ChannelCategory.channel,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isAutoAway: false,
+          isConnected: true,
+          setIsAutoAway: mockSetIsAutoAway,
+          autoAwayMinutes,
+          autoAwayMessage,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore;
+        vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) => selector(state));
+        vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue(state);
+      };
+
+      it('goes away after the chosen time', () => {
+        mockAutoAwaySettings(5);
+        render(<Toolbar />);
+
+        vi.advanceTimersByTime(5 * 60 * 1000 - 1);
+        expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
+
+        vi.advanceTimersByTime(1);
+        expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :currentUser.autoAway');
+      });
+
+      it('never goes away when turned off', () => {
+        mockAutoAwaySettings(0);
+        render(<Toolbar />);
+
+        vi.advanceTimersByTime(24 * 60 * 60 * 1000);
+
+        expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringMatching(/^AWAY/));
+        expect(mockSetIsAutoAway).not.toHaveBeenCalled();
+      });
+
+      it('sends the user\'s own away message', () => {
+        mockAutoAwaySettings(5, '  out for lunch ');
+        render(<Toolbar />);
+
+        vi.advanceTimersByTime(5 * 60 * 1000);
+
+        expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :out for lunch');
+      });
+
+      it('sends the default message when the user\'s own is blank', () => {
+        mockAutoAwaySettings(5, '   ');
+        render(<Toolbar />);
+
+        vi.advanceTimersByTime(5 * 60 * 1000);
+
+        expect(network.ircSendRawMessage).toHaveBeenCalledWith('AWAY :currentUser.autoAway');
+      });
+
+      it('counts a changed time from the change', () => {
+        mockAutoAwaySettings(15);
+        const { rerender } = render(<Toolbar />);
+        vi.advanceTimersByTime(2 * 60 * 1000);
+
+        mockAutoAwaySettings(5);
+        rerender(<Toolbar />);
+        vi.advanceTimersByTime(4 * 60 * 1000);
+        expect(network.ircSendRawMessage).not.toHaveBeenCalledWith('AWAY :currentUser.autoAway');
+
+        vi.advanceTimersByTime(60 * 1000);
+        expect(network.ircSendRawMessage).toHaveBeenCalledExactlyOnceWith('AWAY :currentUser.autoAway');
+      });
+
+      it('stops the countdown when turned off', () => {
+        mockAutoAwaySettings(5);
+        const { rerender } = render(<Toolbar />);
+        vi.advanceTimersByTime(4 * 60 * 1000);
+
+        mockAutoAwaySettings(0);
+        rerender(<Toolbar />);
+        vi.advanceTimersByTime(60 * 60 * 1000);
+
+        expect(network.ircSendRawMessage).not.toHaveBeenCalledWith(expect.stringMatching(/^AWAY/));
+      });
     });
   });
 

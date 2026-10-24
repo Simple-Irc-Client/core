@@ -133,6 +133,8 @@ history:
     restrictions:
         expire-time: 1d
         query-cutoff: 'none'
+    retention:
+        allow-individual-delete: true
     persistent:
         enabled: false
     tagmsg-storage:

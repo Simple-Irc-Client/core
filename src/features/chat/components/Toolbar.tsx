@@ -113,6 +113,7 @@ const Toolbar = () => {
   const currentUserFlags: string[] = useSettingsStore((state) => state.currentUserFlags);
   const isAway = currentUserFlags.includes('away');
   const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
+  const autoAwayMinutes = useSettingsStore((state) => state.autoAwayMinutes);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
   // An encrypted conversation sends no plaintext reference to the message
@@ -141,8 +142,6 @@ const Toolbar = () => {
   const currentInputBeforeHistory = useRef('');
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousChannelRef = useRef<string>(currentChannelName);
-
-  const AUTO_AWAY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 
   const commands = useMemo(() => {
     const commandsNotSorted = currentChannelCategory === ChannelCategory.channel || currentChannelCategory === ChannelCategory.priv ? generalCommands.concat(channelCommands) : generalCommands;
@@ -173,21 +172,23 @@ const Toolbar = () => {
       clearTimeout(inactivityTimerRef.current);
     }
 
-    if (isAway && !isAutoAway) {
+    if (autoAwayMinutes === 0 || (isAway && !isAutoAway)) {
       return;
     }
 
     inactivityTimerRef.current = setTimeout(() => {
       const state = useSettingsStore.getState();
       if (state.isConnected && !state.currentUserFlags.includes('away')) {
-        ircSendRawMessage(`AWAY :${t('currentUser.autoAway')}`);
+        const message = state.autoAwayMessage.trim() || t('currentUser.autoAway', { minutes: autoAwayMinutes });
+        ircSendRawMessage(`AWAY :${message}`);
         state.setIsAutoAway(true);
       }
-    }, AUTO_AWAY_TIMEOUT);
+    }, autoAwayMinutes * 60 * 1000);
   };
 
   const startInactivityTimer = useEffectEvent(resetInactivityTimer);
 
+  // A changed setting counts from now
   useEffect(() => {
     startInactivityTimer();
 
@@ -196,7 +197,7 @@ const Toolbar = () => {
         clearTimeout(inactivityTimerRef.current);
       }
     };
-  }, []);
+  }, [autoAwayMinutes]);
 
   // Grows with its lines up to its max height
   useLayoutEffect(() => {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/app/i18n';
 import { languages, type LanguageSetting } from '@/config/languages';
-import { type FontSize, useSettingsStore } from '@features/settings/store/settings';
+import { type Density, type FontSize, type TimeFormat, useSettingsStore } from '@features/settings/store/settings';
 import { type MembershipEventsDisplay } from '@features/chat/membershipEvents';
 import { isBuiltinTheme } from '@features/themes/builtinThemes';
 import { getThemeList } from '@features/themes/themeSelectors';
@@ -19,6 +19,16 @@ const FONT_SIZES: { size: FontSize; label: string }[] = [
   { size: 'small', label: 'profileSettings.fontSizeSmall' },
   { size: 'medium', label: 'profileSettings.fontSizeMedium' },
   { size: 'large', label: 'profileSettings.fontSizeLarge' },
+];
+
+const TIME_FORMATS: { format: TimeFormat; label: string }[] = [
+  { format: '24h', label: 'profileSettings.timeFormat24h' },
+  { format: '12h', label: 'profileSettings.timeFormat12h' },
+];
+
+const DENSITIES: { density: Density; label: string }[] = [
+  { density: 'comfortable', label: 'profileSettings.densityComfortable' },
+  { density: 'compact', label: 'profileSettings.densityCompact' },
 ];
 
 const MEMBERSHIP_EVENTS: { display: MembershipEventsDisplay; label: string }[] = [
@@ -44,6 +54,14 @@ const AppearanceTab = () => {
   const membershipEvents = useSettingsStore((state) => state.membershipEvents);
   const setMembershipEvents = useSettingsStore((state) => state.setMembershipEvents);
   const setHideTypingIndicator = useSettingsStore((state) => state.setHideTypingIndicator);
+  const timeFormat = useSettingsStore((state) => state.timeFormat);
+  const setTimeFormat = useSettingsStore((state) => state.setTimeFormat);
+  const showSeconds = useSettingsStore((state) => state.showSeconds);
+  const setShowSeconds = useSettingsStore((state) => state.setShowSeconds);
+  const density = useSettingsStore((state) => state.density);
+  const setDensity = useSettingsStore((state) => state.setDensity);
+  const showLag = useSettingsStore((state) => state.showLag);
+  const setShowLag = useSettingsStore((state) => state.setShowLag);
   const [themeDialog, setThemeDialog] = useState<{
     kind: 'editor' | 'creator';
     mode: 'edit' | 'create';
@@ -145,6 +163,46 @@ const AppearanceTab = () => {
         </div>
       </div>
       <div className={SETTING_ROW}>
+        <Label id="density-label" className={SETTING_LABEL}>
+          {t('profileSettings.density')}
+        </Label>
+        <div className="col-span-full flex gap-2 sm:col-span-3" role="group" aria-labelledby="density-label">
+          {DENSITIES.map(({ density: option, label }) => (
+            <Button
+              key={option}
+              type="button"
+              variant={density === option ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDensity(option)}
+              className={cn('flex-1', density === option && 'pointer-events-none')}
+              data-testid={`density-${option}`}
+              aria-pressed={density === option}
+            >
+              {t(label)}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className={SETTING_ROW}>
+        <Label id="time-format-label" className={SETTING_LABEL}>
+          {t('profileSettings.timeFormat')}
+        </Label>
+        <div className="col-span-full sm:col-span-3">
+          <Select value={timeFormat} onValueChange={(value) => setTimeFormat(value as TimeFormat)}>
+            <SelectTrigger data-testid="time-format-select" aria-labelledby="time-format-label">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIME_FORMATS.map(({ format, label }) => (
+                <SelectItem key={format} value={format}>
+                  {t(label)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className={SETTING_ROW}>
         <Label className={SETTING_LABEL}>
           {t('profileSettings.language')}
         </Label>
@@ -211,6 +269,28 @@ const AppearanceTab = () => {
         />
         <Label htmlFor="hide-typing">
           {t('profileSettings.hideTyping')}
+        </Label>
+      </div>
+      <div className="col-span-full flex items-center gap-4">
+        <Switch
+          id="show-seconds"
+          checked={showSeconds}
+          onCheckedChange={setShowSeconds}
+          data-testid="show-seconds-toggle"
+        />
+        <Label htmlFor="show-seconds">
+          {t('profileSettings.showSeconds')}
+        </Label>
+      </div>
+      <div className="col-span-full flex items-center gap-4">
+        <Switch
+          id="show-lag"
+          checked={showLag}
+          onCheckedChange={setShowLag}
+          data-testid="show-lag-toggle"
+        />
+        <Label htmlFor="show-lag">
+          {t('profileSettings.showLag')}
         </Label>
       </div>
     </div>

@@ -564,4 +564,58 @@ describe('AppearanceTab', () => {
       expect(useSettingsStore.getState().membershipEvents).toBe('collapseHideIdle');
     });
   });
+
+  describe('Spacing', () => {
+    it('should be comfortable by default, and switch to compact', async () => {
+      useSettingsStore.setState({ density: 'comfortable' });
+      const user = userEvent.setup();
+      render(<AppearanceTab />);
+
+      expect(screen.getByTestId('density-comfortable')).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(screen.getByTestId('density-compact'));
+
+      expect(useSettingsStore.getState().density).toBe('compact');
+      expect(screen.getByTestId('density-compact')).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
+  describe('Time format', () => {
+    it('should switch between 24-hour and 12-hour times', async () => {
+      useSettingsStore.setState({ timeFormat: '24h' });
+      const user = userEvent.setup();
+      render(<AppearanceTab />);
+
+      expect(screen.getByTestId('time-format-select')).toHaveTextContent('profileSettings.timeFormat24h');
+
+      await user.click(screen.getByTestId('time-format-select'));
+      await user.click(screen.getByRole('option', { name: 'profileSettings.timeFormat12h' }));
+
+      expect(useSettingsStore.getState().timeFormat).toBe('12h');
+    });
+
+    it('should toggle seconds', async () => {
+      useSettingsStore.setState({ showSeconds: false });
+      const user = userEvent.setup();
+      render(<AppearanceTab />);
+
+      await user.click(screen.getByTestId('show-seconds-toggle'));
+
+      expect(useSettingsStore.getState().showSeconds).toBe(true);
+    });
+  });
+
+  describe('Server lag', () => {
+    it('should be shown by default, and hidden when turned off', async () => {
+      useSettingsStore.setState({ showLag: true });
+      const user = userEvent.setup();
+      render(<AppearanceTab />);
+
+      expect(screen.getByTestId('show-lag-toggle')).toHaveAttribute('aria-checked', 'true');
+
+      await user.click(screen.getByTestId('show-lag-toggle'));
+
+      expect(useSettingsStore.getState().showLag).toBe(false);
+    });
+  });
 });

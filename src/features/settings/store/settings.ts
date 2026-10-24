@@ -35,6 +35,15 @@ export interface FontFormatting {
 
 export type FontSize = 'small' | 'medium' | 'large';
 
+export type TimeFormat = '24h' | '12h';
+
+/** How tightly the chat lays out its messages */
+export type Density = 'comfortable' | 'compact';
+
+/** The choices of how long without a sent message sets the user away; 0 never does */
+export const AUTO_AWAY_MINUTES = [0, 5, 15, 30, 60] as const;
+export type AutoAwayMinutes = (typeof AUTO_AWAY_MINUTES)[number];
+
 export const fontSizeClasses: Record<FontSize, string> = {
   small: 'text-xs',
   medium: 'text-sm',
@@ -93,6 +102,12 @@ export interface SettingsStore {
   mentionSound: NotificationSound; // Sound for a mention in a channel
   soundVolume: number; // Notification sound volume, 0–100
   membershipEvents: MembershipEventsDisplay; // How join/part/quit/nick lines are shown
+  timeFormat: TimeFormat;
+  showSeconds: boolean; // Message times show seconds in every theme
+  density: Density;
+  showLag: boolean; // The lag next to the network name
+  autoAwayMinutes: AutoAwayMinutes;
+  autoAwayMessage: string; // The away message auto-away sets; empty for the default one
 
   setWizardCompleted: (status: boolean) => void;
   setIsConnecting: (status: boolean) => void;
@@ -147,6 +162,12 @@ export interface SettingsStore {
   setMentionSound: (sound: NotificationSound) => void;
   setSoundVolume: (volume: number) => void;
   setMembershipEvents: (display: MembershipEventsDisplay) => void;
+  setTimeFormat: (timeFormat: TimeFormat) => void;
+  setShowSeconds: (showSeconds: boolean) => void;
+  setDensity: (density: Density) => void;
+  setShowLag: (showLag: boolean) => void;
+  setAutoAwayMinutes: (minutes: AutoAwayMinutes) => void;
+  setAutoAwayMessage: (message: string) => void;
   resetWizardState: () => void;
 }
 
@@ -209,6 +230,12 @@ export const useSettingsStore = create<SettingsStore>()(
     mentionSound: 'ping',
     soundVolume: 60,
     membershipEvents: 'collapse',
+    timeFormat: '24h',
+    showSeconds: false,
+    density: 'comfortable',
+    showLag: true,
+    autoAwayMinutes: 15,
+    autoAwayMessage: '',
 
     setWizardCompleted: (status: boolean): void => {
       set(() => ({
@@ -416,6 +443,24 @@ export const useSettingsStore = create<SettingsStore>()(
     setMembershipEvents: (display: MembershipEventsDisplay): void => {
       set(() => ({ membershipEvents: display }));
     },
+    setTimeFormat: (timeFormat: TimeFormat): void => {
+      set(() => ({ timeFormat }));
+    },
+    setShowSeconds: (showSeconds: boolean): void => {
+      set(() => ({ showSeconds }));
+    },
+    setDensity: (density: Density): void => {
+      set(() => ({ density }));
+    },
+    setShowLag: (showLag: boolean): void => {
+      set(() => ({ showLag }));
+    },
+    setAutoAwayMinutes: (minutes: AutoAwayMinutes): void => {
+      set(() => ({ autoAwayMinutes: minutes }));
+    },
+    setAutoAwayMessage: (message: string): void => {
+      set(() => ({ autoAwayMessage: message }));
+    },
     resetWizardState: (): void => {
       set(sessionDefaults());
     },
@@ -469,6 +514,12 @@ export const useSettingsStore = create<SettingsStore>()(
       mentionSound: state.mentionSound,
       soundVolume: state.soundVolume,
       membershipEvents: state.membershipEvents,
+      timeFormat: state.timeFormat,
+      showSeconds: state.showSeconds,
+      density: state.density,
+      showLag: state.showLag,
+      autoAwayMinutes: state.autoAwayMinutes,
+      autoAwayMessage: state.autoAwayMessage,
       isWizardCompleted: state.isWizardCompleted,
       serverPasswords: state.serverPasswords,
       currentChannelName: state.currentChannelName,

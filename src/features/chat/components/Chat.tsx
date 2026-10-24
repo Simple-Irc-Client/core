@@ -13,9 +13,13 @@ import E2eeBanner from '@features/e2ee/components/E2eeBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage from './ChatMessage';
 import MembershipEventsRow from './MembershipEventsRow';
+import { timeWidthCh } from './MessageTime';
 import { collapseMembershipEvents, contentCategories, type ChatItem } from '../membershipEvents';
 import { foldName } from '@shared/lib/caseMapping';
 import ReactionPicker, { type ReactionPickerHandle } from '@features/reactions/components/ReactionPicker';
+import RedactDialog from '@features/redaction/components/RedactDialog';
+import { canRedactOthers, isRedactionEnabled } from '@features/redaction/redaction';
+import { useUsersStore } from '@features/users/store/users';
 import { useCanReact } from '@features/reactions/useCanReact';
 import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
 import { setReplyTo } from '@features/replies/store/replyTo';
@@ -41,6 +45,9 @@ const Chat = () => {
   const membershipEvents = useSettingsStore((state) => state.membershipEvents);
   const myNick = useSettingsStore((state) => state.nick);
   const caseMapping = useSettingsStore((state) => state.caseMapping);
+  const density = useSettingsStore((state) => state.density);
+  const timeFormat = useSettingsStore((state) => state.timeFormat);
+  const showSeconds = useSettingsStore((state) => state.showSeconds);
   const fold = useCallback((nick: string) => foldName(nick, caseMapping), [caseMapping]);
   /** The event runs shown line by line, by the id of their first event */
   const [expandedRuns, setExpandedRuns] = useState<ReadonlySet<string>>(() => new Set());
@@ -50,9 +57,16 @@ const Chat = () => {
 
   const handleAddReaction = useCallback((message: Message, anchor: HTMLElement) => reactionPicker.current?.open(message, anchor), []);
   const handleReply = useCallback((message: Message) => setReplyTo(message.target, message), []);
+  const [redacting, setRedacting] = useState<Message>();
+  const handleRedact = useCallback((message: Message) => setRedacting(message), []);
+  const closeRedact = useCallback(() => setRedacting(undefined), []);
 
   const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
   const canReply = useCanSendPlaintext(currentChannelName) && !isDebug;
+  const myChannelFlags = useUsersStore((state) =>
+    state.users.find((user) => fold(user.nick) === fold(myNick))?.channels.find((channel) => fold(channel.name) === fold(currentChannelName))?.flags);
+  const canRedactHere = !isDebug && isRedactionEnabled();
+  const canRedactAny = canRedactHere && canRedactOthers(myChannelFlags);
 
   const rows = useMemo(() => {
     const items = collapseMembershipEvents(messages, { display: isDebug ? 'all' : membershipEvents, fold, myNick });
@@ -202,7 +216,14 @@ const Chat = () => {
   }, [isConnected, scrollToBottom]);
 
   return (
-    <div ref={containerRef} data-testid="chat-log" role="log" onScroll={handleScroll} onContextMenu={(e) => {
+    <div
+      ref={containerRef}
+      data-testid="chat-log"
+      role="log"
+      data-density={density}
+      style={{ '--sic-time-width': `${timeWidthCh(timeFormat, showSeconds)}ch` } as React.CSSProperties}
+      onScroll={handleScroll}
+      onContextMenu={(e) => {
       if (e.defaultPrevented) { return; }
       e.preventDefault();
       e.stopPropagation();
@@ -232,6 +253,8 @@ const Chat = () => {
               onReply={handleReply}
               replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
               onShowMessage={handleShowMessage}
+              canRedact={canRedactAny || (canRedactHere && fold(getNickFromMessage(message) ?? '') === fold(myNick))}
+              onRedact={handleRedact}
             />
           );
           if (item.kind === 'message') {
@@ -259,6 +282,7 @@ const Chat = () => {
       </div>
       {/* Keyed, so switching windows closes it */}
       <ReactionPicker key={currentChannelName} ref={reactionPicker} />
+      <RedactDialog message={redacting} onClose={closeRedact} />
     </div>
   );
 };

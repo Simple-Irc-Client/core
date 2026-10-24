@@ -47,6 +47,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const network = networkName ?? server?.network;
   const networkIcon = network !== undefined && Object.hasOwn(serverIcons, network) ? serverIcons[network] : undefined;
   const lagMs = useSettingsStore((state) => state.lagMs);
+  const showLag = useSettingsStore((state) => state.showLag);
   const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
 
@@ -149,11 +150,12 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
               )}
               <h3 className={`${fontSizeClass} font-semibold truncate`}>{network ?? t('main.channels.title')}</h3>
             </div>
-            {isConnected && lagMs !== undefined && (
+            {isConnected && showLag && lagMs !== undefined && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span
+                      data-testid="lag-indicator"
                       className={cn(
                         'ml-1.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums',
                         lagMs < 150 && 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400',

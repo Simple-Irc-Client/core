@@ -64,6 +64,8 @@ describe('Channels', () => {
     isChannelListLoadingFinished?: boolean;
     channelsList?: { name: string; users: number; topic: string }[];
     isConnected?: boolean;
+    lagMs?: number;
+    showLag?: boolean;
   } = {}) => {
     const {
       currentChannelName = '#test',
@@ -78,6 +80,8 @@ describe('Channels', () => {
       selector({
         currentChannelName,
         isConnected,
+        lagMs: overrides.lagMs,
+        showLag: overrides.showLag ?? true,
       } as unknown as settingsStore.SettingsStore)
     );
 
@@ -167,6 +171,32 @@ describe('Channels', () => {
       render(<Channels />);
 
       expect(screen.getByRole('button', { name: 'main.channels.join' })).toBeInTheDocument();
+    });
+  });
+
+  describe('Server lag', () => {
+    it('should show the lag next to the network name', () => {
+      setupMocks({ lagMs: 120 });
+
+      render(<Channels />);
+
+      expect(screen.getByText('120ms')).toBeInTheDocument();
+    });
+
+    it('should hide the lag when the user turned it off', () => {
+      setupMocks({ lagMs: 120, showLag: false });
+
+      render(<Channels />);
+
+      expect(screen.queryByText('120ms')).not.toBeInTheDocument();
+    });
+
+    it('should not show a lag before one is measured', () => {
+      setupMocks({ lagMs: undefined });
+
+      render(<Channels />);
+
+      expect(screen.queryByText(/\d+ms$/)).not.toBeInTheDocument();
     });
   });
 

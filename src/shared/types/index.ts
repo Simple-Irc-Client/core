@@ -63,6 +63,8 @@ export interface Message {
   reactions?: Reaction[];
   /** A nick change line: who became whom */
   renamed?: { from: string; to: string };
+  /** IRCv3 message-redaction: deleted, its text gone */
+  redacted?: boolean;
 }
 
 export type UserTypingStatus = 'active' | 'paused' | 'done';

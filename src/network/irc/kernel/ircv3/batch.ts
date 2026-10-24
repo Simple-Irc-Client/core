@@ -17,6 +17,7 @@ import { onBouncer } from '@/network/irc/kernel/ircv3/bouncer';
 import { onChghost } from '@/network/irc/kernel/ircv3/chghost';
 import { onMetadata } from '@/network/irc/kernel/ircv3/metadata';
 import { applyReadMarker } from '@/network/irc/kernel/ircv3/readmarker';
+import { onRedact } from '@/network/irc/kernel/ircv3/redact';
 import { onSetname } from '@/network/irc/kernel/ircv3/setname';
 import { setAddHistoryPage } from '@features/channels/store/channels';
 import { onTagMsg } from '@/network/irc/kernel/ircv3/tagmsg';
@@ -103,7 +104,7 @@ export const processMultilineBatch = (ctx: IrcContext, batch: BatchState): void 
 };
 
 // What history shows; other events would apply stale state. TAGMSG brings reactions, its typing is ignored
-const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART', 'PRIVMSG', 'QUIT', 'TAGMSG', 'TOPIC']);
+const historyCommands = new Set(['JOIN', 'KICK', 'MODE', 'NICK', 'NOTICE', 'PART', 'PRIVMSG', 'QUIT', 'REDACT', 'TAGMSG', 'TOPIC']);
 
 // Commands replayed from a finished batch; numerics inside batches are not replayed
 const bufferedHandlers = new Map<string, IrcHandler>([
@@ -120,6 +121,7 @@ const bufferedHandlers = new Map<string, IrcHandler>([
   ['PART', onPart],
   ['PRIVMSG', onPrivMsg],
   ['QUIT', onQuit],
+  ['REDACT', onRedact],
   ['SETNAME', onSetname],
   ['TAGMSG', onTagMsg],
   ['TOPIC', onTopic],

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
+import MessageTime from './MessageTime';
 
 interface DateSeparatorProps {
   date: Date;
@@ -13,8 +14,7 @@ const DateSeparator = ({ date, fontSizeClass }: DateSeparatorProps) => {
   return (
     <div className={`sic-date-separator flex items-center gap-3 px-4 py-2 ${fontSizeClass}`} role="separator">
       <span className="sic-date-separator-time hidden">
-        {format(date, 'HH:mm', { locale })}
-        <span className="sic-msg-time-seconds">{format(date, ':ss', { locale })}</span>
+        <MessageTime time={date} />
       </span>
       <div className="sic-date-separator-rule flex-1 border-t border-muted-foreground/25" />
       <span className="sic-date-separator-label text-xs text-muted-foreground whitespace-nowrap">

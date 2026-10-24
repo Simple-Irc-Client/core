@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ircSendUserCommand } from '@/network/irc/network';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { AUTO_AWAY_MINUTES, type AutoAwayMinutes, useSettingsStore } from '@features/settings/store/settings';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { cn, isSafeImageUrl, isSafeUrl } from '@shared/lib/utils';
 import { SETTING_LABEL, SETTING_ROW, SETTINGS_GRID } from '../../settingsLayout';
 
@@ -66,6 +67,10 @@ const ProfileTab = ({ currentNick, onDone }: ProfileTabProps) => {
   const [newStatus, setNewStatus] = useState(currentUserStatus ?? '');
   const [newHomepage, setNewHomepage] = useState(currentUserHomepage ?? '');
   const [newColor, setNewColor] = useState(currentUserColor ?? '');
+  const autoAwayMinutes = useSettingsStore((state) => state.autoAwayMinutes);
+  const setAutoAwayMinutes = useSettingsStore((state) => state.setAutoAwayMinutes);
+  const autoAwayMessage = useSettingsStore((state) => state.autoAwayMessage);
+  const setAutoAwayMessage = useSettingsStore((state) => state.setAutoAwayMessage);
 
   const isSupported = (key: MetadataKey): boolean => supportedOptions.includes(`metadata-${key}`);
 
@@ -155,6 +160,39 @@ const ProfileTab = ({ currentNick, onDone }: ProfileTabProps) => {
           onSubmit={() => setMetadata('homepage', newHomepage, { isSafe: isSafeUrl })}
           placeholder={t('profileSettings.homepagePlaceholder')}
         />
+      )}
+      <div className={SETTING_ROW}>
+        <Label id="auto-away-label" className={SETTING_LABEL}>
+          {t('profileSettings.autoAway')}
+        </Label>
+        <div className="col-span-full sm:col-span-3">
+          <Select value={String(autoAwayMinutes)} onValueChange={(value) => setAutoAwayMinutes(Number(value) as AutoAwayMinutes)}>
+            <SelectTrigger data-testid="auto-away-select" aria-labelledby="auto-away-label">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {AUTO_AWAY_MINUTES.map((minutes) => (
+                <SelectItem key={minutes} value={String(minutes)}>
+                  {minutes === 0 ? t('profileSettings.autoAwayOff') : t('profileSettings.autoAwayAfter', { minutes })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {autoAwayMinutes !== 0 && (
+        <div className={SETTING_ROW}>
+          <Label htmlFor="auto-away-message" className={SETTING_LABEL}>
+            {t('profileSettings.autoAwayMessage')}
+          </Label>
+          <Input
+            id="auto-away-message"
+            value={autoAwayMessage}
+            onChange={(e) => setAutoAwayMessage(e.target.value)}
+            className="col-span-full sm:col-span-3"
+            placeholder={t('currentUser.autoAway', { minutes: autoAwayMinutes })}
+          />
+        </div>
       )}
     </div>
   );
