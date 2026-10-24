@@ -137,47 +137,17 @@ test.describe('Wizard', () => {
     await expect(page.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
-  test('nick already in use shows error and Go Back button', async ({ page }) => {
+  test('a nick already in use gives way to an alternative, and the wizard carries on', async ({ page }) => {
     // Bot is already connected with nick "wizardbot" (from beforeAll)
     await page.goto('/');
 
-    // Use the same nick that the bot already has
     await fillNickStep(page, `wizardbot-${tag}`);
     await fillServerStepAndConnect(page);
 
-    // Error message should show the server's "Nickname (is) already in use"
-    await expect(page.getByText(/Failed to connect|Nickname (is )?already in use|Disconnected/).first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Nickname (is )?already in use/i).first()).toBeVisible({ timeout: 5_000 });
-
-    // "Go Back" button should be visible
-    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible();
-  });
-
-  test('Go Back from nick-in-use error allows retry with different nick', async ({ page }) => {
-    await page.goto('/');
-
-    // Try with taken nick
-    await fillNickStep(page, `wizardbot-${tag}`);
-    await fillServerStepAndConnect(page);
-
-    // Wait for error
-    await expect(page.getByText(/Failed to connect/).first()).toBeVisible({ timeout: 15_000 });
-
-    // Click Go Back
-    await page.getByRole('button', { name: 'Go Back' }).click();
-
-    // Should return to nick step
-    await expect(page.getByLabel('Enter your nickname')).toBeVisible({ timeout: 5_000 });
-
-    // Retry with a different nick
-    await fillNickStep(page, 'wizard-retry');
-    await fillServerStepAndConnect(page);
-
-    // Should connect successfully this time
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
-
-    // Channels step should appear
     await expect(page.getByText('Select a irc channel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeHidden();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('sic-settings') ?? '{}').state?.nick)).toBe(`wizardbot-${tag}_`);
   });
 
   test('wrong server address shows disconnected and Go Back button', async ({ page }) => {

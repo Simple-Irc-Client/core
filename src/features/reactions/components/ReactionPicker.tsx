@@ -3,7 +3,7 @@ import { type EmojiClickData } from 'emoji-picker-react';
 import { Popover, PopoverAnchor, PopoverContent } from '@shared/components/ui/popover';
 import { getMessages } from '@features/channels/store/channels';
 import { hasReacted, sendReaction } from '@features/reactions/reactions';
-import { getCurrentNick } from '@features/settings/store/settings';
+import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
 import { type Message } from '@shared/types';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
@@ -15,6 +15,7 @@ export interface ReactionPickerHandle {
 /** One picker for the whole chat, opened at the message reacted to */
 const ReactionPicker = ({ ref }: { ref: Ref<ReactionPickerHandle> }) => {
   const [target, setTarget] = useState<{ message: Message; anchor: HTMLElement } | null>(null);
+  const isDarkMode = useSettingsStore((state) => state.isDarkMode);
 
   useImperativeHandle(ref, () => ({ open: (message, anchor) => setTarget({ message, anchor }) }), []);
 
@@ -33,7 +34,7 @@ const ReactionPicker = ({ ref }: { ref: Ref<ReactionPickerHandle> }) => {
       <PopoverAnchor virtualRef={{ current: target?.anchor ?? null }} />
       <PopoverContent className="w-auto p-0" align="end">
         <Suspense>
-          <EmojiPicker reactionsDefaultOpen allowExpandReactions onReactionClick={handlePick} onEmojiClick={handlePick} />
+          <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} reactionsDefaultOpen allowExpandReactions onReactionClick={handlePick} onEmojiClick={handlePick} />
         </Suspense>
       </PopoverContent>
     </Popover>

@@ -21,6 +21,30 @@ test.afterAll(async () => {
 test.describe('Layout', () => {
   test.describe.configure({ mode: 'serial' });
 
+  test('the emoji picker follows dark mode', async () => {
+    /** The picker's own background, as a 0 (black) to 255 (white) brightness */
+    const pickerBrightness = async (): Promise<number> => {
+      await page.getByRole('button', { name: /emoticons/i }).click();
+      const picker = page.locator('.epr-main');
+      await expect(picker).toBeVisible();
+      const [r = 0, g = 0, b = 0] = (await picker.evaluate((element) => getComputedStyle(element).backgroundColor)).match(/\d+/g)?.map(Number) ?? [];
+      await page.keyboard.press('Escape');
+      await expect(picker).toBeHidden();
+      return (r + g + b) / 3;
+    };
+    const setDark = async (dark: boolean): Promise<void> => {
+      if (await page.locator('html').evaluate((element) => element.classList.contains('dark')) !== dark) {
+        await page.locator('[data-avatar-button]').click();
+        await page.getByRole('menuitem', { name: dark ? 'Dark Mode' : 'Light Mode' }).click();
+      }
+    };
+
+    await setDark(true);
+    expect(await pickerBrightness()).toBeLessThan(80);
+    await setDark(false);
+    expect(await pickerBrightness()).toBeGreaterThan(200);
+  });
+
   test('dark mode is switched from the user menu, and kept after a reload', async () => {
     const html = page.locator('html');
     const wasDark = await html.evaluate((element) => element.classList.contains('dark'));

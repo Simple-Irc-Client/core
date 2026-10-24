@@ -35,14 +35,9 @@ test.describe('Formatting tools', () => {
     // Emoji picker should open
     await expect(sharedPage.locator('.epr-main')).toBeVisible({ timeout: 5_000 });
 
-    // Click the first emoji in the picker
-    const firstEmoji = sharedPage.locator('.epr-body button[data-unified]').first();
-    await firstEmoji.click();
+    await sharedPage.getByRole('gridcell', { name: 'grinning face', exact: true }).click();
 
-    // The message input should now contain the emoji
-    const messageInput = sharedPage.locator('#message-input');
-    const value = await messageInput.inputValue();
-    expect(value.length).toBeGreaterThan(0);
+    await expect(sharedPage.locator('#message-input')).toHaveValue('😀');
 
     // Picker should close after selection
     await expect(sharedPage.locator('.epr-main')).not.toBeVisible({ timeout: 3_000 });

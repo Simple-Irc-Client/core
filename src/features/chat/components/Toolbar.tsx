@@ -116,6 +116,7 @@ const Toolbar = () => {
   const autoAwayMinutes = useSettingsStore((state) => state.autoAwayMinutes);
   const isConnected: boolean = useSettingsStore((state) => state.isConnected);
   const fontFormatting = useSettingsStore((state) => state.fontFormatting);
+  const isDarkMode = useSettingsStore((state) => state.isDarkMode);
   // An encrypted conversation sends no plaintext reference to the message
   const canSendPlaintext = useCanSendPlaintext(currentChannelName);
   const storedReplyTo = useReplyToStore((state) => state.replies[currentChannelName]);
@@ -568,7 +569,7 @@ const Toolbar = () => {
                   }
                 }}>
                 <Suspense>
-                  <EmojiPicker onEmojiClick={handleEmojiClick} autoFocusSearch={!isCoarsePointer()} />
+                  <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} onEmojiClick={handleEmojiClick} autoFocusSearch={!isCoarsePointer()} />
                 </Suspense>
               </PopoverContent>
             </Popover>

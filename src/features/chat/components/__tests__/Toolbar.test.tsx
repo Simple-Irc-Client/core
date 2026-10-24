@@ -63,8 +63,8 @@ vi.mock('uuid', () => ({
 }));
 
 vi.mock('emoji-picker-react', () => ({
-  default: ({ onEmojiClick }: { onEmojiClick: (data: { emoji: string }) => void }) => (
-    <div data-testid="emoji-picker">
+  default: ({ onEmojiClick, colorScheme }: { onEmojiClick: (data: { emoji: string }) => void; colorScheme?: string }) => (
+    <div data-testid="emoji-picker" data-color-scheme={colorScheme}>
       <button type="button" onClick={() => onEmojiClick({ emoji: '😀' })} data-testid="emoji-grinning">
         😀
       </button>
@@ -427,6 +427,20 @@ describe('Toolbar', () => {
 
       const emojiPicker = await screen.findByTestId('emoji-picker');
       expect(emojiPicker).toBeInTheDocument();
+    });
+
+    it.each([
+      [false, 'light'],
+      [true, 'dark'],
+    ])('should show the picker in the app\'s color scheme when dark mode is %s', async (isDarkMode, colorScheme) => {
+      const settings = vi.mocked(settingsStore.useSettingsStore).getMockImplementation();
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        settings?.((state) => selector({ ...state, isDarkMode } as settingsStore.SettingsStore)) as never);
+      render(<Toolbar />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'main.toolbar.emoticons' }));
+
+      expect(await screen.findByTestId('emoji-picker')).toHaveAttribute('data-color-scheme', colorScheme);
     });
 
     it('should insert emoji into message input when clicking an emoji', async () => {

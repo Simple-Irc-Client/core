@@ -49,6 +49,10 @@ describe('ircFormatting', () => {
       expect(stripIrcFormatting(`${IRC_FORMAT.COLOR}4,2red on blue`)).toBe('red on blue');
     });
 
+    it('should not join what follows a removed color code into a hex color code', () => {
+      expect(stripIrcFormatting(`${IRC_FORMAT.HEX_COLOR}FF0000${IRC_FORMAT.COLOR}04,ABCDEF`)).toBe(',ABCDEF');
+    });
+
     it('should strip hex color codes', () => {
       expect(stripIrcFormatting(`${IRC_FORMAT.HEX_COLOR}FF0000red`)).toBe('red');
     });
@@ -156,6 +160,22 @@ describe('ircFormatting', () => {
         expect(result[0]!.text).toBe('text');
         expect(result[0]!.style.foreground).toBe('#FF0000');
         expect(result[0]!.style.background).toBe('#00007F');
+      });
+
+      it('should keep a comma with no background color after it as text', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.COLOR}04, and then`);
+        expect(result).toHaveLength(1);
+        expect(result[0]!.text).toBe(', and then');
+        expect(result[0]!.style.foreground).toBe('#FF0000');
+        expect(result[0]!.style.background).toBe(null);
+      });
+
+      it('should keep a comma with no hex background color after it as text', () => {
+        const result = parseIrcFormatting(`${IRC_FORMAT.HEX_COLOR}FF0000,zz`);
+        expect(result).toHaveLength(1);
+        expect(result[0]!.text).toBe(',zz');
+        expect(result[0]!.style.foreground).toBe('#FF0000');
+        expect(result[0]!.style.background).toBe(null);
       });
 
       it('should reset colors with bare color code', () => {

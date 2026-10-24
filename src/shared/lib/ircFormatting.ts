@@ -176,21 +176,16 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
           const fg = Number.parseInt(fgStr, 10);
           currentState.foreground = getColorFromCode(fg);
 
-          if (i < text.length && text[i] === ',') {
+          // A comma without a background color after it is text, not part of the code
+          if (text[i] === ',' && /\d/.test(text[i + 1] ?? '')) {
             i++; // Skip comma
-            let bgStr = '';
+            let bgStr = text[i] as string;
+            i++;
             if (i < text.length && /\d/.test(text[i] as string)) {
               bgStr += text[i];
               i++;
-              if (i < text.length && /\d/.test(text[i] as string)) {
-                bgStr += text[i];
-                i++;
-              }
             }
-            if (bgStr.length > 0) {
-              const bg = Number.parseInt(bgStr, 10);
-              currentState.background = getColorFromCode(bg);
-            }
+            currentState.background = getColorFromCode(Number.parseInt(bgStr, 10));
           }
         } else {
           // Color code without numbers resets colors
@@ -208,12 +203,9 @@ export function parseIrcFormatting(text: string): FormattedSegment[] {
           currentState.foreground = '#' + text.slice(i, i + 6);
           i += 6;
 
-          if (i < text.length && text[i] === ',') {
-            i++; // Skip comma
-            if (i + 6 <= text.length && /^[0-9A-Fa-f]{6}$/.test(text.slice(i, i + 6))) {
-              currentState.background = '#' + text.slice(i, i + 6);
-              i += 6;
-            }
+          if (text[i] === ',' && /^[0-9A-Fa-f]{6}$/.test(text.slice(i + 1, i + 7))) {
+            currentState.background = '#' + text.slice(i + 1, i + 7);
+            i += 7;
           }
         }
         break;
@@ -238,11 +230,9 @@ export function hasIrcFormatting(text: string): boolean {
 export function stripIrcFormatting(text: string): string {
   let result = text;
 
+  // Both color codes in one pass: removing one kind first could join what follows into a code of the other
   // eslint-disable-next-line no-control-regex
-  result = result.replace(/\x03(\d{1,2}(,\d{1,2})?)?/g, '');
-
-  // eslint-disable-next-line no-control-regex
-  result = result.replace(/\x04([0-9A-Fa-f]{6}(,[0-9A-Fa-f]{6})?)?/g, '');
+  result = result.replace(/\x03(\d{1,2}(,\d{1,2})?)?|\x04([0-9A-Fa-f]{6}(,[0-9A-Fa-f]{6})?)?/g, '');
 
   const simpleFormatChars = [
     IRC_FORMAT.BOLD,

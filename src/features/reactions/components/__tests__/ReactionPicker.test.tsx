@@ -8,8 +8,8 @@ import * as settingsFile from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
 
 vi.mock('emoji-picker-react', () => ({
-  default: ({ onReactionClick, onEmojiClick }: { onReactionClick: (emoji: { emoji: string }) => void; onEmojiClick: (emoji: { emoji: string }) => void }) => (
-    <div>
+  default: ({ onReactionClick, onEmojiClick, colorScheme }: { onReactionClick: (emoji: { emoji: string }) => void; onEmojiClick: (emoji: { emoji: string }) => void; colorScheme?: string }) => (
+    <div data-testid="emoji-picker" data-color-scheme={colorScheme}>
       <button type="button" onClick={() => onReactionClick({ emoji: '👍' })}>quick 👍</button>
       <button type="button" onClick={() => onEmojiClick({ emoji: '🦀' })}>full 🦀</button>
     </div>
@@ -41,6 +41,17 @@ describe('ReactionPicker', () => {
     render(<ReactionPicker ref={ref} />);
     act(() => ref.current?.open(shown, document.body));
   };
+
+  it.each([
+    [false, 'light'],
+    [true, 'dark'],
+  ])('shows the picker in the app\'s color scheme when dark mode is %s', async (isDarkMode, colorScheme) => {
+    settingsFile.useSettingsStore.setState({ isDarkMode });
+
+    open(message());
+
+    expect(await screen.findByTestId('emoji-picker')).toHaveAttribute('data-color-scheme', colorScheme);
+  });
 
   it('stays closed until opened at a message', () => {
     render(<ReactionPicker ref={createRef()} />);

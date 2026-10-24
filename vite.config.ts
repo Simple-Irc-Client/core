@@ -65,10 +65,10 @@ export default defineConfig(({ command }) => {
           "@shared": path.resolve(import.meta.dirname, "./src/shared"),
         },
       },
-      server: {
-        host: true,
-        hmr: true,
-      },
+      // The e2e servers serve the code as it was when they started: edits made while tests run don't reload their pages
+      server: process.env.SIC_E2E === '1'
+        ? { host: true, hmr: false, watch: null }
+        : { host: true, hmr: true },
     }
   } else {
     return {

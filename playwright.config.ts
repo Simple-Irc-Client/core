@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os';
 import { defineConfig, devices, type Project } from '@playwright/test';
 import { APP_PORT, GATEWAY_APP_PORT, GATEWAY_PORT, IRC_PORT, LEGACY_IRC_PORT } from './e2e/global-setup';
 import type { TestServer } from './e2e/test-server';
@@ -70,7 +71,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 4 : 2,
+  // CI runners have 4 vCPUs; locally half the cores, each worker driving one browser against the shared servers
+  workers: process.env.CI ? 4 : Math.max(2, Math.floor(availableParallelism() / 2)),
   reporter: process.env.CI ? 'github' : 'html',
   timeout: 60_000,
 
@@ -92,6 +94,7 @@ export default defineConfig({
       url: `http://localhost:${APP_PORT}`,
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
+      env: { SIC_E2E: '1' },
     },
     {
       command: `pnpm exec vite --port ${GATEWAY_APP_PORT} --strictPort`,
@@ -99,6 +102,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
       env: {
+        SIC_E2E: '1',
         VITE_GATEWAY_HOST: 'localhost',
         VITE_GATEWAY_PORT: String(GATEWAY_PORT),
         VITE_GATEWAY_PATH: '/webirc',

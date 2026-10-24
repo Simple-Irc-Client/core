@@ -1,0 +1,2 @@
+# Versions published less than 3 days ago (in minutes) are not installed; the min-release-age in .npmrc is for npm
+minimumReleaseAge: 4320
