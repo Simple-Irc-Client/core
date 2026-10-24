@@ -7,6 +7,7 @@ import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeEx
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
 import { announcePresence } from '@/network/irc/preAway';
+import { registrationNick, watchWantedNick } from '@features/nickRegain/nickRegain';
 import { clearSaslCredentials, getNickServFallbackCredentials, markIdentifySent, restoreSaslCredentials } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
 import { clearAllTyping, existChannel, getChannelsToAutoJoin, getOpenChannelNames, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
@@ -46,7 +47,7 @@ export const handleConnect = (): void => {
   }
 
   // Registration starts only here for both transports; a second CAP negotiation caused "Registration Timeout"
-  const nick = getCurrentNick();
+  const nick = registrationNick();
   const serverPassword = getServer()?.serverPassword;
 
   ircSendRawMessage('CAP LS 302');
@@ -162,6 +163,7 @@ export const handleResumed = (complete: boolean): void => {
   subscribeFriendsOnRegistration();
   resetDmPresenceSubscription();
   subscribeDmPresenceOnRegistration();
+  watchWantedNick();
 
   setAddMessageToAllChannels({
     id: uuidv4(),

@@ -5,6 +5,7 @@ import * as settingsStore from '@features/settings/store/settings';
 import * as resolveServerModule from '@shared/lib/resolveServerFromParams';
 import * as queryParams from '@shared/lib/queryParams';
 import * as network from '@/network/irc/network';
+import * as nickRegain from '@features/nickRegain/nickRegain';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,6 +19,10 @@ vi.mock('@features/settings/store/settings', () => ({
   setWizardStep: vi.fn(),
   setServer: vi.fn(),
   setIsConnecting: vi.fn(),
+}));
+
+vi.mock('@features/nickRegain/nickRegain', () => ({
+  forgetWantedNick: vi.fn(),
 }));
 
 vi.mock('@/network/irc/network', () => ({
@@ -154,6 +159,15 @@ describe('WizardNick', () => {
       fireEvent.click(button);
 
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('server');
+    });
+
+    it('should forget a nick wanted on an earlier connection, as the one typed now is the one wanted', () => {
+      render(<WizardNick />);
+
+      fireEvent.change(screen.getByLabelText('wizard.nick.nick'), { target: { value: 'MyNickname' } });
+      fireEvent.click(screen.getByText('wizard.nick.button.next'));
+
+      expect(nickRegain.forgetWantedNick).toHaveBeenCalledOnce();
     });
 
     it('should call setNick when form is submitted via Enter key', () => {

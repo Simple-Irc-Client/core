@@ -56,6 +56,8 @@ export interface SettingsStore {
   isWizardCompleted: boolean;
   wizardStep: WizardStep;
   nick: string;
+  /** The nick the user chose, while connected under another one because it was taken */
+  wantedNick: string | undefined;
   server: Server | undefined;
   isPasswordRequired: boolean | undefined;
   connectedTime: number; // unix timestamp
@@ -114,6 +116,7 @@ export interface SettingsStore {
   setIsConnected: (status: boolean) => void;
   setConnectedTime: (time: number) => void;
   setNick: (newNick: string) => void;
+  setWantedNick: (nick: string | undefined) => void;
   setServer: (newServer: Server) => void;
   setWizardStep: (newWizardStep: WizardStep) => void;
   setIsPasswordRequired: (status: boolean) => void;
@@ -211,6 +214,7 @@ export const useSettingsStore = create<SettingsStore>()(
     persist((set) => ({
     ...sessionDefaults(),
     nick: '',
+    wantedNick: undefined,
     server: undefined,
     theme: DEFAULT_THEME_ID,
     customThemes: {},
@@ -250,6 +254,9 @@ export const useSettingsStore = create<SettingsStore>()(
     },
     setConnectedTime: (time: number): void => {
       set(() => ({ connectedTime: time }));
+    },
+    setWantedNick: (nick: string | undefined): void => {
+      set(() => ({ wantedNick: nick }));
     },
     setNick: (newNick: string): void => {
       set((state) => ({
@@ -507,6 +514,7 @@ export const useSettingsStore = create<SettingsStore>()(
       e2eeEnabled: state.e2eeEnabled,
       fontFormatting: state.fontFormatting,
       nick: state.nick,
+      wantedNick: state.wantedNick,
       server: state.server,
       language: state.language,
       highlightWords: state.highlightWords,
@@ -560,6 +568,14 @@ export const setConnectedTime = (time: number): void => {
 
 export const setNick = (newNick: string): void => {
   useSettingsStore.getState().setNick(newNick);
+};
+
+export const getWantedNick = (): string | undefined => {
+  return useSettingsStore.getState().wantedNick;
+};
+
+export const setWantedNick = (nick: string | undefined): void => {
+  useSettingsStore.getState().setWantedNick(nick);
 };
 
 export const setServer = (newServer: Server): void => {

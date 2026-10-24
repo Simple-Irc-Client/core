@@ -4,6 +4,7 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, setWizardStep, setNick, setServer, setIsConnecting } from '@features/settings/store/settings';
+import { forgetWantedNick } from '@features/nickRegain/nickRegain';
 import { ircConnect } from '@/network/irc/network';
 import { resolveServerFromParams, isKnownServerParam } from '@shared/lib/resolveServerFromParams';
 import { getServerParam } from '@shared/lib/queryParams';
@@ -24,6 +25,7 @@ const WizardNick = () => {
   const handleClick = (): void => {
     if (formNick.length !== 0) {
       setNick(formNick);
+      forgetWantedNick();
 
       const serverToConnect = resolveServerFromParams();
       if (serverToConnect) {

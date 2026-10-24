@@ -2,6 +2,7 @@ import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { handleConnected } from '@/network/irc/kernel/connection';
+import { onRegisteredAs } from '@features/nickRegain/nickRegain';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendList } from '@/network/irc/network';
@@ -33,6 +34,9 @@ export const onRaw001 = (ctx: IrcContext): void => {
 
   if (myNick && !isSameName(myNick, getCurrentNick())) {
     setNick(myNick);
+  }
+  if (myNick) {
+    onRegisteredAs(myNick);
   }
 
   const message = ctx.trailing();

@@ -7,7 +7,9 @@ import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
-import { getCurrentNick, getIsWizardCompleted, getNickLenLimit, getUserModes, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
+import { getCurrentNick, getIsConnected, getIsWizardCompleted, getNickLenLimit, getUserModes, getWantedNick, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
+import { onNickTaken, onOwnNickChanged } from '@features/nickRegain/nickRegain';
+import { ircSendRawMessage } from '@/network/irc/network';
 import { getUserChannels, setRenameUser } from '@features/users/store/users';
 import { isValidNick } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
@@ -66,6 +68,7 @@ export const onNick = (ctx: IrcContext): void => {
 
   if (isSameName(oldNick, getCurrentNick())) {
     setNick(newNick);
+    onOwnNickChanged(newNick);
   }
 };
 
@@ -122,10 +125,28 @@ const showNickUnavailable = (ctx: IrcContext, message: string): void => {
   }
 };
 
+/** While registering, a taken nick gives way to an alternative instead of stopping the connection; false when there is none */
+const registerWithAlternative = (ctx: IrcContext, taken: string | undefined): boolean => {
+  const alternative = taken === undefined || getIsConnected() ? undefined : onNickTaken(taken);
+  if (alternative === undefined) {
+    return false;
+  }
+  showReply(ctx, {
+    message: i18next.t('nickRegain.usingAlternative', { nick: getWantedNick() ?? taken, alternative }),
+    target: STATUS_CHANNEL,
+    category: MessageCategory.info,
+  });
+  ircSendRawMessage(`NICK ${alternative}`);
+  return true;
+};
+
 // :server 433 * nick :Nickname is already in use
 export const onRaw433 = (ctx: IrcContext): void => {
   ctx.line.shift(); // asterisk
   const nick = ctx.line.shift();
+  if (registerWithAlternative(ctx, nick)) {
+    return;
+  }
   let message = ctx.trailing();
 
   if (message === 'Nickname is already in use') {
@@ -148,6 +169,10 @@ export const onRaw437 = (ctx: IrcContext): void => {
       target: replyWindow(ctx),
       category: MessageCategory.error,
     });
+    return;
+  }
+
+  if (registerWithAlternative(ctx, target)) {
     return;
   }
 

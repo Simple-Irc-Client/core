@@ -3,6 +3,7 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { showReply } from '@/network/irc/kernel/replies';
 import { subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
 import { subscribeFriendsOnRegistration } from '@features/friends/friends';
+import { watchWantedNick } from '@features/nickRegain/nickRegain';
 import { MessageCategory } from '@shared/types';
 
 const RPL_MOTD = '372';
@@ -51,6 +52,7 @@ export const onRaw376 = (ctx: IrcContext): void => {
   // 005 limits are known by now
   subscribeFriendsOnRegistration();
   subscribeDmPresenceOnRegistration();
+  watchWantedNick();
 };
 
 // :server 422 mynick :MOTD File is missing
@@ -67,6 +69,7 @@ export const onRaw422 = (ctx: IrcContext): void => {
   // No MOTD still ends the registration burst
   subscribeFriendsOnRegistration();
   subscribeDmPresenceOnRegistration();
+  watchWantedNick();
 };
 
 export const handlers: IrcHandlers = {

@@ -7,6 +7,7 @@ import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select';
 import { cn, isSafeImageUrl, isSafeUrl } from '@shared/lib/utils';
+import { forgetWantedNick } from '@features/nickRegain/nickRegain';
 import { SETTING_LABEL, SETTING_ROW, SETTINGS_GRID } from '../../settingsLayout';
 
 type MetadataKey = 'avatar' | 'display-name' | 'status' | 'homepage' | 'color';
@@ -76,6 +77,7 @@ const ProfileTab = ({ currentNick, onDone }: ProfileTabProps) => {
 
   const handleNickChange = (): void => {
     if (newNick.trim().length > 0) {
+      forgetWantedNick();
       ircSendUserCommand(`NICK ${newNick.trim()}`);
       onDone();
     }

@@ -4,6 +4,7 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { showReply } from '@/network/irc/kernel/replies';
 import { resumePendingEncryption } from '@features/e2ee/session';
 import { setMultipleMonitorOffline, setMultipleMonitorOnline } from '@features/monitor/store/monitor';
+import { onNicksOffline } from '@features/nickRegain/nickRegain';
 import { MessageCategory } from '@shared/types';
 
 const RPL_REAWAY = '597';
@@ -86,6 +87,7 @@ export const onRaw601 = (ctx: IrcContext): void => {
   // User went offline
   if (nick) {
     setMultipleMonitorOffline([nick]);
+    onNicksOffline([nick]);
     showReply(ctx, {
       message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
       target: STATUS_CHANNEL,
@@ -143,6 +145,7 @@ export const onRaw605 = (ctx: IrcContext): void => {
   // User is currently offline (when adding to watch list)
   if (nick) {
     setMultipleMonitorOffline([nick]);
+    onNicksOffline([nick]);
     showReply(ctx, {
       message: i18next.t('kernel.watchoffline', { nick, defaultValue: `${nick} is now offline` }),
       target: STATUS_CHANNEL,

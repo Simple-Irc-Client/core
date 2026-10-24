@@ -4,6 +4,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import * as channelsFile from '@features/channels/store/channels';
 import * as settingsFile from '@features/settings/store/settings';
 import * as usersFile from '@features/users/store/users';
+import * as networkFile from '@/network/irc/network';
 import { MessageCategory } from '@shared/types';
 import '@/app/i18n';
 
@@ -27,18 +28,38 @@ describe('dedicated numeric handlers', () => {
   });
 
   describe('437 ERR_UNAVAILRESOURCE', () => {
-    it('reports an unavailable nick during registration in Status and the wizard', () => {
+    beforeEach(() => {
+      settingsFile.useSettingsStore.setState({ wantedNick: undefined });
+    });
+
+    it('registers with an alternative while the nick is unavailable, without stopping the wizard', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
       const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
+      const send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
       handle(':server 437 * alice :Nick/channel is temporarily unavailable');
 
+      expect(send).toHaveBeenCalledWith('NICK alice_');
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: STATUS_CHANNEL, category: MessageCategory.info });
+      expect(mockSetWizardProgress).not.toHaveBeenCalled();
+    });
+
+    it('reports an unavailable nick in Status and the wizard once the alternatives are used up', () => {
+      vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
+      vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+      settingsFile.useSettingsStore.setState({ wantedNick: 'alice' });
+
+      handle(':server 437 * alice___ :Nick/channel is temporarily unavailable');
+
       expect(lastReply(mockSetAddMessage)).toMatchObject({
         target: STATUS_CHANNEL,
-        message: 'alice: Nick/channel is temporarily unavailable',
+        message: 'alice___: Nick/channel is temporarily unavailable',
         category: MessageCategory.error,
       });
-      expect(mockSetWizardProgress).toHaveBeenCalledWith(0, expect.stringContaining('alice: Nick/channel is temporarily unavailable'));
+      expect(mockSetWizardProgress).toHaveBeenCalledWith(0, expect.stringContaining('alice___: Nick/channel is temporarily unavailable'));
     });
 
     it('reports an unavailable channel in the current window without touching the wizard', () => {
@@ -53,6 +74,7 @@ describe('dedicated numeric handlers', () => {
 
     it('does not touch the wizard after registration', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
+      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
       const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
       handle(':server 437 mynick alice :Nick/channel is temporarily unavailable');

@@ -8,6 +8,7 @@ import { acknowledgePlaintext, endSession, markVerified, offerEncryption } from 
 import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2ee';
 import { getE2eeEnabled } from '@features/settings/store/settings';
 import { addIgnore, getIgnoreMasks, removeIgnore, toIgnoreMask } from '@features/ignore/ignore';
+import { forgetWantedNick } from '@features/nickRegain/nickRegain';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
@@ -361,6 +362,7 @@ const nickCommand = (line: string[]): string | undefined => {
   if (!newNick) {
     return undefined;
   }
+  forgetWantedNick();
   return `NICK ${newNick}`;
 };
 

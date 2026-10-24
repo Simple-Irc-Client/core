@@ -13,6 +13,7 @@ import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import NotConnected from './NotConnected';
 import DisconnectedBanner from './DisconnectedBanner';
 import E2eeBanner from '@features/e2ee/components/E2eeBanner';
+import NickRegainBanner from '@features/nickRegain/components/NickRegainBanner';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import ChatMessage from './ChatMessage';
 import MembershipEventsRow from './MembershipEventsRow';
@@ -277,6 +278,7 @@ const Chat = () => {
       }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
         <div className="sticky top-0 z-10 break-normal">
           {!isConnected && <DisconnectedBanner />}
+          <NickRegainBanner />
           <E2eeBanner />
         </div>
         {!isConnected && messages.length === 0 && <NotConnected />}

@@ -1,6 +1,7 @@
 import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { onNicksOffline } from '@features/nickRegain/nickRegain';
 import { showReply } from '@/network/irc/kernel/replies';
 import { resumePendingEncryption } from '@features/e2ee/session';
 import { addMonitoredNick, setMultipleMonitorOffline, setMultipleMonitorOnline } from '@features/monitor/store/monitor';
@@ -48,6 +49,7 @@ export const onRaw731 = (ctx: IrcContext): void => {
 
   if (nicks.length > 0) {
     setMultipleMonitorOffline(nicks);
+    onNicksOffline(nicks);
   }
 };
 
