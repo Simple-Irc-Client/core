@@ -113,6 +113,7 @@
     "main.chat.deleteConfirm": "Delete",
     "main.chat.replyToEarlier": "Reply to an earlier message",
     "main.chat.showReplied": "Show the message replied to",
+    "main.chat.jumpToBottom": "Jump to the newest messages",
     "main.toolbar.replyingTo": "Replying to {{nick}}:",
     "main.toolbar.cancelReply": "Cancel reply",
     "kernel.connected": "Connected",

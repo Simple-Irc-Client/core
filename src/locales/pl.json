@@ -113,6 +113,7 @@
     "main.chat.deleteConfirm": "Usuń",
     "main.chat.replyToEarlier": "Odpowiedź na wcześniejszą wiadomość",
     "main.chat.showReplied": "Pokaż wiadomość, na którą to odpowiedź",
+    "main.chat.jumpToBottom": "Przewiń do najnowszych wiadomości",
     "main.toolbar.replyingTo": "Odpowiedź dla {{nick}}:",
     "main.toolbar.cancelReply": "Anuluj odpowiedź",
     "kernel.connected": "Połączono z serwerem",

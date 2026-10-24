@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from 'vitest';
 import { act, render, screen, fireEvent } from '@testing-library/react';
+import i18next from 'i18next';
 import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
@@ -40,6 +41,7 @@ const createUserNick = (overrides: Partial<User> = {}): User => ({
 // theme's CSS decides which parts are visible. jsdom does not apply CSS, so these
 // tests assert the DOM contract (sic-* class names + data attributes), not the
 // visual outcome of a particular theme.
+const getLog = (container: HTMLElement) => container.querySelector<HTMLDivElement>('[data-testid="chat-log"]') as HTMLDivElement;
 const getMessages = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>('.sic-msg')];
 const getHeaderNick = (container: HTMLElement) => container.querySelector<HTMLElement>('.sic-msg-header .sic-msg-nick');
 const getInlineNick = (container: HTMLElement) => container.querySelector<HTMLElement>('.sic-msg-nick-inline');
@@ -161,7 +163,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // scrollTop should be set to scrollHeight (scroll to bottom)
       expect(scrollContainer.scrollTop).toBe(scrollContainer.scrollHeight);
@@ -1259,7 +1261,7 @@ describe('Chat tests', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
       const { container } = render(<Main />);
 
-      scrollUpTo(container.firstChild as HTMLDivElement, 150);
+      scrollUpTo(getLog(container), 150);
 
       expect(requestOlderHistory).toHaveBeenCalledWith('#channel1');
     });
@@ -1269,7 +1271,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
       const { container } = render(<Main />);
 
-      scrollUpTo(container.firstChild as HTMLDivElement, 300);
+      scrollUpTo(getLog(container), 300);
 
       expect(requestOlderHistory).not.toHaveBeenCalled();
     });
@@ -1283,7 +1285,7 @@ describe('Chat tests', () => {
       const shown = [createMessage({ id: '2' }), createMessage({ id: '3' })];
       setupMocks({ messages: shown });
       const { container, rerender } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
       scrollUpTo(scrollContainer, 100);
 
       tops['2'] = 310;
@@ -1299,7 +1301,7 @@ describe('Chat tests', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container, rerender } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate scroll container dimensions
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1321,7 +1323,7 @@ describe('Chat tests', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container, rerender } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate scroll container dimensions
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1346,7 +1348,7 @@ describe('Chat tests', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container, rerender } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate scroll container dimensions
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1369,7 +1371,7 @@ describe('Chat tests', () => {
       setupMocks({ currentChannelName: '#channel1', messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // After initial render, content loads and ResizeObserver fires
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 500, configurable: true });
@@ -1574,12 +1576,79 @@ describe('Chat tests', () => {
     });
   });
 
+  describe('Jump to the newest messages', () => {
+    const jumpButton = () => screen.queryByRole('button', { name: i18next.t('main.chat.jumpToBottom') });
+
+    const scrollTo = (log: HTMLDivElement, scrollTop: number): void => {
+      Object.defineProperty(log, 'scrollHeight', { value: 2000, configurable: true });
+      Object.defineProperty(log, 'clientHeight', { value: 400, configurable: true });
+      log.scrollTop = 1600;
+      fireEvent.scroll(log);
+      log.scrollTop = scrollTop;
+      fireEvent.scroll(log);
+    };
+
+    it('should not offer it at the bottom, nor less than a screen above it', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+      const { container } = render(<Main />);
+      expect(jumpButton()).not.toBeInTheDocument();
+
+      scrollTo(getLog(container), 1300);
+
+      expect(jumpButton()).not.toBeInTheDocument();
+    });
+
+    it('should offer it more than a screen above the bottom, and hide it back down there', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+      const { container } = render(<Main />);
+      const log = getLog(container);
+
+      scrollTo(log, 1000);
+      expect(jumpButton()).toBeInTheDocument();
+
+      log.scrollTop = 1600;
+      fireEvent.scroll(log);
+      expect(jumpButton()).not.toBeInTheDocument();
+    });
+
+    it('should offer it once new messages push the bottom more than a screen away', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+      const { container, rerender } = render(<Main />);
+      const log = getLog(container);
+      scrollTo(log, 1300);
+      expect(jumpButton()).not.toBeInTheDocument();
+
+      Object.defineProperty(log, 'scrollHeight', { value: 2500, configurable: true });
+      setupMocks({ messages: [createMessage({ id: '1' }), createMessage({ id: '2' })] });
+      rerender(<Main />);
+
+      expect(jumpButton()).toBeInTheDocument();
+    });
+
+    it('should scroll to the bottom when clicked, and follow new messages again', () => {
+      setupMocks({ messages: [createMessage({ id: '1' })] });
+      const { container } = render(<Main />);
+      const log = getLog(container);
+      log.scrollTo = vi.fn();
+      scrollTo(log, 200);
+
+      fireEvent.click(jumpButton() as HTMLElement);
+
+      expect(log.scrollTo).toHaveBeenCalledExactlyOnceWith({ top: 2000, behavior: 'smooth' });
+      log.scrollTop = 200;
+      act(() => {
+        resizeObserverCallback([], {} as ResizeObserver);
+      });
+      expect(log.scrollTop).toBe(2000);
+    });
+  });
+
   describe('Scroll behavior with content resize', () => {
     it('should set up ResizeObserver on mount', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
       const content = scrollContainer.lastElementChild;
 
       // ResizeObserver should observe the content element
@@ -1592,7 +1661,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate content height increase (e.g., image loaded)
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1608,7 +1677,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate scroll container dimensions
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1633,7 +1702,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
       Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
@@ -1664,7 +1733,7 @@ describe('Chat tests', () => {
       setupMocks({ messages: [createMessage({ id: '1' })] });
 
       const { container, rerender } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Simulate scroll container dimensions
       Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1000, configurable: true });
@@ -1886,7 +1955,7 @@ describe('Chat tests', () => {
       });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Mock globalThis.getSelection to return selected text
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
@@ -1911,7 +1980,7 @@ describe('Chat tests', () => {
       });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       // Mock globalThis.getSelection to return empty selection
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
@@ -1956,7 +2025,7 @@ describe('Chat tests', () => {
       });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
         toString: () => 'selected',
@@ -1979,7 +2048,7 @@ describe('Chat tests', () => {
       });
 
       const { container } = render(<Main />);
-      const scrollContainer = container.firstChild as HTMLDivElement;
+      const scrollContainer = getLog(container);
 
       const mockGetSelection = vi.spyOn(globalThis, 'getSelection').mockReturnValue({
         toString: () => '',
@@ -2343,7 +2412,7 @@ describe('Chat tests', () => {
     it('keeps the view on the message as new ones arrive', () => {
       setupMocks({ messages });
       const { container, rerender } = render(<Main />);
-      const log = container.querySelector<HTMLElement>('[data-testid="chat-log"]') as HTMLElement;
+      const log = getLog(container);
       Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 2000 });
       Object.defineProperty(log, 'clientHeight', { configurable: true, value: 500 });
       // Where scrolling to the message lands, far above the bottom

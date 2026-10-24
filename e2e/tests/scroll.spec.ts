@@ -92,6 +92,24 @@ test.describe('Scroll behavior', () => {
     expect(isAtBottom).toBe(true);
   });
 
+  test('far up, an arrow takes the user back to the newest messages', async () => {
+    const chatLog = sharedPage.getByTestId('chat-log');
+    const jumpButton = sharedPage.getByRole('button', { name: 'Jump to the newest messages' });
+    for (let i = 1; i <= 80; i++) {
+      bot.sendMessage(channel, `Long history ${i}`);
+    }
+    await expect(chatLog.getByText('Long history 80', { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(jumpButton).toBeHidden();
+
+    await chatLog.evaluate((el) => { el.scrollTop = 0; });
+    await jumpButton.click();
+
+    await expect(jumpButton).toBeHidden();
+    await expect(chatLog.getByText('Long history 80', { exact: true })).toBeInViewport();
+    bot.sendMessage(channel, 'After the jump');
+    await expect(chatLog.getByText('After the jump')).toBeInViewport();
+  });
+
   test('auto-scroll stays at bottom when async media loads after new messages', async () => {
     const chatLog = sharedPage.getByTestId('chat-log');
 

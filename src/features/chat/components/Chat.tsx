@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ArrowDown } from 'lucide-react';
 import { useSettingsStore, fontSizeClasses, isSameName } from '@features/settings/store/settings';
 import { startOfDay } from 'date-fns';
 import type { Message } from '@shared/types';
@@ -24,6 +26,7 @@ import { useUsersStore } from '@features/users/store/users';
 import { useCanReact } from '@features/reactions/useCanReact';
 import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
 import { setReplyTo } from '@features/replies/store/replyTo';
+import { Button } from '@shared/components/ui/button';
 
 // Close enough to the top that the older page is usually in before the user gets there
 const LOAD_OLDER_THRESHOLD_PX = 200;
@@ -41,6 +44,7 @@ const GROUP_BREAK_MS = 5 * 60 * 1000;
 const messageTop = (row: HTMLElement): number => (row.lastElementChild ?? row).getBoundingClientRect().top;
 
 const Chat = () => {
+  const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();
   const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
   const fontSize = useSettingsStore((state) => state.fontSize);
@@ -118,6 +122,16 @@ const Chat = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isUserScrolledUp = useRef(false);
   const lastScrollTop = useRef(0);
+  /** More than a screen above the newest messages: a button takes the user back */
+  const [isFarFromBottom, setIsFarFromBottom] = useState(false);
+
+  const updateFarFromBottom = useCallback(() => {
+    const container = containerRef.current;
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setIsFarFromBottom(scrollHeight - scrollTop - clientHeight > clientHeight);
+    }
+  }, []);
   /** The first message and where it was on screen, to keep it there when older ones go in above */
   const topMessage = useRef<{ id: string; top: number } | null>(null);
 
@@ -176,8 +190,14 @@ const Chat = () => {
       }
       lastScrollTop.current = scrollTop;
       rememberTopMessage();
+      updateFarFromBottom();
     }
-  }, [currentChannelName, rememberTopMessage]);
+  }, [currentChannelName, rememberTopMessage, updateFarFromBottom]);
+
+  const jumpToBottom = useCallback(() => {
+    isUserScrolledUp.current = false;
+    containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: 'smooth' });
+  }, []);
 
   useLayoutEffect(() => {
     isUserScrolledUp.current = false;
@@ -198,7 +218,9 @@ const Chat = () => {
       }
     }
     rememberTopMessage();
-  }, [messages, scrollToBottom, rememberTopMessage]);
+    // Messages coming in while scrolled up move the bottom away without a scroll event
+    updateFarFromBottom();
+  }, [messages, scrollToBottom, rememberTopMessage, updateFarFromBottom]);
 
   // After the effect above, so finding the sought message moves the view to it rather than back to the bottom
   useLayoutEffect(() => {
@@ -234,73 +256,87 @@ const Chat = () => {
   }, [isConnected, scrollToBottom]);
 
   return (
-    <div
-      ref={containerRef}
-      data-testid="chat-log"
-      role="log"
-      data-density={density}
-      style={{ '--sic-time-width': `${timeWidthCh(timeFormat, showSeconds)}ch` } as React.CSSProperties}
-      onScroll={handleScroll}
-      onContextMenu={(e) => {
-      if (e.defaultPrevented) { return; }
-      e.preventDefault();
-      e.stopPropagation();
-      const selection = globalThis.getSelection()?.toString();
-      if (selection) {
-        handleContextMenuUserClick(e, 'text', selection);
-      } else {
-        handleContextMenuUserClick(e, 'chat', currentChannelName);
-      }
-    }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
-      <div className="sticky top-0 z-10 break-normal">
-        {!isConnected && <DisconnectedBanner />}
-        <E2eeBanner />
-      </div>
-      {!isConnected && messages.length === 0 && <NotConnected />}
-      <div className="pt-0 pb-0">
-        {rows.map(({ item, showDateSeparator, currentDate, grouped }) => {
-          const renderMessage = (message: Message, isGrouped: boolean) => (
-            <ChatMessage
-              message={message}
-              grouped={isGrouped}
-              isDebug={isDebug}
-              fontSizeClass={fontSizeClass}
-              canReact={canReact}
-              onAddReaction={handleAddReaction}
-              canReply={canReply}
-              onReply={handleReply}
-              replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
-              onShowMessage={handleShowMessage}
-              canRedact={canRedactAny || (canRedactHere && fold(getNickFromMessage(message) ?? '') === fold(myNick))}
-              onRedact={handleRedact}
-            />
-          );
-          if (item.kind === 'message') {
+    <div className="relative h-full">
+      <div
+        ref={containerRef}
+        data-testid="chat-log"
+        role="log"
+        data-density={density}
+        style={{ '--sic-time-width': `${timeWidthCh(timeFormat, showSeconds)}ch` } as React.CSSProperties}
+        onScroll={handleScroll}
+        onContextMenu={(e) => {
+        if (e.defaultPrevented) { return; }
+        e.preventDefault();
+        e.stopPropagation();
+        const selection = globalThis.getSelection()?.toString();
+        if (selection) {
+          handleContextMenuUserClick(e, 'text', selection);
+        } else {
+          handleContextMenuUserClick(e, 'chat', currentChannelName);
+        }
+      }} className="h-full overflow-y-auto overflow-x-hidden relative break-all">
+        <div className="sticky top-0 z-10 break-normal">
+          {!isConnected && <DisconnectedBanner />}
+          <E2eeBanner />
+        </div>
+        {!isConnected && messages.length === 0 && <NotConnected />}
+        <div className="pt-0 pb-0">
+          {rows.map(({ item, showDateSeparator, currentDate, grouped }) => {
+            const renderMessage = (message: Message, isGrouped: boolean) => (
+              <ChatMessage
+                message={message}
+                grouped={isGrouped}
+                isDebug={isDebug}
+                fontSizeClass={fontSizeClass}
+                canReact={canReact}
+                onAddReaction={handleAddReaction}
+                canReply={canReply}
+                onReply={handleReply}
+                replied={message.replyTo === undefined ? undefined : messagesByMsgid.get(message.replyTo)}
+                onShowMessage={handleShowMessage}
+                canRedact={canRedactAny || (canRedactHere && fold(getNickFromMessage(message) ?? '') === fold(myNick))}
+                onRedact={handleRedact}
+              />
+            );
+            if (item.kind === 'message') {
+              return (
+                <div key={`message-${item.message.id}`} data-message-id={item.message.id}>
+                  {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
+                  {renderMessage(item.message, grouped)}
+                </div>
+              );
+            }
+            const expanded = expandedRuns.has(item.id);
             return (
-              <div key={`message-${item.message.id}`} data-message-id={item.message.id}>
+              // The last event's id: older history going in above can lengthen a run, but never changes its last event
+              <div key={`events-${item.id}`} data-message-id={item.messages.at(-1)?.id}>
                 {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
-                {renderMessage(item.message, grouped)}
+                <MembershipEventsRow id={item.id} events={item.messages} expanded={expanded} onToggle={toggleRun} fontSizeClass={fontSizeClass} fold={fold} />
+                {expanded && item.messages.map((message) => (
+                  <div key={`message-${message.id}`} data-message-id={message.id}>
+                    {renderMessage(message, false)}
+                  </div>
+                ))}
               </div>
             );
-          }
-          const expanded = expandedRuns.has(item.id);
-          return (
-            // The last event's id: older history going in above can lengthen a run, but never changes its last event
-            <div key={`events-${item.id}`} data-message-id={item.messages.at(-1)?.id}>
-              {showDateSeparator && <DateSeparator date={currentDate} fontSizeClass={fontSizeClass} />}
-              <MembershipEventsRow id={item.id} events={item.messages} expanded={expanded} onToggle={toggleRun} fontSizeClass={fontSizeClass} fold={fold} />
-              {expanded && item.messages.map((message) => (
-                <div key={`message-${message.id}`} data-message-id={message.id}>
-                  {renderMessage(message, false)}
-                </div>
-              ))}
-            </div>
-          );
-        })}
+          })}
+        </div>
+        {/* Keyed, so switching windows closes it */}
+        <ReactionPicker key={currentChannelName} ref={reactionPicker} />
+        <RedactDialog message={redacting} onClose={closeRedact} />
       </div>
-      {/* Keyed, so switching windows closes it */}
-      <ReactionPicker key={currentChannelName} ref={reactionPicker} />
-      <RedactDialog message={redacting} onClose={closeRedact} />
+      {isFarFromBottom && (
+        <Button
+          variant="secondary"
+          size="icon"
+          onClick={jumpToBottom}
+          className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full shadow-md"
+          aria-label={t('main.chat.jumpToBottom')}
+          title={t('main.chat.jumpToBottom')}
+        >
+          <ArrowDown />
+        </Button>
+      )}
     </div>
   );
 };
