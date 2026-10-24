@@ -181,6 +181,7 @@
     "kernel.407.too-many-recipients": "Zbyt wielu odbiorców",
     "kernel.407.too-many-targets": "Zbyt wiele celów: maksymalnie {{max}} dla {{command}}",
     "kernel.412.no-text-to-send": "Brak tekstu do wysłania",
+    "kernel.415.channel-needs-account": "Nie możesz pisać na tym kanale (+R): musisz zalogować się na konto NickServ",
     "kernel.421.unknown-command": "Nieznane polecenie",
     "kernel.433.nickname-in-use": "Nick jest już używany",
     "kernel.438.try-later": "Zbyt szybka zmiana nicka. Spróbuj ponownie później",

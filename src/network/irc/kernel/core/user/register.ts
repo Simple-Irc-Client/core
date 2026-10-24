@@ -22,6 +22,7 @@ const ERR_NOTREGISTERED = '451';
 const ERR_ALREADYREGISTRED = '462';
 const ERR_PASSWDMISMATCH = '464';
 const ERR_YOUREBANNEDCREEP = '465';
+const RPL_ANTIBEAR = '931';
 
 // :netsplit.pirc.pl 001 SIC-test :Welcome to the pirc.pl IRC Network SIC-test!~SIC-test@1.1.1.1
 export const onRaw001 = (ctx: IrcContext): void => {
@@ -196,6 +197,18 @@ export const onRaw465 = (ctx: IrcContext): void => {
   }
 };
 
+// InspIRCd's m_antibear, after 439, when we connect: :server 931 mynick :Malicious bots, spammers, and other automated systems of dubious origin are NOT welcome here.
+export const onRaw931 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const message = ctx.trailing();
+
+  showReply(ctx, {
+    message,
+    target: STATUS_CHANNEL,
+    category: MessageCategory.info,
+  });
+};
+
 export const handlers: IrcHandlers = {
   [RPL_WELCOME]: onRaw001,
   [RPL_YOURHOST]: onRaw002,
@@ -209,4 +222,5 @@ export const handlers: IrcHandlers = {
   [ERR_ALREADYREGISTRED]: onRaw462,
   [ERR_PASSWDMISMATCH]: onRaw464,
   [ERR_YOUREBANNEDCREEP]: onRaw465,
+  [RPL_ANTIBEAR]: onRaw931,
 };

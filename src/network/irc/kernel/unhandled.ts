@@ -30,7 +30,6 @@ const KNOWN_TEXTS: Record<string, { text: RegExp; key: string }[]> = {
     { text: /^Nick change too fast\. Please wait (?<seconds>\d+) seconds\.$/, key: 'kernel.438.wait-seconds' },
     { text: /^Nick change too fast\. Please try again later\.$/, key: 'kernel.438.try-later' },
   ],
-  '439': [{ text: /^Message target change too fast\. Please wait (?<seconds>\d+) seconds$/, key: 'kernel.439.wait-seconds' }],
   '440': [
     { text: /^Services are currently unavailable$/, key: 'kernel.440.services-down' },
     { text: /^Services are currently down\. Please try again later\.$/, key: 'kernel.440.services-down' },

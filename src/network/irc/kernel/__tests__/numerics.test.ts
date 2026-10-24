@@ -134,6 +134,76 @@ describe('dedicated numeric handlers', () => {
     });
   });
 
+  describe('415 ERR_MSGNEEDREGGEDNICK', () => {
+    const line = ':ruthenium.libera.chat 415 mynick ##chan :Cannot send message to channel (+R) - you need to be logged into your NickServ account';
+
+    it('shows in the channel the message was refused in, translated', () => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => name === '##chan');
+
+      handle(line);
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({
+        target: '##chan',
+        message: '##chan: Nie możesz pisać na tym kanale (+R): musisz zalogować się na konto NickServ',
+        category: MessageCategory.error,
+      });
+    });
+
+    it('falls back to the current window when that channel is not open', () => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+
+      handle(line);
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', category: MessageCategory.error });
+    });
+
+    it('shows an older server\'s ERR_BADMASK as is, in the current window', () => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+
+      handle(':server 415 mynick *.example :Bad Server/host mask');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: '*.example: Bad Server/host mask', category: MessageCategory.error });
+    });
+  });
+
+  describe('439 ERR_TARGETTOOFAST', () => {
+    it('shows a refused message target as an error in the current window, translated', () => {
+      handle(':server 439 mynick bob :Message target change too fast. Please wait 12 seconds');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({
+        target: '#current',
+        message: 'bob: Zbyt szybka zmiana odbiorcy wiadomości. Poczekaj 12 s',
+        category: MessageCategory.error,
+      });
+    });
+
+    it('keeps a server\'s own wording', () => {
+      handle(':server 439 mynick bob :Slow down');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: 'bob: Slow down', category: MessageCategory.error });
+    });
+
+    it('shows the anti-spambot notice sent on connect as info in Status', () => {
+      handle(':hulk.sad.cinemageddon.net 439 rw :This server has anti-spambot mechanisms enabled.');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({
+        target: STATUS_CHANNEL,
+        message: 'This server has anti-spambot mechanisms enabled.',
+        category: MessageCategory.info,
+      });
+    });
+  });
+
+  it('931 shows the anti-spambot notice sent on connect as info in Status', () => {
+    handle(':hulk.sad.cinemageddon.net 931 rw :Malicious bots, spammers, and other automated systems of dubious origin are NOT welcome here.');
+
+    expect(lastReply(mockSetAddMessage)).toMatchObject({
+      target: STATUS_CHANNEL,
+      message: 'Malicious bots, spammers, and other automated systems of dubious origin are NOT welcome here.',
+      category: MessageCategory.info,
+    });
+  });
+
   describe('486 ERR_NONONREG / 531 ERR_CANTSENDTOUSER', () => {
     it.each(['486', '531'])('%s shows in the open DM window with that user', (numeric) => {
       vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => name === 'alice');

@@ -3,7 +3,7 @@ import { clientSourceUrl, clientVersion, STATUS_CHANNEL } from '@/config/config'
 import { MessageColor } from '@/config/theme';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { isIrcService, parseNick } from '@/network/irc/helpers';
-import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
+import { type IrcContext, type IrcHandlers, joinParamsAndText } from '@/network/irc/kernel/context';
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircAutoAuthenticate, ircSendRawMessage } from '@/network/irc/network';
 import { markReadSoon, noteShownMessage } from '@/network/irc/readMarkers';
@@ -28,6 +28,8 @@ const ERR_NOSUCHNICK = '401';
 const ERR_CANNOTSENDTOCHAN = '404';
 const ERR_NORECIPIENT = '411';
 const ERR_NOTEXTTOSEND = '412';
+const ERR_MSGNEEDREGGEDNICK = '415';
+const ERR_TARGETTOOFAST = '439';
 const ERR_NONONREG = '486';
 const ERR_CANTSENDTOUSER = '531';
 
@@ -530,6 +532,48 @@ export const onRaw412 = (ctx: IrcContext): void => {
   });
 };
 
+// :ruthenium.libera.chat 415 mynick #channel :Cannot send message to channel (+R) - you need to be logged into your NickServ account
+// Older servers send ERR_BADMASK with this number: :server 415 mynick *.mask :Bad Server/host mask
+export const onRaw415 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const { params, text } = ctx.paramsAndText();
+  const [target] = params;
+  const message = text === 'Cannot send message to channel (+R) - you need to be logged into your NickServ account'
+    ? i18next.t('kernel.415.channel-needs-account', { defaultValue: text })
+    : text;
+
+  showReply(ctx, {
+    message: joinParamsAndText(params, message),
+    target: target !== undefined && existChannel(target) ? target : replyWindow(ctx),
+    category: MessageCategory.error,
+  });
+};
+
+// :server 439 mynick #channel :Message target change too fast. Please wait 30 seconds
+// InspIRCd's m_antibear sends one without a target when we connect: :server 439 mynick :This server has anti-spambot mechanisms enabled.
+export const onRaw439 = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const { params, text } = ctx.paramsAndText();
+
+  if (params.length === 0) {
+    showReply(ctx, {
+      message: text,
+      target: STATUS_CHANNEL,
+      category: MessageCategory.info,
+    });
+    return;
+  }
+
+  const seconds = /^Message target change too fast\. Please wait (?<seconds>\d+) seconds$/.exec(text)?.groups?.seconds;
+  const message = seconds === undefined ? text : i18next.t('kernel.439.wait-seconds', { seconds, defaultValue: text });
+
+  showReply(ctx, {
+    message: joinParamsAndText(params, message),
+    target: replyWindow(ctx),
+    category: MessageCategory.error,
+  });
+};
+
 // In the DM window with that user when it is open, where the message was typed
 // :server 486 mynick nick :You must log in with services to message this user
 // :server 531 mynick nick :You are not permitted to send private messages to this user
@@ -552,6 +596,8 @@ export const handlers: IrcHandlers = {
   [ERR_CANNOTSENDTOCHAN]: onRaw404,
   [ERR_NORECIPIENT]: onRaw411,
   [ERR_NOTEXTTOSEND]: onRaw412,
+  [ERR_MSGNEEDREGGEDNICK]: onRaw415,
+  [ERR_TARGETTOOFAST]: onRaw439,
   [ERR_NONONREG]: onPrivateMessageRefused,
   [ERR_CANTSENDTOUSER]: onPrivateMessageRefused,
 };

@@ -104,7 +104,6 @@ describe('kernel unhandled', () => {
       [':server 407 me alice,bob :Too many recipients.', 'alice,bob: Zbyt wielu odbiorców'],
       [':server 407 me alice :Too many targets. The maximum is 4 for PRIVMSG.', 'alice: Zbyt wiele celów: maksymalnie 4 dla PRIVMSG'],
       [':server 438 me newnick :Nick change too fast. Please try again later.', 'newnick: Zbyt szybka zmiana nicka. Spróbuj ponownie później'],
-      [':server 439 me bob :Message target change too fast. Please wait 12 seconds', 'bob: Zbyt szybka zmiana odbiorcy wiadomości. Poczekaj 12 s'],
       [':server 440 me NickServ :Services are currently unavailable', 'NickServ: Serwisy są obecnie niedostępne. Spróbuj ponownie później'],
       [':server 440 me NickServ :Services are currently down. Please try again later.', 'NickServ: Serwisy są obecnie niedostępne. Spróbuj ponownie później'],
       [':server 479 me #bad,name :Illegal channel name', '#bad,name: Niedozwolona nazwa kanału'],
@@ -166,11 +165,16 @@ describe('kernel unhandled', () => {
       expect(captureMessage).toHaveBeenCalledTimes(2);
     });
 
-    it('does not report numerics that have a handler', () => {
+    it.each([
+      ':server 251 mynick :There are 3 users',
+      ':ruthenium.libera.chat 415 mynick ##chan :Cannot send message to channel (+R) - you need to be logged into your NickServ account',
+      ':server 439 mynick :This server has anti-spambot mechanisms enabled.',
+      ':server 931 mynick :Malicious bots, spammers, and other automated systems of dubious origin are NOT welcome here.',
+    ])('does not report numerics that have a handler: %s', (line) => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       captureMessage.mockClear();
 
-      new Kernel({ type: 'raw', line: ':server 251 mynick :There are 3 users' }).handle();
+      new Kernel({ type: 'raw', line }).handle();
 
       expect(captureMessage).not.toHaveBeenCalled();
     });

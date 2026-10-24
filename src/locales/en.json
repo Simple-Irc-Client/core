@@ -181,6 +181,7 @@
     "kernel.407.too-many-recipients": "Too many recipients",
     "kernel.407.too-many-targets": "Too many targets: at most {{max}} for {{command}}",
     "kernel.412.no-text-to-send": "No text to send",
+    "kernel.415.channel-needs-account": "Cannot send to this channel (+R): you need to be logged in to your NickServ account",
     "kernel.421.unknown-command": "Unknown command",
     "kernel.433.nickname-in-use": "Nickname is already in use",
     "kernel.438.try-later": "Nick change too fast. Try again later",
