@@ -1777,6 +1777,34 @@ describe('Toolbar', () => {
       );
     });
 
+    it('keeps text typed in Status in the input, unsent, and says it takes commands only', () => {
+      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
+        selector({
+          currentChannelName: 'Status',
+          currentChannelCategory: ChannelCategory.status,
+          nick: 'testUser',
+          currentUserFlags: [],
+          isConnected: true,
+          isAutoAway: false,
+          fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
+        } as unknown as settingsStore.SettingsStore)
+      );
+
+      render(<Toolbar />);
+
+      const input = screen.getByRole('textbox');
+      fireEvent.change(input, { target: { value: 'join #help' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      expect(network.ircSendCommand).not.toHaveBeenCalled();
+      expect(input).toHaveValue('join #help');
+      expect(mockSetAddMessage).toHaveBeenCalledWith(expect.objectContaining({
+        message: 'main.toolbar.noMessagesHere',
+        target: 'Status',
+        category: MessageCategory.info,
+      }));
+    });
+
     it('should not send typing TAGMSG for DEBUG_CHANNEL', () => {
       vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
         selector({

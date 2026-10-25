@@ -115,6 +115,9 @@ export const skipBouncerAccount = async (page: Page): Promise<void> => {
   await page.getByRole('button', { name: 'Skip' }).click();
 };
 
+/** How long the wizard waits, once connected, for NickServ to say the nick is registered (WizardLoading) */
+const WIZARD_NICKSERV_WAIT_MS = 5_000;
+
 /**
  * Go through the wizard to connect to the project's test server.
  * Enters nick, custom server, server password,
@@ -125,6 +128,9 @@ export const connectViaWizard = async (
   nick: string,
   options: { channels?: string[] } = {},
 ): Promise<void> => {
+  // The page's clock, so the wizard's wait for NickServ can be passed at once
+  await page.clock.install();
+
   // Step 1: Nick
   await page.getByLabel('Enter your nickname').fill(nick);
   await page.getByRole('button', { name: 'Next' }).click();
@@ -139,10 +145,9 @@ export const connectViaWizard = async (
   // Skipping it connects and goes to the loading step
   await skipBouncerAccount(page);
 
-  // Step 3: Loading - wait for connection and password check (≈5 seconds)
+  // Step 3: Loading - wait for connection, then past the password check
   await page.getByText('Connected').waitFor({ timeout: 15_000 });
-
-  // Wait for the channels step to appear (after ~5s password check)
+  await page.clock.fastForward(WIZARD_NICKSERV_WAIT_MS);
   await page.getByText('Select a irc channel').waitFor({ timeout: 15_000 });
 
   // Step 4: Channels - join or skip

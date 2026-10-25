@@ -19,6 +19,7 @@ A React IRC client that connects to IRC servers directly over WebSocket.
 - Joins, parts, quits and nick changes collapsed into one line, optionally hiding people who said nothing
 - Keyboard shortcuts: a window switcher (Ctrl/⌘+K), message search (Ctrl/⌘+Shift+F) and the list of shortcuts (Ctrl/⌘+/)
 - Auto away after a chosen time, with a message of your own
+- A nick already in use: connects as `nick_`, takes the nick back once it is free (MONITOR/WATCH), or asks NickServ to free it
 - End-to-end encrypted private messages (SIC-E2EE v1, described below)
 - Through the Simple IRC Client gateway: sessions survive a backgrounded mobile tab (see below)
 

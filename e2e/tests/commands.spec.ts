@@ -101,6 +101,17 @@ test.describe('Slash commands', () => {
     await expect(chatLog.getByText('Hello from command!')).toBeVisible({ timeout: 10_000 });
   });
 
+  test('text typed in Status stays in the input, and Status says it takes commands', async () => {
+    await page.getByRole('button', { name: 'Status', exact: true }).click();
+    const messageInput = page.locator('#message-input');
+
+    await messageInput.fill('join #somewhere');
+    await messageInput.press('Enter');
+
+    await expect(page.getByTestId('chat-log').getByText('Status takes no messages')).toBeVisible();
+    await expect(messageInput).toHaveValue('join #somewhere');
+  });
+
   test('a command the server refuses with FAIL shows why, where it was typed', async () => {
     skipWithoutIrcv3('ngircd has no standard replies');
     const messageInput = page.locator('#message-input');

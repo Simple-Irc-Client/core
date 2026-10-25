@@ -36,7 +36,6 @@ test.beforeEach(async ({ page: testPage }, testInfo) => {
   bot = await createIrcClient(`datebot-${tag}`);
   await bot.join(`#date-sep-${tag}`);
 
-  await page.clock.install();
   await shiftServerTimes(page);
   await page.goto('/');
   await connectViaWizard(page, `date-tester-${tag}`, { channels: [`#date-sep-${tag}`] });

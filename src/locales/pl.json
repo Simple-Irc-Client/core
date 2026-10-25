@@ -116,6 +116,7 @@
     "main.chat.jumpToBottom": "Przewiń do najnowszych wiadomości",
     "main.toolbar.replyingTo": "Odpowiedź dla {{nick}}:",
     "main.toolbar.cancelReply": "Anuluj odpowiedź",
+    "main.toolbar.noMessagesHere": "Okno {{window}} nie przyjmuje wiadomości — wpisz komendę, np. /join #kanał albo /msg nick treść",
     "kernel.connected": "Połączono z serwerem",
     "kernel.disconnected": "Rozłączono z serwerem",
     "kernel.reconnecting": "Ponowne łączenie z serwerem...",

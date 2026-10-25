@@ -116,6 +116,7 @@
     "main.chat.jumpToBottom": "Jump to the newest messages",
     "main.toolbar.replyingTo": "Replying to {{nick}}:",
     "main.toolbar.cancelReply": "Cancel reply",
+    "main.toolbar.noMessagesHere": "{{window}} takes no messages — type a command instead, such as /join #channel or /msg nick text",
     "kernel.connected": "Connected",
     "kernel.disconnected": "Disconnected from server",
     "kernel.reconnecting": "Reconnecting to server...",

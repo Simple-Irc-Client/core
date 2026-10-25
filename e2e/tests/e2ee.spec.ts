@@ -124,7 +124,6 @@ test.beforeEach(async ({ page: testPage }, testInfo) => {
   peer = new E2eePeer();
   await peer.init();
 
-  await page.clock.install();
   await page.goto('/');
   await connectViaWizard(page, appNick);
 });

@@ -131,10 +131,19 @@ export const useSendMessage = (channelName: string, isSystemChannel: boolean, re
     if (typed.startsWith('/')) {
       return sendCommand(typed);
     }
-    // Status and Debug take no chat messages
-    if (!isSystemChannel) {
-      sendChatMessage(typed);
+    // Status and Debug take no chat messages: the text stays, for a command to be made of it
+    if (isSystemChannel) {
+      setAddMessage({
+        id: uuidv4(),
+        message: t('main.toolbar.noMessagesHere', { window: channelName }),
+        target: channelName,
+        time: new Date().toISOString(),
+        category: MessageCategory.info,
+        color: MessageColor.info,
+      });
+      return 'blocked';
     }
+    sendChatMessage(typed);
     return 'sent';
   };
 };
