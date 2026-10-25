@@ -1,11 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, testTag } from '../helpers';
 
 test.describe('Reconnect', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('disconnect shows banner and manual reconnect works', async ({ page }, testInfo) => {
-    const tag = projectTag(testInfo);
+    const tag = testTag(testInfo);
     await installWebSocketKillSwitch(page);
     await page.goto('/');
     await connectViaWizard(page, `reconnect-user-${tag}`, { channels: [] });

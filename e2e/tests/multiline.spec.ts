@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3, testServer } from '../test-server';
 
 let bot: IrcClient;
@@ -29,28 +29,25 @@ const botSendsBatch = async (target: string, reference: string, lines: string[],
   await echo;
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
   channel = `#multiline-${tag}`;
 
   bot = await createIrcClient(`multibot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message', 'batch', 'draft/multiline'] : undefined);
   await bot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, `multiuser-${tag}`, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Multiline messages', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('Shift+Enter starts a new line, and Enter sends the lines', async () => {
     const input = page.locator('#message-input');
     const lines = bot.captureLines();
@@ -160,6 +157,5 @@ test.describe('Multiline messages', () => {
     }));
     expect(height).toBe(oneLine);
     expect(overflows).toBe(false);
-    await page.setViewportSize({ width: 1280, height: 720 });
   });
 });

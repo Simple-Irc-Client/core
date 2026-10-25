@@ -1,25 +1,22 @@
 import { test, expect, type Page } from '@playwright/test';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let page: Page;
+let tag: string;
 
 const panelWidth = (testId: string): Promise<number> => page.getByTestId(testId).evaluate((panel) => panel.getBoundingClientRect().width);
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.use({ viewport: { width: 1280, height: 800 } });
 
-  page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
+
   await page.goto('/');
   await connectViaWizard(page, `layout-user-${tag}`);
 });
 
-test.afterAll(async () => {
-  await page?.close();
-});
-
 test.describe('Layout', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('the emoji picker follows dark mode', async () => {
     /** The picker's own background, as a 0 (black) to 255 (white) brightness */
     const pickerBrightness = async (): Promise<number> => {
@@ -54,10 +51,6 @@ test.describe('Layout', () => {
 
     await page.reload();
     await expect(html).toHaveClass(wasDark ? /^(?!.*\bdark\b)/ : /\bdark\b/);
-
-    await page.locator('[data-avatar-button]').click();
-    await page.getByRole('menuitem', { name: wasDark ? 'Dark Mode' : 'Light Mode' }).click();
-    await expect(html).toHaveClass(wasDark ? /\bdark\b/ : /^(?!.*\bdark\b)/);
   });
 
   test('the channels panel widens by dragging its edge, and by the arrow keys', async () => {
@@ -81,6 +74,11 @@ test.describe('Layout', () => {
   });
 
   test('the users panel widens by dragging its edge the other way, and never gets narrower than it starts', async () => {
+    // The users panel is a channel's
+    const input = page.locator('#message-input');
+    await input.fill(`/join #layout-${tag}`);
+    await input.press('Enter');
+    await expect(page.getByTestId('users-sidebar')).toBeVisible({ timeout: 10_000 });
     const handle = page.getByRole('separator', { name: 'Resize users panel' });
     const before = await panelWidth('users-sidebar');
 

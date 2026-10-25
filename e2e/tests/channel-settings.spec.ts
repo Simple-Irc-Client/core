@@ -1,24 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
 let tag: string;
 
-test.beforeAll(async ({}, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({}, testInfo) => {
+  tag = testTag(testInfo);
   // Bot joins a channel so ergo has at least one channel visible in LIST
   bot = await createIrcClient(`chansettingsbot-${tag}`);
   await bot.join(`#chan-settings-${tag}`);
 });
 
-test.afterAll(() => {
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('Channel settings', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('channel settings button is visible when user has ops', async ({ page }) => {
     await page.goto('/');
     // Connect and join #chan-settings — the bot is already there, but ergo gives ops
@@ -99,10 +97,7 @@ test.describe('Channel settings', () => {
 
     await inviteSwitch.click();
 
-    // Wait for mode change to round-trip through the server
-    await page.waitForTimeout(1000);
-
-    // Mode should have toggled
+    // Mode should have toggled, once the change has round-tripped through the server
     if (initialChecked) {
       await expect(inviteSwitch).not.toBeChecked({ timeout: 10_000 });
     } else {
@@ -176,7 +171,8 @@ test.describe('Channel settings', () => {
     // Switch to #chan-settings — the bot created this channel and has ops, not this user
     await page.getByRole('button', { name: `#chan-settings-${tag}`, exact: true }).click();
 
-    // Channel settings button should NOT be visible (no ops)
-    await expect(page.getByTestId('channel-settings-button')).not.toBeVisible({ timeout: 3_000 });
+    // Once the members are known, the channel settings button should NOT be visible (no ops)
+    await expect(page.getByTestId('users-sidebar').getByText(bot.nick)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('channel-settings-button')).toHaveCount(0);
   });
 });

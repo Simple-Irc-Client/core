@@ -1,12 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
+import { connectViaWizard, openProfileSettings, testTag } from '../helpers';
 
 // Rounded: AudioParam values are single precision
 const CHIME = [880, 1319];
 const PING = [1568];
-/** Longer than the gap the app keeps between two sounds */
-const SOUND_GAP_MS = 1100;
 /** Longer than a sound waits for audio to start, as a sound device can take on CI */
 const DEVICE_OPEN_MS = 1000;
 
@@ -59,15 +57,24 @@ const openSettings = async (): Promise<void> => {
   await openProfileSettings(page, 'notifications');
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+/** Picks a sound in the open settings, and waits until the Select is closed */
+const chooseSound = async (selectTestId: 'mention-sound-select' | 'direct-sound-select', sound: string): Promise<void> => {
+  const select = page.getByTestId(selectTestId);
+  await select.click();
+  await page.getByRole('option', { name: sound }).click();
+  // Escape before the Select hands focus back would close the Select, not the dialog
+  await expect(select).toBeFocused();
+};
+
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   channel = `#sounds-${tag}`;
   userNick = `listener-${tag}`;
 
   friend = await createIrcClient(`chimer-${tag}`);
   await friend.join(channel);
 
-  page = await browser.newPage();
   await recordTones(page);
   await page.goto('/');
   await connectViaWizard(page, userNick, { channels: [channel] });
@@ -75,14 +82,11 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(page.getByTestId('users-sidebar').getByText(friend.nick, { exact: true })).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   friend?.disconnect();
 });
 
 test.describe('Notification sounds', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a private message plays the private message sound', async () => {
     friend.sendMessage(userNick, 'are you there?');
 
@@ -90,8 +94,7 @@ test.describe('Notification sounds', () => {
   });
 
   test('a mention in a channel in the background plays the mention sound, an ordinary message none', async () => {
-    await page.getByRole('button', { name: friend.nick, exact: true }).click();
-    await page.waitForTimeout(SOUND_GAP_MS);
+    await page.getByRole('button', { name: 'Status', exact: true }).click();
 
     friend.sendMessage(channel, 'just chatting');
     friend.sendMessage(channel, `${userNick}: look here`);
@@ -101,15 +104,10 @@ test.describe('Notification sounds', () => {
 
   test('a sound set to None stays silent', async () => {
     await openSettings();
-    const mentionSelect = page.getByTestId('mention-sound-select');
-    await mentionSelect.click();
-    await page.getByRole('option', { name: 'None' }).click();
-    // Escape before the Select hands focus back would close the Select, not the dialog
-    await expect(mentionSelect).toBeFocused();
+    await chooseSound('mention-sound-select', 'None');
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
     await page.getByRole('button', { name: 'Status', exact: true }).click();
-    await page.waitForTimeout(SOUND_GAP_MS);
 
     friend.sendMessage(channel, `${userNick}: silent mention`);
     friend.sendMessage(userNick, 'and a private one');
@@ -118,10 +116,10 @@ test.describe('Notification sounds', () => {
     await expectTones(CHIME);
   });
 
-  test('the settings preview the chosen sound', async () => {
+  test('the settings preview the chosen sound, and have nothing to preview for None', async () => {
     await openSettings();
-    await page.getByTestId('direct-sound-select').click();
-    await page.getByRole('option', { name: 'Trill' }).click();
+    await chooseSound('mention-sound-select', 'None');
+    await chooseSound('direct-sound-select', 'Trill');
     await page.getByRole('button', { name: 'Play Private message sound' }).click();
 
     await expectTones([523, 659, 784]);

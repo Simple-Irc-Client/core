@@ -1,71 +1,65 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
+import { connectViaWizard, expectImageLoaded, openProfileSettings, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
 
   skipWithoutIrcv3('avatars and colors are METADATA');
   bot = await createIrcClient(`metabot-${tag}`, '127.0.0.1', 6667, ['draft/metadata-2']);
   await bot.join(`#metadata-test-${tag}`);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `meta-tester-${tag}`, { channels: [`#metadata-test-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#metadata-test-${tag}`, exact: true }).click();
+  await page.goto('/');
+  await connectViaWizard(page, `meta-tester-${tag}`, { channels: [`#metadata-test-${tag}`] });
+  await page.getByRole('button', { name: `#metadata-test-${tag}`, exact: true }).click();
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Metadata', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('set avatar via profile settings', async () => {
     const avatarUrl = 'https://simpleircclient.com/assets/test-image.png';
 
     // Open profile settings
-    await openProfileSettings(sharedPage, 'profile');
+    await openProfileSettings(page, 'profile');
 
     // Avatar input is conditionally rendered when the server supports metadata
-    const avatarInput = sharedPage.locator('#avatar');
+    const avatarInput = page.locator('#avatar');
     await expect(avatarInput).toBeVisible({ timeout: 10_000 });
     await avatarInput.fill(avatarUrl);
     await avatarInput.press('Enter');
 
     // Close dialog
-    await sharedPage.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
 
     // Avatar should display in the users sidebar and actually load (not swap to fallback)
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    const avatarImg = usersSidebar.locator(`img[src="${avatarUrl}"]`);
-    await expect(avatarImg).toBeVisible({ timeout: 10_000 });
-    await sharedPage.waitForTimeout(2_000);
-    await expect(avatarImg).toBeVisible();
+    const usersSidebar = page.getByTestId('users-sidebar');
+    await expectImageLoaded(usersSidebar.locator(`img[src="${avatarUrl}"]`));
   });
 
   test('set nick color via profile settings', async () => {
 
     // Open profile settings
-    await openProfileSettings(sharedPage, 'profile');
+    await openProfileSettings(page, 'profile');
 
     // Color input is conditionally rendered when the server supports metadata
-    const colorInput = sharedPage.locator('#color');
+    const colorInput = page.locator('#color');
     await expect(colorInput).toBeVisible({ timeout: 10_000 });
     await colorInput.fill('#ff0000');
     await colorInput.press('Enter');
 
-    await sharedPage.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
 
     // Verify color is applied — nick in users sidebar should have the color style
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
     const nickEl = usersSidebar.getByText(`meta-tester-${tag}`);
     await expect(nickEl).toBeVisible({ timeout: 10_000 });
     // The nick should have the chosen color applied
@@ -77,15 +71,15 @@ test.describe('Metadata', () => {
 
     // Each change closes the dialog
     for (const [id, value] of [['displayName', 'Meta Tester'], ['status', 'testing things'], ['homepage', 'https://example.com/meta']] as const) {
-      await openProfileSettings(sharedPage, 'profile');
-      const field = sharedPage.locator(`#${id}`);
+      await openProfileSettings(page, 'profile');
+      const field = page.locator(`#${id}`);
       await expect(field).toBeVisible({ timeout: 10_000 });
       await field.fill(value);
       await field.press('Enter');
-      await expect(sharedPage.getByRole('dialog')).toBeHidden();
+      await expect(page.getByRole('dialog')).toBeHidden();
     }
 
-    await expect(sharedPage.getByTestId('users-sidebar').getByText('Meta Tester')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('users-sidebar').getByText('Meta Tester')).toBeVisible({ timeout: 10_000 });
     // What the server now holds for everyone else
     const capture = bot.captureLines();
     bot.send(`METADATA ${nick} GET display-name status homepage`);
@@ -97,17 +91,14 @@ test.describe('Metadata', () => {
   test('bot metadata update is visible to browser user', async () => {
     const avatarUrl = 'https://simpleircclient.com/assets/test-image.jpg';
 
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText(`metabot-${tag}`)).toBeVisible({ timeout: 10_000 });
 
     // Bot sets its avatar via raw METADATA command
     bot.send(`METADATA * SET avatar :${avatarUrl}`);
 
     // Avatar should load and stay visible (not swap to fallback letter)
-    const avatarImg = usersSidebar.locator(`img[src="${avatarUrl}"]`);
-    await expect(avatarImg).toBeVisible({ timeout: 10_000 });
-    await sharedPage.waitForTimeout(2_000);
-    await expect(avatarImg).toBeVisible();
+    await expectImageLoaded(usersSidebar.locator(`img[src="${avatarUrl}"]`));
   });
 
   // Channel avatar tests for each image format. These use real image files
@@ -117,30 +108,21 @@ test.describe('Metadata', () => {
   for (const ext of ['webp', 'jpg', 'svg', 'png'] as const) {
     test(`channel avatar renders ${ext} image`, async () => {
       const avatarUrl = `https://simpleircclient.com/assets/test-image.${ext}`;
-      const channelNav = sharedPage.getByTestId('channels-sidebar');
+      const channelNav = page.getByTestId('channels-sidebar');
       const channelButton = channelNav.getByRole('button', { name: `#metadata-test-${tag}`, exact: true });
 
       // Collect page errors to detect service worker "no-response" rejections
       const pageErrors: string[] = [];
       const onPageError = (error: Error) => { pageErrors.push(error.message); };
-      sharedPage.on('pageerror', onPageError);
+      page.on('pageerror', onPageError);
 
       // Bot (channel operator) sets the channel avatar
       bot.send(`METADATA #metadata-test-${tag} SET avatar :${avatarUrl}`);
 
-      // The img must stay visible (not replaced by fallback letter), confirming
-      // the image actually loaded. If the service worker intercepted and rejected
-      // the fetch, onError would fire and the img would be replaced by a <span>.
-      const avatarImg = channelButton.locator(`img[src="${avatarUrl}"]`);
-      await expect(avatarImg).toBeVisible({ timeout: 10_000 });
+      // A service worker that intercepted and rejected the fetch would keep the image from loading
+      await expectImageLoaded(channelButton.locator(`img[src="${avatarUrl}"]`));
 
-      // Allow any async service worker errors to surface
-      await sharedPage.waitForTimeout(2_000);
-
-      // The img must still be visible after the wait — not swapped to fallback
-      await expect(avatarImg).toBeVisible();
-
-      sharedPage.off('pageerror', onPageError);
+      page.off('pageerror', onPageError);
 
       // No service worker "no-response" errors should have occurred
       const swErrors = pageErrors.filter((msg) => msg.includes('no-response'));

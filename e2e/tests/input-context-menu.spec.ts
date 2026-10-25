@@ -1,45 +1,40 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
-let sharedPage: Page;
-let sharedContext: BrowserContext;
+let page: Page;
+let context: BrowserContext;
 let isChromium: boolean;
 
-test.beforeAll(async ({ browser }) => {
+test.beforeEach(async ({ browser }, testInfo) => {
   isChromium = browser.browserType().name() === 'chromium';
-  const nick = isChromium ? 'ctx-chrome' : 'ctx-firefox';
-  sharedContext = await browser.newContext({
+  context = await browser.newContext({
     ...(isChromium ? { permissions: ['clipboard-read', 'clipboard-write'] } : {}),
     ignoreHTTPSErrors: true,
   });
-  sharedPage = await sharedContext.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, nick);
+  page = await context.newPage();
+  await page.goto('/');
+  await connectViaWizard(page, `ctx-${testTag(testInfo)}`);
 });
 
-test.afterAll(async () => {
-  await sharedContext.close();
+test.afterEach(async () => {
+  await context.close();
 });
 
 test.describe('Input context menu', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  const messageInput = () => sharedPage.locator('#message-input');
+  const messageInput = () => page.locator('#message-input');
 
   const openContextMenu = async () => {
     await messageInput().click({ button: 'right' });
-    await expect(sharedPage.getByRole('menuitem', { name: 'Paste' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Paste' })).toBeVisible();
   };
 
   test('opens context menu on right-click', async () => {
     await openContextMenu();
 
-    await expect(sharedPage.getByRole('menuitem', { name: 'Cut' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Copy' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Paste' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Select All' })).toBeVisible();
-
-    await sharedPage.keyboard.press('Escape');
+    await expect(page.getByRole('menuitem', { name: 'Cut' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Copy' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Paste' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Select All' })).toBeVisible();
   });
 
   test('copy and paste via context menu', async () => {
@@ -50,12 +45,12 @@ test.describe('Input context menu', () => {
 
     // Copy via context menu
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Copy' }).click();
+    await page.getByRole('menuitem', { name: 'Copy' }).click();
 
     // Clear input and paste
     await input.fill('');
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Paste' }).click();
+    await page.getByRole('menuitem', { name: 'Paste' }).click();
 
     await expect(input).toHaveValue('clipboard test', { timeout: 3_000 });
   });
@@ -67,14 +62,14 @@ test.describe('Input context menu', () => {
 
     // Cut via context menu
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Cut' }).click();
+    await page.getByRole('menuitem', { name: 'Cut' }).click();
 
     // Input should be empty after cut
     await expect(input).toHaveValue('', { timeout: 3_000 });
 
     // Paste the cut text back
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Paste' }).click();
+    await page.getByRole('menuitem', { name: 'Paste' }).click();
 
     await expect(input).toHaveValue('cut me', { timeout: 3_000 });
   });
@@ -85,11 +80,11 @@ test.describe('Input context menu', () => {
 
     // Simulate the user leaving the app (clears internal clipboard buffer so
     // stale in-app copies don't shadow external clipboard content)
-    await sharedPage.evaluate(() => globalThis.dispatchEvent(new Event('blur')));
+    await page.evaluate(() => globalThis.dispatchEvent(new Event('blur')));
 
     // Open a separate page in the same context and copy text there
     // (simulates copying from a different site — shared clipboard, different origin)
-    const externalPage = await sharedContext.newPage();
+    const externalPage = await context.newPage();
     await externalPage.setContent('<textarea id="ext">copied from outside</textarea>');
     const textarea = externalPage.locator('#ext');
     await textarea.focus();
@@ -98,16 +93,16 @@ test.describe('Input context menu', () => {
     await externalPage.close();
 
     // Switch back to the app and paste via our context menu
-    await sharedPage.bringToFront();
+    await page.bringToFront();
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Paste' }).click();
+    await page.getByRole('menuitem', { name: 'Paste' }).click();
 
     if (isChromium) {
       // Chromium grants clipboard-read permission — readText() works directly
       await expect(input).toHaveValue('copied from outside', { timeout: 3_000 });
     } else {
       // Firefox can't read external clipboard — shows keyboard shortcut hint
-      await expect(sharedPage.getByRole('alert')).toContainText(/Ctrl\+V/, { timeout: 3_000 });
+      await expect(page.getByRole('alert')).toContainText(/Ctrl\+V/, { timeout: 3_000 });
       await expect(input).toHaveValue('');
     }
   });
@@ -117,15 +112,15 @@ test.describe('Input context menu', () => {
     await input.fill('select all test');
 
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Select All' }).click();
+    await page.getByRole('menuitem', { name: 'Select All' }).click();
 
     // After select all, the entire text should be selected — verify by copying
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Copy' }).click();
+    await page.getByRole('menuitem', { name: 'Copy' }).click();
 
     await input.fill('');
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Paste' }).click();
+    await page.getByRole('menuitem', { name: 'Paste' }).click();
 
     await expect(input).toHaveValue('select all test', { timeout: 3_000 });
   });
@@ -133,19 +128,21 @@ test.describe('Input context menu', () => {
   test('disabled items when no selection', async () => {
     const input = messageInput();
     await input.fill('some text');
+    // Something on the clipboard, so Paste has what to paste
+    await input.selectText();
+    await openContextMenu();
+    await page.getByRole('menuitem', { name: 'Copy' }).click();
     // Click at end to deselect
     await input.click();
 
     await openContextMenu();
 
     // Cut and Copy should be disabled (no selection)
-    await expect(sharedPage.getByRole('menuitem', { name: 'Cut' })).toHaveAttribute('aria-disabled', 'true');
-    await expect(sharedPage.getByRole('menuitem', { name: 'Copy' })).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('menuitem', { name: 'Cut' })).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByRole('menuitem', { name: 'Copy' })).toHaveAttribute('aria-disabled', 'true');
 
     // Paste should be enabled
-    await expect(sharedPage.getByRole('menuitem', { name: 'Paste' })).not.toHaveAttribute('aria-disabled');
-
-    await sharedPage.keyboard.press('Escape');
+    await expect(page.getByRole('menuitem', { name: 'Paste' })).not.toHaveAttribute('aria-disabled');
   });
 
   test('Paste is disabled when the clipboard is empty', async () => {
@@ -155,26 +152,24 @@ test.describe('Input context menu', () => {
 
     // Drop the in-app buffer so a stale in-app copy can't shadow an empty
     // system clipboard.
-    await sharedPage.evaluate(() => globalThis.dispatchEvent(new Event('blur')));
+    await page.evaluate(() => globalThis.dispatchEvent(new Event('blur')));
 
     if (isChromium) {
       // Chromium grants clipboard-read, so the menu can probe the clipboard.
       // Empty it, and Paste must come up disabled rather than offering a paste
       // that would only surface the misleading "use Ctrl+V" hint.
-      await sharedPage.evaluate(() => navigator.clipboard.writeText(''));
+      await page.evaluate(() => navigator.clipboard.writeText(''));
 
       await openContextMenu();
-      await expect(sharedPage.getByRole('menuitem', { name: 'Paste' }))
+      await expect(page.getByRole('menuitem', { name: 'Paste' }))
         .toHaveAttribute('aria-disabled', 'true');
     } else {
       // Firefox can't probe the system clipboard without an intrusive popup,
       // so Paste stays enabled regardless of clipboard contents.
       await openContextMenu();
-      await expect(sharedPage.getByRole('menuitem', { name: 'Paste' }))
+      await expect(page.getByRole('menuitem', { name: 'Paste' }))
         .not.toHaveAttribute('aria-disabled');
     }
-
-    await sharedPage.keyboard.press('Escape');
   });
 
   test('paste replaces selected text', async () => {
@@ -184,13 +179,13 @@ test.describe('Input context menu', () => {
     await input.fill('new text');
     await input.selectText();
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Copy' }).click();
+    await page.getByRole('menuitem', { name: 'Copy' }).click();
 
     // Now fill with different text, select it, and paste over it
     await input.fill('replace me');
     await input.selectText();
     await openContextMenu();
-    await sharedPage.getByRole('menuitem', { name: 'Paste' }).click();
+    await page.getByRole('menuitem', { name: 'Paste' }).click();
 
     await expect(input).toHaveValue('new text', { timeout: 3_000 });
   });

@@ -1,35 +1,32 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
 
   skipWithoutIrcv3('display names are METADATA');
   bot = await createIrcClient(`dnbot-${tag}`, '127.0.0.1', 6667, ['draft/metadata-2']);
   await bot.join(`#display-name-${tag}`);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `dn-viewer-${tag}`, { channels: [`#display-name-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#display-name-${tag}`, exact: true }).click();
+  await page.goto('/');
+  await connectViaWizard(page, `dn-viewer-${tag}`, { channels: [`#display-name-${tag}`] });
+  await page.getByRole('button', { name: `#display-name-${tag}`, exact: true }).click();
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('IRCv3 display name', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('display name is shown in users sidebar', async () => {
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Initially the bot shows its real nick
     await expect(usersSidebar.getByText(`dnbot-${tag}`)).toBeVisible({ timeout: 10_000 });
@@ -42,27 +39,27 @@ test.describe('IRCv3 display name', () => {
   });
 
   test('display name is shown in chat messages', async () => {
-    await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // Bot sets display name first
     bot.send('METADATA * SET display-name :Chat Display Name');
 
     // Wait for metadata to be processed
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
     await expect(usersSidebar.getByText('Chat Display Name')).toBeVisible({ timeout: 10_000 });
 
     // Bot sends a message
     bot.sendMessage(`#display-name-${tag}`, 'Hello with display name!');
 
     // The message should appear in chat with the display name shown
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Hello with display name!')).toBeVisible({ timeout: 10_000 });
     // The nick renders in two slots (header + inline); the active theme shows one
     await expect(chatLog.getByText('Chat Display Name').first()).toBeVisible();
   });
 
   test('context menu uses real nick, not display name', async () => {
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Pretty Name');
@@ -74,22 +71,19 @@ test.describe('IRCv3 display name', () => {
     await usersSidebar.getByText('Pretty Name').click();
 
     // Context menu should appear with Whois and Priv options
-    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
 
     // Click Priv to open a DM tab — the tab should use the real nick, not the display name
-    await sharedPage.getByRole('menuitem', { name: 'Priv' }).click();
+    await page.getByRole('menuitem', { name: 'Priv' }).click();
 
-    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    const channelNav = page.getByTestId('channels-sidebar');
     // The DM tab should be named with the real nick "dnbot"
     await expect(channelNav.getByRole('button', { name: `dnbot-${tag}` })).toBeVisible({ timeout: 5_000 });
   });
 
   test('whois command uses real nick', async () => {
-    // Navigate back to #display-name from DM tab
-    await sharedPage.getByRole('button', { name: `#display-name-${tag}`, exact: true }).click();
-
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Whois Display');
@@ -99,18 +93,15 @@ test.describe('IRCv3 display name', () => {
 
     // Click on bot to open context menu, then Whois
     await usersSidebar.getByText('Whois Display').click();
-    await sharedPage.getByRole('menuitem', { name: 'Whois' }).click();
+    await page.getByRole('menuitem', { name: 'Whois' }).click();
 
     // Whois response should contain the real nick "dnbot"
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(bot.nick).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('clearing display name reverts to real nick', async () => {
-    // Ensure we're on #display-name channel
-    await sharedPage.getByRole('button', { name: `#display-name-${tag}`, exact: true }).click();
-
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Bot sets display name
     bot.send('METADATA * SET display-name :Temporary Name');

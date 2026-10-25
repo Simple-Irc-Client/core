@@ -1,75 +1,72 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+/** The time the page's clock was set to, once a test sets it */
+let shiftedNow: number | undefined;
+
+/** Server-time tags follow the page's clock once it is set, as though the server's clock had been set with it */
+const shiftServerTimes = (target: Page): Promise<void> =>
+  target.routeWebSocket(/.*/, (socket) => {
+    const server = socket.connectToServer();
+    server.onMessage((message) => {
+      socket.send(typeof message === 'string' && shiftedNow !== undefined
+        ? message.replace(/(^@|;)time=[^; ]+/g, `$1time=${new Date(shiftedNow).toISOString()}`)
+        : message);
+    });
+  });
+
+/** Sets the page's clock to `fromMidnight` ms from the coming midnight */
+const setClockAroundMidnight = async (fromMidnight: number): Promise<void> => {
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  shiftedNow = midnight.getTime() + fromMidnight;
+  await page.clock.setSystemTime(shiftedNow);
+};
+
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
+  shiftedNow = undefined;
 
   bot = await createIrcClient(`datebot-${tag}`);
   await bot.join(`#date-sep-${tag}`);
 
-  sharedPage = await browser.newPage();
-
-  // Override Date so we can shift message timestamps near midnight.
-  // - new Date() (no-arg) and Date.now() are shifted by __dateOffset.
-  // - new Date(string) is shifted too (needed because server-time tags
-  //   carry real timestamps — the offset makes them appear near midnight).
-  // - new Date(number) and multi-arg forms pass through unchanged so that
-  //   date-fns internal cloning (new Date(date.getTime())) doesn't double-shift.
-  await sharedPage.addInitScript(`
-    (function() {
-      var OrigDate = Date;
-      var origNow = Date.now.bind(Date);
-      var offset = 0;
-
-      Object.defineProperty(window, '__dateOffset', {
-        get: function() { return offset; },
-        set: function(v) { offset = v; }
-      });
-      Object.defineProperty(window, '__origNow', { value: origNow });
-      Object.defineProperty(window, '__OrigDate', { value: OrigDate });
-
-      var NewDate = function Date() {
-        if (arguments.length === 0) {
-          return new OrigDate(origNow() + offset);
-        }
-        if (arguments.length === 1 && typeof arguments[0] === 'string') {
-          return new OrigDate(OrigDate.parse(arguments[0]) + offset);
-        }
-        return new (Function.prototype.bind.apply(OrigDate, [null].concat(Array.prototype.slice.call(arguments))))();
-      };
-      NewDate.now = function() { return origNow() + offset; };
-      NewDate.parse = OrigDate.parse;
-      NewDate.UTC = OrigDate.UTC;
-      NewDate.prototype = OrigDate.prototype;
-      globalThis.Date = NewDate;
-    })();
-  `);
-
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `date-tester-${tag}`, { channels: [`#date-sep-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#date-sep-${tag}`, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await page.clock.install();
+  await shiftServerTimes(page);
+  await page.goto('/');
+  await connectViaWizard(page, `date-tester-${tag}`, { channels: [`#date-sep-${tag}`] });
+  await page.getByRole('button', { name: `#date-sep-${tag}`, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await sharedPage.close();
+test.afterEach(() => {
   bot.disconnect();
 });
 
-test.describe('Date separator', () => {
-  test.describe.configure({ mode: 'serial' });
+/** The bot says one thing 5s before midnight and another 2s after it */
+const messagesEitherSideOfMidnight = async (): Promise<void> => {
+  const chatLog = page.getByTestId('chat-log');
+  await setClockAroundMidnight(-5000);
+  bot.sendMessage(`#date-sep-${tag}`, 'Before midnight message');
+  await expect(chatLog.getByText('Before midnight message')).toBeVisible({ timeout: 10_000 });
 
+  await setClockAroundMidnight(2000);
+  bot.sendMessage(`#date-sep-${tag}`, 'After midnight message');
+  await expect(chatLog.getByText('After midnight message')).toBeVisible({ timeout: 10_000 });
+};
+
+test.describe('Date separator', () => {
   test('no separator between messages from the same day', async () => {
     // Send two messages on the same day
     bot.sendMessage(`#date-sep-${tag}`, 'Same day message 1');
     bot.sendMessage(`#date-sep-${tag}`, 'Same day message 2');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Same day message 1')).toBeVisible({ timeout: 10_000 });
     await expect(chatLog.getByText('Same day message 2')).toBeVisible({ timeout: 10_000 });
 
@@ -78,40 +75,21 @@ test.describe('Date separator', () => {
   });
 
   test('separator appears between messages from different days', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
-    // Shift the clock so that "now" is ~5 seconds before the next midnight.
-    // This also shifts parsed server-time timestamps, so the next message
-    // the bot sends will appear as just before midnight.
-    await sharedPage.evaluate(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const w = globalThis as any;
-      const now: number = w.__origNow();
-      const midnight = new w.__OrigDate(now);
-      midnight.setHours(24, 0, 0, 0);
-      w.__dateOffset = midnight.getTime() - 5000 - now;
-    });
-
-    // Send a message — its server-time will be shifted to ~5s before midnight
-    bot.sendMessage(`#date-sep-${tag}`, 'Before midnight message');
-    await expect(chatLog.getByText('Before midnight message')).toBeVisible({ timeout: 10_000 });
-
-    // Wait for the shifted clock to cross midnight
-    await sharedPage.waitForTimeout(7_000);
-
-    // Send another message — its server-time will be shifted to ~2s after midnight (next day)
-    bot.sendMessage(`#date-sep-${tag}`, 'After midnight message');
-    await expect(chatLog.getByText('After midnight message')).toBeVisible({ timeout: 10_000 });
+    await messagesEitherSideOfMidnight();
 
     // A date separator should now appear between the two days
     await expect(chatLog.locator('[role="separator"]')).toBeVisible({ timeout: 10_000 });
   });
 
   test('separator shows formatted date text', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
+    await messagesEitherSideOfMidnight();
 
     // The separator should contain a human-readable date
     const separator = chatLog.locator('[role="separator"]');
+    await expect(separator).toBeVisible({ timeout: 10_000 });
     const text = await separator.first().textContent();
 
     // date-fns 'PPP' format produces e.g. "March 18th, 2026" or locale equivalent

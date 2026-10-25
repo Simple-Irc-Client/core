@@ -1,19 +1,18 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
-let sharedPage: Page;
+let page: Page;
 let bot: IrcClient | undefined;
-// Both browser projects run this spec concurrently against the same ergo
-// server; per-project nicks avoid 433 collisions.
 let botNick: string;
 let testerNick: string;
 let chanNick: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('presence comes from MONITOR');
-  const suffix = projectTag(testInfo);
+  const suffix = testTag(testInfo);
   botNick = `dmp-bot-${suffix}`;
   testerNick = `dmp-tester-${suffix}`;
   chanNick = `#dmp-chan-${suffix}`;
@@ -21,23 +20,26 @@ test.beforeAll(async ({ browser }, testInfo) => {
   bot = await createIrcClient(botNick);
   await bot.join(chanNick);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, testerNick, { channels: [chanNick] });
+  await page.goto('/');
+  await connectViaWizard(page, testerNick, { channels: [chanNick] });
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
-const channelNav = () => sharedPage.getByTestId('channels-sidebar');
+const channelNav = () => page.getByTestId('channels-sidebar');
 const dmRow = () => channelNav().getByRole('button', { name: botNick, exact: true });
-const headerName = () => sharedPage.getByTestId('chat-header-name');
+const headerName = () => page.getByTestId('chat-header-name');
+
+/** The bot writes to us, and we open the window of that conversation */
+const openDmFromBot = async (): Promise<void> => {
+  bot?.sendMessage(testerNick, 'Hello there!');
+  await dmRow().click({ timeout: 10_000 });
+  await expect(headerName()).toContainText(botNick);
+};
 
 test.describe('DM presence indicator', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('receiving a DM shows the peer as online in the sidebar', async () => {
     bot?.sendMessage(testerNick, 'Hello there!');
 
@@ -51,7 +53,7 @@ test.describe('DM presence indicator', () => {
   });
 
   test('a regular channel never shows a presence dot', async () => {
-    await sharedPage.getByRole('button', { name: chanNick, exact: true }).click();
+    await page.getByRole('button', { name: chanNick, exact: true }).click();
 
     await expect(headerName()).toContainText(chanNick);
 
@@ -61,7 +63,7 @@ test.describe('DM presence indicator', () => {
   });
 
   test('peer disconnecting flips the dot to offline', async () => {
-    await dmRow().click();
+    await openDmFromBot();
 
     bot?.disconnect();
     bot = undefined;
@@ -70,16 +72,20 @@ test.describe('DM presence indicator', () => {
   });
 
   test('peer reconnecting flips the still-open window back to online', async () => {
+    await openDmFromBot();
+    bot?.disconnect();
+    await expect(dmRow().getByLabel('Offline')).toBeVisible({ timeout: 10_000 });
+
     bot = await createIrcClient(botNick);
 
     await expect(dmRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
   });
 
   test('closing the DM window and reopening it still tracks presence correctly', async () => {
-    await dmRow().click();
+    await openDmFromBot();
 
     // Close the DM window (hover reveals the X, same interaction as private-messages.spec.ts)
-    await sharedPage.mouse.move(0, 0);
+    await page.mouse.move(0, 0);
     await dmRow().hover();
     await channelNav().getByRole('button', { name: `Leave ${botNick}` }).click();
     await expect(dmRow()).toBeHidden();
@@ -98,15 +104,9 @@ test.describe('DM presence indicator', () => {
     await expect(dmRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
   });
 
-  // Keep this test last: it renames the bot for the rest of the suite.
   test('peer renaming (NICK) moves the DM window and its presence dot to the new nick', async () => {
-    // A NICK change is only ever delivered to clients sharing a channel with
-    // the renaming user — MONITOR itself has no "renamed" notification, only
-    // online/offline. Earlier tests disconnected/reconnected the bot without
-    // rejoining, so make sure it's actually in `chanNick` with us again
-    // before renaming, or the server has nobody to tell.
-    await bot?.join(chanNick);
-    await dmRow().click();
+    // A NICK change reaches only those sharing a channel with the bot (MONITOR has no "renamed" notification), as chanNick does
+    await openDmFromBot();
     await expect(dmRow().getByLabel('Online')).toBeVisible({ timeout: 10_000 });
 
     const newNick = `${botNick}-renamed`;
@@ -120,7 +120,5 @@ test.describe('DM presence indicator', () => {
     // ...and so must the MONITOR subscription: still online, not "unknown" or stuck offline.
     await expect(renamedRow.getByLabel('Online')).toBeVisible({ timeout: 10_000 });
     await expect(headerName()).toContainText(newNick);
-
-    botNick = newNick;
   });
 });

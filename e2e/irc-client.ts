@@ -321,6 +321,7 @@ export class IrcClient {
   private readonly password?: string;
   private readonly requestCaps?: string[];
   private readonly sasl?: SaslCredentials;
+  private roundTrips = 0;
 
   constructor(nick: string, password?: string, requestCaps?: string[], sasl?: SaslCredentials) {
     this.nick = nick;
@@ -428,6 +429,14 @@ export class IrcClient {
       }, timeoutMs);
       this.client.on('raw', handler);
     });
+  }
+
+  /** Resolves once the server has handled every line sent before this: it answers a PING in turn */
+  async roundTrip(): Promise<void> {
+    const token = `sync-${++this.roundTrips}`;
+    const pong = this.waitForLine((line) => / PONG /.test(line) && line.endsWith(token));
+    this.client.send(`PING ${token}`);
+    await pong;
   }
 
   sendAction(target: string, text: string): void {

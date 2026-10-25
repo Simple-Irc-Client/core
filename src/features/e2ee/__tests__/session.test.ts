@@ -436,6 +436,56 @@ describe('e2ee session', () => {
       });
     });
 
+    it('shows an offer under way before its keys are made, and sends it once they are', async () => {
+      const alice = await createClient('alice');
+      await createClient('bob');
+
+      const offering = alice.session.offerEncryption('bob');
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.offered);
+      expect(drain(alice)).toHaveLength(0);
+
+      await offering;
+      expect(drain(alice).map((line) => line.verb)).toEqual(['PRIVMSG']);
+    });
+
+    it('sends nothing for an offer ended while its keys were made', async () => {
+      const alice = await createClient('alice');
+      await createClient('bob');
+
+      const offering = alice.session.offerEncryption('bob');
+      alice.session.endSession('bob', false);
+      await offering;
+
+      expect(drain(alice)).toHaveLength(0);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.none);
+    });
+
+    it('drops its own offer when it gave way to the peer\'s while its keys were made', async () => {
+      let releaseKeys = (): void => {};
+      const keysHeld = new Promise<void>((resolve) => { releaseKeys = resolve; });
+      vi.doMock('../crypto', async (importOriginal) => {
+        const actual = await importOriginal<typeof import('../crypto')>();
+        let calls = 0;
+        // Bob's own offer is the first to ask for keys
+        return { ...actual, generateEphemeral: async () => (++calls === 1 ? keysHeld.then(actual.generateEphemeral) : actual.generateEphemeral()) };
+      });
+      const bob = await createClient('bob');
+      vi.doUnmock('../crypto');
+      const alice = await createClient('alice');
+
+      const bobOffering = bob.session.offerEncryption('alice');
+      await alice.session.offerEncryption('bob');
+      // Glare: the higher nick gives way, answering Alice's offer at once
+      await deliver(alice, bob);
+      releaseKeys();
+      await bobOffering;
+
+      expect((await deliver(bob, alice)).map((line) => line.verb)).toEqual(['NOTICE']);
+      expect(bob.store.getSessionState('alice')).toBe(E2eeState.active);
+      expect(alice.store.getSessionState('bob')).toBe(E2eeState.active);
+      expect(await sendAndReceive(bob, alice, 'one session')).toEqual({ kind: BodyKind.message, text: 'one session' });
+    });
+
     // Characterisation, not a regression guard: the store and the key material
     // already moved together here. Pinned so a future change to the re-offer
     // path cannot let the window keep a padlock it can no longer back.

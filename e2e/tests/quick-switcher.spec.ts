@@ -1,14 +1,15 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let friend: IrcClient;
 let page: Page;
 let first: string;
 let second: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   first = `#switch-one-${tag}`;
   second = `#switch-two-${tag}`;
   const userNick = `switcher-${tag}`;
@@ -18,7 +19,6 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await friend.join(first);
   await friend.join(second);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, userNick, { channels: [first, second] });
   await page.getByRole('button', { name: first, exact: true }).click();
@@ -28,14 +28,11 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(page.getByRole('button', { name: friend.nick, exact: true })).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   friend?.disconnect();
 });
 
 test.describe('Quick switcher', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('lists the unread conversation first, and the current channel last', async () => {
     await page.locator('#message-input').press('ControlOrMeta+k');
 
@@ -65,6 +62,5 @@ test.describe('Quick switcher', () => {
     await page.locator('[data-avatar-button]').click();
     await page.getByRole('menuitem', { name: 'Keyboard shortcuts' }).click();
     await expect(page.getByTestId('shortcuts-list')).toBeVisible();
-    await page.keyboard.press('Escape');
   });
 });

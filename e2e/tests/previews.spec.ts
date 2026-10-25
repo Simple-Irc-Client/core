@@ -1,38 +1,34 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, serveImagePreviews, projectTag } from '../helpers';
+import { connectViaWizard, expectImageLoaded, serveImagePreviews, testTag } from '../helpers';
+
+let bot: IrcClient;
+let page: Page;
+let tag: string;
+
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
+
+  bot = await createIrcClient(`previewbot-${tag}`);
+  await bot.join(`#previews-${tag}`);
+
+  await serveImagePreviews(page);
+  await page.goto('/');
+  await connectViaWizard(page, `preview-tester-${tag}`, { channels: [`#previews-${tag}`] });
+  await page.getByRole('button', { name: `#previews-${tag}`, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+});
+
+test.afterEach(() => {
+  bot?.disconnect();
+});
 
 test.describe('Previews', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  let bot: IrcClient;
-  let sharedPage: Page;
-
-  let tag: string;
-
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
-
-    bot = await createIrcClient(`previewbot-${tag}`);
-    await bot.join(`#previews-${tag}`);
-
-    sharedPage = await browser.newPage();
-    await serveImagePreviews(sharedPage);
-    await sharedPage.goto('/');
-    await connectViaWizard(sharedPage, `preview-tester-${tag}`, { channels: [`#previews-${tag}`] });
-    await sharedPage.getByRole('button', { name: `#previews-${tag}`, exact: true }).click();
-    await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
-  });
-
-  test.afterAll(async () => {
-    await sharedPage?.close();
-    bot?.disconnect();
-  });
-
   test('YouTube link renders thumbnail preview', async () => {
     bot.sendMessage(`#previews-${tag}`, 'Check this out https://www.youtube.com/watch?v=dQw4w9WgXcQ');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this out')).toBeVisible({ timeout: 10_000 });
 
     const thumbnail = chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).last();
@@ -46,14 +42,14 @@ test.beforeAll(async ({ browser }, testInfo) => {
   test('youtu.be short link renders thumbnail preview', async () => {
     bot.sendMessage(`#previews-${tag}`, 'Short link https://youtu.be/dQw4w9WgXcQ');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Short link')).toBeVisible({ timeout: 10_000 });
 
     await expect(chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).last()).toBeVisible({ timeout: 10_000 });
   });
 
   test('message without YouTube link has no thumbnail', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
     const countBefore = await chatLog.getByRole('img', { name: 'YouTube video thumbnail' }).count();
 
@@ -67,22 +63,18 @@ test.beforeAll(async ({ browser }, testInfo) => {
   test('image link renders inline preview', async () => {
     bot.sendMessage(`#previews-${tag}`, 'Look at this https://simpleircclient.com/assets/test-image.png');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Look at this')).toBeVisible({ timeout: 10_000 });
 
-    const preview = chatLog.getByRole('img', { name: 'Image thumbnail' }).last();
-    await expect(preview).toBeVisible({ timeout: 10_000 });
-
-    // Verify the image actually loaded (not just the <img> tag existing)
-    await sharedPage.waitForTimeout(2_000);
-    await expect(preview).toBeVisible();
+    // Not just the <img> tag existing: the image itself loaded
+    await expectImageLoaded(chatLog.getByRole('img', { name: 'Image thumbnail' }).last());
 
     const link = chatLog.getByRole('link', { name: /open image/i }).last();
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
   test('multiple image links render multiple previews', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
     const countBefore = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
 
@@ -91,31 +83,25 @@ test.beforeAll(async ({ browser }, testInfo) => {
 
     const previews = chatLog.getByRole('img', { name: 'Image thumbnail' });
     await expect(previews).toHaveCount(countBefore + 2, { timeout: 10_000 });
-
-    // Verify images actually loaded
-    await sharedPage.waitForTimeout(2_000);
-    await expect(previews).toHaveCount(countBefore + 2);
+    for (const preview of await previews.all()) {
+      await expectImageLoaded(preview);
+    }
   });
 
   test('webp image link renders inline preview', async () => {
     bot.sendMessage(`#previews-${tag}`, 'WebP test https://simpleircclient.com/assets/test-image.webp');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('WebP test')).toBeVisible({ timeout: 10_000 });
 
-    const preview = chatLog.getByRole('img', { name: 'Image thumbnail' }).last();
-    await expect(preview).toBeVisible({ timeout: 10_000 });
-
-    // Verify the image actually loaded
-    await sharedPage.waitForTimeout(2_000);
-    await expect(preview).toBeVisible();
+    await expectImageLoaded(chatLog.getByRole('img', { name: 'Image thumbnail' }).last());
 
     const link = chatLog.getByRole('link', { name: /open image/i }).last();
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
   test('non-image link does not render image preview', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
     const countBefore = await chatLog.getByRole('img', { name: 'Image thumbnail' }).count();
 
@@ -129,7 +115,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   test('Twitter/X link renders embed iframe', async () => {
     bot.sendMessage(`#previews-${tag}`, 'Check this tweet https://x.com/user/status/1234567890123456789');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Check this tweet')).toBeVisible({ timeout: 10_000 });
 
     const iframe = chatLog.locator('iframe[title="View social media post"]').last();
@@ -143,7 +129,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   test('Bluesky link renders embed iframe', async () => {
     bot.sendMessage(`#previews-${tag}`, 'Bluesky post https://bsky.app/profile/user.bsky.social/post/3abc123def');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Bluesky post')).toBeVisible({ timeout: 10_000 });
 
     const iframe = chatLog.locator('iframe[title="View social media post"]').last();
@@ -155,7 +141,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   test('Facebook link renders embed iframe', async () => {
     bot.sendMessage(`#previews-${tag}`, 'FB post https://www.facebook.com/user/posts/123456789');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('FB post')).toBeVisible({ timeout: 10_000 });
 
     const iframe = chatLog.locator('iframe[title="View social media post"]').last();
@@ -165,7 +151,7 @@ test.beforeAll(async ({ browser }, testInfo) => {
   });
 
   test('non-social link does not render embed', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
     const countBefore = await chatLog.locator('iframe[title="View social media post"]').count();
 

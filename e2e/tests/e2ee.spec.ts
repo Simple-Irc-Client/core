@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag, waitForPersistedChannels } from '../helpers';
 import { CTCP, ctcpBody, E2eePeer, FrameCollector } from '../e2ee-peer';
 
 /**
@@ -23,14 +23,17 @@ let page: Page;
 let appNick: string;
 let botNick: string;
 
-/**
- * One identity for the whole file, as a real peer would have.
- *
- * Generating a fresh identity per test would trip the app's TOFU pin every
- * time — correctly — and test nothing but the warning path. The impostor case
- * gets its own test at the end.
- */
+/** The bot's identity: each test's app pins it at the first handshake, and the impostor case gets one of its own */
 let peer: E2eePeer;
+
+/** Past the app's limit of one inbound offer per peer per second */
+const OFFER_THROTTLE_MS = 1100;
+
+/**
+ * A test that re-handshakes sends several offers inside a second, far faster than any real client. Moving the
+ * page's clock on is the right fix; loosening the throttle so the tests pass would let the tests set a security parameter.
+ */
+const passOfferThrottle = (): Promise<void> => page.clock.fastForward(OFFER_THROTTLE_MS);
 
 const openDmWithBot = async (): Promise<void> => {
   const sidebar = page.getByTestId('channels-sidebar');
@@ -82,11 +85,7 @@ const waitForCapturedLine = async (capture: { lines: string[] }, needle: string)
 
 /** Drive the handshake with the bot as initiator; leaves both sides active. */
 const handshakeAsInitiator = async (): Promise<void> => {
-  // Inbound offers are throttled to one per peer per second, and this file
-  // re-handshakes once per test — several offers inside a second, far faster
-  // than any real client. Pacing the suite is the right fix; loosening the
-  // throttle so the tests pass would let the tests set a security parameter.
-  await page.waitForTimeout(1100);
+  await passOfferThrottle();
 
   await peer.newHandshake();
   const capture = bot.captureLines();
@@ -114,8 +113,9 @@ const sendInDm = async (text: string): Promise<void> => {
   await input.press('Enter');
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   appNick = `e2ee-tester-${tag}`;
 
   bot = await createIrcClient(`e2eebot-${tag}`);
@@ -124,19 +124,16 @@ test.beforeAll(async ({ browser }, testInfo) => {
   peer = new E2eePeer();
   await peer.init();
 
-  page = await browser.newPage();
+  await page.clock.install();
   await page.goto('/');
   await connectViaWizard(page, appNick);
 });
 
-test.afterAll(async () => {
-  await page.close();
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('End-to-end encryption', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('encrypts an outgoing message so no plaintext reaches the network', async () => {
     await openDmWithBot();
     await handshakeAsInitiator();
@@ -209,12 +206,12 @@ test.describe('End-to-end encryption', () => {
 
     const capture = bot.captureLines();
     await page.locator('#message-input').fill('composing something');
-    await page.waitForTimeout(2000);
+    // Typing notifications go out as the text changes, so ahead of the message itself
+    await page.locator('#message-input').press('Enter');
+    await waitForCipherPayload(capture);
     capture.stop();
 
     expect(capture.lines.join('\n')).not.toContain('TAGMSG');
-
-    await page.locator('#message-input').clear();
   });
 
   test('declining leaves the conversation in plaintext', async () => {
@@ -247,15 +244,11 @@ test.describe('End-to-end encryption', () => {
 
     // ...then an inbound E2EE offer lands right under it. Without the detach it
     // groups under the previous author's header and reads as their message.
-    await page.waitForTimeout(1100); // inbound-offer throttle
     bot.send(`PRIVMSG ${appNick} :${CTCP}${peer.offerFrame()}${CTCP}`);
 
-    // Earlier tests in this file each left an offer notice in this same shared
-    // log, so match the most recent one.
     const offerRow = page
       .getByTestId('chat-log')
-      .locator('.sic-msg', { hasText: 'wants to start an encrypted conversation' })
-      .last();
+      .locator('.sic-msg', { hasText: 'wants to start an encrypted conversation' });
     await expect(offerRow).toBeVisible({ timeout: 20_000 });
 
     // It is a standalone system notice: flagged detached, not "content", and
@@ -301,6 +294,11 @@ test.describe('End-to-end encryption', () => {
 
   test('blocks a peer whose identity key changed instead of quietly re-keying', async () => {
     await openDmWithBot();
+    // The genuine peer's key, pinned
+    await handshakeAsInitiator();
+    bot.send(`NOTICE ${appNick} :${CTCP}SIC-E2EE RESET${CTCP}`);
+    await expect(page.getByTestId('e2ee-banner')).toContainText('you have encrypted with', { timeout: 20_000 });
+    await page.getByRole('button', { name: 'Dismiss' }).click();
 
     // Someone else now answers to this nick, holding a different identity key —
     // a reinstall, or an interception attempt. Either way the user must be told,
@@ -308,6 +306,7 @@ test.describe('End-to-end encryption', () => {
     const impostor = new E2eePeer();
     await impostor.init();
 
+    await passOfferThrottle();
     bot.send(`PRIVMSG ${appNick} :${CTCP}${impostor.offerFrame()}${CTCP}`);
 
     await expect(page.getByTestId('e2ee-banner')).toContainText('encryption key has changed', { timeout: 20_000 });
@@ -364,8 +363,7 @@ test.describe('End-to-end encryption', () => {
     bot.sendMessage(appNick, 'plaintext-that-should-persist');
     await expect(page.getByTestId('chat-log').getByText('plaintext-that-should-persist')).toBeVisible({ timeout: 20_000 });
 
-    // The channels store debounces its IndexedDB write by 2s.
-    await page.waitForTimeout(2500);
+    await waitForPersistedChannels(page, 'plaintext-that-should-persist');
     await page.reload();
 
     await openDmWithBot();

@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
 let tag: string;
 let channel: string;
 
-test.beforeAll(async ({}, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({}, testInfo) => {
+  tag = testTag(testInfo);
   channel = `#joinable-${tag}`;
 
   bot = await createIrcClient(`joinbot-${tag}`);
@@ -15,13 +15,11 @@ test.beforeAll(async ({}, testInfo) => {
   await bot.setTopic(channel, 'Come join us');
 });
 
-test.afterAll(() => {
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('Join channel button', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('join button opens channel list dialog', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, `join-tester-${tag}`);
@@ -83,6 +81,7 @@ test.describe('Join channel button', () => {
   });
 
   test('already-joined channels are excluded from dialog', async ({ page }) => {
+    await bot.join(`#not-joined-${tag}`);
     await page.goto('/');
     await connectViaWizard(page, `exclude-tester-${tag}`, { channels: [channel] });
 
@@ -92,9 +91,8 @@ test.describe('Join channel button', () => {
     await channelNav.getByRole('button', { name: /join channel/i }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
-    // #joinable should NOT appear since we already joined it
-    // Wait for list to load first
-    await new Promise((r) => setTimeout(r, 2000));
+    // Once the list has loaded the channel we did not join, #joinable must not be in it
+    await expect(page.getByRole('dialog').getByRole('button', { name: new RegExp(`#not-joined-${tag}`) })).toBeVisible({ timeout: 10_000 });
     const rows = page.getByRole('dialog').getByRole('button', { name: new RegExp(channel) });
     await expect(rows).toHaveCount(0);
   });

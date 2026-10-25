@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let friend: IrcClient;
 let page: Page;
@@ -8,8 +8,9 @@ let first: string;
 let second: string;
 let userNick: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   first = `#search-one-${tag}`;
   second = `#search-two-${tag}`;
   userNick = `searcher-${tag}`;
@@ -19,7 +20,6 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await friend.join(first);
   await friend.join(second);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, userNick, { channels: [first, second] });
 
@@ -40,20 +40,21 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(page.getByRole('button', { name: friend.nick, exact: true })).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   friend?.disconnect();
 });
 
 test.describe('Message search', () => {
-  test.describe.configure({ mode: 'serial' });
-
   const search = () => page.getByTestId('message-search');
   const results = () => search().getByRole('option');
 
-  test('lists the matches from every open window, newest first, keeping spoilers hidden', async () => {
+  const searchFor = async (words: string): Promise<void> => {
     await page.locator('#message-input').press('ControlOrMeta+Shift+F');
-    await search().getByRole('combobox').fill('release');
+    await search().getByRole('combobox').fill(words);
+  };
+
+  test('lists the matches from every open window, newest first, keeping spoilers hidden', async () => {
+    await searchFor('release');
 
     await expect(results()).toHaveCount(3);
     await expect(results().nth(0)).toContainText('release notes are ▒▒▒');
@@ -64,6 +65,7 @@ test.describe('Message search', () => {
   });
 
   test('picking a result shows the message in its window', async () => {
+    await searchFor('release');
     await results().nth(2).click();
 
     await expect(search()).toBeHidden();
@@ -74,6 +76,7 @@ test.describe('Message search', () => {
   });
 
   test('opens from the header too, and searches only the current window when asked', async () => {
+    await page.getByRole('button', { name: second, exact: true }).click();
     await page.getByRole('button', { name: 'Search messages' }).click();
     await search().getByRole('combobox').fill('release');
     await expect(results()).toHaveCount(3);
@@ -85,7 +88,7 @@ test.describe('Message search', () => {
   });
 
   test('says when nothing matches', async () => {
-    await search().getByRole('combobox').fill('no such words');
+    await searchFor('no such words');
 
     await expect(results()).toHaveCount(0);
     await expect(search()).toContainText('No matching messages');

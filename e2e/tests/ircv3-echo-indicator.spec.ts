@@ -1,40 +1,37 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
 
   skipWithoutIrcv3('the indicator marks messages the server echoed with echo-message');
   bot = await createIrcClient(`echobot-${tag}`);
   await bot.join(`#echo-test-${tag}`);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `echo-tester-${tag}`, { channels: [`#echo-test-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#echo-test-${tag}`, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await page.goto('/');
+  await connectViaWizard(page, `echo-tester-${tag}`, { channels: [`#echo-test-${tag}`] });
+  await page.getByRole('button', { name: `#echo-test-${tag}`, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Echo indicator', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('sent message shows echo indicator', async () => {
-    const messageInput = sharedPage.locator('#message-input');
+    const messageInput = page.locator('#message-input');
     await messageInput.fill('Echo test message');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Echo test message')).toBeVisible({ timeout: 10_000 });
 
     // The echo indicator (double checkmark) should appear next to the sent message
@@ -45,29 +42,28 @@ test.describe('Echo indicator', () => {
     // Bot sends a message — it should NOT have the echo indicator for us
     bot.sendMessage(`#echo-test-${tag}`, 'Message from bot');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Message from bot')).toBeVisible({ timeout: 10_000 });
 
-    // Count echo indicators — only the one from previous test should exist
     const messageRow = chatLog.getByText('Message from bot').locator('..');
     await expect(messageRow.locator('.lucide-check-check')).not.toBeVisible();
   });
 
   test('multiple sent messages each show echo indicator', async () => {
-    const messageInput = sharedPage.locator('#message-input');
+    const messageInput = page.locator('#message-input');
 
     await messageInput.fill('First echo');
     await messageInput.press('Enter');
     await messageInput.fill('Second echo');
     await messageInput.press('Enter');
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Second echo')).toBeVisible({ timeout: 10_000 });
 
     // Each sent message should have its own echo indicator
-    const echoIndicators = chatLog.locator('.lucide-check-check');
-    const count = await echoIndicators.count();
-    // At least 3 (one from test 1 + two from this test)
-    expect(count).toBeGreaterThanOrEqual(3);
+    for (const text of ['First echo', 'Second echo']) {
+      // The theme shows one of the message's time slots, the indicator with it
+      await expect(chatLog.locator('.sic-msg', { hasText: text }).locator('.lucide-check-check').filter({ visible: true })).toHaveCount(1, { timeout: 10_000 });
+    }
   });
 });

@@ -1,5 +1,5 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPersistedChannels, projectTag } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPersistedChannels, testTag } from '../helpers';
 
 /**
  * Event-driven reconnect, the way mobile web actually recovers.
@@ -16,22 +16,16 @@ import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPe
  *   3. it does NOT yank the view back to Status — the user stays on whatever
  *      channel/DM they were reading (kernel.ts `handleConnect`).
  *
- * Named *-reconnect.spec.ts so playwright.config.ts routes it to the serial
- * reconnect project: force-closing every socket is too disruptive to run
- * alongside the rest of the suite.
+ * Named *-reconnect.spec.ts so playwright.config.ts routes it to the
+ * reconnect project, which runs after the rest of the suite: force-closing
+ * every socket is too disruptive to run alongside it.
  */
 
 const CHANNEL = '#mobile-recon';
 
-/**
- * Wizard through with no channels, then join CHANNEL and land on it.
- *
- * The nick is suffixed per project: chromium-reconnect and firefox-reconnect run
- * this file concurrently against one shared Ergo server, and identical nicks
- * race to 433. See e2e-testing-gotchas.
- */
+/** Wizard through with no channels, then join CHANNEL and land on it */
 const setUpOnChannel = async (page: Page, baseNick: string, testInfo: TestInfo): Promise<void> => {
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   await installWebSocketKillSwitch(page);
   await page.goto('/');
   await connectViaWizard(page, `${baseNick}-${tag}`, { channels: [] });
@@ -49,8 +43,6 @@ const setUpOnChannel = async (page: Page, baseNick: string, testInfo: TestInfo):
 };
 
 test.describe('Mobile event-driven reconnect', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('reconnects on the browser `online` event without a manual Connect', async ({ page }, testInfo) => {
     await setUpOnChannel(page, 'mob-rec-online', testInfo);
 

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let greeter: IrcClient;
@@ -14,8 +14,9 @@ const openWindow = async (name: string): Promise<void> => {
   await expect(page.getByTestId('chat-header-name')).toHaveText(name);
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   greeted = `#greeted-${tag}`;
   viewing = `#viewing-${tag}`;
   userNick = `routed-${tag}`;
@@ -24,20 +25,16 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await greeter.join(greeted);
   await greeter.join(viewing);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, userNick, { channels: [greeted, viewing] });
   await openWindow(viewing);
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   greeter?.disconnect();
 });
 
 test.describe('Notice routing', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a channel greeting sent to us shows in that channel, not the one being viewed', async () => {
     greeter.sendNotice(userNick, `[${greeted}] Welcome, read the rules`);
     greeter.sendMessage(viewing, 'marker line');

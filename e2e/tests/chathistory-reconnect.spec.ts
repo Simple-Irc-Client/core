@@ -1,31 +1,32 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let nick: string;
 let readChannel: string;
 let currentChannel: string;
 
 const unreadBadge = (channel: string) =>
-  sharedPage.getByTestId('channels-sidebar').getByRole('button', { name: channel, exact: true }).locator('..').locator('[aria-label*="unread"], [aria-label*="mention"]');
+  page.getByTestId('channels-sidebar').getByRole('button', { name: channel, exact: true }).locator('..').locator('[aria-label*="unread"], [aria-label*="mention"]');
 
 const openChannel = async (channel: string): Promise<void> => {
-  await sharedPage.getByRole('button', { name: channel, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await page.getByRole('button', { name: channel, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 };
 
 const sendFromApp = async (text: string): Promise<void> => {
-  const messageInput = sharedPage.locator('#message-input');
+  const messageInput = page.locator('#message-input');
   await messageInput.fill(text);
   await messageInput.press('Enter');
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('history is replayed with draft/chathistory');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   nick = `histuser-${tag}`;
   readChannel = `#hist-read-${tag}`;
   currentChannel = `#hist-current-${tag}`;
@@ -34,21 +35,17 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await bot.join(readChannel);
   await bot.join(currentChannel);
 
-  sharedPage = await browser.newPage();
-  await installWebSocketKillSwitch(sharedPage);
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, nick, { channels: [readChannel, currentChannel] });
+  await installWebSocketKillSwitch(page);
+  await page.goto('/');
+  await connectViaWizard(page, nick, { channels: [readChannel, currentChannel] });
   await openChannel(currentChannel);
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Chat history replayed after a reconnect', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('messages already read do not come back as unread, and old CTCP requests are not answered again', async () => {
     const botLines = bot.captureLines();
 
@@ -62,16 +59,16 @@ test.describe('Chat history replayed after a reconnect', () => {
     await expect(unreadBadge(readChannel)).not.toBeVisible();
     await openChannel(currentChannel);
 
-    await dropConnection(sharedPage);
+    await dropConnection(page);
     const rejoined = bot.waitForLine((line) => line.includes(`JOIN ${readChannel}`) && line.includes(`:${nick}!`), 30_000);
-    await sharedPage.getByRole('button', { name: 'Connect' }).click();
+    await page.getByRole('button', { name: 'Connect' }).click();
     await rejoined;
-    await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 
     // The server answers in order: once this echo is back, so is the history asked for on rejoin
     await openChannel(currentChannel);
     await sendFromApp('back after the reconnect');
-    const echoed = sharedPage.getByTestId('chat-log').locator('.sic-msg', { hasText: 'back after the reconnect' });
+    const echoed = page.getByTestId('chat-log').locator('.sic-msg', { hasText: 'back after the reconnect' });
     await expect(echoed.locator('.lucide-check-check').first()).toBeVisible({ timeout: 10_000 });
 
     // Sent after anything the app answered to that history, so the bot has all of it by then
@@ -88,7 +85,7 @@ test.describe('Chat history replayed after a reconnect', () => {
     const missed = Array.from({ length: 80 }, (_, index) => `missed ${String(index + 1).padStart(2, '0')}`);
     const lastMissed = 'missed 80';
 
-    await dropConnection(sharedPage);
+    await dropConnection(page);
     const stored = bot.waitForLine((line) => line.endsWith(`PRIVMSG ${currentChannel} :${lastMissed}`));
     for (const text of missed) {
       bot.sendMessage(currentChannel, text);
@@ -96,10 +93,10 @@ test.describe('Chat history replayed after a reconnect', () => {
     await stored;
 
     const rejoined = bot.waitForLine((line) => line.includes(`JOIN ${currentChannel}`) && line.includes(`:${nick}!`), 30_000);
-    await sharedPage.getByRole('button', { name: 'Connect' }).click();
+    await page.getByRole('button', { name: 'Connect' }).click();
     await rejoined;
 
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('missed 01', { exact: true })).toBeAttached({ timeout: 15_000 });
     await expect(chatLog.getByText(lastMissed, { exact: true })).toBeAttached();
 

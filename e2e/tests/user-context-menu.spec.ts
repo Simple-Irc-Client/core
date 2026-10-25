@@ -1,13 +1,14 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let alice: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
 
   alice = await createIrcClient(`ctx-alice-${tag}`);
   await alice.join(`#lobby-${tag}`);
@@ -16,91 +17,75 @@ test.beforeAll(async ({ browser }, testInfo) => {
   // server, so this needs a member before ctx-tester can join it below.
   await alice.join(`#invite-target-${tag}`);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
+  await page.goto('/');
   // The second channel gives the "Invite to Channel" submenu something to
   // list, without requiring ctx-tester to hold any operator flag.
-  await connectViaWizard(sharedPage, `ctx-tester-${tag}`, { channels: [`#lobby-${tag}`, `#invite-target-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#lobby-${tag}`, exact: true }).click();
+  await connectViaWizard(page, `ctx-tester-${tag}`, { channels: [`#lobby-${tag}`, `#invite-target-${tag}`] });
+  await page.getByRole('button', { name: `#lobby-${tag}`, exact: true }).click();
 
-  const usersSidebar = sharedPage.getByTestId('users-sidebar');
+  const usersSidebar = page.getByTestId('users-sidebar');
   await expect(usersSidebar.getByText(alice.nick)).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await sharedPage.close();
+test.afterEach(() => {
   alice.disconnect();
 });
 
 test.describe('User context menu', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('opens context menu on user click', async () => {
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Click on alice to open context menu
     await usersSidebar.getByRole('button', { name: alice.nick }).click();
 
     // Context menu should appear with Whois and Priv options
-    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
-
-    // Close the context menu so it doesn't interfere with subsequent tests
-    await sharedPage.keyboard.press('Escape');
-    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
   });
 
   test('whois shows user info', async () => {
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Open context menu and click Whois
     await usersSidebar.getByRole('button', { name: alice.nick }).click();
-    await sharedPage.getByRole('menuitem', { name: 'Whois' }).click();
+    await page.getByRole('menuitem', { name: 'Whois' }).click();
 
     // Whois response should appear in the chat log
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(alice.nick).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('priv opens private message tab', async () => {
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Open context menu and click Priv
     await usersSidebar.getByRole('button', { name: alice.nick }).click();
-    await sharedPage.getByRole('menuitem', { name: 'Priv' }).click();
+    await page.getByRole('menuitem', { name: 'Priv' }).click();
 
     // A private message tab for alice should appear in the sidebar
-    const channelNav = sharedPage.getByTestId('channels-sidebar');
+    const channelNav = page.getByTestId('channels-sidebar');
     await expect(channelNav.getByRole('button', { name: alice.nick })).toBeVisible({ timeout: 5_000 });
   });
 
   test('context menu opens on right click', async () => {
-    // Navigate back to #lobby (test 3 left us on the alice PM tab)
-    await sharedPage.getByRole('button', { name: `#lobby-${tag}`, exact: true }).click();
-
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Right-click on alice
     await usersSidebar.getByRole('button', { name: alice.nick }).click({ button: 'right' });
 
     // Context menu should appear
-    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
-    await expect(sharedPage.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Whois' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Priv' })).toBeVisible();
   });
 
   test('right-clicking inside an open submenu does not fall through to the native context menu', async () => {
-    // The previous test leaves its menu open — close it first so it doesn't
-    // cover the users sidebar and block the click below.
-    await sharedPage.keyboard.press('Escape');
-    await expect(sharedPage.getByRole('menuitem', { name: 'Whois' })).not.toBeVisible({ timeout: 3_000 });
-
-    const usersSidebar = sharedPage.getByTestId('users-sidebar');
+    const usersSidebar = page.getByTestId('users-sidebar');
 
     // Open the menu and its "Invite to Channel" submenu.
     await usersSidebar.getByRole('button', { name: alice.nick }).click();
-    const inviteTrigger = sharedPage.getByRole('menuitem', { name: 'Invite to Channel' });
+    const inviteTrigger = page.getByRole('menuitem', { name: 'Invite to Channel' });
     await inviteTrigger.hover();
-    await expect(sharedPage.getByRole('menuitem', { name: `#invite-target-${tag}` })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: `#invite-target-${tag}` })).toBeVisible();
 
     // Arm a one-shot listener before the click so we observe the *next*
     // contextmenu event's defaultPrevented state once it has finished
@@ -109,12 +94,10 @@ test.describe('User context menu', () => {
     // right-click landing back on the app's own (already open) menu must
     // still be swallowed — it must never fall through to the native
     // OS/WebView context menu.
-    const preventedPromise = sharedPage.evaluate(() => new Promise<boolean>((resolve) => {
+    const preventedPromise = page.evaluate(() => new Promise<boolean>((resolve) => {
       document.addEventListener('contextmenu', (e) => resolve(e.defaultPrevented), { once: true });
     }));
     await inviteTrigger.click({ button: 'right' });
     expect(await preventedPromise).toBe(true);
-
-    await sharedPage.keyboard.press('Escape');
   });
 });

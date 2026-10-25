@@ -1,41 +1,42 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
 
   bot = await createIrcClient(`histbot-${tag}`);
   await bot.join(`#history-test-${tag}`);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `hist-tester-${tag}`, { channels: [`#history-test-${tag}`] });
-  await sharedPage.getByRole('button', { name: `#history-test-${tag}`, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await page.goto('/');
+  await connectViaWizard(page, `hist-tester-${tag}`, { channels: [`#history-test-${tag}`] });
+  await page.getByRole('button', { name: `#history-test-${tag}`, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await sharedPage.close();
+test.afterEach(() => {
   bot.disconnect();
 });
 
-test.describe('Input history', () => {
-  test.describe.configure({ mode: 'serial' });
-
-  test('arrow up recalls last sent message', async () => {
-    const messageInput = sharedPage.locator('#message-input');
-
-    // Send a message
-    await messageInput.fill('History message one');
+/** Sends each text in turn, waiting until the last one is in the log */
+const sendAll = async (...texts: string[]): Promise<void> => {
+  const messageInput = page.locator('#message-input');
+  for (const text of texts) {
+    await messageInput.fill(text);
     await messageInput.press('Enter');
+  }
+  await expect(page.getByTestId('chat-log').getByText(texts.at(-1) ?? '')).toBeVisible({ timeout: 10_000 });
+};
 
-    const chatLog = sharedPage.getByTestId('chat-log');
-    await expect(chatLog.getByText('History message one')).toBeVisible({ timeout: 10_000 });
+test.describe('Input history', () => {
+  test('arrow up recalls last sent message', async () => {
+    const messageInput = page.locator('#message-input');
+    await sendAll('History message one');
 
     // Press ArrowUp to recall it
     await messageInput.press('ArrowUp');
@@ -43,20 +44,8 @@ test.describe('Input history', () => {
   });
 
   test('arrow up cycles through multiple messages', async () => {
-    const messageInput = sharedPage.locator('#message-input');
-
-    // Clear and reset by pressing ArrowDown until empty
-    await messageInput.press('ArrowDown');
-    await messageInput.fill('');
-
-    // Send two more messages
-    await messageInput.fill('History message two');
-    await messageInput.press('Enter');
-    await messageInput.fill('History message three');
-    await messageInput.press('Enter');
-
-    const chatLog = sharedPage.getByTestId('chat-log');
-    await expect(chatLog.getByText('History message three')).toBeVisible({ timeout: 10_000 });
+    const messageInput = page.locator('#message-input');
+    await sendAll('History message one', 'History message two', 'History message three');
 
     // ArrowUp once → most recent (three)
     await messageInput.press('ArrowUp');
@@ -72,9 +61,13 @@ test.describe('Input history', () => {
   });
 
   test('arrow down navigates forward through history', async () => {
-    const messageInput = sharedPage.locator('#message-input');
+    const messageInput = page.locator('#message-input');
+    await sendAll('History message one', 'History message two', 'History message three');
+    for (const expected of ['History message three', 'History message two', 'History message one']) {
+      await messageInput.press('ArrowUp');
+      await expect(messageInput).toHaveValue(expected);
+    }
 
-    // We should be at 'History message one' from the previous test
     // ArrowDown → back to two
     await messageInput.press('ArrowDown');
     await expect(messageInput).toHaveValue('History message two');
@@ -89,7 +82,8 @@ test.describe('Input history', () => {
   });
 
   test('arrow up preserves current input and restores it on arrow down', async () => {
-    const messageInput = sharedPage.locator('#message-input');
+    const messageInput = page.locator('#message-input');
+    await sendAll('History message three');
 
     // Type something but don't send
     await messageInput.fill('unsent draft');
@@ -101,8 +95,5 @@ test.describe('Input history', () => {
     // ArrowDown to return — should restore the unsent draft
     await messageInput.press('ArrowDown');
     await expect(messageInput).toHaveValue('unsent draft');
-
-    // Clear for next tests
-    await messageInput.fill('');
   });
 });

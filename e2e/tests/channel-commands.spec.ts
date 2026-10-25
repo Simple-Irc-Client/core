@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let page: Page;
 let bot: IrcClient;
@@ -25,8 +25,9 @@ const receivedOn = async (client: IrcClient, command: string, predicate: (line: 
   return received;
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
   channel = `#chancmds-${tag}`;
   otherChannel = `#chancmds-other-${tag}`;
   userNick = `chancmds-${tag}`;
@@ -34,7 +35,6 @@ test.beforeAll(async ({ browser }, testInfo) => {
   bot = await createIrcClient(`chancmdbot-${tag}`);
   guest = await createIrcClient(`chancmdguest-${tag}`);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, userNick);
 
@@ -49,15 +49,12 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(page.getByTestId('users-sidebar').getByText(bot.nick)).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
   guest?.disconnect();
 });
 
 test.describe('Channel and general commands', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('/op and /deop, /voice and /devoice change a member\'s mode', async () => {
     const mode = (sign: string) => (line: string) => line.includes(`MODE ${channel} ${sign} ${bot.nick}`);
 
@@ -134,9 +131,7 @@ test.describe('Channel and general commands', () => {
     await expect(page.getByTestId('users-sidebar').getByText(bot.nick)).toBeHidden({ timeout: 10_000 });
   });
 
-  // Rejoining costs the user their ops, so the commands that need them come before
   test('/cycle leaves the channel and joins it again', async () => {
-    // The bot was kicked out above
     await guest.join(channel);
     const parted = guest.waitForLine((line) => line.includes(`PART ${channel}`) && line.startsWith(`:${userNick}!`));
     const joined = guest.waitForLine((line) => line.includes(`JOIN`) && line.includes(channel) && line.startsWith(`:${userNick}!`));
@@ -150,6 +145,8 @@ test.describe('Channel and general commands', () => {
   });
 
   test('/quit leaves the network with the given message', async () => {
+    // Sharing the channel, the guest is told of the quit
+    await guest.join(channel);
     const quit = guest.waitForLine((line) => line.startsWith(`:${userNick}!`) && line.includes('QUIT') && line.includes('see you later'));
 
     await type('/quit see you later');

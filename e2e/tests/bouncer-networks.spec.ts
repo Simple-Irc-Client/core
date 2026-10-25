@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { getServerPassword, projectTag } from '../helpers';
+import { getServerPassword, testTag } from '../helpers';
 import { IRC_PORT, LEGACY_IRC_PORT, SOJU_WSS_PORT } from '../global-setup';
 import { createSojuNetwork, createSojuUser, deleteSojuNetwork } from '../soju';
 import { skipWithoutIrcv3 } from '../test-server';
@@ -18,20 +18,21 @@ let nick: string;
 let channel: string;
 
 /** Through the nick and server steps to the bouncer's WebSocket */
-const wizardToBouncer = async (onPage: Page): Promise<void> => {
-  await onPage.getByLabel('Enter your nickname').fill(account);
-  await onPage.getByRole('button', { name: 'Next' }).click();
-  await onPage.getByLabel('Server address').fill('localhost');
-  await onPage.getByLabel('Port').clear();
-  await onPage.getByLabel('Port').fill(String(SOJU_WSS_PORT));
-  await onPage.getByRole('button', { name: 'WebSocket' }).click();
-  await onPage.getByRole('button', { name: 'Next' }).click();
+const wizardToBouncer = async (): Promise<void> => {
+  await page.getByLabel('Enter your nickname').fill(account);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel('Server address').fill('localhost');
+  await page.getByLabel('Port').clear();
+  await page.getByLabel('Port').fill(String(SOJU_WSS_PORT));
+  await page.getByRole('button', { name: 'WebSocket' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   // One bouncer serves every project; the IRCv3 ones are enough to drive it
   skipWithoutIrcv3('one bouncer serves every project');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   account = `bnc-${tag}-${randomBytes(3).toString('hex')}`;
   nick = `bncnick-${tag}-${randomBytes(2).toString('hex')}`;
@@ -48,12 +49,33 @@ test.beforeAll(async ({ browser }, testInfo) => {
   legacyBot = await createIrcClient(`bnclegacy-${tag}`, '127.0.0.1', LEGACY_IRC_PORT);
   await legacyBot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
 });
 
-test.afterAll(async () => {
-  await page?.close();
+/** Logs in to the bouncer account from the wizard, chats on ergo-net and joins the channel there */
+const connectThroughBouncer = async (): Promise<void> => {
+  await wizardToBouncer();
+  await page.getByLabel('Username').fill(account);
+  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: /ergo-net/ }).click({ timeout: 20_000 });
+  await page.getByText('Select a irc channel').waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await page.locator('#message-input').waitFor({ timeout: 10_000 });
+  await joinFrom(bot);
+};
+
+const switchToLegacyNet = async (): Promise<void> => {
+  await page.getByRole('button', { name: 'User menu' }).click();
+  await page.getByRole('menuitem', { name: 'Bouncer networks' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: /ergo-net/ })).toContainText('Current');
+  await dialog.getByRole('button', { name: /legacy-net/ }).click();
+  await expect(page.getByTestId('channels-sidebar').getByRole('button', { name: channel, exact: true })).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 30_000 });
+};
+
+test.afterEach(() => {
   bot?.disconnect();
   legacyBot?.disconnect();
 });
@@ -68,10 +90,8 @@ const joinFrom = async (ircBot: IrcClient): Promise<void> => {
 };
 
 test.describe('Bouncer networks', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a bouncer account lists its networks, and the one chosen is where the app chats', async () => {
-    await wizardToBouncer(page);
+    await wizardToBouncer();
 
     await expect(page.getByRole('heading', { name: 'Bouncer account' })).toBeVisible();
     await page.getByLabel('Username').fill(account);
@@ -94,6 +114,7 @@ test.describe('Bouncer networks', () => {
   });
 
   test('after a reload the app logs in again and returns to the same network', async () => {
+    await connectThroughBouncer();
     await page.reload();
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 20_000 });
 
@@ -109,18 +130,14 @@ test.describe('Bouncer networks', () => {
   });
 
   test('switching to another network leaves the windows of the one before', async () => {
-    await page.getByRole('button', { name: 'User menu' }).click();
-    await page.getByRole('menuitem', { name: 'Bouncer networks' }).click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByRole('button', { name: /ergo-net/ })).toContainText('Current');
-    await dialog.getByRole('button', { name: /legacy-net/ }).click();
-
-    await expect(page.getByTestId('channels-sidebar').getByRole('button', { name: channel, exact: true })).toHaveCount(0, { timeout: 10_000 });
-    await expect(page.locator('#message-input')).toBeEnabled({ timeout: 30_000 });
+    await connectThroughBouncer();
+    await switchToLegacyNet();
     await joinFrom(legacyBot);
   });
 
   test('when the bouncer no longer has the network, the user picks another', async () => {
+    await connectThroughBouncer();
+    await switchToLegacyNet();
     deleteSojuNetwork(account, 'legacy-net');
     await page.reload();
     await page.getByRole('button', { name: 'Connect' }).click();
@@ -139,21 +156,15 @@ test.describe('Bouncer networks', () => {
     expect(await said).toContain(`:${nick}!`);
   });
 
-  test('a wrong password is refused, and the user can go back and fix it', async ({ browser }) => {
-    const other = await browser.newPage();
-    try {
-      await other.goto('/');
-      await wizardToBouncer(other);
-      await other.getByLabel('Username').fill(account);
-      await other.getByLabel('Password').fill('not-the-password');
-      await other.getByRole('button', { name: 'Next' }).click();
+  test('a wrong password is refused, and the user can go back and fix it', async () => {
+    await wizardToBouncer();
+    await page.getByLabel('Username').fill(account);
+    await page.getByLabel('Password').fill('not-the-password');
+    await page.getByRole('button', { name: 'Next' }).click();
 
-      await expect(other.getByRole('heading', { name: 'Disconnected' })).toBeVisible({ timeout: 20_000 });
-      await expect(other.getByText('Authentication required')).toBeVisible();
-      await other.getByRole('button', { name: 'Go Back' }).click();
-      await expect(other.getByLabel('Enter your nickname')).toBeVisible();
-    } finally {
-      await other.close();
-    }
+    await expect(page.getByRole('heading', { name: 'Disconnected' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Authentication required')).toBeVisible();
+    await page.getByRole('button', { name: 'Go Back' }).click();
+    await expect(page.getByLabel('Enter your nickname')).toBeVisible();
   });
 });

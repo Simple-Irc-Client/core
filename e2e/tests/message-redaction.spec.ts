@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient, registerMulticlientAccount } from '../irc-client';
-import { connectViaWizard, identifyInApp, projectTag } from '../helpers';
+import { connectViaWizard, identifyInApp, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 const PASSWORD = 'delete-it-42';
@@ -22,9 +22,10 @@ const say = async (text: string): Promise<Locator> => {
   return row;
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('ngircd has no draft/message-redaction');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   const account = `redact-${tag}-${randomBytes(3).toString('hex')}`;
   channel = `#redact-${tag}-${randomBytes(3).toString('hex')}`;
@@ -34,7 +35,6 @@ test.beforeAll(async ({ browser }, testInfo) => {
   bot = await createIrcClient(`redactbot-${tag}`, undefined, undefined, ['message-tags', 'draft/message-redaction']);
   await bot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, account, { channels: [channel] });
   await identifyInApp(page, account, PASSWORD);
@@ -42,14 +42,11 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Deleting messages', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('the user deletes their own message once they confirm, for everyone', async () => {
     const row = await say('oops, wrong channel');
     const relayed = bot.waitForLine((line) => line.includes(` REDACT ${channel} `));
@@ -87,7 +84,7 @@ test.describe('Deleting messages', () => {
 
     bot.send(`REDACT ${channel} ${msgid ?? ''} :spam`);
 
-    await expect(page.getByTestId('chat-log').locator('.sic-msg[data-redacted]')).toHaveCount(2, { timeout: 10_000 });
+    await expect(page.getByTestId('chat-log').locator('.sic-msg[data-redacted]')).toHaveCount(1, { timeout: 10_000 });
     await expect(messageRow('against the rules')).toHaveCount(0);
   });
 

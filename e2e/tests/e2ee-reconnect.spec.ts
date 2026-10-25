@@ -1,9 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, testTag } from '../helpers';
 import { CTCP, ctcpBody, E2eePeer } from '../e2ee-peer';
-import { testServer } from '../test-server';
+import { skipWithoutIrcv3, testServer } from '../test-server';
 
 /**
  * E2EE across our own disconnect/reconnect.
@@ -18,13 +18,10 @@ import { testServer } from '../test-server';
  * Through the gateway the IRC connection outlives the WebSocket, so the peer
  * never sees us leave: the session is resumed rather than renegotiated.
  *
- * Named *-reconnect.spec.ts so playwright.config.ts routes it to the serial
- * reconnect project.
+ * Named *-reconnect.spec.ts so playwright.config.ts routes it to the
+ * reconnect project, which runs after the rest of the suite.
  */
 
-// Nicks are per-project: chromium-reconnect and firefox-reconnect run this file
-// concurrently against the one shared Ergo server, and identical nicks race to
-// 433 (the wizard then never reaches "Connected"). See e2e-testing-gotchas.
 let APP_NICK: string;
 let BOT_NICK: string;
 
@@ -53,9 +50,6 @@ const openDmWithBot = async (): Promise<void> => {
 
 /** Bot offers, the app accepts — leaves the conversation encrypted on both sides. */
 const handshakeWithBotAsInitiator = async (): Promise<void> => {
-  // Inbound offers are throttled to one per peer per second; space re-handshakes out.
-  await page.waitForTimeout(1100);
-
   await peer.newHandshake();
   const capture = bot.captureLines();
   bot.send(`PRIVMSG ${APP_NICK} :${CTCP}${peer.offerFrame()}${CTCP}`);
@@ -85,8 +79,9 @@ const reconnectViaBanner = async (): Promise<void> => {
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   APP_NICK = `e2ee-rec-${tag}-app`;
   BOT_NICK = `e2ee-rec-${tag}-bot`;
 
@@ -96,20 +91,16 @@ test.beforeAll(async ({ browser }, testInfo) => {
   peer = new E2eePeer();
   await peer.init();
 
-  page = await browser.newPage();
   await installWebSocketKillSwitch(page);
   await page.goto('/');
   await connectViaWizard(page, APP_NICK, { channels: [] });
 });
 
-test.afterAll(async () => {
-  await page.close();
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('E2EE resume on reconnect', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('re-offers encryption automatically after the connection drops and returns', async () => {
     test.skip(testServer().viaGateway, 'the gateway resumes the IRC connection, so the session never ends');
     await openDmWithBot();
@@ -156,6 +147,7 @@ test.describe('E2EE resume on reconnect', () => {
   });
 
   test('does not re-offer a session the user turned off before the drop', async () => {
+    skipWithoutIrcv3('a resume is set off by MONITOR, which ngircd lacks');
     await openDmWithBot();
     await handshakeWithBotAsInitiator();
 
@@ -167,8 +159,9 @@ test.describe('E2EE resume on reconnect', () => {
     const capture = bot.captureLines();
     await reconnectViaBanner();
 
-    // Give resume every chance to (wrongly) fire: reconnect + MONITOR round-trip.
-    await page.waitForTimeout(8_000);
+    // MONITOR reports the bot online again: the app would have its offer under way by now
+    await expect(page.getByTestId('channels-sidebar').getByRole('button', { name: botNick, exact: true }).getByLabel('Online')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('e2ee-status-button')).toHaveAttribute('aria-label', /not encrypted|plaintext|before/i);
     capture.stop();
 
     expect(capture.lines.join('\n'), 'a deliberately ended session must not be silently resurrected')

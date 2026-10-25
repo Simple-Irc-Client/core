@@ -1,25 +1,26 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 const LINES = 120;
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let nick: string;
 let channel: string;
 
 const lineText = (number: number): string => `history line ${String(number).padStart(3, '0')}`;
 
-const historyLines = (): Locator => sharedPage.getByTestId('chat-log').locator('.sic-msg').filter({ hasText: /history line \d{3}/ });
+const historyLines = (): Locator => page.getByTestId('chat-log').locator('.sic-msg').filter({ hasText: /history line \d{3}/ });
 
 const shownLineNumbers = async (): Promise<number[]> =>
   (await historyLines().allInnerTexts()).map((text) => Number(/history line (\d{3})/.exec(text)?.[1]));
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('history is fetched with draft/chathistory');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   nick = `scrolluser-${tag}`;
   channel = `#scrollback-${tag}`;
 
@@ -31,21 +32,17 @@ test.beforeAll(async ({ browser }, testInfo) => {
   }
   await lastStored;
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, nick, { channels: [channel] });
+  await page.goto('/');
+  await connectViaWizard(page, nick, { channels: [channel] });
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Scrolling back through chat history', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a joined channel shows its latest history in order, above our own join', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText(lineText(LINES), { exact: true })).toBeVisible({ timeout: 10_000 });
 
     const shown = await shownLineNumbers();
@@ -58,7 +55,8 @@ test.describe('Scrolling back through chat history', () => {
   });
 
   test('scrolling to the top loads older messages without moving the view, back to the start of history', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
+    await expect(chatLog.getByText(lineText(LINES), { exact: true })).toBeVisible({ timeout: 10_000 });
     const [firstShown = 0] = await shownLineNumbers();
     expect(firstShown).toBeGreaterThan(1);
     const firstLine = chatLog.getByText(lineText(firstShown), { exact: true });

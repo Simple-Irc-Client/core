@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3, testServer } from '../test-server';
 
 let bot: IrcClient;
@@ -24,28 +24,25 @@ const botSays = async (text: string): Promise<string> => {
 
 const messageRow = (text: string): Locator => page.getByTestId('chat-log').locator('.sic-msg', { hasText: text });
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   channel = `#reactions-${tag}`;
 
   bot = await createIrcClient(`reactbot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message'] : undefined);
   await bot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, `reactuser-${tag}`, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Reactions', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a server without message tags offers no reactions', async () => {
     test.skip(testServer().ircv3, 'ngircd has no message-tags');
 
@@ -107,8 +104,15 @@ test.describe('Reactions', () => {
   test('clicking our reaction takes it back', async () => {
     skipWithoutIrcv3('reactions are client tags');
 
-    const row = messageRow('pick a reaction');
-    const eyes = row.getByRole('button', { name: /^👀/ });
+    const msgid = await botSays('take it back');
+    const eyes = messageRow('take it back').getByRole('button', { name: /^👀/ });
+    bot.send(`@+draft/react=👀;+draft/reply=${msgid} TAGMSG ${channel}`);
+    await expect(eyes).toHaveText('👀1', { timeout: 10_000 });
+    const joined = bot.waitForLine((line) => line.includes('+draft/react=👀') && line.includes(`TAGMSG ${channel}`));
+    await eyes.click();
+    await joined;
+    await expect(eyes).toHaveText('👀2', { timeout: 10_000 });
+
     const takenBack = bot.waitForLine((line) => line.includes('+draft/unreact=👀') && line.includes(`TAGMSG ${channel}`));
 
     await eyes.click();

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let op: IrcClient;
@@ -9,31 +9,30 @@ let page: Page;
 let nick: string;
 let channel: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('channel events are replayed with draft/event-playback');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   nick = `eventsuser-${tag}`;
   channel = `#events-${tag}`;
 
   op = await createIrcClient(`eventsop-${tag}`);
   await op.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, nick, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   visitor?.disconnect();
   op?.disconnect();
 });
 
 test.describe('Channel events in chat history', () => {
   test('rejoining after a kick shows what happened as history, without acting on it again', async ({}, testInfo) => {
-    const tag = projectTag(testInfo);
+    const tag = testTag(testInfo);
     const visitorNick = `eventsvisitor-${tag}`;
     const chatLog = page.getByTestId('chat-log');
 

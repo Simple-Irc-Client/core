@@ -4,13 +4,13 @@ import { skipWithoutIrcv3 } from '../test-server';
 
 /**
  * Lets a test hold every incoming WebSocket message and release them in order later, like a slow network.
- * Exposes `window.__holdIncoming(hold)`. Must be called before `page.goto`.
+ * Exposes `window.__holdIncoming(hold)`, and `window.__heldIncoming()` with the messages held. Must be called before `page.goto`.
  */
 const installIncomingHold = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
     const OrigWS = globalThis.WebSocket;
     let holding = false;
-    const held: (() => void)[] = [];
+    const held: { data: unknown; deliver: () => void }[] = [];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis as any).WebSocket = function (url: string, protocols?: string | string[]) {
@@ -21,7 +21,7 @@ const installIncomingHold = async (page: Page): Promise<void> => {
         set: (handler: (event: MessageEvent) => void) => {
           onmessage?.set?.call(ws, (event: MessageEvent) => {
             if (holding) {
-              held.push(() => handler.call(ws, event));
+              held.push({ data: event.data, deliver: () => handler.call(ws, event) });
             } else {
               handler.call(ws, event);
             }
@@ -37,11 +37,13 @@ const installIncomingHold = async (page: Page): Promise<void> => {
     (globalThis as any).__holdIncoming = (hold: boolean) => {
       holding = hold;
       if (!hold) {
-        for (const deliver of held.splice(0)) {
+        for (const { deliver } of held.splice(0)) {
           deliver();
         }
       }
     };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).__heldIncoming = () => held.map(({ data }) => String(data));
   });
 };
 
@@ -74,11 +76,14 @@ test.describe('Labeled responses', () => {
     await messageInput.fill('/whois no-such-label-nick');
     await messageInput.press('Enter');
     await page.getByRole('button', { name: `#label-b-${tag}`, exact: true }).click();
-    await page.waitForTimeout(500);
+    // The whole reply is in, up to its end of WHOIS
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect.poll(() => page.evaluate(() => ((globalThis as any).__heldIncoming() as string[]).some((data) => / 318 /.test(data)))).toBe(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await page.evaluate(() => (globalThis as any).__holdIncoming(false));
 
-    await page.waitForTimeout(500);
+    // Handled as it was released; rendered by the frame after next
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
     await expect(chatLog.getByText(/no-such-label-nick/)).toHaveCount(0);
 
     await page.getByRole('button', { name: `#label-a-${tag}`, exact: true }).click();

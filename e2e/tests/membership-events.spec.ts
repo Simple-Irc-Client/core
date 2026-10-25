@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { chooseMembershipEventsDisplay, connectViaWizard, projectTag } from '../helpers';
+import { chooseMembershipEventsDisplay, connectViaWizard, testTag } from '../helpers';
 
 let talker: IrcClient;
 let page: Page;
@@ -23,38 +23,40 @@ const visitor = async (name: string): Promise<IrcClient> => {
   return client;
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+/** settler joins and stays, drifter joins and leaves: one run of events */
+const settlerStaysDrifterLeaves = async (): Promise<void> => {
+  const drifter = await visitor('drifter');
+  const settler = await visitor('settler');
+  await drifter.join(channel);
+  await settler.join(channel);
+  await drifter.part(channel);
+};
+
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
   channel = `#members-${tag}`;
 
   talker = await createIrcClient(`talker-${tag}`);
   await talker.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, `watcher-${tag}`, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.getByTestId('users-sidebar').getByText(`talker-${tag}`, { exact: true })).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   talker?.disconnect();
-  for (const client of visitors) {
+  for (const client of visitors.splice(0)) {
     client.disconnect();
   }
 });
 
 test.describe('Joins and parts', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('events in a row show as one line that expands to the lines themselves', async () => {
     await startRound('round one');
-    const first = await visitor('drifter');
-    const second = await visitor('settler');
-    await first.join(channel);
-    await second.join(channel);
-    await first.part(channel);
+    await settlerStaysDrifterLeaves();
 
     const toggle = eventRuns().last().getByRole('button');
     await expect(toggle).toHaveText(`Joined: settler-${tag} · Joined and left: drifter-${tag}`, { timeout: 10_000 });
@@ -71,6 +73,10 @@ test.describe('Joins and parts', () => {
   });
 
   test('"Show all" shows every line', async () => {
+    await startRound('round two');
+    await settlerStaysDrifterLeaves();
+    await expect(eventRuns().last().getByRole('button')).toContainText(`drifter-${tag}`, { timeout: 10_000 });
+
     await chooseMembershipEventsDisplay(page, 'Show all');
 
     await expect(eventRuns()).toHaveCount(0);
@@ -79,6 +85,9 @@ test.describe('Joins and parts', () => {
   });
 
   test('hiding idle people keeps the events of someone who spoke', async () => {
+    await startRound('round two');
+    await settlerStaysDrifterLeaves();
+    await expect(eventRuns().last().getByRole('button')).toContainText(`drifter-${tag}`, { timeout: 10_000 });
     await chooseMembershipEventsDisplay(page, 'Collapse and hide idle users');
     await startRound('round three');
     const idle = await visitor('idler');

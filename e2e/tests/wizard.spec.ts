@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress, projectTag } from '../helpers';
+import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress, testTag } from '../helpers';
 
 
 /** Fill in nick step and advance to the server step. */
@@ -28,20 +28,18 @@ const refuseConnections = async (page: Page): Promise<string[]> => {
 };
 
 test.describe('Wizard', () => {
-  test.describe.configure({ mode: 'serial' });
-
   let bot: IrcClient;
   let tag: string;
 
-  test.beforeAll(async ({}, testInfo) => {
-    tag = projectTag(testInfo);
+  test.beforeEach(async ({}, testInfo) => {
+    tag = testTag(testInfo);
 
     bot = await createIrcClient(`wizardbot-${tag}`);
     await bot.join(`#welcome-${tag}`);
     await bot.setTopic(`#welcome-${tag}`, 'Welcome to the test server!');
   });
 
-  test.afterAll(() => {
+  test.afterEach(() => {
     bot?.disconnect();
   });
 
@@ -147,7 +145,7 @@ test.describe('Wizard', () => {
   });
 
   test('a nick already in use gives way to an alternative, and the wizard carries on', async ({ page }) => {
-    // Bot is already connected with nick "wizardbot" (from beforeAll)
+    // The bot is connected with this nick
     await page.goto('/');
 
     await fillNickStep(page, `wizardbot-${tag}`);

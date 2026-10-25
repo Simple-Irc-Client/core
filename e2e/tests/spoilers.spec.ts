@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
 let page: Page;
@@ -9,28 +9,25 @@ let channel: string;
 const messageRow = (text: string): Locator =>
   page.getByTestId('chat-log').locator('.sic-msg').filter({ has: page.locator('.sic-msg-body', { hasText: text }) });
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   channel = `#spoilers-${tag}`;
 
   bot = await createIrcClient(`spoilbot-${tag}`);
   await bot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, `spoiluser-${tag}`, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Spoilers', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('text in its own background color stays covered until clicked', async () => {
     bot.sendMessage(channel, 'whodunit: \x0301,01the butler\x03 of course');
 
@@ -82,7 +79,6 @@ test.describe('Spoilers', () => {
     const replyBar = page.getByText(/^Replying to /);
     await expect(replyBar).toContainText('the twist: ▒▒▒');
     await expect(replyBar).not.toContainText('twins');
-    await page.locator('#message-input').press('Escape');
   });
 
   test('a link hidden in a spoiler gets no preview to give it away', async () => {

@@ -1,15 +1,16 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings, serveImagePreviews, projectTag } from '../helpers';
+import { connectViaWizard, openProfileSettings, serveImagePreviews, testTag } from '../helpers';
 
 let bot: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let tag: string;
 let channel: string;
 let otherChannel: string;
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  tag = testTag(testInfo);
   channel = `#scroll-test-${tag}`;
   otherChannel = `#scroll-other-${tag}`;
 
@@ -17,24 +18,51 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await bot.join(channel);
   await bot.join(otherChannel);
 
-  sharedPage = await browser.newPage();
-  await serveImagePreviews(sharedPage);
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, `scroll-tester-${tag}`, { channels: [channel, otherChannel] });
-  await sharedPage.getByRole('button', { name: channel, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await serveImagePreviews(page);
+  await page.goto('/');
+  await connectViaWizard(page, `scroll-tester-${tag}`, { channels: [channel, otherChannel] });
+  await page.getByRole('button', { name: channel, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await sharedPage.close();
+test.afterEach(() => {
   bot.disconnect();
 });
 
-test.describe('Scroll behavior', () => {
-  test.describe.configure({ mode: 'serial' });
+/** Enough lines to make a log scroll */
+const sendLines = (target: string, label: string): void => {
+  for (let i = 1; i <= 40; i++) {
+    bot.sendMessage(target, `${label} ${i}`);
+  }
+};
 
+const fillLog = async (label: string): Promise<void> => {
+  sendLines(channel, label);
+  await expect(page.getByTestId('chat-log').getByText(`${label} 40`, { exact: true })).toBeAttached({ timeout: 10_000 });
+};
+
+/** Scrolls the log to its top or bottom, and resolves once the app has had the scroll event */
+const scrollLogTo = (where: 'top' | 'bottom'): Promise<void> =>
+  page.getByTestId('chat-log').evaluate((log, position) => new Promise<void>((resolve) => {
+    const top = position === 'top' ? 0 : log.scrollHeight - log.clientHeight;
+    if (Math.abs(log.scrollTop - top) < 1) {
+      resolve();
+      return;
+    }
+    log.addEventListener('scroll', () => resolve(), { once: true });
+    log.scrollTop = top;
+  }), where);
+
+const isLogAtBottom = (): Promise<boolean> =>
+  page.getByTestId('chat-log').evaluate((log) => log.scrollHeight - log.scrollTop - log.clientHeight < 50);
+
+/** Resolves after the next two frames: the log follows new content on the frame after it renders */
+const nextFrames = (): Promise<void> =>
+  page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+
+test.describe('Scroll behavior', () => {
   test('chat auto-scrolls to bottom on new messages', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
 
     // Send enough messages to fill the viewport and make content scrollable
     for (let i = 1; i <= 40; i++) {
@@ -45,55 +73,38 @@ test.describe('Scroll behavior', () => {
     await expect(chatLog.getByText('Autoscroll message 40', { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Verify we're at the bottom
-    const isAtBottom = await chatLog.evaluate((el) => {
-      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    });
-    expect(isAtBottom).toBe(true);
+    expect(await isLogAtBottom()).toBe(true);
   });
 
   test('new messages do not auto-scroll when user scrolled up', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
-
-    // Scroll to top and wait for the browser's scroll event to fire,
-    // which React's onScroll handler picks up to mark user as scrolled up
-    await chatLog.evaluate((el) => new Promise<void>((resolve) => {
-      el.addEventListener('scroll', () => resolve(), { once: true });
-      el.scrollTop = 0;
-      // Fallback in case no scroll event fires (content not tall enough)
-      setTimeout(() => resolve(), 500);
-    }));
+    await fillLog('Earlier line');
+    await scrollLogTo('top');
 
     // Send a new message while scrolled up
     bot.sendMessage(channel, 'Message while scrolled up');
-    await sharedPage.waitForTimeout(2000);
+    await expect(page.getByTestId('chat-log').getByText('Message while scrolled up')).toBeAttached({ timeout: 10_000 });
+    await nextFrames();
 
     // We should NOT be at the bottom
-    const isAtBottom = await chatLog.evaluate((el) => {
-      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    });
-    expect(isAtBottom).toBe(false);
+    expect(await isLogAtBottom()).toBe(false);
   });
 
   test('scrolling back to bottom resumes auto-scroll', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
+    await fillLog('Earlier line');
+    await scrollLogTo('top');
 
-    // Scroll to bottom
-    await chatLog.evaluate((el) => { el.scrollTop = el.scrollHeight; });
-    await sharedPage.waitForTimeout(200);
+    await scrollLogTo('bottom');
 
     // Now new messages should auto-scroll again
     bot.sendMessage(channel, 'After re-scroll message');
     await expect(chatLog.getByText('After re-scroll message')).toBeVisible({ timeout: 10_000 });
-
-    const isAtBottom = await chatLog.evaluate((el) => {
-      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    });
-    expect(isAtBottom).toBe(true);
+    await expect.poll(isLogAtBottom).toBe(true);
   });
 
   test('far up, an arrow takes the user back to the newest messages', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
-    const jumpButton = sharedPage.getByRole('button', { name: 'Jump to the newest messages' });
+    const chatLog = page.getByTestId('chat-log');
+    const jumpButton = page.getByRole('button', { name: 'Jump to the newest messages' });
     for (let i = 1; i <= 80; i++) {
       bot.sendMessage(channel, `Long history ${i}`);
     }
@@ -110,11 +121,7 @@ test.describe('Scroll behavior', () => {
   });
 
   test('auto-scroll stays at bottom when async media loads after new messages', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
-
-    // Ensure we start at the bottom
-    await chatLog.evaluate((el) => { el.scrollTop = el.scrollHeight; });
-    await sharedPage.waitForTimeout(200);
+    const chatLog = page.getByTestId('chat-log');
 
     // Send messages with YouTube and image links (these load async previews)
     bot.sendMessage(channel, 'Check this video https://www.youtube.com/watch?v=dQw4w9WgXcQ');
@@ -154,40 +161,30 @@ test.describe('Scroll behavior', () => {
     // After all async content has loaded, we should still be at the bottom
     // This is the key assertion: the ResizeObserver should keep us scrolled down
     // even though images loaded after the join message was already rendered
-    const isAtBottom = await chatLog.evaluate((el) => {
-      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    });
-    expect(isAtBottom).toBe(true);
+    expect(await isLogAtBottom()).toBe(true);
 
     // Clean up the joiner bot
     joiner.disconnect();
   });
 
   test('switching channels resets scroll to bottom', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
-
-    // Scroll to the top on current channel
-    await chatLog.evaluate((el) => { el.scrollTop = 0; });
-    await sharedPage.waitForTimeout(200);
+    sendLines(otherChannel, 'Other line');
+    // Sent after the other channel's lines, so they are in once these show
+    await fillLog('Earlier line');
+    await scrollLogTo('top');
 
     // Switch to the other channel
-    await sharedPage.getByRole('button', { name: otherChannel, exact: true }).click();
-    await sharedPage.waitForTimeout(500);
+    await page.getByRole('button', { name: otherChannel, exact: true }).click();
+    await expect(page.getByTestId('chat-log').getByText('Other line 40', { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Should be at bottom on the new channel
-    const isAtBottom = await chatLog.evaluate((el) => {
-      return el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    });
-    expect(isAtBottom).toBe(true);
-
-    // Switch back for next tests
-    await sharedPage.getByRole('button', { name: channel, exact: true }).click();
+    expect(await isLogAtBottom()).toBe(true);
   });
 
   test('switching theme keeps chat at the bottom', async () => {
-    const chatLog = sharedPage.getByTestId('chat-log');
+    const chatLog = page.getByTestId('chat-log');
     // A tall view makes the theme's height change exceed the scrolled-up threshold
-    await sharedPage.setViewportSize({ width: 1600, height: 1200 });
+    await page.setViewportSize({ width: 1600, height: 1200 });
 
     for (let i = 1; i <= 60; i++) {
       bot.sendMessage(channel, i % 10 === 0 ? `Theme image ${i} https://simpleircclient.com/assets/test-image.png` : `Theme line ${i}`);
@@ -198,13 +195,13 @@ test.describe('Scroll behavior', () => {
     const distanceFromBottom = () => chatLog.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
 
     for (const theme of ['irc', 'classic', 'modern']) {
-      await openProfileSettings(sharedPage, 'appearance');
-      const themeSelect = sharedPage.getByTestId('theme-select');
+      await openProfileSettings(page, 'appearance');
+      const themeSelect = page.getByTestId('theme-select');
       await themeSelect.click();
-      await sharedPage.getByTestId(`theme-${theme}`).click();
+      await page.getByTestId(`theme-${theme}`).click();
       // Radix Select restores focus only after its closing animation; Escape before that misses the Dialog
       await expect(themeSelect).toBeFocused();
-      await sharedPage.keyboard.press('Escape');
+      await page.keyboard.press('Escape');
 
       await expect.poll(distanceFromBottom, { message: `after switching to ${theme}` }).toBeLessThan(50);
     }

@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 import { skipWithoutIrcv3, testServer } from '../test-server';
 
 // More than the one page of history a joined channel starts with
@@ -44,28 +44,25 @@ const send = async (text: string): Promise<void> => {
   await input.press('Enter');
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   channel = `#replies-${tag}`;
 
   bot = await createIrcClient(`replybot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message'] : undefined);
   await bot.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, `replyuser-${tag}`, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   bot?.disconnect();
 });
 
 test.describe('Replies', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('a reply shows what it answers, and clicking that goes to it', async () => {
     skipWithoutIrcv3('replies refer to a msgid in a client tag');
 

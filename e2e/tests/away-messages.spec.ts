@@ -1,26 +1,24 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
 let tag: string;
 let channel: string;
 
-test.beforeAll(async ({}, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({}, testInfo) => {
+  tag = testTag(testInfo);
   channel = `#away-test-${tag}`;
 
   bot = await createIrcClient(`awaybot-${tag}`);
   await bot.join(channel);
 });
 
-test.afterAll(() => {
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('Away messages', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('away messages are collected and shown in dialog', async ({ page }) => {
     const nick = `away-tester-${tag}`;
     await page.goto('/');
@@ -34,15 +32,11 @@ test.describe('Away messages', () => {
     await messageInput.fill('/away Taking a break');
     await messageInput.press('Enter');
 
-    // Wait for away status to be acknowledged
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText('You have been marked as being away')).toBeVisible({ timeout: 10_000 });
 
     // Bot sends messages mentioning the user's nick
     bot.sendMessage(channel, `Hey ${nick}, are you there?`);
     bot.sendMessage(channel, `Pinging ${nick} again`);
-
-    // Small delay for messages to be processed
-    await new Promise((r) => setTimeout(r, 500));
 
     // Badge should appear on the avatar button
     const avatarButton = page.locator('[data-avatar-button]');
@@ -85,8 +79,7 @@ test.describe('Away messages', () => {
     // Set user as away
     await messageInput.fill('/away Be right back');
     await messageInput.press('Enter');
-
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText('You have been marked as being away')).toBeVisible({ timeout: 10_000 });
 
     // Bot sends a mention
     bot.sendMessage(channel, `Hello ${nick}, check this out!`);
@@ -121,12 +114,11 @@ test.describe('Away messages', () => {
     // Bot sends a message mentioning the user (but user is NOT away)
     bot.sendMessage(channel, `Hey ${nick}, just saying hi`);
 
-    // Wait a moment
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText(`Hey ${nick}, just saying hi`)).toBeVisible({ timeout: 10_000 });
 
     // Badge should NOT appear on avatar button
     const avatarButton = page.locator('[data-avatar-button]');
-    await expect(avatarButton.locator('..').locator('[aria-label*="unread away"]')).not.toBeVisible({ timeout: 3_000 });
+    await expect(avatarButton.locator('..').locator('[aria-label*="unread away"]')).toHaveCount(0);
 
     // Open menu — "Away Messages" should NOT be visible
     await avatarButton.click();
@@ -145,8 +137,7 @@ test.describe('Away messages', () => {
     // Set user as away
     await messageInput.fill('/away Gone fishing');
     await messageInput.press('Enter');
-
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText('You have been marked as being away')).toBeVisible({ timeout: 10_000 });
 
     // Bot sends a mention while away
     bot.sendMessage(channel, `${nick}, first message while away`);
@@ -158,8 +149,7 @@ test.describe('Away messages', () => {
     // Return from away by sending /away with no argument
     await messageInput.fill('/away');
     await messageInput.press('Enter');
-
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText('You are no longer marked as being away')).toBeVisible({ timeout: 10_000 });
 
     // Clear existing away messages
     await avatarButton.click();
@@ -169,10 +159,9 @@ test.describe('Away messages', () => {
 
     // Bot sends another mention (user is no longer away)
     bot.sendMessage(channel, `${nick}, second message after return`);
-
-    await new Promise((r) => setTimeout(r, 1000));
+    await expect(page.getByTestId('chat-log').getByText(`${nick}, second message after return`)).toBeVisible({ timeout: 10_000 });
 
     // No new badge should appear
-    await expect(avatarButton.locator('..').locator('[aria-label*="unread away"]')).not.toBeVisible({ timeout: 3_000 });
+    await expect(avatarButton.locator('..').locator('[aria-label*="unread away"]')).toHaveCount(0);
   });
 });

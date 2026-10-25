@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, IrcClient, registerMulticlientAccount } from '../irc-client';
-import { connectViaWizard, getServerPassword, identifyInApp, projectTag } from '../helpers';
+import { connectViaWizard, getServerPassword, identifyInApp, testTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 // ergo's multiclient stands in for a bouncer: the app and a "phone" are two sessions of one account
@@ -9,12 +9,12 @@ const PASSWORD = 'read-on-phone-42';
 
 let bot: IrcClient;
 let phone: IrcClient;
-let sharedPage: Page;
+let page: Page;
 let readChannel: string;
 let idleChannel: string;
 
 const unreadBadge = () =>
-  sharedPage.getByTestId('channels-sidebar').getByRole('button', { name: readChannel, exact: true }).locator('..').locator('[aria-label*="unread"], [aria-label*="mention"]');
+  page.getByTestId('channels-sidebar').getByRole('button', { name: readChannel, exact: true }).locator('..').locator('[aria-label*="unread"], [aria-label*="mention"]');
 
 const serverTimeOf = (line: string): string => {
   const time = /^@(?:\S*;)?time=([^; ]+)/.exec(line)?.[1];
@@ -32,13 +32,14 @@ const botSays = async (text: string): Promise<string> => {
 };
 
 const openChannel = async (channel: string): Promise<void> => {
-  await sharedPage.getByRole('button', { name: channel, exact: true }).click();
-  await expect(sharedPage.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
+  await page.getByRole('button', { name: channel, exact: true }).click();
+  await expect(page.locator('#message-input')).toBeEnabled({ timeout: 10_000 });
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
   skipWithoutIrcv3('ergo multiclient stands in for a bouncer');
-  const tag = projectTag(testInfo);
+  const tag = testTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   const account = `readmark-${tag}-${randomBytes(3).toString('hex')}`;
   readChannel = `#readmark-${tag}`;
@@ -49,25 +50,21 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await bot.join(readChannel);
   await bot.join(idleChannel);
 
-  sharedPage = await browser.newPage();
-  await sharedPage.goto('/');
-  await connectViaWizard(sharedPage, account, { channels: [readChannel, idleChannel] });
-  await identifyInApp(sharedPage, account, PASSWORD);
+  await page.goto('/');
+  await connectViaWizard(page, account, { channels: [readChannel, idleChannel] });
+  await identifyInApp(page, account, PASSWORD);
   await openChannel(idleChannel);
 
   phone = new IrcClient(account, getServerPassword(), ['server-time', 'draft/read-marker'], { account, password: PASSWORD });
   await phone.connect();
 });
 
-test.afterAll(async () => {
-  await sharedPage?.close();
+test.afterEach(() => {
   phone?.disconnect();
   bot?.disconnect();
 });
 
 test.describe('Read state shared with other clients of the same account (draft/read-marker)', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('messages read on the phone stop counting as unread in the app, up to where they were read', async () => {
     const first = await botSays('first');
     const second = await botSays('second');

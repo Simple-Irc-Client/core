@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
+import { connectViaWizard, openProfileSettings, testTag } from '../helpers';
 
 let troll: IrcClient;
 let friend: IrcClient;
@@ -21,8 +21,15 @@ const openSettings = async (): Promise<void> => {
   await openProfileSettings(page, 'privacy');
 };
 
-test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = projectTag(testInfo);
+const ignoreTrollFromUserMenu = async (): Promise<void> => {
+  await openUserMenu(trollNick);
+  await page.getByRole('menuitem', { name: 'Ignore' }).click();
+  await expect(page.getByRole('menu')).toBeHidden();
+};
+
+test.beforeEach(async ({ page: testPage }, testInfo) => {
+  page = testPage;
+  const tag = testTag(testInfo);
   channel = `#ignore-${tag}`;
   trollNick = `troll-${tag}`;
   userNick = `ignorer-${tag}`;
@@ -32,25 +39,20 @@ test.beforeAll(async ({ browser }, testInfo) => {
   await troll.join(channel);
   await friend.join(channel);
 
-  page = await browser.newPage();
   await page.goto('/');
   await connectViaWizard(page, userNick, { channels: [channel] });
   await page.getByRole('button', { name: channel, exact: true }).click();
   await expect(page.getByTestId('users-sidebar').getByText(trollNick, { exact: true })).toBeVisible({ timeout: 10_000 });
 });
 
-test.afterAll(async () => {
-  await page?.close();
+test.afterEach(() => {
   troll?.disconnect();
   friend?.disconnect();
 });
 
 test.describe('Ignore', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('ignoring from the user menu hides their channel and private messages', async () => {
-    await openUserMenu(trollNick);
-    await page.getByRole('menuitem', { name: 'Ignore' }).click();
+    await ignoreTrollFromUserMenu();
 
     troll.sendMessage(channel, 'channel spam');
     troll.sendMessage(userNick, 'private spam');
@@ -62,6 +64,8 @@ test.describe('Ignore', () => {
   });
 
   test('the user menu offers to stop ignoring, and the settings list the mask', async () => {
+    await ignoreTrollFromUserMenu();
+
     await openUserMenu(trollNick);
     await expect(page.getByRole('menuitem', { name: 'Stop ignoring' })).toBeVisible();
     await expect(page.getByRole('menuitem', { name: 'Ignore' })).toHaveCount(0);
@@ -69,10 +73,10 @@ test.describe('Ignore', () => {
 
     await openSettings();
     await expect(page.getByTestId('ignored-list')).toHaveText(`${trollNick}!*@*`);
-    await page.keyboard.press('Escape');
   });
 
   test('removing the mask in the settings shows their messages again', async () => {
+    await ignoreTrollFromUserMenu();
     await openSettings();
     await page.getByRole('button', { name: `Stop ignoring ${trollNick}!*@*` }).click();
     await expect(page.getByTestId('ignored-list')).toHaveCount(0);

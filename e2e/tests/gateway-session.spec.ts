@@ -1,5 +1,5 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag, waitForPersistedChannels } from '../helpers';
 import { createIrcClient, type IrcClient } from '../irc-client';
 
 /**
@@ -59,8 +59,8 @@ test.describe('Resumable gateway session', () => {
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 15_000 });
 
     peer.sendMessage(channel, 'sent while the tab was in the background');
-    // Lets the line reach the gateway before the page comes back
-    await page.waitForTimeout(500);
+    // The server has relayed the line to the gateway before the page comes back
+    await peer.roundTrip();
 
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
 
@@ -84,8 +84,8 @@ test.describe('Resumable gateway session', () => {
     peer = await createIrcClient(peerNick);
     await peer.join(channel);
 
-    // Let the persisted windows flush (IndexedDB debounce) so the reload restores the channel
-    await page.waitForTimeout(2500);
+    // The persisted windows hold the channel, so the reload restores it
+    await waitForPersistedChannels(page, channel);
     await page.reload();
     await expect(page.getByText('Not connected to server').first()).toBeVisible({ timeout: 20_000 });
 

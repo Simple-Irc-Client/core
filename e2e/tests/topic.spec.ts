@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, testTag } from '../helpers';
 
 let bot: IrcClient;
 let tag: string;
 
-test.beforeAll(async ({}, testInfo) => {
-  tag = projectTag(testInfo);
+test.beforeEach(async ({}, testInfo) => {
+  tag = testTag(testInfo);
 
   // Bot creates and owns #bot-topic-chan (gets ops as first joiner)
   bot = await createIrcClient(`topicbot-${tag}`);
@@ -14,13 +14,11 @@ test.beforeAll(async ({}, testInfo) => {
   await bot.setTopic(`#bot-topic-chan-${tag}`, 'Bot-controlled topic');
 });
 
-test.afterAll(() => {
+test.afterEach(() => {
   bot.disconnect();
 });
 
 test.describe('Topic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test('edit topic as channel operator', async ({ page }) => {
     await page.goto('/');
     await connectViaWizard(page, `topic-op-${tag}`);
@@ -59,7 +57,8 @@ test.describe('Topic', () => {
     // The topic text should be visible in the read-only display
     await expect(page.getByTestId('topic-display')).toHaveText('Bot-controlled topic', { timeout: 10_000 });
 
-    // The topic input should NOT be present (non-ops see read-only div, not an input)
-    await expect(page.getByTestId('topic-input')).not.toBeVisible();
+    // Once the members are known, the topic input should NOT be present (non-ops see read-only div, not an input)
+    await expect(page.getByTestId('users-sidebar').getByText(bot.nick)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('topic-input')).toHaveCount(0);
   });
 });

@@ -253,9 +253,17 @@ export const offerEncryption = async (nick: string): Promise<void> => {
     return;
   }
 
+  // Under way from the moment it is asked for, while its keys are made
+  setSession(nick, { state: E2eeState.offered, verified: false });
+
   try {
     const identity = await getIdentity();
     const ephemeral = await generateEphemeral();
+
+    // Ended meanwhile, or given way to the peer's own offer: this one is no longer wanted
+    if (getSessionState(nick) !== E2eeState.offered) {
+      return;
+    }
 
     secrets.set(key, { role: 'initiator', identity, ephemeral });
     setSession(nick, { state: E2eeState.offered, verified: false, myFingerprint: identity.fingerprint });
@@ -388,9 +396,9 @@ const handleOffer = async (nick: string, frame: Extract<E2eeFrame, { type: 'offe
 const handleAccept = async (nick: string, frame: Extract<E2eeFrame, { type: 'accept' }>): Promise<void> => {
   const key = getSessionKey(nick);
   const state = getSessionState(nick);
-  // Waiting, or timed out but not superseded; any other ACCEPT is unsolicited and ignored
+  // Our offer sent, and waiting or timed out but not superseded; any other ACCEPT is unsolicited and ignored
   const awaitingOurOffer =
-    state === E2eeState.offered || (state === E2eeState.error && secrets.get(key)?.role === 'initiator');
+    secrets.get(key)?.role === 'initiator' && (state === E2eeState.offered || state === E2eeState.error);
   if (!awaitingOurOffer) {
     return;
   }
