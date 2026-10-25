@@ -40,13 +40,16 @@ describe('ProfileSettings', () => {
   describe('Tabs', () => {
     const renderOpen = () => render(<ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />);
 
-    it('should open on the profile tab, with only its fields', () => {
+    // Every tab stays in place so the dialog is as tall as the tallest; the inactive ones are hidden by their state
+    const panelState = (element: Element | null) => element?.closest('[role="tabpanel"]')?.getAttribute('data-state');
+
+    it('should open on the profile tab, with only its fields shown', () => {
       renderOpen();
 
       expect(screen.getByTestId('profile-tab-profile')).toHaveAttribute('aria-selected', 'true');
-      expect(document.querySelector('#nick')).not.toBeNull();
-      expect(screen.queryByTestId('theme-select')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('e2ee-enabled-toggle')).not.toBeInTheDocument();
+      expect(panelState(document.querySelector('#nick'))).toBe('active');
+      expect(panelState(screen.getByTestId('theme-select'))).toBe('inactive');
+      expect(panelState(screen.getByTestId('e2ee-enabled-toggle'))).toBe('inactive');
     });
 
     it.each([
@@ -59,8 +62,8 @@ describe('ProfileSettings', () => {
 
       await user.click(screen.getByTestId(`profile-tab-${tab}`));
 
-      expect(screen.getByTestId(testId)).toBeInTheDocument();
-      expect(document.querySelector('#nick')).toBeNull();
+      expect(panelState(screen.getByTestId(testId))).toBe('active');
+      expect(panelState(document.querySelector('#nick'))).toBe('inactive');
     });
 
     it('should show the highlight words on the notifications tab', async () => {

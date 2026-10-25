@@ -17,6 +17,16 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await skipBouncerAccount(page);
 };
 
+/** The connections the page opens, closed at once: a test of a real network then never leaves this machine */
+const refuseConnections = async (page: Page): Promise<string[]> => {
+  const attempted: string[] = [];
+  await page.routeWebSocket(/.*/, (socket) => {
+    attempted.push(socket.url());
+    socket.close();
+  });
+  return attempted;
+};
+
 test.describe('Wizard', () => {
   test.describe.configure({ mode: 'serial' });
 
@@ -74,7 +84,7 @@ test.describe('Wizard', () => {
     await expect(page.getByText(`#welcome-${tag}`)).toBeVisible({ timeout: 10_000 });
 
     // Select and join (click the row to select it — it becomes a badge above the table)
-    await page.getByRole('button', { name: /welcome/ }).click();
+    await page.getByRole('button', { name: new RegExp(`^#welcome-${tag}`) }).click();
     await page.getByRole('button', { name: 'Next' }).click();
 
     // Main page
@@ -212,6 +222,7 @@ test.describe('Wizard', () => {
   });
 
   test('known server param shows info banner and skips server step', async ({ page }) => {
+    const attempted = await refuseConnections(page);
     await page.goto('/?server=Libera.Chat');
 
     // Nick step should show the blue info banner with known server name
@@ -222,13 +233,14 @@ test.describe('Wizard', () => {
     await page.getByLabel('Enter your nickname').fill('param-known');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Should skip the server step — verify by checking loading/error state appears
-    // (the connection may succeed or fail, but the server step must be skipped)
+    // Straight to connecting to Libera.Chat, without the server step
     await expect(page.getByText('Choose your server')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 15_000 });
+    expect(attempted.some((url) => url.includes('irc.libera.chat'))).toBe(true);
   });
 
   test('custom server param shows warning banner and skips server step', async ({ page }) => {
+    const attempted = await refuseConnections(page);
     await page.goto('/?server=irc.example.com');
 
     // Nick step should show the yellow warning banner with the custom server
@@ -239,9 +251,10 @@ test.describe('Wizard', () => {
     await page.getByLabel('Enter your nickname').fill('param-custom');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Should skip the server step — verify by checking loading/error state appears
+    // Straight to connecting to that server, without the server step
     await expect(page.getByText('Choose your server')).not.toBeVisible();
-    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: 'Go Back' })).toBeVisible({ timeout: 15_000 });
+    expect(attempted.some((url) => url.includes('irc.example.com'))).toBe(true);
   });
 
   test('custom server param with port is displayed correctly', async ({ page }) => {

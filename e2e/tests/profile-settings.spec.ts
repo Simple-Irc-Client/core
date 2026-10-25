@@ -45,6 +45,25 @@ test.describe('Profile settings', () => {
     await sharedPage.keyboard.press('Escape');
   });
 
+  test('every tab fits the dialog without scrolling, and switching tabs keeps its size', async () => {
+    await openProfileSettings(sharedPage, 'profile');
+    const dialog = sharedPage.getByRole('dialog');
+    const measure = () => dialog.evaluate((element) => {
+      const panels = element.querySelector('[role="tabpanel"]')?.parentElement as HTMLElement;
+      return { height: Math.round(element.getBoundingClientRect().height), overflow: panels.scrollHeight - panels.clientHeight };
+    });
+    const first = await measure();
+
+    for (const tab of ['Profile', 'Appearance', 'Notifications', 'Privacy']) {
+      await sharedPage.getByRole('tab', { name: tab }).click();
+      expect(await measure()).toEqual({ height: first.height, overflow: 0 });
+    }
+    // The other tabs keep their space, but out of sight
+    await expect(sharedPage.getByLabel('Nickname')).toBeHidden();
+
+    await sharedPage.keyboard.press('Escape');
+  });
+
   test('changes nickname from profile settings', async () => {
     // Open profile settings
     await openProfileSettings(sharedPage, 'profile');
@@ -52,7 +71,7 @@ test.describe('Profile settings', () => {
     // Change nickname
     const nickInput = sharedPage.getByLabel('Nickname');
     await nickInput.clear();
-    await nickInput.fill('new-nick');
+    await nickInput.fill(`new-nick-${tag}`);
     await sharedPage.getByRole('button', { name: 'Set' }).first().click();
 
     // Close dialog
@@ -60,7 +79,7 @@ test.describe('Profile settings', () => {
 
     // The users sidebar should now show the new nick
     const usersSidebar = sharedPage.getByTestId('users-sidebar');
-    await expect(usersSidebar.getByText('new-nick')).toBeVisible({ timeout: 10_000 });
+    await expect(usersSidebar.getByText(`new-nick-${tag}`)).toBeVisible({ timeout: 10_000 });
   });
 
   test('switches theme between Classic and Modern', async () => {

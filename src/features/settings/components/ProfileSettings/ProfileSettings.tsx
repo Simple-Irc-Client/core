@@ -16,6 +16,8 @@ import PrivacyTab from './tabs/PrivacyTab';
 
 type ProfileSettingsTab = 'profile' | 'appearance' | 'notifications' | 'privacy';
 
+const TAB_PANEL = 'mt-2 [grid-area:1/1] data-[state=inactive]:invisible';
+
 const TABS: { value: ProfileSettingsTab; label: string; Icon: LucideIcon }[] = [
   { value: 'profile', label: 'profileSettings.tabs.profile', Icon: UserIcon },
   { value: 'appearance', label: 'profileSettings.tabs.appearance', Icon: Palette },
@@ -52,18 +54,19 @@ const ProfileSettings = ({ open, onOpenChange, currentNick }: ProfileSettingsPro
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {/* One height for every tab, so switching tabs never resizes the dialog */}
-              <div className="mt-2 h-[min(28rem,calc(100dvh-15rem))] overflow-y-auto p-1">
-                <TabsContent value="profile" className="mt-2">
+              {/* The tabs share one cell, the hidden ones still taking their space: the dialog is as tall as the tallest
+                  tab, so switching never resizes it, and it scrolls only on a screen too short for that */}
+              <div className="mt-2 grid max-h-[calc(100dvh-14rem)] overflow-y-auto p-1">
+                <TabsContent forceMount value="profile" className={TAB_PANEL}>
                   <ProfileTab currentNick={currentNick} onDone={() => onOpenChange(false)} />
                 </TabsContent>
-                <TabsContent value="appearance" className="mt-2">
+                <TabsContent forceMount value="appearance" className={TAB_PANEL}>
                   <AppearanceTab />
                 </TabsContent>
-                <TabsContent value="notifications" className="mt-2">
+                <TabsContent forceMount value="notifications" className={TAB_PANEL}>
                   <NotificationsTab />
                 </TabsContent>
-                <TabsContent value="privacy" className="mt-2">
+                <TabsContent forceMount value="privacy" className={TAB_PANEL}>
                   <PrivacyTab />
                 </TabsContent>
               </div>
