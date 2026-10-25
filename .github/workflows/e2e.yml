@@ -11,8 +11,15 @@ permissions:
 
 jobs:
   e2e:
+    name: e2e (${{ matrix.browser }}, ${{ matrix.server }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Split along the projects: a reconnect project depends on its parallel one, so they stay in one job
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+        server: [ergo, legacy]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,7 +44,7 @@ jobs:
         working-directory: gateway-src
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
 
       # Firefox runs Web Audio only with a sound device; the runner has none, so PulseAudio gives it a silent one
       - name: Start a virtual sound device
@@ -53,9 +60,12 @@ jobs:
           docker pull codeberg.org/emersion/soju:v0.11.1
 
       - name: Run e2e tests
-        run: pnpm exec playwright test
+        run: pnpm exec playwright test $PROJECTS
         env:
           E2E_GATEWAY_DIR: ${{ github.workspace }}/gateway-src
+          PROJECTS: ${{ matrix.server == 'ergo'
+            && format('--project={0}-parallel --project={0}-reconnect --project={0}-clipboard --project={0}-gateway', matrix.browser)
+            || format('--project={0}-legacy-parallel --project={0}-legacy-reconnect --project={0}-legacy-clipboard', matrix.browser) }}
 
       # - name: Upload test results
       #   uses: actions/upload-artifact@v7
