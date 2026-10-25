@@ -6,7 +6,8 @@ import { type HistoryReplay, IrcContext, type IrcHandler, type IrcHandlers } fro
 import { onJoin } from '@/network/irc/kernel/core/channel/join';
 import { onKick } from '@/network/irc/kernel/core/channel/kick';
 import { onTopic } from '@/network/irc/kernel/core/channel/topic';
-import { onNotice, onPrivMsg } from '@/network/irc/kernel/core/message';
+import { onPrivMsg } from '@/network/irc/kernel/core/message';
+import { onNotice } from '@/network/irc/kernel/core/notice';
 import { onMode } from '@/network/irc/kernel/core/mode';
 import { onAway } from '@/network/irc/kernel/core/user/away';
 import { onNick } from '@/network/irc/kernel/core/user/nick';

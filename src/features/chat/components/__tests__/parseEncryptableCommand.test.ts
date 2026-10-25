@@ -4,7 +4,7 @@ import { BodyKind } from '@features/e2ee/protocol';
 import { setSession, removeSession } from '@features/e2ee/store/e2ee';
 import { E2eeState } from '@features/e2ee/store/e2ee';
 
-import { gateOutgoingCommand } from '../Toolbar';
+import { gateOutgoingCommand } from '@features/chat/outgoing';
 
 const activate = (nick: string): void => {
   setSession(nick, { state: E2eeState.active, verified: false, myFingerprint: 'x' });

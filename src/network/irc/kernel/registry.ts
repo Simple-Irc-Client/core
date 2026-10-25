@@ -17,7 +17,9 @@ import { handlers as coreInfoVersion } from '@/network/irc/kernel/core/info/vers
 import { handlers as coreList } from '@/network/irc/kernel/core/list';
 import { handlers as coreLusers } from '@/network/irc/kernel/core/lusers';
 import { handlers as coreMessage } from '@/network/irc/kernel/core/message';
+import { handlers as coreMessageErrors } from '@/network/irc/kernel/core/messageErrors';
 import { handlers as coreMode } from '@/network/irc/kernel/core/mode';
+import { handlers as coreNotice } from '@/network/irc/kernel/core/notice';
 import { handlers as coreOperKill } from '@/network/irc/kernel/core/oper/kill';
 import { handlers as coreOperOper } from '@/network/irc/kernel/core/oper/oper';
 import { handlers as coreOperRehash } from '@/network/irc/kernel/core/oper/rehash';
@@ -83,7 +85,9 @@ export const ircHandlers = mergeHandlers(
   coreList,
   coreLusers,
   coreMessage,
+  coreMessageErrors,
   coreMode,
+  coreNotice,
   coreOperKill,
   coreOperOper,
   coreOperRehash,
