@@ -129,4 +129,32 @@ test.describe('Chat', () => {
     const chatLog = page.getByTestId('chat-log');
     await expect(chatLog.getByText('Sent with Enter key!')).toBeVisible({ timeout: 10_000 });
   });
+
+  test('the chat log menu closes on a click elsewhere in the log, without clearing it', async () => {
+    await page.getByRole('button', { name: `#general-${tag}`, exact: true }).click();
+    const chatLog = page.getByTestId('chat-log');
+    const clear = page.getByRole('menuitem', { name: 'Clear Screen' });
+    alice.sendMessage(`#general-${tag}`, 'still here after the menu');
+    await expect(chatLog.getByText('still here after the menu')).toBeVisible({ timeout: 10_000 });
+
+    await chatLog.click({ button: 'right', position: { x: 200, y: 150 } });
+    await expect(clear).toBeVisible();
+
+    // With the menu open the page takes no pointer events, so the mouse, as a user's would, presses where the log is
+    const log = await chatLog.boundingBox();
+    if (log === null) { throw new Error('the chat log is not shown'); }
+    await page.mouse.click(log.x + 400, log.y + 300);
+
+    await expect(clear).toBeHidden();
+    await expect(chatLog.getByText('still here after the menu')).toBeVisible();
+  });
+
+  test('the chat log menu closes with Escape', async () => {
+    await page.getByTestId('chat-log').click({ button: 'right', position: { x: 200, y: 150 } });
+    await expect(page.getByRole('menuitem', { name: 'Clear Screen' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByRole('menuitem', { name: 'Clear Screen' })).toBeHidden();
+  });
 });

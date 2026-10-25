@@ -101,13 +101,23 @@ const isOnElement = (element: HTMLElement, event: PointerEvent): boolean =>
     (rect) => event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom,
   );
 
+/** How far from where a menu was opened a press still counts as the same spot */
+const SAME_SPOT_PX = 4;
+
+/**
+ * The press that opened the menu, not a dismiss: a right-click's trailing events or a double-click's second press.
+ * A menu opened on an element takes them on that element; one opened at a point, such as on the chat log, only there.
+ */
+const isOpeningPress = (source: HTMLElement | { x: number; y: number }, event: PointerEvent): boolean =>
+  source instanceof HTMLElement
+    ? isOnElement(source, event)
+    : Math.abs(event.clientX - source.x) <= SAME_SPOT_PX && Math.abs(event.clientY - source.y) <= SAME_SPOT_PX;
+
 const PositionedMenuContent = ({
   source,
-  anchorElement,
   children,
 }: {
   source: HTMLElement | { x: number; y: number } | null;
-  anchorElement: HTMLElement | null;
   children: React.ReactNode;
 }) => {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -149,8 +159,7 @@ const PositionedMenuContent = ({
           : undefined
       }
       onPointerDownOutside={(event) => {
-        // A press on the element that opened the menu (a right-click's trailing events, a double-click's second press) isn't a dismiss
-        if (anchorElement && isOnElement(anchorElement, event.detail.originalEvent)) {
+        if (source && isOpeningPress(source, event.detail.originalEvent)) {
           event.preventDefault();
         }
       }}
@@ -174,7 +183,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement}>
+        <PositionedMenuContent source={contextMenuAnchorElement}>
           <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleJoin}>
@@ -299,7 +308,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuAnchorElement} anchorElement={contextMenuAnchorElement}>
+        <PositionedMenuContent source={contextMenuAnchorElement}>
           <DropdownMenuLabel>{contextMenuItem}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {userHomepage && (
@@ -482,7 +491,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuLabel className="max-w-80 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleOpenUrl}>
@@ -506,7 +515,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuItem onClick={handleClearScreen}>
             <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
             {t('contextmenu.chat.clear')}
@@ -526,7 +535,7 @@ export const ContextMenu = () => {
 
     return (
       <DropdownMenu open={contextMenuOpen} onOpenChange={(open) => !open && handleContextMenuClose()}>
-        <PositionedMenuContent source={contextMenuPosition} anchorElement={contextMenuAnchorElement}>
+        <PositionedMenuContent source={contextMenuPosition}>
           <DropdownMenuLabel className="max-w-64 truncate select-none">{truncated}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleCopy}>

@@ -1243,5 +1243,37 @@ describe('ContextMenu', () => {
       expect(mockHandleContextMenuClose).toHaveBeenCalled();
       document.body.removeChild(anchorElement);
     });
+
+    // The chat log opens its menu where it was right-clicked, and the log fills most of the screen
+    const renderChatMenuOpenedAt = (position: { x: number; y: number }) => {
+      const chatLog = document.createElement('div');
+      document.body.appendChild(chatLog);
+      vi.spyOn(chatLog, 'getClientRects').mockReturnValue([new DOMRect(0, 0, 1000, 800)] as unknown as DOMRectList);
+      vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
+        createContextMenuMock({ contextMenuCategory: 'chat', contextMenuItem: '#test', contextMenuAnchorElement: chatLog, contextMenuPosition: position })
+      );
+      render(<ContextMenu />);
+      return chatLog;
+    };
+
+    it('closes a menu opened on the chat log when the log is pressed somewhere else', async () => {
+      const chatLog = renderChatMenuOpenedAt({ x: 300, y: 200 });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(chatLog, { clientX: 600, clientY: 500 });
+
+      expect(mockHandleContextMenuClose).toHaveBeenCalled();
+      document.body.removeChild(chatLog);
+    });
+
+    it('keeps a menu opened on the chat log through a press on the spot it was opened at', async () => {
+      const chatLog = renderChatMenuOpenedAt({ x: 300, y: 200 });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      fireEvent.pointerDown(document.documentElement, { clientX: 300, clientY: 200 });
+
+      expect(mockHandleContextMenuClose).not.toHaveBeenCalled();
+      document.body.removeChild(chatLog);
+    });
   });
 });
