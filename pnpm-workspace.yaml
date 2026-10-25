@@ -1,2 +1,7 @@
 # Versions published less than 3 days ago (in minutes) are not installed; the min-release-age in .npmrc is for npm
 minimumReleaseAge: 4320
+
+# Security fixes for packages pulled in by others; a selector replaces only the vulnerable versions
+overrides:
+  'fast-uri@<3.1.9': ^3.1.9
+  'brace-expansion@>=2 <2.1.7': ^2.1.7
