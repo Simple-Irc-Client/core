@@ -10,7 +10,6 @@ A React IRC client that connects to IRC servers directly over WebSocket.
 - Direct WebSocket connection, no backend required
 - Responsive UI (Tailwind CSS, shadcn/ui), light and dark mode
 - Built-in themes (classic, modern, irc) and custom CSS themes; comfortable or compact spacing, 24 or 12-hour time, with or without seconds
-- English and Polish translations (i18next)
 - IRCv3: SASL, STS, chathistory, typing, metadata, MONITOR, read markers, pre-away, standard replies and more
 - Replies, emoji reactions, multiline messages and deleting messages (IRCv3 drafts); replies and multiline messages fall back to plain lines where the server lacks them
 - Spoilers (`||text||`) and quotes (`> text`)
