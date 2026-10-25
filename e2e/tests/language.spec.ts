@@ -24,7 +24,7 @@ test.afterEach(() => {
 });
 
 /** Picks a language in the open settings, and waits until the Select is closed */
-const chooseLanguage = async (code: 'en' | 'pl' | 'auto'): Promise<void> => {
+const chooseLanguage = async (code: 'en' | 'de' | 'pl' | 'auto'): Promise<void> => {
   await page.getByTestId('language-select').click();
   await page.getByTestId(`language-${code}`).click();
   // Radix Select hands focus back to its trigger once its closing animation ends; an Escape before that closes the Select, not the dialog
@@ -58,6 +58,15 @@ test.describe('Language switching', () => {
 
     // "Theme" → "Motyw"
     await expect(page.getByText('Motyw', { exact: true })).toBeVisible();
+  });
+
+  test('switching to German translates UI', async () => {
+    await openProfileSettings(page, 'appearance');
+
+    await chooseLanguage('de');
+
+    await expect(page.getByRole('tab', { name: 'Aussehen' })).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Profileinstellungen')).toBeVisible();
   });
 
   test('switching back to English restores UI', async () => {

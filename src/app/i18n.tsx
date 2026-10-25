@@ -34,7 +34,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
+    // Portuguese from anywhere reads the Brazilian translation rather than English
+    fallbackLng: { pt: ['pt-BR', 'en'], default: ['en'] },
     ...(persistedLanguage ? { lng: persistedLanguage } : {}),
     interpolation: {
       escapeValue: false, // Disable HTML escaping - React already escapes output
