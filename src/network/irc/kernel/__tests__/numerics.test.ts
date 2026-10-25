@@ -278,6 +278,12 @@ describe('dedicated numeric handlers', () => {
       expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#chan', message, category: MessageCategory.error });
     });
 
+    it('shows a mode refused for its syntax in the window it was typed in', () => {
+      handle(':netsplit.pirc.pl 974 mynick H :Invalid syntax for MODE +H. Use +H lines:period.');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: 'H: Invalid syntax for MODE +H. Use +H lines:period.', category: MessageCategory.error });
+    });
+
     it('shows a refused user mode in the current window', () => {
       handle(':server 696 mynick mynick s xyz :Invalid snomask');
 

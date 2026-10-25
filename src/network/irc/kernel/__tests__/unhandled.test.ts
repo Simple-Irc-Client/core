@@ -170,6 +170,7 @@ describe('kernel unhandled', () => {
       ':ruthenium.libera.chat 415 mynick ##chan :Cannot send message to channel (+R) - you need to be logged into your NickServ account',
       ':server 439 mynick :This server has anti-spambot mechanisms enabled.',
       ':server 931 mynick :Malicious bots, spammers, and other automated systems of dubious origin are NOT welcome here.',
+      ':netsplit.pirc.pl 974 mynick H :Invalid syntax for MODE +H. Use +H lines:period.',
     ])('does not report numerics that have a handler: %s', (line) => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       captureMessage.mockClear();

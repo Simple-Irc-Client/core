@@ -8,7 +8,7 @@ import { redactSensitiveIrc } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
 
 // Error replies outside the 400–599 range: STARTTLS, mode params, oper privs, MLOCK, metadata, knock, Unreal
-const OUT_OF_RANGE_ERROR_NUMERICS = new Set(['691', '696', '712', '713', '714', '723', '742', '764', '765', '767', '768', '769', '972', '974']);
+const OUT_OF_RANGE_ERROR_NUMERICS = new Set(['691', '696', '712', '713', '714', '723', '742', '764', '765', '767', '768', '769', '972']);
 
 const isErrorNumeric = (numeric: string): boolean => {
   const value = Number.parseInt(numeric, 10);

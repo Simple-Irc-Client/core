@@ -31,6 +31,7 @@ const ERR_USERSDONTMATCH = '502';
 const ERR_INVALIDKEY = '525';
 const ERR_INVALIDMODEPARAM = '696';
 const ERR_MLOCKRESTRICTED = '742';
+const ERR_CANNOTCHANGECHANMODE = '974';
 
 // @draft/bot;msgid=TAwD3gzM6wZJulwi2hI0Ki;time=2023-03-04T19:13:32.450Z :Pomocnik!pomocny@bot:kanalowy.pomocnik MODE #Religie +h Merovingian
 // @account=PEPSISEXIBOMBA;msgid=c97PqlwAZZ8m2aRhCPMl8O;time=2023-03-19T20:35:06.649Z :PEPSISEXIBOMBA!~yooz@cloak:PEPSISEXIBOMBA MODE #Religie +b *!*@ukryty-D5702E9C.dip0.t-ipconnect.de
@@ -453,6 +454,7 @@ export const onRaw502 = (ctx: IrcContext): void => {
 // :server 467 mynick #channel :Channel key already set
 // :server 696 mynick #channel l abc :Invalid limit mode parameter
 // :server 742 mynick #channel t nt :MODE cannot be set due to channel having an active MLOCK restriction policy
+// UnrealIRCd: :server 974 mynick H :Invalid syntax for MODE +H. Use +H lines:period.
 export const onModeRefused = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const target = ctx.line[0];
@@ -485,4 +487,5 @@ export const handlers: IrcHandlers = {
   [ERR_INVALIDKEY]: onModeRefused,
   [ERR_INVALIDMODEPARAM]: onModeRefused,
   [ERR_MLOCKRESTRICTED]: onModeRefused,
+  [ERR_CANNOTCHANGECHANMODE]: onModeRefused,
 };
