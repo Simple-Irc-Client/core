@@ -37,6 +37,12 @@ export type FontSize = 'small' | 'medium' | 'large';
 
 export type TimeFormat = '24h' | '12h';
 
+/** How the user wants times shown */
+export interface TimeSettings {
+  timeFormat: TimeFormat;
+  showSeconds: boolean;
+}
+
 /** How tightly the chat lays out its messages */
 export type Density = 'comfortable' | 'compact';
 
@@ -860,12 +866,9 @@ export const getSoundVolume = (): number => {
   return useSettingsStore.getState().soundVolume;
 };
 
-export const getTimeFormat = (): TimeFormat => {
-  return useSettingsStore.getState().timeFormat;
-};
-
-export const getShowSeconds = (): boolean => {
-  return useSettingsStore.getState().showSeconds;
+export const getTimeSettings = (): TimeSettings => {
+  const { timeFormat, showSeconds } = useSettingsStore.getState();
+  return { timeFormat, showSeconds };
 };
 
 /** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */

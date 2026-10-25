@@ -46,9 +46,9 @@ describe('MessageTime', () => {
   });
 
   it('sizes the time column for the widest time in the format', () => {
-    expect(timeWidthCh('24h', false)).toBe(5);
-    expect(timeWidthCh('24h', true)).toBe(8);
-    expect(timeWidthCh('12h', false)).toBe(8);
-    expect(timeWidthCh('12h', true)).toBe(11);
+    expect(timeWidthCh({ timeFormat: '24h', showSeconds: false })).toBe(5);
+    expect(timeWidthCh({ timeFormat: '24h', showSeconds: true })).toBe(8);
+    expect(timeWidthCh({ timeFormat: '12h', showSeconds: false })).toBe(8);
+    expect(timeWidthCh({ timeFormat: '12h', showSeconds: true })).toBe(11);
   });
 });

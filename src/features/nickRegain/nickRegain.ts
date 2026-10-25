@@ -15,14 +15,18 @@ const GHOST_SETTLE_MS = 2000;
 /** The nick to register with: the one the user chose, if the last connection had to do without it */
 export const registrationNick = (): string => getWantedNick() ?? getCurrentNick();
 
-/** During registration `taken` was in use: remembers the nick the user wanted, and gives the next one to try, if any */
-export const onNickTaken = (taken: string): string | undefined => {
+/** The nick to try after `taken` while registering, if there is one left */
+export const alternativeNick = (taken: string): string | undefined => {
   const wanted = getWantedNick() ?? taken;
+  const suffix = taken.length - wanted.length;
+  return suffix < MAX_ALTERNATIVE_SUFFIX && isSameName(taken.slice(0, wanted.length), wanted) ? `${taken}_` : undefined;
+};
+
+/** The first nick found taken while registering is the one the user wanted */
+export const rememberWantedNick = (taken: string): void => {
   if (getWantedNick() === undefined) {
     setWantedNick(taken);
   }
-  const suffix = taken.length - wanted.length;
-  return suffix < MAX_ALTERNATIVE_SUFFIX && isSameName(taken.slice(0, wanted.length), wanted) ? `${taken}_` : undefined;
 };
 
 const isWaiting = (): boolean => {

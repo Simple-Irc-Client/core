@@ -1,14 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
 let channel: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  // Each browser project runs this at once on the same server: names of its own keep them apart
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   channel = `#autocomplete-${tag}`;
 
   bot = await createIrcClient(`compbot-${tag}`);

@@ -8,7 +8,7 @@ import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
 import { getCurrentNick, getIsConnected, getIsWizardCompleted, getNickLenLimit, getUserModes, getWantedNick, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
-import { onNickTaken, onOwnNickChanged } from '@features/nickRegain/nickRegain';
+import { alternativeNick, onOwnNickChanged, rememberWantedNick } from '@features/nickRegain/nickRegain';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getUserChannels, setRenameUser } from '@features/users/store/users';
 import { isValidNick } from '@shared/lib/utils';
@@ -125,26 +125,27 @@ const showNickUnavailable = (ctx: IrcContext, message: string): void => {
   }
 };
 
-/** While registering, a taken nick gives way to an alternative instead of stopping the connection; false when there is none */
-const registerWithAlternative = (ctx: IrcContext, taken: string | undefined): boolean => {
-  const alternative = taken === undefined || getIsConnected() ? undefined : onNickTaken(taken);
-  if (alternative === undefined) {
-    return false;
-  }
+/** While registering, the nick to try instead of `taken`; once registered a taken nick is only reported */
+const registrationAlternative = (taken: string | undefined): string | undefined =>
+  taken === undefined || getIsConnected() ? undefined : alternativeNick(taken);
+
+const registerAs = (ctx: IrcContext, taken: string, alternative: string): void => {
+  rememberWantedNick(taken);
   showReply(ctx, {
     message: i18next.t('nickRegain.usingAlternative', { nick: getWantedNick() ?? taken, alternative }),
     target: STATUS_CHANNEL,
     category: MessageCategory.info,
   });
   ircSendRawMessage(`NICK ${alternative}`);
-  return true;
 };
 
 // :server 433 * nick :Nickname is already in use
 export const onRaw433 = (ctx: IrcContext): void => {
   ctx.line.shift(); // asterisk
   const nick = ctx.line.shift();
-  if (registerWithAlternative(ctx, nick)) {
+  const alternative = registrationAlternative(nick);
+  if (nick !== undefined && alternative !== undefined) {
+    registerAs(ctx, nick, alternative);
     return;
   }
   let message = ctx.trailing();
@@ -172,7 +173,9 @@ export const onRaw437 = (ctx: IrcContext): void => {
     return;
   }
 
-  if (registerWithAlternative(ctx, target)) {
+  const alternative = registrationAlternative(target);
+  if (target !== undefined && alternative !== undefined) {
+    registerAs(ctx, target, alternative);
     return;
   }
 

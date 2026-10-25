@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { CTCP, ctcpBody, E2eePeer, FrameCollector } from '../e2ee-peer';
 
 /**
@@ -115,8 +115,7 @@ const sendInDm = async (text: string): Promise<void> => {
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  // Each browser project runs this at once on the same server: names of its own keep them apart
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   appNick = `e2ee-tester-${tag}`;
 
   bot = await createIrcClient(`e2eebot-${tag}`);

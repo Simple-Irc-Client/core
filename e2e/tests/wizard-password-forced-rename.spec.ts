@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress } from '../helpers';
+import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress, projectTag } from '../helpers';
 
 
 const NICKSERV_PASSWORD = 'CorrectHorseBattery42';
@@ -64,8 +64,7 @@ const readCurrentNick = (page: Page): Promise<string> =>
 test.describe('Wizard password survives a server-forced nick change', () => {
   test('reconnecting after a forced rename + disconnect still finds the saved password', async ({ page }, testInfo) => {
     test.setTimeout(90_000);
-    // Each browser project runs this at once on the same server: names of its own keep them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     const nick = `pw-forced-rename-tester-${tag}`;
     const forcedNick = `Unidentified-pwtest-${tag}`;
 

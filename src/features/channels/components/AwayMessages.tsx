@@ -24,7 +24,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
   const awayMessages = useAwayMessagesStore((state) => state.messages);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
-  const time = timePattern(timeFormat, showSeconds);
+  const time = timePattern({ timeFormat, showSeconds });
 
   const handleMarkAsRead = (): void => {
     clearAwayMessages();

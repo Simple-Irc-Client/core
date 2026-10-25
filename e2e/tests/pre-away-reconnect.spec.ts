@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 /**
@@ -33,7 +33,7 @@ const setVisibility = async (page: Page, visibility: DocumentVisibilityState): P
 test.describe('Reconnecting in the background', () => {
   test('registers as not present until the user looks, without telling them about it', async ({ page }, testInfo) => {
     skipWithoutIrcv3('draft/pre-away is an IRCv3 extension');
-    const nick = `preaway-${testInfo.project.name.includes('firefox') ? 'ff' : 'cr'}`;
+    const nick = `preaway-${projectTag(testInfo)}`;
     const debugLog = page.getByTestId('chat-log');
 
     await installWebSocketKillSwitch(page);

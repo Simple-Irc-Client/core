@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings } from '../helpers';
+import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
 
 let bot: IrcClient;
 let page: Page;
@@ -12,7 +12,7 @@ const messageRow = (text: string): Locator =>
   page.getByTestId('chat-log').locator('.sic-msg').filter({ has: page.locator('.sic-msg-body', { hasText: text }) });
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   channel = `#hlwords-${tag}`;
   otherChannel = `#hlwords-other-${tag}`;
   nick = `hluser-${tag}`;

@@ -50,7 +50,7 @@ const Results = ({ onDone }: { onDone: () => void }) => {
   const scope = inCurrentWindow && canSearchCurrentWindow ? currentChannelName : undefined;
   const results = useMemo(() => searchMessages(channels, deferredQuery, scope), [channels, deferredQuery, scope]);
   const locale = getDateFnsLocale();
-  const datePattern = `P ${timePattern(timeFormat, showSeconds)}`;
+  const datePattern = `P ${timePattern({ timeFormat, showSeconds })}`;
 
   const handleSelect = ({ channel, message }: SearchResult): void => {
     onDone();

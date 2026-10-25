@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 // Named *-reconnect.spec.ts on purpose: playwright.config.ts routes anything
@@ -10,8 +10,7 @@ import { skipWithoutIrcv3 } from '../test-server';
 test.describe('DM presence indicator survives our own disconnect/reconnect', () => {
   test('does not keep showing a peer as online once our own connection drops', async ({ page }, testInfo) => {
     skipWithoutIrcv3('presence comes from MONITOR');
-    // Each browser project runs this at once on the same server: names of its own keep them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     const bot: IrcClient = await createIrcClient(`dmp-recon-bot-${tag}`);
 
     // Installed before the page loads, so we can force-close our own connection later

@@ -191,8 +191,7 @@ describe('kernel core/whois', () => {
   it('test raw 317 - signon time in the user\'s time format', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getTimeFormat').mockImplementation(() => '12h');
-    vi.spyOn(settingsFile, 'getShowSeconds').mockImplementation(() => true);
+    vi.spyOn(settingsFile, 'getTimeSettings').mockImplementation(() => ({ timeFormat: '12h', showSeconds: true }));
     const signon = new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000;
 
     new Kernel({ type: 'raw', line: `:insomnia.pirc.pl 317 sic-test toto 118 ${signon} :seconds idle, signon time` }).handle();

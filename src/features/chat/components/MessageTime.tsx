@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
-import { useSettingsStore, type TimeFormat } from '@features/settings/store/settings';
+import { useSettingsStore, type TimeSettings } from '@features/settings/store/settings';
 
 /** The widest time in a format, in digits: what themes size the time column by */
-export const timeWidthCh = (timeFormat: TimeFormat, showSeconds: boolean): number =>
+export const timeWidthCh = ({ timeFormat, showSeconds }: TimeSettings): number =>
   5 + (showSeconds ? 3 : 0) + (timeFormat === '12h' ? 3 : 0);
 
 /** The time in the user's format; the seconds a theme may hide go in .sic-msg-time-seconds unless the user shows them */

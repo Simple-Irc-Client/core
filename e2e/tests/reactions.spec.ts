@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3, testServer } from '../test-server';
 
 let bot: IrcClient;
@@ -25,7 +25,7 @@ const botSays = async (text: string): Promise<string> => {
 const messageRow = (text: string): Locator => page.getByTestId('chat-log').locator('.sic-msg', { hasText: text });
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   channel = `#reactions-${tag}`;
 
   bot = await createIrcClient(`reactbot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message'] : undefined);

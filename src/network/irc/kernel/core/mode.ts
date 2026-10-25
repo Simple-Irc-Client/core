@@ -6,7 +6,7 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
-import { getChannelModes, getCurrentNick, getShowSeconds, getTimeFormat, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
+import { getChannelModes, getCurrentNick, getTimeSettings, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUpdateUserFlag, setUserBot } from '@features/users/store/users';
 import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory, type UserMode } from '@shared/types';
@@ -372,7 +372,7 @@ export const onRaw329 = (ctx: IrcContext): void => {
   const timestamp = Number(ctx.line.shift() ?? '0');
 
   if (channel && timestamp > 0) {
-    const createdDate = formatDateTime(new Date(timestamp * 1000), getTimeFormat(), getShowSeconds());
+    const createdDate = formatDateTime(new Date(timestamp * 1000), getTimeSettings());
     showReply(ctx, {
       message: i18next.t('kernel.329', { channel, created: createdDate, defaultValue: `Channel created: ${createdDate}` }),
       target: channel,

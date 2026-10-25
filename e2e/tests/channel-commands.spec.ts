@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 
 let page: Page;
 let bot: IrcClient;
@@ -26,8 +26,7 @@ const receivedOn = async (client: IrcClient, command: string, predicate: (line: 
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  // Each browser project runs this at once on the same server: names of its own keep them apart
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
   channel = `#chancmds-${tag}`;
   otherChannel = `#chancmds-other-${tag}`;
   userNick = `chancmds-${tag}`;

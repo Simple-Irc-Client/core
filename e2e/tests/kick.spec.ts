@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 
 test.describe('Kick', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('see kick message when another user is kicked', async ({ page }, testInfo) => {
-    // Each browser project runs this at once on the same server: names of its own keep them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     // Bot1 creates channel (gets ops), bot2 joins
     const bot1 = await createIrcClient(`kickop-${tag}`);
     await bot1.join(`#kick-test-${tag}`);
@@ -38,8 +37,7 @@ test.describe('Kick', () => {
   });
 
   test('user gets kicked from channel', async ({ page }, testInfo) => {
-    // Each browser project runs this at once on the same server: names of its own keep them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     // Bot creates channel (gets ops)
     const bot = await createIrcClient(`kickerop-${tag}`);
     await bot.join(`#kickme-chan-${tag}`);

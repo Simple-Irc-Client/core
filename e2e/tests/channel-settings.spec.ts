@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 
 let bot: IrcClient;
 let tag: string;
 
 test.beforeAll(async ({}, testInfo) => {
-  // Each browser project runs this at once on the same server: names of its own keep them apart
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
   // Bot joins a channel so ergo has at least one channel visible in LIST
   bot = await createIrcClient(`chansettingsbot-${tag}`);
   await bot.join(`#chan-settings-${tag}`);

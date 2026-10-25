@@ -1,13 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 
 let page: Page;
 
 const panelWidth = (testId: string): Promise<number> => page.getByTestId(testId).evaluate((panel) => panel.getBoundingClientRect().width);
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  // Each browser project runs this at once on the same server: a nick of its own keeps them apart
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
 
   page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   await page.goto('/');

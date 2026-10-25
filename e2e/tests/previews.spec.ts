@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, serveImagePreviews } from '../helpers';
+import { connectViaWizard, serveImagePreviews, projectTag } from '../helpers';
 
 test.describe('Previews', () => {
   test.describe.configure({ mode: 'serial' });
@@ -11,8 +11,7 @@ test.describe('Previews', () => {
   let tag: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  // Each browser project runs this at once on the same server: names of its own keep them apart
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
 
     bot = await createIrcClient(`previewbot-${tag}`);
     await bot.join(`#previews-${tag}`);

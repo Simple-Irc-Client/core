@@ -1,5 +1,5 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPersistedChannels } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, waitForPersistedChannels, projectTag } from '../helpers';
 
 /**
  * Event-driven reconnect, the way mobile web actually recovers.
@@ -31,7 +31,7 @@ const CHANNEL = '#mobile-recon';
  * race to 433. See e2e-testing-gotchas.
  */
 const setUpOnChannel = async (page: Page, baseNick: string, testInfo: TestInfo): Promise<void> => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   await installWebSocketKillSwitch(page);
   await page.goto('/');
   await connectViaWizard(page, `${baseNick}-${tag}`, { channels: [] });

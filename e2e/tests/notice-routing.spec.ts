@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let greeter: IrcClient;
@@ -15,7 +15,7 @@ const openWindow = async (name: string): Promise<void> => {
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   greeted = `#greeted-${tag}`;
   viewing = `#viewing-${tag}`;
   userNick = `routed-${tag}`;

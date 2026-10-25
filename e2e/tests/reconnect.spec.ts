@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 
 test.describe('Reconnect', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('disconnect shows banner and manual reconnect works', async ({ page }, testInfo) => {
-    // Each browser project runs this at once on the same server: a nick of its own keeps them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     await installWebSocketKillSwitch(page);
     await page.goto('/');
     await connectViaWizard(page, `reconnect-user-${tag}`, { channels: [] });

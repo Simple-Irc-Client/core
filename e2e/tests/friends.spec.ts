@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let sharedPage: Page;
@@ -10,7 +10,7 @@ let bot: IrcClient | undefined;
 let botNick: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const suffix = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const suffix = projectTag(testInfo);
   botNick = `fr-bot-${suffix}`;
 
   sharedPage = await browser.newPage();

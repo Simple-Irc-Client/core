@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 import { CTCP, ctcpBody, E2eePeer } from '../e2ee-peer';
 import { testServer } from '../test-server';
 
@@ -86,7 +86,7 @@ const reconnectViaBanner = async (): Promise<void> => {
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   APP_NICK = `e2ee-rec-${tag}-app`;
   BOT_NICK = `e2ee-rec-${tag}-bot`;
 

@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, IrcClient, registerMulticlientAccount } from '../irc-client';
-import { connectViaWizard, getServerPassword, identifyInApp } from '../helpers';
+import { connectViaWizard, getServerPassword, identifyInApp, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 // ergo's multiclient stands in for a bouncer: the app and a "phone" are two sessions of one account
@@ -38,7 +38,7 @@ const openChannel = async (channel: string): Promise<void> => {
 
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('ergo multiclient stands in for a bouncer');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   const account = `readmark-${tag}-${randomBytes(3).toString('hex')}`;
   readChannel = `#readmark-${tag}`;

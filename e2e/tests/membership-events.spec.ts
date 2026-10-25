@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { chooseMembershipEventsDisplay, connectViaWizard } from '../helpers';
+import { chooseMembershipEventsDisplay, connectViaWizard, projectTag } from '../helpers';
 
 let talker: IrcClient;
 let page: Page;
@@ -24,7 +24,7 @@ const visitor = async (name: string): Promise<IrcClient> => {
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
   channel = `#members-${tag}`;
 
   talker = await createIrcClient(`talker-${tag}`);

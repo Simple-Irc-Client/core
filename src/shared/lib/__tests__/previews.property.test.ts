@@ -37,8 +37,8 @@ describe('link previews, for anything someone writes', () => {
       facebook: ['https://www.facebook.com', '/plugins/'],
       bluesky: ['https://embed.bsky.app', '/embed/'],
     };
-    fc.assert(fc.property(message, fc.boolean(), (text, isDarkMode) => {
-      for (const { platform, embedUrl } of extractSocialEmbeds(text, isDarkMode)) {
+    fc.assert(fc.property(message, fc.constantFrom('light', 'dark'), (text, colorScheme) => {
+      for (const { platform, embedUrl } of extractSocialEmbeds(text, colorScheme)) {
         const [origin, path] = embedPaths[platform] ?? ['', ''];
         const parsed = new URL(embedUrl);
         expect(parsed.origin).toBe(origin);

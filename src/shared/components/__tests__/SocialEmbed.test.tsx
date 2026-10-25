@@ -3,8 +3,21 @@ import { render } from '@testing-library/react';
 import SocialEmbed from '../SocialEmbed';
 import * as socialEmbed from '@shared/lib/socialEmbed';
 import type { SocialEmbedInfo } from '@shared/lib/socialEmbed';
+import { useSettingsStore } from '@features/settings/store/settings';
 
 describe('SocialEmbed', () => {
+  it.each([
+    [false, 'light'],
+    [true, 'dark'],
+  ] as const)('should ask for embeds in the app\'s color scheme when dark mode is %s', (isDarkMode, colorScheme) => {
+    useSettingsStore.setState({ isDarkMode });
+    const extract = vi.spyOn(socialEmbed, 'extractSocialEmbeds').mockReturnValue([]);
+
+    render(<SocialEmbed text="https://x.com/user/status/1" />);
+
+    expect(extract).toHaveBeenCalledWith('https://x.com/user/status/1', colorScheme);
+  });
+
   describe('when no social URLs are found', () => {
     it('should return null for plain text', () => {
       vi.spyOn(socialEmbed, 'extractSocialEmbeds').mockReturnValue([]);

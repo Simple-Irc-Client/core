@@ -9,7 +9,7 @@ interface SocialEmbedProps {
 const SocialEmbed = ({ text }: SocialEmbedProps) => {
   const { t } = useTranslation();
   const isDarkMode = useSettingsStore((s) => s.isDarkMode);
-  const embeds = extractSocialEmbeds(text, isDarkMode);
+  const embeds = extractSocialEmbeds(text, isDarkMode ? 'dark' : 'light');
 
   if (embeds.length === 0) {
     return null;

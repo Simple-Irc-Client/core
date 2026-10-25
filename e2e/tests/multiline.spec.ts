@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3, testServer } from '../test-server';
 
 let bot: IrcClient;
@@ -30,7 +30,7 @@ const botSendsBatch = async (target: string, reference: string, lines: string[],
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
   channel = `#multiline-${tag}`;
 
   bot = await createIrcClient(`multibot-${tag}`, undefined, undefined, testServer().ircv3 ? ['message-tags', 'echo-message', 'batch', 'draft/multiline'] : undefined);

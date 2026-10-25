@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let op: IrcClient;
@@ -11,7 +11,7 @@ let channel: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('channel events are replayed with draft/event-playback');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   nick = `eventsuser-${tag}`;
   channel = `#events-${tag}`;
 
@@ -33,7 +33,7 @@ test.afterAll(async () => {
 
 test.describe('Channel events in chat history', () => {
   test('rejoining after a kick shows what happened as history, without acting on it again', async ({}, testInfo) => {
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     const visitorNick = `eventsvisitor-${tag}`;
     const chatLog = page.getByTestId('chat-log');
 

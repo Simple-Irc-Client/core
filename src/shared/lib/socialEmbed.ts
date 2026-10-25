@@ -1,5 +1,7 @@
 import { isSafeUrl } from './utils';
 
+export type ColorScheme = 'light' | 'dark';
+
 export interface SocialEmbedInfo {
   platform: 'x' | 'facebook' | 'bluesky';
   embedUrl: string;
@@ -16,7 +18,7 @@ const FB_WATCH_REGEX = /https:\/\/fb\.watch\/[a-zA-Z0-9_-]+\/?/g;
 
 const NUMERIC_ID_REGEX = /^\d+$/;
 
-function extractTwitterEmbeds(text: string, isDarkMode: boolean): SocialEmbedInfo[] {
+function extractTwitterEmbeds(text: string, colorScheme: ColorScheme): SocialEmbedInfo[] {
   const results: SocialEmbedInfo[] = [];
 
   for (const match of text.matchAll(TWITTER_REGEX)) {
@@ -27,7 +29,7 @@ function extractTwitterEmbeds(text: string, isDarkMode: boolean): SocialEmbedInf
     if (!isSafeUrl(originalUrl)) { continue; }
     if (results.some((r) => r.originalUrl === originalUrl)) { continue; }
 
-    const theme = isDarkMode ? '&theme=dark' : '';
+    const theme = colorScheme === 'dark' ? '&theme=dark' : '';
     results.push({
       platform: 'x',
       embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${tweetId}${theme}`,
@@ -104,6 +106,7 @@ function extractBlueskyEmbeds(text: string): SocialEmbedInfo[] {
   return results;
 }
 
-export function extractSocialEmbeds(text: string, isDarkMode: boolean): SocialEmbedInfo[] {
-  return [...extractTwitterEmbeds(text, isDarkMode), ...extractFacebookEmbeds(text), ...extractBlueskyEmbeds(text)];
+/** `colorScheme` is the app's, for embeds that can match it */
+export function extractSocialEmbeds(text: string, colorScheme: ColorScheme): SocialEmbedInfo[] {
+  return [...extractTwitterEmbeds(text, colorScheme), ...extractFacebookEmbeds(text), ...extractBlueskyEmbeds(text)];
 }

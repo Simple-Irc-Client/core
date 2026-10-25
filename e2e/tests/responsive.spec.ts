@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings } from '../helpers';
+import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 test.describe('Responsive layout', () => {
@@ -14,7 +14,7 @@ test.describe('Responsive layout', () => {
   let channel: string;
 
   test.beforeAll(async ({ browser }, testInfo) => {
-    const suffix = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const suffix = projectTag(testInfo);
     botNick = `mobilebot-${suffix}`;
     channel = `#responsive-${suffix}`;
     bot = await createIrcClient(botNick);

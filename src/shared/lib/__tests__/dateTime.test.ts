@@ -16,7 +16,7 @@ describe('timePattern', () => {
     ['12h', false, 'h:mm a'],
     ['12h', true, 'h:mm:ss a'],
   ] as const)('should give %s with seconds %s as %s', (timeFormat, showSeconds, pattern) => {
-    expect(timePattern(timeFormat, showSeconds)).toBe(pattern);
+    expect(timePattern({ timeFormat, showSeconds })).toBe(pattern);
   });
 });
 
@@ -27,6 +27,6 @@ describe('formatDateTime', () => {
     ['12h', false, '24 Oct 2026 10:40 PM'],
     ['12h', true, '24 Oct 2026 10:40:09 PM'],
   ] as const)('should show %s with seconds %s as %s', (timeFormat, showSeconds, shown) => {
-    expect(formatDateTime(AFTERNOON, timeFormat, showSeconds)).toBe(shown);
+    expect(formatDateTime(AFTERNOON, { timeFormat, showSeconds })).toBe(shown);
   });
 });

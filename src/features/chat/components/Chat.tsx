@@ -263,7 +263,7 @@ const Chat = () => {
         data-testid="chat-log"
         role="log"
         data-density={density}
-        style={{ '--sic-time-width': `${timeWidthCh(timeFormat, showSeconds)}ch` } as React.CSSProperties}
+        style={{ '--sic-time-width': `${timeWidthCh({ timeFormat, showSeconds })}ch` } as React.CSSProperties}
         onScroll={handleScroll}
         onContextMenu={(e) => {
         if (e.defaultPrevented) { return; }

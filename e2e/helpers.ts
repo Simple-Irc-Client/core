@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type TestInfo } from '@playwright/test';
 import { PASSWORD_FILE } from './global-setup';
 import { testServer } from './test-server';
+
+/** Each browser project runs every spec at once on the same servers: this suffix keeps their nicks and channels apart */
+export const projectTag = (testInfo: TestInfo): 'cr' | 'ff' => (testInfo.project.name.includes('firefox') ? 'ff' : 'cr');
 
 /**
  * Wrap `WebSocket` on the page so a test can force every live socket closed,

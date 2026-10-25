@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient, registerMulticlientAccount } from '../irc-client';
-import { connectViaWizard, identifyInApp } from '../helpers';
+import { connectViaWizard, identifyInApp, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 const PASSWORD = 'delete-it-42';
@@ -24,7 +24,7 @@ const say = async (text: string): Promise<Locator> => {
 
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('ngircd has no draft/message-redaction');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   const account = `redact-${tag}-${randomBytes(3).toString('hex')}`;
   channel = `#redact-${tag}-${randomBytes(3).toString('hex')}`;

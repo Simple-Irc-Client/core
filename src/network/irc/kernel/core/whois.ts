@@ -2,7 +2,7 @@ import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { getShowSeconds, getTimeFormat, getUserModes } from '@features/settings/store/settings';
+import { getTimeSettings, getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory } from '@shared/types';
@@ -201,7 +201,7 @@ export const onRaw317 = (ctx: IrcContext): void => {
   const signonTime = Number(ctx.line.shift() ?? '0');
 
   const idleFormatted = formatDuration(idleSeconds);
-  const signonDate = signonTime > 0 ? formatDateTime(new Date(signonTime * 1000), getTimeFormat(), getShowSeconds()) : '';
+  const signonDate = signonTime > 0 ? formatDateTime(new Date(signonTime * 1000), getTimeSettings()) : '';
 
   showReply(ctx, {
     message: i18next.t('kernel.317', { user, idle: idleFormatted, signon: signonDate, defaultValue: `${user} idle ${idleFormatted}, signed on ${signonDate}` }),

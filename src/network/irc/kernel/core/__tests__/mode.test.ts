@@ -156,8 +156,7 @@ describe('kernel core/mode', () => {
 
   it('test raw 329 - creation time in the user\'s time format', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getTimeFormat').mockImplementation(() => '12h');
-    vi.spyOn(settingsFile, 'getShowSeconds').mockImplementation(() => false);
+    vi.spyOn(settingsFile, 'getTimeSettings').mockImplementation(() => ({ timeFormat: '12h', showSeconds: false }));
     const created = new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000;
 
     new Kernel({ type: 'raw', line: `:chmurka.pirc.pl 329 sic-test #sic ${created}` }).handle();

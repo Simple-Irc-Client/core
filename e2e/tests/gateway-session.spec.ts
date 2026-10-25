@@ -1,5 +1,5 @@
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 import { createIrcClient, type IrcClient } from '../irc-client';
 
 /**
@@ -9,7 +9,7 @@ import { createIrcClient, type IrcClient } from '../irc-client';
 
 // Both browser projects share one server, so names are per project (see e2e-nick-collision-flake)
 const names = (testInfo: TestInfo, base: string): { nick: string; peer: string; channel: string } => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   return { nick: `${base}-${tag}`, peer: `${base}-p-${tag}`, channel: `#${base}-${tag}` };
 };
 

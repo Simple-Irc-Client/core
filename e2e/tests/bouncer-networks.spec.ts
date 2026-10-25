@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { getServerPassword } from '../helpers';
+import { getServerPassword, projectTag } from '../helpers';
 import { IRC_PORT, LEGACY_IRC_PORT, SOJU_WSS_PORT } from '../global-setup';
 import { createSojuNetwork, createSojuUser, deleteSojuNetwork } from '../soju';
 import { skipWithoutIrcv3 } from '../test-server';
@@ -31,7 +31,7 @@ const wizardToBouncer = async (onPage: Page): Promise<void> => {
 test.beforeAll(async ({ browser }, testInfo) => {
   // One bouncer serves every project; the IRCv3 ones are enough to drive it
   skipWithoutIrcv3('one bouncer serves every project');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   // Accounts outlive a retried test; a fresh name per attempt
   account = `bnc-${tag}-${randomBytes(3).toString('hex')}`;
   nick = `bncnick-${tag}-${randomBytes(2).toString('hex')}`;

@@ -4,7 +4,7 @@ import * as subscribeFile from '@features/monitor/subscribe';
 import * as friendsFile from '@features/friends/friends';
 import * as channelsFile from '@features/channels/store/channels';
 import { useSettingsStore } from '@features/settings/store/settings';
-import { forgetWantedNick, onNicksOffline, onNickTaken, onOwnNickChanged, onRegisteredAs, reclaimWantedNick, registrationNick, watchWantedNick } from '../nickRegain';
+import { alternativeNick, forgetWantedNick, onNicksOffline, onOwnNickChanged, onRegisteredAs, reclaimWantedNick, registrationNick, rememberWantedNick, watchWantedNick } from '../nickRegain';
 
 const state = (fields: Partial<ReturnType<typeof useSettingsStore.getState>>) => useSettingsStore.setState(fields);
 
@@ -37,21 +37,38 @@ describe('nick regain', () => {
       expect(registrationNick()).toBe('piotr_');
     });
 
-    it('should remember the wanted nick when it is taken, and try it with underscores', () => {
+    it('should try a taken nick with underscores', () => {
       state({ nick: 'piotr', wantedNick: undefined });
+      expect(alternativeNick('piotr')).toBe('piotr_');
 
-      expect(onNickTaken('piotr')).toBe('piotr_');
-      expect(useSettingsStore.getState().wantedNick).toBe('piotr');
-      expect(onNickTaken('piotr_')).toBe('piotr__');
-      expect(onNickTaken('piotr__')).toBe('piotr___');
+      state({ wantedNick: 'piotr' });
+      expect(alternativeNick('piotr_')).toBe('piotr__');
+      expect(alternativeNick('piotr__')).toBe('piotr___');
     });
 
     it('should give up after three underscores', () => {
-      expect(onNickTaken('piotr___')).toBeUndefined();
+      expect(alternativeNick('piotr___')).toBeUndefined();
     });
 
     it('should give up on a taken nick that is no alternative of the wanted one', () => {
-      expect(onNickTaken('someone')).toBeUndefined();
+      expect(alternativeNick('someone')).toBeUndefined();
+    });
+
+    it('should remember the first taken nick as the wanted one, and only that one', () => {
+      state({ wantedNick: undefined });
+
+      rememberWantedNick('piotr');
+      rememberWantedNick('piotr_');
+
+      expect(useSettingsStore.getState().wantedNick).toBe('piotr');
+    });
+
+    it('should only answer which nick to try, not remember anything', () => {
+      state({ wantedNick: undefined });
+
+      alternativeNick('piotr');
+
+      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
     });
 
     it('should end the wait when registered as the wanted nick, whatever its case', () => {

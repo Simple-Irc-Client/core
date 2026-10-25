@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, dropConnection, installWebSocketKillSwitch } from '../helpers';
+import { connectViaWizard, dropConnection, installWebSocketKillSwitch, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let bot: IrcClient;
@@ -25,7 +25,7 @@ const sendFromApp = async (text: string): Promise<void> => {
 
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('history is replayed with draft/chathistory');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   nick = `histuser-${tag}`;
   readChannel = `#hist-read-${tag}`;
   currentChannel = `#hist-current-${tag}`;

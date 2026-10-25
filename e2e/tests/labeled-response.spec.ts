@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 /**
@@ -55,8 +55,7 @@ const joinChannel = async (page: Page, channel: string): Promise<void> => {
 test.describe('Labeled responses', () => {
   test('a reply that arrives after switching windows is shown where the command was typed', async ({ page }, testInfo) => {
     skipWithoutIrcv3('replies are matched to commands by labeled-response');
-    // Each browser project runs this at once on the same server: names of its own keep them apart
-    const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+    const tag = projectTag(testInfo);
     await installIncomingHold(page);
     await page.goto('/');
     await connectViaWizard(page, `label-tester-${tag}`);

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, openProfileSettings } from '../helpers';
+import { connectViaWizard, openProfileSettings, projectTag } from '../helpers';
 
 // Rounded: AudioParam values are single precision
 const CHIME = [880, 1319];
@@ -60,7 +60,7 @@ const openSettings = async (): Promise<void> => {
 };
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   channel = `#sounds-${tag}`;
   userNick = `listener-${tag}`;
 

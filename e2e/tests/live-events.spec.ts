@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { chooseMembershipEventsDisplay, connectViaWizard } from '../helpers';
+import { chooseMembershipEventsDisplay, connectViaWizard, projectTag } from '../helpers';
 
 let bot: IrcClient;
 let sharedPage: Page;
@@ -9,7 +9,7 @@ let channel: string;
 let tag: string;
 
 test.beforeAll(async ({ browser }, testInfo) => {
-  tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  tag = projectTag(testInfo);
   channel = `#live-events-${tag}`;
   bot = await createIrcClient(`eventbot-${tag}`);
   await bot.join(channel);

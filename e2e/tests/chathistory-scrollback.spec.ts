@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard } from '../helpers';
+import { connectViaWizard, projectTag } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 const LINES = 120;
@@ -19,7 +19,7 @@ const shownLineNumbers = async (): Promise<number[]> =>
 
 test.beforeAll(async ({ browser }, testInfo) => {
   skipWithoutIrcv3('history is fetched with draft/chathistory');
-  const tag = testInfo.project.name.includes('firefox') ? 'ff' : 'cr';
+  const tag = projectTag(testInfo);
   nick = `scrolluser-${tag}`;
   channel = `#scrollback-${tag}`;
 
