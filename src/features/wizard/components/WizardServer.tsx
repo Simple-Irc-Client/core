@@ -10,7 +10,7 @@ import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 
-const POPULAR_NETWORKS = new Set(['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet']);
+const POPULAR_NETWORKS = new Set(['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet', 'UnderNet']);
 
 const ServerIcon = ({ server }: { server: Server }) => {
   const svg = serverIcons[server.network];
