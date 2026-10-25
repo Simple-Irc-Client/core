@@ -1,51 +1,32 @@
-import { describe, it, expect, vi } from 'vitest';
-import { enUS, pl } from 'date-fns/locale';
-
-vi.mock('@/app/i18n', () => ({
-  default: { language: 'en' },
-}));
-
+import { describe, it, expect } from 'vitest';
 import i18n from '@/app/i18n';
+import { languages } from '@/config/languages';
 import { getDateFnsLocale } from '../dateLocale';
 
+const dateLocaleIn = async (language: string): Promise<string | undefined> => {
+  await i18n.changeLanguage(language);
+  return getDateFnsLocale().code;
+};
+
 describe('getDateFnsLocale', () => {
-  it('returns enUS for "en"', () => {
-    i18n.language = 'en';
-    expect(getDateFnsLocale()).toBe(enUS);
+  it.each(languages.filter(({ code }) => code !== 'en'))('writes dates in $label when the app is in $label', async ({ code }) => {
+    expect(await dateLocaleIn(code)).toBe(code);
   });
 
-  it('returns pl for "pl"', () => {
-    i18n.language = 'pl';
-    expect(getDateFnsLocale()).toBe(pl);
+  it('writes English dates in American English', async () => {
+    expect(await dateLocaleIn('en')).toBe('en-US');
   });
 
-  it('returns pl for BCP 47 tag "pl-PL"', () => {
-    i18n.language = 'pl-PL';
-    expect(getDateFnsLocale()).toBe(pl);
+  it('writes dates in the language of a regional tag', async () => {
+    expect(await dateLocaleIn('pl-PL')).toBe('pl');
+    expect(await dateLocaleIn('fr-FR')).toBe('fr');
   });
 
-  it('returns enUS for BCP 47 tag "en-US"', () => {
-    i18n.language = 'en-US';
-    expect(getDateFnsLocale()).toBe(enUS);
+  it('writes Portuguese from Portugal in Brazilian Portuguese, like its texts', async () => {
+    expect(await dateLocaleIn('pt-PT')).toBe('pt-BR');
   });
 
-  it('returns enUS for BCP 47 tag "en-GB"', () => {
-    i18n.language = 'en-GB';
-    expect(getDateFnsLocale()).toBe(enUS);
-  });
-
-  it('falls back to enUS for unknown language', () => {
-    i18n.language = 'de';
-    expect(getDateFnsLocale()).toBe(enUS);
-  });
-
-  it('falls back to enUS for unknown BCP 47 tag', () => {
-    i18n.language = 'fr-FR';
-    expect(getDateFnsLocale()).toBe(enUS);
-  });
-
-  it('falls back to enUS when language is undefined', () => {
-    i18n.language = undefined as unknown as string;
-    expect(getDateFnsLocale()).toBe(enUS);
+  it('writes dates in English for a language the app has no translation for', async () => {
+    expect(await dateLocaleIn('ja')).toBe('en-US');
   });
 });
