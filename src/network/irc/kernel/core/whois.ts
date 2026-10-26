@@ -2,10 +2,11 @@ import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { getTimeSettings, getUserModes } from '@features/settings/store/settings';
+import { getTimeSettings } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory } from '@shared/types';
+import { getUserModes } from '@features/networks/store/networks';
 
 const RPL_WHOISCERTFP = '276';
 const RPL_WHOISREGNICK = '307';

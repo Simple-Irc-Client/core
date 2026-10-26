@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { quoteLine, splitQuotedLines, replyTags } from '../replies';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { type Message, MessageCategory } from '@shared/types';
 
 const message = (overrides: Partial<Message> = {}): Message => ({
@@ -38,7 +38,7 @@ describe('replies', () => {
       ['without message-tags', () => {}, message()],
       ['when the server drops the tag', () => {
         markCapabilitiesAcknowledged(['message-tags']);
-        vi.spyOn(settingsFile, 'getClientTagDeny').mockReturnValue(['*', '-typing']);
+        vi.spyOn(networksStore, 'getClientTagDeny').mockReturnValue(['*', '-typing']);
       }, message()],
       ['for a message without a msgid', () => markCapabilitiesAcknowledged(['message-tags']), message({ msgid: undefined })],
     ])('has none %s', (_case, arrange, replied) => {

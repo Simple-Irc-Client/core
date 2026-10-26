@@ -3,6 +3,7 @@ import { act, render, screen, fireEvent } from '@testing-library/react';
 import i18next from 'i18next';
 import Main from '@features/chat/components/Chat';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as chatHistoryFile from '@/network/irc/chatHistory';
@@ -15,6 +16,7 @@ import { useGoToMessageStore } from '@features/chat/store/goToMessage';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
 import { useUsersStore } from '@features/users/store/users';
 import * as network from '@/network/irc/network';
+import { setTestSlice, mockStoreState } from '@/test/networks';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
@@ -83,7 +85,7 @@ describe('Chat tests', () => {
     });
 
     // Default channel types mock
-    vi.spyOn(settingsStore, 'getChannelTypes').mockReturnValue(['#']);
+    vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
   });
 
   const setupMocks = (overrides: {
@@ -103,8 +105,7 @@ describe('Chat tests', () => {
       messages = [],
     } = overrides;
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         currentChannelName,
         theme,
         isConnected: overrides.isConnected ?? true,
@@ -115,8 +116,7 @@ describe('Chat tests', () => {
         density: overrides.density ?? 'comfortable',
         timeFormat: overrides.timeFormat ?? '24h',
         showSeconds: overrides.showSeconds ?? false,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
 
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2142,7 +2142,7 @@ describe('Chat tests', () => {
     const getDeleteButton = (container: HTMLElement) => container.querySelector('.sic-msg-actions .sic-msg-delete-action');
     const ownMessage = createMessage({ id: 'local', msgid: 'm1', nick: 'me', message: 'oops' });
     const theirMessage = createMessage({ id: 'local', msgid: 'm1', nick: 'alice', message: 'spam' });
-    const asMember = (flags: string[]) => useUsersStore.setState({
+    const asMember = (flags: string[]) => setTestSlice(useUsersStore, {
       users: [{ nick: 'me', ident: '', hostname: '', flags: [], channels: [{ name: '#test', flags, maxPermission: -1 }] } as unknown as User],
     });
 
@@ -2153,7 +2153,7 @@ describe('Chat tests', () => {
 
     afterEach(() => {
       resetCapabilityState();
-      useUsersStore.setState({ users: [] });
+      setTestSlice(useUsersStore, { users: [] });
     });
 
     it('deletes the user\'s own message once confirmed', () => {
@@ -2253,7 +2253,7 @@ describe('Chat tests', () => {
 
     beforeEach(() => {
       clearAllReplies();
-      useE2eeStore.setState({ sessions: {} });
+      setTestSlice(useE2eeStore, { sessions: {} });
     });
 
     it('offers to reply, on a server without message tags too', () => {
@@ -2283,7 +2283,7 @@ describe('Chat tests', () => {
     });
 
     it('does not offer to reply in an encrypted conversation', () => {
-      useE2eeStore.setState({ sessions: { [getSessionKey('bob')]: { state: E2eeState.active } as E2eeSession } });
+      setTestSlice(useE2eeStore, { sessions: { [getSessionKey('bob')]: { state: E2eeState.active } as E2eeSession } });
       setupMocks({ messages: [createMessage({ id: '1', target: 'bob' })], currentChannelName: 'bob' });
 
       const { container } = render(<Main />);

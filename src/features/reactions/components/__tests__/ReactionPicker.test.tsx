@@ -5,6 +5,7 @@ import ReactionPicker, { type ReactionPickerHandle } from '../ReactionPicker';
 import * as reactionsFile from '@features/reactions/reactions';
 import * as channelsFile from '@features/channels/store/channels';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { type Message, MessageCategory } from '@shared/types';
 
 vi.mock('emoji-picker-react', () => ({
@@ -32,7 +33,7 @@ describe('ReactionPicker', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     send = vi.spyOn(reactionsFile, 'sendReaction').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'me');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'me');
   });
 
   const open = (shown: Message): void => {

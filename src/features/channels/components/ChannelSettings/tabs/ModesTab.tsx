@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
-import { useChannelsStore } from '@features/channels/store/channels';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveChannels } from '@features/channels/store/channels';
+import { useActiveSession } from '@features/networks/store/networks';
 import { ircSendCommand } from '@/network/irc/network';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
@@ -28,14 +28,14 @@ const ModesTab = ({ channelName }: ModesTabProps) => {
   const { t } = useTranslation();
   const isLoading = useChannelSettingsStore((state) => state.isLoading);
   const channelModes = useChannelSettingsStore((state) => state.channelModes);
-  const serverChannelModes = useSettingsStore((state) => state.channelModes);
-  const supportedOptions = useSettingsStore((state) => state.supportedOptions);
+  const serverChannelModes = useActiveSession((session) => session.channelModes);
+  const supportedOptions = useActiveSession((session) => session.supportedOptions);
 
   const [limit, setLimit] = useState('');
   const [key, setKey] = useState('');
   const [rawModes, setRawModes] = useState('');
-  const channelAvatar = useChannelsStore((state) => state.openChannels.find((ch) => ch.name === channelName)?.avatar ?? '');
-  const channelDisplayName = useChannelsStore((state) => state.openChannels.find((ch) => ch.name === channelName)?.displayName ?? '');
+  const channelAvatar = useActiveChannels((slice) => slice.openChannels.find((ch) => ch.name === channelName)?.avatar ?? '');
+  const channelDisplayName = useActiveChannels((slice) => slice.openChannels.find((ch) => ch.name === channelName)?.displayName ?? '');
   const [avatar, setAvatar] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [paramEdits, setParamEdits] = useState<Record<string, string>>({});

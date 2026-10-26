@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { addIgnore, getIgnoreMasks, isIgnoredMask, isIgnoredSender, removeIgnore, toIgnoreMask } from '../ignore';
 import { useIgnoreStore } from '../store/ignore';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { connectTestNetwork, resetNetworks, setTestSession } from '@/test/networks';
 
 const server = (network: string) => ({ default: 0, encoding: 'utf8', network, servers: ['irc.test:6667'] });
 
@@ -9,7 +9,8 @@ describe('ignore', () => {
   beforeEach(() => {
     localStorage.clear();
     useIgnoreStore.setState({ masksByNetwork: {} });
-    useSettingsStore.setState({ server: server('TestNet'), nick: 'Me', caseMapping: 'rfc1459' });
+    connectTestNetwork(server('TestNet'));
+    setTestSession({ nick: 'Me', caseMapping: 'rfc1459' });
   });
 
   describe('toIgnoreMask', () => {
@@ -54,7 +55,7 @@ describe('ignore', () => {
 
     it('should keep each network its own list, and persist it', () => {
       addIgnore('troll');
-      useSettingsStore.setState({ server: server('OtherNet') });
+      connectTestNetwork(server('OtherNet'));
 
       expect(getIgnoreMasks()).toEqual([]);
       expect(isIgnoredSender(':troll!t@host')).toBe(false);
@@ -63,7 +64,7 @@ describe('ignore', () => {
 
     it('should refuse an invalid entry, or one with no network', () => {
       expect(addIgnore('two words')).toBe(false);
-      useSettingsStore.setState({ server: undefined });
+      resetNetworks();
       expect(addIgnore('troll')).toBe(false);
       expect(getIgnoreMasks()).toEqual([]);
     });

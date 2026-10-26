@@ -6,6 +6,8 @@ import { Kernel } from '@/network/irc/kernel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as awayMessagesFile from '@features/channels/store/awayMessages';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
@@ -32,10 +34,10 @@ describe('kernel ircv3/batch', () => {
 
   describe('chathistory replay', () => {
     const mockReplayEnvironment = () => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => ['away']);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => ['away']);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
       return {
@@ -136,8 +138,8 @@ describe('kernel ircv3/batch', () => {
         setTopic: vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {}),
         setRenameChannel: vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {}),
         setRemoveChannel: vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {}),
-        setCurrentChannelName: vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {}),
-        setNick: vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {}),
+        setCurrentChannelName: vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {}),
+        setNick: vi.spyOn(networksStore, 'setNick').mockImplementation(() => {}),
         requestLatestHistory: vi.spyOn(chatHistoryFile, 'requestLatestHistory').mockImplementation(() => {}),
       });
 
@@ -260,10 +262,10 @@ describe('kernel ircv3/batch', () => {
 
   describe('draft/multiline', () => {
     const mockLiveEnvironment = () => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);

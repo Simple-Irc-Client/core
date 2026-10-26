@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { STATUS_CHANNEL } from '@/config/config';
 import { MessageCategory } from '@shared/types';
@@ -22,7 +22,7 @@ describe('kernel unhandled', () => {
   describe('unhandled numerics', () => {
     it('shows an unhandled error numeric in the current window', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
       const line = ':server 438 mynick newnick :Nick change too fast. Please wait 30 seconds.';
 
@@ -42,7 +42,7 @@ describe('kernel unhandled', () => {
 
     it('treats documented error numerics outside 400-599 as errors', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
       const line = ':server 723 mynick kill :Insufficient oper privileges.';
 
@@ -121,7 +121,7 @@ describe('kernel unhandled', () => {
       [':server 723 me kill :Insufficient oper privs', 'kill: Niewystarczające uprawnienia operatora IRC'],
     ])('%s', (line, message) => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
 
       new Kernel({ type: 'raw', line }).handle();
 
@@ -130,7 +130,7 @@ describe('kernel unhandled', () => {
 
     it('keeps a server\'s own wording that is not a known standard text', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
 
       new Kernel({ type: 'raw', line: ':server 438 me newnick :Slow down, you are changing nicks too often' }).handle();
 
@@ -141,7 +141,7 @@ describe('kernel unhandled', () => {
   describe('reporting to Sentry', () => {
     it('reports a numeric with no handler, tagged with the network', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getServer').mockReturnValue({ network: 'ExampleNet', default: 0, encoding: 'utf8', servers: [] });
+      vi.spyOn(networksStore, 'getServer').mockReturnValue({ network: 'ExampleNet', default: 0, encoding: 'utf8', servers: [] });
       captureMessage.mockClear();
 
       new Kernel({ type: 'raw', line: ':server 981 mynick :Something new' }).handle();

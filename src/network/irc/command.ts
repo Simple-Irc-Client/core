@@ -1,5 +1,5 @@
 import { defaultQuitMessage, STATUS_CHANNEL } from '@/config/config';
-import { useChannelsStore, isChannel, setAddMessage } from '@features/channels/store/channels';
+import { getOpenChannelNames, isChannel, setAddMessage } from '@features/channels/store/channels';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageColor } from '@/config/theme';
@@ -328,10 +328,7 @@ const allCommand = (line: string[]): string | undefined => {
     return undefined;
   }
 
-  const channels = useChannelsStore
-    .getState()
-    .openChannels.filter((channel) => isChannel(channel.name))
-    .map((channel) => channel.name);
+  const channels = getOpenChannelNames();
 
   if (channels.length === 0) {
     return undefined;

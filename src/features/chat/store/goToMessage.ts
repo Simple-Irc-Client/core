@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { setCurrentChannelName } from '@features/settings/store/settings';
 import { type ChannelCategory } from '@shared/types';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 /** A message to scroll to once its window shows */
 interface GoToMessageStore {

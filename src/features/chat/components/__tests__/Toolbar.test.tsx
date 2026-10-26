@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Toolbar from '../Toolbar';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as network from '@/network/irc/network';
 import * as users from '@features/users/store/users';
 import * as channelList from '@features/channels/store/channelList';
@@ -13,6 +14,7 @@ import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
 import { clearAllReplies, getReplyTo, setReplyTo } from '@features/replies/store/replyTo';
 import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '@features/e2ee/store/e2ee';
 import { useShortcutsStore } from '@features/shortcuts/store/shortcuts';
+import { mockStoreState, setTestSession, setTestSlice } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -33,14 +35,10 @@ vi.mock('@/network/irc/network', () => ({
 
 const mockResetAndGoToStart = vi.fn();
 const mockChangeServer = vi.fn();
-vi.mock('@features/settings/store/settings', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@features/settings/store/settings')>();
-  return {
-    ...actual,
-    resetAndGoToStart: () => mockResetAndGoToStart(),
-    changeServer: () => mockChangeServer(),
-  };
-});
+vi.mock('@features/networks/networkLifecycle', () => ({
+  resetAndGoToStart: () => mockResetAndGoToStart(),
+  changeServer: () => mockChangeServer(),
+}));
 
 const mockSetAddMessage = vi.fn();
 vi.mock('@features/channels/store/channels', () => ({
@@ -55,7 +53,7 @@ vi.mock('@/network/irc/capabilities', () => ({
 let mockAwayMessages: unknown[] = [];
 
 vi.mock('@features/channels/store/awayMessages', () => ({
-  useAwayMessagesStore: (selector: (state: { messages: unknown[] }) => unknown) => selector({ messages: mockAwayMessages }),
+  useActiveAwayMessages: (selector: (state: { messages: unknown[] }) => unknown) => selector({ messages: mockAwayMessages }),
 }));
 
 vi.mock('uuid', () => ({
@@ -97,8 +95,7 @@ describe('Toolbar', () => {
       })),
     });
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         currentChannelName: '#test',
         currentChannelCategory: ChannelCategory.channel,
         nick: 'testUser',
@@ -107,13 +104,12 @@ describe('Toolbar', () => {
         isAutoAway: false,
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         setFontFormatting: vi.fn(),
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
 
-    vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testUser');
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('testUser');
 
-    vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
-      selector({ users: [] } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+    vi.spyOn(users, 'useActiveUsers').mockImplementation((selector) =>
+      selector({ users: [] })
     );
     vi.spyOn(users, 'getUser').mockReturnValue(undefined);
 
@@ -183,8 +179,7 @@ describe('Toolbar', () => {
     });
 
     it('should go back to the chosen color after a spoiler', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -193,8 +188,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           fontFormatting: { colorCode: 4, bold: false, italic: false, underline: false },
           setFontFormatting: vi.fn(),
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
       render(<Toolbar />);
 
       const input = screen.getByRole('textbox');
@@ -394,15 +388,13 @@ describe('Toolbar', () => {
 
   describe('DEBUG_CHANNEL handling', () => {
     it('should not render input for DEBUG_CHANNEL', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: 'Debug',
           currentChannelCategory: ChannelCategory.status,
           nick: 'testUser',
           currentUserFlags: [],
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -518,15 +510,13 @@ describe('Toolbar', () => {
     });
 
     it('should display uppercase first letter', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'lowercase',
           currentUserFlags: [],
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -593,8 +583,7 @@ describe('Toolbar', () => {
     };
 
     it('should show away icon (moon) when user is away', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -603,8 +592,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -614,8 +602,7 @@ describe('Toolbar', () => {
     });
 
     it('should position away icon on top-left of avatar', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -624,8 +611,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -635,8 +621,7 @@ describe('Toolbar', () => {
     });
 
     it('should not show away icon when user is not away', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -645,8 +630,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -655,8 +639,7 @@ describe('Toolbar', () => {
     });
 
     it('should show both away icon and message count badge simultaneously', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -665,8 +648,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       mockAwayMessages = [
         {
@@ -697,8 +679,7 @@ describe('Toolbar', () => {
     });
 
     it('should show away icon for auto-away status', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -707,8 +688,7 @@ describe('Toolbar', () => {
           isAutoAway: true,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -717,8 +697,7 @@ describe('Toolbar', () => {
     });
 
     it('should show away icon with other user flags present', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -727,8 +706,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           isConnected: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -829,9 +807,9 @@ describe('Toolbar', () => {
 
     beforeEach(() => {
       vi.useFakeTimers();
+      vi.spyOn(networksStore, 'setIsAutoAway').mockImplementation(mockSetIsAutoAway);
 
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -842,17 +820,11 @@ describe('Toolbar', () => {
           autoAwayMinutes: 15,
           autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       // Mock getState to return the same mock functions
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: [],
-        isConnected: true,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: [], isConnected: true });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
     });
 
     afterEach(() => {
@@ -905,8 +877,7 @@ describe('Toolbar', () => {
 
     it('should turn off auto-away when user sends a message', () => {
       // Set up as auto-away
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -917,16 +888,10 @@ describe('Toolbar', () => {
           autoAwayMinutes: 15,
           autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: ['away'],
-        isConnected: true,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: ['away'], isConnected: true });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
 
@@ -942,8 +907,7 @@ describe('Toolbar', () => {
 
     it('should not turn off away if it was set manually', () => {
       // Set up as manually away (not auto)
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -954,16 +918,10 @@ describe('Toolbar', () => {
           autoAwayMinutes: 15,
           autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: ['away'],
-        isConnected: true,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: ['away'], isConnected: true });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
 
@@ -977,13 +935,8 @@ describe('Toolbar', () => {
     });
 
     it('should not set auto-away if already manually away', () => {
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: ['away'],
-        isConnected: true,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: ['away'], isConnected: true });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
 
@@ -995,13 +948,8 @@ describe('Toolbar', () => {
     });
 
     it('should not set auto-away if not connected', () => {
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: [],
-        isConnected: false,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: [], isConnected: false });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
 
@@ -1014,8 +962,7 @@ describe('Toolbar', () => {
 
     it('should not turn off auto-away if not connected', () => {
       // Set up as auto-away but not connected
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1026,16 +973,10 @@ describe('Toolbar', () => {
           autoAwayMinutes: 15,
           autoAwayMessage: '',
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
-      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({
-        currentUserFlags: ['away'],
-        isConnected: false,
-        setIsAutoAway: mockSetIsAutoAway,
-          autoAwayMinutes: 15,
-          autoAwayMessage: '',
-      } as unknown as settingsStore.SettingsStore);
+      setTestSession({ currentUserFlags: ['away'], isConnected: false });
+      vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue({ autoAwayMinutes: 15, autoAwayMessage: '' } as unknown as settingsStore.SettingsStore);
 
       render(<Toolbar />);
 
@@ -1061,7 +1002,8 @@ describe('Toolbar', () => {
           autoAwayMessage,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         } as unknown as settingsStore.SettingsStore;
-        vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) => selector(state));
+        mockStoreState(state);
+        setTestSession({ currentUserFlags: [], isConnected: true });
         vi.spyOn(settingsStore.useSettingsStore, 'getState').mockReturnValue(state);
       };
 
@@ -1291,8 +1233,8 @@ describe('Toolbar', () => {
 
   describe('Autocomplete users', () => {
     const mockUsersStore = (usersList: { nick: string; ident: string; hostname: string; flags: string[]; channels: { name: string; flags: string[]; maxPermission: number }[] }[]) => {
-      vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
-        selector({ users: usersList } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+      vi.spyOn(users, 'useActiveUsers').mockImplementation((selector) =>
+        selector({ users: usersList })
       );
     };
 
@@ -1483,8 +1425,7 @@ describe('Toolbar', () => {
     });
 
     it('should show Connect option when disconnected', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1492,8 +1433,7 @@ describe('Toolbar', () => {
           isConnected: false,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1507,8 +1447,7 @@ describe('Toolbar', () => {
     });
 
     it('should call ircReconnect when clicking Connect', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1516,8 +1455,7 @@ describe('Toolbar', () => {
           isConnected: false,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1533,8 +1471,7 @@ describe('Toolbar', () => {
     });
 
     it('should show Connecting text and disable Connect when isConnecting is true', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1543,8 +1480,7 @@ describe('Toolbar', () => {
           isConnecting: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1558,8 +1494,7 @@ describe('Toolbar', () => {
     });
 
     it('should mark Connect menu item as disabled when connecting', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1568,8 +1503,7 @@ describe('Toolbar', () => {
           isConnecting: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1583,8 +1517,7 @@ describe('Toolbar', () => {
     });
 
     it('should not call resetAndGoToStart when clicking Connect', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1592,8 +1525,7 @@ describe('Toolbar', () => {
           isConnected: false,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1609,8 +1541,7 @@ describe('Toolbar', () => {
     });
 
     it('should show Change Server option when disconnected', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1618,8 +1549,7 @@ describe('Toolbar', () => {
           isConnected: false,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1643,8 +1573,7 @@ describe('Toolbar', () => {
     });
 
     it('should call changeServer when clicking Change Server', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1652,8 +1581,7 @@ describe('Toolbar', () => {
           isConnected: false,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1669,8 +1597,7 @@ describe('Toolbar', () => {
     });
 
     it('should hide Change Server when connecting', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1679,8 +1606,7 @@ describe('Toolbar', () => {
           isConnecting: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1754,8 +1680,7 @@ describe('Toolbar', () => {
     });
 
     it('should not send typing TAGMSG for STATUS_CHANNEL', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: 'Status',
           currentChannelCategory: ChannelCategory.status,
           nick: 'testUser',
@@ -1763,8 +1688,7 @@ describe('Toolbar', () => {
           isConnected: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -1778,8 +1702,7 @@ describe('Toolbar', () => {
     });
 
     it('keeps text typed in Status in the input, unsent, and says it takes commands only', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: 'Status',
           currentChannelCategory: ChannelCategory.status,
           nick: 'testUser',
@@ -1787,8 +1710,7 @@ describe('Toolbar', () => {
           isConnected: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -1806,8 +1728,7 @@ describe('Toolbar', () => {
     });
 
     it('should not send typing TAGMSG for DEBUG_CHANNEL', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: 'Debug',
           currentChannelCategory: ChannelCategory.status,
           nick: 'testUser',
@@ -1815,8 +1736,7 @@ describe('Toolbar', () => {
           isConnected: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -1852,8 +1772,7 @@ describe('Toolbar', () => {
     });
 
     it('should send typing indicator to correct channel', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#mychannel',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -1861,8 +1780,7 @@ describe('Toolbar', () => {
           isConnected: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -1875,8 +1793,7 @@ describe('Toolbar', () => {
     });
 
     it('should send typing indicator for private messages', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: 'someuser',
           currentChannelCategory: ChannelCategory.priv,
           nick: 'testUser',
@@ -1884,8 +1801,7 @@ describe('Toolbar', () => {
           isConnected: true,
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<Toolbar />);
 
@@ -1905,16 +1821,14 @@ describe('Toolbar', () => {
     };
 
     it('should show dark mode option in dropdown menu when in light mode', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
           currentUserFlags: [],
           isDarkMode: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1927,16 +1841,14 @@ describe('Toolbar', () => {
     });
 
     it('should show light mode option in dropdown menu when in dark mode', async () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
           currentUserFlags: [],
           isDarkMode: true,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -1952,16 +1864,14 @@ describe('Toolbar', () => {
       const mockToggleDarkMode = vi.fn();
       vi.spyOn(settingsStore, 'toggleDarkMode').mockImplementation(mockToggleDarkMode);
 
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
           currentUserFlags: [],
           isDarkMode: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       const user = userEvent.setup();
       render(<Toolbar />);
@@ -2115,8 +2025,7 @@ describe('Toolbar', () => {
       fireEvent.change(input, { target: { value: 'draft message' } });
 
       // Switch to a different channel
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#other',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -2125,9 +2034,8 @@ describe('Toolbar', () => {
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
           setFontFormatting: vi.fn(),
-        } as unknown as settingsStore.SettingsStore)
-      );
-      vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testUser');
+        });
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('testUser');
 
       rerender(<Toolbar />);
 
@@ -2135,8 +2043,7 @@ describe('Toolbar', () => {
       expect(screen.getByRole('textbox')).toHaveValue('');
 
       // Switch back to original channel
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -2145,8 +2052,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
           setFontFormatting: vi.fn(),
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       rerender(<Toolbar />);
 
@@ -2249,7 +2155,7 @@ describe('Toolbar', () => {
       ['a server without message tags', () => withCapabilities(), question],
       ['a server that drops the reply tag', () => {
         withCapabilities('message-tags');
-        vi.spyOn(settingsStore, 'getClientTagDeny').mockReturnValue(['draft/reply']);
+        vi.spyOn(networksStore, 'getClientTagDeny').mockReturnValue(['draft/reply']);
       }, question],
       ['a message without a msgid', () => withCapabilities('message-tags'), { ...question, msgid: undefined }],
     ])('quotes the message on a line of its own on %s', (_case, arrange, replied) => {
@@ -2281,12 +2187,12 @@ describe('Toolbar', () => {
 
     it('sets the reply aside in an encrypted conversation', () => {
       setReplyTo('#test', question);
-      useE2eeStore.setState({ sessions: { [getSessionKey('#test')]: { state: E2eeState.active } as E2eeSession } });
+      setTestSlice(useE2eeStore, { sessions: { [getSessionKey('#test')]: { state: E2eeState.active } as E2eeSession } });
 
       render(<Toolbar />);
 
       expect(screen.queryByText(/main.toolbar.replyingTo/)).not.toBeInTheDocument();
-      act(() => useE2eeStore.setState({ sessions: {} }));
+      act(() => setTestSlice(useE2eeStore, { sessions: {} }));
       expect(screen.getByText(/main.toolbar.replyingTo/)).toBeInTheDocument();
     });
 
@@ -2387,7 +2293,7 @@ describe('Toolbar', () => {
 
     it('puts the reply tag on the opening line of the batch', () => {
       withMultiline('message-tags');
-      vi.spyOn(settingsStore, 'getClientTagDeny').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getClientTagDeny').mockReturnValue([]);
       setReplyTo('#test', { id: 'm1', msgid: 'm1', message: 'question', nick: 'alice', target: '#test', time: '2026-10-23T10:00:00.000Z', category: MessageCategory.default });
       render(<Toolbar />);
 
@@ -2411,8 +2317,7 @@ describe('Toolbar', () => {
     });
 
     it('formats each line on its own', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           currentChannelCategory: ChannelCategory.channel,
           nick: 'testUser',
@@ -2421,8 +2326,7 @@ describe('Toolbar', () => {
           isAutoAway: false,
           fontFormatting: { colorCode: null, bold: true, italic: false, underline: false },
           setFontFormatting: vi.fn(),
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
       render(<Toolbar />);
 
       send('first\n\nsecond');
@@ -2463,8 +2367,8 @@ describe('Toolbar', () => {
     });
 
     it('completes the word on the line being typed', () => {
-      vi.spyOn(users, 'useUsersStore').mockImplementation((selector) =>
-        selector({ users: [{ nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] }] } as unknown as ReturnType<typeof users.useUsersStore.getState>)
+      vi.spyOn(users, 'useActiveUsers').mockImplementation((selector) =>
+        selector({ users: [{ nick: 'alice', ident: 'alice', hostname: 'host', flags: [], channels: [{ name: '#test', flags: [], maxPermission: 0 }] }] })
       );
       render(<Toolbar />);
       const input = type('hello\nal');

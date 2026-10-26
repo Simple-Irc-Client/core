@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { type UserTypingStatus, type Channel, ChannelCategory, type Message, type ChannelExtended } from '@shared/types';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { DEBUG_CHANNEL, maxMessages, maxViewedMessages, STATUS_CHANNEL } from '@/config/config';
-import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
-import { flushCurrentUsers } from '@features/users/store/users';
-import { createServerScopedStorage } from '@shared/lib/idbStorage';
 import { foldName } from '@shared/lib/caseMapping';
+import { activeSlice, updateActiveSlice, useActiveSlice, type NetworkSlices } from '@features/networks/store/networkSlices';
+import { getCaseMapping, getChannelTypes, getCurrentChannelName, isSameName } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 const updateChannelByName = <T extends { name: string }>(
   list: T[],
@@ -47,10 +47,14 @@ export const mergeHistoryPage = (shown: Message[], page: Message[], beforeId?: s
 
 const keepNewest = (messages: Message[], limit: number): Message[] => (messages.length > limit ? messages.slice(-limit) : messages);
 
-interface ChannelsStore {
+export interface ChannelsSlice {
   openChannels: ChannelExtended[];
   openChannelsShortList: Channel[];
+}
 
+export const NO_CHANNELS: ChannelsSlice = { openChannels: [], openChannelsShortList: [] };
+
+interface ChannelsStore extends NetworkSlices<ChannelsSlice> {
   setAddChannel: (channelName: string, category: ChannelCategory) => void;
   setRemoveChannel: (channelName: string) => void;
   /** Adopt a different casing for an already open channel (the server is authoritative) */
@@ -79,107 +83,17 @@ interface ChannelsStore {
   setClearAll: () => void;
 }
 
-const syncCurrentAfterHydration = (): void => {
-  const currentChannelName = getCurrentChannelName();
-  const state = useChannelsStore.getState();
-  const channel = state.openChannels.find((ch) => isSameName(ch.name, currentChannelName));
-  if (channel) {
-    useCurrentStore.getState().setUpdateMessages([...channel.messages]);
-    useCurrentStore.getState().setUpdateTopic(channel.topic);
-    useCurrentStore.getState().setUpdateTyping([]);
-    flushCurrentUsers();
-  }
-};
-
-// Merges legacy case-duplicate channels (#religie / #Religie). Folds with `ascii`, which is safe under every CASEMAPPING
-const mergeCaseDuplicates = <T extends { name?: unknown }>(
-  channels: unknown,
-  merge: (existing: T, duplicate: T) => T,
-): T[] => {
-  if (!Array.isArray(channels)) {
-    return [];
-  }
-
-  const byFoldedName = new Map<string, T>();
-
-  for (const channel of channels as T[]) {
-    if (channel === null || typeof channel !== 'object' || typeof channel.name !== 'string') {
-      continue;
-    }
-
-    const key = foldName(channel.name, 'ascii');
-    const existing = byFoldedName.get(key);
-    byFoldedName.set(key, existing === undefined ? channel : merge(existing, channel));
-  }
-
-  return [...byFoldedName.values()];
-};
-
-const mergeMessages = (existing: Message[], duplicate: Message[]): Message[] => {
-  const seenIds = new Set(existing.map((message) => message.id));
-
-  return [...existing, ...duplicate.filter((message) => !seenIds.has(message.id))]
-    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''))
-    .slice(-maxMessages);
-};
-
-// E2EE messages never reach disk (plaintext would outlive forward secrecy). Returns the same object when nothing is stripped
-const stripUnpersisted = (channel: ChannelExtended): ChannelExtended => {
-  const hasTyping = channel.typing.length > 0;
-  const hasEncrypted = channel.messages.some((message) => message.e2ee !== undefined);
-
-  if (!hasTyping && !hasEncrypted) {
-    return channel;
-  }
-
-  return {
-    ...channel,
-    ...(hasTyping ? { typing: [] as string[] } : {}),
-    ...(hasEncrypted ? { messages: channel.messages.filter((message) => message.e2ee === undefined) } : {}),
-  };
-};
-
-export const migrateChannels = (persisted: unknown, version: number): ChannelsStore => {
-  const state = persisted as ChannelsStore;
-
-  if (version < 2) {
-    return {
-      ...state,
-      openChannels: mergeCaseDuplicates<ChannelExtended>(state?.openChannels, (existing, duplicate) => ({
-        ...existing,
-        messages: mergeMessages(existing.messages ?? [], duplicate.messages ?? []),
-        ...(existing.topic ? {} : { topic: duplicate.topic, topicSetBy: duplicate.topicSetBy, topicSetTime: duplicate.topicSetTime }),
-        unReadMessages: (existing.unReadMessages ?? 0) + (duplicate.unReadMessages ?? 0),
-        hasMention: existing.hasMention === true || duplicate.hasMention === true,
-        avatar: existing.avatar ?? duplicate.avatar,
-        displayName: existing.displayName ?? duplicate.displayName,
-        typing: [],
-      })),
-      openChannelsShortList: mergeCaseDuplicates<Channel>(state?.openChannelsShortList, (existing, duplicate) => ({
-        ...existing,
-        unReadMessages: (existing.unReadMessages ?? 0) + (duplicate.unReadMessages ?? 0),
-        hasMention: existing.hasMention === true || duplicate.hasMention === true,
-        avatar: existing.avatar ?? duplicate.avatar,
-        displayName: existing.displayName ?? duplicate.displayName,
-      })),
-    };
-  }
-
-  return state;
-};
-
 export const useChannelsStore = create<ChannelsStore>()(
   devtools(
-    persist(
       (set) => ({
-    openChannels: [],
-    openChannelsShortList: [],
+    byNetwork: {},
+    emptySlice: NO_CHANNELS,
 
     setAddChannel: (channelName: string, category: ChannelCategory): void => {
-      set((state) => ({
-        openChannelsShortList: [...state.openChannelsShortList, { category, name: channelName, unReadMessages: 0 }],
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: [...slice.openChannelsShortList, { category, name: channelName, unReadMessages: 0 }],
         openChannels: [
-          ...state.openChannels,
+          ...slice.openChannels,
           {
             category,
             messages: [],
@@ -191,49 +105,49 @@ export const useChannelsStore = create<ChannelsStore>()(
             typing: [],
           },
         ],
-      }));
+      })));
     },
     setRemoveChannel: (channelName: string) => {
-      set((state) => ({
-        openChannelsShortList: state.openChannelsShortList.filter((channel) => !isSameName(channel.name, channelName)),
-        openChannels: state.openChannels.filter((channel) => !isSameName(channel.name, channelName)),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: slice.openChannelsShortList.filter((channel) => !isSameName(channel.name, channelName)),
+        openChannels: slice.openChannels.filter((channel) => !isSameName(channel.name, channelName)),
+      })));
     },
     setRenameChannel: (from: string, to: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, from, (ch) => ({ ...ch, name: to })),
-        openChannels: updateChannelByName(state.openChannels, from, (ch) => ({
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, from, (ch) => ({ ...ch, name: to })),
+        openChannels: updateChannelByName(slice.openChannels, from, (ch) => ({
           ...ch,
           name: to,
           messages: ch.messages.map((message) => (isSameName(message.target, from) ? { ...message, target: to } : message)),
         })),
-      }));
+      })));
     },
     setTopic: (channelName: string, newTopic: string) => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, channelName)) {
             return channel;
           }
 
           return { ...channel, topic: newTopic };
         }),
-      }));
+      })));
     },
     setTopicSetBy: (channelName: string, nick: string, when: number) => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, channelName)) {
             return channel;
           }
 
           return { ...channel, topicSetBy: nick, topicSetTime: when };
         }),
-      }));
+      })));
     },
     setAddMessage: (newMessage: Message, limit: number): void => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, newMessage.target)) {
             return channel;
           }
@@ -245,19 +159,19 @@ export const useChannelsStore = create<ChannelsStore>()(
 
           return { ...channel, messages: keepNewest([...channel.messages, newMessage], limit) };
         }),
-      }));
+      })));
     },
     setAddHistoryPage: (channelName: string, page: Message[], limit: number, beforeId?: string): void => {
-      set((state) => ({
-        openChannels: updateChannelByName(state.openChannels, channelName, (channel) => ({
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: updateChannelByName(slice.openChannels, channelName, (channel) => ({
           ...channel,
           messages: keepNewest(mergeHistoryPage(channel.messages, page, beforeId), limit),
         })),
-      }));
+      })));
     },
     setUpdateMessage: (channelName: string, messageId: string, patch: Partial<Message>): void => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, channelName)) {
             return channel;
           }
@@ -271,11 +185,11 @@ export const useChannelsStore = create<ChannelsStore>()(
           messages[index] = { ...messages[index], ...patch } as Message;
           return { ...channel, messages };
         }),
-      }));
+      })));
     },
     setTyping: (channelName: string, nick: string, status: UserTypingStatus) => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel: ChannelExtended) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel: ChannelExtended) => {
           if (!isSameName(channel.name, channelName)) {
             return channel;
           }
@@ -295,92 +209,75 @@ export const useChannelsStore = create<ChannelsStore>()(
 
           return { ...channel, typing };
         }),
-      }));
+      })));
     },
     setClearAllTyping: () => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel) =>
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel) =>
           channel.typing.length > 0 ? { ...channel, typing: [] } : channel,
         ),
-      }));
+      })));
     },
     setClearUnreadMessages: (channelName: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: 0, hasMention: false })),
+      })));
     },
     setIncreaseUnreadMessages: (channelName: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: ch.unReadMessages + 1 })),
+      })));
     },
     setUnreadMessages: (channelName: string, count: number, hasMention: boolean) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, unReadMessages: count, hasMention })),
+      })));
     },
     setHasMention: (channelName: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, hasMention: true })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, hasMention: true })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, hasMention: true })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, hasMention: true })),
+      })));
     },
     setChannelAvatar: (channelName: string, avatar: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, avatar })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, avatar })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, avatar })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, avatar })),
+      })));
     },
     setChannelDisplayName: (channelName: string, displayName: string) => {
-      set((state) => ({
-        openChannelsShortList: updateChannelByName(state.openChannelsShortList, channelName, (ch) => ({ ...ch, displayName })),
-        openChannels: updateChannelByName(state.openChannels, channelName, (ch) => ({ ...ch, displayName })),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannelsShortList: updateChannelByName(slice.openChannelsShortList, channelName, (ch) => ({ ...ch, displayName })),
+        openChannels: updateChannelByName(slice.openChannels, channelName, (ch) => ({ ...ch, displayName })),
+      })));
     },
     setClearMessages: (channelName: string) => {
-      set((state) => ({
-        openChannels: state.openChannels.map((channel) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        openChannels: slice.openChannels.map((channel) => {
           if (!isSameName(channel.name, channelName)) {
             return channel;
           }
           return { ...channel, messages: [] };
         }),
-      }));
+      })));
     },
     setClearAll: () => {
-      set(() => ({
+      set((state) => updateActiveSlice(state, () => ({
         openChannels: [],
         openChannelsShortList: [],
-      }));
+      })));
     },
   }),
-      {
-        name: 'sic-channels',
-        version: 3,
-        migrate: migrateChannels,
-        storage: createServerScopedStorage<ChannelsStore>(),
-        partialize: (state) => ({
-          openChannels: state.openChannels.map((ch) => stripUnpersisted(ch)),
-          openChannelsShortList: state.openChannelsShortList,
-        }) as unknown as ChannelsStore,
-        onRehydrateStorage: () => {
-          return (state, error) => {
-            if (error) {
-              console.warn('Channels store rehydration failed:', error);
-              return;
-            }
-            if (state) {
-              syncCurrentAfterHydration();
-            }
-          };
-        },
-      },
-    ),
   ),
 );
+
+/** The active network's windows */
+export const useActiveChannels = <T>(selector: (slice: ChannelsSlice) => T): T => useActiveSlice(useChannelsStore, selector);
+
+const getChannels = (): ChannelsSlice => activeSlice(useChannelsStore.getState());
 
 /** The order of the window groups in the sidebar */
 export const CHANNEL_CATEGORY_ORDER: ChannelCategory[] = [ChannelCategory.status, ChannelCategory.debug, ChannelCategory.channel, ChannelCategory.priv];
@@ -396,7 +293,7 @@ export const setRemoveChannel = (channelName: string): void => {
 };
 
 export const getChannel = (channelName: string): ChannelExtended | undefined => {
-  return useChannelsStore.getState().openChannels.find((channel: ChannelExtended) => isSameName(channel.name, channelName));
+  return getChannels().openChannels.find((channel: ChannelExtended) => isSameName(channel.name, channelName));
 };
 
 export const existChannel = (channelName: string): boolean => {
@@ -420,7 +317,7 @@ export const setRenameChannel = (from: string, to: string): void => {
 };
 
 export const getOpenChannelNames = (): string[] => {
-  return useChannelsStore.getState().openChannelsShortList
+  return getChannels().openChannelsShortList
     .filter((ch) => ch.category === ChannelCategory.channel)
     .map((ch) => ch.name);
 };
@@ -431,7 +328,7 @@ export const getChannelsToAutoJoin = (): string[] => {
 };
 
 export const getOpenDmNicks = (): string[] => {
-  return useChannelsStore.getState().openChannelsShortList
+  return getChannels().openChannelsShortList
     .filter((ch) => ch.category === ChannelCategory.priv)
     .map((ch) => ch.name);
 };
@@ -494,12 +391,12 @@ export const setAddMessage = (newMessage: Message): void => {
 };
 
 /** A chathistory page, in the server's order: placed among what is shown rather than at the end; older than the message `beforeId` when given */
+/** History is asked for an open window; one closed before its page came (a kick, a part) stays closed */
 export const setAddHistoryPage = (page: Message[], beforeId?: string): void => {
   const currentChannelName = getCurrentChannelName();
-  const targets = [...new Set(page.map((message) => message.target))];
+  const targets = [...new Set(page.map((message) => message.target))].filter((target) => existChannel(target));
 
   for (const target of targets) {
-    ensureChannel(target);
     const isCurrent = isSameName(currentChannelName, target);
     useChannelsStore.getState().setAddHistoryPage(target, page.filter((message) => message.target === target), messageLimit(isCurrent), beforeId);
 
@@ -519,7 +416,7 @@ export const setUpdateMessage = (channelName: string, messageId: string, patch: 
 };
 
 export const setAddMessageToAllChannels = (newMessage: Omit<Message, 'target'>): void => {
-  const channels = useChannelsStore.getState().openChannels;
+  const channels = getChannels().openChannels;
   const currentChannelName = getCurrentChannelName();
 
   for (const channel of channels) {

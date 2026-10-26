@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
@@ -13,7 +13,7 @@ describe('kernel core/channel/invite', () => {
 
   it('test raw INVITE', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel1');
 
     const line = '@msgid=WglKE4an4Y6MGcC9tVM7jV;time=2023-03-23T00:58:29.305Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP INVITE sic-test :#sic';
 
@@ -26,7 +26,7 @@ describe('kernel core/channel/invite', () => {
 
   it('test raw 341 - inviting user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 341 sic-test inviteduser #somechannel';
 
@@ -40,7 +40,7 @@ describe('kernel core/channel/invite', () => {
 
   it('test raw 443 - user already on channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 443 sic-test someuser #somechannel :is already on channel';
 

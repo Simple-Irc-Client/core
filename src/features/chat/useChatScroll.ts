@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import type { Message } from '@shared/types';
-import { isSameName } from '@features/settings/store/settings';
 import { requestOlderHistory } from '@/network/irc/chatHistory';
 import { clearGoToMessage, useGoToMessageStore } from '@features/chat/store/goToMessage';
+import { isSameName } from '@features/networks/store/networks';
 
 // Close enough to the top that the older page is usually in before the user gets there
 const LOAD_OLDER_THRESHOLD_PX = 200;

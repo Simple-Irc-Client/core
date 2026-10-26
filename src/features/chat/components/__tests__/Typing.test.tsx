@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import Typing from '../Typing';
 import * as currentStore from '@features/chat/store/current';
-import * as settingsStore from '@features/settings/store/settings';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -21,11 +21,9 @@ describe('Typing', () => {
   });
 
   const setupMocks = (typing: string[] = [], isConnected = true) => {
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         isConnected,
-      } as ReturnType<typeof settingsStore.useSettingsStore.getState>)
-    );
+      });
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
       selector({
         topic: '',

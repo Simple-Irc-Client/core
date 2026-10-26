@@ -3,12 +3,13 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as channelListFile from '@features/channels/store/channelList';
 import * as networkFile from '@/network/irc/network';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
+import { setTestSlice } from '@/test/networks';
 
 describe('kernel core/list', () => {
   setupKernelTest();
@@ -85,8 +86,8 @@ describe('kernel core/list', () => {
   describe('Alis fallback for LIST on IRCnet', () => {
     it('should set listDeprecated when deprecation notice is received', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       const mockSetListDeprecated = vi.spyOn(channelListFile, 'setListDeprecated').mockImplementation(() => {});
       const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
@@ -105,7 +106,7 @@ describe('kernel core/list', () => {
       vi.spyOn(channelListFile, 'getListDeprecated').mockImplementation(() => true);
       // Populate store with enough channels
       const channels = Array.from({ length: 500 }, (_, i) => ({ name: `#ch${i}`, users: i, topic: '' }));
-      channelListFile.useChannelListStore.setState({ channels });
+      setTestSlice(channelListFile.useChannelListStore, { channels });
       const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
       const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
 
@@ -122,7 +123,7 @@ describe('kernel core/list', () => {
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => false);
       vi.spyOn(channelListFile, 'getListDeprecated').mockImplementation(() => true);
       // Populate store with too few channels
-      channelListFile.useChannelListStore.setState({ channels: [{ name: '#a', users: 1, topic: '' }] });
+      setTestSlice(channelListFile.useChannelListStore, { channels: [{ name: '#a', users: 1, topic: '' }] });
       const mockSetChannelListClear = vi.spyOn(channelListFile, 'setChannelListClear').mockImplementation(() => {});
       const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
       const mockIrcSendAlisListRequest = vi.spyOn(networkFile, 'ircSendAlisListRequest').mockImplementation(() => {});
@@ -150,8 +151,8 @@ describe('kernel core/list', () => {
 
     it('should parse Alis channel NOTICE correctly', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
       const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
 
@@ -165,8 +166,8 @@ describe('kernel core/list', () => {
 
     it('should handle Alis footer and reset alisMode', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
       const mockSetChannelListFinished = vi.spyOn(channelListFile, 'setChannelListFinished').mockImplementation(() => {});
       const mockSetAlisMode = vi.spyOn(channelListFile, 'setAlisMode').mockImplementation(() => {});
@@ -181,8 +182,8 @@ describe('kernel core/list', () => {
 
     it('should skip Alis header line silently', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => true);
       const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
 
@@ -195,8 +196,8 @@ describe('kernel core/list', () => {
 
     it('should not parse Alis NOTICE when alisMode is false', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(channelListFile, 'getAlisMode').mockImplementation(() => false);
       const mockSetAddChannelToList = vi.spyOn(channelListFile, 'setAddChannelToList').mockImplementation(() => {});
 

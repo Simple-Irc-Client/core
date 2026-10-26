@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { setCaseMapping } from '@features/settings/store/settings';
 import { getFriendsForNetwork, isFriendOnNetwork, useFriendsStore } from '../friends';
+import { setCaseMapping } from '@features/networks/store/networks';
 
 describe('friends store', () => {
   beforeEach(() => {

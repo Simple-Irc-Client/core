@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPlus, X } from 'lucide-react';
 import { setAddChannel } from '@features/channels/store/channels';
-import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
-import { monitorKey, useMonitorStore } from '@features/monitor/store/monitor';
+import { monitorKey, useActiveMonitor } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { removeFriend } from '@features/friends/friends';
 import { ChannelCategory } from '@shared/types';
@@ -12,6 +11,8 @@ import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { useChannelsDrawer } from '@/providers/DrawersContext';
 import AddFriendDialog from './AddFriendDialog';
+import { useNetworksStore } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 interface FriendsProps {
   fontSizeClass: string;
@@ -20,15 +21,13 @@ interface FriendsProps {
 const Friends = ({ fontSizeClass }: FriendsProps) => {
   const { t } = useTranslation();
 
-  const server = useSettingsStore((state) => state.server);
+  const network = useNetworksStore((state) => state.activeNetworkId);
   const friendsByNetwork = useFriendsStore((state) => state.friendsByNetwork);
-  const monitoredUsers = useMonitorStore((state) => state.monitoredUsers);
+  const monitoredUsers = useActiveMonitor((slice) => slice.monitoredUsers);
   const { toggleChannelsDrawer } = useChannelsDrawer();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [hoveredFriend, setHoveredFriend] = useState('');
-
-  const network = server?.network;
 
   const friends = useMemo(() => {
     const nicks = network !== undefined ? (friendsByNetwork[network] ?? []) : [];

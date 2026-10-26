@@ -1,7 +1,7 @@
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { redacted, setRedacted } from '@features/redaction/redaction';
-import { getCurrentNick, getUserModes, isSameName } from '@features/settings/store/settings';
+import { getCurrentNick, getUserModes, isSameName } from '@features/networks/store/networks';
 
 // IRCv3 message-redaction; ours count too, relayed back once the server deleted the message
 // @msgid=dJw8Q4rTq;time=2026-10-24T10:00:00.000Z :alice!~u@host REDACT #sic 4KDXxxP5mQbJM9eYuTm3J7 :spam

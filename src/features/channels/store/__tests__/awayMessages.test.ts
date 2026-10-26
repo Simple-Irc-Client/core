@@ -9,10 +9,11 @@ import {
 } from '../awayMessages';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
+import { setTestSlice, testSlice } from '@/test/networks';
 
 describe('awayMessages store', () => {
   beforeEach(() => {
-    useAwayMessagesStore.setState({
+    setTestSlice(useAwayMessagesStore, {
       messages: [],
     });
   });
@@ -34,7 +35,7 @@ describe('awayMessages store', () => {
       const message = createAwayMessage();
       addAwayMessage(message);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages.length).toBe(1);
       expect(messages[0]).toEqual(message);
     });
@@ -48,7 +49,7 @@ describe('awayMessages store', () => {
       addAwayMessage(message2);
       addAwayMessage(message3);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages.length).toBe(3);
       expect(messages[0]?.id).toBe('msg-1');
       expect(messages[1]?.id).toBe('msg-2');
@@ -62,7 +63,7 @@ describe('awayMessages store', () => {
       addAwayMessage(message1);
       addAwayMessage(message2);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages[0]?.id).toBe('msg-1');
       expect(messages[1]?.id).toBe('msg-2');
     });
@@ -74,7 +75,7 @@ describe('awayMessages store', () => {
       addAwayMessage(message1);
       addAwayMessage(message2);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages.length).toBe(2);
       expect(messages[0]?.channel).toBe('#channel1');
       expect(messages[1]?.channel).toBe('#channel2');
@@ -92,7 +93,7 @@ describe('awayMessages store', () => {
 
       addAwayMessage(message);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages[0]?.nick).toEqual(userNick);
     });
 
@@ -101,7 +102,7 @@ describe('awayMessages store', () => {
 
       addAwayMessage(message);
 
-      const messages = useAwayMessagesStore.getState().messages;
+      const messages = testSlice(useAwayMessagesStore).messages;
       expect(messages[0]?.nick).toBe('simpleNick');
     });
   });
@@ -112,19 +113,19 @@ describe('awayMessages store', () => {
       addAwayMessage(createAwayMessage({ id: 'msg-2' }));
       addAwayMessage(createAwayMessage({ id: 'msg-3' }));
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(3);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(3);
 
       clearAwayMessages();
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(0);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(0);
     });
 
     it('should work when already empty', () => {
-      expect(useAwayMessagesStore.getState().messages.length).toBe(0);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(0);
 
       clearAwayMessages();
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(0);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(0);
     });
   });
 
@@ -182,7 +183,7 @@ describe('awayMessages store', () => {
         addAwayMessage(createAwayMessage({ id: `msg-${i}` }));
       }
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(1_000);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(1_000);
     });
   });
 
@@ -192,16 +193,16 @@ describe('awayMessages store', () => {
 
       useAwayMessagesStore.getState().addAwayMessage(message);
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(1);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(1);
     });
 
     it('should allow direct clear', () => {
       addAwayMessage(createAwayMessage());
-      expect(useAwayMessagesStore.getState().messages.length).toBe(1);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(1);
 
       useAwayMessagesStore.getState().clearAwayMessages();
 
-      expect(useAwayMessagesStore.getState().messages.length).toBe(0);
+      expect(testSlice(useAwayMessagesStore).messages.length).toBe(0);
     });
   });
 });

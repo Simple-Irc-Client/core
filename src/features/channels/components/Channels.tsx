@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
 import { X, Plus, WifiOff } from 'lucide-react';
-import { getCurrentChannelName, isSameName, setCurrentChannelName, useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
+import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { ChannelCategory, type Channel } from '@shared/types';
 import Avatar from '@shared/components/Avatar';
 import { serverIcons } from '@/network/irc/servers';
 import { useTranslation } from 'react-i18next';
-import { CHANNEL_CATEGORY_ORDER, setRemoveChannel, useChannelsStore } from '@features/channels/store/channels';
+import { CHANNEL_CATEGORY_ORDER, setRemoveChannel, useActiveChannels } from '@features/channels/store/channels';
 import { channelsWidth as defaultChannelsWidth } from '@/config/theme';
 import { ircJoinChannels, ircPartChannel } from '@/network/irc/network';
 import { useChannelsDrawer } from '@/providers/DrawersContext';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
-import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
+import { getChannelListSortedByUsers, useActiveChannelList } from '@features/channels/store/channelList';
 import { Button } from '@shared/components/ui/button';
 import { cn } from '@shared/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
@@ -21,6 +21,8 @@ import DmPresenceDot from '@features/dmPresence/components/DmPresenceDot';
 import AppVersion from './AppVersion';
 import ChannelIcon from './ChannelIcon';
 import UnreadBadge from './UnreadBadge';
+import { getCurrentChannelName, isSameName, useActiveSession } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 interface ChannelsProps {
   width?: number;
@@ -38,22 +40,22 @@ const formatLagMs = (ms: number): string => {
 const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { t } = useTranslation();
 
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const fontSize = useSettingsStore((state) => state.fontSize);
-  const server = useSettingsStore((state) => state.server);
-  const networkName = useSettingsStore((state) => state.networkName);
+  const server = useActiveSession((session) => session.server);
+  const networkName = useActiveSession((session) => session.networkName);
   // ISUPPORT NETWORK once connected, else the network picked in the wizard
   const network = networkName ?? server?.network;
   const networkIcon = network !== undefined && Object.hasOwn(serverIcons, network) ? serverIcons[network] : undefined;
-  const lagMs = useSettingsStore((state) => state.lagMs);
+  const lagMs = useActiveSession((session) => session.lagMs);
   const showLag = useSettingsStore((state) => state.showLag);
-  const openChannelsShort = useChannelsStore((state) => state.openChannelsShortList);
+  const openChannelsShort = useActiveChannels((slice) => slice.openChannelsShortList);
   const fontSizeClass = fontSizeClasses[fontSize];
 
   const { isChannelsDrawerOpen, toggleChannelsDrawer } = useChannelsDrawer();
 
-  const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+  const isChannelListLoadingFinished = useActiveChannelList((slice) => slice.finished);
 
   const channelsList = useMemo(() => (isChannelListLoadingFinished ? getChannelListSortedByUsers() : []), [isChannelListLoadingFinished]);
 

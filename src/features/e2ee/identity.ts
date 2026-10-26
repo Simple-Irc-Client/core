@@ -5,11 +5,11 @@
 
 import { get, set, del } from 'idb-keyval';
 
-import { getServer } from '@/features/settings/store/settings';
+import { getActiveNetworkId, NO_NETWORK } from '@features/networks/store/networks';
 
 import { fingerprintFromB64, generateIdentity, type Identity } from './crypto';
 
-const IDENTITY_STORAGE_PREFIX = 'sic-e2ee-identity';
+export const E2EE_IDENTITY_KEY_PREFIX = 'sic-e2ee-identity';
 
 const cache = new Map<string, Identity>();
 
@@ -17,9 +17,9 @@ const cache = new Map<string, Identity>();
 const pending = new Map<string, Promise<Identity>>();
 
 const getNetworkKey = (): string => {
-  const network = getServer()?.network;
+  const networkId = getActiveNetworkId();
 
-  return `${IDENTITY_STORAGE_PREFIX}:${network && network.length > 0 ? network : 'default'}`;
+  return `${E2EE_IDENTITY_KEY_PREFIX}:${networkId === NO_NETWORK ? 'default' : networkId}`;
 };
 
 /** Otherwise a dropped or partial key would only fail much later, inside deriveBits. */

@@ -3,12 +3,14 @@ import { render, fireEvent } from '@testing-library/react';
 import { ContextMenu, getMenuPosition } from '../ContextMenu';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as DrawersContext from '@/providers/DrawersContext';
-import * as settings from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as users from '@features/users/store/users';
 import * as channels from '@features/channels/store/channels';
 import * as network from '@/network/irc/network';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
 import { ChannelCategory } from '@shared/types';
+import { connectTestNetwork } from '@/test/networks';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -65,12 +67,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock()
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       // Menu renders into portal (document.body)
@@ -83,12 +85,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'currentUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.priv');
@@ -98,12 +100,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.user.priv');
@@ -115,12 +117,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('otherUser');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('otherUser');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.priv');
@@ -130,12 +132,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('someoneElse');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.priv);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('someoneElse');
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.user.priv');
@@ -147,12 +149,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]); // No +r flag
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(10);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]); // No +r flag
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(10);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
@@ -162,12 +164,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue(['r']);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
@@ -177,12 +179,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(128);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue(['r']);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(128);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.user.addfriend');
@@ -192,12 +194,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'currentUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue(['r']);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(10);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(128);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue(['r']);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(10);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(128);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.addfriend');
@@ -207,13 +209,13 @@ describe('ContextMenu', () => {
   describe('Ignore functionality', () => {
     const mockUserMenu = (item: string) => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(createContextMenuMock({ contextMenuItem: item }));
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(settings, 'getServer').mockReturnValue({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      connectTestNetwork({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
     };
 
     const clickItem = (label: string): void => {
@@ -264,12 +266,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.operator.title');
@@ -279,12 +281,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['h']);
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
@@ -304,12 +306,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'currentUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'currentUser',
@@ -329,12 +331,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
@@ -355,12 +357,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'anyUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
       expect(document.body.textContent).toContain('contextmenu.user.whois');
@@ -372,12 +374,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
         ident: 'user',
@@ -396,12 +398,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
         ident: 'user',
@@ -425,12 +427,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
         ident: 'user',
@@ -454,12 +456,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
         ident: 'user',
@@ -482,12 +484,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'otherUser',
         ident: 'user',
@@ -513,13 +515,13 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useActiveChannels').mockImplementation(createChannelsStoreMock([
         { name: '#channel1', category: ChannelCategory.channel, unReadMessages: 0 },
         { name: '#channel2', category: ChannelCategory.channel, unReadMessages: 0 },
       ]) as typeof channels.useChannelsStore);
@@ -532,13 +534,13 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'currentUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useActiveChannels').mockImplementation(createChannelsStoreMock([
         { name: '#channel1', category: ChannelCategory.channel, unReadMessages: 0 },
       ]) as typeof channels.useChannelsStore);
 
@@ -550,13 +552,13 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useActiveChannels').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
 
       render(<ContextMenu />);
       expect(document.body.textContent).not.toContain('contextmenu.user.invite');
@@ -566,13 +568,13 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useActiveChannels').mockImplementation(createChannelsStoreMock([
         { name: 'someUser', category: ChannelCategory.priv, unReadMessages: 0 },
         { name: 'Status', category: ChannelCategory.status, unReadMessages: 0 },
       ]) as typeof channels.useChannelsStore);
@@ -659,18 +661,18 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
-      vi.spyOn(channels, 'useChannelsStore').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(channels, 'useActiveChannels').mockImplementation(createChannelsStoreMock([]) as typeof channels.useChannelsStore);
 
       const mockSetAddUser = vi.spyOn(users, 'setAddUser').mockImplementation(() => {});
       const mockSetJoinUser = vi.spyOn(users, 'setJoinUser').mockImplementation(() => {});
       const mockSetAddChannel = vi.spyOn(channels, 'setAddChannel').mockImplementation(() => {});
-      const mockSetCurrentChannelName = vi.spyOn(settings, 'setCurrentChannelName').mockImplementation(() => {});
+      const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
 
       render(<ContextMenu />);
 
@@ -1035,12 +1037,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'departedUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#test');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#test');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       // User has departed - getUser returns undefined
       vi.spyOn(users, 'getUser').mockReturnValue(undefined);
@@ -1055,12 +1057,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'targetUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'targetUser',
@@ -1089,12 +1091,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'targetUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       vi.spyOn(users, 'getUser').mockReturnValue({
         nick: 'targetUser',
@@ -1122,12 +1124,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'departedUser' })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('#ops');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.channel);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#ops');
       vi.spyOn(users, 'getCurrentUserChannelModes').mockReturnValue(['o']);
       vi.spyOn(users, 'getUser').mockReturnValue(undefined);
 
@@ -1158,12 +1160,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
 
@@ -1186,12 +1188,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
 
       render(<ContextMenu />);
 
@@ -1214,12 +1216,12 @@ describe('ContextMenu', () => {
       vi.spyOn(ContextMenuContext, 'useContextMenu').mockReturnValue(
         createContextMenuMock({ contextMenuItem: 'otherUser', contextMenuAnchorElement: anchorElement })
       );
-      vi.spyOn(settings, 'getCurrentNick').mockReturnValue('currentUser');
-      vi.spyOn(settings, 'getCurrentUserFlags').mockReturnValue([]);
-      vi.spyOn(settings, 'getWatchLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getMonitorLimit').mockReturnValue(0);
-      vi.spyOn(settings, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
-      vi.spyOn(settings, 'getCurrentChannelName').mockReturnValue('');
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('currentUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getWatchLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockReturnValue(0);
+      vi.spyOn(networksStore, 'getCurrentChannelCategory').mockReturnValue(ChannelCategory.status);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('');
       render(<ContextMenu />);
       return anchorElement;
     };

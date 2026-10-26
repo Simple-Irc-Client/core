@@ -33,8 +33,9 @@ vi.mock('idb-keyval', () => ({
 
 const network = { current: 'libera' as string | undefined };
 
-vi.mock('@/features/settings/store/settings', () => ({
-  getServer: (): { network: string | undefined } => ({ network: network.current }),
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  getActiveNetworkId: (): string => network.current ?? '',
 }));
 
 const { getIdentity, resetIdentity, clearIdentityCache } = await import('../identity');

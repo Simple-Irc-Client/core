@@ -6,11 +6,12 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { addToChannelSettingsBanList, addToChannelSettingsExceptionList, addToChannelSettingsInviteList, removeFromChannelSettingsBanList, removeFromChannelSettingsExceptionList, removeFromChannelSettingsInviteList, setChannelSettingsIsBanListLoading, setChannelSettingsIsExceptionListLoading, setChannelSettingsIsInviteListLoading, setChannelSettingsIsLoading, setChannelSettingsModes, updateChannelSettingsMode, useChannelSettingsStore } from '@features/channels/store/channelSettings';
 import { isChannel, setAddMessage } from '@features/channels/store/channels';
-import { getChannelModes, getCurrentNick, getTimeSettings, getUserModes, isSameName, setCurrentUserFlag } from '@features/settings/store/settings';
+import { getTimeSettings } from '@features/settings/store/settings';
 import { setUpdateUserFlag, setUserBot } from '@features/users/store/users';
 import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory, type UserMode } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getChannelModes, getCurrentNick, getUserModes, isSameName, setCurrentUserFlag } from '@features/networks/store/networks';
 
 const RPL_UMODEIS = '221';
 const RPL_CHANNELMODEIS = '324';

@@ -7,6 +7,8 @@ import { useGoToMessageStore } from '@features/chat/store/goToMessage';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { applySpoilerMarkup } from '@features/chat/spoilers';
 import { ChannelCategory, MessageCategory, type ChannelExtended, type Message } from '@shared/types';
+import { setTestSession, setTestSlice } from '@/test/networks';
+import { getActiveSession } from '@features/networks/store/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string, params?: Record<string, unknown>) => (params ? `${key} ${JSON.stringify(params)}` : key) }),
@@ -62,8 +64,9 @@ const renderSearch = () => {
 describe('MessageSearch', () => {
   beforeEach(() => {
     useGoToMessageStore.setState({ sought: undefined });
-    useSettingsStore.setState({ currentChannelName: '#home', currentChannelCategory: ChannelCategory.channel, timeFormat: '24h', showSeconds: false });
-    useChannelsStore.setState({
+    useSettingsStore.setState({ timeFormat: '24h', showSeconds: false });
+    setTestSession({ currentChannelName: '#home', currentChannelCategory: ChannelCategory.channel });
+    setTestSlice(useChannelsStore, {
       openChannels: [
         channel('#home', ChannelCategory.channel, [
           message('h1', 'the deploy went fine', { nick: 'bob', time: new Date(2024, 0, 1, 9, 30).toISOString() }),
@@ -114,7 +117,7 @@ describe('MessageSearch', () => {
     await user.click(options()[1] as HTMLElement);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(useSettingsStore.getState().currentChannelName).toBe('#home');
+    expect(getActiveSession().currentChannelName).toBe('#home');
     expect(useGoToMessageStore.getState().sought).toEqual({ channelName: '#home', messageId: 'h1' });
   });
 
@@ -124,8 +127,8 @@ describe('MessageSearch', () => {
 
     await user.type(input, 'deploy{Enter}');
 
-    expect(useSettingsStore.getState().currentChannelName).toBe('alice');
-    expect(useSettingsStore.getState().currentChannelCategory).toBe(ChannelCategory.priv);
+    expect(getActiveSession().currentChannelName).toBe('alice');
+    expect(getActiveSession().currentChannelCategory).toBe(ChannelCategory.priv);
     expect(useGoToMessageStore.getState().sought).toEqual({ channelName: 'alice', messageId: 'a1' });
   });
 
@@ -140,7 +143,7 @@ describe('MessageSearch', () => {
   });
 
   it('should not offer to search only Debug, which is never searched', () => {
-    useSettingsStore.setState({ currentChannelName: 'Debug', currentChannelCategory: ChannelCategory.debug });
+    setTestSession({ currentChannelName: 'Debug', currentChannelCategory: ChannelCategory.debug });
 
     renderSearch();
 
@@ -154,7 +157,7 @@ describe('MessageSearch', () => {
     await user.type(input, 'zzz{Enter}');
 
     expect(screen.getByText('search.empty')).toBeInTheDocument();
-    expect(useSettingsStore.getState().currentChannelName).toBe('#home');
+    expect(getActiveSession().currentChannelName).toBe('#home');
     expect(useGoToMessageStore.getState().sought).toBeUndefined();
   });
 
@@ -170,7 +173,7 @@ describe('MessageSearch', () => {
   });
 
   it('should keep a spoiler hidden in the listed message', async () => {
-    useChannelsStore.setState({ openChannels: [channel('#home', ChannelCategory.channel, [message('s1', applySpoilerMarkup('the ending: ||he dies||', null))])] });
+    setTestSlice(useChannelsStore, { openChannels: [channel('#home', ChannelCategory.channel, [message('s1', applySpoilerMarkup('the ending: ||he dies||', null))])] });
     const user = userEvent.setup();
     const { input } = renderSearch();
 
@@ -182,7 +185,7 @@ describe('MessageSearch', () => {
 
   it('should cut a long message to show the match', async () => {
     const lead = 'word '.repeat(40);
-    useChannelsStore.setState({ openChannels: [channel('#home', ChannelCategory.channel, [message('l1', `${lead}needle here`)])] });
+    setTestSlice(useChannelsStore, { openChannels: [channel('#home', ChannelCategory.channel, [message('l1', `${lead}needle here`)])] });
     const user = userEvent.setup();
     const { input } = renderSearch();
 
@@ -194,7 +197,7 @@ describe('MessageSearch', () => {
 
   it('should list only the newest 100 matches, and say so', async () => {
     const messages = Array.from({ length: 101 }, (_, index) => message(`m${index}`, `match ${index}`, { time: new Date(2024, 0, 1, 0, index).toISOString() }));
-    useChannelsStore.setState({ openChannels: [channel('#home', ChannelCategory.channel, messages)] });
+    setTestSlice(useChannelsStore, { openChannels: [channel('#home', ChannelCategory.channel, messages)] });
     const user = userEvent.setup();
     const { input } = renderSearch();
 

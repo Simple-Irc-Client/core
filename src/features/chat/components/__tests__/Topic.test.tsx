@@ -4,11 +4,13 @@ import Topic from '../Topic';
 import * as DrawersContext from '@/providers/DrawersContext';
 import * as currentStore from '@features/chat/store/current';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as usersStore from '@features/users/store/users';
 import * as channelsStore from '@features/channels/store/channels';
 import * as network from '@/network/irc/network';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import { useShortcutsStore } from '@features/shortcuts/store/shortcuts';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -79,19 +81,17 @@ describe('Topic', () => {
       selector({ topic, messages: [], users: [], typing: [], setUpdateTopic: vi.fn(), setUpdateMessages: vi.fn(), setUpdateUsers: vi.fn(), setUpdateTyping: vi.fn(), setClearAll: vi.fn() })
     );
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         currentChannelName,
         currentChannelCategory,
         isConnected: true,
         timeFormat: overrides.timeFormat ?? '24h',
         showSeconds: overrides.showSeconds ?? false,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
 
-    vi.spyOn(settingsStore, 'getCurrentNick').mockReturnValue('testuser');
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('testuser');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.spyOn(usersStore, 'useUsersStore').mockImplementation((selector: any) =>
+    vi.spyOn(usersStore, 'useActiveUsers').mockImplementation((selector: any) =>
       selector({
         users: [{ nick: 'testuser', channels: [{ name: currentChannelName, flags: userFlags, maxPermission: -1 }] }],
       })

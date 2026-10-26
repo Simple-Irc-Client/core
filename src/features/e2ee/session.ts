@@ -36,7 +36,7 @@
 
 import i18next from 'i18next';
 
-import { getAutoOfferEncryption, getCurrentNick, getE2eeEnabled, getLineLenLimit, getServer } from '@/features/settings/store/settings';
+import { getAutoOfferEncryption, getE2eeEnabled } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { ircSendRawMessage } from '@/network/irc/network';
 
@@ -53,6 +53,7 @@ import {
   type SessionKeys,
 } from './crypto';
 import { getIdentity } from './identity';
+import { type NetworkId } from '@features/networks/networkId';
 import {
   buildAcceptFrame,
   buildCipherFrames,
@@ -82,6 +83,7 @@ import {
   clearSessions,
 } from './store/e2ee';
 import { getPeerKey, getPin, putPin, setPinVerified } from './store/pins';
+import { getActiveNetworkId, getCurrentNick, getLineLenLimit, NO_NETWORK } from '@features/networks/store/networks';
 
 // Covers the peer's human reaction time (15s was too tight). Only changes the UI: a late ACCEPT still completes
 const OFFER_TIMEOUT_MS = 60_000;
@@ -112,10 +114,10 @@ const reassembler = createReassembler();
 /** Peers with an active session when the connection dropped; re-offered when seen online after reconnect. */
 let resumeCandidates = new Set<string>();
 
-const getNetwork = (): string => {
-  const network = getServer()?.network;
+const getNetwork = (): NetworkId => {
+  const networkId = getActiveNetworkId();
 
-  return network && network.length > 0 ? network : 'default';
+  return networkId === NO_NETWORK ? 'default' : networkId;
 };
 
 /** Account where known, nick otherwise. */

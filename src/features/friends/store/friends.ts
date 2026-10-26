@@ -2,7 +2,8 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { isSameName } from '@features/settings/store/settings';
+import { rekeyLegacyNetworks } from '@features/networks/legacyStorage';
+import { isSameName } from '@features/networks/store/networks';
 
 interface FriendsStore {
   /** Insertion order, display case */
@@ -66,7 +67,12 @@ export const useFriendsStore = create<FriendsStore>()(
       }),
       {
         name: 'sic-friends',
-        version: 1,
+        version: 2,
+        // An older version kept a bouncer's networks under its name
+        migrate: (persisted) => {
+          const state = persisted as Pick<FriendsStore, 'friendsByNetwork'>;
+          return { ...state, friendsByNetwork: rekeyLegacyNetworks(state.friendsByNetwork ?? {}) };
+        },
       },
     ),
   ),

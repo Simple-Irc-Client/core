@@ -4,7 +4,8 @@ import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { ircDisconnect, ircReconnect, ircSendRawMessage } from '@/network/irc/network';
 import { getSaslState } from '@/network/irc/sasl';
 import { getBoundBouncerNetworkId } from '@features/bouncer/store/bouncerNetworks';
-import { clearForAnotherNetwork, getIsConnected, getServer, setServer } from '@features/settings/store/settings';
+import { activateNetwork, getCurrentNick, getIsConnected, getServer } from '@features/networks/store/networks';
+import { switchToBouncerNetwork } from '@features/networks/networkLifecycle';
 
 /** BIND went out on this connection: a FAIL BOUNCER before registration completes is its answer */
 let bindSent = false;
@@ -29,8 +30,8 @@ export const onBouncerFailed = (): void => {
   if (!bindSent || getIsConnected() || server?.bouncer === undefined) {
     return;
   }
-  setServer({ ...server, bouncer: { ...server.bouncer, networkId: undefined } });
   ircDisconnect();
+  activateNetwork({ ...server, bouncer: { ...server.bouncer, networkId: undefined } }, getCurrentNick());
   void ircReconnect({ announce: false });
 };
 
@@ -42,8 +43,7 @@ export const connectToBouncerNetwork = (networkId: string): void => {
   }
   ircDisconnect();
   // The bouncer brings back the new network's channels as it binds
-  clearForAnotherNetwork();
-  setServer({ ...server, bouncer: { ...server.bouncer, networkId } });
+  switchToBouncerNetwork({ ...server, bouncer: { ...server.bouncer, networkId } });
   void ircReconnect({ announce: false });
 };
 

@@ -4,10 +4,10 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getUserModes, setCurrentUserFlag } from '@features/settings/store/settings';
 import { setUserAway } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getUserModes, setCurrentUserFlag } from '@features/networks/store/networks';
 
 const RPL_AWAY = '301';
 const RPL_UNAWAY = '305';

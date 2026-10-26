@@ -1,7 +1,7 @@
 // Shared by friends and DM presence, so both respect the server's limit
 
-import { getMonitorLimit, getWatchLimit } from '@features/settings/store/settings';
 import { ircMonitorAdd, ircMonitorRemove, ircWatchAdd, ircWatchRemove } from '@/network/irc/network';
+import { getMonitorLimit, getWatchLimit } from '@features/networks/store/networks';
 
 // Nick bytes per command, well below the 512-byte line limit
 const MAX_NICKS_BYTES = 400;

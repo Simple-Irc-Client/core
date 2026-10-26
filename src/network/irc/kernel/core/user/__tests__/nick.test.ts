@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -14,7 +15,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1', '#channel2']);
 
@@ -35,9 +36,9 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
-    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+    const mockSetNick = vi.spyOn(networksStore, 'setNick').mockImplementation(() => {});
     const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1', '#channel2']);
 
     const line = '@msgid=ls4nEYgZI42LXbsrfkcwcc;time=2023-02-12T14:20:53.072Z :SIC-test NICK :Niezident36707';
@@ -60,10 +61,10 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK with full nick!ident@host sender parses nick correctly', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     const mockGetUserChannels = vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
 
     const line = '@msgid=abc123;time=2023-02-12T14:20:53.072Z :OldNick!~user@some.host.com NICK :NewNick';
 
@@ -78,12 +79,12 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK with full sender detects own nick change', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#test');
     vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#test']);
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetNick = vi.spyOn(networksStore, 'setNick').mockImplementation(() => {});
 
     const line = ':MyNick!~user@my.host NICK :MyNewNick';
 
@@ -94,7 +95,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK rejects nick exceeding max length', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
 
@@ -108,7 +109,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK rejects nick with invalid characters', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
 
@@ -121,7 +122,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw NICK accepts valid nick with special chars', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockSetRenameUser = vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
 
@@ -134,7 +135,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw 432 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
@@ -148,7 +149,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw 432 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
 
     const line = `:irc01-black.librairc.net 432 * ioiijhjkkljkljlkj :Erroneous Nickname`;
@@ -162,7 +163,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw 432 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
 
     const line = `:insomnia.pirc.pl 432 * Merovingian :Nickname is unavailable: Being held for registered user`;
@@ -189,7 +190,7 @@ describe('kernel core/user/nick', () => {
 
   it('test raw 447 - cannot change nick', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':insomnia.pirc.pl 447 sic-test :Can not change nickname while on #Religie (+N)';
 

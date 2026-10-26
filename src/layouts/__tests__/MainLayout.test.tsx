@@ -26,6 +26,12 @@ vi.mock('@features/settings/store/settings', () => ({
     selector({ isWizardCompleted: mockIsWizardCompleted }),
 }));
 
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  useActiveSession: (selector: (state: { isWizardCompleted: boolean }) => unknown) =>
+    selector({ isWizardCompleted: mockIsWizardCompleted }),
+}));
+
 describe('MainLayout', () => {
   it('should render MainPage when wizard is completed', async () => {
     mockIsWizardCompleted = true;

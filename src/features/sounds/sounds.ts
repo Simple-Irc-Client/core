@@ -1,5 +1,6 @@
 // Synthesized with Web Audio, so no audio files ship with the app
-import { getCurrentChannelName, getDirectSound, getMentionSound, getSoundVolume, isSameName } from '@features/settings/store/settings';
+import { getDirectSound, getMentionSound, getSoundVolume } from '@features/settings/store/settings';
+import { getCurrentChannelName, isSameName } from '@features/networks/store/networks';
 
 export const NOTIFICATION_SOUNDS = ['chime', 'ping', 'trill'] as const;
 

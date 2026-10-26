@@ -4,9 +4,9 @@ import { maxMessages, maxViewedMessages } from '@/config/config';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { type ChatHistoryReference, ircRequestChatHistory } from '@/network/irc/network';
 import { getCategory, getMessages } from '@features/channels/store/channels';
-import { getCaseMapping, getChatHistoryLimit, getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { foldName } from '@shared/lib/caseMapping';
 import { ChannelCategory, type Message } from '@shared/types';
+import { getCaseMapping, getChatHistoryLimit, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 const PAGE_SIZE = 50;
 

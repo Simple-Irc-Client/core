@@ -2,7 +2,8 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { isSameName } from '@features/settings/store/settings';
+import { rekeyLegacyNetworks } from '@features/networks/legacyStorage';
+import { isSameName } from '@features/networks/store/networks';
 
 interface IgnoreStore {
   /** `nick!user@host` masks, insertion order */
@@ -48,7 +49,12 @@ export const useIgnoreStore = create<IgnoreStore>()(
       }),
       {
         name: 'sic-ignore',
-        version: 1,
+        version: 2,
+        // An older version kept a bouncer's networks under its name
+        migrate: (persisted) => {
+          const state = persisted as Pick<IgnoreStore, 'masksByNetwork'>;
+          return { ...state, masksByNetwork: rekeyLegacyNetworks(state.masksByNetwork ?? {}) };
+        },
       },
     ),
   ),

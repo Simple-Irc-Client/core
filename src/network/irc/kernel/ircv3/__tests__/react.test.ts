@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as channelsFile from '@features/channels/store/channels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as usersFile from '@features/users/store/users';
 import * as chatHistoryFile from '@/network/irc/chatHistory';
 import { type Message, MessageCategory } from '@shared/types';
@@ -33,8 +33,8 @@ describe('kernel ircv3/react', () => {
   beforeEach(() => {
     messages = [shown()];
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'me');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'me');
     vi.spyOn(channelsFile, 'getMessages').mockImplementation((window) => messages.filter((message) => message.target === window));
     update = vi.spyOn(channelsFile, 'setUpdateMessage').mockImplementation(() => {});
     setTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
@@ -101,7 +101,7 @@ describe('kernel ircv3/react', () => {
     };
 
     beforeEach(() => {
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
       vi.spyOn(chatHistoryFile, 'onHistoryBatch').mockImplementation(() => {});

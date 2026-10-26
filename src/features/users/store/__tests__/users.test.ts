@@ -28,7 +28,8 @@ import {
 } from '../users';
 import { type User, type UserChannel, type ChannelExtended, ChannelCategory, MessageCategory } from '@shared/types';
 import { getChannel, setAddMessage } from '@features/channels/store/channels';
-import { getCurrentChannelName } from '@features/settings/store/settings';
+import { getCurrentChannelName } from '@features/networks/store/networks';
+import { setTestSlice, testSlice } from '@/test/networks';
 
 const createUser = (nick: string, channels: UserChannel[]): User => ({
   nick,
@@ -38,7 +39,8 @@ const createUser = (nick: string, channels: UserChannel[]): User => ({
   channels,
 });
 
-vi.mock('@features/settings/store/settings', () => ({
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getCurrentChannelName: vi.fn(() => '#test'),
   getCurrentNick: vi.fn(() => 'TestUser'),
   // Real folding: the store's channel/nick identity depends on it
@@ -64,7 +66,7 @@ vi.mock('@features/channels/store/channels', () => ({
 
 describe('users store', () => {
   beforeEach(() => {
-    useUsersStore.setState({ users: [] });
+    setTestSlice(useUsersStore, { users: [] });
     pendingMetadata.clear();
     vi.clearAllMocks();
   });
@@ -77,8 +79,8 @@ describe('users store', () => {
 
       useUsersStore.getState().setAddUser(user);
 
-      expect(useUsersStore.getState().users.length).toBe(1);
-      expect(useUsersStore.getState().users[0]?.nick).toBe('TestUser');
+      expect(testSlice(useUsersStore).users.length).toBe(1);
+      expect(testSlice(useUsersStore).users[0]?.nick).toBe('TestUser');
     });
 
     it('should add multiple users to the store', () => {
@@ -89,7 +91,7 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      expect(useUsersStore.getState().users.length).toBe(2);
+      expect(testSlice(useUsersStore).users.length).toBe(2);
     });
 
     it('should preserve user properties', () => {
@@ -105,7 +107,7 @@ describe('users store', () => {
 
       useUsersStore.getState().setAddUser(user);
 
-      const storedUser = useUsersStore.getState().users[0];
+      const storedUser = testSlice(useUsersStore).users[0];
       expect(storedUser?.nick).toBe('TestUser');
       expect(storedUser?.ident).toBe('testident');
       expect(storedUser?.hostname).toBe('test.host.com');
@@ -137,7 +139,7 @@ describe('users store', () => {
       useUsersStore.getState().setRemoveUser('TestUser', '#channel1');
 
       expect(getUser('TestUser')).toBeUndefined();
-      expect(useUsersStore.getState().users.length).toBe(0);
+      expect(testSlice(useUsersStore).users.length).toBe(0);
     });
 
     it('should not affect other users when removing', () => {
@@ -184,7 +186,7 @@ describe('users store', () => {
       useUsersStore.getState().setQuitUser('TestUser');
 
       expect(getUser('TestUser')).toBeUndefined();
-      expect(useUsersStore.getState().users.length).toBe(0);
+      expect(testSlice(useUsersStore).users.length).toBe(0);
     });
 
     it('should not affect other users when quitting', () => {
@@ -199,7 +201,7 @@ describe('users store', () => {
 
       expect(getUser('User1')).toBeUndefined();
       expect(getUser('User2')).toBeDefined();
-      expect(useUsersStore.getState().users.length).toBe(1);
+      expect(testSlice(useUsersStore).users.length).toBe(1);
     });
   });
 
@@ -217,7 +219,7 @@ describe('users store', () => {
 
       expect(getUser('OldNick')).toBeUndefined();
       expect(getUser('NewNick')).toBeDefined();
-      expect(useUsersStore.getState().users.length).toBe(1);
+      expect(testSlice(useUsersStore).users.length).toBe(1);
     });
 
     it('should preserve channels after rename', () => {
@@ -246,7 +248,7 @@ describe('users store', () => {
 
       const user = getUser('FinalNick');
       expect(user?.channels.length).toBe(1);
-      expect(useUsersStore.getState().users.length).toBe(1);
+      expect(testSlice(useUsersStore).users.length).toBe(1);
     });
 
     it('should not affect other users when renaming', () => {
@@ -262,7 +264,7 @@ describe('users store', () => {
       expect(getUser('User1')).toBeUndefined();
       expect(getUser('User1Renamed')).toBeDefined();
       expect(getUser('User2')).toBeDefined();
-      expect(useUsersStore.getState().users.length).toBe(2);
+      expect(testSlice(useUsersStore).users.length).toBe(2);
     });
   });
 
@@ -721,9 +723,9 @@ describe('users store', () => {
 
       useUsersStore.getState().setAddUser(originalUser);
 
-      const userBeforeRename = useUsersStore.getState().users[0];
+      const userBeforeRename = testSlice(useUsersStore).users[0];
       useUsersStore.getState().setRenameUser('OldNick', 'NewNick');
-      const userAfterRename = useUsersStore.getState().users[0];
+      const userAfterRename = testSlice(useUsersStore).users[0];
 
       expect(userBeforeRename).not.toBe(userAfterRename);
     });
@@ -733,12 +735,12 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      const userBefore = useUsersStore.getState().users[0];
+      const userBefore = testSlice(useUsersStore).users[0];
       const channelsBefore = userBefore?.channels;
 
       useUsersStore.getState().setJoinUser('TestUser', '#channel2');
 
-      const userAfter = useUsersStore.getState().users[0];
+      const userAfter = testSlice(useUsersStore).users[0];
       const channelsAfter = userAfter?.channels;
 
       expect(channelsBefore).not.toBe(channelsAfter);
@@ -751,9 +753,9 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      const userBefore = useUsersStore.getState().users[0];
+      const userBefore = testSlice(useUsersStore).users[0];
       useUsersStore.getState().setUserAvatar('TestUser', 'https://example.com/avatar.png');
-      const userAfter = useUsersStore.getState().users[0];
+      const userAfter = testSlice(useUsersStore).users[0];
 
       expect(userBefore).not.toBe(userAfter);
       expect(userBefore?.avatar).toBeUndefined();
@@ -765,9 +767,9 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      const userBefore = useUsersStore.getState().users[0];
+      const userBefore = testSlice(useUsersStore).users[0];
       useUsersStore.getState().setUserColor('TestUser', '#ff0000');
-      const userAfter = useUsersStore.getState().users[0];
+      const userAfter = testSlice(useUsersStore).users[0];
 
       expect(userBefore).not.toBe(userAfter);
       expect(userBefore?.color).toBeUndefined();
@@ -779,12 +781,12 @@ describe('users store', () => {
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      const userBefore = useUsersStore.getState().users[0];
+      const userBefore = testSlice(useUsersStore).users[0];
       const channelBefore = userBefore?.channels[0];
 
       useUsersStore.getState().setUpdateUserFlag('TestUser', '#channel1', '+', 'o', []);
 
-      const userAfter = useUsersStore.getState().users[0];
+      const userAfter = testSlice(useUsersStore).users[0];
       const channelAfter = userAfter?.channels[0];
 
       expect(channelBefore).not.toBe(channelAfter);
@@ -798,12 +800,12 @@ describe('users store', () => {
         { name: '#channel2', flags: [], maxPermission: -1 },
       ]));
 
-      const userBefore = useUsersStore.getState().users[0];
+      const userBefore = testSlice(useUsersStore).users[0];
       const channelsBefore = userBefore?.channels;
 
       useUsersStore.getState().setRemoveUser('TestUser', '#channel1');
 
-      const userAfter = useUsersStore.getState().users[0];
+      const userAfter = testSlice(useUsersStore).users[0];
       const channelsAfter = userAfter?.channels;
 
       expect(channelsBefore).not.toBe(channelsAfter);
@@ -900,7 +902,7 @@ describe('users store', () => {
 
       // User never joins - should not be in the store
       expect(getUser('GhostUser')).toBeUndefined();
-      expect(useUsersStore.getState().users.length).toBe(0);
+      expect(testSlice(useUsersStore).users.length).toBe(0);
       // Buffer exists but user is not visible in any channel list
       expect(getUsersFromChannelSortedByMode('#test').length).toBe(0);
     });
@@ -1042,13 +1044,13 @@ describe('users store', () => {
     it('should handle renaming non-existent user gracefully', () => {
       useUsersStore.getState().setRenameUser('NonExistent', 'NewNick');
 
-      expect(useUsersStore.getState().users.length).toBe(0);
+      expect(testSlice(useUsersStore).users.length).toBe(0);
     });
 
     it('should handle joining channel for non-existent user gracefully', () => {
       useUsersStore.getState().setJoinUser('NonExistent', '#channel1');
 
-      expect(useUsersStore.getState().users.length).toBe(0);
+      expect(testSlice(useUsersStore).users.length).toBe(0);
     });
 
     it('should handle user with many channels correctly', () => {
@@ -1082,14 +1084,14 @@ describe('users store', () => {
       const users = Array.from({ length: 50_000 }, (_, i) => createUser(`User${i}`, [
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
-      useUsersStore.setState({ users });
+      setTestSlice(useUsersStore, { users });
 
       // The next user via the exported wrapper should be rejected
       setAddUserExport(createUser('Overflow', [
         { name: '#channel1', flags: [], maxPermission: -1 },
       ]));
 
-      expect(useUsersStore.getState().users.length).toBe(50_000);
+      expect(testSlice(useUsersStore).users.length).toBe(50_000);
       expect(getHasUser('Overflow')).toBe(false);
     });
   });
@@ -1103,7 +1105,7 @@ describe('users store', () => {
 
       setUsersClearAll();
 
-      expect(useUsersStore.getState().users).toEqual([]);
+      expect(testSlice(useUsersStore).users).toEqual([]);
       expect(pendingMetadata.size).toBe(0);
     });
   });
@@ -1125,7 +1127,7 @@ describe('users store', () => {
 
     it('should use stored user data for a DM participant when available', () => {
       mockPrivChannel('Bob');
-      useUsersStore.setState({
+      setTestSlice(useUsersStore, {
         users: [{ ...createUser('Bob', [{ name: '#shared', flags: [], maxPermission: -1 }]), away: true }],
       });
 
@@ -1247,17 +1249,17 @@ describe('users store', () => {
     it('should add every nick of the roster in one update', () => {
       setNamesUsersExport('#channel1', [entry('Alice'), entry('Bob', ['o'], 254)]);
 
-      const { users } = useUsersStore.getState();
+      const { users } = testSlice(useUsersStore);
       expect(users.map((user) => user.nick)).toEqual(['Alice', 'Bob']);
       expect(users[1]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
     });
 
     it('should give a known user the new channel without duplicating them', () => {
-      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
+      setTestSlice(useUsersStore, { users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
 
       setNamesUsersExport('#channel1', [entry('Alice', ['v'], 251)]);
 
-      const { users } = useUsersStore.getState();
+      const { users } = testSlice(useUsersStore);
       expect(users).toHaveLength(1);
       expect(users[0]?.channels).toEqual([
         { name: '#other', flags: [], maxPermission: -1 },
@@ -1266,27 +1268,27 @@ describe('users store', () => {
     });
 
     it('should refresh the flags of a user already in the channel', () => {
-      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
+      setTestSlice(useUsersStore, { users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
 
       setNamesUsersExport('#channel1', [entry('Alice', ['o'], 254)]);
 
-      expect(useUsersStore.getState().users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
+      expect(testSlice(useUsersStore).users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
     });
 
     it('should leave an existing user untouched when the roster carries no flags', () => {
-      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: ['o'], maxPermission: 254 }])] });
+      setTestSlice(useUsersStore, { users: [createUser('Alice', [{ name: '#channel1', flags: ['o'], maxPermission: 254 }])] });
 
       setNamesUsersExport('#channel1', [entry('Alice')]);
 
-      expect(useUsersStore.getState().users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
+      expect(testSlice(useUsersStore).users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
     });
 
     it('should match a known user under a different casing', () => {
-      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
+      setTestSlice(useUsersStore, { users: [createUser('Alice', [{ name: '#other', flags: [], maxPermission: -1 }])] });
 
       setNamesUsersExport('#channel1', [entry('ALICE')]);
 
-      const { users } = useUsersStore.getState();
+      const { users } = testSlice(useUsersStore);
       expect(users).toHaveLength(1);
       expect(users[0]?.nick).toBe('Alice');
     });
@@ -1296,29 +1298,29 @@ describe('users store', () => {
 
       setNamesUsersExport('#channel1', [entry('Alice')]);
 
-      expect(useUsersStore.getState().users[0]?.avatar).toBe('https://example.com/a.png');
+      expect(testSlice(useUsersStore).users[0]?.avatar).toBe('https://example.com/a.png');
       expect(pendingMetadata.size).toBe(0);
     });
 
     it('should keep the same users array when the roster changes nothing', () => {
-      useUsersStore.setState({ users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
-      const before = useUsersStore.getState().users;
+      setTestSlice(useUsersStore, { users: [createUser('Alice', [{ name: '#channel1', flags: [], maxPermission: -1 }])] });
+      const before = testSlice(useUsersStore).users;
 
       setNamesUsersExport('#channel1', [entry('Alice')]);
 
-      expect(useUsersStore.getState().users).toBe(before);
+      expect(testSlice(useUsersStore).users).toBe(before);
     });
 
     it('should ignore an empty roster', () => {
       setNamesUsersExport('#channel1', []);
 
-      expect(useUsersStore.getState().users).toEqual([]);
+      expect(testSlice(useUsersStore).users).toEqual([]);
     });
 
     it('should collapse a nick repeated within one roster', () => {
       setNamesUsersExport('#channel1', [entry('Alice'), entry('alice', ['o'], 254)]);
 
-      const { users } = useUsersStore.getState();
+      const { users } = testSlice(useUsersStore);
       expect(users).toHaveLength(1);
       expect(users[0]?.channels).toEqual([{ name: '#channel1', flags: ['o'], maxPermission: 254 }]);
     });

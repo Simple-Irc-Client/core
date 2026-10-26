@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Users from '../Users';
-import * as settingsStore from '@features/settings/store/settings';
 import * as currentStore from '@features/chat/store/current';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
 import * as DrawersContext from '@/providers/DrawersContext';
 import { ChannelCategory } from '@shared/types';
 import type { User, UserMode } from '@shared/types';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -56,16 +56,14 @@ describe('Users', () => {
       isUsersDrawerOpen = false,
     } = overrides;
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         currentChannelCategory,
         currentChannelName,
         userModes,
         hideAvatarsInUsersList,
         isConnected: true,
         isConnecting: false,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
 
     vi.spyOn(currentStore, 'useCurrentStore').mockImplementation((selector) =>
       selector({

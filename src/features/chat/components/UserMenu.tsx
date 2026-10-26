@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User as UserIcon, MessageSquare, Moon, Sun, LogIn, LogOut, ArrowLeftRight, Network, Keyboard } from 'lucide-react';
-import { useSettingsStore, resetAndGoToStart, changeServer, toggleDarkMode } from '@features/settings/store/settings';
+import { useSettingsStore, toggleDarkMode } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { ircReconnect } from '@/network/irc/network';
 import {
   DropdownMenu,
@@ -10,11 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@shared/components/ui/dropdown-menu';
-import { useAwayMessagesStore } from '@features/channels/store/awayMessages';
+import { useActiveAwayMessages } from '@features/channels/store/awayMessages';
 import { openShortcutsHelp } from '@features/shortcuts/store/shortcuts';
 import ProfileSettings from '@features/settings/components/ProfileSettings/ProfileSettings';
 import AwayMessages from '@features/channels/components/AwayMessages';
 import BouncerNetworksDialog from '@features/bouncer/components/BouncerNetworksDialog';
+import { resetAndGoToStart, changeServer } from '@features/networks/networkLifecycle';
 
 const UserMenu = () => {
   const { t } = useTranslation();
@@ -22,14 +24,14 @@ const UserMenu = () => {
   const [awayDialogOpen, setAwayDialogOpen] = useState(false);
   const [bouncerNetworksDialogOpen, setBouncerNetworksDialogOpen] = useState(false);
 
-  const nick = useSettingsStore((state) => state.nick);
-  const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
-  const isAway = useSettingsStore((state) => state.currentUserFlags.includes('away'));
-  const isConnected = useSettingsStore((state) => state.isConnected);
-  const isConnecting = useSettingsStore((state) => state.isConnecting);
+  const nick = useActiveSession((session) => session.nick);
+  const currentUserAvatar = useActiveSession((session) => session.currentUserAvatar);
+  const isAway = useActiveSession((session) => session.currentUserFlags.includes('away'));
+  const isConnected = useActiveSession((session) => session.isConnected);
+  const isConnecting = useActiveSession((session) => session.isConnecting);
   const isDarkMode = useSettingsStore((state) => state.isDarkMode);
-  const isOnBouncer = useSettingsStore((state) => state.server?.bouncer !== undefined);
-  const awayMessagesCount = useAwayMessagesStore((state) => state.messages.length);
+  const isOnBouncer = useActiveSession((session) => session.server?.bouncer !== undefined);
+  const awayMessagesCount = useActiveAwayMessages((slice) => slice.messages.length);
 
   return (
     <>

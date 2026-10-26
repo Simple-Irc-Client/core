@@ -10,9 +10,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/components/ui/tabs';
 import { useChannelSettingsStore, clearChannelSettingsStore, type ActiveTab } from '@features/channels/store/channelSettings';
 import { ircRequestMetadataList, ircSendCommand } from '@/network/irc/network';
-import { isSupportedOption } from '@features/settings/store/settings';
 import ModesTab from './tabs/ModesTab';
 import ListsTab from './tabs/ListsTab';
+import { isSupportedOption } from '@features/networks/store/networks';
 
 interface ChannelSettingsProps {
   open: boolean;

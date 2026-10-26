@@ -3,8 +3,8 @@ import { escapeTagValue } from '@/network/irc/helpers';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getMessages, setUpdateMessage } from '@features/channels/store/channels';
 import { REPLY_TAG } from '@features/replies/replies';
-import { getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { type Message, type Reaction } from '@shared/types';
+import { getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 // https://ircv3.net/specs/client-tags/react
 export const REACT_TAG = '+draft/react';

@@ -2,9 +2,10 @@ import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import ChannelIcon from '@features/channels/components/ChannelIcon';
-import { useChannelsStore } from '@features/channels/store/channels';
+import { useActiveChannels } from '@features/channels/store/channels';
 import { goToMessage } from '@features/chat/store/goToMessage';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@shared/components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@shared/components/ui/dialog';
 import { Switch } from '@shared/components/ui/switch';
@@ -39,9 +40,9 @@ const Results = ({ onDone }: { onDone: () => void }) => {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [inCurrentWindow, setInCurrentWindow] = useState(false);
-  const channels = useChannelsStore((state) => state.openChannels);
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const channels = useActiveChannels((slice) => slice.openChannels);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
+  const currentChannelCategory = useActiveSession((session) => session.currentChannelCategory);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
   // Typing stays responsive while a long history is searched

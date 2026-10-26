@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
@@ -13,7 +14,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 276', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 276 sic-test k4be :has client certificate fingerprint 56fca76';
 
@@ -28,7 +29,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 307', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 307 sic-test Noop :is identified for this nick';
 
@@ -43,7 +44,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 312', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 312 sic-test Noop insomnia.pirc.pl :IRC lepszy od spania!';
 
@@ -58,7 +59,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 313 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 313 sic-test k4be :is an IRC Operator';
 
@@ -73,7 +74,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 313 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 313 sic-test k4be :is a Network Service';
 
@@ -88,7 +89,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 318', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 311 sic-test Noop ~Noop ukryty-29093CCD.compute-1.amazonaws.com * :*';
 
@@ -103,8 +104,8 @@ describe('kernel core/whois', () => {
 
   it('test raw 319', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetUserModes = vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
 
     const line = ':chmurka.pirc.pl 319 sic-test Noop :@#onet_quiz @#scc @#sic';
 
@@ -131,7 +132,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 320', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 320 sic-test k4be :a Network Administrator';
 
@@ -146,7 +147,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 335', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 335 sic-test Noop :is a \u0002Bot\u0002 on pirc.pl';
 
@@ -161,7 +162,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 671', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection';
 
@@ -176,7 +177,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 317 - idle and signon time', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':insomnia.pirc.pl 317 sic-test toto 118 1768728754 :seconds idle, signon time';
 
@@ -190,7 +191,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 317 - signon time in the user\'s time format', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
     vi.spyOn(settingsFile, 'getTimeSettings').mockImplementation(() => ({ timeFormat: '12h', showSeconds: true }));
     const signon = new Date(2026, 9, 24, 22, 40, 9).getTime() / 1000;
 
@@ -201,7 +202,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 330 - logged in as', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 330 sic-test someuser :is logged in as someaccount';
 
@@ -215,7 +216,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 338 - actual host/IP', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 338 sic-test someuser ~user@host.com 192.168.1.1';
 
@@ -229,7 +230,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 344 - REOP/geo info', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 344 sic-test someuser :is connecting from Poland';
 
@@ -243,7 +244,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 378 - connecting from', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 378 sic-test someuser :is connecting from *@host.com 192.168.1.1';
 
@@ -257,7 +258,7 @@ describe('kernel core/whois', () => {
 
   it('test raw 379 - using modes', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 379 sic-test someuser :is using modes +iwx';
 

@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { setCaseMapping } from '@features/settings/store/settings';
 import {
   addMonitoredNick,
   removeMonitoredNick,
@@ -15,6 +14,7 @@ import {
   isNickOnline,
   clearMonitorList,
 } from '../monitor';
+import { setCaseMapping } from '@features/networks/store/networks';
 
 describe('monitor store', () => {
   beforeEach(() => {

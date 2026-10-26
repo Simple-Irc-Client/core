@@ -9,7 +9,7 @@ import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
 import { clearBouncerBind } from '@/network/irc/bouncer';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import * as networkFile from '@/network/irc/network';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 
 describe('kernel ircv3/sasl', () => {
   setupKernelTest();
@@ -28,8 +28,8 @@ describe('kernel ircv3/sasl', () => {
 
   it('binds a bouncer connection to its network once logged in, before ending negotiation', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       default: 0,
       encoding: 'utf8',
       network: 'bouncer',

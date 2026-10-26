@@ -1,7 +1,7 @@
 import { type IrcContext } from '@/network/irc/kernel/context';
 import { REACT_TAG, setReaction, UNREACT_TAG, withReaction } from '@features/reactions/reactions';
 import { REPLY_TAG } from '@features/replies/replies';
-import { getCurrentNick, isSameName } from '@features/settings/store/settings';
+import { getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 const applyReaction = (ctx: IrcContext, window: string, msgid: string, emoji: string, nick: string, isAdded: boolean): void => {
   // A replayed reaction usually follows its message in the same page, not yet shown; the page may repeat one shown already

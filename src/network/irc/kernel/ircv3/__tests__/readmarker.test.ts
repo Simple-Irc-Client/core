@@ -7,7 +7,7 @@ import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/ir
 import * as networkFile from '@/network/irc/network';
 import { clearReadMarkers, getReadMarker, noteShownMessage } from '@/network/irc/readMarkers';
 import * as channelsFile from '@features/channels/store/channels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { type Message, MessageCategory } from '@shared/types';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
 
@@ -25,8 +25,8 @@ describe('kernel ircv3/readmarker', () => {
   setupKernelTest();
 
   const mockEnvironment = (messages: Message[] = []) => {
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => name !== '#unknown');
     vi.spyOn(channelsFile, 'getMessages').mockImplementation(() => messages);
     return {

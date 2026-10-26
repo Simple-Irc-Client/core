@@ -7,10 +7,11 @@ import {
   getChannelListSortedByAZ,
   getChannelListSortedByUsers,
 } from '../channelList';
+import { setTestSlice, testSlice } from '@/test/networks';
 
 describe('channelList store', () => {
   beforeEach(() => {
-    useChannelListStore.setState({
+    setTestSlice(useChannelListStore, {
       channels: [],
       finished: false,
     });
@@ -20,7 +21,7 @@ describe('channelList store', () => {
     it('should add channel to list', () => {
       setAddChannelToList('#test', 10, 'Test channel');
 
-      const channels = useChannelListStore.getState().channels;
+      const channels = testSlice(useChannelListStore).channels;
       expect(channels.length).toBe(1);
       expect(channels[0]?.name).toBe('#test');
       expect(channels[0]?.users).toBe(10);
@@ -32,34 +33,34 @@ describe('channelList store', () => {
       setAddChannelToList('#test2', 20, 'Channel 2');
       setAddChannelToList('#test3', 30, 'Channel 3');
 
-      expect(useChannelListStore.getState().channels.length).toBe(3);
+      expect(testSlice(useChannelListStore).channels.length).toBe(3);
     });
 
     it('should not add duplicate channel', () => {
       setAddChannelToList('#test', 10, 'Topic 1');
       setAddChannelToList('#test', 20, 'Topic 2');
 
-      expect(useChannelListStore.getState().channels.length).toBe(1);
-      expect(useChannelListStore.getState().channels[0]?.users).toBe(10);
+      expect(testSlice(useChannelListStore).channels.length).toBe(1);
+      expect(testSlice(useChannelListStore).channels[0]?.users).toBe(10);
     });
 
     it('should ignore hidden channels (asterisk)', () => {
       setAddChannelToList('*', 100, 'Hidden');
 
-      expect(useChannelListStore.getState().channels.length).toBe(0);
+      expect(testSlice(useChannelListStore).channels.length).toBe(0);
     });
 
     it('should handle channel with empty topic', () => {
       setAddChannelToList('#test', 10, '');
 
-      const channels = useChannelListStore.getState().channels;
+      const channels = testSlice(useChannelListStore).channels;
       expect(channels[0]?.topic).toBe('');
     });
 
     it('should handle channel with zero users', () => {
       setAddChannelToList('#test', 0, 'Empty channel');
 
-      const channels = useChannelListStore.getState().channels;
+      const channels = testSlice(useChannelListStore).channels;
       expect(channels[0]?.users).toBe(0);
     });
   });
@@ -71,12 +72,12 @@ describe('channelList store', () => {
 
       setChannelListClear();
 
-      expect(useChannelListStore.getState().channels.length).toBe(0);
+      expect(testSlice(useChannelListStore).channels.length).toBe(0);
     });
 
     it('should work on empty list', () => {
       setChannelListClear();
-      expect(useChannelListStore.getState().channels.length).toBe(0);
+      expect(testSlice(useChannelListStore).channels.length).toBe(0);
     });
   });
 
@@ -84,14 +85,14 @@ describe('channelList store', () => {
     it('should set finished to true', () => {
       setChannelListFinished(true);
 
-      expect(useChannelListStore.getState().finished).toBe(true);
+      expect(testSlice(useChannelListStore).finished).toBe(true);
     });
 
     it('should set finished to false', () => {
-      useChannelListStore.setState({ finished: true });
+      setTestSlice(useChannelListStore, { finished: true });
       setChannelListFinished(false);
 
-      expect(useChannelListStore.getState().finished).toBe(false);
+      expect(testSlice(useChannelListStore).finished).toBe(false);
     });
 
     it('should preserve channels when finishing with few channels', () => {
@@ -100,8 +101,8 @@ describe('channelList store', () => {
 
       setChannelListFinished(true);
 
-      expect(useChannelListStore.getState().channels.length).toBe(2);
-      expect(useChannelListStore.getState().finished).toBe(true);
+      expect(testSlice(useChannelListStore).channels.length).toBe(2);
+      expect(testSlice(useChannelListStore).finished).toBe(true);
     });
 
     it('should preserve channels when finishing with many channels', () => {
@@ -111,8 +112,8 @@ describe('channelList store', () => {
 
       setChannelListFinished(true);
 
-      expect(useChannelListStore.getState().channels.length).toBe(15);
-      expect(useChannelListStore.getState().finished).toBe(true);
+      expect(testSlice(useChannelListStore).channels.length).toBe(15);
+      expect(testSlice(useChannelListStore).finished).toBe(true);
     });
   });
 
@@ -197,10 +198,10 @@ describe('channelList store', () => {
   describe('immutability', () => {
     it('should not mutate channels array when adding', () => {
       setAddChannelToList('#test1', 10, 'Channel 1');
-      const channelsBefore = useChannelListStore.getState().channels;
+      const channelsBefore = testSlice(useChannelListStore).channels;
 
       setAddChannelToList('#test2', 20, 'Channel 2');
-      const channelsAfter = useChannelListStore.getState().channels;
+      const channelsAfter = testSlice(useChannelListStore).channels;
 
       expect(channelsBefore).not.toBe(channelsAfter);
     });
@@ -209,7 +210,7 @@ describe('channelList store', () => {
       setAddChannelToList('#zebra', 10, 'Zebra');
       setAddChannelToList('#alpha', 20, 'Alpha');
 
-      const original = useChannelListStore.getState().channels;
+      const original = testSlice(useChannelListStore).channels;
       const sorted = getChannelListSortedByAZ();
 
       expect(original).not.toBe(sorted);
@@ -221,7 +222,7 @@ describe('channelList store', () => {
       setAddChannelToList('#small', 10, 'Small');
       setAddChannelToList('#large', 100, 'Large');
 
-      const original = useChannelListStore.getState().channels;
+      const original = testSlice(useChannelListStore).channels;
       const sorted = getChannelListSortedByUsers();
 
       expect(original).not.toBe(sorted);
@@ -235,20 +236,20 @@ describe('channelList store', () => {
       const longName = '#' + 'a'.repeat(100);
       setAddChannelToList(longName, 10, 'Long name');
 
-      expect(useChannelListStore.getState().channels[0]?.name).toBe(longName);
+      expect(testSlice(useChannelListStore).channels[0]?.name).toBe(longName);
     });
 
     it('should handle special characters in topic', () => {
       const topic = 'Welcome! 🎉 <script>alert("xss")</script> & more';
       setAddChannelToList('#test', 10, topic);
 
-      expect(useChannelListStore.getState().channels[0]?.topic).toBe(topic);
+      expect(testSlice(useChannelListStore).channels[0]?.topic).toBe(topic);
     });
 
     it('should handle large user counts', () => {
       setAddChannelToList('#large', 999999, 'Very large');
 
-      expect(useChannelListStore.getState().channels[0]?.users).toBe(999999);
+      expect(testSlice(useChannelListStore).channels[0]?.users).toBe(999999);
     });
 
     it('should handle many channels', () => {
@@ -256,7 +257,7 @@ describe('channelList store', () => {
         setAddChannelToList(`#channel${i}`, i, `Topic ${i}`);
       }
 
-      expect(useChannelListStore.getState().channels.length).toBe(1000);
+      expect(testSlice(useChannelListStore).channels.length).toBe(1000);
 
       const sortedByAZ = getChannelListSortedByAZ();
       expect(sortedByAZ.length).toBe(1000);
@@ -270,13 +271,13 @@ describe('channelList store', () => {
         setAddChannelToList(`#ch${i}`, i, `Topic ${i}`);
       }
 
-      expect(useChannelListStore.getState().channels.length).toBe(10_000);
+      expect(testSlice(useChannelListStore).channels.length).toBe(10_000);
     });
   });
 
   describe('finished state', () => {
     it('should default to false', () => {
-      expect(useChannelListStore.getState().finished).toBe(false);
+      expect(testSlice(useChannelListStore).finished).toBe(false);
     });
 
     it('should reset when clearing', () => {
@@ -285,11 +286,11 @@ describe('channelList store', () => {
         setAddChannelToList(`#channel${i}`, i, `Topic ${i}`);
       }
       setChannelListFinished(true);
-      expect(useChannelListStore.getState().finished).toBe(true);
+      expect(testSlice(useChannelListStore).finished).toBe(true);
 
       setChannelListClear();
       // Note: clear doesn't reset finished, it only clears channels
-      expect(useChannelListStore.getState().channels.length).toBe(0);
+      expect(testSlice(useChannelListStore).channels.length).toBe(0);
     });
   });
 });

@@ -3,18 +3,19 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
+import { testSlice } from '@/test/networks';
 
 describe('kernel core/channel/names', () => {
   setupKernelTest();
 
   it('test raw 353 #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line =
@@ -36,7 +37,7 @@ describe('kernel core/channel/names', () => {
 
   it('test raw 353 #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line = ':chmurka.pirc.pl 353 sic-test = #Religie :aleksa7!~aleksa7@vhost:kohana.aleksia';
@@ -51,7 +52,7 @@ describe('kernel core/channel/names', () => {
   });
 
   it('should ignore the space some servers end the list with', () => {
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line: ':irc.example.net 353 sic-test = #chan :@op voiced ' }).handle();
@@ -64,7 +65,7 @@ describe('kernel core/channel/names', () => {
 
   it('test raw 353 #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockBufferNamesUsers = vi.spyOn(usersFile, 'bufferNamesUsers').mockImplementation(() => {});
 
     const line =
@@ -99,7 +100,7 @@ describe('kernel core/channel/names', () => {
 
   it('should apply a roster split across several 353 lines as one store update on 366', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     usersFile.setUsersClearAll();
 
     let storeUpdates = 0;
@@ -114,20 +115,20 @@ describe('kernel core/channel/names', () => {
 
     // Nothing reaches the store until the roster is closed
     expect(storeUpdates).toBe(0);
-    expect(usersFile.useUsersStore.getState().users).toHaveLength(0);
+    expect(testSlice(usersFile.useUsersStore).users).toHaveLength(0);
 
     new Kernel({ type: 'raw', line: ':chmurka.pirc.pl 366 sic-test #sic :End of /NAMES list.' }).handle();
     unsubscribe();
 
     // The whole roster in a single update, however many lines carried it
     expect(storeUpdates).toBe(1);
-    expect(usersFile.useUsersStore.getState().users.map((user) => user.nick)).toEqual(['alice', 'bob', 'carol']);
+    expect(testSlice(usersFile.useUsersStore).users.map((user) => user.nick)).toEqual(['alice', 'bob', 'carol']);
     expect(usersFile.getUser('carol')?.channels).toEqual([{ name: '#sic', flags: ['o'], maxPermission: 253 }]);
   });
 
   it('should close a roster whose 366 echoes a different casing', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     usersFile.setUsersClearAll();
 
     new Kernel({ type: 'raw', line: ':chmurka.pirc.pl 353 sic-test = #Religie :alice!~a@host.one' }).handle();
@@ -139,7 +140,7 @@ describe('kernel core/channel/names', () => {
 
   it('should not strand a roster the server never closes', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     usersFile.setUsersClearAll();
 
     // 1000 buffered nicks is the safety valve; 100 per line keeps the lines realistic
@@ -149,6 +150,6 @@ describe('kernel core/channel/names', () => {
     }
 
     // No 366 ever arrives, yet the users are there
-    expect(usersFile.useUsersStore.getState().users).toHaveLength(1000);
+    expect(testSlice(usersFile.useUsersStore).users).toHaveLength(1000);
   });
 });

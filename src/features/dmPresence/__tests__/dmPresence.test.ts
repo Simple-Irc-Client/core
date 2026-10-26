@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as networkFile from '@/network/irc/network';
 import { clearMonitorList, isNickMonitored } from '@features/monitor/store/monitor';
 import { useChannelsStore, setAddChannel, setRemoveChannel, getOpenDmNicks, existChannel } from '@features/channels/store/channels';
@@ -17,6 +17,7 @@ import {
   unsubscribeDmPresence,
 } from '../dmPresence';
 import { type Server } from '@/network/irc/servers';
+import { connectTestNetwork, setTestSlice } from '@/test/networks';
 
 const testServer = { network: 'pirc.pl' } as Server;
 
@@ -28,14 +29,14 @@ describe('dmPresence actions', () => {
   let mockWatchRemove: NicksMock;
 
   beforeEach(() => {
-    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+    setTestSlice(useChannelsStore, { openChannels: [], openChannelsShortList: [] });
     useFriendsStore.setState({ friendsByNetwork: {} });
     clearMonitorList();
     resetDmPresenceSubscription();
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => testServer);
-    vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
-    vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 0);
+    connectTestNetwork(testServer);
+    vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
+    vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 0);
     mockMonitorAdd = vi.fn<(nicks: string[]) => void>();
     mockMonitorRemove = vi.fn<(nicks: string[]) => void>();
     mockWatchAdd = vi.fn<(nicks: string[]) => void>();
@@ -59,7 +60,7 @@ describe('dmPresence actions', () => {
     });
 
     it('does nothing when disconnected', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
 
       subscribeDmPresence('Alice');
 
@@ -68,8 +69,8 @@ describe('dmPresence actions', () => {
     });
 
     it('falls back to WATCH when the server has no MONITOR', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 128);
 
       subscribeDmPresence('Alice');
 
@@ -90,7 +91,7 @@ describe('dmPresence actions', () => {
 
     it('does not send when disconnected', () => {
       subscribeDmPresence('Alice');
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       mockMonitorRemove.mockClear();
 
       unsubscribeDmPresence('Alice');
@@ -207,7 +208,7 @@ describe('dmPresence actions', () => {
     it('still renames local data when disconnected, but sends nothing over the wire', () => {
       setAddChannel('Bob', ChannelCategory.priv);
       subscribeDmPresence('Bob');
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       mockMonitorAdd.mockClear();
       mockMonitorRemove.mockClear();
 
@@ -222,8 +223,8 @@ describe('dmPresence actions', () => {
     });
 
     it('uses WATCH on servers without MONITOR', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 128);
       addFriend('Bob');
       mockWatchAdd.mockClear();
 

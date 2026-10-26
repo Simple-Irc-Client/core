@@ -9,10 +9,11 @@ import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies
 import { requestLatestHistory } from '@/network/irc/chatHistory';
 import { ircRequestMetadataList, ircSendRawMessage } from '@/network/irc/network';
 import { existChannel, getChannel, setAddMessage, setRenameChannel } from '@features/channels/store/channels';
-import { getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setAddUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentNick, getUserModes, isSameName } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 const RPL_CHANNEL_URL = '328';
 const ERR_NOSUCHCHANNEL = '403';

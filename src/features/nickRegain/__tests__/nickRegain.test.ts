@@ -3,10 +3,11 @@ import * as networkFile from '@/network/irc/network';
 import * as subscribeFile from '@features/monitor/subscribe';
 import * as friendsFile from '@features/friends/friends';
 import * as channelsFile from '@features/channels/store/channels';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { alternativeNick, forgetWantedNick, onNicksOffline, onOwnNickChanged, onRegisteredAs, reclaimWantedNick, registrationNick, rememberWantedNick, watchWantedNick } from '../nickRegain';
+import { getActiveSession } from '@features/networks/store/networks';
+import { setTestSession } from '@/test/networks';
 
-const state = (fields: Partial<ReturnType<typeof useSettingsStore.getState>>) => useSettingsStore.setState(fields);
+const state = setTestSession;
 
 describe('nick regain', () => {
   let send: ReturnType<typeof vi.spyOn>;
@@ -60,7 +61,7 @@ describe('nick regain', () => {
       rememberWantedNick('piotr');
       rememberWantedNick('piotr_');
 
-      expect(useSettingsStore.getState().wantedNick).toBe('piotr');
+      expect(getActiveSession().wantedNick).toBe('piotr');
     });
 
     it('should only answer which nick to try, not remember anything', () => {
@@ -68,19 +69,19 @@ describe('nick regain', () => {
 
       alternativeNick('piotr');
 
-      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
+      expect(getActiveSession().wantedNick).toBeUndefined();
     });
 
     it('should end the wait when registered as the wanted nick, whatever its case', () => {
       onRegisteredAs('Piotr');
 
-      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
+      expect(getActiveSession().wantedNick).toBeUndefined();
     });
 
     it('should keep waiting when registered as an alternative', () => {
       onRegisteredAs('piotr_');
 
-      expect(useSettingsStore.getState().wantedNick).toBe('piotr');
+      expect(getActiveSession().wantedNick).toBe('piotr');
     });
   });
 
@@ -123,7 +124,7 @@ describe('nick regain', () => {
     it('should end the wait and stop watching once the nick is ours', () => {
       onOwnNickChanged('piotr');
 
-      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
+      expect(getActiveSession().wantedNick).toBeUndefined();
       expect(unsubscribe).toHaveBeenCalledWith(['piotr']);
     });
 
@@ -138,7 +139,7 @@ describe('nick regain', () => {
     it('should keep waiting when our nick changes to another one', () => {
       onOwnNickChanged('piotr__');
 
-      expect(useSettingsStore.getState().wantedNick).toBe('piotr');
+      expect(getActiveSession().wantedNick).toBe('piotr');
     });
   });
 
@@ -146,7 +147,7 @@ describe('nick regain', () => {
     it('should stop waiting when the user settles or picks another nick', () => {
       forgetWantedNick();
 
-      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
+      expect(getActiveSession().wantedNick).toBeUndefined();
       expect(unsubscribe).toHaveBeenCalledWith(['piotr']);
     });
 
@@ -155,7 +156,7 @@ describe('nick regain', () => {
 
       forgetWantedNick();
 
-      expect(useSettingsStore.getState().wantedNick).toBeUndefined();
+      expect(getActiveSession().wantedNick).toBeUndefined();
       expect(unsubscribe).not.toHaveBeenCalled();
     });
 

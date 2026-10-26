@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageCategory } from '@shared/types';
@@ -13,7 +13,7 @@ describe('kernel: HELP, ADMIN and STATS replies', () => {
   setupKernelTest();
 
   const shown = (line: string) => {
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
     const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line }).handle();

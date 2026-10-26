@@ -4,8 +4,9 @@ import userEvent from '@testing-library/user-event';
 import KeyboardShortcuts from '../KeyboardShortcuts';
 import { openMessageSearch, useShortcutsStore } from '../../store/shortcuts';
 import { useChannelsStore } from '@features/channels/store/channels';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory } from '@shared/types';
+import { setTestSession, setTestSlice } from '@/test/networks';
+import { getActiveSession } from '@features/networks/store/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -33,8 +34,8 @@ const itemNames = (): string[] =>
 describe('KeyboardShortcuts', () => {
   beforeEach(() => {
     useShortcutsStore.setState({ openDialog: null });
-    useSettingsStore.setState({ currentChannelName: '#home', currentChannelCategory: ChannelCategory.channel });
-    useChannelsStore.setState({
+    setTestSession({ currentChannelName: '#home', currentChannelCategory: ChannelCategory.channel });
+    setTestSlice(useChannelsStore, {
       openChannelsShortList: [
         { name: 'Status', category: ChannelCategory.status, unReadMessages: 0 },
         { name: '#home', category: ChannelCategory.channel, unReadMessages: 0 },
@@ -61,8 +62,8 @@ describe('KeyboardShortcuts', () => {
     await user.keyboard('{Meta>}k{/Meta}');
     await user.keyboard('rus{Enter}');
 
-    expect(useSettingsStore.getState().currentChannelName).toBe('#rust');
-    expect(useSettingsStore.getState().currentChannelCategory).toBe(ChannelCategory.channel);
+    expect(getActiveSession().currentChannelName).toBe('#rust');
+    expect(getActiveSession().currentChannelCategory).toBe(ChannelCategory.channel);
     expect(screen.queryByTestId('quick-switcher')).not.toBeInTheDocument();
   });
 
@@ -73,8 +74,8 @@ describe('KeyboardShortcuts', () => {
     await user.keyboard('{Control>}k{/Control}');
     await user.click(screen.getByRole('option', { name: /alice/ }));
 
-    expect(useSettingsStore.getState().currentChannelName).toBe('alice');
-    expect(useSettingsStore.getState().currentChannelCategory).toBe(ChannelCategory.priv);
+    expect(getActiveSession().currentChannelName).toBe('alice');
+    expect(getActiveSession().currentChannelCategory).toBe(ChannelCategory.priv);
   });
 
   it('should say when nothing matches, and stay on the current window', async () => {
@@ -85,7 +86,7 @@ describe('KeyboardShortcuts', () => {
     await user.keyboard('zzz{Enter}');
 
     expect(screen.getByText('shortcuts.switcher.empty')).toBeInTheDocument();
-    expect(useSettingsStore.getState().currentChannelName).toBe('#home');
+    expect(getActiveSession().currentChannelName).toBe('#home');
   });
 
   it('should close the switcher with the same shortcut, or Escape', async () => {

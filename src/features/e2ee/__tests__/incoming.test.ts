@@ -15,14 +15,18 @@ vi.mock('@/network/irc/network', () => ({
   },
 }));
 
-vi.mock('@/features/settings/store/settings', () => ({
+vi.mock('@features/settings/store/settings', () => ({
+  getAutoOfferEncryption: (): boolean => false,
+  getE2eeEnabled: (): boolean => true,
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getServer: (): { network: string } => ({ network: 'testnet' }),
   getCaseMapping: (): string => 'ascii',
   getCurrentNick: (): string => 'me',
   getCurrentChannelName: (): string => 'Status',
   isSameName: (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase(),
-  getAutoOfferEncryption: (): boolean => false,
-  getE2eeEnabled: (): boolean => true,
   // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
   getLineLenLimit: (): number => 0,
 }));

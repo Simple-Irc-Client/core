@@ -1,7 +1,7 @@
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { getUserModes } from '@features/settings/store/settings';
 import { setUserAccount } from '@features/users/store/users';
+import { getUserModes } from '@features/networks/store/networks';
 
 // IRCv3 account-notify
 // :nick!user@host ACCOUNT accountname

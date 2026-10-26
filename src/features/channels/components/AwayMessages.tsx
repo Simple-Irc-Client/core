@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@shared/components/ui/dialog';
 import { Button } from '@shared/components/ui/button';
-import { useAwayMessagesStore, clearAwayMessages } from '@features/channels/store/awayMessages';
+import { clearAwayMessages, useActiveAwayMessages } from '@features/channels/store/awayMessages';
 import { format, isToday } from 'date-fns';
 import { getDateFnsLocale } from '@/shared/lib/dateLocale';
 import { timePattern } from '@shared/lib/dateTime';
@@ -21,7 +21,7 @@ interface AwayMessagesProps {
 
 const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
   const { t } = useTranslation();
-  const awayMessages = useAwayMessagesStore((state) => state.messages);
+  const awayMessages = useActiveAwayMessages((slice) => slice.messages);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
   const time = timePattern({ timeFormat, showSeconds });

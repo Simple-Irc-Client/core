@@ -1,73 +1,50 @@
 import { get, set, del } from 'idb-keyval';
-import type { PersistStorage, StateStorage, StorageValue } from 'zustand/middleware';
+import { type NetworkId } from '@features/networks/networkId';
 
 const WRITE_DEBOUNCE_MS = 2000;
 
-const getServerStorageKey = (baseName: string): string => {
+export interface NetworkStorage<Saved> {
+  /** What was saved for the network; nothing when unreadable too */
+  load: (networkId: NetworkId) => Promise<Saved | undefined>;
+  /** Like load, for a key an older version saved under */
+  loadKey: (key: string) => Promise<Saved | undefined>;
+  /** Debounced; serialized only when written */
+  save: (networkId: NetworkId, value: Saved) => void;
+  /** Written at once; resolves once it is */
+  saveNow: (networkId: NetworkId, value: Saved) => Promise<void>;
+  removeKey: (key: string) => Promise<void>;
+  /** Only needed by tests; the app keeps one storage for its lifetime. */
+  dispose: () => void;
+}
+
+const readKey = async <Saved>(key: string): Promise<Saved | undefined> => {
+  let raw: unknown;
   try {
-    const settingsJson = localStorage.getItem('sic-settings');
-    if (settingsJson) {
-      const settings = JSON.parse(settingsJson) as { state?: { server?: { network: string; servers: string[]; default: number; bouncer?: { networkId?: string } } } };
-      const server = settings?.state?.server;
-      if (server) {
-        // Each network on a bouncer is a server of its own
-        const bouncerNetwork = server.bouncer?.networkId;
-        return `${baseName}:${server.network}:${server.servers[server.default]}${bouncerNetwork === undefined ? '' : `:${bouncerNetwork}`}`;
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to parse settings for storage key:', error);
+    raw = await get(key);
+  } catch {
+    // Private browsing or no IndexedDB: the app works without what was saved
+    return undefined;
   }
-  return baseName;
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(raw) as Saved;
+  } catch (error) {
+    // Truncated or hand-edited data: start clean rather than break the app
+    console.warn('Failed to parse persisted state:', error);
+    return undefined;
+  }
 };
 
-const idbStorage: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    try {
-      return (await get(name)) ?? null;
-    } catch {
-      return null;
-    }
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    try {
-      await set(name, value);
-    } catch {
-      // Silently fail — app works without persistence (private browsing, quota exceeded)
-    }
-  },
-  removeItem: async (name: string): Promise<void> => {
-    try {
-      await del(name);
-    } catch {
-      // Same as setItem
-    }
-  },
-};
+/** One value per network in IndexedDB, under `baseName:networkId` */
+export const createNetworkStorage = <Saved>(baseName: string): NetworkStorage<Saved> => {
+  const keyOf = (networkId: NetworkId): string => `${baseName}:${networkId}`;
+  const pendingValues = new Map<string, Saved>();
+  const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();
 
-// Debounces JSON serialization too, not just the write (createJSONStorage re-encoded everything per mutation).
-// Holding the state object is safe because the stores update immutably
-export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: () => void } => {
-  let pendingWrite: ReturnType<typeof setTimeout> | null = null;
-  let pendingValue: StorageValue<S> | null = null;
-  let pendingKey: string | null = null;
-
-  // Fire-and-forget: it also runs during page teardown, and idbStorage never rejects
-  const flush = (): void => {
-    if (pendingWrite !== null) {
-      clearTimeout(pendingWrite);
-      pendingWrite = null;
-    }
-
-    const key = pendingKey;
-    const value = pendingValue;
-    pendingKey = null;
-    pendingValue = null;
-
-    if (key === null || value === null) {
-      return;
-    }
-
+  const write = async (key: string, value: Saved): Promise<void> => {
     let encoded: string;
     try {
       encoded = JSON.stringify(value);
@@ -77,73 +54,79 @@ export const createServerScopedStorage = <S>(): PersistStorage<S> & { dispose: (
       return;
     }
 
-    void idbStorage.setItem(key, encoded);
+    try {
+      await set(key, encoded);
+    } catch {
+      // Private browsing or quota exceeded: the app works without persistence
+    }
+  };
+
+  const cancel = (key: string): void => {
+    clearTimeout(pendingWrites.get(key));
+    pendingWrites.delete(key);
+    pendingValues.delete(key);
+  };
+
+  // Fire-and-forget: it also runs during page teardown
+  const flush = (key: string): void => {
+    const value = pendingValues.get(key);
+    cancel(key);
+    if (value !== undefined) {
+      void write(key, value);
+    }
+  };
+
+  const flushAll = (): void => {
+    for (const key of [...pendingValues.keys()]) {
+      flush(key);
+    }
   };
 
   // Flush pending writes on hide/pagehide: closed or discarded tabs may never get `unload`
   const onVisibilityChange = (): void => {
     if (document.visibilityState === 'hidden') {
-      flush();
+      flushAll();
     }
-  };
-  const onPageHide = (): void => {
-    flush();
   };
 
   if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', onVisibilityChange);
-    globalThis.addEventListener('pagehide', onPageHide);
+    globalThis.addEventListener('pagehide', flushAll);
   }
 
   return {
-    /** Only needed by tests; the app keeps one storage for its lifetime. */
+    load: (networkId: NetworkId) => readKey<Saved>(keyOf(networkId)),
+    loadKey: (key: string) => readKey<Saved>(key),
+    save: (networkId: NetworkId, value: Saved): void => {
+      const key = keyOf(networkId);
+      pendingValues.set(key, value);
+      clearTimeout(pendingWrites.get(key));
+      pendingWrites.set(key, setTimeout(() => flush(key), WRITE_DEBOUNCE_MS));
+    },
+    saveNow: (networkId: NetworkId, value: Saved): Promise<void> => {
+      const key = keyOf(networkId);
+      cancel(key);
+      return write(key, value);
+    },
+    removeKey: async (key: string): Promise<void> => {
+      // A queued write would otherwise resurrect what was just removed
+      cancel(key);
+      try {
+        await del(key);
+      } catch {
+        // Same as a failed write
+      }
+    },
     dispose: (): void => {
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', onVisibilityChange);
-        globalThis.removeEventListener('pagehide', onPageHide);
+        globalThis.removeEventListener('pagehide', flushAll);
       }
-      if (pendingWrite !== null) {
-        clearTimeout(pendingWrite);
-        pendingWrite = null;
+      for (const timer of pendingWrites.values()) {
+        clearTimeout(timer);
       }
-      pendingKey = null;
-      pendingValue = null;
-    },
-    getItem: async (name: string): Promise<StorageValue<S> | null> => {
-      const raw = await idbStorage.getItem(getServerStorageKey(name));
-      if (raw === null) {
-        return null;
-      }
-
-      try {
-        return JSON.parse(raw) as StorageValue<S>;
-      } catch (error) {
-        // Truncated or hand-edited data: start clean rather than break the app
-        console.warn('Failed to parse persisted state:', error);
-        return null;
-      }
-    },
-    setItem: (name: string, value: StorageValue<S>): void => {
-      pendingKey = getServerStorageKey(name);
-      pendingValue = value;
-
-      if (pendingWrite !== null) {
-        clearTimeout(pendingWrite);
-      }
-      pendingWrite = setTimeout(flush, WRITE_DEBOUNCE_MS);
-    },
-    removeItem: async (name: string): Promise<void> => {
-      const key = getServerStorageKey(name);
-
-      // A queued write would otherwise resurrect what was just removed
-      if (pendingWrite !== null) {
-        clearTimeout(pendingWrite);
-        pendingWrite = null;
-      }
-      pendingKey = null;
-      pendingValue = null;
-
-      await idbStorage.removeItem(key);
+      pendingWrites.clear();
+      pendingValues.clear();
     },
   };
 };

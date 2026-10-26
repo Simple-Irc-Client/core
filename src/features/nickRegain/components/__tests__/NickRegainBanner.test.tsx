@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import NickRegainBanner from '../NickRegainBanner';
 import * as nickRegain from '../../nickRegain';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { setTestSession } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string, params?: Record<string, unknown>) => (params ? `${key} ${JSON.stringify(params)}` : key) }),
@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
 
 describe('NickRegainBanner', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ nick: 'piotr_', wantedNick: 'piotr', isConnected: true });
+    setTestSession({ nick: 'piotr_', wantedNick: 'piotr', isConnected: true });
   });
 
   afterEach(() => {
@@ -40,7 +40,7 @@ describe('NickRegainBanner', () => {
     render(<NickRegainBanner />);
 
     act(() => {
-      useSettingsStore.setState({ nick: 'Piotr' });
+      setTestSession({ nick: 'Piotr' });
     });
 
     expect(screen.queryByTestId('nick-regain-banner')).not.toBeInTheDocument();
@@ -50,7 +50,7 @@ describe('NickRegainBanner', () => {
     ['nothing is wanted', { wantedNick: undefined }],
     ['disconnected', { isConnected: false }],
   ])('should not show when %s', (_case, fields) => {
-    useSettingsStore.setState(fields);
+    setTestSession(fields);
 
     render(<NickRegainBanner />);
 

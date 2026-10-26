@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardNetworks from '../WizardNetworks';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networkLifecycle from '@features/networks/networkLifecycle';
 import * as bouncer from '@/network/irc/bouncer';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { clearBouncerNetworks, updateBouncerNetwork } from '@features/bouncer/store/bouncerNetworks';
@@ -21,8 +22,11 @@ vi.mock('@/network/irc/bouncer', () => ({
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
-  resetAndGoToStart: vi.fn(),
   setWizardStep: vi.fn(),
+}));
+
+vi.mock('@features/networks/networkLifecycle', () => ({
+  resetAndGoToStart: vi.fn(),
 }));
 
 describe('WizardNetworks', () => {
@@ -48,6 +52,6 @@ describe('WizardNetworks', () => {
 
     fireEvent.click(screen.getByText('wizard.networks.button.back'));
 
-    expect(settingsStore.resetAndGoToStart).toHaveBeenCalled();
+    expect(networkLifecycle.resetAndGoToStart).toHaveBeenCalled();
   });
 });

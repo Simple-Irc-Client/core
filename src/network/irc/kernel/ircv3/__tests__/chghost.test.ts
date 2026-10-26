@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -13,8 +13,8 @@ describe('kernel: CHGHOST', () => {
   setupKernelTest();
 
   const chghost = (line: string) => {
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#one', '#two']);
     const setUserHost = vi.spyOn(usersFile, 'setUserHost').mockImplementation(() => {});
     const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});

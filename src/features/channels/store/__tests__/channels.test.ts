@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import { DEFAULT_CASE_MAPPING, namesEqual } from '@shared/lib/caseMapping';
 import { maxMessages, maxViewedMessages } from '@/config/config';
 import {
@@ -32,10 +33,10 @@ import {
   mergeHistoryPage,
   setUpdateMessage,
   setRenameChannel,
-  migrateChannels,
 } from '@features/channels/store/channels';
 import { ChannelCategory, MessageCategory } from '@shared/types';
-import type { Channel, ChannelExtended, Message } from '@shared/types';
+import type { Message } from '@shared/types';
+import { setTestSlice, testSlice } from '@/test/networks';
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn(() => Promise.resolve(null)),
@@ -43,12 +44,16 @@ vi.mock('idb-keyval', () => ({
   del: vi.fn(() => Promise.resolve()),
 }));
 
-vi.mock('@features/settings/store/settings', () => ({
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getCurrentChannelName: vi.fn(() => '#test'),
   getChannelTypes: vi.fn(() => ['#', '&']),
   // Real folding: the store's channel identity depends on it
   getCaseMapping: vi.fn(() => DEFAULT_CASE_MAPPING),
   isSameName: vi.fn((a: string, b: string) => namesEqual(a, b)),
+}));
+
+vi.mock('@features/networks/currentChannel', () => ({
   setCurrentChannelName: vi.fn(),
 }));
 
@@ -80,7 +85,7 @@ const createMessageAt = (id: string, message: string, target: string, time: stri
 
 describe('channels store', () => {
   beforeEach(() => {
-    useChannelsStore.setState({
+    setTestSlice(useChannelsStore, {
       openChannels: [],
       openChannelsShortList: [],
     });
@@ -92,14 +97,14 @@ describe('channels store', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
       expect(existChannel('#test')).toBe(true);
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
     });
 
     it('should not add duplicate channel', () => {
       setAddChannel('#test', ChannelCategory.channel);
       setAddChannel('#test', ChannelCategory.channel);
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
     });
 
     it('should add channel with correct category', () => {
@@ -126,8 +131,8 @@ describe('channels store', () => {
     it('should add to both openChannels and openChannelsShortList', () => {
       setAddChannel('#test', ChannelCategory.channel);
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
-      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannelsShortList.length).toBe(1);
     });
   });
 
@@ -153,8 +158,8 @@ describe('channels store', () => {
       setAddChannel('#test', ChannelCategory.channel);
       setRemoveChannel('#test');
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(0);
-      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(0);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(0);
+      expect(testSlice(useChannelsStore).openChannelsShortList.length).toBe(0);
     });
   });
 
@@ -279,12 +284,22 @@ describe('channels store', () => {
 
       it('should place pages for each window they belong to', () => {
         setAddChannel('#test', ChannelCategory.channel);
+        setAddChannel('Friend', ChannelCategory.priv);
         setAddMessage(at('joined', '2026-10-22T10:05:00.000Z'));
 
         setAddHistoryPage([at('a', '2026-10-22T10:00:00.000Z'), { ...at('dm', '2026-10-22T10:01:00.000Z'), target: 'Friend' }]);
 
         expect(ids(getMessages('#test'))).toEqual(['a', 'joined']);
         expect(ids(getMessages('Friend'))).toEqual(['dm']);
+      });
+
+      it('should not open again a window closed before its page came, as after a kick', () => {
+        setAddChannel('#test', ChannelCategory.channel);
+        setRemoveChannel('#test');
+
+        setAddHistoryPage([at('a', '2026-10-22T10:00:00.000Z')]);
+
+        expect(existChannel('#test')).toBe(false);
       });
     });
 
@@ -600,7 +615,7 @@ describe('channels store', () => {
     it('should handle no channels gracefully', () => {
       clearAllTyping();
 
-      expect(useChannelsStore.getState().openChannels).toEqual([]);
+      expect(testSlice(useChannelsStore).openChannels).toEqual([]);
     });
 
     it('should not affect channels with no typing', () => {
@@ -652,7 +667,7 @@ describe('channels store', () => {
 
       setIncreaseUnreadMessages('#test');
 
-      const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
+      const shortListChannel = testSlice(useChannelsStore).openChannelsShortList.find((c) => c.name === '#test');
       expect(shortListChannel?.unReadMessages).toBe(1);
     });
 
@@ -664,7 +679,7 @@ describe('channels store', () => {
       setUnreadMessages('#TEST', 3, false);
 
       expect(getChannel('#test')).toEqual(expect.objectContaining({ unReadMessages: 3, hasMention: false }));
-      expect(useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test')).toEqual(expect.objectContaining({ unReadMessages: 3, hasMention: false }));
+      expect(testSlice(useChannelsStore).openChannelsShortList.find((c) => c.name === '#test')).toEqual(expect.objectContaining({ unReadMessages: 3, hasMention: false }));
     });
   });
 
@@ -702,10 +717,10 @@ describe('channels store', () => {
   describe('immutability', () => {
     it('should not mutate openChannels when adding', () => {
       setAddChannel('#test1', ChannelCategory.channel);
-      const channelsBefore = useChannelsStore.getState().openChannels;
+      const channelsBefore = testSlice(useChannelsStore).openChannels;
 
       setAddChannel('#test2', ChannelCategory.channel);
-      const channelsAfter = useChannelsStore.getState().openChannels;
+      const channelsAfter = testSlice(useChannelsStore).openChannels;
 
       expect(channelsBefore).not.toBe(channelsAfter);
     });
@@ -784,7 +799,7 @@ describe('channels store', () => {
 
       setHasMention('#test');
 
-      const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
+      const shortListChannel = testSlice(useChannelsStore).openChannelsShortList.find((c) => c.name === '#test');
       expect(shortListChannel?.hasMention).toBe(true);
     });
 
@@ -816,7 +831,7 @@ describe('channels store', () => {
       setHasMention('#test');
       setClearUnreadMessages('#test');
 
-      const shortListChannel = useChannelsStore.getState().openChannelsShortList.find((c) => c.name === '#test');
+      const shortListChannel = testSlice(useChannelsStore).openChannelsShortList.find((c) => c.name === '#test');
       expect(shortListChannel?.hasMention).toBe(false);
     });
   });
@@ -830,8 +845,8 @@ describe('channels store', () => {
 
       setAddMessage(createMessage('1', 'hello', '#Religie'));
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
-      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannelsShortList.length).toBe(1);
       expect(getMessages('#religie').length).toBe(1);
     });
 
@@ -848,7 +863,7 @@ describe('channels store', () => {
       setAddChannel('#religie', ChannelCategory.channel);
       setAddChannel('#Religie', ChannelCategory.channel);
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
     });
 
     it('should remove the channel whatever casing the remove is asked for', () => {
@@ -857,8 +872,8 @@ describe('channels store', () => {
       setRemoveChannel('#religie');
 
       expect(existChannel('#Religie')).toBe(false);
-      expect(useChannelsStore.getState().openChannels.length).toBe(0);
-      expect(useChannelsStore.getState().openChannelsShortList.length).toBe(0);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(0);
+      expect(testSlice(useChannelsStore).openChannelsShortList.length).toBe(0);
     });
 
     it('should route topic, messages and typing to the one window', () => {
@@ -878,7 +893,7 @@ describe('channels store', () => {
 
       setAddMessage(createMessage('1', 'hi', 'merovingian'));
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(1);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(1);
       expect(getMessages('Merovingian').length).toBe(1);
     });
 
@@ -886,7 +901,7 @@ describe('channels store', () => {
       setAddChannel('#religie', ChannelCategory.channel);
       setAddChannel('#religia', ChannelCategory.channel);
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(2);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(2);
     });
   });
 
@@ -897,7 +912,7 @@ describe('channels store', () => {
       setRenameChannel('#religie', '#Religie');
 
       expect(getChannel('#religie')?.name).toBe('#Religie');
-      expect(useChannelsStore.getState().openChannelsShortList[0]?.name).toBe('#Religie');
+      expect(testSlice(useChannelsStore).openChannelsShortList[0]?.name).toBe('#Religie');
     });
 
     it('should keep the messages and retarget them at the new name', () => {
@@ -914,16 +929,16 @@ describe('channels store', () => {
     it('should do nothing when the channel is not open', () => {
       setRenameChannel('#religie', '#Religie');
 
-      expect(useChannelsStore.getState().openChannels.length).toBe(0);
+      expect(testSlice(useChannelsStore).openChannels.length).toBe(0);
     });
 
     it('should do nothing when the name is unchanged', () => {
       setAddChannel('#religie', ChannelCategory.channel);
-      const before = useChannelsStore.getState().openChannels;
+      const before = testSlice(useChannelsStore).openChannels;
 
       setRenameChannel('#religie', '#religie');
 
-      expect(useChannelsStore.getState().openChannels).toBe(before);
+      expect(testSlice(useChannelsStore).openChannels).toBe(before);
     });
 
     it('should follow the rename when the renamed window is the one currently viewed (matched by its old name, not the new one)', () => {
@@ -932,8 +947,8 @@ describe('channels store', () => {
       // (the identity before the rename) can catch this — matching against
       // `to` only worked by coincidence for same-name-different-casing JOINs.
       setAddChannel('Bob', ChannelCategory.priv);
-      vi.mocked(settingsFile.getCurrentChannelName).mockReturnValue('Bob');
-      const mockSetCurrentChannelName = vi.mocked(settingsFile.setCurrentChannelName);
+      vi.mocked(networksStore.getCurrentChannelName).mockReturnValue('Bob');
+      const mockSetCurrentChannelName = vi.mocked(currentChannel.setCurrentChannelName);
       mockSetCurrentChannelName.mockClear();
 
       setRenameChannel('Bob', 'Bob2');
@@ -943,8 +958,8 @@ describe('channels store', () => {
 
     it('should not touch the current view when renaming a window that is not the one currently viewed', () => {
       setAddChannel('Bob', ChannelCategory.priv);
-      vi.mocked(settingsFile.getCurrentChannelName).mockReturnValue('#test');
-      const mockSetCurrentChannelName = vi.mocked(settingsFile.setCurrentChannelName);
+      vi.mocked(networksStore.getCurrentChannelName).mockReturnValue('#test');
+      const mockSetCurrentChannelName = vi.mocked(currentChannel.setCurrentChannelName);
       mockSetCurrentChannelName.mockClear();
 
       setRenameChannel('Bob', 'Bob2');
@@ -953,200 +968,9 @@ describe('channels store', () => {
     });
   });
 
-  describe('migrateChannels', () => {
-    const channel = (name: string, overrides: Partial<ChannelExtended> = {}): ChannelExtended => ({
-      name,
-      category: ChannelCategory.channel,
-      messages: [],
-      topic: '',
-      topicSetBy: '',
-      topicSetTime: 0,
-      unReadMessages: 0,
-      typing: [],
-      ...overrides,
-    });
-
-    const shortListChannel = (name: string, overrides: Partial<Channel> = {}): Channel => ({
-      name,
-      category: ChannelCategory.channel,
-      unReadMessages: 0,
-      ...overrides,
-    });
-
-    it('should merge case-duplicate channels into one window', () => {
-      const migrated = migrateChannels({
-        openChannels: [channel('#religie'), channel('#Religie')],
-        openChannelsShortList: [shortListChannel('#religie'), shortListChannel('#Religie')],
-      }, 1);
-
-      expect(migrated.openChannels.length).toBe(1);
-      expect(migrated.openChannelsShortList.length).toBe(1);
-    });
-
-    it('should keep the first name so a later JOIN can correct it', () => {
-      const migrated = migrateChannels({
-        openChannels: [channel('#religie'), channel('#Religie')],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.name).toBe('#religie');
-    });
-
-    it('should interleave the messages of both windows by time', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { messages: [
-            createMessageAt('sys-1', 'connected', '#religie', '2026-07-30T10:00:00.000Z'),
-            createMessageAt('sys-2', 'connected', '#religie', '2026-07-30T12:00:00.000Z'),
-          ] }),
-          channel('#Religie', { messages: [
-            createMessageAt('chat-1', 'hello', '#Religie', '2026-07-30T11:00:00.000Z'),
-          ] }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.messages.map((message) => message.id)).toEqual(['sys-1', 'chat-1', 'sys-2']);
-    });
-
-    it('should drop messages that both windows already hold', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { messages: [createMessage('same', 'hello', '#religie')] }),
-          channel('#Religie', { messages: [createMessage('same', 'hello', '#Religie')] }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.messages.length).toBe(1);
-    });
-
-    it('should cap the merged history at maxMessages', () => {
-      const many = (prefix: string, count: number): Message[] =>
-        Array.from({ length: count }, (_, index) => createMessageAt(`${prefix}-${index}`, 'm', '#religie', `2026-07-30T10:00:${String(index % 60).padStart(2, '0')}.000Z`));
-
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { messages: many('a', 250) }),
-          channel('#Religie', { messages: many('b', 250) }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.messages.length).toBe(300);
-    });
-
-    it('should carry over the topic from the window that has one', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie'),
-          channel('#Religie', { topic: 'the topic', topicSetBy: 'op', topicSetTime: 42 }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.topic).toBe('the topic');
-      expect(migrated.openChannels[0]?.topicSetBy).toBe('op');
-      expect(migrated.openChannels[0]?.topicSetTime).toBe(42);
-    });
-
-    it('should keep the topic of the first window when both have one', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { topic: 'first' }),
-          channel('#Religie', { topic: 'second' }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.topic).toBe('first');
-    });
-
-    it('should add up the unread counts and keep a mention from either window', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { unReadMessages: 2 }),
-          channel('#Religie', { unReadMessages: 3, hasMention: true }),
-        ],
-        openChannelsShortList: [
-          shortListChannel('#religie', { unReadMessages: 2 }),
-          shortListChannel('#Religie', { unReadMessages: 3, hasMention: true }),
-        ],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.unReadMessages).toBe(5);
-      expect(migrated.openChannels[0]?.hasMention).toBe(true);
-      expect(migrated.openChannelsShortList[0]?.unReadMessages).toBe(5);
-      expect(migrated.openChannelsShortList[0]?.hasMention).toBe(true);
-    });
-
-    it('should keep metadata from whichever window carries it', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie'),
-          channel('#Religie', { avatar: 'https://avatar.png', displayName: 'Religie' }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.avatar).toBe('https://avatar.png');
-      expect(migrated.openChannels[0]?.displayName).toBe('Religie');
-    });
-
-    it('should drop stale typing state', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('#religie', { typing: ['someone'] }),
-          channel('#Religie', { typing: ['other'] }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels[0]?.typing).toEqual([]);
-    });
-
-    it('should merge DM windows for the same nick', () => {
-      const migrated = migrateChannels({
-        openChannels: [
-          channel('Merovingian', { category: ChannelCategory.priv }),
-          channel('merovingian', { category: ChannelCategory.priv }),
-        ],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels.length).toBe(1);
-    });
-
-    it('should leave channels that only differ outside ASCII alone', () => {
-      // ascii folding is the conservative choice: it must never join two
-      // channels a server with another CASEMAPPING considers distinct
-      const migrated = migrateChannels({
-        openChannels: [channel('#a[b]'), channel('#a{b}')],
-        openChannelsShortList: [],
-      }, 1);
-
-      expect(migrated.openChannels.length).toBe(2);
-    });
-
-    it('should leave an already migrated state untouched', () => {
-      const state = { openChannels: [channel('#religie'), channel('#Religie')], openChannelsShortList: [] };
-
-      const migrated = migrateChannels(state, 2);
-
-      expect(migrated.openChannels.length).toBe(2);
-    });
-
-    it('should survive persisted state that is missing or malformed', () => {
-      expect(migrateChannels({}, 1).openChannels).toEqual([]);
-      expect(migrateChannels({ openChannels: 'nonsense' }, 1).openChannels).toEqual([]);
-      expect(migrateChannels(undefined, 1).openChannels).toEqual([]);
-      expect(migrateChannels({ openChannels: [null, 42, { noName: true }, channel('#ok')] }, 1).openChannels.length).toBe(1);
-    });
-  });
-
   describe('setUpdateMessage', () => {
     beforeEach(() => {
-      useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+      setTestSlice(useChannelsStore, { openChannels: [], openChannelsShortList: [] });
       setAddChannel('bob', ChannelCategory.priv);
     });
 
@@ -1200,64 +1024,6 @@ describe('channels store', () => {
       setUpdateMessage('BOB', 'a', { message: 'patched' });
 
       expect(getMessages('bob')[0]?.message).toBe('patched');
-    });
-  });
-
-  describe('persistence of encrypted messages', () => {
-    /** The real partialize the persist middleware is wired with. */
-    const partialize = (): ((state: unknown) => { openChannels: ChannelExtended[] }) =>
-      useChannelsStore.persist.getOptions().partialize as unknown as (state: unknown) => { openChannels: ChannelExtended[] };
-
-    beforeEach(() => {
-      useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
-      setAddChannel('bob', ChannelCategory.priv);
-    });
-
-    const message = (id: string, text: string, extra: Partial<Message> = {}): Message => ({
-      id,
-      message: text,
-      target: 'bob',
-      time: '2026-08-10T10:00:00.000Z',
-      category: MessageCategory.default,
-      ...extra,
-    });
-
-    it('should keep end-to-end encrypted messages out of storage', () => {
-      setAddMessage(message('a', 'plaintext dm'));
-      setAddMessage(message('b', 'secret', { e2ee: 'ok' }));
-      setAddMessage(message('c', 'still decrypting', { e2ee: 'decrypting' }));
-      setAddMessage(message('d', 'could not decrypt', { e2ee: 'failed' }));
-
-      const persisted = partialize()(useChannelsStore.getState());
-
-      expect(persisted.openChannels[0]?.messages.map((entry) => entry.message)).toEqual(['plaintext dm']);
-    });
-
-    it('should not disturb the in-memory messages while persisting', () => {
-      setAddMessage(message('a', 'plaintext dm'));
-      setAddMessage(message('b', 'secret', { e2ee: 'ok' }));
-
-      partialize()(useChannelsStore.getState());
-
-      expect(getMessages('bob')).toHaveLength(2);
-    });
-
-    it('should still strip the transient typing list', () => {
-      setTyping('bob', 'someone', 'active');
-
-      const persisted = partialize()(useChannelsStore.getState());
-
-      expect(persisted.openChannels[0]?.typing).toEqual([]);
-    });
-
-    it('should reuse the channel object when there is nothing to strip', () => {
-      setAddMessage(message('a', 'plaintext dm'));
-      const before = useChannelsStore.getState().openChannels[0];
-
-      const persisted = partialize()(useChannelsStore.getState());
-
-      // partialize runs on every mutation, so the untouched case must not allocate
-      expect(persisted.openChannels[0]).toBe(before);
     });
   });
 });

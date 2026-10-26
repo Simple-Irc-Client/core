@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 import MessageText from '../MessageText';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
-import * as settings from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 
 describe('MessageText', () => {
@@ -30,7 +30,7 @@ describe('MessageText', () => {
 
   describe('Basic rendering', () => {
     it('should render plain text without modifications', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Hello world" />);
 
@@ -39,7 +39,7 @@ describe('MessageText', () => {
     });
 
     it('should preserve whitespace between words', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="word1  word2" />);
 
@@ -49,7 +49,7 @@ describe('MessageText', () => {
 
   describe('Channel name detection', () => {
     it('should detect channel names starting with #', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Join #channel for help" />);
 
@@ -59,7 +59,7 @@ describe('MessageText', () => {
     });
 
     it('should detect channel names starting with &', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#', '&']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#', '&']);
 
       const { getByText } = render(<MessageText text="Join &localchannel now" />);
 
@@ -68,7 +68,7 @@ describe('MessageText', () => {
     });
 
     it('should detect multiple channels in one message', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Try #help or #support" />);
 
@@ -77,7 +77,7 @@ describe('MessageText', () => {
     });
 
     it('should not detect channel when no channel types configured', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue([]);
 
       const { container } = render(<MessageText text="This is #notachannel" />);
 
@@ -86,7 +86,7 @@ describe('MessageText', () => {
     });
 
     it('should handle channel names with special characters', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Join #channel-name_123" />);
 
@@ -95,7 +95,7 @@ describe('MessageText', () => {
     });
 
     it('should stop channel name at comma', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Channels: #one, #two" />);
 
@@ -106,7 +106,7 @@ describe('MessageText', () => {
 
   describe('Context menu interaction', () => {
     it('should call handleContextMenuUserClick with channel category on right-click', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Join #testchannel" />);
 
@@ -121,7 +121,7 @@ describe('MessageText', () => {
     });
 
     it('should prevent default on right-click', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Join #channel" />);
 
@@ -133,7 +133,7 @@ describe('MessageText', () => {
     });
 
     it('should not trigger context menu for regular text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Hello world" />);
 
@@ -146,7 +146,7 @@ describe('MessageText', () => {
 
   describe('Emoji sizing', () => {
     it('wraps an emoji in .sic-emoji for larger display', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="nice 😀" />);
 
@@ -157,7 +157,7 @@ describe('MessageText', () => {
     });
 
     it('does not add .sic-emoji spans for plain text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="just plain text" />);
 
@@ -165,7 +165,7 @@ describe('MessageText', () => {
     });
 
     it('wraps emoji inside IRC-formatted text and keeps the formatting style', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.BOLD}bold 😀${IRC_FORMAT.BOLD}`} />
@@ -181,7 +181,7 @@ describe('MessageText', () => {
 
   describe('Edge cases', () => {
     it('should handle empty text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="" />);
 
@@ -189,7 +189,7 @@ describe('MessageText', () => {
     });
 
     it('should handle text with only whitespace', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="   " />);
 
@@ -197,7 +197,7 @@ describe('MessageText', () => {
     });
 
     it('should handle channel at start of message', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="#channel is great" />);
 
@@ -205,7 +205,7 @@ describe('MessageText', () => {
     });
 
     it('should handle channel at end of message', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Come to #channel" />);
 
@@ -213,7 +213,7 @@ describe('MessageText', () => {
     });
 
     it('should handle message with only channel name', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="#channel" />);
 
@@ -222,7 +222,7 @@ describe('MessageText', () => {
 
     it('should escape special regex characters in channel types', () => {
       // Test that special characters like + are properly escaped
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['+']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['+']);
 
       const { getByText } = render(<MessageText text="Join +modeless channel" />);
 
@@ -232,7 +232,7 @@ describe('MessageText', () => {
 
   describe('URL detection', () => {
     it('should detect https URLs as clickable', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Check https://example.com for info" />);
 
@@ -242,7 +242,7 @@ describe('MessageText', () => {
     });
 
     it('should detect http URLs as clickable', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Visit http://example.com now" />);
 
@@ -251,7 +251,7 @@ describe('MessageText', () => {
     });
 
     it('should detect URLs with paths and query strings', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="See https://example.com/path?q=1" />);
 
@@ -260,7 +260,7 @@ describe('MessageText', () => {
     });
 
     it('should detect multiple URLs in one message', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="https://one.com and https://two.com" />);
 
@@ -269,7 +269,7 @@ describe('MessageText', () => {
     });
 
     it('should not detect non-URL text as clickable URL', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="not a url here" />);
 
@@ -278,7 +278,7 @@ describe('MessageText', () => {
     });
 
     it('should not detect unsafe URLs (javascript:)', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="javascript:alert(1)" />);
 
@@ -287,7 +287,7 @@ describe('MessageText', () => {
     });
 
     it('should call handleContextMenuUserClick with url category on click', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Visit https://example.com please" />);
 
@@ -302,7 +302,7 @@ describe('MessageText', () => {
     });
 
     it('should call handleContextMenuUserClick with url category on right-click', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Visit https://example.com please" />);
 
@@ -317,7 +317,7 @@ describe('MessageText', () => {
     });
 
     it('should handle message with both URL and channel', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getByText } = render(<MessageText text="Join #channel or visit https://example.com" />);
 
@@ -328,7 +328,7 @@ describe('MessageText', () => {
 
   describe('IRC formatting', () => {
     it('should render bold text with font-weight bold', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.BOLD}`} />
@@ -340,7 +340,7 @@ describe('MessageText', () => {
     });
 
     it('should render italic text with font-style italic', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.ITALIC}italic${IRC_FORMAT.ITALIC}`} />
@@ -351,7 +351,7 @@ describe('MessageText', () => {
     });
 
     it('should render underlined text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.UNDERLINE}underline${IRC_FORMAT.UNDERLINE}`} />
@@ -362,7 +362,7 @@ describe('MessageText', () => {
     });
 
     it('should render colored text with foreground color', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       // Color code 4 is red (#FF0000)
       const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}4red`} />);
@@ -373,7 +373,7 @@ describe('MessageText', () => {
     });
 
     it('should render text with background color', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       // Color code 4,2 is red on blue
       const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}4,2text`} />);
@@ -383,7 +383,7 @@ describe('MessageText', () => {
     });
 
     it('should render hex colored text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.HEX_COLOR}FF5500orange`} />
@@ -394,7 +394,7 @@ describe('MessageText', () => {
     });
 
     it('should render monospace text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.MONOSPACE}code${IRC_FORMAT.MONOSPACE}`} />
@@ -405,7 +405,7 @@ describe('MessageText', () => {
     });
 
     it('should render strikethrough text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.STRIKETHROUGH}strike${IRC_FORMAT.STRIKETHROUGH}`} />
@@ -416,7 +416,7 @@ describe('MessageText', () => {
     });
 
     it('should handle combined formatting (bold + italic)', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.BOLD}${IRC_FORMAT.ITALIC}bold+italic`} />
@@ -427,7 +427,7 @@ describe('MessageText', () => {
     });
 
     it('should reset formatting after reset code', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.BOLD}bold${IRC_FORMAT.RESET} normal`} />
@@ -443,7 +443,7 @@ describe('MessageText', () => {
     });
 
     it('should preserve text content when stripping formatting', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText
@@ -455,7 +455,7 @@ describe('MessageText', () => {
     });
 
     it('should apply italic to all words, not just the first', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.ITALIC}hello world${IRC_FORMAT.ITALIC}`} />
@@ -470,7 +470,7 @@ describe('MessageText', () => {
     });
 
     it('should apply underline to all words, not just the first', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.UNDERLINE}hello world${IRC_FORMAT.UNDERLINE}`} />
@@ -485,7 +485,7 @@ describe('MessageText', () => {
     });
 
     it('should apply bold to all words, not just the first', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.BOLD}hello world${IRC_FORMAT.BOLD}`} />
@@ -500,7 +500,7 @@ describe('MessageText', () => {
     });
 
     it('should apply formatting across many words', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`${IRC_FORMAT.ITALIC}one two three four${IRC_FORMAT.ITALIC}`} />
@@ -515,7 +515,7 @@ describe('MessageText', () => {
     });
 
     it('should apply formatting only to wrapped portion in mixed text', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(
         <MessageText text={`normal ${IRC_FORMAT.ITALIC}italic words${IRC_FORMAT.ITALIC} normal`} />
@@ -533,7 +533,7 @@ describe('MessageText', () => {
 
   describe('Unhappy paths', () => {
     it('should not detect channels when channelTypes is empty', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue([]);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue([]);
 
       const { container } = render(<MessageText text="#channel should be plain text" />);
 
@@ -544,7 +544,7 @@ describe('MessageText', () => {
     });
 
     it('should not render data: scheme as clickable link', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="data:text/html,<h1>xss</h1>" />);
 
@@ -554,7 +554,7 @@ describe('MessageText', () => {
     });
 
     it('should render plain text without IRC parsing (fast path)', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text="just plain text with no formatting" />);
 
@@ -565,7 +565,7 @@ describe('MessageText', () => {
     });
 
     it('should handle IRC formatting code at end of text without closing', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text={`Hello ${IRC_FORMAT.BOLD}bold text`} />);
 
@@ -579,7 +579,7 @@ describe('MessageText', () => {
 
   describe('Spoilers', () => {
     it('shows text in its own background color as one covered spoiler', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container, getAllByRole } = render(<MessageText text={`see ${IRC_FORMAT.COLOR}14,14he \x02dies\x02 #end${IRC_FORMAT.COLOR} ok`} />);
 
@@ -589,7 +589,7 @@ describe('MessageText', () => {
     });
 
     it('keeps a channel inside a spoiler from being clickable', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}04,04#secret`} />);
 
@@ -597,7 +597,7 @@ describe('MessageText', () => {
     });
 
     it('shows spoilers in two colors as two', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { getAllByRole } = render(<MessageText text={`${IRC_FORMAT.COLOR}14,14one${IRC_FORMAT.COLOR}01,01two`} />);
 
@@ -605,7 +605,7 @@ describe('MessageText', () => {
     });
 
     it('does not take default colors for a spoiler', () => {
-      vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+      vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
 
       const { container } = render(<MessageText text={`${IRC_FORMAT.COLOR}99,99plain`} />);
 

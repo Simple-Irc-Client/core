@@ -3,9 +3,9 @@ import i18next from '@/app/i18n';
 import { STATUS_CHANNEL } from '@/config/config';
 import { type IrcContext, joinParamsAndText } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
-import { getServer } from '@features/settings/store/settings';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
+import { getServer } from '@features/networks/store/networks';
 
 // Error replies outside the 400–599 range: STARTTLS, mode params, oper privs, MLOCK, metadata, knock, Unreal
 const OUT_OF_RANGE_ERROR_NUMERICS = new Set(['691', '696', '712', '713', '714', '723', '742', '764', '765', '767', '768', '769', '972']);

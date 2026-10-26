@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as networkFile from '@/network/irc/network';
 import { clearMonitorList, isNickMonitored } from '@features/monitor/store/monitor';
 import { useFriendsStore } from '../store/friends';
@@ -10,6 +10,7 @@ import { addFriend, getFriends, isFriend, removeFriend, renameFriend, resetFrien
 import { type Server } from '@/network/irc/servers';
 import { useChannelsStore, setAddChannel, setRemoveChannel } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
+import { connectTestNetwork, resetNetworks, setTestSlice } from '@/test/networks';
 
 const testServer = { network: 'pirc.pl' } as Server;
 
@@ -22,13 +23,13 @@ describe('friends actions', () => {
 
   beforeEach(() => {
     useFriendsStore.setState({ friendsByNetwork: {} });
-    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+    setTestSlice(useChannelsStore, { openChannels: [], openChannelsShortList: [] });
     clearMonitorList();
     resetFriendsSubscription();
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => testServer);
-    vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
-    vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 0);
+    connectTestNetwork(testServer);
+    vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
+    vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 0);
     mockMonitorAdd = vi.fn<(nicks: string[]) => void>();
     mockMonitorRemove = vi.fn<(nicks: string[]) => void>();
     mockWatchAdd = vi.fn<(nicks: string[]) => void>();
@@ -55,8 +56,8 @@ describe('friends actions', () => {
     });
 
     it('falls back to WATCH when the server has no MONITOR', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 128);
 
       addFriend('Alice');
 
@@ -65,8 +66,8 @@ describe('friends actions', () => {
     });
 
     it('subscribes nothing when the server supports neither MONITOR nor WATCH', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 0);
 
       expect(addFriend('Alice')).toBe(true);
 
@@ -76,7 +77,7 @@ describe('friends actions', () => {
     });
 
     it('persists without subscribing when disconnected', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
 
       expect(addFriend('Alice')).toBe(true);
 
@@ -95,7 +96,7 @@ describe('friends actions', () => {
     });
 
     it('rejects when no network is configured', () => {
-      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+      resetNetworks();
 
       expect(addFriend('Alice')).toBe(false);
       expect(mockMonitorAdd).not.toHaveBeenCalled();
@@ -120,8 +121,8 @@ describe('friends actions', () => {
     });
 
     it('unsubscribes via WATCH on WATCH-only servers', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 128);
 
       addFriend('Alice');
       removeFriend('Alice');
@@ -132,7 +133,7 @@ describe('friends actions', () => {
 
     it('does not send when disconnected', () => {
       addFriend('Alice');
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       mockMonitorRemove.mockClear();
 
       removeFriend('Alice');
@@ -168,7 +169,7 @@ describe('friends actions', () => {
     });
 
     it('is a no-op when there is no network configured', () => {
-      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+      resetNetworks();
 
       renameFriend('Alice', 'Alicia');
 
@@ -189,8 +190,8 @@ describe('friends actions', () => {
     });
 
     it('uses WATCH on servers without MONITOR', () => {
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 0);
-      vi.spyOn(settingsFile, 'getWatchLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 0);
+      vi.spyOn(networksStore, 'getWatchLimit').mockImplementation(() => 128);
       useFriendsStore.getState().addFriend('pirc.pl', 'Alice');
       useFriendsStore.getState().addFriend('pirc.pl', 'Bob');
 

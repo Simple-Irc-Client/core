@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { useCurrentStore } from '@features/chat/store/current';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 
 const Typing = () => {
   const { t } = useTranslation();
 
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const typing = useCurrentStore((state) => state.typing);
   const filteredTyping = typing.filter((nick) => nick.trim().length > 0);
 

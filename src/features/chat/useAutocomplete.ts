@@ -1,9 +1,9 @@
 import { useMemo, useRef } from 'react';
-import { isSameName } from '@features/settings/store/settings';
 import { ChannelCategory, type User } from '@shared/types';
 import { channelCommands, generalCommands } from '@/network/irc/command';
 import { getChannelListSortedByAZ } from '@features/channels/store/channelList';
-import { useUsersStore } from '@features/users/store/users';
+import { useActiveUsers } from '@features/users/store/users';
+import { isSameName } from '@features/networks/store/networks';
 
 /** The word being typed: everything after the last whitespace */
 const lastWord = (text: string): string => /\S*$/.exec(text)?.[0] ?? '';
@@ -34,7 +34,7 @@ export const useAutocomplete = (channelName: string, channelCategory: ChannelCat
 
   const channels = useMemo(() => getChannelListSortedByAZ(), []);
 
-  const allUsers = useUsersStore((state) => state.users);
+  const allUsers = useActiveUsers((slice) => slice.users);
   const users = useMemo(
     () =>
       allUsers

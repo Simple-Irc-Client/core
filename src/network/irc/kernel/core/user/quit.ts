@@ -5,10 +5,10 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { addMessage } from '@/network/irc/kernel/replies';
 import { endSession } from '@features/e2ee/session';
 import { setMultipleMonitorOffline } from '@features/monitor/store/monitor';
-import { getUserModes } from '@features/settings/store/settings';
 import { getUser, setQuitUser } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getUserModes } from '@features/networks/store/networks';
 
 // @msgid=aGJTRBjAMOMRB6Ky2ucXbV-Gved4HyF6QNSHYfzOX1jOA;time=2023-03-11T00:52:21.568Z :mero!~mero@D6D788C7.623ED634.C8132F93.IP QUIT :Quit: Leaving
 export const onQuit = (ctx: IrcContext): void => {

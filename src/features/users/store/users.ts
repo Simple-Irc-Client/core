@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { type UserMode, type Message, type User, ChannelCategory } from '@shared/types';
 import { devtools } from 'zustand/middleware';
-import { getCaseMapping, getCurrentChannelName, getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { useCurrentStore } from '@features/chat/store/current';
 import { clearTyping, getChannel, setAddMessage } from '@features/channels/store/channels';
 import { calculateMaxPermission } from '@/network/irc/helpers';
 import { foldName, type CaseMapping } from '@shared/lib/caseMapping';
+import { activeSlice, updateActiveSlice, useActiveSlice, type NetworkSlices } from '@features/networks/store/networkSlices';
+import { getCaseMapping, getCurrentChannelName, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 const MAX_USERS = 50_000;
 
@@ -14,8 +15,13 @@ let indexedUsers: User[] | null = null;
 let indexedMapping: CaseMapping | null = null;
 let nickIndex = new Map<string, User>();
 
+/** The active network's users */
+export const useActiveUsers = <T>(selector: (slice: UsersSlice) => T): T => useActiveSlice(useUsersStore, selector);
+
+const getAllUsers = (): User[] => activeSlice(useUsersStore.getState()).users;
+
 const getNickIndex = (): Map<string, User> => {
-  const users = useUsersStore.getState().users;
+  const users = getAllUsers();
   const mapping = getCaseMapping();
 
   if (users !== indexedUsers || mapping !== indexedMapping) {
@@ -72,9 +78,13 @@ export interface NamesUser {
   maxPermission: number;
 }
 
-interface UsersStore {
+interface UsersSlice {
   users: User[];
+}
 
+const NO_USERS: UsersSlice = { users: [] };
+
+interface UsersStore extends NetworkSlices<UsersSlice> {
   setAddUser: (newUser: User) => void;
   setNamesUsers: (channelName: string, entries: NamesUser[]) => void;
   setRemoveUser: (nick: string, channelName: string) => void;
@@ -106,25 +116,26 @@ interface UsersStore {
 
 export const useUsersStore = create<UsersStore>()(
   devtools((set) => ({
-    users: [],
+    byNetwork: {},
+    emptySlice: NO_USERS,
 
     setAddUser: (newUser: User): void => {
-      set((state) => ({
-        users: [...state.users, newUser],
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: [...slice.users, newUser],
+      })));
     },
     setNamesUsers: (channelName: string, entries: NamesUser[]): void => {
-      set((state) => {
+      set((state) => updateActiveSlice(state, (slice) => {
         const mapping = getCaseMapping();
         const indexByNick = new Map<string, number>();
-        state.users.forEach((user, index) => {
+        slice.users.forEach((user, index) => {
           const key = foldName(user.nick, mapping);
           if (!indexByNick.has(key)) {
             indexByNick.set(key, index);
           }
         });
 
-        const users = [...state.users];
+        const users = [...slice.users];
         let changed = false;
 
         for (const entry of entries) {
@@ -172,12 +183,12 @@ export const useUsersStore = create<UsersStore>()(
           }
         }
 
-        return changed ? { users } : state;
-      });
+        return changed ? { users } : slice;
+      }));
     },
     setRemoveUser: (nick: string, channelName: string): void => {
-      set((state) => ({
-        users: state.users
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users
           .map((user: User) => {
             if (!isSameName(user.nick, nick)) {
               return user;
@@ -185,26 +196,26 @@ export const useUsersStore = create<UsersStore>()(
             return { ...user, channels: user.channels.filter((channel) => !isSameName(channel.name, channelName)) };
           })
           .filter((user) => user.channels.length !== 0),
-      }));
+      })));
     },
     setQuitUser: (nick: string): void => {
-      set((state) => ({
-        users: state.users.filter((user: User) => !isSameName(user.nick, nick)),
-      }));
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.filter((user: User) => !isSameName(user.nick, nick)),
+      })));
     },
     setRenameUser: (from: string, to: string): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, from)) {
             return user;
           }
           return { ...user, nick: to };
         }),
-      }));
+      })));
     },
     setJoinUser: (nick: string, channel: string, flags?: string[], maxPermission?: number): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick)) {
             return user;
           }
@@ -222,111 +233,111 @@ export const useUsersStore = create<UsersStore>()(
           }
           return { ...user, channels: [...user.channels, { name: channel, flags: flags ?? [], maxPermission: maxPermission ?? -1 }] };
         }),
-      }));
+      })));
     },
     setUserAvatar: (nick: string, avatar: string | undefined): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.avatar === avatar) {
             return user;
           }
           return { ...user, avatar };
         }),
-      }));
+      })));
     },
     setUserColor: (nick: string, color: string | undefined): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.color === color) {
             return user;
           }
           return { ...user, color };
         }),
-      }));
+      })));
     },
     setUserAccount: (nick: string, account: string | null): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.account === (account ?? undefined)) {
             return user;
           }
           return { ...user, account: account ?? undefined };
         }),
-      }));
+      })));
     },
     setUserAway: (nick: string, away: boolean, reason?: string): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || (user.away === away && user.awayReason === reason)) {
             return user;
           }
           return { ...user, away, awayReason: reason };
         }),
-      }));
+      })));
     },
     setUserHost: (nick: string, ident: string, hostname: string): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || (user.ident === ident && user.hostname === hostname)) {
             return user;
           }
           return { ...user, ident, hostname };
         }),
-      }));
+      })));
     },
     setUserRealname: (nick: string, realname: string): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.realname === realname) {
             return user;
           }
           return { ...user, realname };
         }),
-      }));
+      })));
     },
     setUserDisplayName: (nick: string, displayName: string | undefined): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.displayName === displayName) {
             return user;
           }
           return { ...user, displayName };
         }),
-      }));
+      })));
     },
     setUserStatus: (nick: string, status: string | undefined): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.status === status) {
             return user;
           }
           return { ...user, status };
         }),
-      }));
+      })));
     },
     setUserHomepage: (nick: string, homepage: string | undefined): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.homepage === homepage) {
             return user;
           }
           return { ...user, homepage };
         }),
-      }));
+      })));
     },
     setUserBot: (nick: string, bot: boolean): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick) || user.bot === bot) {
             return user;
           }
           return { ...user, bot };
         }),
-      }));
+      })));
     },
     setUpdateUserFlag: (nick: string, channelName: string, plusMinus: string, newFlag: string, serverModes: UserMode[]): void => {
-      set((state) => ({
-        users: state.users.map((user: User) => {
+      set((state) => updateActiveSlice(state, (slice) => ({
+        users: slice.users.map((user: User) => {
           if (!isSameName(user.nick, nick)) {
             return user;
           }
@@ -341,12 +352,12 @@ export const useUsersStore = create<UsersStore>()(
             }),
           };
         }),
-      }));
+      })));
     },
     setClearAll: (): void => {
-      set(() => ({
+      set((state) => updateActiveSlice(state, () => ({
         users: [],
-      }));
+      })));
     },
   })),
 );
@@ -358,7 +369,7 @@ export const setAddUser = (newUser: User): void => {
       setJoinUser(newUser.nick, channel.name);
     }
   } else {
-    if (useUsersStore.getState().users.length >= MAX_USERS) { return; }
+    if (getAllUsers().length >= MAX_USERS) { return; }
     const buffered = pendingMetadata.get(metadataKey(newUser.nick));
     if (buffered) {
       useUsersStore.getState().setAddUser({ ...newUser, ...buffered });
@@ -430,7 +441,7 @@ export const flushNamesUsers = (channelName: string): void => {
 export const setRemoveUser = (nick: string, channelName: string): void => {
   if (isSameName(nick, getCurrentNick())) {
     // We left: drop everyone from that channel's roster
-    const usersFromChannel = useUsersStore.getState().users.filter((user) => user.channels.some((channel) => isSameName(channel.name, channelName)));
+    const usersFromChannel = getAllUsers().filter((user) => user.channels.some((channel) => isSameName(channel.name, channelName)));
     for (const userFromChannel of usersFromChannel) {
       useUsersStore.getState().setRemoveUser(userFromChannel.nick, channelName);
       clearTyping(channelName, userFromChannel.nick);
@@ -540,7 +551,7 @@ export const getUsersFromChannelSortedByMode = (channelName: string): User[] => 
   // Sort keys computed once per user, not per comparison
   const entries: { user: User; permission: number; sortKey: string }[] = [];
 
-  for (const user of useUsersStore.getState().users) {
+  for (const user of getAllUsers()) {
     const channel = user.channels.find((c) => isSameName(c.name, channelName));
     if (channel === undefined) {
       continue;

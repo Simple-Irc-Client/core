@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL } from '@/config/config';
@@ -180,8 +180,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA status clears for current user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserStatus = vi.spyOn(usersFile, 'setUserStatus').mockImplementation(() => {});
-    const mockSetCurrentUserStatus = vi.spyOn(settingsFile, 'setCurrentUserStatus').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserStatus = vi.spyOn(networksStore, 'setCurrentUserStatus').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser status * :';
@@ -244,8 +244,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA homepage saves for current user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserHomepage = vi.spyOn(usersFile, 'setUserHomepage').mockImplementation(() => {});
-    const mockSetCurrentUserHomepage = vi.spyOn(settingsFile, 'setCurrentUserHomepage').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserHomepage = vi.spyOn(networksStore, 'setCurrentUserHomepage').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser homepage * :https://mywebsite.com';
@@ -304,8 +304,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA color saves for current user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
-    const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserColor = vi.spyOn(networksStore, 'setCurrentUserColor').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser color * :#00ff00';
@@ -325,8 +325,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA color clears for current user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
-    const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserColor = vi.spyOn(networksStore, 'setCurrentUserColor').mockImplementation(() => {});
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':netsplit.pirc.pl METADATA TestUser color * :';
@@ -446,8 +446,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA clears avatar for current user', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockSetCurrentUserAvatar = vi.spyOn(settingsFile, 'setCurrentUserAvatar').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserAvatar = vi.spyOn(networksStore, 'setCurrentUserAvatar').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':server METADATA TestUser avatar *';
@@ -474,8 +474,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA clears color for current user when no value', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserColor = vi.spyOn(usersFile, 'setUserColor').mockImplementation(() => {});
-    const mockSetCurrentUserColor = vi.spyOn(settingsFile, 'setCurrentUserColor').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserColor = vi.spyOn(networksStore, 'setCurrentUserColor').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':server METADATA TestUser color *';
@@ -515,8 +515,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw METADATA clears display-name for current user', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserDisplayName = vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
-    const mockSetCurrentUserDisplayName = vi.spyOn(settingsFile, 'setCurrentUserDisplayName').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    const mockSetCurrentUserDisplayName = vi.spyOn(networksStore, 'setCurrentUserDisplayName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':server METADATA TestUser display-name *';
@@ -620,8 +620,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw 766 clears current user display name', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setUserDisplayName').mockImplementation(() => {});
-    const mockSetCurrentUserDisplayName = vi.spyOn(settingsFile, 'setCurrentUserDisplayName').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+    const mockSetCurrentUserDisplayName = vi.spyOn(networksStore, 'setCurrentUserDisplayName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('TestUser');
 
     const line = ':ergo.test 766 * TestUser display-name :Key deleted';
 
@@ -644,7 +644,7 @@ describe('kernel ircv3/metadata', () => {
 
   it('test raw 770 avatar', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':jowisz.pirc.pl 770 Merovingian :avatar';
 
@@ -658,7 +658,7 @@ describe('kernel ircv3/metadata', () => {
 
   it('test raw 770 status', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':jowisz.pirc.pl 770 Merovingian :status';
 
@@ -672,7 +672,7 @@ describe('kernel ircv3/metadata', () => {
 
   it('test raw 770 display-name', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':jowisz.pirc.pl 770 Merovingian :display-name';
 
@@ -686,7 +686,7 @@ describe('kernel ircv3/metadata', () => {
 
   it('test raw 770 with multiple keys (ergo format)', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':ergo.test 770 * avatar status bot homepage display-name color';
 
@@ -705,8 +705,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw 761 sets currentUserAvatar for current user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockSetCurrentUserAvatar = vi.spyOn(settingsFile, 'setCurrentUserAvatar').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+    const mockSetCurrentUserAvatar = vi.spyOn(networksStore, 'setCurrentUserAvatar').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('TestUser');
 
     const line = ':insomnia.pirc.pl 761 TestUser TestUser Avatar * :https://example.com/avatar.png';
 
@@ -720,8 +720,8 @@ describe('kernel ircv3/metadata', () => {
   it('test raw 761 does not set currentUserAvatar for other user', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAvatar = vi.spyOn(usersFile, 'setUserAvatar').mockImplementation(() => {});
-    const mockSetCurrentUserAvatar = vi.spyOn(settingsFile, 'setCurrentUserAvatar').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('TestUser');
+    const mockSetCurrentUserAvatar = vi.spyOn(networksStore, 'setCurrentUserAvatar').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('TestUser');
 
     const line = ':insomnia.pirc.pl 761 TestUser OtherUser Avatar * :https://example.com/avatar.png';
 

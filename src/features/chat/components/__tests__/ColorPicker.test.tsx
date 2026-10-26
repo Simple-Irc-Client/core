@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ColorPicker from '../ColorPicker';
-import * as settingsStore from '@features/settings/store/settings';
 import { IRC_COLORS } from '@/shared/lib/ircFormatting';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,12 +18,10 @@ describe('ColorPicker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         setFontFormatting: mockSetFontFormatting,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
   });
 
   describe('Basic rendering', () => {
@@ -43,12 +41,10 @@ describe('ColorPicker', () => {
     });
 
     it('should show color indicator when a color is selected', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 4, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -92,12 +88,10 @@ describe('ColorPicker', () => {
     });
 
     it('should show selected state on the currently selected color', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 2, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -114,12 +108,10 @@ describe('ColorPicker', () => {
     });
 
     it('should show clear button when a color is selected', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 5, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -127,12 +119,10 @@ describe('ColorPicker', () => {
     });
 
     it('should clear the color when clicking the clear button', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 5, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -143,12 +133,10 @@ describe('ColorPicker', () => {
     });
 
     it('should close the popover after clearing the color', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 5, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -174,12 +162,10 @@ describe('ColorPicker', () => {
 
   describe('Unhappy paths', () => {
     it('should treat colorCode 0 (white, falsy) as a valid selected color', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 0, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -190,12 +176,10 @@ describe('ColorPicker', () => {
     });
 
     it('should handle clicking already-selected color', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: 4, bold: false, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<ColorPicker open={true} onOpenChange={mockOnOpenChange} />);
 

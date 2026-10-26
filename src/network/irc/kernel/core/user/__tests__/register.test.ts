@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as stsFile from '@/network/irc/sts';
@@ -14,14 +15,15 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { resetFriendsSubscription } from '@features/friends/friends';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
+import { connectTestNetwork } from '@/test/networks';
 
 describe('kernel core/user/register', () => {
   setupKernelTest();
 
   it('test connected', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    const mockSetIsConnected = vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+    const mockSetConnectedTime = vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line: ':srv 001 TestNick :Welcome' }).handle();
@@ -34,13 +36,13 @@ describe('kernel core/user/register', () => {
   });
 
   describe('without SASL', () => {
-    const connectWithFallback = (server: ReturnType<typeof settingsFile.getServer>) => {
+    const connectWithFallback = (server: ReturnType<typeof networksStore.getServer>) => {
       saslFile.resetSaslState();
-      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => server);
+      vi.spyOn(networksStore, 'getServer').mockImplementation(() => server);
       vi.spyOn(saslFile, 'getNickServFallbackCredentials').mockImplementation(() => ({ account: 'alice', password: 'secret' }));
       const clearSaslCredentials = vi.spyOn(saslFile, 'clearSaslCredentials').mockImplementation(() => {});
       const send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
@@ -62,7 +64,7 @@ describe('kernel core/user/register', () => {
       connectWithFallback({ default: 0, encoding: 'utf8', network: 'net', servers: ['irc.net'] });
       // Every IDENTIFY the client sends stores its credentials first
       const identifiesAgain = vi.spyOn(saslFile, 'setSaslCredentials');
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'alice');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'alice');
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
       vi.spyOn(settingsFile, 'getEncryptedPassword').mockImplementation(() => 'encrypted');
       vi.spyOn(settingsFile, 'getPasswordNick').mockImplementation(() => 'alice');
@@ -93,14 +95,12 @@ describe('kernel core/user/register', () => {
   });
 
   it('test end of MOTD (376) subscribes persisted friends once per connection', () => {
-    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(
-      () => ({ network: 'testnet' }) as unknown as ReturnType<typeof settingsFile.getServer>,
-    );
-    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+    connectTestNetwork({ default: 0, encoding: 'utf8', network: 'testnet', servers: ['irc.testnet'] });
+    vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
@@ -125,14 +125,12 @@ describe('kernel core/user/register', () => {
   });
 
   it('test missing MOTD (422) also subscribes persisted friends', () => {
-    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(
-      () => ({ network: 'testnet' }) as unknown as ReturnType<typeof settingsFile.getServer>,
-    );
-    vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+    connectTestNetwork({ default: 0, encoding: 'utf8', network: 'testnet', servers: ['irc.testnet'] });
+    vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
@@ -148,9 +146,9 @@ describe('kernel core/user/register', () => {
   });
 
   it('test connected starts the active keepalive', () => {
-    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockStartKeepalive = vi.spyOn(networkFile, 'startKeepalive').mockImplementation(() => {});
 
@@ -160,9 +158,9 @@ describe('kernel core/user/register', () => {
   });
 
   it('test connected clears pending STS upgrade', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-    const mockSetConnectedTime = vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    const mockSetIsConnected = vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+    const mockSetConnectedTime = vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockClearPendingSTSUpgrade = vi.spyOn(stsFile, 'clearPendingSTSUpgrade').mockImplementation(() => {});
     const mockResetSTSRetries = vi.spyOn(stsFile, 'resetSTSRetries').mockImplementation(() => {});
@@ -180,8 +178,8 @@ describe('kernel core/user/register', () => {
 
   it('test raw 001 should persist server-confirmed nick', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'RequestedNick');
-    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'RequestedNick');
+    const mockSetNick = vi.spyOn(networksStore, 'setNick').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 001 RequestedNick_ :Welcome to the pirc.pl IRC Network RequestedNick_!~user@1.1.1.1';
 
@@ -194,8 +192,8 @@ describe('kernel core/user/register', () => {
 
   it('test raw 001 should not call setNick when nick matches', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
-    const mockSetNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    const mockSetNick = vi.spyOn(networksStore, 'setNick').mockImplementation(() => {});
 
     const line = ':netsplit.pirc.pl 001 Merovingian :Welcome to the pirc.pl IRC Network Merovingian!~user@1.1.1.1';
 

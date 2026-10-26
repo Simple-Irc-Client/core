@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as capabilitiesFile from '@/network/irc/capabilities';
@@ -19,7 +19,7 @@ describe('kernel ircv3/cap', () => {
   it('test CAP LS with STS saves SASL credentials before disconnect', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
     vi.spyOn(capabilitiesFile, 'parseCapabilityList').mockImplementation(() => ({
@@ -56,7 +56,7 @@ describe('kernel ircv3/cap', () => {
     vi.useFakeTimers();
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
     vi.spyOn(capabilitiesFile, 'parseCapabilityList').mockImplementation(() => ({
@@ -89,14 +89,14 @@ describe('kernel ircv3/cap', () => {
     }));
     vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
     const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       default: 0,
       encoding: 'utf8',
       network: 'test',
       servers: ['irc.test.com'],
     }));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'testNick');
     const mockRestoreSaslCredentials = vi.spyOn(saslFile, 'restoreSaslCredentials').mockImplementation(async () => true);
     const mockIrcConnectWithTLS = vi.spyOn(networkFile, 'ircConnectWithTLS').mockImplementation(() => {});
 
@@ -123,7 +123,7 @@ describe('kernel ircv3/cap', () => {
 
   it('test raw CAP #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
@@ -143,7 +143,7 @@ describe('kernel ircv3/cap', () => {
 
   it('test raw CAP #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     vi.spyOn(capabilitiesFile, 'parseCapabilityList').mockReturnValue({});
@@ -176,8 +176,8 @@ describe('kernel ircv3/cap', () => {
     it('registers the connection as not present before ending negotiation', () => {
       vi.stubGlobal('document', { visibilityState: 'hidden' });
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => true);
       const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       capabilitiesFile.resetCapabilityState();
@@ -192,7 +192,7 @@ describe('kernel ircv3/cap', () => {
 
   it('test raw CAP #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcRequestMetadata = vi.spyOn(networkFile, 'ircRequestMetadata').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 

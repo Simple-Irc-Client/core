@@ -1,168 +1,21 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import {
-  useSettingsStore,
-  setWizardCompleted,
-  setIsConnecting,
-  setIsConnected,
-  setConnectedTime,
-  setNick,
-  setServer,
-  setWizardStep,
-  setIsPasswordRequired,
-  setTheme,
-  setUserModes,
-  setChannelModes,
-  getChannelModes,
-  setListRequestRemainingSeconds,
-  setChannelTypes,
-  getCurrentNick,
-  getServer,
-  getCurrentChannelName,
-  getCurrentChannelCategory,
-  getChannelTypes,
-  getUserModes,
-  getConnectedTime,
-  getIsWizardCompleted,
-  getIsPasswordRequired,
-  setSupportedOption,
-  isSupportedOption,
-  setWizardProgress,
-  getWizardProgress,
-  setCurrentUserFlag,
-  getCurrentUserFlags,
-  setWatchLimit,
-  setMonitorLimit,
-  getWatchLimit,
-  getMonitorLimit,
-  setSilenceLimit,
-  getSilenceLimit,
-  toggleDarkMode,
-  setHideAvatarsInUsersList,
-  setFontSize,
-  setFontFormatting,
-  setHideTypingIndicator,
-  setCurrentUserHomepage,
-  setCurrentUserColor,
-  setCurrentUserAvatar,
-  setCurrentUserDisplayName,
-  setCurrentUserStatus,
-  setEncryptedPassword,
-  getEncryptedPassword,
-  getPasswordNick,
-  changeServer,
-  clearForAnotherNetwork,
-  setWizardHintDismissed,
-  setCurrentChannelName,
-  getHighlightWords,
-} from '../settings';
-import { ChannelCategory, MessageCategory } from '@shared/types';
-import { clearMonitorList } from '@features/monitor/store/monitor';
-import { forgetChannelsToAutoJoin, setChannelsClearAll, setClearUnreadMessages } from '@features/channels/store/channels';
-import { markRead } from '@/network/irc/readMarkers';
-import { getReplyTo, setReplyTo } from '@features/replies/store/replyTo';
+import { describe, expect, it, beforeEach } from 'vitest';
+import { useSettingsStore, setWizardCompleted, setWizardStep, setIsPasswordRequired, setTheme, getIsWizardCompleted, getIsPasswordRequired, setWizardProgress, getWizardProgress, toggleDarkMode, setHideAvatarsInUsersList, setFontSize, setFontFormatting, setHideTypingIndicator, setEncryptedPassword, getEncryptedPassword, getPasswordNick, setWizardHintDismissed, getHighlightWords, getWizardNick, setWizardNick } from '../settings';
+import { ChannelCategory } from '@shared/types';
+import { getActiveNetworkId, getCurrentNick, getServer, useNetworksStore } from '@features/networks/store/networks';
+import { useFriendsStore } from '@features/friends/store/friends';
+import { connectTestNetwork, resetNetworks, TEST_SERVER } from '@/test/networks';
 
-vi.mock('@features/channels/store/channels', () => ({
-  getMessages: vi.fn(() => []),
-  getTopic: vi.fn(() => ''),
-  getTyping: vi.fn(() => []),
-  setClearUnreadMessages: vi.fn(),
-  setChannelsClearAll: vi.fn(),
-  forgetChannelsToAutoJoin: vi.fn(),
-}));
+const OTHER_SERVER = { default: 0, encoding: 'utf8', network: 'OtherNet', servers: ['irc.other.net'] };
+const BOUNCER_SERVER = { ...TEST_SERVER, network: 'soju', bouncer: { account: 'alice', encryptedPassword: 'x', networkId: '7' } };
 
-vi.mock('@features/chat/store/current', () => ({
-  useCurrentStore: {
-    getState: () => ({
-      setUpdateTopic: vi.fn(),
-      setUpdateMessages: vi.fn(),
-      setUpdateUsers: vi.fn(),
-      setUpdateTyping: vi.fn(),
-    }),
-  },
-  setCurrentClearAll: vi.fn(),
-}));
-
-vi.mock('@features/users/store/users', () => ({
-  getUsersFromChannelSortedByMode: vi.fn(() => []),
-  flushCurrentUsers: vi.fn(),
-  setUsersClearAll: vi.fn(),
-}));
-
-vi.mock('@features/channels/store/channelList', () => ({
-  setChannelListClear: vi.fn(),
-}));
-
-vi.mock('@features/monitor/store/monitor', () => ({
-  clearMonitorList: vi.fn(),
-}));
-
-vi.mock('@/network/irc/network', () => ({
-  ircDisconnect: vi.fn(),
-}));
-
-vi.mock('@/network/irc/readMarkers', () => ({
-  markRead: vi.fn(),
-}));
+const storedSettings = (): { state: Record<string, unknown> } => JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
 
 describe('settings store', () => {
   beforeEach(() => {
+    resetNetworks();
+    useSettingsStore.setState({ isWizardCompleted: false, wizardStep: 'nick', wizardNick: '', isPasswordRequired: undefined, theme: 'modern', customThemes: {}, builtinThemeOverrides: {}, wizardProgress: { value: 0, label: '' }, isDarkMode: false, fontSize: 'medium', highlightWords: [], serverPasswords: {} });
+    // Nothing saved yet, as on the first start of a new version
     localStorage.clear();
-    useSettingsStore.setState({
-      isConnecting: false,
-      isConnected: false,
-      isWizardCompleted: false,
-      wizardStep: 'nick',
-      nick: '',
-      server: undefined,
-      isPasswordRequired: undefined,
-      connectedTime: 0,
-      currentChannelName: 'Status',
-      currentChannelCategory: ChannelCategory.status,
-      theme: 'modern',
-      customThemes: {},
-      builtinThemeOverrides: {},
-      userModes: [],
-      channelModes: { A: [], B: [], C: [], D: [] },
-      listRequestRemainingSeconds: -1,
-      channelTypes: [],
-      supportedOptions: [],
-      wizardProgress: { value: 0, label: '' },
-      currentUserFlags: [],
-      watchLimit: 0,
-      monitorLimit: 0,
-      silenceLimit: 0,
-      isDarkMode: false,
-      fontSize: 'medium',
-      currentUserHomepage: undefined,
-      currentUserColor: undefined,
-      highlightWords: [],
-    });
-    vi.clearAllMocks();
-  });
-
-  describe('connection state', () => {
-    it('should set isConnecting', () => {
-      setIsConnecting(true);
-      expect(useSettingsStore.getState().isConnecting).toBe(true);
-
-      setIsConnecting(false);
-      expect(useSettingsStore.getState().isConnecting).toBe(false);
-    });
-
-    it('should set isConnected', () => {
-      setIsConnected(true);
-      expect(useSettingsStore.getState().isConnected).toBe(true);
-
-      setIsConnected(false);
-      expect(useSettingsStore.getState().isConnected).toBe(false);
-    });
-
-    it('should set connected time', () => {
-      const timestamp = Date.now();
-      setConnectedTime(timestamp);
-
-      expect(getConnectedTime()).toBe(timestamp);
-    });
   });
 
   describe('wizard state', () => {
@@ -205,113 +58,6 @@ describe('settings store', () => {
       expect(progress.label).toBe('Step 3');
     });
 
-    it('should dismiss wizard hint permanently', () => {
-      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(false);
-
-      setWizardHintDismissed();
-
-      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(true);
-    });
-  });
-
-  describe('nick management', () => {
-    it('should set nick', () => {
-      setNick('TestUser');
-      expect(getCurrentNick()).toBe('TestUser');
-    });
-
-    it('should update nick', () => {
-      setNick('OldNick');
-      setNick('NewNick');
-
-      expect(getCurrentNick()).toBe('NewNick');
-    });
-
-    it('should handle empty nick', () => {
-      setNick('');
-      expect(getCurrentNick()).toBe('');
-    });
-  });
-
-  describe('nick change clears user metadata', () => {
-    it('should clear all currentUser metadata when nick changes', () => {
-      setNick('OldNick');
-      setCurrentUserAvatar('https://example.com/avatar.png');
-      setCurrentUserDisplayName('Old Display Name');
-      setCurrentUserStatus('Away');
-      setCurrentUserHomepage('https://example.com');
-      setCurrentUserColor('#ff5500');
-
-      setNick('NewNick');
-
-      const state = useSettingsStore.getState();
-      expect(state.nick).toBe('NewNick');
-      expect(state.currentUserAvatar).toBeUndefined();
-      expect(state.currentUserDisplayName).toBeUndefined();
-      expect(state.currentUserStatus).toBeUndefined();
-      expect(state.currentUserHomepage).toBeUndefined();
-      expect(state.currentUserColor).toBeUndefined();
-    });
-
-    it('should NOT clear metadata when nick is set to the same value', () => {
-      setNick('SameNick');
-      setCurrentUserAvatar('https://example.com/avatar.png');
-      setCurrentUserDisplayName('My Name');
-      setCurrentUserStatus('Online');
-      setCurrentUserHomepage('https://example.com');
-      setCurrentUserColor('#00ff00');
-
-      setNick('SameNick');
-
-      const state = useSettingsStore.getState();
-      expect(state.currentUserAvatar).toBe('https://example.com/avatar.png');
-      expect(state.currentUserDisplayName).toBe('My Name');
-      expect(state.currentUserStatus).toBe('Online');
-      expect(state.currentUserHomepage).toBe('https://example.com');
-      expect(state.currentUserColor).toBe('#00ff00');
-    });
-
-    it('should clear metadata on reconnect with different nick (simulates failed SASL)', () => {
-      // Simulate initial connection with authenticated nick
-      setNick('Merovingian');
-      setCurrentUserAvatar('https://example.com/merovingian.png');
-      setCurrentUserDisplayName('The Merovingian');
-
-      // Simulate reconnect where SASL failed and server assigned a different nick
-      setNick('unknown59356');
-
-      const state = useSettingsStore.getState();
-      expect(state.nick).toBe('unknown59356');
-      expect(state.currentUserAvatar).toBeUndefined();
-      expect(state.currentUserDisplayName).toBeUndefined();
-    });
-
-    it('should allow setting new metadata after nick change', () => {
-      setNick('OldNick');
-      setCurrentUserAvatar('https://example.com/old.png');
-
-      setNick('NewNick');
-      expect(useSettingsStore.getState().currentUserAvatar).toBeUndefined();
-
-      // New metadata arrives for new nick
-      setCurrentUserAvatar('https://example.com/new.png');
-      expect(useSettingsStore.getState().currentUserAvatar).toBe('https://example.com/new.png');
-    });
-  });
-
-  describe('server management', () => {
-    it('should set server', () => {
-      const server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['irc.test.com:6667'],
-      };
-
-      useSettingsStore.getState().setServer(server);
-      expect(useSettingsStore.getState().server).toEqual(server);
-    });
-
     it('should set password required status', () => {
       setIsPasswordRequired(true);
       expect(getIsPasswordRequired()).toBe(true);
@@ -319,33 +65,20 @@ describe('settings store', () => {
       setIsPasswordRequired(false);
       expect(getIsPasswordRequired()).toBe(false);
     });
-  });
 
-  describe('channel management', () => {
-    it('should get current channel name', () => {
-      expect(getCurrentChannelName()).toBe('Status');
+    it('should keep the nick typed in the wizard, also on resetWizardState', () => {
+      setWizardNick('alice');
+      useSettingsStore.getState().resetWizardState();
+
+      expect(getWizardNick()).toBe('alice');
     });
 
-    it('should get current channel category', () => {
-      expect(getCurrentChannelCategory()).toBe(ChannelCategory.status);
-    });
+    it('should dismiss wizard hint permanently', () => {
+      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(false);
 
-    it('should set channel types', () => {
-      setChannelTypes(['#', '&']);
-      expect(getChannelTypes()).toEqual(['#', '&']);
-    });
+      setWizardHintDismissed();
 
-    it('should return default channel types when empty (before 005 arrives)', () => {
-      setChannelTypes([]);
-      expect(getChannelTypes()).toEqual(['#', '&']);
-    });
-
-    it('should mark the channel it switches to as read, here and on the server', () => {
-      setCurrentChannelName('#chan', ChannelCategory.channel);
-
-      expect(getCurrentChannelName()).toBe('#chan');
-      expect(setClearUnreadMessages).toHaveBeenCalledWith('#chan');
-      expect(markRead).toHaveBeenCalledWith('#chan');
+      expect(useSettingsStore.getState().isWizardHintDismissed).toBe(true);
     });
   });
 
@@ -489,172 +222,6 @@ describe('settings store', () => {
     });
   });
 
-  describe('modes management', () => {
-    it('should set user modes', () => {
-      const modes = [
-        { symbol: '@', flag: 'o' },
-        { symbol: '+', flag: 'v' },
-      ];
-
-      setUserModes(modes);
-      expect(getUserModes()).toEqual(modes);
-    });
-
-    it('should set channel modes', () => {
-      const modes = {
-        A: ['b', 'e', 'I'],
-        B: ['k'],
-        C: ['l'],
-        D: ['i', 'm', 'n', 's', 't'],
-      };
-
-      setChannelModes(modes);
-      expect(getChannelModes()).toEqual(modes);
-    });
-
-    it('should update user modes', () => {
-      setUserModes([{ symbol: '@', flag: 'o' }]);
-      setUserModes([{ symbol: '+', flag: 'v' }]);
-
-      expect(getUserModes()).toEqual([{ symbol: '+', flag: 'v' }]);
-    });
-  });
-
-  describe('list request', () => {
-    it('should set list request remaining seconds', () => {
-      setListRequestRemainingSeconds(60);
-      expect(useSettingsStore.getState().listRequestRemainingSeconds).toBe(60);
-    });
-
-    it('should handle negative value', () => {
-      setListRequestRemainingSeconds(-1);
-      expect(useSettingsStore.getState().listRequestRemainingSeconds).toBe(-1);
-    });
-  });
-
-  describe('supported options', () => {
-    it('should add supported option', () => {
-      setSupportedOption('WHOX');
-      expect(isSupportedOption('WHOX')).toBe(true);
-    });
-
-    it('should return false for unsupported option', () => {
-      expect(isSupportedOption('UNKNOWN')).toBe(false);
-    });
-
-    it('should accumulate supported options', () => {
-      setSupportedOption('WHOX');
-      setSupportedOption('MONITOR');
-      setSupportedOption('WATCH');
-
-      expect(isSupportedOption('WHOX')).toBe(true);
-      expect(isSupportedOption('MONITOR')).toBe(true);
-      expect(isSupportedOption('WATCH')).toBe(true);
-    });
-  });
-
-  describe('current user flags', () => {
-    it('should add flag to current user', () => {
-      setCurrentUserFlag('r', true);
-      expect(getCurrentUserFlags()).toContain('r');
-    });
-
-    it('should remove flag from current user', () => {
-      setCurrentUserFlag('r', true);
-      setCurrentUserFlag('r', false);
-
-      expect(getCurrentUserFlags()).not.toContain('r');
-    });
-
-    it('should handle multiple flags', () => {
-      setCurrentUserFlag('r', true);
-      setCurrentUserFlag('x', true);
-      setCurrentUserFlag('i', true);
-
-      const flags = getCurrentUserFlags();
-      expect(flags).toContain('r');
-      expect(flags).toContain('x');
-      expect(flags).toContain('i');
-    });
-
-    it('should remove specific flag only', () => {
-      setCurrentUserFlag('r', true);
-      setCurrentUserFlag('x', true);
-      setCurrentUserFlag('r', false);
-
-      const flags = getCurrentUserFlags();
-      expect(flags).not.toContain('r');
-      expect(flags).toContain('x');
-    });
-  });
-
-  describe('limits', () => {
-    it('should set and get watch limit', () => {
-      setWatchLimit(100);
-      expect(getWatchLimit()).toBe(100);
-    });
-
-    it('should set and get monitor limit', () => {
-      setMonitorLimit(200);
-      expect(getMonitorLimit()).toBe(200);
-    });
-
-    it('should set and get silence limit', () => {
-      setSilenceLimit(50);
-      expect(getSilenceLimit()).toBe(50);
-    });
-
-    it('should default limits to 0', () => {
-      expect(getWatchLimit()).toBe(0);
-      expect(getMonitorLimit()).toBe(0);
-      expect(getSilenceLimit()).toBe(0);
-    });
-  });
-
-  describe('immutability', () => {
-    it('should not mutate supported options array', () => {
-      setSupportedOption('WHOX');
-      const optionsBefore = useSettingsStore.getState().supportedOptions;
-
-      setSupportedOption('MONITOR');
-      const optionsAfter = useSettingsStore.getState().supportedOptions;
-
-      expect(optionsBefore).not.toBe(optionsAfter);
-    });
-
-    it('should not mutate current user flags array', () => {
-      setCurrentUserFlag('r', true);
-      const flagsBefore = useSettingsStore.getState().currentUserFlags;
-
-      setCurrentUserFlag('x', true);
-      const flagsAfter = useSettingsStore.getState().currentUserFlags;
-
-      expect(flagsBefore).not.toBe(flagsAfter);
-    });
-  });
-
-  describe('setIsAutoAway', () => {
-    it('should set isAutoAway to true', () => {
-      useSettingsStore.getState().setIsAutoAway(true);
-
-      expect(useSettingsStore.getState().isAutoAway).toBe(true);
-    });
-
-    it('should set isAutoAway to false', () => {
-      useSettingsStore.getState().setIsAutoAway(true);
-      useSettingsStore.getState().setIsAutoAway(false);
-
-      expect(useSettingsStore.getState().isAutoAway).toBe(false);
-    });
-
-    it('should reset isAutoAway on resetWizardState', () => {
-      useSettingsStore.getState().setIsAutoAway(true);
-      useSettingsStore.getState().resetWizardState();
-
-      expect(useSettingsStore.getState().isAutoAway).toBe(false);
-    });
-  });
-
   describe('dark mode', () => {
     it('should toggle dark mode', () => {
       expect(useSettingsStore.getState().isDarkMode).toBe(false);
@@ -727,54 +294,6 @@ describe('settings store', () => {
     });
   });
 
-  describe('current user homepage', () => {
-    it('should set currentUserHomepage', () => {
-      setCurrentUserHomepage('https://example.com');
-      expect(useSettingsStore.getState().currentUserHomepage).toBe('https://example.com');
-    });
-
-    it('should clear currentUserHomepage with undefined', () => {
-      setCurrentUserHomepage('https://example.com');
-      setCurrentUserHomepage(undefined);
-      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
-    });
-
-    it('should default currentUserHomepage to undefined', () => {
-      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
-    });
-
-    it('should reset currentUserHomepage on resetWizardState', () => {
-      setCurrentUserHomepage('https://example.com');
-      useSettingsStore.getState().resetWizardState();
-
-      expect(useSettingsStore.getState().currentUserHomepage).toBeUndefined();
-    });
-  });
-
-  describe('current user color', () => {
-    it('should set currentUserColor', () => {
-      setCurrentUserColor('#ff5500');
-      expect(useSettingsStore.getState().currentUserColor).toBe('#ff5500');
-    });
-
-    it('should clear currentUserColor with undefined', () => {
-      setCurrentUserColor('#ff5500');
-      setCurrentUserColor(undefined);
-      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
-    });
-
-    it('should default currentUserColor to undefined', () => {
-      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
-    });
-
-    it('should reset currentUserColor on resetWizardState', () => {
-      setCurrentUserColor('#ff5500');
-      useSettingsStore.getState().resetWizardState();
-
-      expect(useSettingsStore.getState().currentUserColor).toBeUndefined();
-    });
-  });
-
   describe('persistence', () => {
     it('should write preferences to localStorage', () => {
       useSettingsStore.setState({ isDarkMode: true });
@@ -784,206 +303,131 @@ describe('settings store', () => {
       setHideTypingIndicator(true);
       setFontFormatting({ bold: true });
 
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
+      const stored = storedSettings();
       expect(stored.state.isDarkMode).toBe(true);
       expect(stored.state.theme).toBe('classic');
       expect(stored.state.fontSize).toBe('large');
       expect(stored.state.hideAvatarsInUsersList).toBe(true);
       expect(stored.state.hideTypingIndicator).toBe(true);
-      expect(stored.state.fontFormatting.bold).toBe(true);
+      expect(stored.state.fontFormatting).toMatchObject({ bold: true });
     });
 
     it('should write highlight words to localStorage', () => {
       useSettingsStore.getState().setHighlightWords(['deploy', 'release']);
 
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.highlightWords).toEqual(['deploy', 'release']);
+      expect(storedSettings().state.highlightWords).toEqual(['deploy', 'release']);
       expect(getHighlightWords()).toEqual(['deploy', 'release']);
     });
 
-    it('should have no highlight words when restoring settings saved before they existed', async () => {
-      localStorage.setItem('sic-settings', JSON.stringify({ state: { nick: 'SavedNick' }, version: 4 }));
+    it('should write the wizard nick and isWizardCompleted, and nothing of a network', () => {
+      setWizardNick('alice');
+      setWizardCompleted(true);
+
+      const stored = storedSettings();
+      expect(stored.state.wizardNick).toBe('alice');
+      expect(stored.state.isWizardCompleted).toBe(true);
+      expect(stored.state).not.toHaveProperty('nick');
+      expect(stored.state).not.toHaveProperty('server');
+    });
+
+    it('should stay in main view after page reload when wizard was completed', async () => {
+      localStorage.setItem('sic-settings', JSON.stringify({ state: { isWizardCompleted: true }, version: 5 }));
 
       await useSettingsStore.persist.rehydrate();
 
-      expect(getCurrentNick()).toBe('SavedNick');
-      expect(getHighlightWords()).toEqual([]);
-    });
-
-    it('should write nick and server to localStorage', () => {
-      setNick('PersistUser');
-      const server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['irc.test.com:6667'],
-      };
-      setServer(server);
-
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.nick).toBe('PersistUser');
-      expect(stored.state.server).toEqual(server);
-    });
-
-    it('should NOT write transient connection state to localStorage', () => {
-      setIsConnecting(true);
-      setIsConnected(true);
-      setConnectedTime(123456);
-
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.isConnecting).toBeUndefined();
-      expect(stored.state.isConnected).toBeUndefined();
-      expect(stored.state.connectedTime).toBeUndefined();
-    });
-
-    it('should write isWizardCompleted to localStorage', () => {
-      setWizardCompleted(true);
-
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.isWizardCompleted).toBe(true);
-    });
-
-    it('should update isWizardCompleted in localStorage when reset', () => {
-      setWizardCompleted(true);
-      setWizardCompleted(false);
-
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.isWizardCompleted).toBe(false);
-    });
-
-    it('should rehydrate isWizardCompleted after page reload', () => {
-      const persistedData = {
-        state: {
-          isWizardCompleted: true,
-          nick: 'SavedNick',
-          server: { default: 0, encoding: 'utf8', network: 'Net', servers: ['irc.net:6667'] },
-        },
-        version: 1,
-      };
-      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
-
-      useSettingsStore.persist.rehydrate();
-
       expect(getIsWizardCompleted()).toBe(true);
     });
 
-    it('should stay in main view after page reload when wizard was completed', () => {
-      // Simulate localStorage as saved from a previous session where wizard was completed
-      localStorage.setItem('sic-settings', JSON.stringify({ state: { isWizardCompleted: true }, version: 1 }));
-
-      // beforeEach already reset in-memory state to false — confirm fresh-page defaults
-      expect(getIsWizardCompleted()).toBe(false);
-
-      // Rehydrate simulates the store reading localStorage on page load
-      useSettingsStore.persist.rehydrate();
-
-      // Should restore completed state — no wizard shown
-      expect(getIsWizardCompleted()).toBe(true);
-    });
-
-    it('should return to wizard after page reload when wizard was never completed', () => {
-      // isWizardCompleted defaults to false and is never set true
-      // so localStorage either has false or the key is missing
-
-      useSettingsStore.persist.rehydrate();
+    it('should return to wizard after page reload when wizard was never completed', async () => {
+      await useSettingsStore.persist.rehydrate();
 
       expect(getIsWizardCompleted()).toBe(false);
     });
 
-    it('should rehydrate preferences from localStorage', () => {
-      const persistedData = {
-        state: {
-          isDarkMode: true,
-          theme: 'classic',
-          fontSize: 'small',
-          hideAvatarsInUsersList: true,
-          hideTypingIndicator: true,
-          fontFormatting: { colorCode: 4, bold: true, italic: false, underline: false },
-          nick: 'SavedNick',
-          server: { default: 0, encoding: 'utf8', network: 'Net', servers: ['irc.net:6667'] },
-          isWizardCompleted: true,
-        },
-        version: 1,
-      };
-      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
+    it('should rehydrate preferences from localStorage', async () => {
+      localStorage.setItem('sic-settings', JSON.stringify({
+        state: { isDarkMode: true, theme: 'classic', fontSize: 'small', hideTypingIndicator: true, fontFormatting: { colorCode: 4, bold: true, italic: false, underline: false } },
+        version: 5,
+      }));
 
-      // Trigger rehydration
-      useSettingsStore.persist.rehydrate();
+      await useSettingsStore.persist.rehydrate();
 
-      expect(useSettingsStore.getState().isDarkMode).toBe(true);
-      expect(useSettingsStore.getState().theme).toBe('classic');
-      expect(useSettingsStore.getState().fontSize).toBe('small');
-      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
-      expect(useSettingsStore.getState().hideTypingIndicator).toBe(true);
-      expect(useSettingsStore.getState().fontFormatting.bold).toBe(true);
-      expect(getCurrentNick()).toBe('SavedNick');
-      expect(getServer()).toEqual(persistedData.state.server);
-      expect(getIsWizardCompleted()).toBe(true);
-    });
-
-    it('should preserve nick and server on resetWizardState', () => {
-      setNick('MyNick');
-      const server = {
-        default: 0,
-        encoding: 'utf8',
-        network: 'TestNet',
-        servers: ['irc.test.com:6667'],
-      };
-      setServer(server);
-
-      useSettingsStore.getState().resetWizardState();
-
-      expect(getCurrentNick()).toBe('MyNick');
-      expect(getServer()).toEqual(server);
+      const state = useSettingsStore.getState();
+      expect(state.isDarkMode).toBe(true);
+      expect(state.theme).toBe('classic');
+      expect(state.fontSize).toBe('small');
+      expect(state.hideTypingIndicator).toBe(true);
+      expect(state.fontFormatting.bold).toBe(true);
     });
 
     it('should preserve fontFormatting on resetWizardState', () => {
       setFontFormatting({ bold: true, italic: true });
       useSettingsStore.getState().resetWizardState();
 
-      const formatting = useSettingsStore.getState().fontFormatting;
-      expect(formatting.bold).toBe(true);
-      expect(formatting.italic).toBe(true);
+      expect(useSettingsStore.getState().fontFormatting).toMatchObject({ bold: true, italic: true });
+    });
+  });
+
+  describe('migration of what an older version kept for one network', () => {
+    const storeLegacy = (state: Record<string, unknown>): void => {
+      localStorage.setItem('sic-settings', JSON.stringify({ state, version: 4 }));
+    };
+
+    it('moves the session to the networks store, and the nick to the wizard', async () => {
+      storeLegacy({ nick: 'alice', server: TEST_SERVER, currentChannelName: '#chat', currentChannelCategory: ChannelCategory.channel, isWizardCompleted: true });
+
+      await useSettingsStore.persist.rehydrate();
+      await useNetworksStore.persist.rehydrate();
+
+      expect(getWizardNick()).toBe('alice');
+      expect(getActiveNetworkId()).toBe('TestNet');
+      expect(getServer()).toEqual(TEST_SERVER);
+      expect(getCurrentNick()).toBe('alice');
+      expect(storedSettings().state).not.toHaveProperty('server');
+      expect(getIsWizardCompleted()).toBe(true);
     });
 
-    it('should write serverPasswords to localStorage', () => {
-      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
-      setEncryptedPassword('encrypted-data', 'TestNick');
+    it('keeps the password of a network under its name', async () => {
+      storeLegacy({ server: TEST_SERVER, serverPasswords: { TestNet: { encrypted: 'secret', nick: 'alice' } } });
 
-      const stored = JSON.parse(localStorage.getItem('sic-settings') ?? '{}');
-      expect(stored.state.serverPasswords).toEqual({ TestNet: { encrypted: 'encrypted-data', nick: 'TestNick' } });
+      await useSettingsStore.persist.rehydrate();
+      connectTestNetwork();
+
+      expect(getEncryptedPassword()).toBe('secret');
     });
 
-    it('should rehydrate serverPasswords from localStorage', () => {
-      const persistedData = {
-        state: {
-          serverPasswords: { TestNet: { encrypted: 'saved-encrypted', nick: 'SavedNick' } },
-          server: { default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false },
-          nick: 'SavedNick',
-        },
-        version: 3,
-      };
-      localStorage.setItem('sic-settings', JSON.stringify(persistedData));
+    it('gives the password kept under a bouncer\'s name to the bouncer network in use', async () => {
+      storeLegacy({ server: BOUNCER_SERVER, serverPasswords: { soju: { encrypted: 'secret', nick: 'alice' } } });
 
-      useSettingsStore.persist.rehydrate();
+      await useSettingsStore.persist.rehydrate();
+      connectTestNetwork(BOUNCER_SERVER);
 
-      expect(getEncryptedPassword()).toBe('saved-encrypted');
-      expect(getPasswordNick()).toBe('SavedNick');
+      expect(getEncryptedPassword()).toBe('secret');
+      expect(useSettingsStore.getState().serverPasswords).not.toHaveProperty('soju');
+    });
+
+    it('gives friends kept under a bouncer\'s name to the bouncer network in use', async () => {
+      storeLegacy({ server: BOUNCER_SERVER });
+      localStorage.setItem('sic-friends', JSON.stringify({ state: { friendsByNetwork: { soju: ['bob'], OtherNet: ['carol'] } }, version: 1 }));
+
+      await useSettingsStore.persist.rehydrate();
+      await useFriendsStore.persist.rehydrate();
+
+      expect(useFriendsStore.getState().friendsByNetwork).toEqual({ 'soju/bouncer:7': ['bob'], OtherNet: ['carol'] });
     });
   });
 
   describe('encrypted password', () => {
-    const testServer = { default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false };
-
     beforeEach(() => {
-      setServer(testServer);
+      connectTestNetwork();
     });
 
-    it('should set encrypted password and nick', () => {
+    it('should set encrypted password and nick for the active network', () => {
       setEncryptedPassword('encrypted-data', 'TestNick');
 
       expect(getEncryptedPassword()).toBe('encrypted-data');
       expect(getPasswordNick()).toBe('TestNick');
+      expect(storedSettings().state.serverPasswords).toEqual({ TestNet: { encrypted: 'encrypted-data', nick: 'TestNick' } });
     });
 
     it('should clear encrypted password with undefined', () => {
@@ -999,155 +443,25 @@ describe('settings store', () => {
       expect(getPasswordNick()).toBeUndefined();
     });
 
-    it('should preserve encrypted password on resetWizardState', () => {
-      setEncryptedPassword('encrypted-data', 'TestNick');
-      useSettingsStore.getState().resetWizardState();
-
-      // Server is cleared by resetWizardState, so re-set it to read the password
-      setServer(testServer);
-      expect(getEncryptedPassword()).toBe('encrypted-data');
-      expect(getPasswordNick()).toBe('TestNick');
-    });
-
-    it('should preserve encrypted password when nick changes', () => {
-      setNick('OldNick');
-      setEncryptedPassword('encrypted-data', 'OldNick');
-
-      setNick('NewNick');
-
-      // Password is preserved per server, passwordNick still reflects who saved it
-      expect(getEncryptedPassword()).toBe('encrypted-data');
-      expect(getPasswordNick()).toBe('OldNick');
-    });
-
-    it('should NOT clear encrypted password when nick is set to the same value', () => {
-      setNick('SameNick');
-      setEncryptedPassword('encrypted-data', 'SameNick');
-
-      setNick('SameNick');
-
-      expect(getEncryptedPassword()).toBe('encrypted-data');
-      expect(getPasswordNick()).toBe('SameNick');
-    });
-
-    it('should store passwords per server', () => {
+    it('should store passwords per network', () => {
       setEncryptedPassword('pass1', 'Nick1');
-
-      const otherServer = { default: 0, network: 'OtherNet', servers: ['irc.other.com:6667'], encoding: 'utf-8', tls: false };
-      setServer(otherServer);
+      connectTestNetwork(OTHER_SERVER);
       setEncryptedPassword('pass2', 'Nick2');
 
       expect(getEncryptedPassword()).toBe('pass2');
-      expect(getPasswordNick()).toBe('Nick2');
 
-      setServer(testServer);
+      connectTestNetwork();
       expect(getEncryptedPassword()).toBe('pass1');
       expect(getPasswordNick()).toBe('Nick1');
     });
 
-    it('should return undefined when no server is set', () => {
-      useSettingsStore.setState({ server: undefined });
-      expect(getEncryptedPassword()).toBeUndefined();
-      expect(getPasswordNick()).toBeUndefined();
-    });
-  });
+    it('should save nothing before a network is chosen', () => {
+      resetNetworks();
 
-  describe('changeServer', () => {
-    it('should reset wizard state', () => {
-      setWizardCompleted(true);
-      setIsConnected(true);
-      setNick('TestNick');
-
-      changeServer();
-
-      expect(getIsWizardCompleted()).toBe(false);
-      expect(useSettingsStore.getState().isConnected).toBe(false);
-      expect(useSettingsStore.getState().wizardStep).toBe('nick');
-    });
-
-    it('should clear nick and server', () => {
-      setNick('TestNick');
-      setServer({ default: 0, network: 'test', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
-
-      changeServer();
-
-      expect(getCurrentNick()).toBe('');
-      expect(getServer()).toBeUndefined();
-    });
-
-    it('should preserve encrypted password per server after changing server', () => {
-      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
       setEncryptedPassword('encrypted-data', 'TestNick');
 
-      changeServer();
-
-      // No server set, so getters return undefined
+      expect(useSettingsStore.getState().serverPasswords).toEqual({});
       expect(getEncryptedPassword()).toBeUndefined();
-
-      // But password is still stored for TestNet
-      setServer({ default: 0, network: 'TestNet', servers: ['irc.test.com:6667'], encoding: 'utf-8', tls: false });
-      expect(getEncryptedPassword()).toBe('encrypted-data');
-      expect(getPasswordNick()).toBe('TestNick');
-    });
-
-    it('should preserve user preferences', () => {
-      useSettingsStore.setState({ isDarkMode: true });
-      setFontSize('large');
-      setHideAvatarsInUsersList(true);
-
-      changeServer();
-
-      expect(useSettingsStore.getState().isDarkMode).toBe(true);
-      expect(useSettingsStore.getState().fontSize).toBe('large');
-      expect(useSettingsStore.getState().hideAvatarsInUsersList).toBe(true);
-    });
-
-    it('should clear the monitor list so friend statuses do not leak across servers', () => {
-      changeServer();
-
-      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
-    });
-
-    it('should drop replies being written to messages of the server before', () => {
-      setReplyTo('#chan', { id: 'm1', message: 'hi', target: '#chan', time: '2026-10-23T10:00:00.000Z', category: MessageCategory.default });
-
-      changeServer();
-
-      expect(getReplyTo('#chan')).toBeUndefined();
-    });
-  });
-
-  describe('clearForAnotherNetwork', () => {
-    it('forgets what was learned on the network before, and its channels', () => {
-      useSettingsStore.setState({ networkName: 'Libera.Chat', channelTypes: ['#'], currentUserFlags: ['away'], monitorLimit: 100, isConnected: true });
-
-      clearForAnotherNetwork();
-
-      const state = useSettingsStore.getState();
-      expect(state.networkName).toBeUndefined();
-      expect(state.channelTypes).toEqual([]);
-      expect(state.currentUserFlags).toEqual([]);
-      expect(state.monitorLimit).toBe(0);
-      expect(state.isConnected).toBe(false);
-      expect(vi.mocked(setChannelsClearAll)).toHaveBeenCalled();
-      expect(vi.mocked(forgetChannelsToAutoJoin)).toHaveBeenCalled();
-      expect(vi.mocked(clearMonitorList)).toHaveBeenCalled();
-    });
-
-    it('keeps the wizard where it is, and the server and nick', () => {
-      const server = { default: 0, network: 'bouncer', servers: ['bouncer.example.net'], encoding: 'utf-8' };
-      setServer(server);
-      setNick('alice');
-      useSettingsStore.setState({ isWizardCompleted: false, wizardStep: 'loading', wizardProgress: { value: 2, label: 'Connected' } });
-
-      clearForAnotherNetwork();
-
-      const state = useSettingsStore.getState();
-      expect(state.wizardStep).toBe('loading');
-      expect(state.wizardProgress).toEqual({ value: 2, label: 'Connected' });
-      expect(state.isWizardCompleted).toBe(false);
-      expect(getServer()).toEqual(server);
-      expect(getCurrentNick()).toBe('alice');
     });
   });
 });

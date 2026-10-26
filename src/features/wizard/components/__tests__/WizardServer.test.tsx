@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardServer from '../WizardServer';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as network from '@/network/irc/network';
 import * as serversModule from '@/network/irc/servers';
 
@@ -28,10 +29,15 @@ vi.mock('@/network/irc/network', () => ({
 
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: (selector: (s: Record<string, unknown>) => unknown) => selector({ nick: '', server: undefined }),
-  getCurrentNick: vi.fn(),
   setWizardStep: vi.fn(),
+  getWizardNick: vi.fn(() => ''),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  activateNetwork: vi.fn(),
+  getCurrentNick: vi.fn(),
   setIsConnecting: vi.fn(),
-  setServer: vi.fn(),
 }));
 
 const mockServers: serversModule.Server[] = [
@@ -88,7 +94,7 @@ vi.mock('@/network/irc/servers', () => ({
 describe('WizardServer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+    vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
   });
 
   describe('Basic rendering', () => {
@@ -248,7 +254,7 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(mockServers[0]);
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(mockServers[0], expect.any(String));
     });
 
     it('should call getCurrentNick when button is clicked', () => {
@@ -261,11 +267,11 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.getCurrentNick).toHaveBeenCalled();
+      expect(networksStore.getCurrentNick).toHaveBeenCalled();
     });
 
     it('should call ircConnect with server and nick when button is clicked', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('MyNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('MyNick');
 
       render(<WizardServer />);
 
@@ -289,7 +295,7 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setIsConnecting).toHaveBeenCalledWith(true);
+      expect(networksStore.setIsConnecting).toHaveBeenCalledWith(true);
     });
 
     it('should call setWizardStep with "loading" when button is clicked', () => {
@@ -308,17 +314,17 @@ describe('WizardServer', () => {
     it('should call handlers in correct order', () => {
       const callOrder: string[] = [];
 
-      vi.mocked(settingsStore.setServer).mockImplementation(() => {
-        callOrder.push('setServer');
+      vi.mocked(networksStore.activateNetwork).mockImplementation(() => {
+        callOrder.push('activateNetwork');
       });
-      vi.mocked(settingsStore.getCurrentNick).mockImplementation(() => {
+      vi.mocked(networksStore.getCurrentNick).mockImplementation(() => {
         callOrder.push('getCurrentNick');
         return 'TestNick';
       });
       vi.mocked(network.ircConnect).mockImplementation(async () => {
         callOrder.push('ircConnect');
       });
-      vi.mocked(settingsStore.setIsConnecting).mockImplementation(() => {
+      vi.mocked(networksStore.setIsConnecting).mockImplementation(() => {
         callOrder.push('setIsConnecting');
       });
       vi.mocked(settingsStore.setWizardStep).mockImplementation(() => {
@@ -335,7 +341,7 @@ describe('WizardServer', () => {
       fireEvent.click(button);
 
       expect(callOrder).toEqual([
-        'setServer',
+        'activateNetwork',
         'getCurrentNick',
         'ircConnect',
         'setIsConnecting',
@@ -356,7 +362,7 @@ describe('WizardServer', () => {
       }
       fireEvent.submit(form);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(mockServers[0]);
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(mockServers[0], expect.any(String));
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('loading');
     });
   });
@@ -370,7 +376,7 @@ describe('WizardServer', () => {
 
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).not.toHaveBeenCalled();
+      expect(networksStore.activateNetwork).not.toHaveBeenCalled();
       expect(network.ircConnect).not.toHaveBeenCalled();
       expect(settingsStore.setWizardStep).not.toHaveBeenCalled();
     });
@@ -399,7 +405,7 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(mockServers[2]);
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(mockServers[2], expect.any(String));
     });
   });
 
@@ -448,13 +454,13 @@ describe('WizardServer', () => {
       fireEvent.change(screen.getByPlaceholderText('wizard.server.host'), { target: { value: 'bouncer.example.net' } });
       fireEvent.click(screen.getByText('wizard.server.button.next'));
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(expect.objectContaining({ network: 'bouncer.example.net' }));
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(expect.objectContaining({ network: 'bouncer.example.net' }), expect.any(String));
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('bouncer');
       expect(network.ircConnect).not.toHaveBeenCalled();
     });
 
     it('should create backend server config by default', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -463,17 +469,18 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           connectionType: 'backend',
           network: 'custom.irc.net',
           servers: ['custom.irc.net'],
-        })
+        }),
+        expect.any(String),
       );
     });
 
     it('should create websocket server config when websocket is selected', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -489,19 +496,20 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           connectionType: 'websocket',
           network: 'custom.irc.net',
           servers: ['custom.irc.net:443'],
           tls: true,
           websocketUrl: 'wss://custom.irc.net/',
-        })
+        }),
+        expect.any(String),
       );
     });
 
     it('should include custom port in websocket URL', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -516,16 +524,17 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           connectionType: 'websocket',
           websocketUrl: 'wss://custom.irc.net:8080/',
-        })
+        }),
+        expect.any(String),
       );
     });
 
     it('should include custom port in servers array for backend', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -537,10 +546,11 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           servers: ['custom.irc.net:7000'],
-        })
+        }),
+        expect.any(String),
       );
     });
 
@@ -561,10 +571,11 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           connectionType: 'backend',
-        })
+        }),
+        expect.any(String),
       );
     });
 
@@ -600,7 +611,7 @@ describe('WizardServer', () => {
     });
 
     it('should handle empty port field by using host without port suffix', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -612,15 +623,16 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           servers: ['custom.irc.net'],
-        })
+        }),
+        expect.any(String),
       );
     });
 
     it('should handle IP address as custom host', () => {
-      vi.mocked(settingsStore.getCurrentNick).mockReturnValue('TestNick');
+      vi.mocked(networksStore.getCurrentNick).mockReturnValue('TestNick');
       render(<WizardServer />);
 
       const hostInput = screen.getByPlaceholderText('wizard.server.host');
@@ -629,11 +641,12 @@ describe('WizardServer', () => {
       const button = screen.getByText('wizard.server.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(
         expect.objectContaining({
           network: '192.168.1.100',
           servers: ['192.168.1.100'],
-        })
+        }),
+        expect.any(String),
       );
     });
   });

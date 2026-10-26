@@ -2,7 +2,7 @@
 
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { ircSendCommand } from '@/network/irc/network';
-import { getCurrentUserFlags, getIsConnected } from '@features/settings/store/settings';
+import { getCurrentUserFlags, getIsConnected } from '@features/networks/store/networks';
 
 /** Registered while nobody was looking: the server doesn't count this connection as the user being present */
 let notPresent = false;

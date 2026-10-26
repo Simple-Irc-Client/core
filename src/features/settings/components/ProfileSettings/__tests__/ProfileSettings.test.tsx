@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfileSettings from '../ProfileSettings';
 import * as network from '@/network/irc/network';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { setTestSession } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -27,14 +27,7 @@ describe('ProfileSettings', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useSettingsStore.setState({
-      supportedOptions: [],
-      currentUserAvatar: undefined,
-      currentUserDisplayName: undefined,
-      currentUserStatus: undefined,
-      currentUserHomepage: undefined,
-      currentUserColor: undefined,
-    });
+    setTestSession({ supportedOptions: [], currentUserAvatar: undefined, currentUserDisplayName: undefined, currentUserStatus: undefined, currentUserHomepage: undefined, currentUserColor: undefined });
   });
 
   describe('Tabs', () => {
@@ -312,7 +305,7 @@ describe('ProfileSettings', () => {
   describe('Avatar change functionality', () => {
     it('should not send METADATA when avatar URL is unsafe (javascript:)', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+      setTestSession({ supportedOptions: ['metadata-avatar'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -329,7 +322,7 @@ describe('ProfileSettings', () => {
 
     it('should not send METADATA when avatar URL is unsafe (data:)', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+      setTestSession({ supportedOptions: ['metadata-avatar'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -346,7 +339,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA when avatar URL is safe (https)', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+      setTestSession({ supportedOptions: ['metadata-avatar'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -365,10 +358,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA to clear avatar when input is empty', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-avatar'],
-        currentUserAvatar: 'https://example.com/old.png',
-      });
+      setTestSession({ supportedOptions: ['metadata-avatar'], currentUserAvatar: 'https://example.com/old.png' });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -385,7 +375,7 @@ describe('ProfileSettings', () => {
 
     it('should not close dialog when avatar URL is unsafe', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-avatar'] });
+      setTestSession({ supportedOptions: ['metadata-avatar'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -403,7 +393,7 @@ describe('ProfileSettings', () => {
 
   describe('Display name change functionality', () => {
     it('should not show display name field when metadata-display-name is not supported', () => {
-      useSettingsStore.setState({ supportedOptions: [] });
+      setTestSession({ supportedOptions: [] });
 
       render(
         <ProfileSettings
@@ -418,7 +408,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should show display name field when metadata-display-name is supported', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+      setTestSession({ supportedOptions: ['metadata-display-name'] });
 
       render(
         <ProfileSettings
@@ -433,10 +423,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should pre-fill display name input with current display name', () => {
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-display-name'],
-        currentUserDisplayName: 'John Doe',
-      });
+      setTestSession({ supportedOptions: ['metadata-display-name'], currentUserDisplayName: 'John Doe' });
 
       render(
         <ProfileSettings
@@ -452,7 +439,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET display-name command when changing display name', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+      setTestSession({ supportedOptions: ['metadata-display-name'] });
 
       render(
         <ProfileSettings
@@ -473,10 +460,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET display-name without value to clear display name', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-display-name'],
-        currentUserDisplayName: 'Old Name',
-      });
+      setTestSession({ supportedOptions: ['metadata-display-name'], currentUserDisplayName: 'Old Name' });
 
       render(
         <ProfileSettings
@@ -497,7 +481,7 @@ describe('ProfileSettings', () => {
 
     it('should close dialog after changing display name', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+      setTestSession({ supportedOptions: ['metadata-display-name'] });
 
       render(
         <ProfileSettings
@@ -518,7 +502,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET display-name command when pressing Enter', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+      setTestSession({ supportedOptions: ['metadata-display-name'] });
 
       render(
         <ProfileSettings
@@ -535,7 +519,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should display translated display name label', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-display-name'] });
+      setTestSession({ supportedOptions: ['metadata-display-name'] });
 
       render(
         <ProfileSettings
@@ -551,7 +535,7 @@ describe('ProfileSettings', () => {
 
   describe('Status change functionality', () => {
     it('should not show status field when metadata-status is not supported', () => {
-      useSettingsStore.setState({ supportedOptions: [] });
+      setTestSession({ supportedOptions: [] });
 
       render(
         <ProfileSettings
@@ -566,7 +550,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should show status field when metadata-status is supported', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+      setTestSession({ supportedOptions: ['metadata-status'] });
 
       render(
         <ProfileSettings
@@ -581,10 +565,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should pre-fill status input with current status', () => {
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-status'],
-        currentUserStatus: 'Working from home',
-      });
+      setTestSession({ supportedOptions: ['metadata-status'], currentUserStatus: 'Working from home' });
 
       render(
         <ProfileSettings
@@ -600,7 +581,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET status command when changing status', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+      setTestSession({ supportedOptions: ['metadata-status'] });
 
       render(
         <ProfileSettings
@@ -621,10 +602,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET status without value to clear status', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-status'],
-        currentUserStatus: 'Old Status',
-      });
+      setTestSession({ supportedOptions: ['metadata-status'], currentUserStatus: 'Old Status' });
 
       render(
         <ProfileSettings
@@ -645,7 +623,7 @@ describe('ProfileSettings', () => {
 
     it('should close dialog after changing status', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+      setTestSession({ supportedOptions: ['metadata-status'] });
 
       render(
         <ProfileSettings
@@ -666,7 +644,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET status command when pressing Enter', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-status'] });
+      setTestSession({ supportedOptions: ['metadata-status'] });
 
       render(
         <ProfileSettings
@@ -685,7 +663,7 @@ describe('ProfileSettings', () => {
 
   describe('Homepage change functionality', () => {
     it('should not show homepage field when metadata-homepage is not supported', () => {
-      useSettingsStore.setState({ supportedOptions: [] });
+      setTestSession({ supportedOptions: [] });
 
       render(
         <ProfileSettings
@@ -700,7 +678,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should show homepage field when metadata-homepage is supported', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings
@@ -715,10 +693,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should pre-fill homepage input with current homepage', () => {
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-homepage'],
-        currentUserHomepage: 'https://example.com',
-      });
+      setTestSession({ supportedOptions: ['metadata-homepage'], currentUserHomepage: 'https://example.com' });
 
       render(
         <ProfileSettings
@@ -734,7 +709,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET homepage command when changing homepage', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings
@@ -755,10 +730,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET homepage without value to clear homepage', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-homepage'],
-        currentUserHomepage: 'https://old-website.com',
-      });
+      setTestSession({ supportedOptions: ['metadata-homepage'], currentUserHomepage: 'https://old-website.com' });
 
       render(
         <ProfileSettings
@@ -779,7 +751,7 @@ describe('ProfileSettings', () => {
 
     it('should close dialog after changing homepage', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings
@@ -800,7 +772,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET homepage command when pressing Enter', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings
@@ -817,7 +789,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should display translated homepage labels', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings
@@ -833,7 +805,7 @@ describe('ProfileSettings', () => {
 
     it('should not send METADATA when homepage URL is unsafe (javascript:)', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -850,7 +822,7 @@ describe('ProfileSettings', () => {
 
     it('should not send METADATA when homepage URL is unsafe (data:)', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -867,7 +839,7 @@ describe('ProfileSettings', () => {
 
     it('should not close dialog when homepage URL is unsafe', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-homepage'] });
+      setTestSession({ supportedOptions: ['metadata-homepage'] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -885,7 +857,7 @@ describe('ProfileSettings', () => {
 
   describe('Color change functionality', () => {
     it('should not show color field when metadata-color is not supported', () => {
-      useSettingsStore.setState({ supportedOptions: [] });
+      setTestSession({ supportedOptions: [] });
 
       render(
         <ProfileSettings
@@ -900,7 +872,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should show color field when metadata-color is supported', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+      setTestSession({ supportedOptions: ['metadata-color'] });
 
       render(
         <ProfileSettings
@@ -915,10 +887,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should pre-fill color input with current color', () => {
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-color'],
-        currentUserColor: '#ff0000',
-      });
+      setTestSession({ supportedOptions: ['metadata-color'], currentUserColor: '#ff0000' });
 
       render(
         <ProfileSettings
@@ -934,7 +903,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET color command when changing color', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+      setTestSession({ supportedOptions: ['metadata-color'] });
 
       render(
         <ProfileSettings
@@ -956,10 +925,7 @@ describe('ProfileSettings', () => {
 
     it('should close dialog after changing color', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-color'],
-        currentUserColor: '#ff0000',
-      });
+      setTestSession({ supportedOptions: ['metadata-color'], currentUserColor: '#ff0000' });
 
       render(
         <ProfileSettings
@@ -976,7 +942,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should display translated color labels', () => {
-      useSettingsStore.setState({ supportedOptions: ['metadata-color'] });
+      setTestSession({ supportedOptions: ['metadata-color'] });
 
       render(
         <ProfileSettings
@@ -991,10 +957,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should default to black color when no color is set', () => {
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-color'],
-        currentUserColor: undefined,
-      });
+      setTestSession({ supportedOptions: ['metadata-color'], currentUserColor: undefined });
 
       render(
         <ProfileSettings
@@ -1027,10 +990,7 @@ describe('ProfileSettings', () => {
 
     it('should send METADATA SET color with value when color input has a value', async () => {
       const user = userEvent.setup();
-      useSettingsStore.setState({
-        supportedOptions: ['metadata-color'],
-        currentUserColor: '#ff0000',
-      });
+      setTestSession({ supportedOptions: ['metadata-color'], currentUserColor: '#ff0000' });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />
@@ -1046,7 +1006,7 @@ describe('ProfileSettings', () => {
     });
 
     it('should hide all metadata fields when no options are supported', () => {
-      useSettingsStore.setState({ supportedOptions: [] });
+      setTestSession({ supportedOptions: [] });
 
       render(
         <ProfileSettings open={true} onOpenChange={mockOnOpenChange} currentNick="testUser" />

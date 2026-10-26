@@ -1,7 +1,7 @@
 import { Fragment, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChannelCategory, MessageCategory, type Message } from '@shared/types';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
 import Avatar from '@shared/components/Avatar';
 import ImagesPreview from '@shared/components/ImagesPreview';
@@ -61,7 +61,7 @@ const ChatMessage = ({ message, grouped, isDebug, fontSizeClass, canReact, onAdd
   const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
-  const currentChannelCategory = useSettingsStore((s) => s.currentChannelCategory);
+  const currentChannelCategory = useActiveSession((session) => session.currentChannelCategory);
 
   const nick = getNickFromMessage(message);
   const displayNick = getDisplayNickFromMessage(message);

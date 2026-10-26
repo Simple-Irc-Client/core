@@ -2,10 +2,10 @@ import { MessageColor } from '@/config/theme';
 import { isIrcService } from '@/network/irc/helpers';
 import { existChannel, isChannel, setAddChannel, setAddMessage } from '@features/channels/store/channels';
 import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
-import { getCurrentNick } from '@features/settings/store/settings';
 import { getUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentNick } from '@features/networks/store/networks';
 
 // eslint-disable-next-line no-control-regex
 export const ACTION_BODY = /^\x01ACTION (.*)\x01$/;

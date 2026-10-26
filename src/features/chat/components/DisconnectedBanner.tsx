@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { WifiOff } from 'lucide-react';
-import { useSettingsStore, changeServer } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { ircReconnect } from '@/network/irc/network';
+import { changeServer } from '@features/networks/networkLifecycle';
 
 const DisconnectedBanner = () => {
   const { t } = useTranslation();
-  const isConnecting = useSettingsStore((state) => state.isConnecting);
+  const isConnecting = useActiveSession((session) => session.isConnecting);
   return (
     <div role="status" aria-live="polite" className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-2.5 bg-yellow-50 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-400 text-xs">
       <WifiOff className="h-3 w-3 shrink-0" aria-hidden="true" />

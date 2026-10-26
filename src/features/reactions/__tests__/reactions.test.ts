@@ -3,7 +3,7 @@ import { hasReacted, sendReaction, setReaction, withReaction } from '../reaction
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import * as networkFile from '@/network/irc/network';
 import * as channelsFile from '@features/channels/store/channels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { type Message, MessageCategory, type Reaction } from '@shared/types';
 
 const message = (overrides: Partial<Message> = {}): Message => ({
@@ -19,8 +19,8 @@ const message = (overrides: Partial<Message> = {}): Message => ({
 
 describe('reactions', () => {
   beforeEach(() => {
-    vi.spyOn(settingsFile, 'isSameName').mockImplementation((a, b) => a.toLowerCase() === b.toLowerCase());
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'me');
+    vi.spyOn(networksStore, 'isSameName').mockImplementation((a, b) => a.toLowerCase() === b.toLowerCase());
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'me');
   });
 
   afterEach(() => {

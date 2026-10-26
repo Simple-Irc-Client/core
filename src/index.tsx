@@ -7,6 +7,7 @@ import { initSentry } from './runtime/sentry';
 import { initServiceWorker } from './runtime/serviceWorker';
 import { initMobileNotifications } from './runtime/notifications';
 import { initSounds } from './features/sounds/sounds';
+import { startChannelsPersistence } from './features/channels/store/channelsPersistence';
 
 initSentry();
 
@@ -19,6 +20,8 @@ void checkForUpdates();
 void initMobileNotifications();
 
 initSounds();
+
+startChannelsPersistence();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

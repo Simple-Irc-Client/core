@@ -5,7 +5,7 @@ import * as bouncer from '@/network/irc/bouncer';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { type Server } from '@/network/irc/servers';
 import { clearBouncerNetworks, setBoundBouncerNetworkId, updateBouncerNetwork } from '@features/bouncer/store/bouncerNetworks';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { connectTestNetwork, setTestSession } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -37,9 +37,10 @@ describe('BouncerNetworksDialog', () => {
     clearBouncerNetworks();
     resetCapabilityState();
     markCapabilitiesAcknowledged(['soju.im/bouncer-networks', 'soju.im/bouncer-networks-notify']);
+    connectTestNetwork(bouncerServer('1'));
+    setTestSession({ isConnected: true });
     updateBouncerNetwork('1', { name: 'Libera', state: 'connected' });
     updateBouncerNetwork('2', { name: 'OFTC', state: 'connected' });
-    useSettingsStore.setState({ isConnected: true, server: bouncerServer('1') });
   });
 
   it('switches to another network and closes', () => {
@@ -60,7 +61,8 @@ describe('BouncerNetworksDialog', () => {
   });
 
   it('opens by itself when the bouncer refused the network chosen', () => {
-    useSettingsStore.setState({ server: bouncerServer() });
+    connectTestNetwork(bouncerServer());
+    setTestSession({ isConnected: true });
 
     render(<BouncerNetworksDialog open={false} onOpenChange={onOpenChange} />);
 
@@ -69,7 +71,8 @@ describe('BouncerNetworksDialog', () => {
   });
 
   it('does not open by itself while disconnected', () => {
-    useSettingsStore.setState({ isConnected: false, server: bouncerServer() });
+    connectTestNetwork(bouncerServer());
+    setTestSession({ isConnected: false });
 
     render(<BouncerNetworksDialog open={false} onOpenChange={onOpenChange} />);
 

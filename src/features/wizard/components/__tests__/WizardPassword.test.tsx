@@ -2,9 +2,11 @@ import { describe, expect, it, vi, beforeAll, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardPassword from '../WizardPassword';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as network from '@/network/irc/network';
 import * as queryParams from '@shared/lib/queryParams';
 import * as encryption from '@/network/encryption';
+import { connectTestNetwork, mockStoreState } from '@/test/networks';
 
 beforeAll(() => {
   globalThis.ResizeObserver = class ResizeObserver {
@@ -35,6 +37,10 @@ vi.mock('@features/settings/store/settings', () => ({
   setWizardCompleted: vi.fn(),
   setEncryptedPassword: vi.fn(),
   useSettingsStore: vi.fn(),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getCurrentNick: vi.fn(),
   isSameName: vi.fn((a: string, b: string) => a.toLowerCase() === b.toLowerCase()),
 }));
@@ -60,15 +66,13 @@ describe('WizardPassword', () => {
     if (opts?.encryptedPassword && opts?.passwordNick) {
       serverPasswords['TestNet'] = { encrypted: opts.encryptedPassword, nick: opts.passwordNick };
     }
-    vi.mocked(settingsStore.useSettingsStore).mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({
+    connectTestNetwork(testServer, nick);
+    mockStoreState({
         nick,
         server: testServer,
         serverPasswords,
-      })
-    );
-    vi.mocked(settingsStore.getCurrentNick).mockReturnValue(nick);
+      });
+    vi.mocked(networksStore.getCurrentNick).mockReturnValue(nick);
   };
 
   describe('Basic rendering', () => {

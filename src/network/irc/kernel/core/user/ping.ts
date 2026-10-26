@@ -1,6 +1,6 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { setLagMs } from '@features/settings/store/settings';
+import { setLagMs } from '@features/networks/store/networks';
 
 // PING :F549DB3
 export const onPing = (ctx: IrcContext): void => {

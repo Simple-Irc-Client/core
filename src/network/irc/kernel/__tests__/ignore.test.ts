@@ -3,23 +3,24 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as notificationsFile from '@/runtime/notifications';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
+import { connectTestNetwork } from '@/test/networks';
 
 describe('kernel: ignored users', () => {
   setupKernelTest();
 
   const mockEnvironment = () => {
-    vi.spyOn(settingsFile, 'getServer').mockReturnValue({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
-    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('MyNick');
-    vi.spyOn(settingsFile, 'getUserModes').mockReturnValue(defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#other');
-    vi.spyOn(settingsFile, 'getCurrentUserFlags').mockReturnValue([]);
+    connectTestNetwork({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('MyNick');
+    vi.spyOn(networksStore, 'getUserModes').mockReturnValue(defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#other');
+    vi.spyOn(networksStore, 'getCurrentUserFlags').mockReturnValue([]);
     vi.spyOn(channelsFile, 'existChannel').mockReturnValue(true);
     return {
       setAddMessage: vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {}),

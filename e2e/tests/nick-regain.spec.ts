@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, projectTag } from '../helpers';
+import { connectViaWizard, projectTag, readPersistedSession } from '../helpers';
 import { skipWithoutIrcv3 } from '../test-server';
 
 let page: Page;
@@ -9,7 +9,7 @@ let wanted: string;
 
 const banner = () => page.getByTestId('nick-regain-banner');
 const currentNick = () => page.locator('[data-avatar-button]');
-const persistedNick = (): Promise<string | undefined> => page.evaluate(() => JSON.parse(localStorage.getItem('sic-settings') ?? '{}').state?.nick);
+const persistedNick = async (): Promise<string | undefined> => (await readPersistedSession(page))?.nick;
 
 /** Resolves once the server has no one on `nick` any more */
 const waitUntilFree = async (nick: string): Promise<void> => {

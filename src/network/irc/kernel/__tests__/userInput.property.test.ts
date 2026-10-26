@@ -6,10 +6,10 @@ import fc from 'fast-check';
 import { Kernel } from '@/network/irc/kernel';
 import * as channelsFile from '@features/channels/store/channels';
 import { getUser, setAddUser, setUsersClearAll } from '@features/users/store/users';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { parseMessageToCommand } from '@/network/irc/command';
 import { isSafeCssColor, isSafeImageUrl, isSafeUrl } from '@shared/lib/utils';
 import { setupKernelTest } from './fixtures';
+import { setTestSession } from '@/test/networks';
 
 /** What fits in one IRC line's trailing parameter: anything but a line break or NUL */
 const lineText = fc.string({ unit: 'binary', maxLength: 80 }).map((text) => text.replace(/[\r\n\0]/g, ''));
@@ -26,7 +26,7 @@ describe('what users type, for any value', () => {
   const alice = () => getUser('alice');
 
   beforeEach(() => {
-    useSettingsStore.setState({ nick: 'me', caseMapping: 'rfc1459' });
+    setTestSession({ nick: 'me', caseMapping: 'rfc1459' });
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     setUsersClearAll();
     setAddUser({ nick: 'alice', ident: 'a', hostname: 'host', flags: [], channels: [{ name: '#chan', flags: [], maxPermission: -1 }] });

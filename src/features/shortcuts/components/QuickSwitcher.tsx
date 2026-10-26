@@ -2,12 +2,13 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ChannelIcon from '@features/channels/components/ChannelIcon';
 import UnreadBadge from '@features/channels/components/UnreadBadge';
-import { useChannelsStore } from '@features/channels/store/channels';
-import { setCurrentChannelName, useSettingsStore } from '@features/settings/store/settings';
+import { useActiveChannels } from '@features/channels/store/channels';
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '@shared/components/ui/command';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@shared/components/ui/dialog';
 import { type Channel } from '@shared/types';
 import { switcherOrder } from '../shortcuts';
+import { useActiveSession } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 interface QuickSwitcherProps {
   open: boolean;
@@ -16,8 +17,8 @@ interface QuickSwitcherProps {
 
 const QuickSwitcher = ({ open, onOpenChange }: QuickSwitcherProps) => {
   const { t } = useTranslation();
-  const channels = useChannelsStore((state) => state.openChannelsShortList);
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
+  const channels = useActiveChannels((slice) => slice.openChannelsShortList);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
   const ordered = useMemo(() => switcherOrder(channels, currentChannelName), [channels, currentChannelName]);
 
   const handleSelect = (channel: Channel): void => {

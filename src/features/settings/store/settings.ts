@@ -1,23 +1,15 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { type Server } from '@/network/irc/servers';
 import { BUILTIN_THEMES, DEFAULT_THEME_ID, isBuiltinTheme, type BuiltinThemeId } from '@features/themes/builtinThemes';
 import { type CustomTheme } from '@features/themes/themeSelectors';
 import { devtools, persist } from 'zustand/middleware';
-import { ChannelCategory, type ChannelMode, type UserMode } from '@shared/types';
-import { forgetChannelsToAutoJoin, getMessages, getTopic, getTyping, setClearUnreadMessages, setChannelsClearAll } from '@features/channels/store/channels';
-import { useCurrentStore, setCurrentClearAll } from '@features/chat/store/current';
-import { flushCurrentUsers, setUsersClearAll } from '@features/users/store/users';
-import { defaultChannelTypes } from '@/config/config';
 import { type LanguageSetting } from '@/config/languages';
-import { setChannelListClear } from '@features/channels/store/channelList';
-import { clearMonitorList } from '@features/monitor/store/monitor';
-import { clearAllReplies } from '@features/replies/store/replyTo';
 import { type NotificationSound } from '@features/sounds/sounds';
 import { type MembershipEventsDisplay } from '@features/chat/membershipEvents';
-import { ircDisconnect } from '@/network/irc/network';
-import { markRead } from '@/network/irc/readMarkers';
-import { DEFAULT_CASE_MAPPING, namesEqual, type CaseMapping } from '@shared/lib/caseMapping';
+import { type NetworkId } from '@features/networks/networkId';
+import { getActiveNetworkId, NO_NETWORK } from '@features/networks/store/networks';
+import { moveLegacyBouncerIdentity, rekeyLegacyNetworks, saveLegacyNetworks, SETTINGS_VERSION_WITHOUT_SESSION } from '@features/networks/legacyStorage';
+import { E2EE_IDENTITY_KEY_PREFIX } from '@features/e2ee/identity';
 
 export type WizardStep = 'nick' | 'server' | 'bouncer' | 'loading' | 'networks' | 'password' | 'channels';
 
@@ -57,44 +49,15 @@ export const fontSizeClasses: Record<FontSize, string> = {
 };
 
 export interface SettingsStore {
-  isConnecting: boolean;
-  isConnected: boolean;
   isWizardCompleted: boolean;
   wizardStep: WizardStep;
-  nick: string;
-  /** The nick the user chose, while connected under another one because it was taken */
-  wantedNick: string | undefined;
-  server: Server | undefined;
+  /** The nick typed in the wizard; a network's own nick may differ once its server renames it */
+  wizardNick: string;
   isPasswordRequired: boolean | undefined;
-  connectedTime: number; // unix timestamp
-  currentChannelName: string;
-  currentChannelCategory: ChannelCategory;
   theme: string; // active theme id: a builtin id ('modern' | 'classic') or a custom theme uuid
   customThemes: Record<string, CustomTheme>;
   builtinThemeOverrides: Partial<Record<BuiltinThemeId, string>>; // user-edited CSS of builtin themes; absent key = shipped default
-  userModes: UserMode[];
-  channelModes: ChannelMode;
-  listRequestRemainingSeconds: number;
-  channelTypes: string[];
-  caseMapping: CaseMapping; // CASEMAPPING from 005, decides channel/nick name identity
-  supportedOptions: string[];
   wizardProgress: WizardProgress;
-  currentUserFlags: string[]; // Current user's flags (e.g., +r for registered)
-  isAutoAway: boolean; // Whether the away status was set automatically due to inactivity
-  watchLimit: number; // WATCH limit from 005, 0 if not supported
-  monitorLimit: number; // MONITOR limit from 005, 0 if not supported
-  silenceLimit: number; // SILENCE limit from 005, 0 if not supported
-  clientTagDeny: string[]; // CLIENTTAGDENY from 005 — client tags the server drops; `*` for all, `-tag` exempts one
-  chatHistoryLimit: number; // CHATHISTORY from 005 — most messages one request may ask for; 0 when unlimited or not advertised
-  nickLenLimit: number; // NICKLEN from 005, default 50
-  lineLenLimit: number; // LINELEN from 005 — max bytes the server accepts per line; 0 if not advertised, callers fall back to a conservative default
-  networkName: string | undefined; // NETWORK from 005, overrides server.network for display
-  lagMs: number | undefined; // Round-trip time of the last PING/PONG keepalive, undefined until measured
-  currentUserAvatar: string | undefined; // Current user's avatar URL from metadata
-  currentUserDisplayName: string | undefined; // Current user's display name from metadata
-  currentUserStatus: string | undefined; // Current user's status text from metadata
-  currentUserHomepage: string | undefined; // Current user's homepage URL from metadata
-  currentUserColor: string | undefined; // Current user's nick color from metadata
   fontFormatting: FontFormatting; // Current font formatting settings for outgoing messages
   isDarkMode: boolean; // Whether dark mode is enabled
   hideAvatarsInUsersList: boolean; // Whether to hide avatars in the users list
@@ -103,7 +66,7 @@ export interface SettingsStore {
   e2eeEnabled: boolean; // Whether end-to-end encryption is available at all; off suppresses offers and auto-declines incoming ones
   fontSize: FontSize; // Font size for chat, users list, and channels list
   language: LanguageSetting; // Language preference ('auto' = browser detection)
-  serverPasswords: Record<string, { encrypted: string; nick: string }>; // Encrypted passwords per server network (persistent)
+  serverPasswords: Record<NetworkId, { encrypted: string; nick: string }>; // Encrypted NickServ passwords per network (persistent)
   isWizardHintDismissed: boolean; // Whether the wizard intro hint has been permanently dismissed
   highlightWords: string[]; // Words that highlight a message besides the own nick
   directSound: NotificationSound; // Sound for a private message
@@ -118,44 +81,16 @@ export interface SettingsStore {
   autoAwayMessage: string; // The away message auto-away sets; empty for the default one
 
   setWizardCompleted: (status: boolean) => void;
-  setIsConnecting: (status: boolean) => void;
-  setIsConnected: (status: boolean) => void;
-  setConnectedTime: (time: number) => void;
-  setNick: (newNick: string) => void;
-  setWantedNick: (nick: string | undefined) => void;
-  setServer: (newServer: Server) => void;
   setWizardStep: (newWizardStep: WizardStep) => void;
+  setWizardNick: (nick: string) => void;
   setIsPasswordRequired: (status: boolean) => void;
-  setCurrentChannelName: (channelName: string, category: ChannelCategory) => void;
   setTheme: (theme: string) => void;
   addCustomTheme: (name: string, css: string) => string;
   updateCustomTheme: (id: string, patch: Partial<CustomTheme>) => void;
   deleteCustomTheme: (id: string) => void;
   setBuiltinThemeCss: (id: BuiltinThemeId, css: string) => void;
   resetBuiltinThemeCss: (id: BuiltinThemeId) => void;
-  setUserModes: (modes: UserMode[]) => void;
-  setChannelModes: (modes: ChannelMode) => void;
-  setListRequestRemainingSeconds: (seconds: number) => void;
-  setChannelTypes: (types: string[]) => void;
-  setCaseMapping: (mapping: CaseMapping) => void;
-  setSupportedOption: (option: string) => void;
   setWizardProgress: (value: number, label: string) => void;
-  setCurrentUserFlag: (flag: string, add: boolean) => void;
-  setIsAutoAway: (isAuto: boolean) => void;
-  setWatchLimit: (limit: number) => void;
-  setMonitorLimit: (limit: number) => void;
-  setSilenceLimit: (limit: number) => void;
-  setChatHistoryLimit: (limit: number) => void;
-  setClientTagDeny: (tags: string[]) => void;
-  setNickLenLimit: (limit: number) => void;
-  setLineLenLimit: (limit: number) => void;
-  setNetworkName: (name: string | undefined) => void;
-  setLagMs: (lagMs: number | undefined) => void;
-  setCurrentUserAvatar: (avatar: string | undefined) => void;
-  setCurrentUserDisplayName: (displayName: string | undefined) => void;
-  setCurrentUserStatus: (status: string | undefined) => void;
-  setCurrentUserHomepage: (homepage: string | undefined) => void;
-  setCurrentUserColor: (color: string | undefined) => void;
   setFontFormatting: (formatting: Partial<FontFormatting>) => void;
   toggleDarkMode: () => void;
   setHideAvatarsInUsersList: (hide: boolean) => void;
@@ -164,7 +99,7 @@ export interface SettingsStore {
   setE2eeEnabled: (enabled: boolean) => void;
   setFontSize: (fontSize: FontSize) => void;
   setLanguage: (language: LanguageSetting) => void;
-  setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined) => void;
+  setEncryptedPassword: (networkId: NetworkId, encrypted: string | undefined, nick: string | undefined) => void;
   setWizardHintDismissed: () => void;
   setHighlightWords: (words: string[]) => void;
   setDirectSound: (sound: NotificationSound) => void;
@@ -180,48 +115,19 @@ export interface SettingsStore {
   resetWizardState: () => void;
 }
 
-/** Per-connection state: the initial values, and what resetWizardState restores on disconnect */
-const sessionDefaults = () => ({
-  isConnecting: false,
-  isConnected: false,
+/** The wizard's state: the initial values, and what resetWizardState restores */
+const wizardDefaults = () => ({
   isWizardCompleted: false,
   wizardStep: 'nick',
   isPasswordRequired: undefined,
-  connectedTime: 0,
-  currentChannelName: 'Status',
-  currentChannelCategory: ChannelCategory.status,
-  userModes: [],
-  channelModes: { A: [], B: [], C: [], D: [] },
-  listRequestRemainingSeconds: -1,
-  channelTypes: [],
-  caseMapping: DEFAULT_CASE_MAPPING,
-  supportedOptions: [],
   wizardProgress: { value: 0, label: '' },
-  currentUserFlags: [],
-  isAutoAway: false,
-  watchLimit: 0,
-  monitorLimit: 0,
-  silenceLimit: 0,
-  chatHistoryLimit: 0,
-  clientTagDeny: [],
-  nickLenLimit: 50,
-  lineLenLimit: 0,
-  networkName: undefined,
-  lagMs: undefined,
-  currentUserAvatar: undefined,
-  currentUserDisplayName: undefined,
-  currentUserStatus: undefined,
-  currentUserHomepage: undefined,
-  currentUserColor: undefined,
 }) satisfies Partial<SettingsStore>;
 
 export const useSettingsStore = create<SettingsStore>()(
   devtools(
     persist((set) => ({
-    ...sessionDefaults(),
-    nick: '',
-    wantedNick: undefined,
-    server: undefined,
+    ...wizardDefaults(),
+    wizardNick: '',
     theme: DEFAULT_THEME_ID,
     customThemes: {},
     builtinThemeOverrides: {},
@@ -252,47 +158,11 @@ export const useSettingsStore = create<SettingsStore>()(
         isWizardCompleted: status,
       }));
     },
-    setIsConnecting: (status: boolean): void => {
-      set(() => ({ isConnecting: status }));
-    },
-    setIsConnected: (status: boolean): void => {
-      set(() => ({ isConnected: status }));
-    },
-    setConnectedTime: (time: number): void => {
-      set(() => ({ connectedTime: time }));
-    },
-    setWantedNick: (nick: string | undefined): void => {
-      set(() => ({ wantedNick: nick }));
-    },
-    setNick: (newNick: string): void => {
-      set((state) => ({
-        nick: newNick,
-        // Metadata for the new nick arrives via METADATA
-        ...(newNick !== state.nick
-          ? {
-              currentUserAvatar: undefined,
-              currentUserDisplayName: undefined,
-              currentUserStatus: undefined,
-              currentUserHomepage: undefined,
-              currentUserColor: undefined,
-            }
-          : {}),
-      }));
-    },
-    setServer: (newServer: Server): void => {
-      set(() => ({ server: newServer }));
-    },
     setWizardStep: (newWizardStep: WizardStep): void => {
       set(() => ({ wizardStep: newWizardStep }));
     },
     setIsPasswordRequired: (status: boolean): void => {
       set(() => ({ isPasswordRequired: status }));
-    },
-    setCurrentChannelName: (channelName: string, category: ChannelCategory): void => {
-      set(() => ({
-        currentChannelName: channelName,
-        currentChannelCategory: category,
-      }));
     },
     setTheme: (newTheme: string): void => {
       set(() => ({ theme: newTheme }));
@@ -329,78 +199,8 @@ export const useSettingsStore = create<SettingsStore>()(
         builtinThemeOverrides: Object.fromEntries(Object.entries(state.builtinThemeOverrides).filter(([key]) => key !== id)),
       }));
     },
-    setUserModes: (modes: UserMode[]): void => {
-      set(() => ({ userModes: modes }));
-    },
-    setChannelModes: (modes: ChannelMode): void => {
-      set(() => ({ channelModes: modes }));
-    },
-    setListRequestRemainingSeconds: (seconds: number): void => {
-      set(() => ({ listRequestRemainingSeconds: seconds }));
-    },
-    setChannelTypes: (types: string[]): void => {
-      set(() => ({ channelTypes: types }));
-    },
-    setCaseMapping: (mapping: CaseMapping): void => {
-      set(() => ({ caseMapping: mapping }));
-    },
-    setSupportedOption: (option: string): void => {
-      set((state) => ({ supportedOptions: [...state.supportedOptions, option] }));
-    },
     setWizardProgress: (value: number, label: string): void => {
       set(() => ({ wizardProgress: { value, label } }));
-    },
-    setCurrentUserFlag: (flag: string, add: boolean): void => {
-      set((state) => ({
-        currentUserFlags: add
-          ? [...state.currentUserFlags, flag]
-          : state.currentUserFlags.filter((f) => f !== flag),
-      }));
-    },
-    setIsAutoAway: (isAuto: boolean): void => {
-      set(() => ({ isAutoAway: isAuto }));
-    },
-    setWatchLimit: (limit: number): void => {
-      set(() => ({ watchLimit: limit }));
-    },
-    setMonitorLimit: (limit: number): void => {
-      set(() => ({ monitorLimit: limit }));
-    },
-    setSilenceLimit: (limit: number): void => {
-      set(() => ({ silenceLimit: limit }));
-    },
-    setChatHistoryLimit: (limit: number): void => {
-      set(() => ({ chatHistoryLimit: limit }));
-    },
-    setClientTagDeny: (tags: string[]): void => {
-      set(() => ({ clientTagDeny: tags }));
-    },
-    setNickLenLimit: (limit: number): void => {
-      set(() => ({ nickLenLimit: limit }));
-    },
-    setLineLenLimit: (limit: number): void => {
-      set(() => ({ lineLenLimit: limit }));
-    },
-    setNetworkName: (name: string | undefined): void => {
-      set(() => ({ networkName: name }));
-    },
-    setLagMs: (lagMs: number | undefined): void => {
-      set(() => ({ lagMs }));
-    },
-    setCurrentUserAvatar: (avatar: string | undefined): void => {
-      set(() => ({ currentUserAvatar: avatar }));
-    },
-    setCurrentUserDisplayName: (displayName: string | undefined): void => {
-      set(() => ({ currentUserDisplayName: displayName }));
-    },
-    setCurrentUserStatus: (status: string | undefined): void => {
-      set(() => ({ currentUserStatus: status }));
-    },
-    setCurrentUserHomepage: (homepage: string | undefined): void => {
-      set(() => ({ currentUserHomepage: homepage }));
-    },
-    setCurrentUserColor: (color: string | undefined): void => {
-      set(() => ({ currentUserColor: color }));
     },
     setFontFormatting: (formatting: Partial<FontFormatting>): void => {
       set((state) => ({
@@ -428,14 +228,12 @@ export const useSettingsStore = create<SettingsStore>()(
     setLanguage: (language: LanguageSetting): void => {
       set(() => ({ language }));
     },
-    setEncryptedPassword: (encrypted: string | undefined, nick: string | undefined): void => {
+    setEncryptedPassword: (networkId: NetworkId, encrypted: string | undefined, nick: string | undefined): void => {
       set((state) => {
-        const network = state.server?.network;
-        if (!network) { return state; }
         if (encrypted && nick) {
-          return { serverPasswords: { ...state.serverPasswords, [network]: { encrypted, nick } } };
+          return { serverPasswords: { ...state.serverPasswords, [networkId]: { encrypted, nick } } };
         }
-        return { serverPasswords: Object.fromEntries(Object.entries(state.serverPasswords).filter(([key]) => key !== network)) };
+        return { serverPasswords: Object.fromEntries(Object.entries(state.serverPasswords).filter(([key]) => key !== networkId)) };
       });
     },
     setWizardHintDismissed: (): void => {
@@ -474,13 +272,16 @@ export const useSettingsStore = create<SettingsStore>()(
     setAutoAwayMessage: (message: string): void => {
       set(() => ({ autoAwayMessage: message }));
     },
+    setWizardNick: (nick: string): void => {
+      set(() => ({ wizardNick: nick }));
+    },
     resetWizardState: (): void => {
-      set(sessionDefaults());
+      set(wizardDefaults());
     },
   }),
   {
     name: 'sic-settings',
-    version: 4,
+    version: SETTINGS_VERSION_WITHOUT_SESSION,
     migrate: (persisted, version) => {
       const state = persisted as Record<string, unknown>;
       if (version < 2) {
@@ -506,6 +307,18 @@ export const useSettingsStore = create<SettingsStore>()(
         state.customThemes = {};
         state.builtinThemeOverrides = {};
       }
+      if (version < SETTINGS_VERSION_WITHOUT_SESSION) {
+        // The session moves to the networks store, and what was kept per network name under its NetworkId
+        saveLegacyNetworks();
+        state.wizardNick = typeof state.nick === 'string' ? state.nick : '';
+        state.serverPasswords = rekeyLegacyNetworks((state.serverPasswords ?? {}) as Record<NetworkId, unknown>);
+        void moveLegacyBouncerIdentity(E2EE_IDENTITY_KEY_PREFIX);
+        delete state.nick;
+        delete state.wantedNick;
+        delete state.server;
+        delete state.currentChannelName;
+        delete state.currentChannelCategory;
+      }
       return persisted as SettingsStore;
     },
     partialize: (state) => ({
@@ -519,9 +332,7 @@ export const useSettingsStore = create<SettingsStore>()(
       autoOfferEncryption: state.autoOfferEncryption,
       e2eeEnabled: state.e2eeEnabled,
       fontFormatting: state.fontFormatting,
-      nick: state.nick,
-      wantedNick: state.wantedNick,
-      server: state.server,
+      wizardNick: state.wizardNick,
       language: state.language,
       highlightWords: state.highlightWords,
       directSound: state.directSound,
@@ -536,60 +347,25 @@ export const useSettingsStore = create<SettingsStore>()(
       autoAwayMessage: state.autoAwayMessage,
       isWizardCompleted: state.isWizardCompleted,
       serverPasswords: state.serverPasswords,
-      currentChannelName: state.currentChannelName,
-      currentChannelCategory: state.currentChannelCategory,
     }),
   }),
   ),
 );
 
-export const setCurrentChannelName = (channelName: string, category: ChannelCategory): void => {
-  useSettingsStore.getState().setCurrentChannelName(channelName, category);
-
-  setClearUnreadMessages(channelName);
-  markRead(channelName);
-
-  useCurrentStore.getState().setUpdateTopic(getTopic(channelName));
-  useCurrentStore.getState().setUpdateMessages(getMessages(channelName));
-  // Paint the new channel immediately rather than after a queued roster sync
-  flushCurrentUsers();
-  useCurrentStore.getState().setUpdateTyping(getTyping(channelName));
-};
-
 export const setWizardCompleted = (status: boolean): void => {
   useSettingsStore.getState().setWizardCompleted(status);
 };
 
-export const setIsConnecting = (status: boolean): void => {
-  useSettingsStore.getState().setIsConnecting(status);
-};
-
-export const setIsConnected = (status: boolean): void => {
-  useSettingsStore.getState().setIsConnected(status);
-};
-
-export const setConnectedTime = (time: number): void => {
-  useSettingsStore.getState().setConnectedTime(time);
-};
-
-export const setNick = (newNick: string): void => {
-  useSettingsStore.getState().setNick(newNick);
-};
-
-export const getWantedNick = (): string | undefined => {
-  return useSettingsStore.getState().wantedNick;
-};
-
-export const setWantedNick = (nick: string | undefined): void => {
-  useSettingsStore.getState().setWantedNick(nick);
-};
-
-export const setServer = (newServer: Server): void => {
-  useSettingsStore.getState().setServer(newServer);
-};
-
 export const setWizardStep = (newWizardStep: WizardStep): void => {
   useSettingsStore.getState().setWizardStep(newWizardStep);
+};
+
+export const getWizardNick = (): string => {
+  return useSettingsStore.getState().wizardNick;
+};
+
+export const setWizardNick = (nick: string): void => {
+  useSettingsStore.getState().setWizardNick(nick);
 };
 
 export const setIsPasswordRequired = (status: boolean): void => {
@@ -600,83 +376,12 @@ export const setTheme = (newTheme: string): void => {
   useSettingsStore.getState().setTheme(newTheme);
 };
 
-export const setUserModes = (modes: UserMode[]): void => {
-  useSettingsStore.getState().setUserModes(modes);
-};
-
-export const setChannelModes = (modes: ChannelMode): void => {
-  useSettingsStore.getState().setChannelModes(modes);
-};
-
-export const getChannelModes = (): ChannelMode => {
-  return useSettingsStore.getState().channelModes;
-};
-
-export const setListRequestRemainingSeconds = (seconds: number): void => {
-  useSettingsStore.getState().setListRequestRemainingSeconds(seconds);
-};
-
-export const setChannelTypes = (types: string[]): void => {
-  useSettingsStore.getState().setChannelTypes(types);
-};
-
-export const getCurrentNick = (): string => {
-  return useSettingsStore.getState().nick;
-};
-
-export const getServer = (): Server | undefined => {
-  return useSettingsStore.getState().server;
-};
-
-export const getCurrentChannelName = (): string => {
-  return useSettingsStore.getState().currentChannelName;
-};
-
-export const getCurrentChannelCategory = (): ChannelCategory => {
-  return useSettingsStore.getState().currentChannelCategory;
-};
-
-export const getChannelTypes = (): string[] => {
-  const channelTypes = useSettingsStore.getState().channelTypes;
-  return channelTypes.length > 0 ? channelTypes : defaultChannelTypes;
-};
-
-export const setCaseMapping = (mapping: CaseMapping): void => {
-  useSettingsStore.getState().setCaseMapping(mapping);
-};
-
-export const getCaseMapping = (): CaseMapping => {
-  return useSettingsStore.getState().caseMapping;
-};
-
-/** Always use this instead of `===` when comparing IRC names. */
-export const isSameName = (a: string, b: string): boolean => {
-  return namesEqual(a, b, getCaseMapping());
-};
-
-
-export const getUserModes = (): UserMode[] => {
-  return useSettingsStore.getState().userModes;
-};
-
-export const getConnectedTime = (): number => {
-  return useSettingsStore.getState().connectedTime;
-};
-
 export const getIsWizardCompleted = (): boolean => {
   return useSettingsStore.getState().isWizardCompleted;
 };
 
 export const getIsPasswordRequired = (): boolean | undefined => {
   return useSettingsStore.getState().isPasswordRequired;
-};
-
-export const setSupportedOption = (key: string): void => {
-  useSettingsStore.getState().setSupportedOption(key);
-};
-
-export const isSupportedOption = (option: string): boolean => {
-  return useSettingsStore.getState().supportedOptions.includes(option);
 };
 
 export const setWizardProgress = (value: number, label: string): void => {
@@ -687,103 +392,6 @@ export const getWizardProgress = (): WizardProgress => {
   return useSettingsStore.getState().wizardProgress;
 };
 
-export const setCurrentUserFlag = (flag: string, add: boolean): void => {
-  useSettingsStore.getState().setCurrentUserFlag(flag, add);
-};
-
-export const getCurrentUserFlags = (): string[] => {
-  return useSettingsStore.getState().currentUserFlags;
-};
-
-export const getIsConnected = (): boolean => {
-  return useSettingsStore.getState().isConnected;
-};
-
-export const setWatchLimit = (limit: number): void => {
-  useSettingsStore.getState().setWatchLimit(limit);
-};
-
-export const setMonitorLimit = (limit: number): void => {
-  useSettingsStore.getState().setMonitorLimit(limit);
-};
-
-export const getWatchLimit = (): number => {
-  return useSettingsStore.getState().watchLimit;
-};
-
-export const getMonitorLimit = (): number => {
-  return useSettingsStore.getState().monitorLimit;
-};
-
-export const setSilenceLimit = (limit: number): void => {
-  useSettingsStore.getState().setSilenceLimit(limit);
-};
-
-export const getSilenceLimit = (): number => {
-  return useSettingsStore.getState().silenceLimit;
-};
-
-export const setChatHistoryLimit = (limit: number): void => {
-  useSettingsStore.getState().setChatHistoryLimit(limit);
-};
-
-export const getChatHistoryLimit = (): number => {
-  return useSettingsStore.getState().chatHistoryLimit;
-};
-
-export const setClientTagDeny = (tags: string[]): void => {
-  useSettingsStore.getState().setClientTagDeny(tags);
-};
-
-export const getClientTagDeny = (): string[] => {
-  return useSettingsStore.getState().clientTagDeny;
-};
-
-export const setNickLenLimit = (limit: number): void => {
-  useSettingsStore.getState().setNickLenLimit(limit);
-};
-
-export const setNetworkName = (name: string | undefined): void => {
-  useSettingsStore.getState().setNetworkName(name);
-};
-
-export const setLagMs = (lagMs: number | undefined): void => {
-  useSettingsStore.getState().setLagMs(lagMs);
-};
-
-export const getNickLenLimit = (): number => {
-  return useSettingsStore.getState().nickLenLimit;
-};
-
-export const setLineLenLimit = (limit: number): void => {
-  useSettingsStore.getState().setLineLenLimit(limit);
-};
-
-/** ISUPPORT `LINELEN`, or `0` if the server never sent one. */
-export const getLineLenLimit = (): number => {
-  return useSettingsStore.getState().lineLenLimit;
-};
-
-export const setCurrentUserAvatar = (avatar: string | undefined): void => {
-  useSettingsStore.getState().setCurrentUserAvatar(avatar);
-};
-
-export const setCurrentUserDisplayName = (displayName: string | undefined): void => {
-  useSettingsStore.getState().setCurrentUserDisplayName(displayName);
-};
-
-export const setCurrentUserStatus = (status: string | undefined): void => {
-  useSettingsStore.getState().setCurrentUserStatus(status);
-};
-
-export const setCurrentUserHomepage = (homepage: string | undefined): void => {
-  useSettingsStore.getState().setCurrentUserHomepage(homepage);
-};
-
-export const setCurrentUserColor = (color: string | undefined): void => {
-  useSettingsStore.getState().setCurrentUserColor(color);
-};
-
 export const setFontFormatting = (formatting: Partial<FontFormatting>): void => {
   useSettingsStore.getState().setFontFormatting(formatting);
 };
@@ -792,23 +400,17 @@ export const resetWizardState = (): void => {
   useSettingsStore.getState().resetWizardState();
 };
 
+/** For the active network; before one is chosen there is nothing to save it for */
 export const setEncryptedPassword = (encrypted: string | undefined, nick: string | undefined): void => {
-  useSettingsStore.getState().setEncryptedPassword(encrypted, nick);
+  const networkId = getActiveNetworkId();
+  if (networkId !== NO_NETWORK) {
+    useSettingsStore.getState().setEncryptedPassword(networkId, encrypted, nick);
+  }
 };
 
-export const getEncryptedPassword = (): string | undefined => {
-  const state = useSettingsStore.getState();
-  const network = state.server?.network;
-  if (!network) { return undefined; }
-  return state.serverPasswords[network]?.encrypted;
-};
+export const getEncryptedPassword = (): string | undefined => useSettingsStore.getState().serverPasswords[getActiveNetworkId()]?.encrypted;
 
-export const getPasswordNick = (): string | undefined => {
-  const state = useSettingsStore.getState();
-  const network = state.server?.network;
-  if (!network) { return undefined; }
-  return state.serverPasswords[network]?.nick;
-};
+export const getPasswordNick = (): string | undefined => useSettingsStore.getState().serverPasswords[getActiveNetworkId()]?.nick;
 
 export const toggleDarkMode = (): void => {
   useSettingsStore.getState().toggleDarkMode();
@@ -869,52 +471,4 @@ export const getSoundVolume = (): number => {
 export const getTimeSettings = (): TimeSettings => {
   const { timeFormat, showSeconds } = useSettingsStore.getState();
   return { timeFormat, showSeconds };
-};
-
-/** What the app knows about the network it is connected to: windows, users, the channel list and MONITOR */
-export const clearNetworkState = (): void => {
-  setChannelsClearAll();
-  setUsersClearAll();
-  setCurrentClearAll();
-  setChannelListClear();
-  clearMonitorList();
-  clearAllReplies();
-};
-
-/** Before connecting to another network on a bouncer: nothing learned on the previous one holds there; the wizard stays where it is */
-export const clearForAnotherNetwork = (): void => {
-  clearNetworkState();
-  forgetChannelsToAutoJoin();
-  useSettingsStore.setState((state) => ({
-    ...sessionDefaults(),
-    isWizardCompleted: state.isWizardCompleted,
-    wizardStep: state.wizardStep,
-    wizardProgress: state.wizardProgress,
-  }));
-};
-
-export const resetAndGoToStart = (clearNick = false): void => {
-  ircDisconnect();
-
-  clearNetworkState();
-
-  resetWizardState();
-
-  // `nick` may hold a server-forced rename (NickServ enforcement) that mustn't carry into the next attempt
-  if (clearNick) {
-    useSettingsStore.setState({ nick: '' });
-  }
-};
-
-export const changeServer = (): void => {
-  ircDisconnect();
-
-  clearNetworkState();
-
-  // Passwords are preserved per server
-  resetWizardState();
-  useSettingsStore.setState({
-    nick: '',
-    server: undefined,
-  });
 };

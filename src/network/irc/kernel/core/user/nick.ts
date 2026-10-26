@@ -7,13 +7,14 @@ import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { isChannel, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { handlePresenceNickChange } from '@features/dmPresence/dmPresence';
 import { handlePeerRename } from '@features/e2ee/session';
-import { getCurrentNick, getIsConnected, getIsWizardCompleted, getNickLenLimit, getUserModes, getWantedNick, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
+import { getIsWizardCompleted, setWizardProgress } from '@features/settings/store/settings';
 import { alternativeNick, onOwnNickChanged, rememberWantedNick } from '@features/nickRegain/nickRegain';
 import { ircSendRawMessage } from '@/network/irc/network';
 import { getUserChannels, setRenameUser } from '@features/users/store/users';
 import { isValidNick } from '@shared/lib/utils';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentNick, getIsConnected, getNickLenLimit, getUserModes, getWantedNick, isSameName, setNick } from '@features/networks/store/networks';
 
 const ERR_NONICKNAMEGIVEN = '431';
 const ERR_ERRONEUSNICKNAME = '432';

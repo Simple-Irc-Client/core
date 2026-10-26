@@ -7,8 +7,9 @@ import { parseNetworkAttributes } from '@/network/irc/kernel/ircv3/bouncer';
 import * as channelsFile from '@features/channels/store/channels';
 import { clearBouncerNetworks, getBoundBouncerNetworkId, useBouncerNetworksStore } from '@features/bouncer/store/bouncerNetworks';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
+import { testSlice } from '@/test/networks';
 
-const networks = () => useBouncerNetworksStore.getState().networks;
+const networks = () => testSlice(useBouncerNetworksStore).networks;
 
 const handle = (line: string): void => {
   new Kernel({ type: 'raw', line }).handle();

@@ -3,14 +3,14 @@ import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { ircJoinChannels } from '@/network/irc/network';
 import { setWizardCompleted } from '@features/settings/store/settings';
-import { getChannelListSortedByUsers, useChannelListStore } from '@features/channels/store/channelList';
+import { getChannelListSortedByUsers, useActiveChannelList } from '@features/channels/store/channelList';
 import { getChannelsToAutoJoin } from '@features/channels/store/channels';
 import ChannelListTable from '@shared/components/ChannelListTable';
 
 const WizardChannelList = () => {
   const { t } = useTranslation();
 
-  const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+  const isChannelListLoadingFinished = useActiveChannelList((slice) => slice.finished);
 
   const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getChannelsToAutoJoin());
 

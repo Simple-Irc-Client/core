@@ -6,12 +6,12 @@ import { addAwayMessage } from '@features/channels/store/awayMessages';
 import { setIncreaseUnreadMessages, setTyping } from '@features/channels/store/channels';
 import { REPLY_TAG } from '@features/replies/replies';
 import { isIgnoredSender } from '@features/ignore/ignore';
-import { getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getUserModes, isSameName } from '@features/settings/store/settings';
 import { getUser, setUserBot } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { announceHighlight, isHighlight, mentionsMe, openConversationWindow, resolveConversation, trackReadPosition } from './conversation';
 import { handleCtcp } from './ctcp';
+import { getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getUserModes, isSameName } from '@features/networks/store/networks';
 
 // @batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1
 // @msgid=HPS1IK0ruo8t691kVDRtFl;time=2023-02-12T02:11:26.770Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 4

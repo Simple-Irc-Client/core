@@ -52,10 +52,14 @@ const createClient = async (nick: string, network = `${nick}-net`): Promise<Clie
   }));
 
   vi.doMock('@/features/settings/store/settings', () => ({
-    getServer: (): { network: string } => ({ network }),
-    getCaseMapping: (): string => 'ascii',
     getAutoOfferEncryption: (): boolean => autoOffer.enabled,
     getE2eeEnabled: (): boolean => e2eeEnabled.value,
+  }));
+
+  vi.doMock('@features/networks/store/networks', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+    getActiveNetworkId: (): string => network,
+    getCaseMapping: (): string => 'ascii',
     getCurrentNick: (): string => nick,
     // 0 = server never sent ISUPPORT LINELEN; chunking falls back to the default.
     getLineLenLimit: (): number => 0,

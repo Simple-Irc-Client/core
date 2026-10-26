@@ -38,7 +38,7 @@ vi.mock('@/network/irc/network', () => ({
 }));
 
 vi.mock('@features/channels/store/channels', () => ({
-  useChannelsStore: vi.fn((selector) =>
+  useActiveChannels: vi.fn((selector) =>
     selector({
       openChannels: [{ name: '#test' }],
     })
@@ -89,13 +89,31 @@ vi.mock('@features/settings/store/settings', () => ({
       nick: 'testuser',
     })
   ),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  useActiveSession: vi.fn((selector) =>
+    selector({
+      channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
+      supportedOptions: [],
+      userModes: [
+        { symbol: '~', flag: 'q' },
+        { symbol: '&', flag: 'a' },
+        { symbol: '@', flag: 'o' },
+        { symbol: '%', flag: 'h' },
+        { symbol: '+', flag: 'v' },
+      ],
+      nick: 'testuser',
+    })
+  ),
   getCurrentNick: vi.fn(() => 'testuser'),
   isSupportedOption: vi.fn(() => false),
 }));
 
 const mockUsersStoreWithFlags = (channelName: string, flags: string[]) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  vi.spyOn(usersStore, 'useUsersStore').mockImplementation((selector: any) =>
+  vi.spyOn(usersStore, 'useActiveUsers').mockImplementation((selector: any) =>
     selector({
       users: [{ nick: 'testuser', channels: [{ name: channelName, flags, maxPermission: -1 }] }],
     })

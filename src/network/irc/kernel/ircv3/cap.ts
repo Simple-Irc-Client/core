@@ -10,9 +10,9 @@ import { getSaslAccount, getSaslPassword, saveSaslCredentialsForReconnect, setSa
 import { setSTSPolicy } from '@/network/irc/store/stsStore';
 import { createSTSPolicy, getCurrentConnectionHost, isCurrentConnectionSecure, parseSTSValue, setPendingSTSUpgrade } from '@/network/irc/sts';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { setSupportedOption } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { setSupportedOption } from '@features/networks/store/networks';
 
 // :chmurka.pirc.pl CAP * LS * :sts=port=6697,duration=300 unrealircd.org/link-security=2 ...
 // :jowisz.pirc.pl CAP * LS :unrealircd.org/json-log

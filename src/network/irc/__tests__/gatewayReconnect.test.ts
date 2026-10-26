@@ -55,13 +55,17 @@ const server = { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['ir
 const plaintextServer = { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test.net:6667'], tls: false };
 let settingsServer = server;
 vi.mock('@features/settings/store/settings', () => ({
+  getEncryptedPassword: () => undefined,
+  getPasswordNick: () => undefined,
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getServer: () => settingsServer,
   getCurrentNick: () => 'tester',
   setNick: vi.fn(),
   setIsConnected: vi.fn(),
   setIsConnecting: vi.fn(),
-  getEncryptedPassword: () => undefined,
-  getPasswordNick: () => undefined,
   getLineLenLimit: () => 0,
   getCurrentChannelName: () => '#current',
   isSameName: (a: string, b: string) => a.toLowerCase() === b.toLowerCase(),

@@ -41,14 +41,13 @@ const triggerPasswordRequired = (page: Page): Promise<void> =>
     settings.setWizardStep('password');
   });
 
-/** Read the encrypted server password saved for the current server out of localStorage. */
+/** Read the encrypted password saved for the current network out of localStorage. */
 const readEncryptedPassword = (page: Page): Promise<string | undefined> =>
   page.evaluate(() => {
-    const raw = localStorage.getItem('sic-settings');
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw) as { state?: { server?: { network?: string }; serverPasswords?: Record<string, { encrypted: string }> } };
-    const network = parsed.state?.server?.network;
-    return network ? parsed.state?.serverPasswords?.[network]?.encrypted : undefined;
+    const networks = JSON.parse(localStorage.getItem('sic-networks') ?? '{}') as { state?: { activeNetworkId?: string } };
+    const settings = JSON.parse(localStorage.getItem('sic-settings') ?? '{}') as { state?: { serverPasswords?: Record<string, { encrypted: string }> } };
+    const networkId = networks.state?.activeNetworkId;
+    return networkId === undefined ? undefined : settings.state?.serverPasswords?.[networkId]?.encrypted;
   });
 
 /** Read the live (not-yet-persisted) current nick straight from the running app's store. */
@@ -57,8 +56,8 @@ const readCurrentNick = (page: Page): Promise<string> =>
     // @ts-expect-error - resolved by Vite's dev server at runtime in the browser page;
     // e2e/ isn't part of the tsc project (tsconfig.json only includes "src"), and there
     // is no real module for tsc to resolve here regardless.
-    const settings = await import('/src/features/settings/store/settings.ts');
-    return settings.getCurrentNick();
+    const networks = await import('/src/features/networks/store/networks.ts');
+    return networks.getCurrentNick();
   });
 
 test.describe('Wizard password survives a server-forced nick change', () => {

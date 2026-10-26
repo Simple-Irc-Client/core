@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 import E2eeStatusButton from '../components/E2eeStatusButton';
 import { E2eeState, useE2eeStore, type E2eeSession } from '../store/e2ee';
+import { setTestSlice } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -33,18 +34,23 @@ vi.mock('../incoming', () => ({
 const settings = { e2eeEnabled: true, isConnected: true };
 
 vi.mock('@features/settings/store/settings', () => ({
-  getCaseMapping: () => 'ascii',
   useSettingsStore: (selector: (state: typeof settings) => unknown) => selector(settings),
 }));
 
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  useActiveSession: (selector: (state: typeof settings) => unknown) => selector(settings),
+  getCaseMapping: () => 'ascii',
+}));
+
 const setSessionState = (session: Partial<E2eeSession> & { state: E2eeState }): void => {
-  useE2eeStore.setState({ sessions: { bob: { peer: 'bob', verified: false, ...session } } });
+  setTestSlice(useE2eeStore, { sessions: { bob: { peer: 'bob', verified: false, ...session } } });
 };
 
 describe('E2eeStatusButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
+    setTestSlice(useE2eeStore, { sessions: {}, plaintextAcknowledged: {} });
     peerIsPinned.value = false;
     settings.e2eeEnabled = true;
     settings.isConnected = true;

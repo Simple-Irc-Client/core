@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfileTab from '../tabs/ProfileTab';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { setTestSession } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -24,7 +25,8 @@ beforeAll(() => {
 
 describe('ProfileTab', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ supportedOptions: [], autoAwayMinutes: 15, autoAwayMessage: '' });
+    useSettingsStore.setState({ autoAwayMinutes: 15, autoAwayMessage: '' });
+    setTestSession({ supportedOptions: [] });
   });
 
   describe('Auto away', () => {

@@ -3,10 +3,11 @@ import { Lock, ShieldAlert, ShieldQuestion } from 'lucide-react';
 
 import { ChannelCategory } from '@shared/types';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 
 import { acknowledgePlaintext, declineIncomingOffer, hasPinnedPeer, offerEncryption } from '../session';
 import { acceptOfferAndAnnounce, endSessionAndAnnounce } from '../incoming';
-import { E2eeState, useE2eeStore, getSessionKey, type E2eeSession } from '../store/e2ee';
+import { E2eeState, useActiveE2ee, getSessionKey, type E2eeSession } from '../store/e2ee';
 import { useE2eePinsStore } from '../store/pins';
 
 /**
@@ -34,15 +35,15 @@ const TONE_CLASSES: Record<BannerContent['tone'], string> = {
 
 const E2eeBanner = () => {
   const { t } = useTranslation();
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
+  const currentChannelCategory = useActiveSession((session) => session.currentChannelCategory);
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const canOffer = e2eeEnabled && isConnected;
 
   const sessionKey = getSessionKey(currentChannelName);
-  const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[sessionKey]);
-  const plaintextAcknowledged = useE2eeStore((state) => state.plaintextAcknowledged[sessionKey] === true);
+  const session: E2eeSession | undefined = useActiveE2ee((slice) => slice.sessions[sessionKey]);
+  const plaintextAcknowledged = useActiveE2ee((slice) => slice.plaintextAcknowledged[sessionKey] === true);
   // Subscribed: the pin appears the moment a handshake completes
   const pinned = useE2eePinsStore(() => hasPinnedPeer(currentChannelName));
 

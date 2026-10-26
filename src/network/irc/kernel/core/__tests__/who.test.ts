@@ -3,7 +3,8 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
@@ -18,7 +19,7 @@ describe('kernel core/who', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getHasUser').mockReturnValue(false);
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockReturnValue(defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockReturnValue(defaultUserModes);
 
     const line = ':insomnia.pirc.pl 354 mero 152 #Religie ~pirc ukryty-88E7A1BA.adsl.inetia.pl * JAKNEK Hs 0 :Użytkownik bramki';
 
@@ -32,12 +33,12 @@ describe('kernel core/who', () => {
   describe('WHO sent after joining a channel', () => {
     beforeEach(() => {
       clearChannelWhoRequests();
-      vi.spyOn(settingsFile, 'getUserModes').mockReturnValue(defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+      vi.spyOn(networksStore, 'getUserModes').mockReturnValue(defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
     });
 
     it('asks for WHOX fields when the server supports WHOX', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation((option) => option === 'WHOX');
+      vi.spyOn(networksStore, 'isSupportedOption').mockImplementation((option) => option === 'WHOX');
       const mockSend = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
 
       requestChannelWho('#chan');
@@ -46,7 +47,7 @@ describe('kernel core/who', () => {
     });
 
     it('sends a plain WHO when the server lacks WHOX', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
       const mockSend = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
 
       requestChannelWho('#chan');
@@ -55,7 +56,7 @@ describe('kernel core/who', () => {
     });
 
     it('updates users from 352 replies without showing them', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getHasUser').mockReturnValue(false);
@@ -82,7 +83,7 @@ describe('kernel core/who', () => {
     });
 
     it('shows a later WHO for the same channel once ours has ended', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
@@ -94,12 +95,12 @@ describe('kernel core/who', () => {
     });
 
     it('forgets requests from a previous connection', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('me');
-      vi.spyOn(settingsFile, 'getServer').mockReturnValue(undefined);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('me');
+      vi.spyOn(networksStore, 'getServer').mockReturnValue(undefined);
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
       requestChannelWho('#chan');
@@ -110,7 +111,7 @@ describe('kernel core/who', () => {
     });
 
     it('ignores its own 352 without a nick', () => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
@@ -125,7 +126,7 @@ describe('kernel core/who', () => {
   describe('WHO typed by the user', () => {
     beforeEach(() => {
       clearChannelWhoRequests();
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
     });
 
     it('shows 352 and 315 in the current window without touching users', () => {

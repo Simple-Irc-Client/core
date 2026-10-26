@@ -5,7 +5,8 @@ import * as networkFile from '../network';
 import * as saslFile from '../sasl';
 import { type Server } from '../servers';
 import { clearBouncerNetworks, setBoundBouncerNetworkId } from '@features/bouncer/store/bouncerNetworks';
-import * as settingsFile from '@features/settings/store/settings';
+import { getActiveNetworkId, getCurrentNick, getServer, setIsConnected } from '@features/networks/store/networks';
+import { connectTestNetwork, resetNetworks } from '@/test/networks';
 
 const bouncerServer = (networkId?: string): Server => ({
   default: 0,
@@ -17,21 +18,16 @@ const bouncerServer = (networkId?: string): Server => ({
 
 describe('bouncer', () => {
   let send: ReturnType<typeof vi.spyOn>;
-  let server: Server | undefined;
-  let connected: boolean;
 
   beforeEach(() => {
     clearBouncerBind();
     clearBouncerNetworks();
     resetCapabilityState();
     markCapabilitiesAcknowledged(['sasl', 'soju.im/bouncer-networks']);
-    server = bouncerServer('1');
-    connected = false;
+    resetNetworks();
+    connectTestNetwork(bouncerServer('1'), 'alice');
     send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     vi.spyOn(saslFile, 'getSaslState').mockImplementation(() => 'success');
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => server);
-    vi.spyOn(settingsFile, 'setServer').mockImplementation((newServer) => { server = newServer; });
-    vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => connected);
   });
 
   afterEach(() => {
@@ -55,8 +51,8 @@ describe('bouncer', () => {
     });
 
     it.each([
-      ['no network was chosen yet', () => { server = bouncerServer(); }],
-      ['the server is no bouncer', () => { server = { ...bouncerServer(), bouncer: undefined }; }],
+      ['no network was chosen yet', () => { connectTestNetwork(bouncerServer(), 'alice'); }],
+      ['the server is no bouncer', () => { connectTestNetwork({ ...bouncerServer(), bouncer: undefined }, 'alice'); }],
       ['the server lacks bouncer-networks', () => { resetCapabilityState(); }],
       ['the account did not log in', () => { vi.spyOn(saslFile, 'getSaslState').mockImplementation(() => 'failed'); }],
     ])('does not bind when %s', (_case, arrange) => {
@@ -92,7 +88,8 @@ describe('bouncer', () => {
 
       onBouncerFailed();
 
-      expect(server?.bouncer).toEqual({ account: 'alice', encryptedPassword: 'encrypted', networkId: undefined });
+      expect(getServer()?.bouncer).toEqual({ account: 'alice', encryptedPassword: 'encrypted', networkId: undefined });
+      expect(getActiveNetworkId()).toBe('bouncer.example.net');
       expect(disconnect).toHaveBeenCalled();
       expect(reconnect).toHaveBeenCalledWith({ announce: false });
     });
@@ -101,34 +98,32 @@ describe('bouncer', () => {
       const reconnect = vi.spyOn(networkFile, 'ircReconnect').mockImplementation(() => Promise.resolve(true));
       onBouncerFailed();
       sendBouncerBind();
-      connected = true;
+      setIsConnected(true);
       onBouncerFailed();
 
-      expect(server?.bouncer?.networkId).toBe('1');
+      expect(getServer()?.bouncer?.networkId).toBe('1');
       expect(reconnect).not.toHaveBeenCalled();
     });
   });
 
   describe('connectToBouncerNetwork', () => {
-    it('connects again, bound to the network chosen, with nothing of the network before', () => {
-      server = bouncerServer();
-      connected = true;
+    it('connects again, as the same nick, to the network chosen as a network of its own', () => {
+      connectTestNetwork(bouncerServer(), 'alice');
+      setIsConnected(true);
       const disconnect = vi.spyOn(networkFile, 'ircDisconnect').mockImplementation(() => {});
       const reconnect = vi.spyOn(networkFile, 'ircReconnect').mockImplementation(() => Promise.resolve(true));
-      const clearForAnotherNetwork = vi.spyOn(settingsFile, 'clearForAnotherNetwork').mockImplementation(() => {});
-      const setServer = vi.mocked(settingsFile.setServer);
 
       connectToBouncerNetwork('5');
 
-      expect(server?.bouncer?.networkId).toBe('5');
+      expect(getActiveNetworkId()).toBe('bouncer.example.net/bouncer:5');
+      expect(getServer()?.bouncer?.networkId).toBe('5');
+      expect(getCurrentNick()).toBe('alice');
       expect(reconnect).toHaveBeenCalledWith({ announce: false });
-      const order = [disconnect, clearForAnotherNetwork, setServer, reconnect].map((spy) => spy.mock.invocationCallOrder[0] ?? 0);
-      // Cleared while still stored under the old network, which the bouncer brings back on return
-      expect(order).toEqual([...order].sort((a, b) => a - b));
+      expect(disconnect.mock.invocationCallOrder[0]).toBeLessThan(reconnect.mock.invocationCallOrder[0] ?? 0);
     });
 
     it('does nothing for a server without a bouncer account', () => {
-      server = { ...bouncerServer(), bouncer: undefined };
+      connectTestNetwork({ ...bouncerServer(), bouncer: undefined }, 'alice');
       const reconnect = vi.spyOn(networkFile, 'ircReconnect').mockImplementation(() => Promise.resolve(true));
 
       connectToBouncerNetwork('5');

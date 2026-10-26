@@ -10,7 +10,7 @@ import { STATUS_CHANNEL } from '@/config/config';
 import { MessageCategory } from '@shared/types';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
 import { createLabel } from '@/network/irc/labels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 
 describe('kernel ircv3/standardreplies', () => {
   setupKernelTest();
@@ -48,7 +48,7 @@ describe('kernel ircv3/standardreplies', () => {
 
   it('shows a refused deletion in the current window when the server does not label it', () => {
     const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
 
     new Kernel({ type: 'raw', line: ':ergo.test FAIL REDACT UNKNOWN_MSGID #sic m1 :This message does not exist or is too old' }).handle();
 
@@ -80,7 +80,7 @@ describe('kernel ircv3/standardreplies', () => {
 
   it('shows any other failure in Status when the server does not say what it answers', () => {
     const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#current');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#current');
 
     new Kernel({ type: 'raw', line: ':ergo.test FAIL NICK NICKNAME_RESERVED * :Nickname is reserved' }).handle();
 

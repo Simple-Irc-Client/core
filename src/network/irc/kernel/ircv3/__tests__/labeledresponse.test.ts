@@ -7,7 +7,7 @@ import { clearChannelWhoRequests, requestChannelWho } from '@/network/irc/kernel
 import { clearAllBatches } from '@/network/irc/batch';
 import { clearLabels, createLabel, takeLabel } from '@/network/irc/labels';
 import * as channelsFile from '@features/channels/store/channels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
 import { DEBUG_CHANNEL } from '@/config/config';
@@ -30,8 +30,8 @@ describe('kernel ircv3/labeledresponse', () => {
     clearAllBatches();
     clearChannelWhoRequests();
     mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockReturnValue('#now-viewing');
-    vi.spyOn(settingsFile, 'getUserModes').mockReturnValue(defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#now-viewing');
+    vi.spyOn(networksStore, 'getUserModes').mockReturnValue(defaultUserModes);
   });
 
   it('shows a single labeled reply in the window the command was sent from', () => {
@@ -109,7 +109,7 @@ describe('kernel ircv3/labeledresponse', () => {
 
   describe('WHO sent after joining', () => {
     beforeEach(() => {
-      vi.spyOn(settingsFile, 'isSupportedOption').mockReturnValue(false);
+      vi.spyOn(networksStore, 'isSupportedOption').mockReturnValue(false);
       vi.spyOn(usersFile, 'getHasUser').mockReturnValue(false);
     });
 

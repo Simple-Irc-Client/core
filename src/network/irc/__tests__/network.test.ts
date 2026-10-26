@@ -89,13 +89,17 @@ const mockGetEncryptedPassword = vi.fn();
 const mockGetPasswordNick = vi.fn();
 const mockGetLineLenLimit = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
+  getEncryptedPassword: () => mockGetEncryptedPassword(),
+  getPasswordNick: () => mockGetPasswordNick(),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
   setNick: (val: string) => mockSetNick(val),
   setIsConnected: (val: boolean) => mockSetIsConnecting(val),
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
-  getEncryptedPassword: () => mockGetEncryptedPassword(),
-  getPasswordNick: () => mockGetPasswordNick(),
   getLineLenLimit: () => mockGetLineLenLimit(),
   getCurrentChannelName: () => '#current',
   isSameName: (a: string, b: string) => namesEqual(a, b),

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useDraftsStore, setDraft, getDraft, clearDraft, clearAllDrafts } from '../drafts';
+import { testSlice } from '@/test/networks';
 
 describe('drafts store', () => {
   beforeEach(() => {
@@ -36,7 +37,7 @@ describe('drafts store', () => {
       setDraft('#general', '');
 
       expect(getDraft('#general')).toBe('');
-      expect(useDraftsStore.getState().drafts['#general']).toBeUndefined();
+      expect(testSlice(useDraftsStore).drafts['#general']).toBeUndefined();
     });
   });
 
@@ -79,7 +80,7 @@ describe('drafts store', () => {
       expect(getDraft('#general')).toBe('');
       expect(getDraft('#random')).toBe('');
       expect(getDraft('privateUser')).toBe('');
-      expect(useDraftsStore.getState().drafts).toEqual({});
+      expect(testSlice(useDraftsStore).drafts).toEqual({});
     });
   });
 
@@ -87,14 +88,14 @@ describe('drafts store', () => {
     it('should allow direct store manipulation', () => {
       useDraftsStore.getState().setDraft('#test', 'Direct set');
 
-      expect(useDraftsStore.getState().getDraft('#test')).toBe('Direct set');
+      expect(getDraft('#test')).toBe('Direct set');
     });
 
     it('should track drafts in store state', () => {
       setDraft('#channel1', 'Draft 1');
       setDraft('#channel2', 'Draft 2');
 
-      const { drafts } = useDraftsStore.getState();
+      const { drafts } = testSlice(useDraftsStore);
 
       expect(drafts).toEqual({
         '#channel1': 'Draft 1',

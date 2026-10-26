@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest'
 import { showOwnCommandMessages } from '@features/chat/ownMessages';
 import * as channelsFile from '@features/channels/store/channels';
 import * as dmPresenceFile from '@features/dmPresence/dmPresence';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 
 describe('showOwnCommandMessages', () => {
@@ -11,7 +11,7 @@ describe('showOwnCommandMessages', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(settingsFile, 'getCurrentNick').mockReturnValue('me');
+    vi.spyOn(networksStore, 'getCurrentNick').mockReturnValue('me');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => openWindows.has(name));
     vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
     vi.spyOn(dmPresenceFile, 'subscribeDmPresence').mockImplementation(() => {});

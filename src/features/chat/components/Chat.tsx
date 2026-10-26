@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown } from 'lucide-react';
 import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import type { Message } from '@shared/types';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { useCurrentStore } from '@features/chat/store/current';
@@ -21,7 +22,7 @@ import { foldName } from '@shared/lib/caseMapping';
 import ReactionPicker, { type ReactionPickerHandle } from '@features/reactions/components/ReactionPicker';
 import RedactDialog from '@features/redaction/components/RedactDialog';
 import { canRedactOthers, isRedactionEnabled } from '@features/redaction/redaction';
-import { useUsersStore } from '@features/users/store/users';
+import { useActiveUsers } from '@features/users/store/users';
 import { useCanReact } from '@features/reactions/useCanReact';
 import { useCanSendPlaintext } from '@features/chat/useCanSendPlaintext';
 import { setReplyTo } from '@features/replies/store/replyTo';
@@ -30,13 +31,13 @@ import { Button } from '@shared/components/ui/button';
 const Chat = () => {
   const { t } = useTranslation();
   const { handleContextMenuUserClick } = useContextMenuActions();
-  const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
+  const currentChannelName: string = useActiveSession((session) => session.currentChannelName);
   const fontSize = useSettingsStore((state) => state.fontSize);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const messages = useCurrentStore((state) => state.messages);
   const membershipEvents = useSettingsStore((state) => state.membershipEvents);
-  const myNick = useSettingsStore((state) => state.nick);
-  const caseMapping = useSettingsStore((state) => state.caseMapping);
+  const myNick = useActiveSession((session) => session.nick);
+  const caseMapping = useActiveSession((session) => session.caseMapping);
   const density = useSettingsStore((state) => state.density);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
@@ -55,8 +56,8 @@ const Chat = () => {
 
   const isDebug = currentChannelName === DEBUG_CHANNEL || currentChannelName === STATUS_CHANNEL;
   const canReply = useCanSendPlaintext(currentChannelName) && !isDebug;
-  const myChannelFlags = useUsersStore((state) =>
-    state.users.find((user) => fold(user.nick) === fold(myNick))?.channels.find((channel) => fold(channel.name) === fold(currentChannelName))?.flags);
+  const myChannelFlags = useActiveUsers((slice) =>
+    slice.users.find((user) => fold(user.nick) === fold(myNick))?.channels.find((channel) => fold(channel.name) === fold(currentChannelName))?.flags);
   const canRedactHere = !isDebug && isRedactionEnabled();
   const canRedactAny = canRedactHere && canRedactOthers(myChannelFlags);
 
