@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
@@ -17,13 +18,13 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #1 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
 
@@ -45,13 +46,13 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'mero-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP JOIN :#chat';
 
@@ -73,9 +74,9 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN #2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
 
     const line = '@msgid=oXhSn3eP0x5LlSJTX2SxJj-NXV6407yG5qKZnAWemhyGQ;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@D6D788C7.623ED634.C8132F93.IP JOIN #channel1 * :Simple Irc Client user';
@@ -93,8 +94,8 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN includes nick in message for context menu', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockUser = { nick: 'SIC-test', ident: '~SIC-test', hostname: 'host', flags: [], channels: [] };
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
@@ -108,8 +109,8 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN falls back to nick string when user not found', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
 
@@ -122,14 +123,14 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self with chathistory enabled', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     const mockIrcSendRawMessage = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcSendCommand = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => false);
     const mockIrcRequestChatHistory = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
     const mockIsCapabilityEnabled = vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'draft/chathistory');
 
     const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
@@ -149,13 +150,13 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self without chathistory capability', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     const mockIrcRequestChatHistory = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
     const mockIsCapabilityEnabled = vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
 
     const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
@@ -173,14 +174,14 @@ describe('kernel core/channel/join', () => {
     'test raw JOIN self with %s enabled requests metadata list',
     (capName) => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
       const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
       vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === capName);
 
       const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
@@ -194,14 +195,14 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self without metadata capability does not request metadata', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
     const mockIrcRequestMetadataList = vi.spyOn(networkFile, 'ircRequestMetadataList').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
     vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
 
     const line = '@msgid=abc123;time=2023-02-11T20:42:11.830Z :SIC-test!~SIC-test@hostname.example JOIN #mychannel * :Real Name';
@@ -213,12 +214,12 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self does not switch current channel when channel already exists (rejoin on reconnect)', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
     vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
     // Channel already exists (e.g. reconnect scenario)
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
@@ -232,12 +233,12 @@ describe('kernel core/channel/join', () => {
 
   it('test raw JOIN self switches current channel when channel is new', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'isSupportedOption').mockImplementation(() => true);
+    vi.spyOn(networksStore, 'isSupportedOption').mockImplementation(() => true);
     vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
     // Channel does not exist yet (fresh join)
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
@@ -252,7 +253,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 473', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:chommik.pirc.pl 473 sic-test #sic :Cannot join channel (+i)`;
 
@@ -265,7 +266,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 474', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:saturn.pirc.pl 474 mero-test #bog :Cannot join channel (+b)`;
 
@@ -278,7 +279,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 477', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:insomnia.pirc.pl 477 test #knajpa :You need a registered nick to join that channel.`;
 
@@ -303,7 +304,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 403 - no such channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 403 sic-test #nonexistent :No such channel';
 
@@ -317,7 +318,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 405 - too many channels', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 405 sic-test #newchannel :You have joined too many channels';
 
@@ -331,7 +332,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 448 - cannot join channel invalid name', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 448 sic-test Global :Cannot join channel: Channel name must start with a hash mark (#)';
 
@@ -345,7 +346,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 471 - channel full', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 471 sic-test #fullchannel :Cannot join channel (+l)';
 
@@ -359,7 +360,7 @@ describe('kernel core/channel/join', () => {
 
   it('test raw 475 - bad channel key', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 475 sic-test #secretchannel :Cannot join channel (+k)';
 
@@ -377,9 +378,9 @@ describe('kernel core/channel/join', () => {
   describe('channel name casing', () => {
     it('should adopt the server casing for a channel we already had open', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'getChannel').mockImplementation(() => ({
@@ -403,9 +404,9 @@ describe('kernel core/channel/join', () => {
 
     it('should not rename when the casing already matches', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'getChannel').mockImplementation(() => ({
@@ -427,8 +428,8 @@ describe('kernel core/channel/join', () => {
 
     it('should not rename on someone else joining', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       const mockSetRenameChannel = vi.spyOn(channelsFile, 'setRenameChannel').mockImplementation(() => {});
 
@@ -439,12 +440,12 @@ describe('kernel core/channel/join', () => {
 
     it('should treat a PART echoed in another casing as parting our channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#religie');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#religie');
       vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
       const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
-      const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: ':SIC-test!~SIC-test@host PART #Religie :bye' }).handle();
 
@@ -455,9 +456,9 @@ describe('kernel core/channel/join', () => {
 
     it('should recognise our own KICK when the nick casing differs', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#religie');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#religie');
       vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
       const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
 
@@ -469,9 +470,9 @@ describe('kernel core/channel/join', () => {
 
     it('should deliver a PRIVMSG to us when our nick comes back in another casing', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: ':Merovingian!~m@host PRIVMSG sic-TEST :hello' }).handle();

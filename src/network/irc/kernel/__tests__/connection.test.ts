@@ -4,6 +4,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import * as stsFile from '@/network/irc/sts';
@@ -17,8 +19,8 @@ describe('kernel connection', () => {
   setupKernelTest();
 
   it('test connect sends the registration burst (CAP LS / NICK / USER)', () => {
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => undefined);
     const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
     new Kernel({ type: 'connect' }).handle();
@@ -32,9 +34,9 @@ describe('kernel connection', () => {
   });
 
   it('test connect sends PASS before NICK when server has a password', () => {
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(
-      () => ({ serverPassword: 'sekret' }) as unknown as ReturnType<typeof settingsFile.getServer>,
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(networksStore, 'getServer').mockImplementation(
+      () => ({ serverPassword: 'sekret' }) as unknown as ReturnType<typeof networksStore.getServer>,
     );
     const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
@@ -47,15 +49,15 @@ describe('kernel connection', () => {
 
   describe('view on connect', () => {
     const stubConnect = () => {
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
-      vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestNick');
+      vi.spyOn(networksStore, 'getServer').mockImplementation(() => undefined);
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-      return vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      return vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     };
 
     it('defaults the view to Status on a fresh connect (nothing else restored)', () => {
       const mockSetCurrentChannelName = stubConnect();
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => STATUS_CHANNEL);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => STATUS_CHANNEL);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
 
       new Kernel({ type: 'connect' }).handle();
@@ -69,7 +71,7 @@ describe('kernel connection', () => {
       // background, so this "Connect" tap arrives as a fresh first connect) or
       // a plain reconnect mid-conversation — either way the user is on a real
       // window and must stay there.
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => 'Bfyhdgbfcgjbv');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => 'Bfyhdgbfcgjbv');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === 'Bfyhdgbfcgjbv');
 
       new Kernel({ type: 'connect' }).handle();
@@ -79,7 +81,7 @@ describe('kernel connection', () => {
 
     it('falls back to Status when the current window no longer exists', () => {
       const mockSetCurrentChannelName = stubConnect();
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#gone');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#gone');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
 
       new Kernel({ type: 'connect' }).handle();
@@ -89,7 +91,7 @@ describe('kernel connection', () => {
 
     it('does not force the view back to Status on a reconnect mid-conversation', () => {
       const mockSetCurrentChannelName = stubConnect();
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === '#sic');
 
       // First connect, then the socket drops and reconnects (or an STS upgrade
@@ -102,8 +104,8 @@ describe('kernel connection', () => {
   });
 
   it('test close stops the active keepalive', () => {
-    vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockStopKeepalive = vi.spyOn(networkFile, 'stopKeepalive').mockImplementation(() => {});
 
@@ -113,8 +115,8 @@ describe('kernel connection', () => {
   });
 
   it('test close', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    const mockSetIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    const mockSetIsConnected = vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
 
     new Kernel({ type: 'close' }).handle();
@@ -140,8 +142,8 @@ describe('kernel connection', () => {
   });
 
   it('test close during reconnection should call handleReconnectFailure instead of showing disconnected', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     vi.spyOn(networkFile, 'getIsReconnecting').mockImplementation(() => true);
     const mockHandleReconnectFailure = vi.spyOn(networkFile, 'handleReconnectFailure').mockImplementation(() => {});
@@ -156,8 +158,8 @@ describe('kernel connection', () => {
   });
 
   it('test close during STS upgrade should trigger STS reconnection', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
@@ -166,13 +168,13 @@ describe('kernel connection', () => {
     }));
     const mockIncrementSTSRetries = vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
     vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       default: 0,
       encoding: 'utf8',
       network: 'test',
       servers: ['irc.test.com'],
     }));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'testNick');
 
     new Kernel({ type: 'close' }).handle();
 
@@ -185,14 +187,14 @@ describe('kernel connection', () => {
   });
 
   it('test socket close during STS upgrade does not clear pending upgrade', () => {
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       network: 'TestNetwork',
       servers: ['irc.test.com:6667'],
       default: 0,
       encoding: 'utf-8',
     }));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockGetPendingSTSUpgrade = vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
       port: 6697,
@@ -213,14 +215,14 @@ describe('kernel connection', () => {
 
   it('test socket close during STS upgrade restores SASL credentials before reconnect', async () => {
     vi.useFakeTimers();
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       network: 'TestNetwork',
       servers: ['irc.test.com:6667'],
       default: 0,
       encoding: 'utf-8',
     }));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
       port: 6697,
@@ -247,8 +249,8 @@ describe('kernel connection', () => {
 
   it('test close during STS upgrade restores SASL credentials before reconnect', async () => {
     vi.useFakeTimers();
-    const mockSetIsConnecting = vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const mockSetIsConnecting = vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     vi.spyOn(stsFile, 'getPendingSTSUpgrade').mockImplementation(() => ({
       host: 'irc.test.com',
@@ -257,13 +259,13 @@ describe('kernel connection', () => {
     }));
     vi.spyOn(stsFile, 'incrementSTSRetries').mockImplementation(() => {});
     vi.spyOn(stsFile, 'hasExhaustedSTSRetries').mockImplementation(() => false);
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => ({
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => ({
       default: 0,
       encoding: 'utf8',
       network: 'test',
       servers: ['irc.test.com'],
     }));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'testNick');
     const mockRestoreSaslCredentials = vi.spyOn(saslFile, 'restoreSaslCredentials').mockImplementation(async () => true);
     const mockIrcConnectWithTLS = vi.spyOn(networkFile, 'ircConnectWithTLS').mockImplementation(() => {});
 
@@ -345,9 +347,9 @@ describe('kernel connection', () => {
 
   describe('auto-rejoin channels on reconnect', () => {
     it('should auto-rejoin channels on connected when wizard is completed', () => {
-      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => ['#test', '#general']);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
@@ -360,9 +362,9 @@ describe('kernel connection', () => {
     });
 
     it('should not auto-rejoin channels when wizard is not completed', () => {
-      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => ['#test', '#general']);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
@@ -374,9 +376,9 @@ describe('kernel connection', () => {
     });
 
     it('should not call ircJoinChannels when no channels to auto-join', () => {
-      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setConnectedTime').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setConnectedTime').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'getChannelsToAutoJoin').mockImplementation(() => []);
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);

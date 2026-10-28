@@ -3,9 +3,9 @@ import { MessageColor } from '@/config/theme';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getUserModes } from '@features/networks/store/networks';
 
 // :server KILL scc_test :Killed (Nickname collision)
 export const onKill = (ctx: IrcContext): void => {

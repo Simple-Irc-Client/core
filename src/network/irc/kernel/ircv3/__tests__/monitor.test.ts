@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
@@ -27,19 +27,19 @@ describe('kernel ircv3/monitor', () => {
 
     it('subscribes MONITOR for a new incoming private message', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello there';
@@ -52,18 +52,18 @@ describe('kernel ircv3/monitor', () => {
 
     it('subscribes MONITOR for CTCP ACTION in a private message', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :\x01ACTION waves\x01';
@@ -76,13 +76,13 @@ describe('kernel ircv3/monitor', () => {
 
     it('subscribes MONITOR when a typing notification (TAGMSG) arrives before any message', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
       const line = '@+draft/typing=active;+typing=active;msgid=abc123;time=2023-03-04T19:16:23.158Z :Bob!~bob@host TAGMSG MyNick';
@@ -95,19 +95,19 @@ describe('kernel ircv3/monitor', () => {
 
     it('does not subscribe anything for a regular channel message', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#test');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
       // This is a channel message, not a private message
@@ -121,17 +121,17 @@ describe('kernel ircv3/monitor', () => {
 
     it('does not resubscribe MONITOR when the DM window already exists', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => 'OtherUser');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => 'OtherUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello again';
@@ -143,11 +143,11 @@ describe('kernel ircv3/monitor', () => {
 
     it('does not touch MONITOR/WATCH subscriptions when someone JOINs a channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       const mockMonitorRemove = vi.spyOn(networkFile, 'ircMonitorRemove').mockImplementation(() => {});
 
@@ -161,10 +161,10 @@ describe('kernel ircv3/monitor', () => {
 
     it('does not touch MONITOR/WATCH subscriptions when someone PARTs a channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       const mockMonitorRemove = vi.spyOn(networkFile, 'ircMonitorRemove').mockImplementation(() => {});
 
@@ -178,12 +178,12 @@ describe('kernel ircv3/monitor', () => {
 
     it('does not touch MONITOR/WATCH subscriptions when someone is KICKed from a channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
       vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       const mockMonitorRemove = vi.spyOn(networkFile, 'ircMonitorRemove').mockImplementation(() => {});
 
@@ -196,8 +196,8 @@ describe('kernel ircv3/monitor', () => {
     });
 
     it('flips a DM-subscribed nick online on RPL_MONONLINE (730)', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       subscribeDmPresence('OtherUser');
       expect(isNickOnline('OtherUser')).toBe(false);
@@ -208,8 +208,8 @@ describe('kernel ircv3/monitor', () => {
     });
 
     it('flips a DM-subscribed nick back offline on RPL_MONOFFLINE (731)', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       subscribeDmPresence('OtherUser');
       new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :OtherUser!user@host' }).handle();
@@ -221,8 +221,8 @@ describe('kernel ircv3/monitor', () => {
     });
 
     it('reads a MONITOR list that ends with a space', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       subscribeDmPresence('OtherUser');
       new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :OtherUser!user@host ' }).handle();
@@ -234,8 +234,8 @@ describe('kernel ircv3/monitor', () => {
     });
 
     it('clears all presence state on a natural disconnect (close event) instead of leaving stale online/offline dots', () => {
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       subscribeDmPresence('OtherUser');
       new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :OtherUser!user@host' }).handle();
@@ -243,8 +243,8 @@ describe('kernel ircv3/monitor', () => {
 
       // The socket is gone: the server's MONITOR list died with it, so the
       // last-known online/offline flags can no longer be vouched for.
-      vi.spyOn(settingsFile, 'setIsConnecting').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnecting').mockImplementation(() => {});
+      vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'clearAllTyping').mockImplementation(() => {});
 
@@ -256,11 +256,11 @@ describe('kernel ircv3/monitor', () => {
 
     it('follows a peer renaming (NICK): the open DM window and its MONITOR subscription both move to the new nick', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       const mockMonitorRemove = vi.spyOn(networkFile, 'ircMonitorRemove').mockImplementation(() => {});
 
@@ -284,8 +284,8 @@ describe('kernel ircv3/monitor', () => {
     it('flips a DM-subscribed nick offline immediately on QUIT, without waiting for RPL_MONOFFLINE', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(usersFile, 'setQuitUser').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       subscribeDmPresence('mero');
       new Kernel({ type: 'raw', line: ':irc.example.net 730 MyNick :mero!~mero@host' }).handle();
@@ -299,11 +299,11 @@ describe('kernel ircv3/monitor', () => {
 
     it('a NICK from someone with no open DM window and no friend entry does not touch MONITOR', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(usersFile, 'setRenameUser').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#channel1']);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getMonitorLimit').mockImplementation(() => 128);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getMonitorLimit').mockImplementation(() => 128);
       const mockMonitorAdd = vi.spyOn(networkFile, 'ircMonitorAdd').mockImplementation(() => {});
       const mockMonitorRemove = vi.spyOn(networkFile, 'ircMonitorRemove').mockImplementation(() => {});
 

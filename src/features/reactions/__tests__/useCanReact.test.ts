@@ -3,14 +3,14 @@ import { renderHook } from '@testing-library/react';
 import { useCanReact } from '../useCanReact';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '@/network/irc/capabilities';
 import { E2eeState, getSessionKey, useE2eeStore } from '@features/e2ee/store/e2ee';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { type E2eeSession } from '@features/e2ee/store/e2ee';
+import { setTestSession, setTestSlice } from '@/test/networks';
 
 describe('useCanReact', () => {
   beforeEach(() => {
     markCapabilitiesAcknowledged(['message-tags']);
-    useSettingsStore.setState({ isConnected: true, clientTagDeny: [] });
-    useE2eeStore.setState({ sessions: {} });
+    setTestSession({ isConnected: true, clientTagDeny: [] });
+    setTestSlice(useE2eeStore, { sessions: {} });
   });
 
   afterEach(() => {
@@ -22,7 +22,7 @@ describe('useCanReact', () => {
   });
 
   it('does not while disconnected', () => {
-    useSettingsStore.setState({ isConnected: false });
+    setTestSession({ isConnected: false });
 
     expect(renderHook(() => useCanReact('#sic')).result.current).toBe(false);
   });
@@ -38,7 +38,7 @@ describe('useCanReact', () => {
     [['draft/reply']],
     [['*', '-draft/reply']],
   ])('does not when the server drops the tags it needs (CLIENTTAGDENY=%s)', (deny) => {
-    useSettingsStore.setState({ clientTagDeny: deny });
+    setTestSession({ clientTagDeny: deny });
 
     expect(renderHook(() => useCanReact('#sic')).result.current).toBe(false);
   });
@@ -47,7 +47,7 @@ describe('useCanReact', () => {
     const { result, rerender } = renderHook(() => useCanReact('bob'));
     expect(result.current).toBe(true);
 
-    useE2eeStore.setState({ sessions: { [getSessionKey('bob')]: { state: E2eeState.active } as E2eeSession } });
+    setTestSlice(useE2eeStore, { sessions: { [getSessionKey('bob')]: { state: E2eeState.active } as E2eeSession } });
     rerender();
 
     expect(result.current).toBe(false);

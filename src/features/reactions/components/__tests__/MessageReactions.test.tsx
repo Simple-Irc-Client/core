@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import MessageReactions from '../MessageReactions';
 import * as reactionsFile from '@features/reactions/reactions';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
+import { setTestSession } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -31,7 +31,7 @@ const message: Message = {
 describe('MessageReactions', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    useSettingsStore.setState({ nick: 'me' });
+    setTestSession({ nick: 'me' });
   });
 
   it('shows each reaction with its count and who gave it', () => {

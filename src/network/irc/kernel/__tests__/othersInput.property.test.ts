@@ -7,11 +7,12 @@ import { Kernel } from '@/network/irc/kernel';
 import { getChannel, getMessages, useChannelsStore } from '@features/channels/store/channels';
 import { useChannelListStore } from '@features/channels/store/channelList';
 import { getUser, setAddUser, setUsersClearAll } from '@features/users/store/users';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { escapeTagValue } from '@/network/irc/helpers';
 import * as networkFile from '@/network/irc/network';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { setupKernelTest } from './fixtures';
+import { setTestSession, setTestSlice, testSlice } from '@/test/networks';
+import { getActiveSession } from '@features/networks/store/networks';
 
 /** What fits in one IRC line's trailing parameter: anything but a line break or NUL */
 const lineText = fc.string({ unit: 'binary', maxLength: 80 }).map((text) => text.replace(/[\r\n\0]/g, ''));
@@ -24,7 +25,7 @@ describe('what others write, as we show it, for any text', () => {
   const shown = () => getMessages('#chan');
 
   beforeEach(() => {
-    useSettingsStore.setState({ nick: 'me', caseMapping: 'rfc1459', currentChannelName: 'Status', isConnected: true });
+    setTestSession({ nick: 'me', caseMapping: 'rfc1459', currentChannelName: 'Status', isConnected: true });
     vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
     useChannelsStore.getState().setClearAll();
     useChannelsStore.getState().setAddChannel('#chan', ChannelCategory.channel);
@@ -67,9 +68,9 @@ describe('what others write, as we show it, for any text', () => {
   it('a channel listed with any name and topic is listed as sent', () => {
     // eslint-disable-next-line no-control-regex
     fc.assert(fc.property(fc.stringMatching(/^#[^\s,\x07\0]{1,30}$/), fc.nat(100_000), lineText, (name, users, topic) => {
-      useChannelListStore.setState({ channels: [] });
+      setTestSlice(useChannelListStore, { channels: [] });
       handle(`:server 322 me ${name} ${users} :${topic}`);
-      expect(useChannelListStore.getState().channels.at(-1)).toEqual({ name, users, topic });
+      expect(testSlice(useChannelListStore).channels.at(-1)).toEqual({ name, users, topic });
     }));
   });
 
@@ -99,7 +100,7 @@ describe('what others write, as we show it, for any text', () => {
   it('a CTCP answer someone sends is shown without its control characters, and never throws', () => {
     fc.assert(fc.property(fc.constantFrom('VERSION', 'TIME', 'PING', 'CLIENTINFO', 'FINGER'), lineText, (command, answer) => {
       expect(() => handle(`:alice!a@host NOTICE me :\x01${command} ${answer}\x01`)).not.toThrow();
-      for (const message of getMessages(useSettingsStore.getState().currentChannelName)) {
+      for (const message of getMessages(getActiveSession().currentChannelName)) {
         expect(message.message).not.toContain('\x01');
       }
     }));

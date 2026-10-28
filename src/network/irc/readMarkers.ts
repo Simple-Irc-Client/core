@@ -2,8 +2,8 @@
 
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { getCaseMapping, isSameName } from '@features/settings/store/settings';
 import { foldName } from '@shared/lib/caseMapping';
+import { getCaseMapping, isSameName } from '@features/networks/store/networks';
 
 // Messages keep arriving in the window being read; one marker covers a burst of them
 const LIVE_MARK_DELAY_MS = 2000;

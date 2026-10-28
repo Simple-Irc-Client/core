@@ -10,10 +10,11 @@ import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, 
 import { existChannel, isChannel, setAddMessage } from '@features/channels/store/channels';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { isIgnoredSender } from '@features/ignore/ignore';
-import { getConnectedTime, getCurrentChannelName, getCurrentNick, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
+import { getEncryptedPassword, getIsWizardCompleted, getPasswordNick, setIsPasswordRequired, setWizardStep } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getConnectedTime, getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setListRequestRemainingSeconds } from '@features/networks/store/networks';
 
 // @draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...
 // :insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above

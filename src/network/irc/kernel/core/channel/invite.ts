@@ -3,8 +3,8 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { isIgnoredSender } from '@features/ignore/ignore';
-import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
+import { getUserModes } from '@features/networks/store/networks';
 
 const RPL_INVITELIST = '336';
 const RPL_ENDOFINVITELIST = '337';

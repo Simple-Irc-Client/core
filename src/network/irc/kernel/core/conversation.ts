@@ -6,9 +6,10 @@ import { existChannel, isChannel, setAddChannel, setHasMention } from '@features
 import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { playHighlightSound } from '@features/sounds/sounds';
 import { plainText } from '@features/chat/spoilers';
-import { getHighlightWords, isSameName } from '@features/settings/store/settings';
+import { getHighlightWords } from '@features/settings/store/settings';
 import { containsHighlight } from '@shared/lib/highlight';
 import { ChannelCategory } from '@shared/types';
+import { isSameName } from '@features/networks/store/networks';
 
 export interface Conversation {
   /** The window it belongs in: the channel, or the peer's nick for a DM */

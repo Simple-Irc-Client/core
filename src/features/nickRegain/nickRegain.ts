@@ -4,7 +4,7 @@ import { ircSendCommand, ircSendRawMessage } from '@/network/irc/network';
 import { subscribeNicks, unsubscribeNicks } from '@features/monitor/subscribe';
 import { isFriend } from '@features/friends/friends';
 import { getOpenDmNicks } from '@features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, getIsConnected, getMonitorLimit, getWantedNick, getWatchLimit, isSameName, setWantedNick } from '@features/settings/store/settings';
+import { getCurrentChannelName, getCurrentNick, getIsConnected, getMonitorLimit, getWantedNick, getWatchLimit, isSameName, setWantedNick } from '@features/networks/store/networks';
 
 /** Underscores added to a taken nick before giving up */
 const MAX_ALTERNATIVE_SUFFIX = 3;

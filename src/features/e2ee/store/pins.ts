@@ -5,9 +5,10 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { rekeyLegacyNetworks } from '@features/networks/legacyStorage';
 
 import { foldName } from '@shared/lib/caseMapping';
-import { getCaseMapping } from '@/features/settings/store/settings';
+import { getCaseMapping } from '@features/networks/store/networks';
 
 export interface E2eePin {
   /** Base64 SPKI */
@@ -56,7 +57,12 @@ export const useE2eePinsStore = create<PinsStore>()(
       }),
       {
         name: 'sic-e2ee-pins',
-        version: 1,
+        version: 2,
+        // An older version kept a bouncer's networks under its name
+        migrate: (persisted) => {
+          const state = persisted as Pick<PinsStore, 'pinsByNetwork'>;
+          return { ...state, pinsByNetwork: rekeyLegacyNetworks(state.pinsByNetwork ?? {}) };
+        },
       },
     ),
     { name: 'e2ee-pins' },

@@ -3,10 +3,10 @@ import { parseChannelModes, parseUserModes } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendNamesXProto } from '@/network/irc/network';
-import { setCaseMapping, setChannelModes, setChatHistoryLimit, setChannelTypes, setClientTagDeny, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/settings/store/settings';
 import { setBoundBouncerNetworkId } from '@features/bouncer/store/bouncerNetworks';
 import { parseCaseMapping } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
+import { setCaseMapping, setChannelModes, setChatHistoryLimit, setChannelTypes, setClientTagDeny, setLineLenLimit, setMonitorLimit, setNetworkName, setNickLenLimit, setSilenceLimit, setSupportedOption, setUserModes, setWatchLimit } from '@features/networks/store/networks';
 
 const RPL_ISUPPORT = '005';
 

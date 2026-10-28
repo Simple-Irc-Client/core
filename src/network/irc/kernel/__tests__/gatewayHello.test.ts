@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as friendsFile from '@features/friends/friends';
 import * as networkFile from '@/network/irc/network';
@@ -28,8 +28,8 @@ describe('kernel gateway hello', () => {
 
   beforeEach(() => {
     forgetGatewaySession();
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
-    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestNick');
+    vi.spyOn(networksStore, 'getServer').mockImplementation(() => undefined);
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     vi.spyOn(networkFile, 'resetConnectionState').mockImplementation(() => {});
     send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
@@ -60,7 +60,7 @@ describe('kernel gateway hello', () => {
   });
 
   it('marks the resumed session connected without registering or rejoining', () => {
-    const setIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const setIsConnected = vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     const joinChannels = vi.spyOn(networkFile, 'ircJoinChannels').mockImplementation(() => {});
     const subscribeFriends = vi.spyOn(friendsFile, 'subscribeFriendsOnRegistration').mockImplementation(() => {});
     resumeAttempt();
@@ -95,7 +95,7 @@ describe('kernel gateway hello', () => {
   });
 
   it('carries encrypted conversations over a complete resume', () => {
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
     resumeAttempt();
 
@@ -106,7 +106,7 @@ describe('kernel gateway hello', () => {
 
   it('refreshes channel rosters when part of the replay was lost', () => {
     const endSessions = vi.spyOn(e2eeSessionFile, 'endAllSessions').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'getOpenChannelNames').mockImplementation(() => ['#one', '#two']);
     resumeAttempt();
 
@@ -131,8 +131,8 @@ describe('kernel gateway hello', () => {
   });
 
   it('registers and handles the line when the gateway has no session support', () => {
-    const setNick = vi.spyOn(settingsFile, 'setNick').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const setNick = vi.spyOn(networksStore, 'setNick').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     resumeAttempt();
 
     raw(':irc.test 001 OtherNick :Welcome');
@@ -143,7 +143,7 @@ describe('kernel gateway hello', () => {
   });
 
   it('ignores gateway-looking lines after the first one', () => {
-    const setIsConnected = vi.spyOn(settingsFile, 'setIsConnected').mockImplementation(() => {});
+    const setIsConnected = vi.spyOn(networksStore, 'setIsConnected').mockImplementation(() => {});
     beginGatewayConnection(false, target);
     raw(':sic-gateway SESSION token-1');
 

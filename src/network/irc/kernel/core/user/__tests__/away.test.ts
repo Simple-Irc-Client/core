@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import i18next from '@/app/i18n';
@@ -38,7 +38,7 @@ describe('kernel core/user/away', () => {
 
   it('test raw 301', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':chmurka.pirc.pl 301 sic-test Noop :gone';
 
@@ -53,8 +53,8 @@ describe('kernel core/user/away', () => {
 
   it('test raw 305 - no longer away', () => {
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockSetCurrentUserFlag = vi.spyOn(networksStore, 'setCurrentUserFlag').mockImplementation(() => {});
     const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
 
     const line = ':insomnia.pirc.pl 305 mero-test :You are no longer marked as being away';
@@ -71,8 +71,8 @@ describe('kernel core/user/away', () => {
 
   it('test raw 306 - now away', () => {
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockSetCurrentUserFlag = vi.spyOn(networksStore, 'setCurrentUserFlag').mockImplementation(() => {});
     const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
 
     const line = ':bzyk.pirc.pl 306 mero-test :You have been marked as being away';
@@ -90,7 +90,7 @@ describe('kernel core/user/away', () => {
   it('shows the away of a client connected without the user present (pre-away *) in words', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     new Kernel({ type: 'raw', line: ':friend!~u@host AWAY :*' }).handle();
     new Kernel({ type: 'raw', line: ':server 301 sic-test friend :*' }).handle();
@@ -105,7 +105,7 @@ describe('kernel core/user/away', () => {
     ['306', 'You have been marked as being away'],
   ])('keeps quiet about the reply %s to our own presence update', (numeric, text) => {
     const mockSetAddMessageToAllChannels = vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
-    const mockSetCurrentUserFlag = vi.spyOn(settingsFile, 'setCurrentUserFlag').mockImplementation(() => {});
+    const mockSetCurrentUserFlag = vi.spyOn(networksStore, 'setCurrentUserFlag').mockImplementation(() => {});
     const mockSetUserAway = vi.spyOn(usersFile, 'setUserAway').mockImplementation(() => {});
     const label = createLabel({ automatic: true });
 

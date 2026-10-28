@@ -1,8 +1,8 @@
 import { CHANNEL_CATEGORY_ORDER } from '@features/channels/store/channels';
-import { isSameName } from '@features/settings/store/settings';
 import { isMac } from '@shared/lib/platform';
 import { type Channel } from '@shared/types';
 import { type ShortcutDialog } from './store/shortcuts';
+import { isSameName } from '@features/networks/store/networks';
 
 export const MOD_KEY = isMac ? '⌘' : 'Ctrl';
 

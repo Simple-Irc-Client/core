@@ -1,14 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { UserX } from 'lucide-react';
-import { isSameName, useSettingsStore } from '@features/settings/store/settings';
 import { forgetWantedNick, reclaimWantedNick } from '../nickRegain';
+import { isSameName, useActiveSession } from '@features/networks/store/networks';
 
 /** While connected under another nick than the one chosen: waits for it, or the user frees it or settles */
 const NickRegainBanner = () => {
   const { t } = useTranslation();
-  const isConnected = useSettingsStore((state) => state.isConnected);
-  const nick = useSettingsStore((state) => state.nick);
-  const wantedNick = useSettingsStore((state) => state.wantedNick);
+  const isConnected = useActiveSession((session) => session.isConnected);
+  const nick = useActiveSession((session) => session.nick);
+  const wantedNick = useActiveSession((session) => session.wantedNick);
 
   if (!isConnected || wantedNick === undefined || isSameName(wantedNick, nick)) {
     return null;

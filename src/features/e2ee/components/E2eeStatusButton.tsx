@@ -8,9 +8,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 
 import { acknowledgePlaintext, hasPinnedPeer, markVerified, offerEncryption } from '../session';
 import { endSessionAndAnnounce } from '../incoming';
-import { E2eeState, getSessionKey, useE2eeStore, type E2eeSession } from '../store/e2ee';
+import { E2eeState, getSessionKey, useActiveE2ee, type E2eeSession } from '../store/e2ee';
 import { useE2eePinsStore } from '../store/pins';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 
 interface E2eeStatusButtonProps {
   /** The peer nick */
@@ -32,10 +33,10 @@ const STATUS_DISPLAY: Record<StatusKind, { Icon: typeof Lock; iconClass: string;
 const E2eeStatusButton = ({ channelName }: E2eeStatusButtonProps) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const session: E2eeSession | undefined = useE2eeStore((state) => state.sessions[getSessionKey(channelName)]);
+  const session: E2eeSession | undefined = useActiveE2ee((slice) => slice.sessions[getSessionKey(channelName)]);
   const pinned = useE2eePinsStore(() => hasPinnedPeer(channelName));
   const e2eeEnabled = useSettingsStore((state) => state.e2eeEnabled);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnected = useActiveSession((session) => session.isConnected);
 
   const isActive = session?.state === E2eeState.active;
   const isAlarming = session?.state === E2eeState.fingerprintChanged;

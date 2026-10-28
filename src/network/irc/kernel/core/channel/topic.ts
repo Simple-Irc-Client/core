@@ -3,8 +3,8 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { setTopic, setTopicSetBy } from '@features/channels/store/channels';
-import { getUserModes } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
+import { getUserModes } from '@features/networks/store/networks';
 
 const RPL_NOTOPIC = '331';
 const RPL_TOPIC = '332';

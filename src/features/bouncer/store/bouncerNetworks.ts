@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { activeSlice, updateActiveSlice, useActiveSlice, type NetworkSlices } from '@features/networks/store/networkSlices';
 
 /** One of the user's networks on the bouncer; attributes as the bouncer reports them (name, host, port, state, error, ...) */
 export interface BouncerNetwork {
@@ -9,11 +10,15 @@ export interface BouncerNetwork {
   attributes: Record<string, string>;
 }
 
-interface BouncerNetworksStore {
+interface BouncerNetworksSlice {
   networks: BouncerNetwork[];
   /** BOUNCER_NETID: the network this connection is bound to; none on the bouncer's own connection */
   boundNetworkId: string | undefined;
+}
 
+const NO_BOUNCER_NETWORKS: BouncerNetworksSlice = { networks: [], boundNetworkId: undefined };
+
+interface BouncerNetworksStore extends NetworkSlices<BouncerNetworksSlice> {
   /** `undefined` values remove an attribute: an update carries only what changed */
   updateNetwork: (id: string, attributes: Record<string, string | undefined>) => void;
   removeNetwork: (id: string) => void;
@@ -28,31 +33,34 @@ const mergeAttributes = (current: Record<string, string>, update: Record<string,
 
 export const useBouncerNetworksStore = create<BouncerNetworksStore>()(
   devtools((set) => ({
-    networks: [],
-    boundNetworkId: undefined,
+    byNetwork: {},
+    emptySlice: NO_BOUNCER_NETWORKS,
 
     updateNetwork: (id: string, attributes: Record<string, string | undefined>): void => {
-      set((state) => {
-        const existing = state.networks.find((network) => network.id === id);
+      set((state) => updateActiveSlice(state, (slice) => {
+        const existing = slice.networks.find((network) => network.id === id);
         if (existing === undefined) {
-          return { networks: [...state.networks, { id, attributes: mergeAttributes({}, attributes) }] };
+          return { networks: [...slice.networks, { id, attributes: mergeAttributes({}, attributes) }] };
         }
         return {
-          networks: state.networks.map((network) => (network.id === id ? { id, attributes: mergeAttributes(network.attributes, attributes) } : network)),
+          networks: slice.networks.map((network) => (network.id === id ? { id, attributes: mergeAttributes(network.attributes, attributes) } : network)),
         };
-      });
+      }));
     },
     removeNetwork: (id: string): void => {
-      set((state) => ({ networks: state.networks.filter((network) => network.id !== id) }));
+      set((state) => updateActiveSlice(state, (slice) => ({ networks: slice.networks.filter((network) => network.id !== id) })));
     },
     setBoundNetworkId: (id: string): void => {
-      set(() => ({ boundNetworkId: id }));
+      set((state) => updateActiveSlice(state, () => ({ boundNetworkId: id })));
     },
     clearAll: (): void => {
-      set(() => ({ networks: [], boundNetworkId: undefined }));
+      set((state) => updateActiveSlice(state, () => NO_BOUNCER_NETWORKS));
     },
   })),
 );
+
+/** The bouncer networks the active network's connection reports */
+export const useActiveBouncerNetworks = <T>(selector: (slice: BouncerNetworksSlice) => T): T => useActiveSlice(useBouncerNetworksStore, selector);
 
 export const updateBouncerNetwork = (id: string, attributes: Record<string, string | undefined>): void => {
   useBouncerNetworksStore.getState().updateNetwork(id, attributes);
@@ -66,7 +74,7 @@ export const setBoundBouncerNetworkId = (id: string): void => {
   useBouncerNetworksStore.getState().setBoundNetworkId(id);
 };
 
-export const getBoundBouncerNetworkId = (): string | undefined => useBouncerNetworksStore.getState().boundNetworkId;
+export const getBoundBouncerNetworkId = (): string | undefined => activeSlice(useBouncerNetworksStore.getState()).boundNetworkId;
 
 export const clearBouncerNetworks = (): void => {
   useBouncerNetworksStore.getState().clearAll();

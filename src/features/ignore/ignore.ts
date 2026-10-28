@@ -1,10 +1,8 @@
 // Per network; ignored users' messages, notices, CTCPs, typing, reactions and invites are dropped
 
-import { getCaseMapping, getCurrentNick, getServer, isSameName } from '@features/settings/store/settings';
 import { foldName } from '@shared/lib/caseMapping';
 import { getIgnoreMasksForNetwork, useIgnoreStore } from './store/ignore';
-
-const getNetworkKey = (): string | undefined => getServer()?.network;
+import { findActiveNetworkId, getCaseMapping, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 /** A bare nick, `nick!user` or `user@host` completed to a full `nick!user@host` mask; undefined when not a mask */
 export const toIgnoreMask = (entry: string): string | undefined => {
@@ -28,13 +26,13 @@ export const toIgnoreMask = (entry: string): string | undefined => {
 export const nickIgnoreMask = (nick: string): string => `${nick}!*@*`;
 
 export const getIgnoreMasks = (): string[] => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   return network === undefined ? [] : getIgnoreMasksForNetwork(network);
 };
 
 /** False for an entry that is not a mask, or no configured network */
 export const addIgnore = (entry: string): boolean => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   const mask = toIgnoreMask(entry);
   if (network === undefined || mask === undefined) {
     return false;
@@ -45,7 +43,7 @@ export const addIgnore = (entry: string): boolean => {
 
 /** False when the entry is not on the list */
 export const removeIgnore = (entry: string): boolean => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   const mask = toIgnoreMask(entry);
   if (network === undefined || mask === undefined || !getIgnoreMasksForNetwork(network).some((existing) => isSameName(existing, mask))) {
     return false;

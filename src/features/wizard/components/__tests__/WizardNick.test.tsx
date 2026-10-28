@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import WizardNick from '../WizardNick';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as resolveServerModule from '@shared/lib/resolveServerFromParams';
 import * as queryParams from '@shared/lib/queryParams';
 import * as network from '@/network/irc/network';
@@ -14,10 +15,14 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
-  useSettingsStore: (selector: (s: Record<string, unknown>) => unknown) => selector({ nick: '', server: undefined }),
-  setNick: vi.fn(),
+  useSettingsStore: (selector: (s: Record<string, unknown>) => unknown) => selector({ wizardNick: '' }),
   setWizardStep: vi.fn(),
-  setServer: vi.fn(),
+  setWizardNick: vi.fn(),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  activateNetwork: vi.fn(),
   setIsConnecting: vi.fn(),
 }));
 
@@ -137,7 +142,7 @@ describe('WizardNick', () => {
   });
 
   describe('Form submission', () => {
-    it('should call setNick with entered nick when button is clicked', () => {
+    it('should keep the entered nick with entered nick when button is clicked', () => {
       render(<WizardNick />);
 
       const input = screen.getByLabelText('wizard.nick.nick');
@@ -146,7 +151,7 @@ describe('WizardNick', () => {
       const button = screen.getByText('wizard.nick.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setNick).toHaveBeenCalledWith('MyNickname');
+      expect(settingsStore.setWizardNick).toHaveBeenCalledWith('MyNickname');
     });
 
     it('should call setWizardStep with "server" when button is clicked', () => {
@@ -170,7 +175,7 @@ describe('WizardNick', () => {
       expect(nickRegain.forgetWantedNick).toHaveBeenCalledOnce();
     });
 
-    it('should call setNick when form is submitted via Enter key', () => {
+    it('should keep the entered nick when form is submitted via Enter key', () => {
       render(<WizardNick />);
 
       const input = screen.getByLabelText('wizard.nick.nick');
@@ -182,7 +187,7 @@ describe('WizardNick', () => {
       }
       fireEvent.submit(form);
 
-      expect(settingsStore.setNick).toHaveBeenCalledWith('MyNickname');
+      expect(settingsStore.setWizardNick).toHaveBeenCalledWith('MyNickname');
     });
 
     it('should call setWizardStep when form is submitted via Enter key', () => {
@@ -200,7 +205,7 @@ describe('WizardNick', () => {
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('server');
     });
 
-    it('should not call setNick when nick is empty and button is clicked', () => {
+    it('should not keep a nick when nick is empty and button is clicked', () => {
       render(<WizardNick />);
 
       // Button is disabled, but let's verify the logic anyway
@@ -209,7 +214,7 @@ describe('WizardNick', () => {
       // Force click even though disabled
       fireEvent.click(button);
 
-      expect(settingsStore.setNick).not.toHaveBeenCalled();
+      expect(settingsStore.setWizardNick).not.toHaveBeenCalled();
     });
 
     it('should not call setWizardStep when nick is empty', () => {
@@ -251,9 +256,9 @@ describe('WizardNick', () => {
       const button = screen.getByText('wizard.nick.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).toHaveBeenCalledWith(mockServer);
+      expect(networksStore.activateNetwork).toHaveBeenCalledWith(mockServer, expect.any(String));
       expect(network.ircConnect).toHaveBeenCalledWith(mockServer, 'MyNick');
-      expect(settingsStore.setIsConnecting).toHaveBeenCalledWith(true);
+      expect(networksStore.setIsConnecting).toHaveBeenCalledWith(true);
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('loading');
     });
 
@@ -268,7 +273,7 @@ describe('WizardNick', () => {
       const button = screen.getByText('wizard.nick.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setServer).not.toHaveBeenCalled();
+      expect(networksStore.activateNetwork).not.toHaveBeenCalled();
       expect(network.ircConnect).not.toHaveBeenCalled();
       expect(settingsStore.setWizardStep).toHaveBeenCalledWith('server');
     });
@@ -286,8 +291,8 @@ describe('WizardNick', () => {
       expect(button).not.toBeDisabled();
 
       fireEvent.click(button);
-      // setNick will be called with whitespace (validation is on length, not content)
-      expect(settingsStore.setNick).toHaveBeenCalledWith('   ');
+      // The nick is kept with whitespace (validation is on length, not content)
+      expect(settingsStore.setWizardNick).toHaveBeenCalledWith('   ');
     });
 
     it('should handle very long nick', () => {
@@ -302,7 +307,7 @@ describe('WizardNick', () => {
       const button = screen.getByText('wizard.nick.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setNick).toHaveBeenCalledWith(longNick);
+      expect(settingsStore.setWizardNick).toHaveBeenCalledWith(longNick);
     });
   });
 
@@ -316,7 +321,7 @@ describe('WizardNick', () => {
       const button = screen.getByText('wizard.nick.button.next');
       fireEvent.click(button);
 
-      expect(settingsStore.setNick).toHaveBeenCalledWith('[nick]|away');
+      expect(settingsStore.setWizardNick).toHaveBeenCalledWith('[nick]|away');
     });
 
     it('should show custom server warning when server param is unknown', () => {

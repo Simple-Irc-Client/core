@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { connectViaWizard, testTag } from '../helpers';
+import { connectViaWizard, readPersistedNetwork, testTag, writeIdbKey } from '../helpers';
 import { testServer } from '../test-server';
 
 /**
@@ -28,30 +28,11 @@ const anyCasing = (): RegExp => new RegExp(`^${userCasing}$`, 'i');
 
 /** Overwrite the persisted channel store, as a build without the fix left it */
 const seedChannelStore = async (page: Page, state: unknown, version: number): Promise<void> => {
-  await page.evaluate(async ({ state, version }) => {
-    const settings = JSON.parse(localStorage.getItem('sic-settings') ?? '{}') as {
-      state?: { server?: { network: string; servers: string[]; default: number } };
-    };
-    const server = settings.state?.server;
-    if (!server) {
-      throw new Error('no server in sic-settings - the wizard did not complete');
-    }
-    const key = `sic-channels:${server.network}:${server.servers[server.default]}`;
-    const record = JSON.stringify({ state, version });
-
-    // idb-keyval's defaults: database "keyval-store", object store "keyval"
-    await new Promise<void>((resolve, reject) => {
-      const open = indexedDB.open('keyval-store');
-      open.onerror = () => reject(open.error);
-      open.onsuccess = () => {
-        const db = open.result;
-        const tx = db.transaction('keyval', 'readwrite');
-        tx.objectStore('keyval').put(record, key);
-        tx.oncomplete = () => { db.close(); resolve(); };
-        tx.onerror = () => reject(tx.error);
-      };
-    });
-  }, { state, version });
+  const network = await readPersistedNetwork(page);
+  if (network === undefined) {
+    throw new Error('no network in sic-networks - the wizard did not complete');
+  }
+  await writeIdbKey(page, `sic-channels:${network.networkId}`, JSON.stringify({ state, version }));
 };
 
 const persistedChannel = (name: string, messages: { id: string; text: string; time: string }[] = []) => ({

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 type SoundsModule = typeof import('../sounds');
 type SettingsModule = typeof import('@features/settings/store/settings');
+type TestNetworksModule = typeof import('@/test/networks');
 
 interface FakeOscillator {
   frequency: { value: number };
@@ -47,6 +48,7 @@ class FakeAudioContext {
 describe('sounds', () => {
   let sounds: SoundsModule;
   let settings: SettingsModule;
+  let testNetworks: TestNetworksModule;
 
   beforeEach(async () => {
     oscillators = [];
@@ -62,7 +64,9 @@ describe('sounds', () => {
     vi.resetModules();
     sounds = await import('../sounds');
     settings = await import('@features/settings/store/settings');
-    settings.useSettingsStore.setState({ directSound: 'chime', mentionSound: 'ping', soundVolume: 50, currentChannelName: '#other' });
+    testNetworks = await import('@/test/networks');
+    settings.useSettingsStore.setState({ directSound: 'chime', mentionSound: 'ping', soundVolume: 50 });
+    testNetworks.setTestSession({ currentChannelName: '#other' });
   });
 
   afterEach(() => {
@@ -291,7 +295,7 @@ describe('sounds', () => {
     });
 
     it('should play nothing for the conversation the user is looking at', async () => {
-      settings.useSettingsStore.setState({ currentChannelName: '#Channel' });
+      testNetworks.setTestSession({ currentChannelName: '#Channel' });
       vi.spyOn(document, 'hasFocus').mockReturnValue(true);
 
       sounds.playHighlightSound('#channel', false);
@@ -301,7 +305,7 @@ describe('sounds', () => {
     });
 
     it('should play for the open conversation while the app is in the background', async () => {
-      settings.useSettingsStore.setState({ currentChannelName: '#channel' });
+      testNetworks.setTestSession({ currentChannelName: '#channel' });
       vi.spyOn(document, 'hasFocus').mockReturnValue(false);
 
       sounds.playHighlightSound('#channel', false);
@@ -311,7 +315,7 @@ describe('sounds', () => {
     });
 
     it('should play for the open conversation while the tab is hidden', async () => {
-      settings.useSettingsStore.setState({ currentChannelName: '#channel' });
+      testNetworks.setTestSession({ currentChannelName: '#channel' });
       vi.spyOn(document, 'hasFocus').mockReturnValue(true);
       vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
 

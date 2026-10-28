@@ -5,10 +5,11 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { addMessage, replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { setRemoveChannel } from '@features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
 import { getUser, setRemoveUser } from '@features/users/store/users';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentChannelName, getCurrentNick, getUserModes, isSameName } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 const ERR_USERNOTINCHANNEL = '441';
 

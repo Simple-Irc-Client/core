@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
-import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
+import { useSettingsStore } from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
 import { ircSendCommand, ircSendRawMessage } from '@/network/irc/network';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
@@ -17,6 +17,7 @@ import { applySpoilerMarkup } from '@features/chat/spoilers';
 import { quoteLine, replyTags } from '@features/replies/replies';
 import { clearReplyTo } from '@features/replies/store/replyTo';
 import { applyFormatting, gateOutgoingCommand } from '@features/chat/outgoing';
+import { getCurrentNick } from '@features/networks/store/networks';
 
 /** Whether what the user typed went out; a blocked one stays in the input */
 export type SendResult = 'sent' | 'blocked';

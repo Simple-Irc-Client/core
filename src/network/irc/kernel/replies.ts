@@ -1,9 +1,9 @@
 import { MessageColor } from '@/config/theme';
 import { type IrcContext } from '@/network/irc/kernel/context';
 import { setAddMessage } from '@features/channels/store/channels';
-import { getCurrentChannelName } from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentChannelName } from '@features/networks/store/networks';
 
 const colors = {
   [MessageCategory.info]: MessageColor.info,

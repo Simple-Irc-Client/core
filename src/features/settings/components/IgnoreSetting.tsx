@@ -1,14 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { addIgnore, removeIgnore } from '@features/ignore/ignore';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useNetworksStore } from '@features/networks/store/networks';
 import ListSetting from './ListSetting';
 
 const NO_MASKS: string[] = [];
 
 const IgnoreSetting = () => {
   const { t } = useTranslation();
-  const network = useSettingsStore((state) => state.server?.network);
+  const network = useNetworksStore((state) => state.activeNetworkId);
   const masks = useIgnoreStore((state) => (network === undefined ? NO_MASKS : state.masksByNetwork[network] ?? NO_MASKS));
 
   if (network === undefined) {

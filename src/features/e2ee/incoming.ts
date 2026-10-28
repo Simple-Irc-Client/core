@@ -16,7 +16,6 @@ import {
   setTyping,
   setUpdateMessage,
 } from '@/features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, isSameName } from '@/features/settings/store/settings';
 import { getUser } from '@/features/users/store/users';
 import { notifyHighlight } from '@/runtime/notifications';
 import { plainText } from '@features/chat/spoilers';
@@ -28,6 +27,7 @@ import { BodyKind, parseCtcpFrame, type E2eeFrame } from './protocol';
 import { createThrottle } from './rateLimit';
 import { acceptCipherChunk, acceptIncomingOffer, decryptSealed, endSession, handleHandshakeFrame, sendReset } from './session';
 import { E2eeState, getSessionKey, getSessionState } from './store/e2ee';
+import { getCurrentChannelName, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 /** One inbound OFFER per peer per second: no legitimate pattern is faster. */
 const offers = createThrottle(1_000);

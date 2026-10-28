@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL } from '@/config/config';
@@ -13,7 +13,7 @@ describe('kernel: SETNAME and ACCOUNT', () => {
   setupKernelTest();
 
   const handle = (line: string, channels: string[] = ['#one', '#two']) => {
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => channels);
     const setUserRealname = vi.spyOn(usersFile, 'setUserRealname').mockImplementation(() => {});
     const setUserAccount = vi.spyOn(usersFile, 'setUserAccount').mockImplementation(() => {});

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import WizardPage, { getTimeOfDayGradient } from '../WizardPage';
 import * as settingsStore from '@features/settings/store/settings';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -44,10 +45,7 @@ describe('WizardPage', () => {
   });
 
   const setupMocks = (wizardStep: string, overrides: Record<string, unknown> = {}) => {
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ wizardStep, isWizardHintDismissed: true, ...overrides })
-    );
+    mockStoreState({ wizardStep, isWizardHintDismissed: true, ...overrides });
   };
 
   describe('Step rendering', () => {

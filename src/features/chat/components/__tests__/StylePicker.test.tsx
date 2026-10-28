@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import StylePicker from '../StylePicker';
-import * as settingsStore from '@features/settings/store/settings';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -17,12 +17,10 @@ describe('StylePicker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         fontFormatting: { colorCode: null, bold: false, italic: false, underline: false },
         setFontFormatting: mockSetFontFormatting,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
   });
 
   describe('Basic rendering', () => {
@@ -42,12 +40,10 @@ describe('StylePicker', () => {
     });
 
     it('should show active style indicator when bold is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -57,12 +53,10 @@ describe('StylePicker', () => {
     });
 
     it('should show active style indicator when italic is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: false, italic: true, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -72,12 +66,10 @@ describe('StylePicker', () => {
     });
 
     it('should show active style indicator when underline is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -112,12 +104,10 @@ describe('StylePicker', () => {
     });
 
     it('should toggle bold off when clicking bold button while bold is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -128,12 +118,10 @@ describe('StylePicker', () => {
     });
 
     it('should show bold button as active when bold is enabled', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: false, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -154,12 +142,10 @@ describe('StylePicker', () => {
     });
 
     it('should toggle italic off when clicking italic button while italic is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: false, italic: true, underline: false },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -181,12 +167,10 @@ describe('StylePicker', () => {
     });
 
     it('should toggle underline off when clicking underline button while underline is active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: false, italic: false, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -199,12 +183,10 @@ describe('StylePicker', () => {
 
   describe('Multiple styles', () => {
     it('should show indicator when multiple styles are active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -214,12 +196,10 @@ describe('StylePicker', () => {
     });
 
     it('should allow toggling individual styles independently', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: false, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -233,12 +213,10 @@ describe('StylePicker', () => {
 
   describe('Unhappy paths', () => {
     it('should show indicator when all three styles are active simultaneously', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={false} onOpenChange={mockOnOpenChange} />);
 
@@ -248,12 +226,10 @@ describe('StylePicker', () => {
     });
 
     it('should have all three style buttons pressed when all styles active', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 
@@ -267,12 +243,10 @@ describe('StylePicker', () => {
     });
 
     it('should toggle one style off without affecting others', () => {
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           fontFormatting: { colorCode: null, bold: true, italic: true, underline: true },
           setFontFormatting: mockSetFontFormatting,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
       render(<StylePicker open={true} onOpenChange={mockOnOpenChange} />);
 

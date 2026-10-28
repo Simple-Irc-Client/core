@@ -1,8 +1,8 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { getReadMarker, markRead, setReadMarker } from '@/network/irc/readMarkers';
 import { existChannel, getMessages, setUnreadMessages } from '@features/channels/store/channels';
-import { getCurrentChannelName, getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { type Message, MessageCategory } from '@shared/types';
+import { getCurrentChannelName, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 const isUnreadCandidate = (message: Message, myNick: string): boolean => {
   const nick = typeof message.nick === 'string' ? message.nick : message.nick?.nick;

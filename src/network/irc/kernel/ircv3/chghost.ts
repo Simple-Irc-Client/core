@@ -3,9 +3,9 @@ import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
 import { STATUS_CHANNEL } from '@/config/config';
-import { getCurrentNick, getUserModes, isSameName } from '@features/settings/store/settings';
 import { getUserChannels, setUserHost } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
+import { getCurrentNick, getUserModes, isSameName } from '@features/networks/store/networks';
 
 // IRCv3 chghost
 // :nick!user@host CHGHOST newuser newhost

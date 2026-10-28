@@ -2,10 +2,12 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import WizardLoading from '../WizardLoading';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networkLifecycle from '@features/networks/networkLifecycle';
 import * as ircNetwork from '@/network/irc/network';
 import * as queryParams from '@shared/lib/queryParams';
 import * as stsModule from '@/network/irc/sts';
 import * as bouncerModule from '@/network/irc/bouncer';
+import { mockStoreState } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,6 +22,9 @@ vi.mock('@features/settings/store/settings', () => ({
   setWizardProgress: vi.fn(),
   getWizardProgress: vi.fn(),
   useSettingsStore: vi.fn(),
+}));
+
+vi.mock('@features/networks/networkLifecycle', () => ({
   resetAndGoToStart: vi.fn(),
 }));
 
@@ -77,10 +82,7 @@ describe('WizardLoading', () => {
     const server = 'server' in overrides ? overrides.server : mockServer;
     const nick = overrides.nick ?? mockNick;
 
-    vi.mocked(settingsStore.useSettingsStore).mockImplementation(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (selector: any) => selector({ isConnecting, isConnected, wizardProgress, server, nick })
-    );
+    mockStoreState({ isConnecting, isConnected, wizardProgress, server, nick });
     vi.mocked(settingsStore.getWizardProgress).mockReturnValue(wizardProgress);
   };
 
@@ -449,7 +451,7 @@ describe('WizardLoading', () => {
       const goBackButton = screen.getByRole('button', { name: 'wizard.loading.button.goBack' });
       fireEvent.click(goBackButton);
 
-      expect(settingsStore.resetAndGoToStart).toHaveBeenCalledTimes(1);
+      expect(networkLifecycle.resetAndGoToStart).toHaveBeenCalledTimes(1);
     });
   });
 

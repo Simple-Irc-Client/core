@@ -11,9 +11,9 @@ import {
 } from '@shared/components/ui/dropdown-menu';
 import { useContextMenu } from '@/providers/ContextMenuContext';
 import { useUsersDrawer } from '@/providers/DrawersContext';
-import { setAddChannel, setClearMessages, useChannelsStore } from '@features/channels/store/channels';
+import { setAddChannel, setClearMessages, useActiveChannels } from '@features/channels/store/channels';
 import { ChannelCategory } from '@shared/types';
-import { getAutoOfferEncryption, getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getWatchLimit, isSameName, setCurrentChannelName } from '@features/settings/store/settings';
+import { getAutoOfferEncryption } from '@features/settings/store/settings';
 import { ircSendUserCommand } from '@/network/irc/network';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, Ban, Copy, Eye, ExternalLink, EyeOff, LogIn, MessageSquare, Search, Send, Shield, Trash2, UserMinus, UserPlus, UserX } from 'lucide-react';
@@ -24,6 +24,8 @@ import { subscribeDmPresence } from '@features/dmPresence/dmPresence';
 import { offerEncryption } from '@features/e2ee/session';
 import { isSafeUrl } from '@shared/lib/utils';
 import { clipboard, openExternal } from '@/runtime/desktop';
+import { getCurrentChannelCategory, getCurrentChannelName, getCurrentNick, getCurrentUserFlags, getMonitorLimit, getWatchLimit, isSameName } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 const getModeLevel = (flag: string): number => {
   const hierarchy: Record<string, number> = {
@@ -172,7 +174,7 @@ const PositionedMenuContent = ({
 export const ContextMenu = () => {
   const { t } = useTranslation();
   const { contextMenuOpen, handleContextMenuClose, contextMenuAnchorElement, contextMenuCategory, contextMenuItem, contextMenuPosition } = useContextMenu();
-  const openChannels = useChannelsStore((state) => state.openChannelsShortList);
+  const openChannels = useActiveChannels((slice) => slice.openChannelsShortList);
   const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();
 
   if (contextMenuCategory === 'channel' && contextMenuItem !== undefined) {

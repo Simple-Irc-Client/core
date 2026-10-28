@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
-import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress, testTag } from '../helpers';
+import { fillTestServer, getServerPassword, readPersistedSession, skipBouncerAccount, testServerAddress, testTag } from '../helpers';
 
 
 /** Fill in nick step and advance to the server step. */
@@ -154,7 +154,7 @@ test.describe('Wizard', () => {
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText('Select a irc channel')).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Go Back' })).toBeHidden();
-    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('sic-settings') ?? '{}').state?.nick)).toBe(`wizardbot-${tag}_`);
+    await expect.poll(async () => (await readPersistedSession(page))?.nick).toBe(`wizardbot-${tag}_`);
   });
 
   test('wrong server address shows disconnected and Go Back button', async ({ page }) => {

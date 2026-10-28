@@ -7,7 +7,7 @@ import { clearServiceRequests, noteServiceRequest } from './serviceRequests';
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit, isSameName } from '@features/settings/store/settings';
+import { getEncryptedPassword, getPasswordNick } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
@@ -25,6 +25,7 @@ import {
 import { clearAllBatches } from './batch';
 import { clearLabels, createLabel, type LabeledRequest } from './labels';
 import { beginGatewayConnection, forgetGatewaySession, hasGatewaySession } from './gatewaySession';
+import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getLineLenLimit, isSameName } from '@features/networks/store/networks';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const eventHandlers: Record<string, ((data: any) => void)[]> = {};

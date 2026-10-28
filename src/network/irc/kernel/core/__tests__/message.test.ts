@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import * as capabilitiesFile from '@/network/irc/capabilities';
@@ -23,8 +24,8 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
 
     const line = '@draft/bot;msgid=mcOQVkbTRyuCcC0Rso27IB;time=2023-02-22T00:20:59.308Z :Pomocnik!pomocny@bot:kanalowy.pomocnik NOTICE mero-test :[#religie] Dla trolli są inne kanały...';
 
@@ -37,11 +38,11 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE #3', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
-    const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
+    const mockSetListRequestRemainingSeconds = vi.spyOn(networksStore, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
     const line = ':insomnia.pirc.pl NOTICE SIC-test :You have to be connected for at least 20 seconds before being able to /LIST, please ignore the fake output above';
 
@@ -56,11 +57,11 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE #4', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
-    vi.spyOn(settingsFile, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
-    const mockSetListRequestRemainingSeconds = vi.spyOn(settingsFile, 'setListRequestRemainingSeconds').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getConnectedTime').mockImplementation(() => Math.floor(Date.now() / 1000) - 5);
+    const mockSetListRequestRemainingSeconds = vi.spyOn(networksStore, 'setListRequestRemainingSeconds').mockImplementation(() => {});
 
     const line = ':irc.librairc.net NOTICE SIC-test :*** You cannot list within the first 60 seconds of connecting. Please try again later.';
 
@@ -75,9 +76,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - Polish version', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -98,9 +99,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - English version 1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -121,9 +122,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - English version 2', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -144,9 +145,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - should not trigger for non-NickServ messages', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -168,9 +169,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - should not trigger for different target', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestUser');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'TestUser');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -190,9 +191,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - pirc.pl full message with bot tags', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -210,9 +211,9 @@ describe('kernel core/message', () => {
 
     vi.clearAllMocks();
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
     const mockSetIsPasswordRequired2 = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep2 = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -227,9 +228,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - Libera.Chat full message', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -252,9 +253,9 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required - Libera.Chat with IRC bold formatting codes', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
@@ -272,13 +273,13 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE password required after server nick change in 001', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetIsPasswordRequired = vi.spyOn(settingsFile, 'setIsPasswordRequired').mockImplementation(() => {});
     const mockSetWizardStep = vi.spyOn(settingsFile, 'setWizardStep').mockImplementation(() => {});
 
     // Server assigned a different nick than requested
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian_');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian_');
 
     // NickServ sends NOTICE to the server-assigned nick
     const line = '@draft/bot;bot;msgid=TCbDwGyUnF2F7Qld1yjerB;time=2026-02-10T20:05:51.461Z :NickServ!NickServ@serwisy.pirc.pl NOTICE Merovingian_ :Ten nick jest zarejestrowany i chroniony. Jeśli należy do Ciebie,';
@@ -292,12 +293,12 @@ describe('kernel core/message', () => {
 
   it('test raw PRIVMSG #1 channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockSetIncreaseUnreadMessages = vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
     const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG #sic :test 1';
@@ -319,12 +320,12 @@ describe('kernel core/message', () => {
 
   it('test raw PRIVMSG #1 priv', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockSetIncreaseUnreadMessages = vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
     const line = '@batch=UEaMMV4PXL3ymLItBEAhBO;msgid=498xEffzvc3SBMJsRPQ5Iq;time=2023-02-12T02:06:12.210Z :SIC-test2!~mero@D6D788C7.623ED634.C8132F93.IP PRIVMSG SIC-test :test 1';
@@ -350,12 +351,12 @@ describe('kernel core/message', () => {
     ['a message from a server without msgid', ':Friend!~u@host PRIVMSG #sic :hi', undefined],
   ])('test raw PRIVMSG keeps the server msgid of %s, for reactions to refer to', (_case, line, msgid) => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
 
     new Kernel({ type: 'raw', line }).handle();
 
@@ -369,12 +370,12 @@ describe('kernel core/message', () => {
     ['a message replying to nothing', '@msgid=abc :Friend!~u@host PRIVMSG #sic :hi', undefined],
   ])('test raw PRIVMSG keeps what %s replies to', (_case, line, replyTo) => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC-test');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC-test');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
 
     new Kernel({ type: 'raw', line }).handle();
 
@@ -383,10 +384,10 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE addressed to an open channel is routed to that channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-    vi.spyOn(settingsFile, 'getChannelTypes').mockImplementation(() => ['#', '&']);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(networksStore, 'getChannelTypes').mockImplementation(() => ['#', '&']);
     vi.spyOn(channelsFile, 'existChannel').mockImplementation((name: string) => name === '#sic');
 
     const line = ':Someone!~user@host NOTICE #sic :channel announcement';
@@ -399,10 +400,10 @@ describe('kernel core/message', () => {
 
   it('test raw NOTICE addressed to us goes to the current window', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-    vi.spyOn(settingsFile, 'getChannelTypes').mockImplementation(() => ['#', '&']);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(networksStore, 'getChannelTypes').mockImplementation(() => ['#', '&']);
 
     const line = ':Someone!~user@host NOTICE MyNick :psst';
 
@@ -413,7 +414,7 @@ describe('kernel core/message', () => {
 
   it('test raw 401 - no such nick/channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 401 sic-test unknownuser :No such nick/channel';
 
@@ -439,7 +440,7 @@ describe('kernel core/message', () => {
 
   it('test raw 412 - no text to send', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 412 sic-test :No text to send';
 
@@ -454,15 +455,15 @@ describe('kernel core/message', () => {
   describe('Private message window creation', () => {
     it('should create priv channel for incoming private message without touching the users store', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
 
@@ -478,15 +479,15 @@ describe('kernel core/message', () => {
 
     it('should create priv channel for own echoed direct message', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'echo-message');
 
       // Our own message to OtherUser echoed back by the server
@@ -500,13 +501,13 @@ describe('kernel core/message', () => {
 
     it('should not add users to channel for regular channel messages', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#test');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
       vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
@@ -525,15 +526,15 @@ describe('kernel core/message', () => {
 
     it('should not add users when priv channel already exists', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       // Channel already exists
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => 'OtherUser');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => 'OtherUser');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
 
       vi.spyOn(usersFile, 'getHasUser').mockImplementation(() => false);
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
@@ -550,13 +551,13 @@ describe('kernel core/message', () => {
 
     it('should create priv channel for CTCP ACTION in private message without touching the users store', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       const mockSetAddUser = vi.spyOn(usersFile, 'setAddUser').mockImplementation(() => {});
       const mockSetJoinUser = vi.spyOn(usersFile, 'setJoinUser').mockImplementation(() => {});
@@ -576,14 +577,14 @@ describe('kernel core/message', () => {
   describe('Nick mention highlighting', () => {
     it('should set highlight on private message', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :Hello there';
 
@@ -594,14 +595,14 @@ describe('kernel core/message', () => {
 
     it('should set highlight when message mentions nick in channel', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick check this out';
 
@@ -612,14 +613,14 @@ describe('kernel core/message', () => {
 
     it('should set highlight with case-insensitive nick match', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello mynick!';
 
@@ -630,14 +631,14 @@ describe('kernel core/message', () => {
 
     it('should not set highlight when message does not mention nick', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello everyone';
 
@@ -648,12 +649,12 @@ describe('kernel core/message', () => {
 
     it('should not set highlight on echo messages', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation((cap) => cap === 'echo-message');
 
@@ -667,14 +668,14 @@ describe('kernel core/message', () => {
 
     it('should call setHasMention for mentioned nick in non-current channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick!';
@@ -686,14 +687,14 @@ describe('kernel core/message', () => {
 
     it('should not call setHasMention when message is in current channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hey MyNick!';
@@ -705,14 +706,14 @@ describe('kernel core/message', () => {
 
     it('should not call setHasMention when no nick mention', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :hello everyone';
@@ -724,12 +725,12 @@ describe('kernel core/message', () => {
 
     it('should set highlight on CTCP ACTION that mentions nick', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :\x01ACTION waves at MyNick\x01';
@@ -741,12 +742,12 @@ describe('kernel core/message', () => {
 
     it('should set highlight on CTCP ACTION in private message', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG MyNick :\x01ACTION waves\x01';
@@ -758,12 +759,12 @@ describe('kernel core/message', () => {
 
     it('should not set highlight on CTCP ACTION without nick mention in channel', () => {
       const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
 
       const line = '@msgid=test123;time=2023-02-12T02:06:12.210Z :OtherUser!~user@host PRIVMSG #channel :\x01ACTION dances\x01';
@@ -775,12 +776,12 @@ describe('kernel core/message', () => {
 
     it('should call setHasMention for CTCP ACTION with nick mention in non-current channel', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});
       const mockSetHasMention = vi.spyOn(channelsFile, 'setHasMention').mockImplementation(() => {});
 
@@ -794,10 +795,10 @@ describe('kernel core/message', () => {
 
   describe('Highlight words', () => {
     const mockChannelEnvironment = (flags: string[] = []) => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => flags);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => flags);
       vi.spyOn(settingsFile, 'getHighlightWords').mockImplementation(() => ['deploy', 'build failed']);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
@@ -865,9 +866,9 @@ describe('kernel core/message', () => {
 
   describe('Notice routing', () => {
     const mockNoticeEnvironment = (openWindows: string[]) => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#viewing');
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#viewing');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => openWindows.some((open) => open.toLowerCase() === name.toLowerCase()));
       const setAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       return (line: string) => {
@@ -930,10 +931,10 @@ describe('kernel core/message', () => {
 
   describe('Notification sounds', () => {
     const mockSoundEnvironment = () => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setAddHistoryPage').mockImplementation(() => {});
@@ -990,10 +991,10 @@ describe('kernel core/message', () => {
 
   describe('Own messages from other clients (znc.in/self-message)', () => {
     const mockOwnMessageEnvironment = () => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => ['away']);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => ['away']);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUser').mockImplementation(() => undefined);
       vi.spyOn(capabilitiesFile, 'isCapabilityEnabled').mockImplementation(() => false);
@@ -1089,10 +1090,10 @@ describe('kernel core/message', () => {
     });
 
     const mockReadMarkerEnvironment = () => {
-      vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
-      vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => []);
+      vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
+      vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => []);
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
       vi.spyOn(channelsFile, 'setIncreaseUnreadMessages').mockImplementation(() => {});

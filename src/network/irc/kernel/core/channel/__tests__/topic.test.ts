@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
@@ -13,7 +13,7 @@ describe('kernel core/channel/topic', () => {
 
   it('test raw TOPIC', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetTopic = vi.spyOn(channelsFile, 'setTopic').mockImplementation(() => {});
 
     const line = '@account=Merovingian;msgid=33x8Q9DP1OpJVeJe3S7usg;time=2023-03-23T00:04:18.011Z :Merovingian!~pirc@cloak:Merovingian TOPIC #sic :Test 1';

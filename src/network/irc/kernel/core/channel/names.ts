@@ -1,7 +1,7 @@
 import { calculateMaxPermission, parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
-import { getUserModes } from '@features/settings/store/settings';
 import { bufferNamesUsers, flushNamesUsers, type NamesUser } from '@features/users/store/users';
+import { getUserModes } from '@features/networks/store/networks';
 
 const RPL_NAMREPLY = '353';
 const RPL_ENDOFNAMES = '366';

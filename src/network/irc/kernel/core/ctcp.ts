@@ -7,11 +7,11 @@ import { ircSendRawMessage } from '@/network/irc/network';
 import { setAddMessage, setIncreaseUnreadMessages } from '@features/channels/store/channels';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { REPLY_TAG } from '@features/replies/replies';
-import { getCurrentChannelName, getCurrentNick, isSameName } from '@features/settings/store/settings';
 import { getUser } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
 import { announceHighlight, isHighlight, openConversationWindow, resolveConversation, trackReadPosition } from './conversation';
+import { getCurrentChannelName, getCurrentNick, isSameName } from '@features/networks/store/networks';
 
 // CTCP: \x01COMMAND params\x01
 export const handleCtcp = (ctx: IrcContext, nick: string, target: string, message: string): void => {

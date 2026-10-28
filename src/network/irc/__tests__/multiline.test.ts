@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type BatchState } from '../batch';
 import { addAvailableCapabilities, markCapabilitiesAcknowledged, resetCapabilityState } from '../capabilities';
 import { buildPrivmsgs, combineMultiline, getMultilineLimits, privmsgTextBudget, splitLine } from '../multiline';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { type ParsedIrcRawMessage } from '@shared/types';
 
 const enableMultiline = (value: string): void => {
@@ -32,7 +32,7 @@ const batch = (messages: ParsedIrcRawMessage[], tags: Record<string, string> = {
 describe('multiline', () => {
   beforeEach(() => {
     resetCapabilityState();
-    vi.spyOn(settingsFile, 'getLineLenLimit').mockReturnValue(0);
+    vi.spyOn(networksStore, 'getLineLenLimit').mockReturnValue(0);
   });
 
   describe('getMultilineLimits', () => {
@@ -81,7 +81,7 @@ describe('multiline', () => {
     });
 
     it('should follow the server line length', () => {
-      vi.spyOn(settingsFile, 'getLineLenLimit').mockReturnValue(1000);
+      vi.spyOn(networksStore, 'getLineLenLimit').mockReturnValue(1000);
       expect(privmsgTextBudget('me', '#c')).toBe(1000 - 91);
     });
 

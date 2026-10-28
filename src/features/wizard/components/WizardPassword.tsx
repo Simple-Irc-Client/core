@@ -5,20 +5,19 @@ import { Label } from '@shared/components/ui/label';
 import { Switch } from '@shared/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { ircSendPassword, ircJoinChannels } from '@/network/irc/network';
-import { getCurrentNick, isSameName, setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
+import { setWizardStep, setWizardCompleted, useSettingsStore, setEncryptedPassword } from '@features/settings/store/settings';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { encryptPersistent, decryptPersistent } from '@/network/encryption';
+import { getCurrentNick, isSameName, useActiveSession, useNetworksStore } from '@features/networks/store/networks';
 
 const WizardPassword = () => {
   const { t } = useTranslation();
   const [initialNick] = useState(() => getCurrentNick());
   const [password, setPassword] = useState('');
 
-  const nick = useSettingsStore((state) => state.nick);
-  const serverPassword = useSettingsStore((state) => {
-    const network = state.server?.network;
-    return network ? state.serverPasswords[network] : undefined;
-  });
+  const nick = useActiveSession((session) => session.nick);
+  const networkId = useNetworksStore((state) => state.activeNetworkId);
+  const serverPassword = useSettingsStore((state) => (networkId === undefined ? undefined : state.serverPasswords[networkId]));
   const encryptedPassword = serverPassword?.encrypted;
   const passwordNick = serverPassword?.nick;
 

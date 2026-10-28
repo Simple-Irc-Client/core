@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { ChannelCategory } from '@shared/types';
 import { Send } from 'lucide-react';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -23,9 +23,9 @@ import { clearReplyTo, useReplyToStore } from '@features/replies/store/replyTo';
 const Toolbar = () => {
   const { t } = useTranslation();
 
-  const currentChannelName: string = useSettingsStore((state) => state.currentChannelName);
-  const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
-  const isConnected: boolean = useSettingsStore((state) => state.isConnected);
+  const currentChannelName: string = useActiveSession((session) => session.currentChannelName);
+  const currentChannelCategory: ChannelCategory = useActiveSession((session) => session.currentChannelCategory);
+  const isConnected: boolean = useActiveSession((session) => session.isConnected);
   // An encrypted conversation sends no plaintext reference to the message
   const canSendPlaintext = useCanSendPlaintext(currentChannelName);
   const storedReplyTo = useReplyToStore((state) => state.replies[currentChannelName]);

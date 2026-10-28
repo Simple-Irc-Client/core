@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Channels from '../Channels';
-import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsStore from '@features/channels/store/channels';
 import * as channelListStore from '@features/channels/store/channelList';
 import * as DrawersContext from '@/providers/DrawersContext';
@@ -9,6 +10,7 @@ import * as network from '@/network/irc/network';
 import { ChannelCategory } from '@shared/types';
 import type { Channel } from '@shared/types';
 import { useMonitorStore } from '@features/monitor/store/monitor';
+import { mockStoreState } from '@/test/networks';
 
 // Mock browser APIs for Dialog components
 beforeAll(() => {
@@ -54,7 +56,7 @@ describe('Channels', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(settingsStore, 'setCurrentChannelName').mockImplementation(mockSetCurrentChannelName);
+    vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(mockSetCurrentChannelName);
   });
 
   const setupMocks = (overrides: {
@@ -76,16 +78,14 @@ describe('Channels', () => {
       isConnected = true,
     } = overrides;
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
+    mockStoreState({
         currentChannelName,
         isConnected,
         lagMs: overrides.lagMs,
         showLag: overrides.showLag ?? true,
-      } as unknown as settingsStore.SettingsStore)
-    );
+      });
 
-    vi.spyOn(channelsStore, 'useChannelsStore').mockImplementation(
+    vi.spyOn(channelsStore, 'useActiveChannels').mockImplementation(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (selector: any) => selector({ openChannelsShortList: openChannelsShort })
     );
@@ -95,17 +95,12 @@ describe('Channels', () => {
       toggleChannelsDrawer: vi.fn(),
     });
 
-    vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
+    vi.spyOn(channelListStore, 'useActiveChannelList').mockImplementation((selector) =>
       selector({
         finished: isChannelListLoadingFinished,
         channels: channelsList,
         alisMode: false,
         listDeprecated: false,
-        setAddChannel: vi.fn(),
-        setClear: vi.fn(),
-        setFinished: vi.fn(),
-        setAlisMode: vi.fn(),
-        setListDeprecated: vi.fn(),
       })
     );
 
@@ -498,7 +493,7 @@ describe('Channels', () => {
     it('should call setRemoveChannel when closing a priv channel', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
-      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#other');
 
       setupMocks({
         openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
@@ -521,7 +516,7 @@ describe('Channels', () => {
     it('should switch to Status when closing the currently focused priv channel', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
-      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('someUser');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('someUser');
 
       setupMocks({
         currentChannelName: 'someUser',
@@ -559,7 +554,7 @@ describe('Channels', () => {
     it('should remove a channel locally instead of sending PART while disconnected', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
-      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#other');
 
       setupMocks({
         isConnected: false,
@@ -581,7 +576,7 @@ describe('Channels', () => {
     it('should switch to Status when closing the currently focused channel while disconnected', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
-      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#general');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#general');
 
       setupMocks({
         isConnected: false,
@@ -655,7 +650,7 @@ describe('Channels', () => {
     it('should call handleRemoveChannel when the revealed close button is tapped', () => {
       const mockSetRemoveChannel = vi.fn();
       vi.spyOn(channelsStore, 'setRemoveChannel').mockImplementation(mockSetRemoveChannel);
-      vi.spyOn(settingsStore, 'getCurrentChannelName').mockReturnValue('#other');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockReturnValue('#other');
 
       setupMocks({
         openChannelsShort: [createChannel({ name: 'someUser', category: ChannelCategory.priv })],
@@ -793,14 +788,12 @@ describe('Channels', () => {
       const mockSetChannelsDrawerStatus = vi.fn();
       const channels = [createChannel({ name: '#test', category: ChannelCategory.channel })];
 
-      vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           currentChannelName: '#test',
           isConnected: true,
-        } as unknown as settingsStore.SettingsStore)
-      );
+        });
 
-      vi.spyOn(channelsStore, 'useChannelsStore').mockImplementation(
+      vi.spyOn(channelsStore, 'useActiveChannels').mockImplementation(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (selector: any) => selector({ openChannelsShortList: channels })
       );
@@ -810,17 +803,12 @@ describe('Channels', () => {
         toggleChannelsDrawer: mockSetChannelsDrawerStatus,
       });
 
-      vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
+      vi.spyOn(channelListStore, 'useActiveChannelList').mockImplementation((selector) =>
         selector({
           finished: false,
           channels: [],
           alisMode: false,
           listDeprecated: false,
-          setAddChannel: vi.fn(),
-          setClear: vi.fn(),
-          setFinished: vi.fn(),
-          setAlisMode: vi.fn(),
-          setListDeprecated: vi.fn(),
         })
       );
 

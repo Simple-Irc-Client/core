@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Settings } from 'lucide-react';
 import { Button } from '@shared/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
-import { useUsersStore } from '@features/users/store/users';
-import { getCurrentNick } from '@features/settings/store/settings';
+import { useActiveUsers } from '@features/users/store/users';
 import ChannelSettings from './ChannelSettings';
+import { getCurrentNick } from '@features/networks/store/networks';
 
 const SETTINGS_ACCESS_FLAGS = new Set(['h', 'o', 'a', 'q']);
 
@@ -17,9 +17,9 @@ const ChannelSettingsButton = ({ channelName }: ChannelSettingsButtonProps) => {
   const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const canAccessSettings = useUsersStore((state) => {
+  const canAccessSettings = useActiveUsers((slice) => {
     const nick = getCurrentNick();
-    const user = state.users.find((u) => u.nick === nick);
+    const user = slice.users.find((u) => u.nick === nick);
     const channel = user?.channels.find((ch) => ch.name === channelName);
     return channel?.flags.some((flag) => SETTINGS_ACCESS_FLAGS.has(flag)) ?? false;
   });

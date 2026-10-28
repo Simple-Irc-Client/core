@@ -3,9 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useChannelsDrawer, useUsersDrawer } from '@/providers/DrawersContext';
 import { Menu, Save, Search, Users } from 'lucide-react';
 import { useCurrentStore } from '@features/chat/store/current';
-import { isSameName, useSettingsStore, type TimeSettings } from '@features/settings/store/settings';
-import { useUsersStore } from '@features/users/store/users';
-import { getCurrentNick } from '@features/settings/store/settings';
+import { useSettingsStore, type TimeSettings } from '@features/settings/store/settings';
+import { useActiveUsers } from '@features/users/store/users';
 import { getTopicSetBy, getTopicTime } from '@features/channels/store/channels';
 import { ircSendCommand } from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -21,6 +20,7 @@ import ChannelSettingsButton from '@features/channels/components/ChannelSettings
 import E2eeStatusButton from '@features/e2ee/components/E2eeStatusButton';
 import ChannelEncryptionHint from '@features/e2ee/components/ChannelEncryptionHint';
 import { openMessageSearch } from '@features/shortcuts/store/shortcuts';
+import { isSameName, getCurrentNick, useActiveSession } from '@features/networks/store/networks';
 
 const TOPIC_EDIT_FLAGS = new Set(['q', 'a', 'o']);
 
@@ -47,9 +47,9 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
 
-  const canEditTopic = useUsersStore((state) => {
+  const canEditTopic = useActiveUsers((slice) => {
     const nick = getCurrentNick();
-    const user = state.users.find((u) => u.nick === nick);
+    const user = slice.users.find((u) => u.nick === nick);
     const channel = user?.channels.find((ch) => isSameName(ch.name, currentChannelName));
     return channel?.flags.some((flag) => TOPIC_EDIT_FLAGS.has(flag)) ?? false;
   });
@@ -107,8 +107,8 @@ const TopicInput = ({ topic, currentChannelName }: { topic: string; currentChann
 const Topic = () => {
   const { t } = useTranslation();
   const topic: string = useCurrentStore((state) => state.topic);
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const currentChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
+  const currentChannelCategory = useActiveSession((session) => session.currentChannelCategory);
 
   const { isChannelsDrawerOpen, toggleChannelsDrawer } = useChannelsDrawer();
   const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();

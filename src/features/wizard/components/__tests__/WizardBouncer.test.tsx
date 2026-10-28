@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WizardBouncer from '../WizardBouncer';
 import * as settingsStore from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as network from '@/network/irc/network';
 import * as sasl from '@/network/irc/sasl';
 import * as encryption from '@/network/encryption';
@@ -26,11 +27,15 @@ vi.mock('@/network/encryption', () => ({
 }));
 
 vi.mock('@features/settings/store/settings', () => ({
+  setWizardStep: vi.fn(),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  activateNetwork: vi.fn(),
   getCurrentNick: vi.fn(),
   getServer: vi.fn(),
   setIsConnecting: vi.fn(),
-  setServer: vi.fn(),
-  setWizardStep: vi.fn(),
 }));
 
 const server: Server = { default: 0, encoding: 'utf8', network: 'bouncer.example.net', servers: ['bouncer.example.net'] };
@@ -38,8 +43,8 @@ const server: Server = { default: 0, encoding: 'utf8', network: 'bouncer.example
 describe('WizardBouncer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(settingsStore.getCurrentNick).mockReturnValue('alice');
-    vi.mocked(settingsStore.getServer).mockReturnValue(server);
+    vi.mocked(networksStore.getCurrentNick).mockReturnValue('alice');
+    vi.mocked(networksStore.getServer).mockReturnValue(server);
   });
 
   const logIn = (account: string, password: string): void => {
@@ -62,7 +67,7 @@ describe('WizardBouncer', () => {
     await waitFor(() => expect(network.ircConnect).toHaveBeenCalled());
     const bouncerServer = { ...server, bouncer: { account: 'alice-bnc', encryptedPassword: 'encrypted:secret' } };
     expect(sasl.setSaslCredentials).toHaveBeenCalledWith('alice-bnc', 'secret');
-    expect(settingsStore.setServer).toHaveBeenCalledWith(bouncerServer);
+    expect(networksStore.activateNetwork).toHaveBeenCalledWith(bouncerServer, expect.any(String));
     expect(network.ircConnect).toHaveBeenCalledWith(bouncerServer, 'alice');
     expect(settingsStore.setWizardStep).toHaveBeenCalledWith('loading');
   });
@@ -88,12 +93,12 @@ describe('WizardBouncer', () => {
   });
 
   it('connects without an account when skipped, dropping one saved earlier', () => {
-    vi.mocked(settingsStore.getServer).mockReturnValue({ ...server, bouncer: { account: 'old', encryptedPassword: 'encrypted:old', networkId: '3' } });
+    vi.mocked(networksStore.getServer).mockReturnValue({ ...server, bouncer: { account: 'old', encryptedPassword: 'encrypted:old', networkId: '3' } });
     render(<WizardBouncer />);
 
     fireEvent.click(screen.getByText('wizard.bouncer.button.skip'));
 
-    expect(settingsStore.setServer).toHaveBeenCalledWith(server);
+    expect(networksStore.activateNetwork).toHaveBeenCalledWith(server, expect.any(String));
     expect(network.ircConnect).toHaveBeenCalledWith(server, 'alice');
     expect(sasl.setSaslCredentials).not.toHaveBeenCalled();
   });

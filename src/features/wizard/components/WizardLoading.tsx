@@ -2,23 +2,25 @@ import { useEffect, useEffectEvent, useState } from 'react';
 import { Progress } from '@shared/components/ui/progress';
 import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
-import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress, resetAndGoToStart, setIsConnecting } from '@features/settings/store/settings';
+import { getIsPasswordRequired, setWizardStep, setWizardCompleted, useSettingsStore, setWizardProgress, getWizardProgress } from '@features/settings/store/settings';
 import { ircConnect, ircDisconnect, ircJoinChannels, on, off } from '@/network/irc/network';
 import { getChannelParam } from '@shared/lib/queryParams';
 import { isBouncerControlConnection } from '@/network/irc/bouncer';
 import { getPendingSTSUpgrade } from '@/network/irc/sts';
 import { redactSensitiveIrc } from '@shared/lib/utils';
+import { setIsConnecting, useActiveSession } from '@features/networks/store/networks';
+import { resetAndGoToStart } from '@features/networks/networkLifecycle';
 
 const CONNECTION_TIMEOUT_MS = 60_000;
 
 const WizardLoading = () => {
   const { t } = useTranslation();
 
-  const isConnecting = useSettingsStore((state) => state.isConnecting);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnecting = useActiveSession((session) => session.isConnecting);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const wizardProgress = useSettingsStore((state) => state.wizardProgress);
-  const server = useSettingsStore((state) => state.server);
-  const nick = useSettingsStore((state) => state.nick);
+  const server = useActiveSession((session) => session.server);
+  const nick = useActiveSession((session) => session.nick);
 
   const [isTimedOut, setIsTimedOut] = useState(false);
   const [lastServerMessage, setLastServerMessage] = useState('');

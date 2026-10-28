@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { monitorKey, useMonitorStore } from '@features/monitor/store/monitor';
+import { monitorKey, useActiveMonitor } from '@features/monitor/store/monitor';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/components/ui/tooltip';
 import { cn } from '@shared/lib/utils';
 
@@ -11,7 +11,7 @@ interface DmPresenceDotProps {
 /** Renders nothing until a status is known, so an unknown peer doesn't flash "offline". */
 const DmPresenceDot = ({ nick, className }: DmPresenceDotProps) => {
   const { t } = useTranslation();
-  const status = useMonitorStore((state) => state.monitoredUsers.get(monitorKey(nick)));
+  const status = useActiveMonitor((slice) => slice.monitoredUsers.get(monitorKey(nick)));
 
   if (!status) {
     return null;

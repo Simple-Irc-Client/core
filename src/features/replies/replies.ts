@@ -1,9 +1,9 @@
 import { isClientTagAllowed } from '@/network/irc/clientTags';
 import { escapeTagValue } from '@/network/irc/helpers';
 import { plainText } from '@features/chat/spoilers';
-import { getClientTagDeny } from '@features/settings/store/settings';
 import { getNickFromMessage } from '@shared/lib/displayName';
 import { type Message } from '@shared/types';
+import { getClientTagDeny } from '@features/networks/store/networks';
 
 // https://ircv3.net/specs/client-tags/reply
 export const REPLY_TAG = '+draft/reply';

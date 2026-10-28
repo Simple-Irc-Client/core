@@ -2,10 +2,10 @@ import { calculateMaxPermission } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
 import { ircSendCommand } from '@/network/irc/network';
-import { getCaseMapping, getUserModes, isSupportedOption } from '@features/settings/store/settings';
 import { getHasUser, setAddUser, setUserAccount, setUserAway, setUserHost, setUserRealname } from '@features/users/store/users';
 import { foldName } from '@shared/lib/caseMapping';
 import { MessageCategory } from '@shared/types';
+import { getCaseMapping, getUserModes, isSupportedOption } from '@features/networks/store/networks';
 
 const RPL_ENDOFWHO = '315';
 const RPL_WHOREPLY = '352';

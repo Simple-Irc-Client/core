@@ -23,7 +23,7 @@ const mockClearAwayMessages = vi.fn();
 let mockAwayMessages: unknown[] = [];
 
 vi.mock('@features/channels/store/awayMessages', () => ({
-  useAwayMessagesStore: (selector: (state: { messages: unknown[] }) => unknown) => selector({ messages: mockAwayMessages }),
+  useActiveAwayMessages: (selector: (state: { messages: unknown[] }) => unknown) => selector({ messages: mockAwayMessages }),
   clearAwayMessages: () => mockClearAwayMessages(),
 }));
 

@@ -1,8 +1,8 @@
 import { contentCategories } from '@features/chat/membershipEvents';
 import { plainText } from '@features/chat/spoilers';
-import { isSameName } from '@features/settings/store/settings';
 import { escapeRegExp } from '@shared/lib/highlight';
 import { ChannelCategory, type ChannelExtended, type Message } from '@shared/types';
+import { isSameName } from '@features/networks/store/networks';
 
 export interface SearchResult {
   channel: ChannelExtended;

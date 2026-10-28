@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { hasReacted, sendReaction } from '@features/reactions/reactions';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { type Message } from '@shared/types';
 
 interface MessageReactionsProps {
@@ -11,7 +11,7 @@ interface MessageReactionsProps {
 /** Each reaction with its count; clicking one adds ours or takes it back */
 const MessageReactions = ({ message, canReact }: MessageReactionsProps) => {
   const { t } = useTranslation();
-  const nick = useSettingsStore((state) => state.nick);
+  const nick = useActiveSession((session) => session.nick);
 
   return (
     <div className="sic-msg-reactions">

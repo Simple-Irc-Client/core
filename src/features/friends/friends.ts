@@ -1,27 +1,25 @@
 // Per network; MONITOR, else WATCH, else the list is just shown offline
 
-import { getIsConnected, getNickLenLimit, getServer, isSameName } from '@features/settings/store/settings';
 import { addMonitoredNicks, removeMonitoredNick } from '@features/monitor/store/monitor';
 import { subscribeNicks, unsubscribeNicks } from '@features/monitor/subscribe';
 import { getOpenDmNicks } from '@features/channels/store/channels';
 import { isValidNick } from '@shared/lib/utils';
 import { getFriendsForNetwork, isFriendOnNetwork, useFriendsStore } from './store/friends';
-
-const getNetworkKey = (): string | undefined => getServer()?.network;
+import { findActiveNetworkId, getIsConnected, getNickLenLimit, isSameName } from '@features/networks/store/networks';
 
 export const getFriends = (): string[] => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   return network === undefined ? [] : getFriendsForNetwork(network);
 };
 
 export const isFriend = (nick: string): boolean => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   return network !== undefined && isFriendOnNetwork(network, nick);
 };
 
 /** False for an invalid nick or no configured network. */
 export const addFriend = (nick: string): boolean => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   const trimmed = nick.trim();
   if (network === undefined || !isValidNick(trimmed, getNickLenLimit())) {
     return false;
@@ -37,7 +35,7 @@ export const addFriend = (nick: string): boolean => {
 
 /** Keeps the subscription while a DM window with the nick is open. */
 export const removeFriend = (nick: string): void => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   if (network === undefined) {
     return;
   }
@@ -53,7 +51,7 @@ export const removeFriend = (nick: string): void => {
 
 /** Data only: the subscription is handled by handlePresenceNickChange. */
 export const renameFriend = (oldNick: string, newNick: string): void => {
-  const network = getNetworkKey();
+  const network = findActiveNetworkId();
   if (network === undefined) {
     return;
   }

@@ -6,6 +6,7 @@ import { ChannelCategory } from '@shared/types';
 
 import E2eeBanner from '../components/E2eeBanner';
 import { E2eeState, useE2eeStore, type E2eeSession } from '../store/e2ee';
+import { setTestSlice } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -38,17 +39,22 @@ const settings = { currentChannelName: 'bob', currentChannelCategory: ChannelCat
 
 vi.mock('@features/settings/store/settings', () => ({
   useSettingsStore: (selector: (state: typeof settings) => unknown) => selector(settings),
+}));
+
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  useActiveSession: (selector: (state: typeof settings) => unknown) => selector(settings),
   getCaseMapping: () => 'ascii',
 }));
 
 const setSessionState = (session: Partial<E2eeSession> & { state: E2eeState }): void => {
-  useE2eeStore.setState({ sessions: { bob: { peer: 'bob', verified: false, ...session } } });
+  setTestSlice(useE2eeStore, { sessions: { bob: { peer: 'bob', verified: false, ...session } } });
 };
 
 describe('E2eeBanner', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: {} });
+    setTestSlice(useE2eeStore, { sessions: {}, plaintextAcknowledged: {} });
     settings.currentChannelName = 'bob';
     settings.currentChannelCategory = ChannelCategory.priv;
     settings.isConnected = true;
@@ -64,7 +70,7 @@ describe('E2eeBanner', () => {
   it('shows nothing on a channel window, where encryption does not apply', () => {
     settings.currentChannelName = '#chan';
     settings.currentChannelCategory = ChannelCategory.channel;
-    useE2eeStore.setState({ sessions: { '#chan': { peer: '#chan', state: E2eeState.active, verified: false } } });
+    setTestSlice(useE2eeStore, { sessions: { '#chan': { peer: '#chan', state: E2eeState.active, verified: false } } });
 
     render(<E2eeBanner />);
 
@@ -206,7 +212,7 @@ describe('E2eeBanner', () => {
 
     it('goes quiet once the acknowledgement is recorded', () => {
       peerIsPinned.value = true;
-      useE2eeStore.setState({ sessions: {}, plaintextAcknowledged: { bob: true } });
+      setTestSlice(useE2eeStore, { sessions: {}, plaintextAcknowledged: { bob: true } });
 
       render(<E2eeBanner />);
 

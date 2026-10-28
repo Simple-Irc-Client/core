@@ -4,7 +4,7 @@ import { markCapabilitiesAcknowledged, resetCapabilityState } from '../capabilit
 import * as networkFile from '../network';
 import { clearHistoryRequests, onHistoryBatch, onHistoryFailed, pendingHistoryAnchor, requestLatestHistory, requestOlderHistory } from '../chatHistory';
 import * as channelsFile from '@features/channels/store/channels';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { ChannelCategory, type Message, MessageCategory } from '@shared/types';
 
 const at = (minute: number): string => `2026-10-22T10:${String(minute).padStart(2, '0')}:00.000Z`;
@@ -35,7 +35,7 @@ describe('chatHistory', () => {
     send = vi.spyOn(networkFile, 'ircRequestChatHistory').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'getMessages').mockImplementation(() => messages);
     vi.spyOn(channelsFile, 'getCategory').mockImplementation((name) => (name.startsWith('#') ? ChannelCategory.channel : ChannelCategory.priv));
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
   });
 
   afterEach(() => {
@@ -126,7 +126,7 @@ describe('chatHistory', () => {
 
   describe('with a server that caps a request (ISUPPORT CHATHISTORY)', () => {
     it('asks for no more than the cap, and takes a full capped page for more to come', () => {
-      vi.spyOn(settingsFile, 'getChatHistoryLimit').mockImplementation(() => 20);
+      vi.spyOn(networksStore, 'getChatHistoryLimit').mockImplementation(() => 20);
       messages = [message(1)];
       requestLatestHistory('#chan');
       expect(send).toHaveBeenLastCalledWith('#chan', 'LATEST', after(ms(1)), 20);

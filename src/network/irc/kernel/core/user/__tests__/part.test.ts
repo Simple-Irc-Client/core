@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -15,9 +16,9 @@ describe('kernel core/user/part', () => {
 
   it('test raw PART #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
 
     const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
 
@@ -35,8 +36,8 @@ describe('kernel core/user/part', () => {
 
   it('test raw PART includes nick in message for context menu', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'SIC');
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'SIC');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
     const mockUser = { nick: 'Merovingian', ident: '~pirc', hostname: 'host', flags: [], channels: [] };
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
@@ -50,10 +51,10 @@ describe('kernel core/user/part', () => {
 
   it('test raw PART #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
 
     const line = '@account=Merovingian;msgid=hXPXorNkRXTwVOTU1RbpXN-0D/dV2/Monv6zuHQw/QAGw;time=2023-02-12T22:44:07.583Z :Merovingian!~pirc@cloak:Merovingian PART #sic :Opuścił kanał';
@@ -75,10 +76,10 @@ describe('kernel core/user/part', () => {
 
   it('test raw PART #3 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'mero-test');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#chat');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'mero-test');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#chat');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
 
     const line = ':mero-test!mero-test@LibraIRC-gd0.3t0.00m1ra.IP PART :#chat';
@@ -100,10 +101,10 @@ describe('kernel core/user/part', () => {
 
   it('test raw PART self of a non-current channel does not switch the view', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#other');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#other');
     vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
 
     const line = ':Merovingian!~pirc@cloak:Merovingian PART #sic :bye';
@@ -117,7 +118,7 @@ describe('kernel core/user/part', () => {
 
   it('test raw 442', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = `:chmurka.pirc.pl 442 sic-test #kanjpa :You're not on that channel`;
 
@@ -133,8 +134,8 @@ describe('kernel core/user/part', () => {
   describe('442 leftover window', () => {
     it('should drop a window the server says we are not on', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'sic-test');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
       const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
@@ -146,12 +147,12 @@ describe('kernel core/user/part', () => {
 
     it('should switch away from the window when it is the one on screen', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#Religie');
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#Religie');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'sic-test');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
       vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
-      const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+      const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: `:server 442 sic-test #religie :You're not on that channel` }).handle();
 
@@ -162,8 +163,8 @@ describe('kernel core/user/part', () => {
       // 442 can answer commands other than PART; a channel we hold membership
       // for locally is not a leftover and must survive
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'sic-test');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => ['#Religie']);
       const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
@@ -175,8 +176,8 @@ describe('kernel core/user/part', () => {
 
     it('should do nothing when there is no window for it', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
-      vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
+      vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+      vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'sic-test');
       vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
       vi.spyOn(usersFile, 'getUserChannels').mockImplementation(() => []);
       const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});

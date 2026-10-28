@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useContextMenuActions } from '@/providers/ContextMenuContext';
-import { getChannelTypes } from '@features/settings/store/settings';
 import {
   parseIrcFormatting,
   hasIrcFormatting,
@@ -14,6 +13,7 @@ import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import { splitEmoji } from '@/shared/lib/emoji';
 import { isSpoiler } from '../spoilers';
 import Spoiler from './Spoiler';
+import { getChannelTypes } from '@features/networks/store/networks';
 
 interface MessageTextProps {
   text: string;

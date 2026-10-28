@@ -7,9 +7,10 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { showReply } from '@/network/irc/kernel/replies';
 import { ircSendList } from '@/network/irc/network';
 import { setAddMessageToAllChannels } from '@features/channels/store/channels';
-import { getCurrentNick, getIsWizardCompleted, isSameName, setNick, setWizardProgress } from '@features/settings/store/settings';
+import { getIsWizardCompleted, setWizardProgress } from '@features/settings/store/settings';
 import { MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentNick, isSameName, setNick } from '@features/networks/store/networks';
 
 const RPL_WELCOME = '001';
 const RPL_YOURHOST = '002';

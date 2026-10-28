@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { markCapabilitiesAcknowledged, resetCapabilityState } from '../capabilities';
 import * as networkFile from '../network';
 import { announcePresence, sendPreAway, startPresenceWatch, stopPresenceWatch } from '../preAway';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 
 describe('preAway', () => {
   let send: ReturnType<typeof vi.spyOn>;
@@ -15,8 +15,8 @@ describe('preAway', () => {
     connected = false;
     userFlags = [];
     vi.spyOn(document, 'visibilityState', 'get').mockImplementation(() => visibility);
-    vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => connected);
-    vi.spyOn(settingsFile, 'getCurrentUserFlags').mockImplementation(() => userFlags);
+    vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => connected);
+    vi.spyOn(networksStore, 'getCurrentUserFlags').mockImplementation(() => userFlags);
     send = vi.spyOn(networkFile, 'ircSendCommand').mockImplementation(() => true);
 
     // Starts every test from a connection registered in view

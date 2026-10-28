@@ -1,4 +1,4 @@
-import { isSameName, useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
+import { useSettingsStore, fontSizeClasses } from '@features/settings/store/settings';
 import { ChannelCategory, type User, type UserMode } from '@shared/types';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { cn, isSafeCssColor, ensureReadableColor } from '@shared/lib/utils';
 import { useThemeBackgroundStore } from '@features/themes/themeBackground';
 import Avatar from '@shared/components/Avatar';
 import { Button } from '@shared/components/ui/button';
+import { isSameName, useActiveSession } from '@features/networks/store/networks';
 
 const getModeIcons = (flags: string[], userModes: UserMode[]) => {
   if (flags.length === 0 || userModes.length === 0) { return null; }
@@ -119,13 +120,13 @@ const Users = ({ width = defaultUsersWidth }: UsersProps) => {
 
   const { isUsersDrawerOpen, toggleUsersDrawer } = useUsersDrawer();
 
-  const currentChannelCategory: ChannelCategory = useSettingsStore((state) => state.currentChannelCategory);
-  const currentChannelName = useSettingsStore((state) => state.currentChannelName);
-  const userModes = useSettingsStore((state) => state.userModes);
+  const currentChannelCategory: ChannelCategory = useActiveSession((session) => session.currentChannelCategory);
+  const currentChannelName = useActiveSession((session) => session.currentChannelName);
+  const userModes = useActiveSession((session) => session.userModes);
   const hideAvatarsInUsersList = useSettingsStore((state) => state.hideAvatarsInUsersList);
   const fontSize = useSettingsStore((state) => state.fontSize);
   const backgroundLuminance = useThemeBackgroundStore((s) => s.luminance);
-  const isConnected = useSettingsStore((state) => state.isConnected);
+  const isConnected = useActiveSession((session) => session.isConnected);
   const users = useCurrentStore((state) => state.users);
   const fontSizeClass = fontSizeClasses[fontSize];
 

@@ -6,13 +6,13 @@ import { parseMessageToCommand } from '../command';
 import * as channelsFile from '@features/channels/store/channels';
 import { useChannelsStore } from '@features/channels/store/channels';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
-import { useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory } from '@shared/types';
+import { connectTestNetwork, setTestSession, setTestSlice, testSlice } from '@/test/networks';
 
 describe('command tests', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ channelTypes: ['#', '&'] });
-    useChannelsStore.setState({ openChannels: [], openChannelsShortList: [] });
+    setTestSession({ channelTypes: ['#', '&'] });
+    setTestSlice(useChannelsStore, { openChannels: [], openChannelsShortList: [] });
   });
   it('test away command', () => {
     expect(parseMessageToCommand('#channel', '/away Taking a break')).toStrictEqual('AWAY :Taking a break');
@@ -30,7 +30,7 @@ describe('command tests', () => {
   });
 
   it('test quote command', () => {
-    useChannelsStore.setState({
+    setTestSlice(useChannelsStore, {
       openChannels: [
         { name: '#channel', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
       ],
@@ -42,7 +42,7 @@ describe('command tests', () => {
     expect(parseMessageToCommand('#channel', 'test message')).toStrictEqual('test message');
 
     // /raw, /quote should each add an info message showing what was sent
-    const messages = useChannelsStore.getState().openChannels[0]?.messages;
+    const messages = testSlice(useChannelsStore).openChannels[0]?.messages;
     expect(messages?.filter((m) => m.message.includes('test message')).length).toBe(2);
 
     // /msg sends PRIVMSG, not raw
@@ -114,14 +114,10 @@ describe('command tests', () => {
   });
 
   it('test all command', () => {
-    useChannelsStore.setState({
-      openChannels: [
-        { name: '#channel1', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
-        { name: '#channel2', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
-        { name: 'privUser', category: ChannelCategory.priv, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
-      ],
-      openChannelsShortList: [],
-    });
+    setTestSlice(useChannelsStore, { openChannels: [], openChannelsShortList: [] });
+    channelsFile.setAddChannel('#channel1', ChannelCategory.channel);
+    channelsFile.setAddChannel('#channel2', ChannelCategory.channel);
+    channelsFile.setAddChannel('privUser', ChannelCategory.priv);
 
     expect(parseMessageToCommand('#channel', '/all')).toStrictEqual('all');
     expect(parseMessageToCommand('#channel', '/all hello everyone')).toStrictEqual(
@@ -133,7 +129,7 @@ describe('command tests', () => {
   });
 
   it('test help command', () => {
-    useChannelsStore.setState({
+    setTestSlice(useChannelsStore, {
       openChannels: [
         { name: '#channel', category: ChannelCategory.channel, messages: [], topic: '', topicSetBy: '', topicSetTime: 0, unReadMessages: 0, typing: [] },
       ],
@@ -142,7 +138,7 @@ describe('command tests', () => {
 
     expect(parseMessageToCommand('#channel', '/help')).toStrictEqual('');
 
-    const messages = useChannelsStore.getState().openChannels[0]?.messages;
+    const messages = testSlice(useChannelsStore).openChannels[0]?.messages;
     expect(messages?.length).toBeGreaterThan(0);
     expect(messages?.[0]?.message).toStrictEqual('--- Dostępne komendy ---'); // Polish is default language
   });
@@ -253,7 +249,7 @@ describe('command tests', () => {
     const printed = (spy: ReturnType<typeof spyOnPrinted>): string[] => spy.mock.calls.map(([message]) => message.message);
 
     beforeEach(() => {
-      useSettingsStore.setState({ server: { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] } });
+      connectTestNetwork({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
       useIgnoreStore.setState({ masksByNetwork: {} });
     });
 

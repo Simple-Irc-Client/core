@@ -3,8 +3,9 @@ import { type EmojiClickData } from 'emoji-picker-react';
 import { Popover, PopoverAnchor, PopoverContent } from '@shared/components/ui/popover';
 import { getMessages } from '@features/channels/store/channels';
 import { hasReacted, sendReaction } from '@features/reactions/reactions';
-import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
+import { useSettingsStore } from '@features/settings/store/settings';
 import { type Message } from '@shared/types';
+import { getCurrentNick } from '@features/networks/store/networks';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 

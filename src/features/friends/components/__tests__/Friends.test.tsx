@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Friends from '../Friends';
-import * as settingsStore from '@features/settings/store/settings';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsStore from '@features/channels/store/channels';
 import * as friendsActions from '@features/friends/friends';
 import * as DrawersContext from '@/providers/DrawersContext';
 import { useFriendsStore } from '@features/friends/store/friends';
 import { useMonitorStore } from '@features/monitor/store/monitor';
 import { ChannelCategory } from '@shared/types';
+import { connectTestNetwork, resetNetworks, setTestSession } from '@/test/networks';
 
 // Spread the actual module: the friends actions module transitively pulls in
 // app i18n, which needs the real initReactI18next.
@@ -53,13 +54,9 @@ describe('Friends', () => {
     useFriendsStore.setState({ friendsByNetwork: {} });
     useMonitorStore.getState().clearAll();
 
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({
-        server: { network: 'pirc.pl' },
-        currentChannelName: '#test',
-      } as unknown as settingsStore.SettingsStore)
-    );
-    vi.spyOn(settingsStore, 'setCurrentChannelName').mockImplementation(mockSetCurrentChannelName);
+    connectTestNetwork({ default: 0, encoding: 'utf8', network: 'pirc.pl', servers: ['irc.pirc.pl'] });
+    setTestSession({ currentChannelName: '#test' });
+    vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(mockSetCurrentChannelName);
     vi.spyOn(channelsStore, 'setAddChannel').mockImplementation(mockSetAddChannel);
     vi.spyOn(DrawersContext, 'useChannelsDrawer').mockReturnValue({
       isChannelsDrawerOpen: false,
@@ -68,9 +65,7 @@ describe('Friends', () => {
   });
 
   it('renders nothing when no server is configured', () => {
-    vi.spyOn(settingsStore, 'useSettingsStore').mockImplementation((selector) =>
-      selector({ server: undefined, currentChannelName: '#test' } as unknown as settingsStore.SettingsStore)
-    );
+    resetNetworks();
 
     render(<Friends fontSizeClass="text-sm" />);
 

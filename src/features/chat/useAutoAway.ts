@@ -1,15 +1,16 @@
 import { useEffect, useEffectEvent, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '@features/settings/store/settings';
+import { getCurrentUserFlags, getIsConnected, setIsAutoAway, useActiveSession } from '@features/networks/store/networks';
 import { ircSendRawMessage } from '@/network/irc/network';
 
 /** Marks the user away after the time they chose without sending anything, and back once they send again */
 export const useAutoAway = (): { noteActivity: () => void } => {
   const { t } = useTranslation();
-  const isAway = useSettingsStore((state) => state.currentUserFlags.includes('away'));
-  const isAutoAway: boolean = useSettingsStore((state) => state.isAutoAway);
+  const isAway = useActiveSession((session) => session.currentUserFlags.includes('away'));
+  const isAutoAway: boolean = useActiveSession((session) => session.isAutoAway);
   const autoAwayMinutes = useSettingsStore((state) => state.autoAwayMinutes);
-  const isConnected: boolean = useSettingsStore((state) => state.isConnected);
+  const isConnected: boolean = useActiveSession((session) => session.isConnected);
   const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetInactivityTimer = (): void => {
@@ -22,11 +23,10 @@ export const useAutoAway = (): { noteActivity: () => void } => {
     }
 
     inactivityTimerRef.current = setTimeout(() => {
-      const state = useSettingsStore.getState();
-      if (state.isConnected && !state.currentUserFlags.includes('away')) {
-        const message = state.autoAwayMessage.trim() || t('currentUser.autoAway', { minutes: autoAwayMinutes });
+      if (getIsConnected() && !getCurrentUserFlags().includes('away')) {
+        const message = useSettingsStore.getState().autoAwayMessage.trim() || t('currentUser.autoAway', { minutes: autoAwayMinutes });
         ircSendRawMessage(`AWAY :${message}`);
-        state.setIsAutoAway(true);
+        setIsAutoAway(true);
       }
     }, autoAwayMinutes * 60 * 1000);
   };
@@ -48,7 +48,7 @@ export const useAutoAway = (): { noteActivity: () => void } => {
   const noteActivity = (): void => {
     if (isAutoAway && isConnected) {
       ircSendRawMessage('AWAY');
-      useSettingsStore.getState().setIsAutoAway(false);
+      setIsAutoAway(false);
     }
 
     resetInactivityTimer();

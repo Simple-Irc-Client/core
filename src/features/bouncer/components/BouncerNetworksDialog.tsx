@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@shared/components/ui/dialog';
 import { connectToBouncerNetwork } from '@/network/irc/bouncer';
 import BouncerNetworkList from '@features/bouncer/components/BouncerNetworkList';
-import { useBouncerNetworksStore } from '@features/bouncer/store/bouncerNetworks';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveBouncerNetworks } from '@features/bouncer/store/bouncerNetworks';
+import { useActiveSession } from '@features/networks/store/networks';
 
 interface BouncerNetworksDialogProps {
   open: boolean;
@@ -13,8 +13,8 @@ interface BouncerNetworksDialogProps {
 /** Switches to another network on the bouncer; opens by itself when the bouncer no longer has the one chosen */
 const BouncerNetworksDialog = ({ open, onOpenChange }: BouncerNetworksDialogProps) => {
   const { t } = useTranslation();
-  const boundNetworkId = useBouncerNetworksStore((state) => state.boundNetworkId);
-  const mustChoose = useSettingsStore((state) => state.isConnected && state.server?.bouncer !== undefined && state.server.bouncer.networkId === undefined);
+  const boundNetworkId = useActiveBouncerNetworks((slice) => slice.boundNetworkId);
+  const mustChoose = useActiveSession((session) => session.isConnected && session.server?.bouncer !== undefined && session.server.bouncer.networkId === undefined);
 
   const handleChoose = (networkId: string): void => {
     onOpenChange(false);

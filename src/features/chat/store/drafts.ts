@@ -1,41 +1,43 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { activeSlice, updateActiveSlice, type NetworkSlices } from '@features/networks/store/networkSlices';
 
-interface DraftsStore {
+interface DraftsSlice {
   drafts: Record<string, string>;
+}
+
+const NO_DRAFTS: DraftsSlice = { drafts: {} };
+
+interface DraftsStore extends NetworkSlices<DraftsSlice> {
   setDraft: (channelName: string, message: string) => void;
-  getDraft: (channelName: string) => string;
   clearDraft: (channelName: string) => void;
   clearAll: () => void;
 }
 
 export const useDraftsStore = create<DraftsStore>()(
-  devtools((set, get) => ({
-    drafts: {},
+  devtools((set) => ({
+    byNetwork: {},
+    emptySlice: NO_DRAFTS,
 
     setDraft: (channelName: string, message: string): void => {
-      set((state) => ({
+      set((state) => updateActiveSlice(state, (slice) => ({
         drafts: {
-          ...state.drafts,
+          ...slice.drafts,
           [channelName]: message,
         },
-      }));
-    },
-
-    getDraft: (channelName: string): string => {
-      return get().drafts[channelName] ?? '';
+      })));
     },
 
     clearDraft: (channelName: string): void => {
-      set((state) => ({
+      set((state) => updateActiveSlice(state, (slice) => ({
         drafts: Object.fromEntries(
-          Object.entries(state.drafts).filter(([key]) => key !== channelName)
+          Object.entries(slice.drafts).filter(([key]) => key !== channelName)
         ),
-      }));
+      })));
     },
 
     clearAll: (): void => {
-      set(() => ({ drafts: {} }));
+      set((state) => updateActiveSlice(state, () => ({ drafts: {} })));
     },
   })),
 );
@@ -49,7 +51,7 @@ export const setDraft = (channelName: string, message: string): void => {
 };
 
 export const getDraft = (channelName: string): string => {
-  return useDraftsStore.getState().getDraft(channelName);
+  return activeSlice(useDraftsStore.getState()).drafts[channelName] ?? '';
 };
 
 export const clearDraft = (channelName: string): void => {

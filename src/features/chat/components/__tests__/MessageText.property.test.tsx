@@ -3,7 +3,7 @@ import { cleanup, render } from '@testing-library/react';
 import fc from 'fast-check';
 import MessageText from '../MessageText';
 import * as ContextMenuContext from '@/providers/ContextMenuContext';
-import * as settings from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import { IRC_FORMAT } from '@/shared/lib/ircFormatting';
 import { stripIrcFormatting } from '@/shared/lib/ircFormatting';
 
@@ -17,7 +17,7 @@ const message = fc.array(piece, { maxLength: 12 }).map((pieces) => pieces.join('
 describe('a message someone wrote, whatever it holds', () => {
   beforeEach(() => {
     vi.spyOn(ContextMenuContext, 'useContextMenuActions').mockReturnValue({ handleContextMenuUserClick: vi.fn(), handleContextMenuClose: vi.fn() });
-    vi.spyOn(settings, 'getChannelTypes').mockReturnValue(['#']);
+    vi.spyOn(networksStore, 'getChannelTypes').mockReturnValue(['#']);
   });
 
   it('links only to http or https addresses, opened apart from the app', () => {

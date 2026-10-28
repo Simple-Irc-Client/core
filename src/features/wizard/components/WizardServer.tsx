@@ -5,10 +5,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/p
 import { Input } from '@shared/components/ui/input';
 import { useTranslation } from 'react-i18next';
 import { type Server, type ConnectionType, servers, serverIcons } from '@/network/irc/servers';
-import { useSettingsStore, getCurrentNick, setWizardStep, setIsConnecting, setServer } from '@features/settings/store/settings';
+import { getWizardNick, setWizardStep } from '@features/settings/store/settings';
 import { ircConnect } from '@/network/irc/network';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
+import { activateNetwork, getCurrentNick, setIsConnecting, useActiveSession } from '@features/networks/store/networks';
 
 const POPULAR_NETWORKS = new Set(['Libera.Chat', 'OFTC', 'EFnet', 'IRCNet', 'Rizon', 'QuakeNet', 'UnderNet']);
 
@@ -23,7 +24,7 @@ const ServerIcon = ({ server }: { server: Server }) => {
 const WizardServer = () => {
   const { t } = useTranslation();
 
-  const savedServer = useSettingsStore((s) => s.server);
+  const savedServer = useActiveSession((session) => session.server);
   const savedKnownServer = savedServer ? servers.find((s) => s.network === savedServer.network) : undefined;
   const savedIsCustom = savedServer != null && savedKnownServer == null;
 
@@ -63,7 +64,7 @@ const WizardServer = () => {
     }
 
     if (serverToConnect !== undefined) {
-      setServer(serverToConnect);
+      activateNetwork(serverToConnect, getWizardNick());
 
       // A bouncer is always a custom server: its account is asked for before connecting
       if (isCustom) {

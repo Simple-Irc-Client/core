@@ -3,7 +3,7 @@ import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { isCapabilityEnabled } from '@/network/irc/capabilities';
 import { ircSendRawMessage } from '@/network/irc/network';
-import { useBouncerNetworksStore } from '@features/bouncer/store/bouncerNetworks';
+import { useActiveBouncerNetworks } from '@features/bouncer/store/bouncerNetworks';
 
 const KNOWN_STATES = new Set(['connected', 'connecting', 'disconnected']);
 
@@ -16,7 +16,7 @@ interface BouncerNetworkListProps {
 /** The networks on the bouncer account, with their address, state and last error */
 const BouncerNetworkList = ({ onChoose, currentId }: BouncerNetworkListProps) => {
   const { t } = useTranslation();
-  const networks = useBouncerNetworksStore((state) => state.networks);
+  const networks = useActiveBouncerNetworks((slice) => slice.networks);
 
   useEffect(() => {
     // With -notify the bouncer has already sent the list

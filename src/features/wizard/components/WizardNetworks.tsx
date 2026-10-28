@@ -2,7 +2,8 @@ import { Button } from '@shared/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { connectToBouncerNetwork } from '@/network/irc/bouncer';
 import BouncerNetworkList from '@features/bouncer/components/BouncerNetworkList';
-import { resetAndGoToStart, setWizardStep } from '@features/settings/store/settings';
+import { setWizardStep } from '@features/settings/store/settings';
+import { resetAndGoToStart } from '@features/networks/networkLifecycle';
 
 /** The networks on the bouncer account; picking one connects to it */
 const WizardNetworks = () => {

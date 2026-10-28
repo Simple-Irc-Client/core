@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import IgnoreSetting from '../IgnoreSetting';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { connectTestNetwork, resetNetworks } from '@/test/networks';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,7 +20,7 @@ const masks = (): Record<string, string[]> => useIgnoreStore.getState().masksByN
 describe('IgnoreSetting', () => {
   beforeEach(() => {
     useIgnoreStore.setState({ masksByNetwork: {} });
-    useSettingsStore.setState({ server: { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] } });
+    connectTestNetwork({ default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test:6667'] });
   });
 
   it('should ignore a nick on the current network, as a mask', async () => {
@@ -63,7 +63,7 @@ describe('IgnoreSetting', () => {
   });
 
   it('should not render without a network', () => {
-    useSettingsStore.setState({ server: undefined });
+    resetNetworks();
     const { container } = render(<IgnoreSetting />);
 
     expect(container).toBeEmptyDOMElement();

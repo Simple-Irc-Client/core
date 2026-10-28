@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ircSendUserCommand } from '@/network/irc/network';
 import { AUTO_AWAY_MINUTES, type AutoAwayMinutes, useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
@@ -56,12 +57,12 @@ interface ProfileTabProps {
 
 const ProfileTab = ({ currentNick, onDone }: ProfileTabProps) => {
   const { t } = useTranslation();
-  const supportedOptions = useSettingsStore((state) => state.supportedOptions);
-  const currentUserAvatar = useSettingsStore((state) => state.currentUserAvatar);
-  const currentUserDisplayName = useSettingsStore((state) => state.currentUserDisplayName);
-  const currentUserStatus = useSettingsStore((state) => state.currentUserStatus);
-  const currentUserHomepage = useSettingsStore((state) => state.currentUserHomepage);
-  const currentUserColor = useSettingsStore((state) => state.currentUserColor);
+  const supportedOptions = useActiveSession((session) => session.supportedOptions);
+  const currentUserAvatar = useActiveSession((session) => session.currentUserAvatar);
+  const currentUserDisplayName = useActiveSession((session) => session.currentUserDisplayName);
+  const currentUserStatus = useActiveSession((session) => session.currentUserStatus);
+  const currentUserHomepage = useActiveSession((session) => session.currentUserHomepage);
+  const currentUserColor = useActiveSession((session) => session.currentUserColor);
   const [newNick, setNewNick] = useState(currentNick);
   const [newAvatar, setNewAvatar] = useState(currentUserAvatar ?? '');
   const [newDisplayName, setNewDisplayName] = useState(currentUserDisplayName ?? '');

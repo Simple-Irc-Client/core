@@ -59,17 +59,12 @@ describe('WizardChannelList', () => {
 
     vi.mocked(channelsStore.getChannelsToAutoJoin).mockReturnValue(previousChannels);
 
-    vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
+    vi.spyOn(channelListStore, 'useActiveChannelList').mockImplementation((selector) =>
       selector({
         finished: isChannelListLoadingFinished,
         channels: channelList,
         alisMode: false,
         listDeprecated: false,
-        setAddChannel: vi.fn(),
-        setClear: vi.fn(),
-        setFinished: vi.fn(),
-        setAlisMode: vi.fn(),
-        setListDeprecated: vi.fn(),
       })
     );
 

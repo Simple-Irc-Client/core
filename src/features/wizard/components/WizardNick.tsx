@@ -3,16 +3,17 @@ import { Button } from '@shared/components/ui/button';
 import { Input } from '@shared/components/ui/input';
 import { Label } from '@shared/components/ui/label';
 import { useTranslation } from 'react-i18next';
-import { useSettingsStore, setWizardStep, setNick, setServer, setIsConnecting } from '@features/settings/store/settings';
+import { setWizardNick, setWizardStep, useSettingsStore } from '@features/settings/store/settings';
 import { forgetWantedNick } from '@features/nickRegain/nickRegain';
 import { ircConnect } from '@/network/irc/network';
 import { resolveServerFromParams, isKnownServerParam } from '@shared/lib/resolveServerFromParams';
 import { getServerParam } from '@shared/lib/queryParams';
+import { activateNetwork, setIsConnecting } from '@features/networks/store/networks';
 
 const WizardNick = () => {
   const { t } = useTranslation();
 
-  const savedNick = useSettingsStore((s) => s.nick);
+  const savedNick = useSettingsStore((state) => state.wizardNick);
   const [formNick, setFormNick] = useState(savedNick);
   const serverParam = getServerParam();
   const isCustomServer = serverParam && !isKnownServerParam();
@@ -24,12 +25,12 @@ const WizardNick = () => {
 
   const handleClick = (): void => {
     if (formNick.length !== 0) {
-      setNick(formNick);
+      setWizardNick(formNick);
       forgetWantedNick();
 
       const serverToConnect = resolveServerFromParams();
       if (serverToConnect) {
-        setServer(serverToConnect);
+        activateNetwork(serverToConnect, formNick);
         ircConnect(serverToConnect, formNick);
         setIsConnecting(true);
         setWizardStep('loading');

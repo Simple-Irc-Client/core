@@ -4,6 +4,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -31,7 +32,7 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE user +i (invisible)', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':Merovingian!~Merovingi@45.142.162.33 MODE Merovingian +i';
@@ -45,7 +46,7 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE user +iw (invisible and wallops)', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = '@time=2026-01-24T21:57:51.724Z :Merovingian MODE Merovingian :+iw';
@@ -60,7 +61,7 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE user +o (operator)', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':server MODE Merovingian +o';
@@ -74,7 +75,7 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE user +s (server notices)', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#channel1');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#channel1');
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => false);
 
     const line = ':Merovingian MODE Merovingian +s';
@@ -90,7 +91,7 @@ describe('kernel core/mode', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
 
     const line = '@draft/bot;msgid=zAfMgqBIJHiIfUCpDbbUfm;time=2023-03-27T23:49:47.290Z :ChanServ!ChanServ@serwisy.pirc.pl MODE #sic +qo Merovingian Merovingian';
 
@@ -108,12 +109,12 @@ describe('kernel core/mode', () => {
 
   it('test raw MODE channel complex with multiple mode types', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#sic');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#sic');
     const mockIsChannel = vi.spyOn(channelsFile, 'isChannel').mockImplementation(() => true);
     const mockSetUpdateUserFlag = vi.spyOn(usersFile, 'setUpdateUserFlag').mockImplementation(() => {});
-    const mockGetUserModes = vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetUserModes = vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     // CHANMODES from PIRC.pl: beI,fkL,lH,cdimnprstzBCDGKMNOPQRSTVZ
-    const mockGetChannelModes = vi.spyOn(settingsFile, 'getChannelModes').mockImplementation(() => ({
+    const mockGetChannelModes = vi.spyOn(networksStore, 'getChannelModes').mockImplementation(() => ({
       A: ['b', 'e', 'I'],
       B: ['f', 'k', 'L'],
       C: ['l', 'H'],

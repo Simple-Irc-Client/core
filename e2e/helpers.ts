@@ -201,18 +201,9 @@ export const identifyInApp = async (page: Page, account: string, password: strin
   await page.getByText(`You're now logged in as ${account}`).waitFor({ timeout: 10_000 });
 };
 
-/** The channels store as last written to IndexedDB, '' before its first write */
-export const readPersistedChannels = (page: Page): Promise<string> =>
-  page.evaluate(async () => {
-    const settings = JSON.parse(localStorage.getItem('sic-settings') ?? '{}') as {
-      state?: { server?: { network: string; servers: string[]; default: number } };
-    };
-    const server = settings.state?.server;
-    if (!server) {
-      return '';
-    }
-    const key = `sic-channels:${server.network}:${server.servers[server.default]}`;
-
+/** idb-keyval's value under `key`, '' when there is none */
+export const readIdbKey = (page: Page, key: string): Promise<string> =>
+  page.evaluate(async (key) => {
     // idb-keyval's defaults: database "keyval-store", object store "keyval"
     return new Promise<string>((resolve, reject) => {
       const open = indexedDB.open('keyval-store');
@@ -224,7 +215,52 @@ export const readPersistedChannels = (page: Page): Promise<string> =>
         request.onerror = () => { db.close(); reject(request.error); };
       };
     });
+  }, key);
+
+/** Puts `value` under `key` in idb-keyval's store, or deletes the key when it is undefined */
+export const writeIdbKey = (page: Page, key: string, value: string | undefined): Promise<void> =>
+  page.evaluate(async ({ key, value }) => {
+    await new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('keyval-store');
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const tx = db.transaction('keyval', 'readwrite');
+        if (value === undefined) {
+          tx.objectStore('keyval').delete(key);
+        } else {
+          tx.objectStore('keyval').put(value, key);
+        }
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+  }, { key, value });
+
+interface PersistedSession {
+  nick: string;
+  server: { network: string; servers: string[]; default: number };
+}
+
+/** The active network's id and session as last saved to localStorage; none before a network is chosen */
+export const readPersistedNetwork = (page: Page): Promise<{ networkId: string; session: PersistedSession } | undefined> =>
+  page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem('sic-networks') ?? '{}') as {
+      state?: { activeNetworkId?: string; sessions?: Record<string, PersistedSession> };
+    };
+    const networkId = saved.state?.activeNetworkId;
+    const session = networkId === undefined ? undefined : saved.state?.sessions?.[networkId];
+    return networkId === undefined || session === undefined ? undefined : { networkId, session };
   });
+
+/** The active network's session as last saved to localStorage; none before a network is chosen */
+export const readPersistedSession = async (page: Page): Promise<PersistedSession | undefined> => (await readPersistedNetwork(page))?.session;
+
+/** The active network's windows as last written to IndexedDB, '' before their first write */
+export const readPersistedChannels = async (page: Page): Promise<string> => {
+  const network = await readPersistedNetwork(page);
+  return network === undefined ? '' : readIdbKey(page, `sic-channels:${network.networkId}`);
+};
 
 /** Waits until the channels store has written `text` to IndexedDB: it debounces writes, so a burst of traffic keeps postponing them */
 export const waitForPersistedChannels = async (page: Page, text: string): Promise<void> => {

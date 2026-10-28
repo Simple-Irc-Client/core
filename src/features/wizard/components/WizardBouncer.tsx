@@ -7,10 +7,11 @@ import { encryptPersistent } from '@/network/encryption';
 import { ircConnect } from '@/network/irc/network';
 import { setSaslCredentials } from '@/network/irc/sasl';
 import { type Server } from '@/network/irc/servers';
-import { getCurrentNick, getServer, setIsConnecting, setServer, setWizardStep } from '@features/settings/store/settings';
+import { setWizardStep } from '@features/settings/store/settings';
+import { activateNetwork, getCurrentNick, getServer, setIsConnecting } from '@features/networks/store/networks';
 
 const connect = (server: Server): void => {
-  setServer(server);
+  activateNetwork(server, getCurrentNick());
   ircConnect(server, getCurrentNick());
   setIsConnecting(true);
   setWizardStep('loading');

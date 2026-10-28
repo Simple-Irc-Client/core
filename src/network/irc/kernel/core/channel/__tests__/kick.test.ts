@@ -3,7 +3,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
+import * as currentChannel from '@features/networks/currentChannel';
 import * as channelsFile from '@features/channels/store/channels';
 import * as usersFile from '@features/users/store/users';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -14,9 +15,9 @@ describe('kernel core/channel/kick', () => {
 
   it('test raw KICK #1', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'test-user');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'test-user');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
 
     const line = '@account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__';
 
@@ -34,7 +35,7 @@ describe('kernel core/channel/kick', () => {
 
   it('test raw KICK includes nick (kicker) in message for context menu', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'test-user');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'test-user');
     vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
     const mockUser = { nick: 'ratler__', ident: '~pirc', hostname: 'host', flags: [], channels: [] };
     vi.spyOn(usersFile, 'getUser').mockImplementation(() => mockUser);
@@ -48,10 +49,10 @@ describe('kernel core/channel/kick', () => {
 
   it('test raw KICK #2 self', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'sic-test');
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#Religie');
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'sic-test');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#Religie');
     const mockSetRemoveUser = vi.spyOn(usersFile, 'setRemoveUser').mockImplementation(() => {});
-    const mockSetCurrentChannelName = vi.spyOn(settingsFile, 'setCurrentChannelName').mockImplementation(() => {});
+    const mockSetCurrentChannelName = vi.spyOn(currentChannel, 'setCurrentChannelName').mockImplementation(() => {});
     const mockSetRemoveChannel = vi.spyOn(channelsFile, 'setRemoveChannel').mockImplementation(() => {});
 
     const line = '@account=ratler__;msgid=qDtfbJQ2Ym74HmVRslOgeZ-mLABGCzcOme4EdMIqCME+A;time=2023-03-20T21:23:29.512Z :ratler__!~pirc@vhost:ratler.ratler KICK #Religie sic-test :ratler__';
@@ -73,7 +74,7 @@ describe('kernel core/channel/kick', () => {
 
   it('test raw 441 - user not on channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 441 sic-test someuser #somechannel :They aren\'t on that channel';
 

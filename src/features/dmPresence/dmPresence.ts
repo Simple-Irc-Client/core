@@ -1,10 +1,10 @@
 // Every open DM window is MONITOR/WATCH-subscribed while open, independently of Friends; status lands in features/monitor
 
-import { getIsConnected, isSameName } from '@features/settings/store/settings';
 import { addMonitoredNicks, removeMonitoredNick, renameMonitoredNick } from '@features/monitor/store/monitor';
 import { subscribeNicks, unsubscribeNicks } from '@features/monitor/subscribe';
 import { getOpenDmNicks, setRenameChannel } from '@features/channels/store/channels';
 import { isFriend, renameFriend } from '@features/friends/friends';
+import { getIsConnected, isSameName } from '@features/networks/store/networks';
 
 export const subscribeDmPresence = (nick: string): void => {
   if (!getIsConnected()) {

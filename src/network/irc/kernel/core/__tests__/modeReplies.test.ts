@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as channelSettingsFile from '@features/channels/store/channelSettings';
 import { useChannelSettingsStore } from '@features/channels/store/channelSettings';
@@ -16,9 +16,9 @@ describe('kernel: channel and user mode replies', () => {
 
   beforeEach(() => {
     useChannelSettingsStore.setState({ channelName: '#sic' });
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getChannelModes').mockImplementation(() => ({ A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 's'] }));
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getChannelModes').mockImplementation(() => ({ A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 's'] }));
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
   });
 
   const handle = (line: string) => {

@@ -3,10 +3,12 @@ import { Kernel } from '@/network/irc/kernel';
 import { STATUS_CHANNEL } from '@/config/config';
 import * as channelsFile from '@features/channels/store/channels';
 import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as usersFile from '@features/users/store/users';
 import * as networkFile from '@/network/irc/network';
 import { MessageCategory } from '@shared/types';
 import '@/app/i18n';
+import { setTestSession } from '@/test/networks';
 
 const handle = (line: string): void => {
   new Kernel({ type: 'raw', line }).handle();
@@ -20,7 +22,7 @@ describe('dedicated numeric handlers', () => {
 
   beforeEach(() => {
     mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current');
+    vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current');
   });
 
   afterEach(() => {
@@ -29,12 +31,12 @@ describe('dedicated numeric handlers', () => {
 
   describe('437 ERR_UNAVAILRESOURCE', () => {
     beforeEach(() => {
-      settingsFile.useSettingsStore.setState({ wantedNick: undefined });
+      setTestSession({ wantedNick: undefined });
     });
 
     it('registers with an alternative while the nick is unavailable, without stopping the wizard', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
       const send = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
 
@@ -47,10 +49,10 @@ describe('dedicated numeric handlers', () => {
 
     it('reports an unavailable nick in Status and the wizard once the alternatives are used up', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => false);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => false);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => false);
       const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
       vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
-      settingsFile.useSettingsStore.setState({ wantedNick: 'alice' });
+      setTestSession({ wantedNick: 'alice' });
 
       handle(':server 437 * alice___ :Nick/channel is temporarily unavailable');
 
@@ -74,7 +76,7 @@ describe('dedicated numeric handlers', () => {
 
     it('does not touch the wizard after registration', () => {
       vi.spyOn(settingsFile, 'getIsWizardCompleted').mockImplementation(() => true);
-      vi.spyOn(settingsFile, 'getIsConnected').mockImplementation(() => true);
+      vi.spyOn(networksStore, 'getIsConnected').mockImplementation(() => true);
       const mockSetWizardProgress = vi.spyOn(settingsFile, 'setWizardProgress').mockImplementation(() => {});
 
       handle(':server 437 mynick alice :Nick/channel is temporarily unavailable');

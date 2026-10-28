@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { ChannelCategory } from '@shared/types';
@@ -14,7 +14,7 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
 
     const line =
@@ -31,8 +31,8 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG for private message uses sender nick as channel', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    const mockGetCurrentNick = vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    const mockGetCurrentNick = vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
 
@@ -55,8 +55,8 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG for private message creates PRIV channel if not exists', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
     const mockExistChannel = vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
     const mockSetAddChannel = vi.spyOn(channelsFile, 'setAddChannel').mockImplementation(() => {});
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
@@ -78,8 +78,8 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG for private message with real IRC message format', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'Merovingian');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'Merovingian');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true); // Channel already exists
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
 
@@ -95,8 +95,8 @@ describe('kernel ircv3/typing', () => {
 
   it('test raw TAGMSG ignores our own echoed typing notification', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'getUserModes').mockImplementation(() => defaultUserModes);
-    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'MyNick');
+    vi.spyOn(networksStore, 'getUserModes').mockImplementation(() => defaultUserModes);
+    vi.spyOn(networksStore, 'getCurrentNick').mockImplementation(() => 'MyNick');
     vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => true);
     const mockSetTyping = vi.spyOn(channelsFile, 'setTyping').mockImplementation(() => {});
 

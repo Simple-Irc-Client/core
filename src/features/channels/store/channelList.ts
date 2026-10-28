@@ -1,14 +1,24 @@
 import { create } from 'zustand';
 import { type ChannelList } from '@shared/types';
+import { activeSlice, updateActiveSlice, useActiveSlice, type NetworkSlices } from '@features/networks/store/networkSlices';
 
 const MAX_CHANNELS = 10_000;
 
-interface ChannelListStore {
+interface ChannelListSlice {
   channels: ChannelList[];
   finished: boolean;
   alisMode: boolean;
   listDeprecated: boolean;
+}
 
+const NO_CHANNEL_LIST: ChannelListSlice = {
+  channels: [],
+  finished: false,
+  alisMode: false,
+  listDeprecated: false,
+};
+
+interface ChannelListStore extends NetworkSlices<ChannelListSlice> {
   setAddChannel: (name: string, users: number, topic: string) => void;
   setClear: () => void;
   setFinished: (status: boolean) => void;
@@ -17,47 +27,45 @@ interface ChannelListStore {
 }
 
 export const useChannelListStore = create<ChannelListStore>()((set) => ({
-  channels: [],
-  finished: false,
-  alisMode: false,
-  listDeprecated: false,
+  byNetwork: {},
+  emptySlice: NO_CHANNEL_LIST,
 
   setAddChannel: (name: string, users: number, topic: string): void => {
-    set((state) => ({
-      channels: [...state.channels, { name, users, topic }],
-    }));
+    set((state) => updateActiveSlice(state, (slice) => ({
+      channels: [...slice.channels, { name, users, topic }],
+    })));
   },
   setClear: (): void => {
-    set(() => ({
-      channels: [],
-      finished: false,
-      alisMode: false,
-      listDeprecated: false,
-    }));
+    set((state) => updateActiveSlice(state, () => NO_CHANNEL_LIST));
   },
   setFinished: (status: boolean): void => {
-    set(() => ({
+    set((state) => updateActiveSlice(state, () => ({
       finished: status,
-    }));
+    })));
   },
   setAlisMode: (mode: boolean): void => {
-    set(() => ({
+    set((state) => updateActiveSlice(state, () => ({
       alisMode: mode,
-    }));
+    })));
   },
   setListDeprecated: (deprecated: boolean): void => {
-    set(() => ({
+    set((state) => updateActiveSlice(state, () => ({
       listDeprecated: deprecated,
-    }));
+    })));
   },
 }));
+
+/** The active network's channel list */
+export const useActiveChannelList = <T>(selector: (slice: ChannelListSlice) => T): T => useActiveSlice(useChannelListStore, selector);
+
+const getChannelList = (): ChannelListSlice => activeSlice(useChannelListStore.getState());
 
 export const setAddChannelToList = (name: string, users: number, topic: string): void => {
   if (name === '*') {
     return; // ignore hidden channels
   }
 
-  const { channels } = useChannelListStore.getState();
+  const { channels } = getChannelList();
 
   if (channels.length >= MAX_CHANNELS) { return; }
 
@@ -81,7 +89,7 @@ export const setAlisMode = (mode: boolean): void => {
 };
 
 export const getAlisMode = (): boolean => {
-  return useChannelListStore.getState().alisMode;
+  return getChannelList().alisMode;
 };
 
 export const setListDeprecated = (deprecated: boolean): void => {
@@ -89,11 +97,15 @@ export const setListDeprecated = (deprecated: boolean): void => {
 };
 
 export const getListDeprecated = (): boolean => {
-  return useChannelListStore.getState().listDeprecated;
+  return getChannelList().listDeprecated;
+};
+
+export const getChannelListCount = (): number => {
+  return getChannelList().channels.length;
 };
 
 export const getChannelListSortedByAZ = (): ChannelList[] => {
-  return [...useChannelListStore.getState().channels].sort((a: ChannelList, b: ChannelList) => {
+  return [...getChannelList().channels].sort((a: ChannelList, b: ChannelList) => {
     const A = a.name.toLowerCase();
     const B = b.name.toLowerCase();
     return A < B ? -1 : A > B ? 1 : 0;
@@ -101,7 +113,7 @@ export const getChannelListSortedByAZ = (): ChannelList[] => {
 };
 
 export const getChannelListSortedByUsers = (): ChannelList[] => {
-  return [...useChannelListStore.getState().channels].sort((a: ChannelList, b: ChannelList) => {
+  return [...getChannelList().channels].sort((a: ChannelList, b: ChannelList) => {
     const A = a.users;
     const B = b.users;
     return A < B ? 1 : A > B ? -1 : 0;

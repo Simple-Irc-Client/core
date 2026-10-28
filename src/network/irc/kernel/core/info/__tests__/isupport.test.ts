@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import * as networkFile from '@/network/irc/network';
 import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
@@ -15,9 +15,9 @@ describe('kernel core/info/isupport', () => {
   it('test raw 005 chantypes', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
-    const mockSetChannelTypes = vi.spyOn(settingsFile, 'setChannelTypes').mockImplementation(() => {});
-    const mockSetChannelModes = vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetChannelTypes = vi.spyOn(networksStore, 'setChannelTypes').mockImplementation(() => {});
+    const mockSetChannelModes = vi.spyOn(networksStore, 'setChannelModes').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
 
     const line =
@@ -55,11 +55,11 @@ describe('kernel core/info/isupport', () => {
   it('test raw 005 prefix', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
 
-    const mockSetUserModes = vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
-    const mockSetChannelModes = vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
+    const mockSetUserModes = vi.spyOn(networksStore, 'setUserModes').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetChannelModes = vi.spyOn(networksStore, 'setChannelModes').mockImplementation(() => {});
     const mockIrcSendNamesXProto = vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
-    const mockSetNickLenLimit = vi.spyOn(settingsFile, 'setNickLenLimit').mockImplementation(() => {});
+    const mockSetNickLenLimit = vi.spyOn(networksStore, 'setNickLenLimit').mockImplementation(() => {});
 
     const line =
       ':netsplit.pirc.pl 005 SIC-test MONITOR=128 NAMELEN=50 NAMESX NETWORK=pirc.pl NICKLEN=30 PREFIX=(qaohv)~&@%+ QUITLEN=307 SAFELIST SILENCE=15 STATUSMSG=~&@%+ TARGMAX=DCCALLOW:,ISON:,JOIN:,KICK:4,KILL:,LIST:,NAMES:1,NOTICE:1,PART:,PRIVMSG:4,SAJOIN:,SAPART:,TAGMSG:1,USERHOST:,USERIP:,WATCH:,WHOIS:1,WHOWAS:1 TOPICLEN=360 :are supported by this server';
@@ -92,11 +92,11 @@ describe('kernel core/info/isupport', () => {
 
   it('test raw 005 without NICKLEN defaults to 50', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setUserModes').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
-    vi.spyOn(settingsFile, 'setChannelModes').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setUserModes').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
+    vi.spyOn(networksStore, 'setChannelModes').mockImplementation(() => {});
     vi.spyOn(networkFile, 'ircSendNamesXProto').mockImplementation(() => {});
-    const mockSetNickLenLimit = vi.spyOn(settingsFile, 'setNickLenLimit').mockImplementation(() => {});
+    const mockSetNickLenLimit = vi.spyOn(networksStore, 'setNickLenLimit').mockImplementation(() => {});
 
     const line =
       ':server.example.com 005 SIC-test NETWORK=example SAFELIST :are supported by this server';
@@ -109,7 +109,7 @@ describe('kernel core/info/isupport', () => {
 
   it('test raw 005 bare WHOX token enables WHOX', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':ergo.test 005 probe TOPICLEN=390 UTF8ONLY WHOX draft/CHATHISTORY=100 :are supported by this server';
 
@@ -121,9 +121,9 @@ describe('kernel core/info/isupport', () => {
 
   it('test raw 005 list limits without a value mean no limit', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetMonitorLimit = vi.spyOn(settingsFile, 'setMonitorLimit').mockImplementation(() => {});
-    const mockSetWatchLimit = vi.spyOn(settingsFile, 'setWatchLimit').mockImplementation(() => {});
-    const mockSetSilenceLimit = vi.spyOn(settingsFile, 'setSilenceLimit').mockImplementation(() => {});
+    const mockSetMonitorLimit = vi.spyOn(networksStore, 'setMonitorLimit').mockImplementation(() => {});
+    const mockSetWatchLimit = vi.spyOn(networksStore, 'setWatchLimit').mockImplementation(() => {});
+    const mockSetSilenceLimit = vi.spyOn(networksStore, 'setSilenceLimit').mockImplementation(() => {});
 
     const line = ':server 005 nick MONITOR WATCH SILENCE=15 :are supported by this server';
 
@@ -141,7 +141,7 @@ describe('kernel core/info/isupport', () => {
     ['CHATHISTORY=junk', 0],
   ])('test raw 005 %s caps chathistory requests at %i (0: no cap)', (token, limit) => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetChatHistoryLimit = vi.spyOn(settingsFile, 'setChatHistoryLimit').mockImplementation(() => {});
+    const mockSetChatHistoryLimit = vi.spyOn(networksStore, 'setChatHistoryLimit').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line: `:server 005 nick ${token} :are supported by this server` }).handle();
 
@@ -155,7 +155,7 @@ describe('kernel core/info/isupport', () => {
     ['CLIENTTAGDENY', []],
   ])('test raw 005 %s lists the client tags the server drops', (token, deny) => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetClientTagDeny = vi.spyOn(settingsFile, 'setClientTagDeny').mockImplementation(() => {});
+    const mockSetClientTagDeny = vi.spyOn(networksStore, 'setClientTagDeny').mockImplementation(() => {});
 
     new Kernel({ type: 'raw', line: `:server 005 nick ${token} :are supported by this server` }).handle();
 
@@ -164,7 +164,7 @@ describe('kernel core/info/isupport', () => {
 
   it('test raw 005 ignores words of the trailing text', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockSetSupportedOption = vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
+    const mockSetSupportedOption = vi.spyOn(networksStore, 'setSupportedOption').mockImplementation(() => {});
 
     const line = ':server 005 nick SAFELIST :WHOX NAMESX are supported by this server';
 
@@ -176,7 +176,7 @@ describe('kernel core/info/isupport', () => {
   describe('CASEMAPPING', () => {
     it('should take the mapping from 005', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(networksStore, 'setCaseMapping').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: ':server 005 SIC-test CASEMAPPING=ascii CHANTYPES=# :are supported by this server' }).handle();
 
@@ -185,7 +185,7 @@ describe('kernel core/info/isupport', () => {
 
     it('should fall back to the spec default for a mapping we do not implement', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(networksStore, 'setCaseMapping').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: ':server 005 SIC-test CASEMAPPING=utf8 :are supported by this server' }).handle();
 
@@ -194,7 +194,7 @@ describe('kernel core/info/isupport', () => {
 
     it('should not touch the mapping when 005 does not advertise one', () => {
       vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-      const mockSetCaseMapping = vi.spyOn(settingsFile, 'setCaseMapping').mockImplementation(() => {});
+      const mockSetCaseMapping = vi.spyOn(networksStore, 'setCaseMapping').mockImplementation(() => {});
 
       new Kernel({ type: 'raw', line: ':server 005 SIC-test CHANTYPES=# NICKLEN=30 :are supported by this server' }).handle();
 

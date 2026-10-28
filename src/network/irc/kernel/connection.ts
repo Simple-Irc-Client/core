@@ -16,9 +16,11 @@ import { clearIncomingState } from '@features/e2ee/incoming';
 import { endAllSessions } from '@features/e2ee/session';
 import { resetFriendsSubscription, subscribeFriendsOnRegistration } from '@features/friends/friends';
 import { clearMonitorList } from '@features/monitor/store/monitor';
-import { getCurrentChannelName, getCurrentNick, getIsWizardCompleted, getServer, isSameName, setConnectedTime, setCurrentChannelName, setIsConnected, setIsConnecting, setLagMs, setWizardProgress } from '@features/settings/store/settings';
+import { getIsWizardCompleted, setWizardProgress } from '@features/settings/store/settings';
 import { ChannelCategory, MessageCategory } from '@shared/types';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentChannelName, getCurrentNick, getServer, isSameName, setConnectedTime, setIsConnected, setIsConnecting, setLagMs } from '@features/networks/store/networks';
+import { setCurrentChannelName } from '@features/networks/currentChannel';
 
 // Transport errors (TLS failure, refused): 'close' that follows only says "Disconnected"
 export const handleError = (eventLine: string): void => {

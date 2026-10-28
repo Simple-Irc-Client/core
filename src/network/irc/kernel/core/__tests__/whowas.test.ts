@@ -3,7 +3,7 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
-import * as settingsFile from '@features/settings/store/settings';
+import * as networksStore from '@features/networks/store/networks';
 import * as channelsFile from '@features/channels/store/channels';
 import { DEBUG_CHANNEL } from '@/config/config';
 import { setupKernelTest } from '@/network/irc/kernel/__tests__/fixtures';
@@ -13,7 +13,7 @@ describe('kernel core/whowas', () => {
 
   it('test raw 314 - WHOWAS user info', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 314 sic-test oldnick ~user some.host.com * :Real Name';
 
@@ -27,7 +27,7 @@ describe('kernel core/whowas', () => {
 
   it('test raw 369 - end of WHOWAS', () => {
     const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
-    const mockGetCurrentChannelName = vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+    const mockGetCurrentChannelName = vi.spyOn(networksStore, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
 
     const line = ':server.irc.net 369 sic-test oldnick :End of WHOWAS';
 

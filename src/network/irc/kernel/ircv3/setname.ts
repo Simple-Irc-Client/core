@@ -2,9 +2,9 @@ import i18next from '@/app/i18n';
 import { parseNick } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { showReply } from '@/network/irc/kernel/replies';
-import { getUserModes } from '@features/settings/store/settings';
 import { getUserChannels, setUserRealname } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
+import { getUserModes } from '@features/networks/store/networks';
 
 // IRCv3 setname
 // :nick!user@host SETNAME :New Real Name

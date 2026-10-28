@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { addIgnore, isIgnoredSender, toIgnoreMask } from '../ignore';
 import { useIgnoreStore } from '../store/ignore';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { connectTestNetwork, setTestSession } from '@/test/networks';
 
 const part = (pattern: RegExp) => fc.stringMatching(pattern);
 const nick = part(/^[A-Za-z[\]\\`_^{|}][A-Za-z0-9[\]\\`_^{|}-]{0,15}$/);
@@ -11,7 +11,8 @@ const host = part(/^[a-z0-9.:-]{1,30}$/);
 
 describe('ignoring, for any sender', () => {
   beforeEach(() => {
-    useSettingsStore.setState({ nick: 'me', caseMapping: 'rfc1459', server: { network: 'test', servers: ['irc.test'], default: 0, encoding: 'utf8' } });
+    connectTestNetwork({ network: 'test', servers: ['irc.test'], default: 0, encoding: 'utf8' });
+    setTestSession({ nick: 'me', caseMapping: 'rfc1459' });
     useIgnoreStore.setState({ masksByNetwork: {} });
   });
 

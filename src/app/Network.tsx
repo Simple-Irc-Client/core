@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useSettingsStore } from '@features/settings/store/settings';
+import { useActiveSession } from '@features/networks/store/networks';
 import { ircSendList, on, off, isConnected, startReachabilityWatch, stopReachabilityWatch } from '@/network/irc/network';
 import { type IrcEvent, Kernel } from '@/network/irc/kernel';
 import { startPresenceWatch, stopPresenceWatch } from '@/network/irc/preAway';
@@ -7,7 +7,7 @@ import * as Sentry from '@sentry/react';
 import { redactSensitiveIrc } from '@shared/lib/utils';
 
 export const Network = () => {
-  const listRequestRemainingSeconds = useSettingsStore((state) => state.listRequestRemainingSeconds);
+  const listRequestRemainingSeconds = useActiveSession((session) => session.listRequestRemainingSeconds);
 
   useEffect(() => {
     const onIrcEvent = (data: IrcEvent): void => {

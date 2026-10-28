@@ -1,6 +1,6 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { ircSendAlisListRequest } from '@/network/irc/network';
-import { getAlisMode, getListDeprecated, setAddChannelToList, setAlisMode, setChannelListClear, setChannelListFinished, useChannelListStore } from '@features/channels/store/channelList';
+import { getAlisMode, getListDeprecated, setAddChannelToList, setAlisMode, setChannelListClear, setChannelListFinished, getChannelListCount } from '@features/channels/store/channelList';
 
 const RPL_LISTSTART = '321';
 const RPL_LIST = '322';
@@ -31,7 +31,7 @@ export const onRaw323 = (): void => {
   if (getAlisMode()) { return; }
 
   // Deprecated LIST with too few results: fall back to Alis
-  if (getListDeprecated() && useChannelListStore.getState().channels.length < 10) {
+  if (getListDeprecated() && getChannelListCount() < 10) {
     setChannelListClear();
     setAlisMode(true);
     ircSendAlisListRequest();

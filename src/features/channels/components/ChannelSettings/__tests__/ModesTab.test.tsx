@@ -28,17 +28,18 @@ vi.mock('@features/channels/store/channelSettings', () => ({
 }));
 
 vi.mock('@features/channels/store/channels', () => ({
-  useChannelsStore: vi.fn((selector) =>
+  useActiveChannels: vi.fn((selector) =>
     selector({
       openChannels: [{ name: '#test', ...mockChannelData }],
     })
   ),
 }));
 
-import { useSettingsStore } from '@features/settings/store/settings';
+import { mockStoreState } from '@/test/networks';
 
-vi.mock('@features/settings/store/settings', () => ({
-  useSettingsStore: vi.fn((selector) =>
+vi.mock('@features/networks/store/networks', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@features/networks/store/networks')>()),
+  useActiveSession: vi.fn((selector) =>
     selector({
       channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
       supportedOptions: [],
@@ -356,21 +357,17 @@ describe('ModesTab', () => {
 
   describe('display name setting', () => {
     beforeEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: ['metadata-display-name'],
-        } as never)
-      );
+        });
     });
 
     afterEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
     });
 
     it('should render display name input when metadata-display-name is supported', () => {
@@ -416,21 +413,17 @@ describe('ModesTab', () => {
 
   describe('display name populated from channel store', () => {
     beforeEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: ['metadata-display-name'],
-        } as never)
-      );
+        });
     });
 
     afterEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
     });
 
     it('should show display name from channel store', () => {
@@ -452,21 +445,17 @@ describe('ModesTab', () => {
 
   describe('avatar populated from channel store', () => {
     beforeEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: ['metadata-avatar'],
-        } as never)
-      );
+        });
     });
 
     afterEach(() => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
     });
 
     it('should show avatar from channel store', () => {
@@ -488,12 +477,10 @@ describe('ModesTab', () => {
 
   describe('display name not supported', () => {
     it('should not render display name input when metadata-display-name is not supported', () => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
 
       render(<ModesTab channelName="#test" />);
 
@@ -518,12 +505,10 @@ describe('ModesTab', () => {
     });
 
     it('should render no mode switches when channelModes D is empty', () => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: [], B: [], C: [], D: [] },
           supportedOptions: [],
-        } as never)
-      );
+        });
 
       render(<ModesTab channelName="#test" />);
 
@@ -538,12 +523,10 @@ describe('ModesTab', () => {
           channelModes: mockChannelModes,
         } as never)
       );
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
 
       render(<ModesTab channelName="#test" />);
 
@@ -560,12 +543,10 @@ describe('ModesTab', () => {
           channelModes: mockChannelModes,
         } as never)
       );
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
 
       render(<ModesTab channelName="#test" />);
 
@@ -576,12 +557,10 @@ describe('ModesTab', () => {
     });
 
     it('should not render avatar input when metadata-avatar is not supported', () => {
-      vi.mocked(useSettingsStore).mockImplementation((selector) =>
-        selector({
+      mockStoreState({
           channelModes: { A: ['b', 'e', 'I'], B: ['k'], C: ['l'], D: ['n', 't', 'i', 'm', 's', 'p'] },
           supportedOptions: [],
-        } as never)
-      );
+        });
 
       render(<ModesTab channelName="#test" />);
 
