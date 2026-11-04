@@ -1,9 +1,10 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { publicSiteMetadata } from "./build/publicSiteMetadata";
 
 const gitRef = (() => {
   try {
@@ -53,7 +54,7 @@ const pwa = VitePWA({
 });
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
   if (command === "serve") {
     return {
       define: { __GIT_REF__: JSON.stringify(gitRef) },
@@ -71,9 +72,11 @@ export default defineConfig(({ command }) => {
         : { host: true, hmr: true },
     }
   } else {
+    // Public address of a hosted web chat (e.g. in .env.gateway); without it the build gets no canonical URL or llms.txt.
+    const { PUBLIC_SITE_URL } = loadEnv(mode, import.meta.dirname, "PUBLIC_SITE_URL");
     return {
       define: { __GIT_REF__: JSON.stringify(gitRef) },
-      plugins: [react(), tailwindcss(), pwa],
+      plugins: [react(), tailwindcss(), pwa, publicSiteMetadata(PUBLIC_SITE_URL)],
       resolve: {
         alias: {
           "@": path.resolve(import.meta.dirname, "./src"),
