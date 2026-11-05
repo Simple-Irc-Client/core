@@ -1,5 +1,6 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { ircSendRawMessage } from '@/network/irc/network';
+import { forgetPing, getPingWindow, showPingReply } from '@features/ping/ping';
 import { setLagMs } from '@features/settings/store/settings';
 
 // PING :F549DB3
@@ -15,10 +16,18 @@ export const onPong = (ctx: IrcContext): void => {
   if (token === undefined) {
     return;
   }
-  const sentAt = Number.parseInt(ctx.stripColon(token), 10);
+  const echoed = ctx.stripColon(token);
+  const sentAt = Number.parseInt(echoed, 10);
   if (!Number.isNaN(sentAt)) {
     // A backwards clock adjustment would show negative lag
     setLagMs(Math.max(0, Date.now() - sentAt));
+  }
+
+  // The answer to /ping, as opposed to the keepalive's
+  const window = getPingWindow(echoed);
+  if (window !== undefined) {
+    forgetPing(echoed);
+    showPingReply(ctx.sender, echoed, window);
   }
 };
 

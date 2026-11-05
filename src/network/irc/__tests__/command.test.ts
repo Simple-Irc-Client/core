@@ -1,13 +1,15 @@
 /**
  * @vitest-environment node
  */
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, it, afterEach, beforeEach, vi } from 'vitest';
+import { STATUS_CHANNEL } from '@/config/config';
 import { parseMessageToCommand } from '../command';
 import * as channelsFile from '@features/channels/store/channels';
 import { useChannelsStore } from '@features/channels/store/channels';
 import { useIgnoreStore } from '@features/ignore/store/ignore';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { ChannelCategory } from '@shared/types';
+import { getPingWindow } from '@features/ping/ping';
 
 describe('command tests', () => {
   beforeEach(() => {
@@ -196,6 +198,32 @@ describe('command tests', () => {
   it('test names command', () => {
     expect(parseMessageToCommand('#channel', '/names')).toStrictEqual('NAMES');
     expect(parseMessageToCommand('#channel', '/names #otherchannel')).toStrictEqual('NAMES #otherchannel');
+  });
+
+  describe('ping command', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('pings the server without a target, remembering the window it was asked from', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1767225600000);
+
+      expect(parseMessageToCommand('#channel', '/ping')).toStrictEqual('PING :1767225600000');
+      expect(getPingWindow('1767225600000')).toBe('#channel');
+    });
+
+    it('pings a user over CTCP', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1767225600001);
+
+      expect(parseMessageToCommand('#channel', '/ping alice')).toStrictEqual('PRIVMSG alice :\x01PING 1767225600001\x01');
+      expect(getPingWindow('1767225600001')).toBe('#channel');
+    });
+
+    it('is available in Status', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1767225600002);
+
+      expect(parseMessageToCommand(STATUS_CHANNEL, '/ping')).toStrictEqual('PING :1767225600002');
+    });
   });
 
   it('test knock command', () => {

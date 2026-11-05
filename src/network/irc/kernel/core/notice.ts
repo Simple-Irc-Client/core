@@ -10,6 +10,7 @@ import { getAlisMode, setAddChannelToList, setAlisMode, setChannelListFinished, 
 import { existChannel, isChannel, setAddMessage } from '@features/channels/store/channels';
 import { handleE2eeCtcp } from '@features/e2ee/incoming';
 import { isIgnoredSender } from '@features/ignore/ignore';
+import { getPingWindow, showPingReply } from '@features/ping/ping';
 import { getConnectedTime, getCurrentChannelName, getCurrentNick, getEncryptedPassword, getIsWizardCompleted, getPasswordNick, getUserModes, isSameName, setIsPasswordRequired, setListRequestRemainingSeconds, setWizardStep } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { MessageCategory } from '@shared/types';
@@ -145,6 +146,12 @@ export const onNotice = (ctx: IrcContext): void => {
     const spaceIndex = ctcpContent.indexOf(' ');
     const ctcpCommand = spaceIndex !== -1 ? ctcpContent.substring(0, spaceIndex) : ctcpContent;
     const ctcpResponse = spaceIndex !== -1 ? ctcpContent.substring(spaceIndex + 1) : '';
+
+    const pingWindow = ctcpCommand.toUpperCase() === 'PING' ? getPingWindow(ctcpResponse) : undefined;
+    if (pingWindow !== undefined) {
+      showPingReply(nick, ctcpResponse, pingWindow);
+      return;
+    }
 
     setAddMessage({
       id: ctx.tags.msgid ?? uuidv4(),

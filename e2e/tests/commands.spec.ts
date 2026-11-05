@@ -34,6 +34,26 @@ test.describe('Slash commands', () => {
     await expect(chatLog.getByText('waves hello')).toBeVisible({ timeout: 10_000 });
   });
 
+  test('/ping shows how long the server took to answer', async () => {
+    const messageInput = page.locator('#message-input');
+    await messageInput.fill('/ping');
+    await messageInput.press('Enter');
+
+    await expect(page.getByTestId('chat-log').getByText(/^Ping reply from \S+: \d+ ms$/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('/ping <nick> shows how long the user took to answer', async () => {
+    const ctcpPing = bot.waitForLine((line) => line.includes(`PRIVMSG ${bot.nick} :\x01PING `));
+    const messageInput = page.locator('#message-input');
+    await messageInput.fill(`/ping ${bot.nick}`);
+    await messageInput.press('Enter');
+
+    const token = /\x01PING (\S+)\x01/.exec(await ctcpPing)?.[1];
+    bot.sendNotice(`cmd-tester-${tag}`, `\x01PING ${token}\x01`);
+
+    await expect(page.getByTestId('chat-log').getByText(new RegExp(`^Ping reply from ${bot.nick}: \\d+ ms$`))).toBeVisible({ timeout: 10_000 });
+  });
+
   test('/nick changes nickname', async () => {
     const messageInput = page.locator('#message-input');
     await messageInput.fill(`/nick cmd-renamed-${tag}`);

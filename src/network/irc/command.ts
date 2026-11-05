@@ -9,11 +9,12 @@ import { E2eeState, getSession, getSessionState } from '@features/e2ee/store/e2e
 import { getE2eeEnabled } from '@features/settings/store/settings';
 import { addIgnore, getIgnoreMasks, removeIgnore, toIgnoreMask } from '@features/ignore/ignore';
 import { forgetWantedNick } from '@features/nickRegain/nickRegain';
+import { newPingToken, trackPing } from '@features/ping/ping';
 
 export const generalCommands = [
   '/amsg', '/all', '/away', '/help', '/join', '/logout', '/quit', '/raw', '/quote', '/msg',
   '/whois', '/whereis', '/who', '/notice', '/nick', '/mode', '/whowas', '/names', '/knock', '/watch',
-  '/ns', '/cs', '/hs', '/bs', '/ms', '/e2ee', '/ignore', '/unignore'
+  '/ns', '/cs', '/hs', '/bs', '/ms', '/e2ee', '/ignore', '/unignore', '/ping'
 ];
 export const channelCommands = [
   '/ban', '/cycle', '/hop', '/invite', '/kb', '/kban', '/kick', '/me', '/part', '/topic',
@@ -87,6 +88,8 @@ export const parseMessageToCommand = (channel: string, message: string): string 
       return knockCommand(line) ?? originalLine;
     case 'watch':
       return watchCommand(line);
+    case 'ping':
+      return pingCommand(channel, line);
   }
 
   if (channel !== STATUS_CHANNEL) {
@@ -392,6 +395,14 @@ const knockCommand = (line: string[]): string | undefined => {
   return message.length > 0 ? `KNOCK ${channel} :${message}` : `KNOCK ${channel}`;
 };
 
+// Without a target the server is pinged; with a nick or channel, its users are, over CTCP
+const pingCommand = (channel: string, line: string[]): string => {
+  const target = line.shift();
+  const token = newPingToken();
+  trackPing(token, channel);
+  return target ? `PRIVMSG ${target} :\x01PING ${token}\x01` : `PING :${token}`;
+};
+
 const watchCommand = (line: string[]): string => {
   const action = line.join(' ');
   if (action.length === 0) {
@@ -463,6 +474,7 @@ const helpCommands = [
   { cmd: '/ns <command>', key: 'help.cmd.ns' },
   { cmd: '/op <nick>', key: 'help.cmd.op' },
   { cmd: '/part, /p [reason]', key: 'help.cmd.part' },
+  { cmd: '/ping [nick|channel]', key: 'help.cmd.ping' },
   { cmd: '/quit, /q [reason]', key: 'help.cmd.quit' },
   { cmd: '/topic <text>', key: 'help.cmd.topic' },
   { cmd: '/unignore <nick|mask>', key: 'help.cmd.unignore' },
