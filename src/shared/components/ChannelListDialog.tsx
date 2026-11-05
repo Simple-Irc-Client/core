@@ -16,6 +16,7 @@ interface ChannelListDialogProps {
   onOpenChange: (open: boolean) => void;
   channelList: ChannelList[];
   isLoading: boolean;
+  refusal?: string;
   onJoin: (channels: string[]) => void;
   excludeChannels?: string[];
 }
@@ -25,6 +26,7 @@ const ChannelListDialog = ({
   onOpenChange,
   channelList,
   isLoading,
+  refusal,
   onJoin,
   excludeChannels = [],
 }: ChannelListDialogProps) => {
@@ -111,6 +113,7 @@ const ChannelListDialog = ({
           <ChannelListTable
             channelList={channelList}
             isLoading={isLoading}
+            refusal={refusal}
             selectedChannels={selectedChannels}
             onSelectionChange={setSelectedChannels}
             excludeChannels={excludeChannels}

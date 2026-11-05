@@ -54,6 +54,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
   const { isChannelsDrawerOpen, toggleChannelsDrawer } = useChannelsDrawer();
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+  const channelListRefusal = useChannelListStore((state) => state.refusal);
 
   const channelsList = useMemo(() => (isChannelListLoadingFinished ? getChannelListSortedByUsers() : []), [isChannelListLoadingFinished]);
 
@@ -297,6 +298,7 @@ const Channels = ({ width = defaultChannelsWidth }: ChannelsProps) => {
         onOpenChange={setDialogOpen}
         channelList={channelsList}
         isLoading={!isChannelListLoadingFinished}
+        refusal={channelListRefusal}
         onJoin={handleJoinChannels}
         excludeChannels={openChannelNames}
       />

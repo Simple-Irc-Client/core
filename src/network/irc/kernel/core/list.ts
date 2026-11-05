@@ -1,7 +1,18 @@
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { ircSendAlisListRequest } from '@/network/irc/network';
-import { getAlisMode, getListDeprecated, setAddChannelToList, setAlisMode, setChannelListClear, setChannelListFinished, useChannelListStore } from '@features/channels/store/channelList';
+import { showNumericReply, translateKnownText } from '@/network/irc/kernel/unhandled';
+import {
+  getAlisMode,
+  getListDeprecated,
+  setAddChannelToList,
+  setAlisMode,
+  setChannelListClear,
+  setChannelListFinished,
+  setChannelListRefused,
+  useChannelListStore,
+} from '@features/channels/store/channelList';
 
+const RPL_TRYAGAIN = '263';
 const RPL_LISTSTART = '321';
 const RPL_LIST = '322';
 const RPL_ENDOFLIST = '323';
@@ -41,7 +52,18 @@ export const onRaw323 = (): void => {
   setChannelListFinished(true);
 };
 
+// :uranium.libera.chat 263 mynick LIST :This command could not be completed because it has been used recently, and is rate-limited.
+// Answers whichever command was rate-limited: only a refused LIST ends the wait for the channel list
+export const onRaw263 = (ctx: IrcContext): void => {
+  const [, command] = ctx.line;
+  if (command?.toUpperCase() === 'LIST') {
+    setChannelListRefused(translateKnownText(ctx.command, ctx.paramsAndText().text));
+  }
+  showNumericReply(ctx);
+};
+
 export const handlers: IrcHandlers = {
+  [RPL_TRYAGAIN]: onRaw263,
   [RPL_LISTSTART]: onRaw321,
   [RPL_LIST]: onRaw322,
   [RPL_ENDOFLIST]: onRaw323,

@@ -53,7 +53,7 @@ const KNOWN_TEXTS: Record<string, { text: RegExp; key: string }[]> = {
   '723': [{ text: /^Insufficient oper privs$/, key: 'kernel.723.insufficient-privs' }],
 };
 
-const translateKnownText = (numeric: string, text: string): string => {
+export const translateKnownText = (numeric: string, text: string): string => {
   for (const known of KNOWN_TEXTS[numeric] ?? []) {
     const match = known.text.exec(text);
     if (match) {
@@ -84,6 +84,11 @@ const reportUnhandledNumeric = (ctx: IrcContext): void => {
 // :server 438 mynick newnick :Nick change too fast. Please wait 30 seconds.
 export const onUnhandledNumeric = (ctx: IrcContext): void => {
   reportUnhandledNumeric(ctx);
+  showNumericReply(ctx);
+};
+
+/** Shows a numeric as the server worded it (translated when its text is known): errors in the current window, the rest in Status */
+export const showNumericReply = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
 
   const { params, text } = ctx.paramsAndText();

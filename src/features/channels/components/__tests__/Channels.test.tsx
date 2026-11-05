@@ -99,11 +99,13 @@ describe('Channels', () => {
       selector({
         finished: isChannelListLoadingFinished,
         channels: channelsList,
+        refusal: undefined,
         alisMode: false,
         listDeprecated: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
+        setRefused: vi.fn(),
         setAlisMode: vi.fn(),
         setListDeprecated: vi.fn(),
       })
@@ -814,11 +816,13 @@ describe('Channels', () => {
         selector({
           finished: false,
           channels: [],
+          refusal: undefined,
           alisMode: false,
           listDeprecated: false,
           setAddChannel: vi.fn(),
           setClear: vi.fn(),
           setFinished: vi.fn(),
+          setRefused: vi.fn(),
           setAlisMode: vi.fn(),
           setListDeprecated: vi.fn(),
         })

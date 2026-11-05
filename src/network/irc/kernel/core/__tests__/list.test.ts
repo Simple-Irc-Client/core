@@ -7,7 +7,7 @@ import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
 import * as channelListFile from '@features/channels/store/channelList';
 import * as networkFile from '@/network/irc/network';
-import { DEBUG_CHANNEL } from '@/config/config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
 
 describe('kernel core/list', () => {
@@ -206,6 +206,54 @@ describe('kernel core/list', () => {
 
       expect(mockSetAddChannelToList).not.toHaveBeenCalled();
       expect(mockSetAddMessage).toHaveBeenCalledTimes(2); // debug + regular notice
+    });
+  });
+
+  describe('RPL_TRYAGAIN (263)', () => {
+    const RATE_LIMITED = 'This command could not be completed because it has been used recently, and is rate-limited.';
+    const RATE_LIMITED_PL = 'Ta komenda była użyta zbyt niedawno i jest ograniczona. Spróbuj ponownie za chwilę';
+
+    const startWaitingForList = (): void => {
+      channelListFile.useChannelListStore.setState({ channels: [], finished: false, refusal: undefined, alisMode: false });
+    };
+
+    it('ends the wait for a rate-limited LIST with the server\'s reason', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      startWaitingForList();
+
+      new Kernel({ type: 'raw', line: `:uranium.libera.chat 263 afp LIST :${RATE_LIMITED}` }).handle();
+
+      expect(channelListFile.useChannelListStore.getState()).toMatchObject({ finished: true, refusal: RATE_LIMITED_PL });
+    });
+
+    it('still shows the reply in Status for a rate-limited LIST', () => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      startWaitingForList();
+
+      new Kernel({ type: 'raw', line: `:uranium.libera.chat 263 afp LIST :${RATE_LIMITED}` }).handle();
+
+      expect(mockSetAddMessage).toHaveBeenLastCalledWith(expect.objectContaining({ target: STATUS_CHANNEL, message: `LIST: ${RATE_LIMITED_PL}` }));
+    });
+
+    it('keeps a reason in the server\'s own words when its text is not a known one', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      startWaitingForList();
+
+      new Kernel({ type: 'raw', line: ':irc.example 263 afp list :Server load is temporarily too heavy. Please wait a while and try again.' }).handle();
+
+      expect(channelListFile.useChannelListStore.getState()).toMatchObject({
+        finished: true,
+        refusal: 'Server load is temporarily too heavy. Please wait a while and try again.',
+      });
+    });
+
+    it('leaves the channel list waiting when another command is rate-limited', () => {
+      vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      startWaitingForList();
+
+      new Kernel({ type: 'raw', line: `:uranium.libera.chat 263 afp WHO :${RATE_LIMITED}` }).handle();
+
+      expect(channelListFile.useChannelListStore.getState()).toMatchObject({ finished: false, refusal: undefined });
     });
   });
 });

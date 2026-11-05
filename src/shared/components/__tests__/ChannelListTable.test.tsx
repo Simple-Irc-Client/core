@@ -135,6 +135,21 @@ describe('ChannelListTable', () => {
       expect(screen.getByText('Topic 2')).toBeInTheDocument();
     });
 
+    it('should show the server\'s refusal instead of no results when the server sent no list', () => {
+      render(
+        <ChannelListTable
+          channelList={[]}
+          isLoading={false}
+          refusal="Rate-limited, try again later"
+          selectedChannels={[]}
+          onSelectionChange={mockOnSelectionChange}
+        />
+      );
+
+      expect(screen.getByText('Rate-limited, try again later')).toBeInTheDocument();
+      expect(screen.queryByText('channelListDialog.noResults')).toBeNull();
+    });
+
     it('should show no results message when channel list is empty', () => {
       render(
         <ChannelListTable

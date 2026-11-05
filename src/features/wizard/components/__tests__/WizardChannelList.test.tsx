@@ -48,11 +48,13 @@ describe('WizardChannelList', () => {
 
   const setupMocks = (overrides: {
     isChannelListLoadingFinished?: boolean;
+    refusal?: string;
     channelList?: ChannelList[];
     previousChannels?: string[];
   } = {}) => {
     const {
       isChannelListLoadingFinished = true,
+      refusal,
       channelList = [],
       previousChannels = [],
     } = overrides;
@@ -62,12 +64,14 @@ describe('WizardChannelList', () => {
     vi.spyOn(channelListStore, 'useChannelListStore').mockImplementation((selector) =>
       selector({
         finished: isChannelListLoadingFinished,
+        refusal,
         channels: channelList,
         alisMode: false,
         listDeprecated: false,
         setAddChannel: vi.fn(),
         setClear: vi.fn(),
         setFinished: vi.fn(),
+        setRefused: vi.fn(),
         setAlisMode: vi.fn(),
         setListDeprecated: vi.fn(),
       })
@@ -117,6 +121,15 @@ describe('WizardChannelList', () => {
   });
 
   describe('Loading state', () => {
+    it('should show why the server sent no list instead of loading forever', () => {
+      setupMocks({ isChannelListLoadingFinished: true, refusal: 'Rate-limited, try again later' });
+
+      render(<WizardChannelList />);
+
+      expect(screen.getByText('Rate-limited, try again later')).toBeInTheDocument();
+      expect(screen.queryByText('wizard.channels.loading')).toBeNull();
+    });
+
     it('should show loading message when channel list is not finished', () => {
       setupMocks({
         isChannelListLoadingFinished: false,

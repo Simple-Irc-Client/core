@@ -11,6 +11,7 @@ const WizardChannelList = () => {
   const { t } = useTranslation();
 
   const isChannelListLoadingFinished = useChannelListStore((state) => state.finished);
+  const channelListRefusal = useChannelListStore((state) => state.refusal);
 
   const [selectedChannels, setSelectedChannels] = useState<string[]>(() => getChannelsToAutoJoin());
 
@@ -48,6 +49,7 @@ const WizardChannelList = () => {
         <ChannelListTable
           channelList={channelList}
           isLoading={!isChannelListLoadingFinished}
+          refusal={channelListRefusal}
           selectedChannels={selectedChannels}
           onSelectionChange={handleSelectionChange}
           height={350}

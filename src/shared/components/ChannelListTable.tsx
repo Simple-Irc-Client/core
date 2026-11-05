@@ -16,6 +16,8 @@ function renderTopic(topic: string, backgroundLuminance: number): React.ReactNod
 interface ChannelListTableProps {
   channelList: ChannelList[];
   isLoading: boolean;
+  /** The server's reason for sending no list, shown in place of the empty list */
+  refusal?: string;
   selectedChannels: string[];
   onSelectionChange: (channels: string[]) => void;
   excludeChannels?: string[];
@@ -33,6 +35,7 @@ interface ChannelListTableProps {
 const ChannelListTable = ({
   channelList,
   isLoading,
+  refusal,
   selectedChannels,
   onSelectionChange,
   excludeChannels = [],
@@ -108,7 +111,7 @@ const ChannelListTable = ({
           </div>
         ) : filteredChannelList.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p>{labels.noResults}</p>
+            <p>{refusal ?? labels.noResults}</p>
           </div>
         ) : (
           <Table className="table-fixed w-full">

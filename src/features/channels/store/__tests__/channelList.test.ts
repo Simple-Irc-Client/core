@@ -4,6 +4,7 @@ import {
   setAddChannelToList,
   setChannelListClear,
   setChannelListFinished,
+  setChannelListRefused,
   getChannelListSortedByAZ,
   getChannelListSortedByUsers,
 } from '../channelList';
@@ -13,6 +14,7 @@ describe('channelList store', () => {
     useChannelListStore.setState({
       channels: [],
       finished: false,
+      refusal: undefined,
     });
   });
 
@@ -77,6 +79,22 @@ describe('channelList store', () => {
     it('should work on empty list', () => {
       setChannelListClear();
       expect(useChannelListStore.getState().channels.length).toBe(0);
+    });
+  });
+
+  describe('setChannelListRefused', () => {
+    it('should finish the list with the reason it was refused', () => {
+      setChannelListRefused('Rate-limited, try again later');
+
+      expect(useChannelListStore.getState()).toMatchObject({ finished: true, refusal: 'Rate-limited, try again later' });
+    });
+
+    it('should forget the refusal once a new list starts', () => {
+      setChannelListRefused('Rate-limited, try again later');
+
+      setChannelListClear();
+
+      expect(useChannelListStore.getState()).toMatchObject({ finished: false, refusal: undefined });
     });
   });
 

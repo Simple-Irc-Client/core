@@ -6,12 +6,15 @@ const MAX_CHANNELS = 10_000;
 interface ChannelListStore {
   channels: ChannelList[];
   finished: boolean;
+  /** Why the server sent no list, when it refused one (e.g. rate-limited) */
+  refusal: string | undefined;
   alisMode: boolean;
   listDeprecated: boolean;
 
   setAddChannel: (name: string, users: number, topic: string) => void;
   setClear: () => void;
   setFinished: (status: boolean) => void;
+  setRefused: (reason: string) => void;
   setAlisMode: (mode: boolean) => void;
   setListDeprecated: (deprecated: boolean) => void;
 }
@@ -19,6 +22,7 @@ interface ChannelListStore {
 export const useChannelListStore = create<ChannelListStore>()((set) => ({
   channels: [],
   finished: false,
+  refusal: undefined,
   alisMode: false,
   listDeprecated: false,
 
@@ -31,6 +35,7 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
     set(() => ({
       channels: [],
       finished: false,
+      refusal: undefined,
       alisMode: false,
       listDeprecated: false,
     }));
@@ -38,6 +43,12 @@ export const useChannelListStore = create<ChannelListStore>()((set) => ({
   setFinished: (status: boolean): void => {
     set(() => ({
       finished: status,
+    }));
+  },
+  setRefused: (reason: string): void => {
+    set(() => ({
+      finished: true,
+      refusal: reason,
     }));
   },
   setAlisMode: (mode: boolean): void => {
@@ -74,6 +85,10 @@ export const setChannelListClear = (): void => {
 
 export const setChannelListFinished = (status: boolean): void => {
   useChannelListStore.getState().setFinished(status);
+};
+
+export const setChannelListRefused = (reason: string): void => {
+  useChannelListStore.getState().setRefused(reason);
 };
 
 export const setAlisMode = (mode: boolean): void => {

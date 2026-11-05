@@ -128,27 +128,7 @@ export const connectViaWizard = async (
   nick: string,
   options: { channels?: string[] } = {},
 ): Promise<void> => {
-  // The page's clock, so the wizard's wait for NickServ can be passed at once
-  await page.clock.install();
-
-  // Step 1: Nick
-  await page.getByLabel('Enter your nickname').fill(nick);
-  await page.getByRole('button', { name: 'Next' }).click();
-
-  // Step 2: Server
-  await fillTestServer(page);
-
-  // Enter server password
-  await page.getByLabel('Server password').fill(getServerPassword());
-
-  await page.getByRole('button', { name: 'Next' }).click();
-  // Skipping it connects and goes to the loading step
-  await skipBouncerAccount(page);
-
-  // Step 3: Loading - wait for connection, then past the password check
-  await page.getByText('Connected').waitFor({ timeout: 15_000 });
-  await page.clock.fastForward(WIZARD_NICKSERV_WAIT_MS);
-  await page.getByText('Select a irc channel').waitFor({ timeout: 15_000 });
+  await reachWizardChannelStep(page, nick);
 
   // Step 4: Channels - join or skip
   if (options.channels && options.channels.length > 0) {
@@ -170,6 +150,31 @@ export const connectViaWizard = async (
 
   // Wait for main page to render
   await page.locator('#message-input').waitFor({ timeout: 10_000 });
+};
+
+/** Goes through the wizard's nick, server and loading steps to the channel step, connected to the project's test server */
+export const reachWizardChannelStep = async (page: Page, nick: string): Promise<void> => {
+  // The page's clock, so the wizard's wait for NickServ can be passed at once
+  await page.clock.install();
+
+  // Step 1: Nick
+  await page.getByLabel('Enter your nickname').fill(nick);
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  // Step 2: Server
+  await fillTestServer(page);
+
+  // Enter server password
+  await page.getByLabel('Server password').fill(getServerPassword());
+
+  await page.getByRole('button', { name: 'Next' }).click();
+  // Skipping it connects and goes to the loading step
+  await skipBouncerAccount(page);
+
+  // Step 3: Loading - wait for connection, then past the password check
+  await page.getByText('Connected').waitFor({ timeout: 15_000 });
+  await page.clock.fastForward(WIZARD_NICKSERV_WAIT_MS);
+  await page.getByText('Select a irc channel').waitFor({ timeout: 15_000 });
 };
 
 /** Logs the connected app into a NickServ account */
