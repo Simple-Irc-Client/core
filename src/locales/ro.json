@@ -3,6 +3,8 @@
     "wizard.init.message": "Nu se poate conecta la server. Asigură-te că backend-ul rulează.",
     "wizard.init.button.retry": "Reîncearcă",
     "wizard.init.loading": "Se pornește aplicația...",
+    "loadFailed.message": "Ceva nu a mers bine la încărcare. Reîncarcă pagina ca să încerci din nou.",
+    "loadFailed.reload": "Reîncarcă",
     "wizard.nick.title": "Salut",
     "wizard.nick.nick": "Introdu porecla ta",
     "wizard.nick.customServerWarning": "Te vei conecta la un server personalizat:",

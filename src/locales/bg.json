@@ -3,6 +3,8 @@
     "wizard.init.message": "Не може да се осъществи връзка със сървъра. Уверете се, че бекендът работи.",
     "wizard.init.button.retry": "Опитай отново",
     "wizard.init.loading": "Приложението се стартира...",
+    "loadFailed.message": "Нещо се обърка при зареждането. Презаредете страницата, за да опитате отново.",
+    "loadFailed.reload": "Презареди",
     "wizard.nick.title": "Здравей",
     "wizard.nick.nick": "Въведи своя ник",
     "wizard.nick.customServerWarning": "Ще се свържеш с персонализиран сървър:",

@@ -1,6 +1,7 @@
 import { lazy, type Ref, Suspense, useImperativeHandle, useState } from 'react';
-import { type EmojiClickData } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 import { Popover, PopoverAnchor, PopoverContent } from '@shared/components/ui/popover';
+import { LoadFailedBoundary } from '@shared/components/LoadFailedBoundary';
 import { getMessages } from '@features/channels/store/channels';
 import { hasReacted, sendReaction } from '@features/reactions/reactions';
 import { getCurrentNick, useSettingsStore } from '@features/settings/store/settings';
@@ -33,9 +34,11 @@ const ReactionPicker = ({ ref }: { ref: Ref<ReactionPickerHandle> }) => {
     <Popover open={target !== null} onOpenChange={(open) => { if (!open) { setTarget(null); } }}>
       <PopoverAnchor virtualRef={{ current: target?.anchor ?? null }} />
       <PopoverContent className="w-auto p-0" align="end">
-        <Suspense>
-          <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} reactionsDefaultOpen allowExpandReactions onReactionClick={handlePick} onEmojiClick={handlePick} />
-        </Suspense>
+        <LoadFailedBoundary layout="inline">
+          <Suspense>
+            <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} reactionsDefaultOpen allowExpandReactions onReactionClick={handlePick} onEmojiClick={handlePick} />
+          </Suspense>
+        </LoadFailedBoundary>
       </PopoverContent>
     </Popover>
   );

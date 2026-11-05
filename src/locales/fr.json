@@ -3,6 +3,8 @@
     "wizard.init.message": "Impossible de se connecter au serveur. Vérifiez que le backend fonctionne.",
     "wizard.init.button.retry": "Réessayer",
     "wizard.init.loading": "Démarrage de l'application...",
+    "loadFailed.message": "Une erreur s'est produite pendant le chargement. Rechargez la page pour réessayer.",
+    "loadFailed.reload": "Recharger",
     "wizard.nick.title": "Bonjour",
     "wizard.nick.nick": "Saisissez votre pseudo",
     "wizard.nick.customServerWarning": "Vous allez vous connecter à un serveur personnalisé :",

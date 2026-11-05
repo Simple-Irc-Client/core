@@ -3,6 +3,8 @@
     "wizard.init.message": "No se puede conectar al servidor. Comprueba que el backend esté en marcha.",
     "wizard.init.button.retry": "Reintentar",
     "wizard.init.loading": "Iniciando la aplicación...",
+    "loadFailed.message": "Algo salió mal durante la carga. Recarga la página para intentarlo de nuevo.",
+    "loadFailed.reload": "Recargar",
     "wizard.nick.title": "Hola",
     "wizard.nick.nick": "Escribe tu apodo",
     "wizard.nick.customServerWarning": "Te conectarás a un servidor personalizado:",

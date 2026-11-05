@@ -3,6 +3,8 @@
     "wizard.init.message": "Nie można połączyć się z serwerem. Upewnij się, że backend jest uruchomiony.",
     "wizard.init.button.retry": "Spróbuj ponownie",
     "wizard.init.loading": "Uruchamianie aplikacji...",
+    "loadFailed.message": "Coś poszło nie tak podczas ładowania. Odśwież stronę, aby spróbować ponownie.",
+    "loadFailed.reload": "Odśwież",
     "wizard.nick.title": "Witaj",
     "wizard.nick.nick": "Podaj swój pseudonim",
     "wizard.nick.customServerWarning": "Połączysz się z niestandardowym serwerem:",

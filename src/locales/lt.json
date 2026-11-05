@@ -3,6 +3,8 @@
     "wizard.init.message": "Nepavyksta prisijungti prie serverio. Įsitikink, kad backend'as veikia.",
     "wizard.init.button.retry": "Bandyti dar kartą",
     "wizard.init.loading": "Paleidžiama programa...",
+    "loadFailed.message": "Įkeliant kažkas nepavyko. Įkelk puslapį iš naujo ir bandyk dar kartą.",
+    "loadFailed.reload": "Įkelti iš naujo",
     "wizard.nick.title": "Labas",
     "wizard.nick.nick": "Įvesk savo slapyvardį",
     "wizard.nick.customServerWarning": "Prisijungsi prie pasirinktinio serverio:",

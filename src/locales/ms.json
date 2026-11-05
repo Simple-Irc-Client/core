@@ -3,6 +3,8 @@
     "wizard.init.message": "Tidak dapat menyambung ke pelayan. Pastikan backend sedang berjalan.",
     "wizard.init.button.retry": "Cuba lagi",
     "wizard.init.loading": "Memulakan aplikasi...",
+    "loadFailed.message": "Sesuatu tidak kena semasa memuatkan. Muat semula halaman untuk mencuba lagi.",
+    "loadFailed.reload": "Muat semula",
     "wizard.nick.title": "Helo",
     "wizard.nick.nick": "Masukkan nama panggilan anda",
     "wizard.nick.customServerWarning": "Anda akan menyambung ke pelayan tersuai:",

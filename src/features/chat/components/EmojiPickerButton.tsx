@@ -5,6 +5,7 @@ import type { EmojiClickData } from 'emoji-picker-react';
 import { useSettingsStore } from '@features/settings/store/settings';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/components/ui/popover';
 import { Button } from '@shared/components/ui/button';
+import { LoadFailedBoundary } from '@shared/components/LoadFailedBoundary';
 
 const EmojiPicker = lazy(() => import('emoji-picker-react'));
 
@@ -45,9 +46,11 @@ const EmojiPickerButton = ({ disabled, inputRef, onPick }: EmojiPickerButtonProp
             e.preventDefault();
           }
         }}>
-        <Suspense>
-          <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} onEmojiClick={handleEmojiClick} autoFocusSearch={!isCoarsePointer()} />
-        </Suspense>
+        <LoadFailedBoundary layout="inline">
+          <Suspense>
+            <EmojiPicker colorScheme={isDarkMode ? 'dark' : 'light'} onEmojiClick={handleEmojiClick} autoFocusSearch={!isCoarsePointer()} />
+          </Suspense>
+        </LoadFailedBoundary>
       </PopoverContent>
     </Popover>
   );

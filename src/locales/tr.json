@@ -3,6 +3,8 @@
     "wizard.init.message": "Sunucuya bağlanılamıyor. Lütfen arka ucun çalıştığından emin ol.",
     "wizard.init.button.retry": "Yeniden dene",
     "wizard.init.loading": "Uygulama başlatılıyor...",
+    "loadFailed.message": "Yüklenirken bir sorun oluştu. Tekrar denemek için sayfayı yeniden yükle.",
+    "loadFailed.reload": "Yeniden yükle",
     "wizard.nick.title": "Merhaba",
     "wizard.nick.nick": "Takma adını gir",
     "wizard.nick.customServerWarning": "Özel bir sunucuya bağlanacaksın:",

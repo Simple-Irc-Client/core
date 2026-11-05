@@ -3,6 +3,8 @@
     "wizard.init.message": "Keine Verbindung zum Server möglich. Bitte prüfe, ob das Backend läuft.",
     "wizard.init.button.retry": "Erneut versuchen",
     "wizard.init.loading": "Anwendung wird gestartet...",
+    "loadFailed.message": "Beim Laden ist etwas schiefgelaufen. Lade die Seite neu, um es noch einmal zu versuchen.",
+    "loadFailed.reload": "Neu laden",
     "wizard.nick.title": "Hallo",
     "wizard.nick.nick": "Gib deinen Nicknamen ein",
     "wizard.nick.customServerWarning": "Du verbindest dich mit einem eigenen Server:",

@@ -3,6 +3,8 @@
     "wizard.init.message": "Kan geen verbinding maken met de server. Controleer of de backend draait.",
     "wizard.init.button.retry": "Opnieuw proberen",
     "wizard.init.loading": "Applicatie wordt gestart...",
+    "loadFailed.message": "Er ging iets mis bij het laden. Laad de pagina opnieuw om het nog eens te proberen.",
+    "loadFailed.reload": "Opnieuw laden",
     "wizard.nick.title": "Hallo",
     "wizard.nick.nick": "Voer je bijnaam in",
     "wizard.nick.customServerWarning": "Je maakt verbinding met een aangepaste server:",

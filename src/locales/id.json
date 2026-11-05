@@ -3,6 +3,8 @@
     "wizard.init.message": "Tidak dapat terhubung ke server. Pastikan backend sedang berjalan.",
     "wizard.init.button.retry": "Coba lagi",
     "wizard.init.loading": "Memulai aplikasi...",
+    "loadFailed.message": "Terjadi kesalahan saat memuat. Muat ulang halaman untuk mencoba lagi.",
+    "loadFailed.reload": "Muat ulang",
     "wizard.nick.title": "Halo",
     "wizard.nick.nick": "Masukkan nickname kamu",
     "wizard.nick.customServerWarning": "Kamu akan terhubung ke server kustom:",
