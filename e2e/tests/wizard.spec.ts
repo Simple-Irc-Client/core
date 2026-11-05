@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createIrcClient, type IrcClient } from '../irc-client';
 import { fillTestServer, getServerPassword, skipBouncerAccount, testServerAddress, testTag } from '../helpers';
+import { APP_PORT, GATEWAY_APP_PORT } from '../global-setup';
 
 
 /** Fill in nick step and advance to the server step. */
@@ -15,6 +16,34 @@ const fillServerStepAndConnect = async (page: Page): Promise<void> => {
   await page.getByLabel('Server password').fill(getServerPassword());
   await page.getByRole('button', { name: 'Next' }).click();
   await skipBouncerAccount(page);
+};
+
+// The dev servers' own sockets (HMR) are left alone: disturbing them reloads the page
+const APP_PORTS = new Set([String(APP_PORT), String(GATEWAY_APP_PORT)]);
+
+/**
+ * Holds the IRC server's lines back until the returned function releases them, so the wizard stays on
+ * "Connecting to server" for as long as the test looks at it instead of passing it before the test can.
+ */
+const holdServerLines = async (page: Page): Promise<() => void> => {
+  let isHeld = true;
+  const heldSends: (() => void)[] = [];
+  await page.routeWebSocket((url) => !APP_PORTS.has(url.port), (socket) => {
+    const server = socket.connectToServer();
+    server.onMessage((message) => {
+      if (isHeld) {
+        heldSends.push(() => socket.send(message));
+      } else {
+        socket.send(message);
+      }
+    });
+  });
+  return () => {
+    isHeld = false;
+    for (const send of heldSends.splice(0)) {
+      send();
+    }
+  };
 };
 
 /** The connections the page opens, closed at once: a test of a real network then never leaves this machine */
@@ -44,6 +73,7 @@ test.describe('Wizard', () => {
   });
 
   test('completes full wizard flow and reaches main page', async ({ page }) => {
+    const releaseServerLines = await holdServerLines(page);
     await page.goto('/');
 
     // Step 1: Nick
@@ -75,6 +105,7 @@ test.describe('Wizard', () => {
 
     // Step 3: Loading
     await expect(page.getByText('Connecting to server')).toBeVisible();
+    releaseServerLines();
     await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
 
     // Step 4: Channels list
