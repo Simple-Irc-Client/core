@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Kernel } from '@/network/irc/kernel';
 import * as settingsFile from '@features/settings/store/settings';
 import * as channelsFile from '@features/channels/store/channels';
-import { DEBUG_CHANNEL } from '@/config/config';
+import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { setupKernelTest, defaultUserModes } from '@/network/irc/kernel/__tests__/fixtures';
 
 describe('kernel core/whois', () => {
@@ -172,6 +172,35 @@ describe('kernel core/whois', () => {
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(1, expect.objectContaining({ target: DEBUG_CHANNEL, message: `>> ${line}` }));
     expect(mockSetAddMessage).toHaveBeenNthCalledWith(2, expect.objectContaining({ target: '#current-channel', message: '* Noop używa bezpiecznego połączenia' }));
     expect(mockSetAddMessage).toHaveBeenCalledTimes(2);
+  });
+
+  describe('RPL_USINGSSL (275)', () => {
+    const showWhoisLine = (line: string) => {
+      const mockSetAddMessage = vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
+      vi.spyOn(settingsFile, 'getCurrentChannelName').mockImplementation(() => '#current-channel');
+
+      new Kernel({ type: 'raw', line }).handle();
+
+      return mockSetAddMessage;
+    };
+
+    it('shows DALnet\'s secure connection line as part of the WHOIS reply', () => {
+      const mockSetAddMessage = showWhoisLine(':lion.tx.us.dal.net 275 MrRandom subMum38 :is using a secure connection (SSL)');
+
+      expect(mockSetAddMessage).toHaveBeenLastCalledWith(expect.objectContaining({ target: '#current-channel', message: '* subMum38 używa bezpiecznego połączenia' }));
+    });
+
+    it('keeps a secure connection line in the server\'s words when its wording is not a known one', () => {
+      const mockSetAddMessage = showWhoisLine(':irc.example 275 me someone :is using a secure connection (TLSv1.3)');
+
+      expect(mockSetAddMessage).toHaveBeenLastCalledWith(expect.objectContaining({ message: '* someone is using a secure connection (TLSv1.3)' }));
+    });
+
+    it('shows any other 275 as the server sent it', () => {
+      const mockSetAddMessage = showWhoisLine(':undernet.example 275 me d 10.0.0.0/8 :local network');
+
+      expect(mockSetAddMessage).toHaveBeenLastCalledWith(expect.objectContaining({ target: STATUS_CHANNEL, message: 'd 10.0.0.0/8: local network' }));
+    });
   });
 
   it('test raw 317 - idle and signon time', () => {

@@ -2,11 +2,13 @@ import i18next from '@/app/i18n';
 import { parseChannel } from '@/network/irc/helpers';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { replyWindow, showReply } from '@/network/irc/kernel/replies';
+import { showNumericReply } from '@/network/irc/kernel/unhandled';
 import { getTimeSettings, getUserModes } from '@features/settings/store/settings';
 import { setUserBot } from '@features/users/store/users';
 import { formatDateTime } from '@shared/lib/dateTime';
 import { MessageCategory } from '@shared/types';
 
+const RPL_USINGSSL = '275';
 const RPL_WHOISCERTFP = '276';
 const RPL_WHOISREGNICK = '307';
 const RPL_WHOISHELPOP = '310';
@@ -175,6 +177,9 @@ export const onRaw335 = (ctx: IrcContext): void => {
   });
 };
 
+// Standard wordings: 671 as solanum, UnrealIRCd and ergo send it; 275 as DALnet (Bahamut) does
+const SECURE_CONNECTION_TEXTS = new Set(['is using a Secure Connection', 'is using a secure connection (SSL)']);
+
 // :chmurka.pirc.pl 671 sic-test Noop :is using a Secure Connection
 export const onRaw671 = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
@@ -182,7 +187,7 @@ export const onRaw671 = (ctx: IrcContext): void => {
 
   let message = ctx.trailing();
 
-  if (message === 'is using a Secure Connection') {
+  if (SECURE_CONNECTION_TEXTS.has(message)) {
     message = i18next.t('kernel.671.is-using-a-secure-connection');
   }
 
@@ -191,6 +196,16 @@ export const onRaw671 = (ctx: IrcContext): void => {
     target: replyWindow(ctx),
     category: MessageCategory.info,
   });
+};
+
+// DALnet's 671: :lion.tx.us.dal.net 275 mynick someone :is using a secure connection (SSL)
+// ircu sends 275 for STATS d lines, so any other 275 is shown as the server sent it
+export const onRaw275 = (ctx: IrcContext): void => {
+  if (/^is using a secure connection/i.test(ctx.paramsAndText().text)) {
+    onRaw671(ctx);
+  } else {
+    showNumericReply(ctx);
+  }
 };
 
 // :server 317 mynick user idle signon :seconds idle, signon time
@@ -298,6 +313,7 @@ export const onRaw379 = (ctx: IrcContext): void => {
 };
 
 export const handlers: IrcHandlers = {
+  [RPL_USINGSSL]: onRaw275,
   [RPL_WHOISCERTFP]: onRaw276,
   [RPL_WHOISREGNICK]: onRaw307,
   [RPL_WHOISUSER]: onRaw311,
