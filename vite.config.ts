@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { publicSiteMetadata } from "./build/publicSiteMetadata";
@@ -22,6 +23,8 @@ const pwa = VitePWA({
   workbox: {
     globPatterns: ["**/*.{js,css,html,svg,ico,png,webp,woff2}"],
     globIgnores: ["**/*.map"],
+    // The worker's maps would come after the Sentry upload removed the app's, and be deployed
+    sourcemap: false,
   },
   manifest: {
     name: "Simple IRC Client",
@@ -53,6 +56,20 @@ const pwa = VitePWA({
   },
 });
 
+// Source maps go to Sentry and never to the server; without a token (local builds) none are made, since none would be removed
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+const sentrySourceMapUpload = (authToken: string) => sentryVitePlugin({
+  authToken,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // The release is set by Sentry.init; commits need a repository integration Sentry doesn't have
+  release: { name: `simple-irc-client@${gitRef}`, inject: false, setCommits: false },
+  sourcemaps: { filesToDeleteAfterUpload: ["./dist/**/*.map"] },
+  telemetry: false,
+  // A failed upload costs readable stack traces, not the deploy
+  errorHandler: (error) => console.warn(`Sentry source map upload failed: ${error.message}`),
+});
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   if (command === "serve") {
@@ -76,7 +93,7 @@ export default defineConfig(({ command, mode }) => {
     const { PUBLIC_SITE_URL } = loadEnv(mode, import.meta.dirname, "PUBLIC_SITE_URL");
     return {
       define: { __GIT_REF__: JSON.stringify(gitRef) },
-      plugins: [react(), tailwindcss(), pwa, publicSiteMetadata(PUBLIC_SITE_URL)],
+      plugins: [react(), tailwindcss(), pwa, publicSiteMetadata(PUBLIC_SITE_URL), ...(sentryAuthToken ? [sentrySourceMapUpload(sentryAuthToken)] : [])],
       resolve: {
         alias: {
           "@": path.resolve(import.meta.dirname, "./src"),
@@ -89,6 +106,8 @@ export default defineConfig(({ command, mode }) => {
         hmr: false,
       },
       base: './',
+      // Hidden: the bundles name no map, so browsers never ask for one
+      build: { sourcemap: sentryAuthToken ? "hidden" : false },
     }
   }
 });
