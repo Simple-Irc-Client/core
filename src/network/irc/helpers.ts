@@ -97,6 +97,14 @@ export const parseIrcRawMessage = (message: string): ParsedIrcRawMessage => {
   return { tags, sender, command, line };
 };
 
+// What every server takes in a username; nicks allow more (`|`, `[`, `^`…), which servers reject or rewrite
+const USERNAME_UNSAFE_CHARACTERS = /[^0-9A-Za-z_.-]/g;
+// For a nick with none of those characters left, e.g. one written only in another script
+const FALLBACK_USERNAME = 'user';
+
+/** The username sent at registration: the nick without the characters a username can't have */
+export const toUsername = (nick: string): string => nick.replace(USERNAME_UNSAFE_CHARACTERS, '') || FALLBACK_USERNAME;
+
 const IRC_SERVICES = new Set(['nickserv', 'chanserv', 'memoserv', 'hostserv', 'botserv', 'operserv', 'global', 'saslserv']);
 
 /** Messages to services may carry passwords, so the client never shows its own copies of them. */

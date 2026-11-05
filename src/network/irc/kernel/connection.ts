@@ -3,6 +3,7 @@ import { DEBUG_CHANNEL, STATUS_CHANNEL } from '@/config/config';
 import { MessageColor } from '@/config/theme';
 import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context';
 import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
+import { toUsername } from '@/network/irc/helpers';
 import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
 import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
@@ -55,7 +56,7 @@ export const handleConnect = (): void => {
     ircSendRawMessage(`PASS ${serverPassword}`);
   }
   ircSendRawMessage(`NICK ${nick}`);
-  ircSendRawMessage(`USER ${nick} 0 * :${nick}`);
+  ircSendRawMessage(`USER ${toUsername(nick)} 0 * :${nick}`);
 };
 
 export const handleConnected = (): void => {

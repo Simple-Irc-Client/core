@@ -31,6 +31,17 @@ describe('kernel connection', () => {
     expect(mockSend).not.toHaveBeenCalledWith(expect.stringMatching(/^PASS /));
   });
 
+  it('test connect sends a username a server accepts when the nick has characters a username can\'t', () => {
+    vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'josh|droid');
+    vi.spyOn(settingsFile, 'getServer').mockImplementation(() => undefined);
+    const mockSend = vi.spyOn(networkFile, 'ircSendRawMessage').mockImplementation(() => {});
+
+    new Kernel({ type: 'connect' }).handle();
+
+    expect(mockSend).toHaveBeenCalledWith('NICK josh|droid');
+    expect(mockSend).toHaveBeenCalledWith('USER joshdroid 0 * :josh|droid');
+  });
+
   it('test connect sends PASS before NICK when server has a password', () => {
     vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'TestNick');
     vi.spyOn(settingsFile, 'getServer').mockImplementation(

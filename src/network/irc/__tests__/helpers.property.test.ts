@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { escapeTagValue, parseIrcRawMessage, unescapeTagValue } from '../helpers';
+import { escapeTagValue, parseIrcRawMessage, toUsername, unescapeTagValue } from '../helpers';
 
 describe('IRC helpers, for any input', () => {
   it('a tag value comes back as it was, and its escaped form has no space, semicolon or line break', () => {
@@ -23,6 +23,19 @@ describe('IRC helpers, for any input', () => {
       const parsed = parseIrcRawMessage(`:nick!user@host ${command} ${[...params, `:${trailing}`].join(' ')}`);
       expect(parsed.command).toBe(command);
       expect(parsed.line.slice(0, params.length)).toEqual(params);
+    }));
+  });
+  it('a username made from a nick is never empty and holds only characters every server accepts', () => {
+    fc.assert(fc.property(fc.string({ unit: 'binary' }), (nick) => {
+      expect(toUsername(nick)).toMatch(/^[0-9A-Za-z_.-]+$/);
+    }));
+  });
+
+  it('a username made from a nick keeps its accepted characters, in order', () => {
+    fc.assert(fc.property(fc.string({ unit: 'binary' }), (nick) => {
+      const accepted = [...nick].filter((character) => /^[0-9A-Za-z_.-]$/.test(character)).join('');
+      fc.pre(accepted.length > 0);
+      expect(toUsername(nick)).toBe(accepted);
     }));
   });
 });

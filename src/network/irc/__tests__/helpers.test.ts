@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Server } from '../servers';
 import { type UserMode } from '@shared/types';
-import { calculateMaxPermission, escapeTagValue, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes, unescapeTagValue } from '../helpers';
+import { calculateMaxPermission, escapeTagValue, parseChannel, parseIrcRawMessage, parseNick, parseServer, parseUserModes, toUsername, unescapeTagValue } from '../helpers';
 
 describe('helper tests', () => {
   const defaultUserModes = [
@@ -284,5 +284,20 @@ describe('helper tests', () => {
     expect(parseUserModes('(v)+')).toStrictEqual([{ symbol: '+', flag: 'v' }]);
     expect(parseUserModes('(x)')).toStrictEqual([]); // incorrect
     expect(parseUserModes('()*')).toStrictEqual([]); // incorrect
+  });
+  describe('toUsername', () => {
+    it('keeps a nick that is already a valid username', () => {
+      expect(toUsername('Josh_droid-2.0')).toBe('Josh_droid-2.0');
+    });
+
+    it('drops the characters nicks allow and usernames do not', () => {
+      expect(toUsername('josh|droid')).toBe('joshdroid');
+      expect(toUsername('[away]^nick`{}\\')).toBe('awaynick');
+    });
+
+    it('falls back to a fixed username when no character is left', () => {
+      expect(toUsername('|||')).toBe('user');
+      expect(toUsername('Влад')).toBe('user');
+    });
   });
 });
