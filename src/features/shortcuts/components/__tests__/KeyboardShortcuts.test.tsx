@@ -1,3 +1,4 @@
+import { Profiler } from 'react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -132,6 +133,22 @@ describe('KeyboardShortcuts', () => {
       openMessageSearch();
     });
     expect(screen.getByTestId('message-search')).toBeInTheDocument();
+  });
+
+  it('should not re-render the closed switcher when a window gets a new unread message', () => {
+    const onRender = vi.fn();
+    render(
+      <Profiler id="keyboard-shortcuts" onRender={onRender}>
+        <KeyboardShortcuts />
+      </Profiler>,
+    );
+    onRender.mockClear();
+
+    act(() => {
+      useChannelsStore.getState().setIncreaseUnreadMessages('#rust');
+    });
+
+    expect(onRender).not.toHaveBeenCalled();
   });
 
   it('should leave other keys alone', async () => {

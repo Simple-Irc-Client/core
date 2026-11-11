@@ -19,12 +19,40 @@ interface AwayMessagesProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
+const AwayMessageList = () => {
   const { t } = useTranslation();
   const awayMessages = useAwayMessagesStore((state) => state.messages);
   const timeFormat = useSettingsStore((state) => state.timeFormat);
   const showSeconds = useSettingsStore((state) => state.showSeconds);
   const time = timePattern({ timeFormat, showSeconds });
+
+  return (
+    <div className="flex-1 overflow-y-auto py-4">
+      {awayMessages.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center">{t('currentUser.noAwayMessages')}</p>
+      ) : (
+        <div className="space-y-3">
+          {awayMessages.map((msg) => (
+            <div key={msg.id} className="border rounded-lg p-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span className="font-medium">{msg.channel}</span>
+                <span>{format(new Date(msg.time), isToday(new Date(msg.time)) ? time : `${time} (d MMM yyyy)`, { locale: getDateFnsLocale() })}</span>
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}
+                {msg.message}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// The dialog stays mounted, so only the list (rendered while open) subscribes to the messages
+const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
+  const { t } = useTranslation();
 
   const handleMarkAsRead = (): void => {
     clearAwayMessages();
@@ -38,26 +66,7 @@ const AwayMessages = ({ open, onOpenChange }: AwayMessagesProps) => {
           <DialogTitle>{t('currentUser.awayMessages')}</DialogTitle>
           <DialogDescription>{t('currentUser.awayMessagesDescription')}</DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto py-4">
-          {awayMessages.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center">{t('currentUser.noAwayMessages')}</p>
-          ) : (
-            <div className="space-y-3">
-              {awayMessages.map((msg) => (
-                <div key={msg.id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                    <span className="font-medium">{msg.channel}</span>
-                    <span>{format(new Date(msg.time), isToday(new Date(msg.time)) ? time : `${time} (d MMM yyyy)`, { locale: getDateFnsLocale() })}</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-semibold">{typeof msg.nick === 'string' ? msg.nick : msg.nick?.nick}:</span>{' '}
-                    {msg.message}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <AwayMessageList />
         <DialogFooter>
           <Button type="button" onClick={handleMarkAsRead}>
             {t('currentUser.markAsRead')}
