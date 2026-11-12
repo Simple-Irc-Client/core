@@ -52,8 +52,7 @@ describe('kernel ircv3/cap', () => {
     expect(mockIrcDisconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('test CAP LS with STS triggers handleSocketClose directly after ircDisconnect', async () => {
-    vi.useFakeTimers();
+  it('test CAP LS with STS triggers handleSocketClose directly after ircDisconnect', () => {
     vi.spyOn(channelsFile, 'setAddMessage').mockImplementation(() => {});
     vi.spyOn(channelsFile, 'setAddMessageToAllChannels').mockImplementation(() => {});
     vi.spyOn(settingsFile, 'setSupportedOption').mockImplementation(() => {});
@@ -97,8 +96,7 @@ describe('kernel ircv3/cap', () => {
       servers: ['irc.test.com'],
     }));
     vi.spyOn(settingsFile, 'getCurrentNick').mockImplementation(() => 'testNick');
-    const mockRestoreSaslCredentials = vi.spyOn(saslFile, 'restoreSaslCredentials').mockImplementation(async () => true);
-    const mockIrcConnectWithTLS = vi.spyOn(networkFile, 'ircConnectWithTLS').mockImplementation(() => {});
+    const mockScheduleSTSUpgrade = vi.spyOn(networkFile, 'scheduleSTSUpgrade').mockImplementation(() => {});
 
     const line = ':irc.test.com CAP * LS :sts=port=6697,duration=300';
     new Kernel({ type: 'raw', line }).handle();
@@ -106,19 +104,7 @@ describe('kernel ircv3/cap', () => {
     // handleSocketClose should have been called directly (not via onclose event)
     expect(mockIncrementSTSRetries).toHaveBeenCalledTimes(1);
     expect(mockSetIsConnecting).toHaveBeenCalledWith(true);
-
-    // Advance past the setTimeout delay to trigger TLS reconnection
-    await vi.advanceTimersByTimeAsync(1000);
-
-    expect(mockRestoreSaslCredentials).toHaveBeenCalledTimes(1);
-    expect(mockIrcConnectWithTLS).toHaveBeenCalledTimes(1);
-    expect(mockIrcConnectWithTLS).toHaveBeenCalledWith(
-      expect.objectContaining({ servers: ['irc.test.com'] }),
-      'testNick',
-      6697,
-    );
-
-    vi.useRealTimers();
+    expect(mockScheduleSTSUpgrade).toHaveBeenCalledExactlyOnceWith(6697, expect.any(Function));
   });
 
   it('test raw CAP #1', () => {

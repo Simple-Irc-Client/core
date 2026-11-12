@@ -5,11 +5,11 @@ import { type IrcContext, type IrcHandlers } from '@/network/irc/kernel/context'
 import { clearChannelWhoRequests } from '@/network/irc/kernel/core/who';
 import { toUsername } from '@/network/irc/helpers';
 import { forgetGatewaySession, hasGatewaySession, rememberGatewaySession, takeExpectedGatewayHello } from '@/network/irc/gatewaySession';
-import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircConnectWithTLS, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, startKeepalive, stopKeepalive } from '@/network/irc/network';
+import { clearSavedCredentials, getIsReconnecting, handleReconnectFailure, ircJoinChannels, ircSendRawMessage, resetConnectionState, resetInactivityReconnectRetries, scheduleSTSUpgrade, startKeepalive, stopKeepalive } from '@/network/irc/network';
 import { clearLabels } from '@/network/irc/labels';
 import { announcePresence } from '@/network/irc/preAway';
 import { registrationNick, watchWantedNick } from '@features/nickRegain/nickRegain';
-import { clearSaslCredentials, getNickServFallbackCredentials, markIdentifySent, restoreSaslCredentials } from '@/network/irc/sasl';
+import { clearSaslCredentials, getNickServFallbackCredentials, markIdentifySent } from '@/network/irc/sasl';
 import { clearPendingSTSUpgrade, getPendingSTSUpgrade, hasExhaustedSTSRetries, incrementSTSRetries, resetSTSRetries } from '@/network/irc/sts';
 import { clearAllTyping, existChannel, getChannelsToAutoJoin, getOpenChannelNames, setAddChannel, setAddMessage, setAddMessageToAllChannels } from '@features/channels/store/channels';
 import { resetDmPresenceSubscription, subscribeDmPresenceOnRegistration } from '@features/dmPresence/dmPresence';
@@ -241,10 +241,8 @@ export const handleSocketClose = (): void => {
 
     if (server && nick) {
       setIsConnecting(true);
-      setTimeout(async () => {
-        await restoreSaslCredentials();
-        ircConnectWithTLS(server, nick, stsUpgrade.port);
-      }, 1000);
+      // A failed attempt counts like a close: retried until the STS retries run out
+      scheduleSTSUpgrade(stsUpgrade.port, handleSocketClose);
     }
   }
 };

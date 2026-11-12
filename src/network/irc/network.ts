@@ -68,6 +68,16 @@ const cancelReconnect = (): void => {
   }
 };
 
+export const STS_UPGRADE_DELAY_MS = 1000;
+let stsUpgradeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+const cancelSTSUpgrade = (): void => {
+  if (stsUpgradeTimeoutId !== null) {
+    clearTimeout(stsUpgradeTimeoutId);
+    stsUpgradeTimeoutId = null;
+  }
+};
+
 export const resetInactivityReconnectRetries = (): void => {
   inactivityReconnectRetries = 0;
   cancelReconnect();
@@ -211,6 +221,7 @@ export const ircDisconnect = (): void => {
   clearInactivityTimeout();
   stopKeepalive();
   cancelReconnect();
+  cancelSTSUpgrade();
 
   resetCapabilityState();
   resetSaslState();
@@ -334,23 +345,12 @@ export const ircConnect = (currentServer: Server, nick: string, { resumeGatewayS
   }
 };
 
-/** For STS upgrades and servers with a known STS policy. */
-export const ircConnectWithTLS = (currentServer: Server, nick: string, port?: number): void => {
-  const singleServer = parseServer(currentServer);
-  if (singleServer == null || singleServer.host === undefined || singleServer.host === '') {
+const withTLS = (currentServer: Server, port: number): Server => {
+  const host = parseServer(currentServer)?.host;
+  if (host === undefined || host === '') {
     throw new Error('Unable to connect to IRC network - server host is empty');
   }
-
-  const tlsServer: Server = {
-    ...currentServer,
-    tls: true,
-  };
-
-  if (port !== undefined) {
-    tlsServer.servers = [`${singleServer.host}:${port}`];
-  }
-
-  ircConnect(tlsServer, nick);
+  return { ...currentServer, tls: true, servers: [`${host}:${port}`] };
 };
 
 /** NickServ fallback when SASL isn't available. */
@@ -495,17 +495,38 @@ let reconnectInFlight: Promise<boolean> | null = null;
  * Preserves SASL credentials. Single-flight: overlapping calls (double click, watchdog racing network-back)
  * join the running one. `isConnecting` is raised before the first await so Connect buttons stay disabled.
  */
-export const ircReconnect = (options: { announce?: boolean } = {}): Promise<boolean> => {
+export const ircReconnect = (options: { announce?: boolean } = {}): Promise<boolean> =>
+  joinReconnect(() => runReconnect(options));
+
+/**
+ * STS: replaces the plaintext connection with a TLS one on `port`. Shares ircReconnect's single flight,
+ * so a reconnect started meanwhile (network-back, Connect click) is joined instead of racing it for the transport.
+ */
+export const scheduleSTSUpgrade = (port: number, onFailed: () => void): void => {
+  cancelSTSUpgrade();
+  stsUpgradeTimeoutId = setTimeout(() => {
+    stsUpgradeTimeoutId = null;
+    joinReconnect(() => runReconnect({ announce: false, stsPort: port }))
+      .then((started) => {
+        if (!started) {
+          onFailed();
+        }
+      })
+      .catch(onFailed);
+  }, STS_UPGRADE_DELAY_MS);
+};
+
+const joinReconnect = (start: () => Promise<boolean>): Promise<boolean> => {
   if (reconnectInFlight !== null) {
     return reconnectInFlight;
   }
-  reconnectInFlight = runReconnect(options).finally(() => {
+  reconnectInFlight = start().finally(() => {
     reconnectInFlight = null;
   });
   return reconnectInFlight;
 };
 
-const runReconnect = async ({ announce = true }: { announce?: boolean }): Promise<boolean> => {
+const runReconnect = async ({ announce = true, stsPort }: { announce?: boolean; stsPort?: number }): Promise<boolean> => {
   const server = getServer();
   const nick = getCurrentNick();
 
@@ -515,7 +536,7 @@ const runReconnect = async ({ announce = true }: { announce?: boolean }): Promis
 
   setIsConnecting(true);
   try {
-    await reconnectAs(server, nick, announce);
+    await reconnectAs(stsPort === undefined ? server : withTLS(server, stsPort), nick, announce);
   } catch (err) {
     setIsConnecting(false);
     throw err;

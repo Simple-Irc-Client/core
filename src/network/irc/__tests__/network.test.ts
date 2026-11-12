@@ -1626,6 +1626,80 @@ describe('network', () => {
     });
   });
 
+  describe('scheduleSTSUpgrade', () => {
+    const STS_PORT = 6697;
+    const plaintextServer = { default: 0, encoding: 'utf8', network: 'TestNet', servers: ['irc.test.net:6667'], tls: false };
+
+    const lastBackendParams = (): URLSearchParams => {
+      const { websocketUrl } = mockInitDirectWebSocket.mock.calls.at(-1)?.[0] as { websocketUrl: string };
+      return new URL(websocketUrl).searchParams;
+    };
+
+    const runScheduledUpgrade = async (onFailed: () => void = vi.fn()): Promise<void> => {
+      network.scheduleSTSUpgrade(STS_PORT, onFailed);
+      await vi.advanceTimersByTimeAsync(network.STS_UPGRADE_DELAY_MS);
+    };
+
+    beforeEach(() => {
+      mockGetServer.mockReturnValue(plaintextServer);
+      mockGetCurrentNick.mockReturnValue('testNick');
+    });
+
+    it('reconnects over TLS on the STS port with the credentials restored', async () => {
+      await runScheduledUpgrade();
+
+      expect(mockRestoreSaslCredentials).toHaveBeenCalledTimes(1);
+      expect(lastBackendParams().get('port')).toBe(String(STS_PORT));
+      expect(lastBackendParams().get('tls')).toBe('true');
+    });
+
+    it('joins a reconnect already in flight instead of opening a second connection', async () => {
+      // Regression (SIMPLE-IRC-CLIENT-APP-9): the upgrade connected on top of a running reconnect,
+      // and the Tauri transport threw "connection already in progress".
+      let releaseRestore!: (value: boolean) => void;
+      mockRestoreSaslCredentials.mockReturnValueOnce(
+        new Promise<boolean>((resolve) => { releaseRestore = resolve; }),
+      );
+      const reconnect = network.ircReconnect({ announce: false });
+
+      await runScheduledUpgrade();
+      releaseRestore(true);
+      await reconnect;
+      await flushPromises();
+
+      expect(mockInitDirectWebSocket).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not connect once the user has disconnected', async () => {
+      network.scheduleSTSUpgrade(STS_PORT, vi.fn());
+
+      network.ircDisconnect();
+      await vi.advanceTimersByTimeAsync(network.STS_UPGRADE_DELAY_MS);
+
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('reports the attempt as failed when the server has no host', async () => {
+      mockGetServer.mockReturnValue({ ...plaintextServer, servers: [''] });
+      const onFailed = vi.fn();
+
+      await runScheduledUpgrade(onFailed);
+
+      expect(onFailed).toHaveBeenCalledTimes(1);
+      expect(mockSetIsConnecting).toHaveBeenLastCalledWith(false);
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('reports the attempt as failed when there is no server to upgrade', async () => {
+      mockGetServer.mockReturnValue(undefined);
+      const onFailed = vi.fn();
+
+      await runScheduledUpgrade(onFailed);
+
+      expect(onFailed).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('ircAutoAuthenticate', () => {
     it.each([
       ['SASL already logged in', () => mockGetSaslState.mockReturnValue('success')],

@@ -120,8 +120,10 @@ describe('network in gateway mode', () => {
   });
 
   it('resumes a session moved to TLS by STS on the port it was upgraded to', async () => {
+    vi.useFakeTimers();
     settingsServer = plaintextServer;
-    network.ircConnectWithTLS(plaintextServer, 'tester', 6697);
+    network.scheduleSTSUpgrade(6697, vi.fn());
+    await vi.advanceTimersByTimeAsync(network.STS_UPGRADE_DELAY_MS);
     gatewaySession.rememberGatewaySession('token-1');
 
     await network.ircReconnect();
