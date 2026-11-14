@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "Kan {{channel}} niet betreden: alleen voor IRC-operators",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "gebruikt een beveiligde verbinding",
+    "kernel.716.caller-id-blocked": "accepteert geen privéberichten van je (+g); je bericht is niet afgeleverd",
+    "kernel.717.caller-id-notified": "is ervan op de hoogte gebracht dat je een bericht probeerde te sturen",
     "kernel.723.insufficient-privs": "Onvoldoende IRC-operatorrechten",
     "kernel.728": "{{channel}} quiet: {{mask}} (ingesteld door {{setBy}})",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

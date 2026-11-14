@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "Negalima prisijungti prie {{channel}}: tik IRC operatoriams",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "naudoja saugų ryšį",
+    "kernel.716.caller-id-blocked": "nepriima jūsų privačių žinučių (+g); žinutė nepristatyta",
+    "kernel.717.caller-id-notified": "informuotas(-a), kad bandėte parašyti",
     "kernel.723.insufficient-privs": "Nepakanka IRC operatoriaus teisių",
     "kernel.728": "{{channel}} quiet: {{mask}} (nustatė {{setBy}})",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

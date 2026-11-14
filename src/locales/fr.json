@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "Impossible de rejoindre {{channel}} : réservé aux opérateurs IRC",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "utilise une connexion sécurisée",
+    "kernel.716.caller-id-blocked": "n'accepte pas vos messages privés (+g) ; votre message n'a pas été remis",
+    "kernel.717.caller-id-notified": "a été informé(e) que vous avez tenté de lui écrire",
     "kernel.723.insufficient-privs": "Privilèges d'opérateur IRC insuffisants",
     "kernel.728": "{{channel}} réduit au silence : {{mask}} (mis par {{setBy}})",
     "kernel.760": "* {{user}} {{key}} : {{value}}",

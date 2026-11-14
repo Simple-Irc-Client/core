@@ -14,6 +14,15 @@ const ERR_MSGNEEDREGGEDNICK = '415';
 const ERR_TARGETTOOFAST = '439';
 const ERR_NONONREG = '486';
 const ERR_CANTSENDTOUSER = '531';
+const RPL_TARGUMODEG = '716';
+const RPL_TARGNOTIFY = '717';
+
+// hybrid (Rizon) and solanum word 716 differently
+const CALLER_ID_TEXTS: Record<string, string> = {
+  'is in +g mode (server side ignore)': 'kernel.716.caller-id-blocked',
+  'is in +g mode (server-side ignore.)': 'kernel.716.caller-id-blocked',
+  'has been informed that you messaged them.': 'kernel.717.caller-id-notified',
+};
 
 // :server 401 mynick target :No such nick/channel
 export const onRaw401 = (ctx: IrcContext): void => {
@@ -130,12 +139,29 @@ export const onRaw439 = (ctx: IrcContext): void => {
 export const onPrivateMessageRefused = (ctx: IrcContext): void => {
   ctx.line.shift(); // my nick
   const nick = ctx.line.shift();
-  const message = ctx.trailing();
 
+  showInDirectMessageWindow(ctx, nick, ctx.trailing(), MessageCategory.error);
+};
+
+// The recipient has caller-id (+g) on and did not get the message; 717 follows once the server has told them
+// :irc.uworld.se 716 mynick nick :is in +g mode (server side ignore)
+// :irc.uworld.se 717 mynick nick :has been informed that you messaged them.
+export const onCallerIdReply = (ctx: IrcContext): void => {
+  ctx.line.shift(); // my nick
+  const nick = ctx.line.shift();
+  const text = ctx.trailing();
+  const key = CALLER_ID_TEXTS[text];
+  const message = key === undefined ? text : i18next.t(key, { defaultValue: text });
+  const category = ctx.command === RPL_TARGUMODEG ? MessageCategory.error : MessageCategory.info;
+
+  showInDirectMessageWindow(ctx, nick, message, category);
+};
+
+const showInDirectMessageWindow = (ctx: IrcContext, nick: string | undefined, message: string, category: typeof MessageCategory.error | typeof MessageCategory.info): void => {
   showReply(ctx, {
     message: `${nick}: ${message}`,
     target: nick !== undefined && existChannel(nick) ? nick : replyWindow(ctx),
-    category: MessageCategory.error,
+    category,
   });
 };
 
@@ -148,4 +174,6 @@ export const handlers: IrcHandlers = {
   [ERR_TARGETTOOFAST]: onRaw439,
   [ERR_NONONREG]: onPrivateMessageRefused,
   [ERR_CANTSENDTOUSER]: onPrivateMessageRefused,
+  [RPL_TARGUMODEG]: onCallerIdReply,
+  [RPL_TARGNOTIFY]: onCallerIdReply,
 };

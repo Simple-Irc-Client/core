@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "{{channel}} kann nicht betreten werden: nur für IRC-Operatoren",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "nutzt eine sichere Verbindung",
+    "kernel.716.caller-id-blocked": "nimmt keine privaten Nachrichten von dir an (+g); deine Nachricht wurde nicht zugestellt",
+    "kernel.717.caller-id-notified": "wurde benachrichtigt, dass du versucht hast, eine Nachricht zu senden",
     "kernel.723.insufficient-privs": "Unzureichende IRC-Operator-Rechte",
     "kernel.728": "{{channel}} stumm: {{mask}} (gesetzt von {{setBy}})",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

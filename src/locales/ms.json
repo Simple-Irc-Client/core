@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "Tidak dapat menyertai {{channel}}: operator IRC sahaja",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "menggunakan sambungan selamat",
+    "kernel.716.caller-id-blocked": "tidak menerima mesej peribadi daripada anda (+g); mesej anda tidak dihantar",
+    "kernel.717.caller-id-notified": "telah dimaklumkan bahawa anda cuba menghantar mesej",
     "kernel.723.insufficient-privs": "Keistimewaan operator IRC tidak mencukupi",
     "kernel.728": "{{channel}} quiet: {{mask}} (ditetapkan oleh {{setBy}})",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

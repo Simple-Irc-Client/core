@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "Nu poți intra pe {{channel}}: doar pentru operatori IRC",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "folosește o conexiune securizată",
+    "kernel.716.caller-id-blocked": "nu acceptă mesaje private de la tine (+g); mesajul nu a fost livrat",
+    "kernel.717.caller-id-notified": "a fost anunțat că ai încercat să-i scrii",
     "kernel.723.insufficient-privs": "Privilegii de operator IRC insuficiente",
     "kernel.728": "{{channel}} quiet: {{mask}} (setat de {{setBy}})",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

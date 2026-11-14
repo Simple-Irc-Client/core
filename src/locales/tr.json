@@ -217,6 +217,8 @@
     "kernel.520.opers-only": "{{channel}} kanalına katılınamıyor: yalnızca IRC operatörleri",
     "kernel.671": "* {{user}} {{message}}",
     "kernel.671.is-using-a-secure-connection": "güvenli bağlantı kullanıyor",
+    "kernel.716.caller-id-blocked": "sizden özel mesaj kabul etmiyor (+g); mesajınız iletilmedi",
+    "kernel.717.caller-id-notified": "mesaj göndermeye çalıştığınız bildirildi",
     "kernel.723.insufficient-privs": "Yetersiz IRC operatörü yetkisi",
     "kernel.728": "{{channel}} quiet: {{mask}} ({{setBy}} tarafından)",
     "kernel.760": "* {{user}} {{key}}: {{value}}",

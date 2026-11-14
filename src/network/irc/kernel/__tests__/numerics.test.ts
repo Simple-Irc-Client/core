@@ -244,6 +244,43 @@ describe('dedicated numeric handlers', () => {
     });
   });
 
+  describe('716 RPL_TARGUMODEG / 717 RPL_TARGNOTIFY', () => {
+    it.each([
+      ['hybrid', 'is in +g mode (server side ignore)'],
+      ['solanum', 'is in +g mode (server-side ignore.)'],
+    ])('716 shows the undelivered message as an error in the open DM window, translated from %s', (_server, text) => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => name === 'alice');
+
+      handle(`:irc.uworld.se 716 mynick alice :${text}`);
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({
+        target: 'alice',
+        message: 'alice: nie przyjmuje od ciebie prywatnych wiadomości (+g); wiadomość nie została dostarczona',
+        category: MessageCategory.error,
+      });
+    });
+
+    it('717 shows the notification as info in the open DM window, translated', () => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation((name) => name === 'alice');
+
+      handle(':irc.uworld.se 717 mynick alice :has been informed that you messaged them.');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({
+        target: 'alice',
+        message: 'alice: dostał(a) powiadomienie o twojej próbie wysłania wiadomości',
+        category: MessageCategory.info,
+      });
+    });
+
+    it('keeps a server\'s own wording, in the current window when no DM is open', () => {
+      vi.spyOn(channelsFile, 'existChannel').mockImplementation(() => false);
+
+      handle(':server 716 mynick alice :is ignoring you');
+
+      expect(lastReply(mockSetAddMessage)).toMatchObject({ target: '#current', message: 'alice: is ignoring you', category: MessageCategory.error });
+    });
+  });
+
   it('470 ERR_LINKCHANNEL reports the forward as info', () => {
     handle(':server 470 mynick #from #to :Forwarding to another channel');
 
