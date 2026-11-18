@@ -52,20 +52,9 @@ const processMessageQueue = async (): Promise<void> => {
   isProcessingQueue = false;
 };
 
+/** Supersedes any previous socket, even one still connecting. */
 export const initDirectWebSocket = (server: Server): void => {
-  // Handlers removed first so a stale onclose can't null the new socket
-  if (directSocket) {
-    directSocket.onclose = null;
-    directSocket.onerror = null;
-    directSocket.onmessage = null;
-    directSocket.onopen = null;
-    directSocket.close();
-    directSocket = null;
-  }
-
-  if (isDirectConnectingFlag) {
-    throw new Error('Direct WebSocket connection already in progress');
-  }
+  closeDirectSocket();
 
   isDirectConnectingFlag = true;
 
@@ -152,8 +141,15 @@ export const isDirectConnecting = (): boolean => {
 };
 
 export const disconnectDirect = (): void => {
+  closeDirectSocket();
+  useEncryption = false;
+  messageQueue = [];
+  isProcessingQueue = false;
+};
+
+const closeDirectSocket = (): void => {
   if (directSocket) {
-    // No stale close/error events mid-reconnect
+    // Handlers removed first so the old socket's late close/error events can't touch its successor
     directSocket.onclose = null;
     directSocket.onerror = null;
     directSocket.onmessage = null;
@@ -162,7 +158,4 @@ export const disconnectDirect = (): void => {
     directSocket = null;
   }
   isDirectConnectingFlag = false;
-  useEncryption = false;
-  messageQueue = [];
-  isProcessingQueue = false;
 };

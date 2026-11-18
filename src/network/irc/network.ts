@@ -7,7 +7,7 @@ import { clearServiceRequests, noteServiceRequest } from './serviceRequests';
 import { setCurrentConnectionInfo, resetSTSSessionState } from './sts';
 import { getSTSPolicy, hasValidSTSPolicy } from './store/stsStore';
 import { setAddMessageToAllChannels, clearAllTyping } from '@features/channels/store/channels';
-import { getServer, getCurrentChannelName, getCurrentNick, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit, isSameName } from '@features/settings/store/settings';
+import { getServer, getCurrentChannelName, getCurrentNick, getIsWizardCompleted, setNick, setIsConnected, setIsConnecting, getEncryptedPassword, getPasswordNick, getLineLenLimit, isSameName } from '@features/settings/store/settings';
 import { v4 as uuidv4 } from 'uuid';
 import { MessageCategory } from '@shared/types';
 import { MessageColor } from '@/config/theme';
@@ -602,7 +602,8 @@ const restoreCredentials = async (nick: string): Promise<void> => {
 
 // On `online`/tab-visible: mobile freezes the watchdog's timers in the background, so it can't be relied on
 export const handleNetworkMaybeBack = (): void => {
-  if (getServer() === undefined || getCurrentNick() === '') {
+  // The wizard owns its connection attempts: a saved server must not start one behind the step being shown
+  if (!getIsWizardCompleted() || getServer() === undefined || getCurrentNick() === '') {
     return;
   }
 

@@ -59,17 +59,9 @@ export const setTauriEncryption = (enabled: boolean): void => {
   void enabled;
 };
 
+/** Supersedes any previous connection, even one still connecting. */
 export const initTauriIrc = (server: Server): void => {
-  if (isConnectingFlag) {
-    throw new Error('Tauri IRC connection already in progress');
-  }
-  if (connectionId !== null) {
-    const oldId = connectionId;
-    cleanup();
-    void invoke('irc_disconnect', { id: oldId }).catch(() => {
-      // already gone
-    });
-  }
+  disconnectTauriIrc();
 
   const parsed = parseServer(server);
   if (!parsed?.host) {

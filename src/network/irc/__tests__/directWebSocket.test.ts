@@ -191,7 +191,7 @@ describe('directWebSocket', () => {
       expect(eventCallback).toHaveBeenCalledWith('sic-irc-event', { type: 'connect' });
     });
 
-    it('should close existing connection before creating new one', async () => {
+    it('should close existing connection before creating new one', () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -204,15 +204,12 @@ describe('directWebSocket', () => {
       directWebSocket.initDirectWebSocket(server);
       const firstSocket = lastCreatedSocket;
 
-      // Simulate connection established to clear isDirectConnectingFlag
-      await firstSocket?.onopen?.();
-
       directWebSocket.initDirectWebSocket(server);
 
       expect(firstSocket?.close).toHaveBeenCalled();
     });
 
-    it('should remove event handlers from old socket when creating new one', async () => {
+    it('should remove event handlers from old socket when creating new one', () => {
       const server: Server = {
         default: 0,
         encoding: 'utf8',
@@ -224,9 +221,6 @@ describe('directWebSocket', () => {
 
       directWebSocket.initDirectWebSocket(server);
       const firstSocket = lastCreatedSocket as MockWebSocket;
-
-      // Simulate connection established to clear isDirectConnectingFlag
-      await firstSocket.onopen?.();
 
       // The first socket should have handlers
       expect(firstSocket.onclose).not.toBeNull();
@@ -241,6 +235,25 @@ describe('directWebSocket', () => {
       expect(firstSocket.onerror).toBeNull();
       expect(firstSocket.onmessage).toBeNull();
       expect(firstSocket.onopen).toBeNull();
+    });
+
+    it('should replace a socket that is still connecting', () => {
+      const server: Server = {
+        default: 0,
+        encoding: 'utf8',
+        network: 'TestNet',
+        servers: ['testnet.example.com'],
+        connectionType: 'websocket',
+        websocketUrl: 'wss://testnet.example.com/',
+      };
+      directWebSocket.initDirectWebSocket(server);
+      const connectingSocket = lastCreatedSocket as MockWebSocket;
+
+      directWebSocket.initDirectWebSocket(server);
+
+      expect(connectingSocket.close).toHaveBeenCalled();
+      expect(lastCreatedSocket).not.toBe(connectingSocket);
+      expect(directWebSocket.isDirectConnecting()).toBe(true);
     });
   });
 

@@ -88,9 +88,11 @@ const mockSetIsConnecting = vi.fn();
 const mockGetEncryptedPassword = vi.fn();
 const mockGetPasswordNick = vi.fn();
 const mockGetLineLenLimit = vi.fn();
+const mockGetIsWizardCompleted = vi.fn();
 vi.mock('@features/settings/store/settings', () => ({
   getServer: () => mockGetServer(),
   getCurrentNick: () => mockGetCurrentNick(),
+  getIsWizardCompleted: () => mockGetIsWizardCompleted(),
   setNick: (val: string) => mockSetNick(val),
   setIsConnected: (val: boolean) => mockSetIsConnecting(val),
   setIsConnecting: (val: boolean) => mockSetIsConnecting(val),
@@ -161,6 +163,7 @@ describe('network', () => {
     mockGetPasswordNick.mockClear().mockReturnValue(undefined);
     // 0 = server never sent ISUPPORT LINELEN; ircSendRawMessage falls back to the default.
     mockGetLineLenLimit.mockClear().mockReturnValue(0);
+    mockGetIsWizardCompleted.mockClear().mockReturnValue(true);
     mockDecryptPersistent.mockClear().mockImplementation((str: string) => Promise.resolve(str.replace('encrypted:', '')));
     network = await import('../network');
   });
@@ -932,6 +935,19 @@ describe('network', () => {
 
       expect(mockSendDirectRaw).not.toHaveBeenCalled();
       expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+    });
+
+    it('does not connect while the wizard is still open, even with a saved server', async () => {
+      withServerAndNick();
+      mockGetIsWizardCompleted.mockReturnValue(false);
+      network.startReachabilityWatch();
+
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('online'));
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(mockInitDirectWebSocket).not.toHaveBeenCalled();
+      expect(mockSetIsConnecting).not.toHaveBeenCalled();
     });
 
     it('stops responding to events after stopReachabilityWatch', async () => {

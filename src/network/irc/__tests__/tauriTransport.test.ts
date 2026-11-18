@@ -238,5 +238,19 @@ describe('tauriTransport', () => {
       expect(transport.isTauriConnecting()).toBe(true);
       expect(eventCallback).not.toHaveBeenCalled();
     });
+
+    it('replaces a connection that is still connecting', async () => {
+      transport.initTauriIrc(baseServer);
+      const staleChannel = lastChannel;
+
+      transport.initTauriIrc(baseServer);
+      resolveConnect('fresh-conn');
+      await flush();
+
+      expect(transport.isTauriConnecting()).toBe(true);
+      staleChannel?.emit({ type: 'closed' });
+      expect(transport.isTauriConnecting()).toBe(true);
+      expect(eventCallback).not.toHaveBeenCalled();
+    });
   });
 });

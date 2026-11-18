@@ -46,6 +46,16 @@ const holdServerLines = async (page: Page): Promise<() => void> => {
   };
 };
 
+/** The IRC connections the page opens, passed through to the server */
+const recordServerConnections = async (page: Page): Promise<string[]> => {
+  const opened: string[] = [];
+  await page.routeWebSocket((url) => !APP_PORTS.has(url.port), (socket) => {
+    opened.push(socket.url());
+    socket.connectToServer();
+  });
+  return opened;
+};
+
 /** The connections the page opens, closed at once: a test of a real network then never leaves this machine */
 const refuseConnections = async (page: Page): Promise<string[]> => {
   const attempted: string[] = [];
@@ -60,8 +70,8 @@ test.describe('Wizard', () => {
   let bot: IrcClient;
   let tag: string;
 
-  test.beforeEach(async ({}, testInfo) => {
-    tag = testTag(testInfo);
+  test.beforeEach(async () => {
+    tag = testTag(test.info());
 
     bot = await createIrcClient(`wizardbot-${tag}`);
     await bot.join(`#welcome-${tag}`);
@@ -119,6 +129,22 @@ test.describe('Wizard', () => {
     // Main page
     await expect(page.locator('#message-input')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: `#welcome-${tag}`, exact: true })).toBeVisible();
+  });
+
+  test('returning to the tab on the bouncer step does not connect behind it, so Skip connects once', async ({ page }) => {
+    const serverConnections = await recordServerConnections(page);
+    await page.goto('/');
+    await fillNickStep(page, `bouncer-tab-${tag}`);
+    await fillTestServer(page);
+    await page.getByLabel('Server password').fill(getServerPassword());
+    await page.getByRole('button', { name: 'Next' }).click();
+    await expect(page.getByRole('heading', { name: 'Bouncer account' })).toBeVisible();
+
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await page.getByRole('button', { name: 'Skip' }).click();
+
+    await expect(page.getByText('Connected')).toBeVisible({ timeout: 15_000 });
+    expect(serverConnections).toHaveLength(1);
   });
 
   test('saves nick and server settings for reconnecting', async ({ page }) => {
